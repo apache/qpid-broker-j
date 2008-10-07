@@ -27,7 +27,7 @@ package org.apache.qpid.management;
  */
 public interface Protocol
 {
-    String MAGIC_NUMBER = "AM1";
+    String MAGIC_NUMBER = "AM2";
     
     byte [] METHOD_REQUEST_FIRST_FOUR_BYTES = (MAGIC_NUMBER+"M").getBytes();
     byte [] SCHEMA_REQUEST_FIRST_FOUR_BYTES = (MAGIC_NUMBER+"S").getBytes();  
