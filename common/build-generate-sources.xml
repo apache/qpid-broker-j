@@ -32,8 +32,8 @@
     <istrue value="${generate}"/>
   </condition>
 
-  <property name="mllib.dir" value="${basedir}/../../python"/>
-  <property name="xml.spec.dir" value="${basedir}/../../specs"/>
+  <property name="mllib.dir" value="${basedir}"/>
+  <property name="xml.spec.dir" value="${basedir}/../specs"/>
 
   <property name="xml.spec.0-10" value="amqp.0-10-qpid-errata.stripped.xml"/>
 
