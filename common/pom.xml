@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.apache.qpid</groupId>
     <artifactId>qpid-java-build</artifactId>
-    <version>0.32-SNAPSHOT</version>
+    <version>6.0.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>qpid-common</artifactId>
@@ -35,7 +35,7 @@
     <selector.output.dir>${basedir}/src/main/java/org/apache/qpid/filter/selector</selector.output.dir>
     <qpid.name>qpid</qpid.name>
     <qpid.version>${project.version}</qpid.version>
-    <qpid.version.suffix></qpid.version.suffix>
+    <qpid.version.suffix />
     <buildNumber>Unversioned directory</buildNumber>
   </properties>
 
