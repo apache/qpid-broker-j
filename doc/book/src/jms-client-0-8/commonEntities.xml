@@ -30,7 +30,7 @@
 
 <!ENTITY qpidProgrammingBook "../../Programming-In-Apache-Qpid/html/">
 <!ENTITY qpidJavaBrokerBook "../../AMQP-Messaging-Broker-Java-Book/html/">
-<!ENTITY qpidSrc "http://svn.apache.org/viewvc/qpid/trunk/qpid/java/">
+<!ENTITY qpidSrc "http://svn.apache.org/viewvc/qpid/java/trunk/">
 
 <!ENTITY amqpSrc "http://www.amqp.org">
 
