@@ -106,6 +106,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
         _messagesReceived = new StatisticsCounter("messages-received-" + getName());
         _dataReceived = new StatisticsCounter("bytes-received-" + getName());
         setState(State.UNAVAILABLE);
+        changeAttribute(DURABLE, isDurable(), false);
     }
 
     @Override
