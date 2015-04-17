@@ -21,6 +21,7 @@
 package org.apache.qpid.test.utils;
 
 import java.security.PrivilegedAction;
+import java.util.Map;
 import java.util.Set;
 
 import javax.security.auth.Subject;
@@ -47,7 +48,7 @@ public class InternalBrokerHolder implements BrokerHolder
     }
 
     @Override
-    public void start(BrokerOptions options) throws Exception
+    public void start(final BrokerOptions options) throws Exception
     {
         if (Thread.getDefaultUncaughtExceptionHandler() == null)
         {
@@ -71,6 +72,12 @@ public class InternalBrokerHolder implements BrokerHolder
             @Override
             public void performAction(final Integer object)
             {
+                Map<String,String> properties =  options.getConfigProperties();
+                if (properties.containsKey("test.name"))
+                {
+                    String message = "Broker running on ports " + _portsUsedByBroker + " is shutdown for test " + properties.get("test.name");
+                    System.out.println(message);
+                }
                 _broker = null;
             }
         });

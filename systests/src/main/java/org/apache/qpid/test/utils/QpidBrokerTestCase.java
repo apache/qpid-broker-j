@@ -1243,6 +1243,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         options.setSkipLoggingConfiguration(skipLoggingConfiguration);
         options.setLogConfigFileLocation(log4jConfig);
         options.setStartupLoggedToSystemOut(false);
+        options.setConfigProperty("test.name", getClass().getSimpleName() + "-" + getName());
         return options;
     }
 
