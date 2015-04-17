@@ -686,6 +686,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             hostAttributes.put(VirtualHost.MODEL_VERSION, BrokerModel.MODEL_VERSION);
             hostAttributes.put(VirtualHost.NAME, getGroupName());
             hostAttributes.put(VirtualHost.TYPE, "BDB_HA_REPLICA");
+            hostAttributes.put(VirtualHost.DURABLE, false);
             createChild(VirtualHost.class, hostAttributes);
         }
         catch (Exception e)
