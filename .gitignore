@@ -16,6 +16,22 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-*.swp
-eclipse-projects/*
+
+#Java
+*.class
+velocity.log*
+release
+.classpath
+.project
+.settings
+generated/
+target
+classes
 derby.log
+
+# Intellij Project files
+.idea/
+*.iml
+*.ipr
+*.iws
+
