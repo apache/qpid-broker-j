@@ -41,6 +41,7 @@ import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.store.MessageHandle;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
@@ -119,14 +120,14 @@ public class ServerSessionDelegate extends SessionDelegate
                 }
             }
         }
+        catch(ServerScopedRuntimeException | ConnectionScopedRuntimeException e)
+        {
+            throw e;
+        }
         catch(RuntimeException e)
         {
             LOGGER.error("Exception processing command", e);
             exception(session, method, ExecutionErrorCode.INTERNAL_ERROR, "Exception processing command: " + e);
-            if(e instanceof ServerScopedRuntimeException)
-            {
-                throw e;
-            }
         }
     }
 
