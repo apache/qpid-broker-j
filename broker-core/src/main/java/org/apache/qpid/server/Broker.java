@@ -30,6 +30,8 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -98,7 +100,7 @@ public class Broker implements BrokerShutdownProvider
     }
 
     @Override
-    public void shutdown(int exitStatusCode)
+    public void shutdown(final int exitStatusCode)
     {
         try
         {
@@ -106,32 +108,71 @@ public class Broker implements BrokerShutdownProvider
         }
         finally
         {
-            try
+            if(_systemConfig != null)
             {
-                if(_systemConfig != null)
+                final ListenableFuture<Void> closeResult = _systemConfig.closeAsync();
+                if (_taskExecutor.isTaskExecutorThread())
                 {
-                    ListenableFuture<Void> closeResult = _systemConfig.closeAsync();
-                    closeResult.get(30000l, TimeUnit.MILLISECONDS);
+                    //spawn a new thread to avoid blocking the shutdown
+                    final ExecutorService executor = Executors.newSingleThreadExecutor();
+                    executor.execute(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            try
+                            {
+                                waitAndFinishShutdown(closeResult, exitStatusCode);
+                            }
+                            finally
+                            {
+                                executor.shutdown();
+                            }
+                        }
+                    });
                 }
-                _taskExecutor.stop();
+                else
+                {
+                    waitAndFinishShutdown(closeResult, exitStatusCode);
+                }
+            }
+            else
+            {
 
+                finishShutdown(exitStatusCode);
             }
-            catch (TimeoutException | InterruptedException | ExecutionException e)
-            {
-                LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately");
-            }
-            finally
-            {
-                if (_configuringOwnLogging)
-                {
-                    LogManager.shutdown();
-                }
+        }
+    }
 
-                if (_shutdownAction != null)
-                {
-                    _shutdownAction.performAction(exitStatusCode);
-                }
-            }
+    private void waitAndFinishShutdown(ListenableFuture<Void> closeResult, int exitStatusCode)
+    {
+        try
+        {
+            closeResult.get(30000l, TimeUnit.MILLISECONDS);
+
+        }
+        catch (TimeoutException | InterruptedException | ExecutionException e)
+        {
+            LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately");
+        }
+        finally
+        {
+            finishShutdown(exitStatusCode);
+        }
+    }
+
+    private void finishShutdown(int exitStatusCode)
+    {
+        _taskExecutor.stop();
+
+        if (_configuringOwnLogging)
+        {
+            LogManager.shutdown();
+        }
+
+        if (_shutdownAction != null)
+        {
+            _shutdownAction.performAction(exitStatusCode);
         }
     }
 
@@ -149,9 +190,8 @@ public class Broker implements BrokerShutdownProvider
             @Override
             public Object run() throws Exception
             {
-                startupImpl(options);
                 addShutdownHook();
-
+                startupImpl(options);
                 return null;
             }
         });

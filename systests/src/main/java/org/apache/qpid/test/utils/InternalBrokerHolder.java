@@ -72,15 +72,24 @@ public class InternalBrokerHolder implements BrokerHolder
             @Override
             public void performAction(final Integer object)
             {
-                Map<String,String> properties =  options.getConfigProperties();
-                if (properties.containsKey("test.name"))
-                {
-                    String message = "Broker running on ports " + _portsUsedByBroker + " is shutdown for test " + properties.get("test.name");
-                    System.out.println(message);
-                }
                 _broker = null;
             }
-        });
+        })
+        {
+            @Override
+            public void shutdown()
+            {
+                try
+                {
+                    super.shutdown();
+                }
+                catch(IllegalStateException e)
+                {
+                    System.out.println("IllegalStateException occurred on broker shutdown in test " + options.getConfigProperties().get("test.name"));
+                    throw e;
+                }
+            }
+        };
         _broker.startup(options);
     }
 
