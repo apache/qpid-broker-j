@@ -71,6 +71,7 @@
     <profile.broker.persistent>false</profile.broker.persistent>
     <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
     <profile.broker.clean.between.tests>true</profile.broker.clean.between.tests>
+    <profile.test_receive_timeout>1000</profile.test_receive_timeout>
     <dollar.sign>$</dollar.sign>
     <at.sign>@</at.sign>
     <bdb-version>5.0.104</bdb-version>
@@ -182,6 +183,7 @@
                 <echo>[profile.broker.persistent] ${profile.broker.persistent}</echo>
                 <echo>[profile.virtualhostnode.type] ${profile.virtualhostnode.type}</echo>
                 <echo>[profile.virtualhostnode.context.blueprint] ${profile.virtualhostnode.context.blueprint}</echo>
+                <echo>[profile.test_receive_timeout] ${profile.test_receive_timeout}</echo>
               </target>
             </configuration>
           </execution>
@@ -250,6 +252,7 @@
             <!-- This must be a child of qpid home currently due to the horrible mechanics of QBTC  -->
             <test.output>${qpid.home.qbtc.output}</test.output>
             <broker.clean.between.tests>true</broker.clean.between.tests>
+            <qpid.test_receive_timeout>${profile.test_receive_timeout}</qpid.test_receive_timeout>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -575,6 +578,7 @@
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.test_receive_timeout>2000</profile.test_receive_timeout>
       </properties>
     </profile>
 
@@ -594,6 +598,7 @@
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.test_receive_timeout>2000</profile.test_receive_timeout>
       </properties>
     </profile>
 
@@ -613,6 +618,7 @@
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
         <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.test_receive_timeout>2000</profile.test_receive_timeout>
       </properties>
     </profile>
 
