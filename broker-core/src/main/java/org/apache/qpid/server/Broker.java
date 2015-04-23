@@ -30,8 +30,6 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -53,14 +51,14 @@ import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.SystemOutMessageLogger;
 import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
-import org.apache.qpid.server.model.BrokerShutdownProvider;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.util.Action;
 
-public class Broker implements BrokerShutdownProvider
+public class Broker
 {
     private static final Logger LOGGER = Logger.getLogger(Broker.class);
 
@@ -99,8 +97,7 @@ public class Broker implements BrokerShutdownProvider
         shutdown(0);
     }
 
-    @Override
-    public void shutdown(final int exitStatusCode)
+    public void shutdown(int exitStatusCode)
     {
         try
         {
@@ -108,60 +105,27 @@ public class Broker implements BrokerShutdownProvider
         }
         finally
         {
-            if(_systemConfig != null)
+            try
             {
-                final ListenableFuture<Void> closeResult = _systemConfig.closeAsync();
-                if (_taskExecutor.isTaskExecutorThread())
+                if(_systemConfig != null)
                 {
-                    //spawn a new thread to avoid blocking the shutdown
-                    final ExecutorService executor = Executors.newSingleThreadExecutor();
-                    executor.execute(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                waitAndFinishShutdown(closeResult, exitStatusCode);
-                            }
-                            finally
-                            {
-                                executor.shutdown();
-                            }
-                        }
-                    });
+                    ListenableFuture<Void> closeResult = _systemConfig.closeAsync();
+                    closeResult.get(30000l, TimeUnit.MILLISECONDS);
                 }
-                else
-                {
-                    waitAndFinishShutdown(closeResult, exitStatusCode);
-                }
-            }
-            else
-            {
 
-                finishShutdown(exitStatusCode);
+            }
+            catch (TimeoutException | InterruptedException | ExecutionException e)
+            {
+                LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately");
+            }
+            finally
+            {
+                cleanUp(exitStatusCode);
             }
         }
     }
 
-    private void waitAndFinishShutdown(ListenableFuture<Void> closeResult, int exitStatusCode)
-    {
-        try
-        {
-            closeResult.get(30000l, TimeUnit.MILLISECONDS);
-
-        }
-        catch (TimeoutException | InterruptedException | ExecutionException e)
-        {
-            LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately");
-        }
-        finally
-        {
-            finishShutdown(exitStatusCode);
-        }
-    }
-
-    private void finishShutdown(int exitStatusCode)
+    private void cleanUp(int exitStatusCode)
     {
         _taskExecutor.stop();
 
@@ -174,6 +138,8 @@ public class Broker implements BrokerShutdownProvider
         {
             _shutdownAction.performAction(exitStatusCode);
         }
+
+        _systemConfig = null;
     }
 
     public void startup() throws Exception
@@ -190,7 +156,6 @@ public class Broker implements BrokerShutdownProvider
             @Override
             public Object run() throws Exception
             {
-                addShutdownHook();
                 startupImpl(options);
                 return null;
             }
@@ -242,25 +207,43 @@ public class Broker implements BrokerShutdownProvider
         LogRecorder logRecorder = new LogRecorder();
 
         _taskExecutor.start();
-        _systemConfig = configFactory.newInstance(_taskExecutor, _eventLogger, logRecorder, options.convertToSystemConfigAttributes(), this);
+        _systemConfig = configFactory.newInstance(_taskExecutor, _eventLogger, logRecorder, options.convertToSystemConfigAttributes());
         try
         {
             _systemConfig.open();
+            if (_systemConfig.getBroker().getState() == State.ERRORED)
+            {
+                LOGGER.warn("Closing broker as it cannot operate due to errors");
+                closeSystemConfig();
+            }
+            else
+            {
+                addShutdownHook();
+            }
         }
         catch(RuntimeException e)
         {
             LOGGER.fatal("Exception during startup", e);
-            try
-            {
-                _systemConfig.close();
-            }
-            catch(Exception ce)
-            {
-                LOGGER.debug("An error occurred when closing the registry following initialization failure", ce);
-            }
+            closeSystemConfig();
             throw e;
         }
 
+    }
+
+    private void closeSystemConfig()
+    {
+        try
+        {
+            _systemConfig.close();
+        }
+        catch(Exception ce)
+        {
+            LOGGER.debug("An error occurred when closing the system config following initialization failure", ce);
+        }
+        finally
+        {
+            cleanUp(1);
+        }
     }
 
     private void configureLogging(File logConfigFile, int logWatchTime, boolean startupLoggedToSystemOutput) throws InitException, IOException

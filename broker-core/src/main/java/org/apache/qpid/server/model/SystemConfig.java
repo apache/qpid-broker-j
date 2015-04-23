@@ -73,6 +73,4 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
 
     DurableConfigurationStore getConfigurationStore();
 
-    BrokerShutdownProvider getBrokerShutdownProvider();
-
 }

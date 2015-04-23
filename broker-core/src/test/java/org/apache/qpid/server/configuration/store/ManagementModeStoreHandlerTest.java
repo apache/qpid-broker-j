@@ -46,7 +46,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.AbstractSystemConfig;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerShutdownProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.Port;
@@ -81,8 +80,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         _taskExecutor.start();
 
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor, mock(EventLogger.class),
-                                               mock(LogRecorder.class), new BrokerOptions().convertToSystemConfigAttributes(),
-                                               mock(BrokerShutdownProvider.class));
+                                               mock(LogRecorder.class), new BrokerOptions().convertToSystemConfigAttributes());
 
 
         ConfiguredObjectRecord systemContextRecord = _systemConfig.asObjectRecord();
@@ -128,8 +126,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         _systemConfig = new AbstractSystemConfig(_taskExecutor,
                                                  mock(EventLogger.class),
                                                  mock(LogRecorder.class),
-                                                 attributes,
-                                                 mock(BrokerShutdownProvider.class))
+                                                 attributes)
         {
             @Override
             protected void onOpen()

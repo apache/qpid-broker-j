@@ -1198,7 +1198,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 finally
                 {
                     _systemConfig.getEventLogger().message(BrokerMessages.FATAL_ERROR(e.getMessage()));
-                    _systemConfig.getBrokerShutdownProvider().shutdown(1);
+                    _systemConfig.closeAsync();
                 }
             }
         }

@@ -27,7 +27,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.AbstractSystemConfig;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerShutdownProvider;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.SystemConfigFactoryConstructor;
@@ -49,10 +48,9 @@ public class DerbySystemConfigImpl extends AbstractSystemConfig<DerbySystemConfi
     public DerbySystemConfigImpl(final TaskExecutor taskExecutor,
                                  final EventLogger eventLogger,
                                  final LogRecorder logRecorder,
-                                 final Map<String,Object> attributes,
-                                 final BrokerShutdownProvider brokerShutdownProvider)
+                                 final Map<String,Object> attributes)
     {
-        super(taskExecutor, eventLogger, logRecorder, attributes, brokerShutdownProvider);
+        super(taskExecutor, eventLogger, logRecorder, attributes);
     }
 
     @Override

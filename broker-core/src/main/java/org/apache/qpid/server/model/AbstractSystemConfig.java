@@ -56,7 +56,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     private static final UUID SYSTEM_ID = new UUID(0l, 0l);
     private final EventLogger _eventLogger;
     private final LogRecorder _logRecorder;
-    private final BrokerShutdownProvider _brokerShutdownProvider;
 
     private DurableConfigurationStore _configurationStore;
 
@@ -88,8 +87,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     public AbstractSystemConfig(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
                                 final LogRecorder logRecorder,
-                                final Map<String,Object> attributes,
-                                final BrokerShutdownProvider brokerShutdownProvider)
+                                final Map<String,Object> attributes)
     {
         super(parentsMap(),
               updateAttributes(attributes),
@@ -97,7 +95,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         _eventLogger = eventLogger;
         getTaskExecutor().start();
         _logRecorder = logRecorder;
-        _brokerShutdownProvider = brokerShutdownProvider;
     }
 
     private static Map<String, Object> updateAttributes(Map<String, Object> attributes)
@@ -351,12 +348,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     public String getInitialConfigurationLocation()
     {
         return _initialConfigurationLocation;
-    }
-
-    @Override
-    public BrokerShutdownProvider getBrokerShutdownProvider()
-    {
-        return _brokerShutdownProvider;
     }
 
     @Override

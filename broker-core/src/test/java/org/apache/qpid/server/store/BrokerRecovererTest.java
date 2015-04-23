@@ -21,9 +21,7 @@
 package org.apache.qpid.server.store;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,11 +39,11 @@ import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.BrokerShutdownProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 
 public class BrokerRecovererTest extends TestCase
@@ -57,7 +55,6 @@ public class BrokerRecovererTest extends TestCase
     private UUID _authenticationProvider1Id = UUID.randomUUID();
     private SystemConfig<?> _systemConfig;
     private TaskExecutor _taskExecutor;
-    private BrokerShutdownProvider _brokerShutdownProvider;
 
     @Override
     protected void setUp() throws Exception
@@ -66,11 +63,9 @@ public class BrokerRecovererTest extends TestCase
 
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
-        _brokerShutdownProvider = mock(BrokerShutdownProvider.class);
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
                                                mock(EventLogger.class), mock(LogRecorder.class),
-                                               new BrokerOptions().convertToSystemConfigAttributes(),
-                                               _brokerShutdownProvider);
+                                               new BrokerOptions().convertToSystemConfigAttributes());
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());
@@ -260,7 +255,7 @@ public class BrokerRecovererTest extends TestCase
             resolveObjects(_brokerEntry);
             Broker<?> broker = _systemConfig.getBroker();
             broker.open();
-            verify(_brokerShutdownProvider).shutdown(1);
+            assertEquals("Unexpected broker state", State.ERRORED, broker.getState());
         }
     }
 
@@ -279,7 +274,7 @@ public class BrokerRecovererTest extends TestCase
 
         Broker<?> broker = (Broker<?>) recover.resolve();
         broker.open();
-        verify(_brokerShutdownProvider).shutdown(1);
+        assertEquals("Unexpected broker state", State.ERRORED, broker.getState());
     }
 
     public void testIncorrectModelVersion() throws Exception
@@ -297,8 +292,7 @@ public class BrokerRecovererTest extends TestCase
                     _systemConfig.getObjectFactory().recover(_brokerEntry, _systemConfig);
             Broker<?> broker = (Broker<?>) recover.resolve();
             broker.open();
-            verify(_brokerShutdownProvider).shutdown(1);
-            reset(_brokerShutdownProvider);
+            assertEquals("Unexpected broker state", State.ERRORED, broker.getState());
         }
     }
 

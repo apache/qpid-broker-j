@@ -35,7 +35,6 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.BrokerShutdownProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.SystemConfig;
@@ -81,8 +80,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
                                                mock(EventLogger.class),
                                                mock(LogRecorder.class),
-                                               new BrokerOptions().convertToSystemConfigAttributes(),
-                                               mock(BrokerShutdownProvider.class));
+                                               new BrokerOptions().convertToSystemConfigAttributes());
     }
 
     public void testUpgradeVirtualHostWithJDBCStoreAndBoneCPPool()

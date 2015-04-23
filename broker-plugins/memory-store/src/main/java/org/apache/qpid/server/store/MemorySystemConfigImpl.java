@@ -27,7 +27,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.AbstractSystemConfig;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerShutdownProvider;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.SystemConfigFactoryConstructor;
 
@@ -41,10 +40,9 @@ public class MemorySystemConfigImpl extends AbstractSystemConfig<MemorySystemCon
     public MemorySystemConfigImpl(final TaskExecutor taskExecutor,
                                   final EventLogger eventLogger,
                                   final LogRecorder logRecorder,
-                                  final Map<String,Object> attributes,
-                                  final BrokerShutdownProvider brokerShutdownProvider)
+                                  final Map<String,Object> attributes)
     {
-        super(taskExecutor, eventLogger, logRecorder, attributes, brokerShutdownProvider);
+        super(taskExecutor, eventLogger, logRecorder, attributes);
     }
 
     @Override

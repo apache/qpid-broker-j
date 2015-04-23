@@ -91,8 +91,7 @@ public class TestBrokerConfiguration
         final AbstractSystemConfig parentObject = new JsonSystemConfigImpl(taskExecutor,
                                                                mock(EventLogger.class),
                                                                mock(LogRecorder.class),
-                                                               brokerOptions.convertToSystemConfigAttributes(),
-                                                               mock(BrokerShutdownProvider.class));
+                                                               brokerOptions.convertToSystemConfigAttributes());
 
         ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(BrokerModel.getInstance());
 
@@ -205,8 +204,7 @@ public class TestBrokerConfiguration
         final SystemConfig parentObject = configFactory.newInstance(_taskExecutor,
                                                                    mock(EventLogger.class),
                                                                    mock(LogRecorder.class),
-                                                                   attributes,
-                                                                   mock(BrokerShutdownProvider.class));
+                                                                   attributes);
 
         parentObject.open();
         DurableConfigurationStore configurationStore = parentObject.getConfigurationStore();

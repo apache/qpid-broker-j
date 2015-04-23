@@ -39,10 +39,9 @@ public class JsonSystemConfigImpl extends AbstractSystemConfig<JsonSystemConfigI
     public JsonSystemConfigImpl(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
                                 final LogRecorder logRecorder,
-                                final Map<String,Object> attributes,
-                                final BrokerShutdownProvider brokerShutdownProvider)
+                                final Map<String,Object> attributes)
     {
-        super(taskExecutor, eventLogger, logRecorder, attributes, brokerShutdownProvider);
+        super(taskExecutor, eventLogger, logRecorder, attributes);
     }
 
     public String getStorePath()
