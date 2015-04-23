@@ -70,15 +70,13 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
     {
         Map data = new ConcurrentHashMap();
         BufferedInputStream inputStream = null;
+        String fileName = (environment.containsKey(Context.PROVIDER_URL))
+                ? (String)environment.get(Context.PROVIDER_URL) : System.getProperty(Context.PROVIDER_URL);
         try
         {
-
-            String fileName = (environment.containsKey(Context.PROVIDER_URL))
-                    ? (String)environment.get(Context.PROVIDER_URL) : System.getProperty(Context.PROVIDER_URL);
-
             if (fileName != null)
             {
-                _logger.info("Attempting to load " + fileName);
+                _logger.debug("Attempting to load " + fileName);
 
                 inputStream = new BufferedInputStream(new FileInputStream((fileName.contains("file:"))
                                                      ? new File(new URI(fileName)) : new File(fileName)));
@@ -99,22 +97,21 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
                         System.setProperty(key, expanded);
                     }
                 }
-                _logger.info("Loaded Context Properties:" + environment.toString());
             }
             else
             {
-                _logger.info("No Provider URL specified.");
+                _logger.debug("No Provider URL specified.");
             }
         }
         catch (IOException ioe)
         {
-            _logger.warn("Unable to load property file specified in Provider_URL:" + environment.get(Context.PROVIDER_URL) +"\n" +
+            _logger.warn("Unable to load property file specified in Provider_URL:" + fileName +"\n" +
                          "Due to:" + ioe.getMessage());
         }
         catch(URISyntaxException uoe)
         {
-            _logger.warn("Unable to load property file specified in Provider_URL:" + environment.get(Context.PROVIDER_URL) +"\n" +
-                            "Due to:" + uoe.getMessage());
+            _logger.warn("Unable to load property file specified in Provider_URL:" + fileName +"\n" +
+                         "Due to:" + uoe.getMessage());
         }
         finally
         {
