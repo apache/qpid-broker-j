@@ -38,7 +38,7 @@ define(["dojo/_base/xhr"], function (xhr) {
     function loadTimezones()
     {
       xhr.get({
-        url: "service/helper?action=ListTimeZones",
+        url: "service/timezones",
         sync: true,
         handleAs: "json",
         load: function(zones)

@@ -21,8 +21,10 @@
 package org.apache.qpid.server.store.jdbc;
 
 import org.apache.qpid.server.plugin.JDBCConnectionProviderFactory;
+import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.PluggableService;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +32,9 @@ import java.util.Set;
 @PluggableService
 public class DefaultConnectionProviderFactory implements JDBCConnectionProviderFactory
 {
+
+    public static PluggableFactoryLoader<JDBCConnectionProviderFactory> FACTORY_LOADER =  new PluggableFactoryLoader(JDBCConnectionProviderFactory.class);
+
     public static final String TYPE = "NONE";
 
     @Override
@@ -50,4 +55,8 @@ public class DefaultConnectionProviderFactory implements JDBCConnectionProviderF
         return Collections.emptySet();
     }
 
+    public static Collection<String> getAllAvailableConnectionProviderTypes()
+    {
+        return FACTORY_LOADER.getSupportedTypes();
+    }
 }

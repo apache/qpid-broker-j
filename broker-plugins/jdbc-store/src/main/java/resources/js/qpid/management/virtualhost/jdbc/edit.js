@@ -17,7 +17,7 @@
  * under the License.
  */
 define(["qpid/common/util",
-        "dojo/text!service/helper?action=pluginList&plugin=JDBCConnectionProviderFactory",
+        "qpid/common/metadata",
         "dojo/_base/array",
         "dojo/json",
         "dojo/string",
@@ -26,7 +26,7 @@ define(["qpid/common/util",
         "dojo/dom-construct",
         "dijit/registry",
         "dojo/domReady!"],
-   function (util, poolTypeJsonString, array, json, string, Memory, dom, domConstruct, registry)
+   function (util, metadata, array, json, string, Memory, dom, domConstruct, registry)
    {
 
        return {
@@ -41,12 +41,16 @@ define(["qpid/common/util",
               registry.byId("editVirtualHost.connectionUrl").set("regExpGen", util.jdbcUrlOrContextVarRegexp);
               registry.byId("editVirtualHost.username").set("regExpGen", util.nameOrContextVarRegexp);
 
-              var poolTypes = json.parse(poolTypeJsonString);
+              var typeMetaData = metadata.getMetaData("VirtualHost", "JDBC");
+              var poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
               var poolTypesData = [];
-              for (var i =0 ; i < poolTypes.length; i++)
-              {
-                  poolTypesData[i]= {id: poolTypes[i], name: poolTypes[i]};
-              }
+              array.forEach(poolTypes,
+                          function(item)
+                          {
+                              poolTypesData.push({id: item, name: item});
+                          }
+              );
+
               var poolTypesStore = new Memory({ data: poolTypesData });
               var poolTypeControl = registry.byId("editVirtualHost.connectionPoolType");
               poolTypeControl.set("store", poolTypesStore);

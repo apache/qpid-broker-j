@@ -30,7 +30,8 @@ public interface JDBCVirtualHostNode<X extends JDBCVirtualHostNode<X>> extends V
     @ManagedAttribute(mandatory=true)
     String getConnectionUrl();
 
-    @ManagedAttribute(defaultValue=DefaultConnectionProviderFactory.TYPE)
+    @ManagedAttribute(defaultValue=DefaultConnectionProviderFactory.TYPE,
+            validValues = {"org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory#getAllAvailableConnectionProviderTypes()"} )
     String getConnectionPoolType();
 
     @ManagedAttribute

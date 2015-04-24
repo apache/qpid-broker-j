@@ -26,12 +26,12 @@ define(["dojo/_base/xhr",
         "dojo/store/Memory",
         "dijit/registry",
         "dojo/text!virtualhost/jdbc/add.html",
-        "dojo/text!service/helper?action=pluginList&plugin=JDBCConnectionProviderFactory",
+        "qpid/common/metadata",
         "qpid/common/util",
         "dijit/form/ValidationTextBox",
         "dijit/form/CheckBox",
         "dojo/domReady!"],
-  function (xhr, array, parser, dom, domConstruct, json, string, Memory, registry, template, poolTypeJsonString, util)
+  function (xhr, array, parser, dom, domConstruct, json, string, Memory, registry, template, metadata, util)
   {
     return {
         show: function (data)
@@ -48,12 +48,17 @@ define(["dojo/_base/xhr",
             var that = this;
             registry.byId("addVirtualHost.connectionUrl").set("regExpGen", util.jdbcUrlOrContextVarRegexp);
             registry.byId("addVirtualHost.username").set("regExpGen", util.nameOrContextVarRegexp);
-            var poolTypes = json.parse(poolTypeJsonString);
+
+            var typeMetaData = metadata.getMetaData("VirtualHost", "JDBC");
+            var poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
             var poolTypesData = [];
-            for (var i =0 ; i < poolTypes.length; i++)
-            {
-                poolTypesData[i]= {id: poolTypes[i], name: poolTypes[i]};
-            }
+            array.forEach(poolTypes,
+                        function(item)
+                        {
+                            poolTypesData.push({id: item, name: item});
+                        }
+            );
+
             var poolTypesStore = new Memory({ data: poolTypesData });
             var poolTypeControl = registry.byId("addVirtualHost.connectionPoolType");
             poolTypeControl.set("store", poolTypesStore);

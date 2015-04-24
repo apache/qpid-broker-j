@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.management.plugin.servlet.rest.TimeZoneServlet;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -69,7 +70,6 @@ import org.apache.qpid.server.management.plugin.servlet.DefinedFileServlet;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.LogFileServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
-import org.apache.qpid.server.management.plugin.servlet.rest.HelperServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogFileListingServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogRecordsServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LoggedOnUserPreferencesServlet;
@@ -360,7 +360,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new FileServlet()), "*.json");
         root.addServlet(new ServletHolder(new FileServlet()), "*.txt");
         root.addServlet(new ServletHolder(new FileServlet()), "*.xsl");
-        root.addServlet(new ServletHolder(new HelperServlet()), "/service/helper");
+        root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
         root.addServlet(new ServletHolder(new LogFileListingServlet()), "/service/logfilenames");
         root.addServlet(new ServletHolder(new LogFileServlet()), "/service/logfile");
 
