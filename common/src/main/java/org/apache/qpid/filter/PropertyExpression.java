@@ -42,7 +42,7 @@ public class PropertyExpression implements Expression
     private static final Logger _logger = LoggerFactory.getLogger(PropertyExpression.class);
 
     private static final HashMap<String, Expression> JMS_PROPERTY_EXPRESSIONS = new HashMap<String, Expression>();
-
+    static
     {
         JMS_PROPERTY_EXPRESSIONS.put("JMSDestination", new Expression()
                                      {
