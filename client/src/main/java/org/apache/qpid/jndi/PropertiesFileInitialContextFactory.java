@@ -68,18 +68,21 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Context getInitialContext(Hashtable environment) throws NamingException
     {
-        Map data = new ConcurrentHashMap();
-        BufferedInputStream inputStream = null;
+        environment = (environment == null) ? new Hashtable() : environment;
+
         String fileName = (environment.containsKey(Context.PROVIDER_URL))
                 ? (String)environment.get(Context.PROVIDER_URL) : System.getProperty(Context.PROVIDER_URL);
-        try
-        {
-            if (fileName != null)
-            {
-                _logger.debug("Attempting to load " + fileName);
 
-                inputStream = new BufferedInputStream(new FileInputStream((fileName.contains("file:"))
-                                                     ? new File(new URI(fileName)) : new File(fileName)));
+        if (fileName != null)
+        {
+            try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream((fileName.contains("file:"))
+                                                                           ? new File(new URI(fileName))
+                                                                           : new File(fileName))))
+            {
+                // make copy of the original environment to adhere to the Contexts interface
+                environment = new Hashtable(environment);
+                _logger.debug("Attempting to load '{}'", fileName);
+
                 Properties p = new Properties();
                 p.load(inputStream);
 
@@ -92,39 +95,21 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
                     String value = (String) me.getValue();
                     String expanded = Strings.expand(value, resolver);
                     environment.put(key, expanded);
-                    if (System.getProperty(key) == null)
-                    {
-                        System.setProperty(key, expanded);
-                    }
                 }
             }
-            else
+            catch (IOException | URISyntaxException e)
             {
-                _logger.debug("No Provider URL specified.");
+                NamingException ne = new NamingException("Unable to load property file specified in Provider_URL:" + fileName + ".");
+                ne.setRootCause(e);
+                throw ne;
             }
         }
-        catch (IOException ioe)
+        else
         {
-            _logger.warn("Unable to load property file specified in Provider_URL:" + fileName +"\n" +
-                         "Due to:" + ioe.getMessage());
-        }
-        catch(URISyntaxException uoe)
-        {
-            _logger.warn("Unable to load property file specified in Provider_URL:" + fileName +"\n" +
-                         "Due to:" + uoe.getMessage());
-        }
-        finally
-        {
-            try
-            {
-                if(inputStream != null)
-                {
-                    inputStream.close();
-                }
-            }
-            catch(Exception ignore){}
+            _logger.debug("{} was not specified in the context's environment or as a system property.", Context.PROVIDER_URL);
         }
 
+        Map data = new ConcurrentHashMap();
         createConnectionFactories(data, environment);
 
         createDestinations(data, environment);

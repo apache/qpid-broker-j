@@ -214,7 +214,6 @@
             <QPID_HOME>${qpid.home}</QPID_HOME>
             <QPID_WORK>${qpid.work}</QPID_WORK>
             <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
-            <java.naming.provider.url>test-profiles${file.separator}test-provider.properties</java.naming.provider.url>
             <broker.config>${qpid.home}${file.separator}etc${file.separator}config-systests.json</broker.config>
             <max_prefetch>1000</max_prefetch>
             <qpid.dest_syntax>BURL</qpid.dest_syntax>

@@ -24,6 +24,7 @@ package org.apache.qpid.jndi;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Hashtable;
 import java.util.Properties;
 
 import javax.jms.ConnectionFactory;
@@ -133,5 +134,27 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
         {
             f.delete();
         }
+    }
+
+    public void testNonExistentFileHandling() throws Exception
+    {
+        Hashtable environment = new Hashtable();
+        // Make sure the filename does not exist
+        File f = File.createTempFile(getTestName(), ".properties");
+        f.delete();
+
+        environment.put(Context.PROVIDER_URL, f.getAbsolutePath());
+        environment.put(InitialContext.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
+
+        try
+        {
+            new InitialContext(environment);
+            fail("Expected exception not thrown.");
+        }
+        catch (NamingException e)
+        {
+            assertTrue("No IOException chained", e.getCause() instanceof IOException);
+        }
+
     }
 }

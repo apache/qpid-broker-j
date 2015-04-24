@@ -84,6 +84,7 @@
                integration-test phase below instead -->
           <skip>true</skip>
           <systemPropertyVariables>
+            <java.naming.provider.url>test-profiles${file.separator}test-provider.properties</java.naming.provider.url>
             <test.output.dir>${test.output.dir}</test.output.dir>
             <log4j.configuration.file>${basedir}${file.separator}target${file.separator}classes/log4j.xml</log4j.configuration.file>
               <!-- Let the tests themselves configure logging so that we can have a separate log file per test
