@@ -26,6 +26,7 @@ import javax.jms.InvalidDestinationException;
 import javax.jms.JMSException;
 import javax.jms.Topic;
 
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.messaging.Address;
@@ -138,10 +139,7 @@ public class AMQTopic extends AMQDestination implements Topic
                 }
                 catch(Exception e)
                 {
-                    JMSException ex = new JMSException("Error creating durable topic");
-                    ex.initCause(e);
-                    ex.setLinkedException(e);
-                    throw ex;
+                    throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating durable topic"), e);
                 }
             }
             else

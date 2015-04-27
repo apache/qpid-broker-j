@@ -70,6 +70,7 @@ import org.apache.qpid.client.message.MessageFactoryRegistry;
 import org.apache.qpid.client.message.UnprocessedMessage;
 import org.apache.qpid.client.messaging.address.Node;
 import org.apache.qpid.client.util.FlowControllingBlockingQueue;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
@@ -475,12 +476,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             AMQException ex = getLastException();
             if (ex != null)
             {
-                IllegalStateException ssnClosed = new IllegalStateException(
-                        "Session has been closed", ex.getErrorCode().toString());
-
-                ssnClosed.setLinkedException(ex);
-                ssnClosed.initCause(ex);
-                throw ssnClosed;
+                throw JMSExceptionHelper.chainJMSException(new IllegalStateException("Session has been closed",
+                                                                                     ex.getErrorCode().toString()), ex);
             }
             else
             {
@@ -771,10 +768,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             }
             catch (AMQException e)
             {
-                JMSException jmse = new JMSException("Error closing session: " + e);
-                jmse.setLinkedException(e);
-                jmse.initCause(e);
-                throw jmse;
+                throw JMSExceptionHelper.chainJMSException(new JMSException("Error closing session: " + e), e);
             }
             // This is ignored because the channel is already marked as closed so the fail-over process will
             // not re-open it.
@@ -886,7 +880,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }
         catch (FailoverException e)
         {
-            throw new JMSAMQException("Fail-over interrupted commit. Status of the commit is uncertain.", e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException(
+                    "Fail-over interrupted commit. Status of the commit is uncertain."), e);
         }
         catch(TransportException e)
         {
@@ -1287,10 +1282,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         catch (URISyntaxException urlse)
         {
             _logger.error("", urlse);
-            JMSException jmse = new JMSException(urlse.getReason());
-            jmse.setLinkedException(urlse);
-            jmse.initCause(urlse);
-            throw jmse;
+            throw JMSExceptionHelper.chainJMSException(new JMSException(urlse.getReason()), urlse);
         }
 
     }
@@ -1518,7 +1510,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }
         catch(Exception e)
         {
-            throw new JMSAMQException("Cannot create temporary queue: " + e.getMessage(), e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Cannot create temporary queue: "
+                                                                        + e.getMessage()), e);
         }
     }
 
@@ -1580,10 +1573,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         catch (URISyntaxException urlse)
         {
             _logger.error("", urlse);
-            JMSException jmse = new JMSException(urlse.getReason());
-            jmse.setLinkedException(urlse);
-            jmse.initCause(urlse);
-            throw jmse;
+            throw JMSExceptionHelper.chainJMSException(new JMSException(urlse.getReason()), urlse);
         }
     }
 
@@ -1829,7 +1819,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }
         catch (FailoverException e)
         {
-            throw new JMSAMQException("Recovery was interrupted by fail-over. Recovery status is not known.", e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException(
+                    "Recovery was interrupted by fail-over. Recovery status is not known."), e);
         }
         catch(TransportException e)
         {
@@ -1915,7 +1906,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             }
             catch (FailoverException e)
             {
-                throw new JMSAMQException("Fail-over interrupted rollback. Status of the rollback is uncertain.", e);
+                throw JMSExceptionHelper.chainJMSException(new JMSException(
+                        "Fail-over interrupted rollback. Status of the rollback is uncertain."), e);
             }
             catch (TransportException e)
             {
@@ -2082,17 +2074,15 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                         }
                         catch (AMQInvalidArgumentException ise)
                         {
-                            JMSException jmse = new InvalidSelectorException(ise.getMessage());
-                            jmse.setLinkedException(ise);
-                            jmse.initCause(ise);
-                            throw jmse;
+                            throw JMSExceptionHelper.chainJMSException(new InvalidSelectorException(ise.getMessage()),
+                                                                       ise);
                         }
                         catch (AMQInvalidRoutingKeyException e)
                         {
-                            JMSException jmse = new InvalidDestinationException("Invalid routing key:" + amqd.getRoutingKey().toString());
-                            jmse.setLinkedException(e);
-                            jmse.initCause(e);
-                            throw jmse;
+                            throw JMSExceptionHelper.chainJMSException(new InvalidDestinationException(
+                                    "Invalid routing key:"
+                                    + amqd.getRoutingKey().toString()
+                            ), e);
                         }
                         catch (AMQException e)
                         {
@@ -3619,10 +3609,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     JMSException toJMSException(String message, TransportException e)
     {
         int code = getErrorCode(e);
-        JMSException jmse = new JMSException(message, Integer.toString(code));
-        jmse.setLinkedException(e);
-        jmse.initCause(e);
-        return jmse;
+        return JMSExceptionHelper.chainJMSException(new JMSException(message, Integer.toString(code)), e);
     }
 
     private int getErrorCode(TransportException e)
@@ -3646,15 +3633,14 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         AMQConstant errorCode = e.getErrorCode();
         if (errorCode == AMQConstant.ACCESS_REFUSED)
         {
-            ex = new JMSSecurityException(message, String.valueOf(errorCode.getCode()));
+            ex = JMSExceptionHelper.chainJMSException(new JMSSecurityException(message,
+                                                                               String.valueOf(errorCode.getCode())), e);
         }
         else
         {
-            ex = new JMSException(message, errorCode == null ? null : String.valueOf(errorCode.getCode()));
+            String errorCode1 = errorCode == null ? null : String.valueOf(errorCode.getCode());
+            ex = JMSExceptionHelper.chainJMSException(new JMSException(message, errorCode1), e);
         }
-        ex.initCause(e);
-
-        ex.setLinkedException(e);
         return ex;
     }
 

@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.client;
 
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.url.AMQBindingURL;
 import org.apache.qpid.url.URLSyntaxException;
@@ -125,10 +126,8 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
         }
         catch (Exception e)
         {
-            JMSException jmse = new JMSException("Error creating connection: " + e.getMessage());
-            jmse.setLinkedException(e);
-            jmse.initCause(e);
-            throw jmse;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating connection: " + e.getMessage()),
+                                                       e);
         }
     }
 
@@ -159,10 +158,8 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
             }
             catch (Exception e)
             {
-                JMSException jmse = new JMSException("Error creating connection: " + e.getMessage());
-                jmse.setLinkedException(e);
-                jmse.initCause(e);
-                throw jmse;
+                throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating connection: "
+                                                                            + e.getMessage()), e);
             }
         }
         else
@@ -302,10 +299,8 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
         }
         catch (Exception e)
         {
-            JMSException jmse = new JMSException("Error creating connection: " + e.getMessage());
-            jmse.setLinkedException(e);
-            jmse.initCause(e);
-            throw jmse;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating connection: " + e.getMessage()),
+                                                       e);
         }
     }
 
@@ -339,10 +334,8 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
             }
             catch (Exception e)
             {
-                JMSException jmse = new JMSException("Error creating XA Connection: " + e.getMessage());
-                jmse.setLinkedException(e);
-                jmse.initCause(e);
-                throw jmse;
+                throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating XA Connection: "
+                                                                            + e.getMessage()), e);
             }
         }
         else

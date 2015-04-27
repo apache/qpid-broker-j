@@ -22,6 +22,7 @@ package org.apache.qpid.client.message;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.CustomJMSXProperty;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 
 import javax.jms.JMSException;
 import javax.jms.MessageFormatException;
@@ -100,9 +101,8 @@ public class JMSTextMessage extends AbstractJMSMessage implements javax.jms.Text
         {
             if(_exception != null)
             {
-                final MessageFormatException messageFormatException = new MessageFormatException("Cannot decode original message");
-                messageFormatException.setLinkedException(_exception);
-                throw messageFormatException;
+                throw JMSExceptionHelper.chainJMSException(new MessageFormatException("Cannot decode original message"),
+                                                           _exception);
             }
             else if(_decodedValue == null)
             {
@@ -115,9 +115,8 @@ public class JMSTextMessage extends AbstractJMSMessage implements javax.jms.Text
         }
         catch (CharacterCodingException e)
         {
-            final JMSException jmsException = new JMSException("Cannot encode string in UFT-8: " + _decodedValue);
-            jmsException.setLinkedException(e);
-            throw jmsException;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Cannot encode string in UFT-8: "
+                                                                        + _decodedValue), e);
         }
     }
 

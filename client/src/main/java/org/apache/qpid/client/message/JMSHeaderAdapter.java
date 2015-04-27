@@ -30,6 +30,7 @@ import javax.jms.JMSException;
 import javax.jms.MessageFormatException;
 
 import org.apache.qpid.AMQPInvalidClassException;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.framing.FieldTable;
 
 
@@ -343,10 +344,8 @@ public final class JMSHeaderAdapter
         }
         catch (AMQPInvalidClassException aice)
         {
-            MessageFormatException mfe = new MessageFormatException(AMQPInvalidClassException.INVALID_OBJECT_MSG + (object == null ? "null" : object.getClass()));
-            mfe.setLinkedException(aice);
-            mfe.initCause(aice);
-            throw mfe;
+            String msg = AMQPInvalidClassException.INVALID_OBJECT_MSG + (object == null ? "null" : object.getClass());
+            throw JMSExceptionHelper.chainJMSException(new MessageFormatException(msg), aice);
         }
     }
 

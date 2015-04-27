@@ -796,6 +796,7 @@ public class QpidRASessionFactoryImpl implements QpidRASessionFactory, Reference
 
          JMSException je = new JMSException("Could not create a session: " + e.getMessage());
          je.setLinkedException(e);
+         je.initCause(e);
          throw je;
       }
    }
@@ -893,6 +894,7 @@ public class QpidRASessionFactoryImpl implements QpidRASessionFactory, Reference
 
          JMSException je = new JMSException("Could not create a session: " + e.getMessage());
          je.setLinkedException(e);
+         je.initCause(e);
          throw je;
       }
    }

@@ -34,6 +34,7 @@ import org.apache.qpid.client.message.AMQMessageDelegate_0_10;
 import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.client.message.MessageFactoryRegistry;
 import org.apache.qpid.client.message.UnprocessedMessage_0_10;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.jms.Session;
@@ -580,7 +581,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
         }
         catch (AMQException e)
         {
-            throw new JMSAMQException(e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("BasicMessageConsumer.receive failed"), e);
         }
     }
 
@@ -614,7 +615,8 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
         }
         catch (AMQException e)
         {
-            throw new JMSAMQException(e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("BasicMessageConsumer.receiveNoWait failed."),
+                                                       e);
         }
 
     }

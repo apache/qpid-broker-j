@@ -27,7 +27,6 @@ import static org.apache.qpid.configuration.ClientProperties.QPID_FLOW_CONTROL_W
 import static org.apache.qpid.configuration.ClientProperties.QPID_FLOW_CONTROL_WAIT_NOTIFY_PERIOD;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,6 +59,7 @@ import org.apache.qpid.client.protocol.AMQProtocolHandler;
 import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.client.state.AMQStateManager;
 import org.apache.qpid.client.state.listener.SpecificMethodFrameListener;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.*;
@@ -150,7 +150,8 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }
         catch (AMQException e)
         {
-            throw new JMSAMQException(e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Session.reduceCreditAfterAcknowledge failed"),
+                                                       e);
         }
         while (true)
         {
@@ -173,7 +174,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }
         catch (AMQException a)
         {
-            throw new JMSAMQException("Failed to sync after acknowledge", a);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Failed to sync after acknowledge"), a);
         }
     }
 
@@ -442,7 +443,8 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }
         catch (AMQException e)
         {
-            throw new JMSAMQException("Queue bound query failed: " + e.getMessage(), e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Queue bound query failed: " + e.getMessage()),
+                                                       e);
         }
     }
 
@@ -746,11 +748,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
        }
        catch (AMQException e)
        {
-           JMSException ex = new JMSException("Error creating producer");
-           ex.initCause(e);
-           ex.setLinkedException(e);
-
-           throw ex;
+           throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating producer"), e);
        }
     }
 

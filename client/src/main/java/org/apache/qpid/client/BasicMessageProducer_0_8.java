@@ -38,6 +38,7 @@ import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.client.message.QpidMessageProperties;
 import org.apache.qpid.client.protocol.AMQProtocolHandler;
 import org.apache.qpid.client.protocol.BlockingMethodFrameListener;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.AMQFrame;
 import org.apache.qpid.framing.AMQMethodBody;
@@ -242,10 +243,8 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
         }
         catch (InterruptedException e)
         {
-            JMSException jmse = new JMSException("Interrupted while waiting for flow control to be removed");
-            jmse.setLinkedException(e);
-            jmse.initCause(e);
-            throw jmse;
+            throw JMSExceptionHelper.chainJMSException(new JMSException(
+                    "Interrupted while waiting for flow control to be removed"), e);
         }
 
         AMQConnectionDelegate_8_0 connectionDelegate80 = (AMQConnectionDelegate_8_0) (getConnection().getDelegate());
@@ -274,11 +273,12 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
             }
             catch (AMQException e)
             {
-                throw new JMSAMQException(e);
+                throw JMSExceptionHelper.chainJMSException(new JMSException(e.getMessage()), e);
             }
             catch (FailoverException e)
             {
-                throw new JMSAMQException("Fail-over interrupted send. Status of the send is uncertain.", e);
+                throw JMSExceptionHelper.chainJMSException(new JMSException(
+                        "Fail-over interrupted send. Status of the send is uncertain."), e);
 
             }
         }

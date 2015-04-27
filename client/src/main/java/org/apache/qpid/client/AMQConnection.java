@@ -22,7 +22,6 @@ package org.apache.qpid.client;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.ConnectException;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
@@ -68,6 +67,7 @@ import org.apache.qpid.client.failover.FailoverProtectedOperation;
 import org.apache.qpid.client.protocol.AMQProtocolHandler;
 import org.apache.qpid.client.security.CallbackHandlerRegistry;
 import org.apache.qpid.client.state.AMQStateManager;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
@@ -857,7 +857,7 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
                 }
                 catch (AMQException e)
                 {
-                    throw new JMSAMQException(e);
+                    throw JMSExceptionHelper.chainJMSException(new JMSException("Connection.start failed"), e);
                 }
             }
 
@@ -877,7 +877,7 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
                 }
                 catch (AMQException e)
                 {
-                    throw new JMSAMQException(e);
+                    throw JMSExceptionHelper.chainJMSException(new JMSException("Connection.stop failed."), e);
                 }
             }
 
@@ -943,10 +943,7 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
                 catch (JMSException e)
                 {
                     _logger.error("Error closing connection", e);
-                    JMSException jmse = new JMSException("Error closing connection: " + e);
-                    jmse.setLinkedException(e);
-                    jmse.initCause(e);
-                    throw jmse;
+                    throw JMSExceptionHelper.chainJMSException(new JMSException("Error closing connection: " + e), e);
                 }
                 finally
                 {
@@ -1264,7 +1261,11 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
 
             if (code != null)
             {
-                je = new JMSException("Exception thrown against " + toString() + ": " + cause, Integer.toString(code.getCode()));
+                je = JMSExceptionHelper.chainJMSException(new JMSException("Exception thrown against "
+                                                                           + toString()
+                                                                           + ": "
+                                                                           + cause, Integer.toString(code.getCode())),
+                                                          cause);
             }
             else
             {
@@ -1280,15 +1281,11 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
                         cause = last;
                     }
                 }
-                je = new JMSException("Exception thrown against " + toString() + ": " + cause);
+                je = JMSExceptionHelper.chainJMSException(new JMSException("Exception thrown against "
+                                                                           + toString()
+                                                                           + ": "
+                                                                           + cause), cause);
             }
-
-            if (cause instanceof Exception)
-            {
-                je.setLinkedException((Exception) cause);
-            }
-
-            je.initCause(cause);
         }
 
         boolean closer = false;

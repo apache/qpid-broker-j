@@ -39,6 +39,7 @@ import org.apache.qpid.client.message.AMQMessageDelegate_0_10;
 import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.client.message.QpidMessageProperties;
 import org.apache.qpid.client.messaging.address.Link.Reliability;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.Header;
 import org.apache.qpid.transport.MessageAcceptMode;
@@ -257,10 +258,8 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
         }
         catch (Exception e)
         {
-            JMSException jmse = new JMSException("Exception when sending message:" + e.getMessage());
-            jmse.setLinkedException(e);
-            jmse.initCause(e);
-            throw jmse;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Exception when sending message:"
+                                                                        + e.getMessage()), e);
         }
     }
 

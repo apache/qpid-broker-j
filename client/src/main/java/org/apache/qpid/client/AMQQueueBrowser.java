@@ -25,6 +25,7 @@ import javax.jms.InvalidSelectorException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.AMQInternalException;
 import org.apache.qpid.client.filter.JMSSelectorFilter;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.protocol.AMQConstant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,9 +94,9 @@ public class AMQQueueBrowser implements QueueBrowser
             }
             else
             {
-                final JMSException jmsException = new JMSException(e.getMessage(), String.valueOf(e.getErrorCode().getCode()));
-                jmsException.setLinkedException(e);
-                throw jmsException;
+                throw JMSExceptionHelper.chainJMSException(new JMSException(e.getMessage(),
+                                                                            String.valueOf(e.getErrorCode().getCode())),
+                                                           e);
             }
         }
     }

@@ -46,6 +46,7 @@ import org.apache.qpid.AMQPInvalidClassException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQDestination.DestSyntax;
 import org.apache.qpid.client.CustomJMSXProperty;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.jms.Message;
 import org.apache.qpid.transport.DeliveryProperties;
@@ -322,17 +323,13 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
            }
            catch(AMQException ex)
            {
-               JMSException e = new JMSException("Error occured while figuring out the node type");
-               e.initCause(ex);
-               e.setLinkedException(ex);
-               throw e;
+               throw JMSExceptionHelper.chainJMSException(new JMSException(
+                       "Error occured while figuring out the node type"), ex);
            }
            catch (TransportException e)
            {
-               JMSException jmse = new JMSException("Exception occured while figuring out the node type:" + e.getMessage());
-               jmse.initCause(e);
-               jmse.setLinkedException(e);
-               throw jmse;
+               throw JMSExceptionHelper.chainJMSException(new JMSException(
+                       "Exception occured while figuring out the node type:" + e.getMessage()), e);
            }
         }
 

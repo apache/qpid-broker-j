@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQException;
 
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.transport.codec.BBEncoder;
 
@@ -97,11 +98,7 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
         }
         catch (Exception e)
         {
-            MessageFormatException ex = new MessageFormatException("Error adding to ListMessage");
-            ex.initCause(e);
-            ex.setLinkedException(e);
-            throw ex;
-
+            throw JMSExceptionHelper.chainJMSException(new MessageFormatException("Error adding to ListMessage"), e);
         }
     }
 
@@ -115,11 +112,8 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
         }
         catch (Exception e)
         {
-            MessageFormatException ex = new MessageFormatException("Error adding to ListMessage at "
-                    + index);
-            ex.initCause(e);
-            ex.setLinkedException(e);
-            throw ex;
+            throw JMSExceptionHelper.chainJMSException(new MessageFormatException("Error adding to ListMessage at "
+                                                                                  + index), e);
         }
     }
 
@@ -131,10 +125,7 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
         }
         catch (Exception e)
         {
-            JMSException ex = new JMSException("Error when looking up object");
-            ex.initCause(e);
-            ex.setLinkedException(e);
-            throw ex;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Error when looking up object"), e);
         }
     }
 
@@ -146,11 +137,8 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
         }
         catch (IndexOutOfBoundsException e)
         {
-            MessageFormatException ex = new MessageFormatException(
-                    "Error getting ListMessage element at " + index);
-            ex.initCause(e);
-            ex.setLinkedException(e);
-            throw ex;
+            throw JMSExceptionHelper.chainJMSException(new MessageFormatException(
+                    "Error getting ListMessage element at " + index), e);
         }
     }
 
@@ -173,11 +161,8 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
         }
         catch (IndexOutOfBoundsException e)
         {
-            MessageFormatException ex = new MessageFormatException(
-                    "Error removing ListMessage element at " + index);
-            ex.initCause(e);
-            ex.setLinkedException(e);
-            throw ex;
+            throw JMSExceptionHelper.chainJMSException(new MessageFormatException(
+                    "Error removing ListMessage element at " + index), e);
         }
     }
 
@@ -197,11 +182,8 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
         }
         catch (Exception e)
         {
-            MessageFormatException ex = new MessageFormatException(
-                    "Error setting ListMessage element at " + index);
-            ex.initCause(e);
-            ex.setLinkedException(e);
-            throw ex;
+            throw JMSExceptionHelper.chainJMSException(new MessageFormatException(
+                    "Error setting ListMessage element at " + index), e);
         }
     }
 
@@ -239,10 +221,7 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
         }
         catch (NumberFormatException e)
         {
-            JMSException ex = new JMSException("Invalid index string");
-            ex.initCause(e);
-            ex.setLinkedException(e);
-            throw ex;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Invalid index string"), e);
         }
         if (isValidIndex(index))
             return index;
@@ -262,10 +241,8 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
         }
         catch (NumberFormatException e)
         {
-            JMSException ex = new JMSException("The property name should be a valid index");
-            ex.initCause(e);
-            ex.setLinkedException(e);
-            throw ex;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("The property name should be a valid index"),
+                                                       e);
         }
 
         if (isValidIndex(index))

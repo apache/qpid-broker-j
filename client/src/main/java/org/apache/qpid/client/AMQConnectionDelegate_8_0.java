@@ -44,6 +44,7 @@ import org.apache.qpid.client.failover.FailoverRetrySupport;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.client.state.StateWaiter;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.ChannelOpenBody;
@@ -277,10 +278,8 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
                         }
                         catch (AMQException e)
                         {
-                            JMSException jmse = new JMSException("Error creating session: " + e);
-                            jmse.setLinkedException(e);
-                            jmse.initCause(e);
-                            throw jmse;
+                            throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating session: " + e),
+                                                                       e);
                         }
                         finally
                         {
@@ -298,7 +297,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
                             }
                             catch (AMQException e)
                             {
-                                throw new JMSAMQException(e);
+                                throw JMSExceptionHelper.chainJMSException(new JMSException("Session.start failed"), e);
                             }
                         }
 

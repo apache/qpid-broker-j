@@ -22,6 +22,7 @@ package org.apache.qpid.client.message;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.util.ClassLoadingAwareObjectInputStream;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.util.ByteBufferInputStream;
 
 import javax.jms.JMSException;
@@ -100,10 +101,8 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
     {
         if(_exception != null)
         {
-            final MessageFormatException messageFormatException =
-                    new MessageFormatException("Unable to deserialize message");
-            messageFormatException.setLinkedException(_exception);
-            throw messageFormatException;
+            throw JMSExceptionHelper.chainJMSException(new MessageFormatException("Unable to deserialize message"),
+                                                       _exception);
         }
         if(_readData == null)
         {
@@ -122,10 +121,11 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
             }
             catch (IOException e)
             {
-                final JMSException jmsException = new JMSException("Unable to encode object of type: " +
-                        _readData.getClass().getName() + ", value " + _readData);
-                jmsException.setLinkedException(e);
-                throw jmsException;
+                throw JMSExceptionHelper.chainJMSException(new JMSException("Unable to encode object of type: "
+                                                                            +
+                                                                            _readData.getClass().getName()
+                                                                            + ", value "
+                                                                            + _readData), e);
             }
         }
     }
@@ -145,10 +145,11 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
         }
         catch (IOException e)
         {
-            final JMSException jmsException = new JMSException("Unable to encode object of type: " +
-                    serializable.getClass().getName() + ", value " + serializable);
-            jmsException.setLinkedException(e);
-            throw jmsException;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Unable to encode object of type: "
+                                                                        +
+                                                                        serializable.getClass().getName()
+                                                                        + ", value "
+                                                                        + serializable), e);
         }
 
     }
@@ -157,9 +158,8 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
     {
         if(_exception != null)
         {
-            final MessageFormatException messageFormatException = new MessageFormatException("Unable to deserialize message");
-            messageFormatException.setLinkedException(_exception);
-            throw messageFormatException;
+            throw JMSExceptionHelper.chainJMSException(new MessageFormatException("Unable to deserialize message"),
+                                                       _exception);
         }
         else if(_readData != null || _data == null)
         {
@@ -183,9 +183,7 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
                 exception = e;
             }
 
-            JMSException jmsException = new JMSException("Could not deserialize object");
-            jmsException.setLinkedException(exception);
-            throw jmsException;
+            throw JMSExceptionHelper.chainJMSException(new JMSException("Could not deserialize object"), exception);
         }
 
     }

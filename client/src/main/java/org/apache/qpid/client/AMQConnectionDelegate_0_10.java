@@ -40,6 +40,7 @@ import org.apache.qpid.AMQException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
 import org.apache.qpid.client.transport.ClientConnectionDelegate;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.jms.BrokerDetails;
@@ -122,7 +123,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         catch (Exception e)
         {
             _logger.error("exception creating session:", e);
-            throw new JMSAMQException("cannot create session", e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("cannot create session"), e);
         }
         return session;
     }
@@ -164,7 +165,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         }
         catch (Exception e)
         {
-            throw new JMSAMQException("cannot create session", e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("cannot create session"), e);
         }
         return session;
     }
@@ -193,7 +194,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         }
         catch (Exception e)
         {
-            throw new JMSAMQException("cannot create session", e);
+            throw JMSExceptionHelper.chainJMSException(new JMSException("cannot create session"), e);
         }
         return session;
     }
@@ -381,11 +382,8 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
                     {
                         code = close.getReplyCode().toString();
                     }
-
-                    JMSException ex = new JMSException(exc.getMessage(), code);
-                    ex.setLinkedException(exc);
-                    ex.initCause(exc);
-                    listener.onException(ex);
+                    listener.onException(JMSExceptionHelper.chainJMSException(new JMSException(exc.getMessage(), code),
+                                                                              exc));
                 }
             });
 

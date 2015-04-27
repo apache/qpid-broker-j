@@ -22,9 +22,9 @@ package org.apache.qpid.test.unit.ack;
 
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.JMSAMQException;
 import org.apache.qpid.client.failover.FailoverException;
 
+import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 import javax.jms.Session;
@@ -150,7 +150,7 @@ public class AcknowledgeOnMessageTest extends AcknowledgeTest implements Message
         {
             _consumer.close();
         }
-        catch (JMSAMQException amqe)
+        catch (JMSException amqe)
         {
             if (amqe.getLinkedException() instanceof FailoverException)
             {

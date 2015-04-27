@@ -22,6 +22,7 @@
 package org.apache.qpid.client.message;
 
 import org.apache.qpid.AMQException;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.transport.util.Functions;
 
 import javax.jms.JMSException;
@@ -98,10 +99,7 @@ public abstract class AbstractBytesTypedMessage extends AbstractJMSMessage
         }
         catch (Exception e)
         {
-            JMSException jmse = new JMSException(e.toString());
-            jmse.setLinkedException(e);
-            jmse.initCause(e);
-            throw jmse;
+            throw JMSExceptionHelper.chainJMSException(new JMSException(e.toString()), e);
         }
 
     }

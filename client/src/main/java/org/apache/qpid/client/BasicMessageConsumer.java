@@ -48,6 +48,7 @@ import org.apache.qpid.client.message.AMQMessageDelegateFactory;
 import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.client.message.CloseConsumerMessage;
 import org.apache.qpid.client.message.MessageFactoryRegistry;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.FieldTable;
@@ -171,9 +172,8 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         }
         catch (final AMQInternalException ie)
         {
-            InvalidSelectorException ise = new InvalidSelectorException("cannot create consumer because of selector issue");
-            ise.setLinkedException(ie);
-            throw ise;
+            throw JMSExceptionHelper.chainJMSException(new InvalidSelectorException(
+                    "cannot create consumer because of selector issue"), ie);
         }
 
         // Force queue browsers not to use acknowledge modes.
@@ -552,14 +552,8 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         // errors are passed via the queue too since there is no way of interrupting the poll() via the API.
         if (o instanceof Throwable)
         {
-            JMSException e = new JMSException("Message consumer forcibly closed due to error: " + o);
-            e.initCause((Throwable) o);
-            if (o instanceof Exception)
-            {
-                e.setLinkedException((Exception) o);
-            }
-
-            throw e;
+            throw JMSExceptionHelper.chainJMSException(new JMSException(
+                    "Message consumer forcibly closed due to error: " + o), (Throwable) o);
         }
         else if (o instanceof CloseConsumerMessage)
         {
@@ -624,11 +618,12 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
                 }
                 catch (AMQException e)
                 {
-                    throw new JMSAMQException("Error closing consumer: " + e, e);
+                    throw JMSExceptionHelper.chainJMSException(new JMSException("Error closing consumer: " + e.getMessage()), e);
                 }
                 catch (FailoverException e)
                 {
-                    throw new JMSAMQException("FailoverException interrupted basic cancel.", e);
+                    throw JMSExceptionHelper.chainJMSException(new JMSException(
+                            "FailoverException interrupted basic cancel."), e);
                 }
                 catch (TransportException e)
                 {

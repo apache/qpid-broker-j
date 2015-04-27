@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.client.message.MessageConverter;
+import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.util.UUIDGen;
 import org.apache.qpid.util.UUIDs;
@@ -308,10 +309,8 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
             }
             catch (AMQException e)
             {
-                JMSException ex = new JMSException("Exception while closing producer:" + e.getMessage());
-                ex.setLinkedException(e);
-                ex.initCause(e);
-                throw ex;
+                throw JMSExceptionHelper.chainJMSException(new JMSException("Exception while closing producer:"
+                                                                            + e.getMessage()), e);
             }
         }
     }
@@ -481,11 +480,8 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
             }
             catch(Exception e)
             {
-                JMSException ex = new InvalidDestinationException("Error validating destination");
-                ex.initCause(e);
-                ex.setLinkedException(e);
-
-                throw ex;
+                throw JMSExceptionHelper.chainJMSException(new InvalidDestinationException(
+                        "Error validating destination"), e);
             }
             amqDestination.setExchangeExistsChecked(true);
         }
