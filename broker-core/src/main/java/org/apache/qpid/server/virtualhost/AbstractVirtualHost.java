@@ -526,7 +526,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         getSecurityManager().authoriseCreateConnection(connection);
         for(ConnectionValidator validator : _connectionValidators)
         {
-            if(!validator.validateConnectionCreation(connection))
+            if(!validator.validateConnectionCreation(connection, this))
             {
                 return false;
             }
@@ -671,6 +671,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public AMQQueue<?> getQueue(UUID id)
     {
         return (AMQQueue<?>) getChildById(Queue.class, id);
+    }
+
+    @Override
+    public Broker<?> getBroker()
+    {
+        return _broker;
     }
 
     @Override

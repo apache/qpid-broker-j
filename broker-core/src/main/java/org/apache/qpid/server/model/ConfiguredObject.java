@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
+import java.lang.reflect.Type;
 import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Map;
@@ -82,6 +83,8 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
     Map<String, String> getContext();
 
     <T> T getContextValue(Class<T> clazz, String propertyName);
+
+    <T> T getContextValue(Class<T> clazz, Type t, String propertyName);
 
     Set<String> getContextKeys(final boolean excludeSystem);
 

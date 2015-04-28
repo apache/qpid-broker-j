@@ -35,6 +35,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
@@ -66,6 +67,7 @@ import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAReplicaVirtualHostImpl> implements BDBHAReplicaVirtualHost<BDBHAReplicaVirtualHostImpl>
 {
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
+    private final Broker<?> _broker;
 
     @ManagedAttributeField
     private boolean _queue_deadLetterQueueEnabled;
@@ -101,6 +103,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     {
         super(parentsMap(virtualHostNode), attributes);
 
+        _broker = virtualHostNode.getParent(Broker.class);
         _messagesDelivered = new StatisticsCounter("messages-delivered-" + getName());
         _dataDelivered = new StatisticsCounter("bytes-delivered-" + getName());
         _messagesReceived = new StatisticsCounter("messages-received-" + getName());
@@ -120,6 +123,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public String getModelVersion()
     {
         return BrokerModel.MODEL_VERSION;
+    }
+
+    @Override
+    public Broker<?> getBroker()
+    {
+        return _broker;
     }
 
     @Override

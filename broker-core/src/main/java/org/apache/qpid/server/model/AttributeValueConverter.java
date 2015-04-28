@@ -500,7 +500,7 @@ abstract class AttributeValueConverter<T>
                         // fall through to the non-JSON single object case
                     }
                 }
-                return Collections.unmodifiableList(Collections.singletonList(_memberConverter.convert(value, object)));
+                return "".equals(value) ? Collections.emptyList() : Collections.unmodifiableList(Collections.singletonList(_memberConverter.convert(value, object)));
             }
         }
     }

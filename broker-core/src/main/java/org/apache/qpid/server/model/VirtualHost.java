@@ -135,6 +135,8 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     @ManagedStatistic
     long getMessagesOut();
 
+    Broker<?> getBroker();
+
     //children
     Collection<VirtualHostAlias> getAliases();
     Collection<Connection> getConnections();

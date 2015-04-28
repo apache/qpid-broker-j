@@ -27,6 +27,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
 import java.security.AccessControlException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -2277,7 +2278,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public final <T> T getContextValue(Class<T> clazz, String propertyName)
     {
-        AttributeValueConverter<T> converter = AttributeValueConverter.getConverter(clazz, clazz);
+        return getContextValue(clazz, clazz, propertyName);
+    }
+
+    @Override
+    public <T> T getContextValue(final Class<T> clazz, final Type type, final String propertyName)
+    {
+        AttributeValueConverter<T> converter = AttributeValueConverter.getConverter(clazz, type);
         return converter.convert("${" + propertyName + "}", this);
     }
 
