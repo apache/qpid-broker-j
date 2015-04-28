@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.disttest.client;
 
+import java.beans.IntrospectionException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -32,10 +33,10 @@ import javax.jms.Message;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.client.property.PropertyValue;
+import org.apache.qpid.disttest.client.utils.BeanUtils;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 
 public class MessageProvider
@@ -137,7 +138,7 @@ public class MessageProvider
         {
             BeanUtils.setProperty(message, propertyName, propertyValue);
         }
-        catch (IllegalAccessException e)
+        catch (IntrospectionException | NoSuchMethodException | IllegalAccessException e)
         {
             throw new DistributedTestException("Unable to set property " + propertyName + " :" + e.getMessage(), e);
         }

@@ -18,14 +18,15 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
+import java.beans.IntrospectionException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
+import org.apache.qpid.disttest.client.utils.BeanUtils;
 import org.apache.qpid.disttest.message.Command;
 
 public class IterationValue
@@ -52,13 +53,9 @@ public class IterationValue
         try
         {
             Map<String, String> withoutUnderscoresToMatchCommandPropertyNames = getIterationPropertyValuesWithoutUnderscores();
-            BeanUtilsBean.getInstance().copyProperties(command, withoutUnderscoresToMatchCommandPropertyNames);
+            BeanUtils.copyProperties(command, withoutUnderscoresToMatchCommandPropertyNames);
         }
-        catch (IllegalAccessException e)
-        {
-            throw new RuntimeException("Couldn't copy properties from iteration " + this + " to " + command, e);
-        }
-        catch (InvocationTargetException e)
+        catch (IntrospectionException | IllegalAccessException | InvocationTargetException e)
         {
             throw new RuntimeException("Couldn't copy properties from iteration " + this + " to " + command, e);
         }

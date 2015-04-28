@@ -22,14 +22,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.TreeSet;
 
-import org.apache.commons.collections.BidiMap;
-import org.apache.commons.collections.bidimap.DualHashBidiMap;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
 
 public class ParticipatingClients
 {
-    private final BidiMap _configuredToRegisteredNameMap;
+    private final BiMap<String, String> _configuredToRegisteredNameMap;
 
     public ParticipatingClients(ClientRegistry clientRegistry, List<String> configuredClientNamesForTest)
     {
@@ -38,7 +38,7 @@ public class ParticipatingClients
 
     public String getRegisteredNameFromConfiguredName(String clientConfiguredName)
     {
-        String registeredClientName = (String) _configuredToRegisteredNameMap.get(clientConfiguredName);
+        String registeredClientName = _configuredToRegisteredNameMap.get(clientConfiguredName);
         if (registeredClientName == null)
         {
             throw new IllegalArgumentException("Unrecognised client configured name " + clientConfiguredName
@@ -49,7 +49,7 @@ public class ParticipatingClients
 
     public String getConfiguredNameFromRegisteredName(String registeredClientName)
     {
-        String clientConfiguredName = (String) _configuredToRegisteredNameMap.getKey(registeredClientName);
+        String clientConfiguredName = _configuredToRegisteredNameMap.inverse().get(registeredClientName);
         if (clientConfiguredName == null)
         {
             throw new IllegalArgumentException("Unrecognised client registered name " + registeredClientName
@@ -59,9 +59,9 @@ public class ParticipatingClients
         return clientConfiguredName;
     }
 
-    private BidiMap mapConfiguredToRegisteredClientNames(List<String> configuredClientNamesForTest, ClientRegistry clientRegistry)
+    private BiMap<String, String> mapConfiguredToRegisteredClientNames(List<String> configuredClientNamesForTest, ClientRegistry clientRegistry)
     {
-        BidiMap configuredToRegisteredNameMap = new DualHashBidiMap();
+        BiMap<String, String> configuredToRegisteredNameMap = HashBiMap.create();
 
         TreeSet<String> registeredClients = new TreeSet<String>(clientRegistry.getClients());
         for (String configuredClientName : configuredClientNamesForTest)
@@ -83,12 +83,19 @@ public class ParticipatingClients
         return _configuredToRegisteredNameMap.values();
     }
 
-    @Override
+  /*  @Override
     public String toString()
     {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
             .append("configuredToRegisteredNameMap", _configuredToRegisteredNameMap).toString();
     }
+*/
 
-
+    @Override
+    public String toString()
+    {
+        return "ParticipatingClients{" +
+                "configuredToRegisteredNameMap=" + _configuredToRegisteredNameMap +
+                '}';
+    }
 }

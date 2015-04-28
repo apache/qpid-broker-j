@@ -20,10 +20,9 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
-import static org.apache.commons.beanutils.PropertyUtils.getProperty;
-
 import java.io.FileReader;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -33,31 +32,40 @@ import com.google.gson.Gson;
 
 public class JavaScriptConfigEvaluatorTest extends QpidTestCase
 {
+    private void performTest(Map configAsObject) throws Exception
+    {
+        // Tests are produced by the QPID.iterations js function
+        List<?> countries = getPropertyAsList(configAsObject, "_countries");
+        assertEquals("Unexpected number of countries", 2, countries.size());
+
+        Map country0 = (Map) countries.get(0);
+        assertEquals("Unexpected country name", "Country", country0.get("_name"));
+        assertEquals("Unexpected country iteration number", 0, ((Number)country0.get("_iterationNumber")).intValue());
+
+        List<?> regions = getPropertyAsList(country0, "_regions");
+        assertEquals("Unexpected number of regions", 2, regions.size());
+        // Region names are produced by the QPID.times js function
+        Map region0 = (Map) regions.get(0);
+        assertEquals("Unexpected region name", "repeatingRegion0", region0.get("_name"));
+        assertEquals("Unexpected region name", "repeatingRegion1", ((Map)regions.get(1)).get("_name"));
+        // Iterating attribute are produced by the QPID.iterations js function
+        assertEquals("Unexpected iterating attribute", "0", ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"));
+
+        Map country1 = (Map) countries.get(1);
+        regions = getPropertyAsList(country1, "_regions");
+        region0 = (Map) regions.get(0);
+        assertEquals("Unexpected country iteration number", 1, ((Number)country1.get("_iterationNumber")).intValue());
+        assertEquals("Unexpected iterating attribute", "1", ((Map)((List)region0.get("_towns")).get(0)).get("_iteratingAttribute"));
+    }
+
     public void testEvaluateJavaScript() throws Exception
     {
         String jsFilePath = TestFileUtils.createTempFileFromResource(this, "JavaScriptConfigEvaluatorTest-test-config.js").getAbsolutePath();
 
         String rawConfig = new JavaScriptConfigEvaluator().evaluateJavaScript(jsFilePath);
 
-        Object configAsObject = getObject(rawConfig);
-
-        // Tests are produced by the QPID.iterations js function
-        assertEquals("Unexpected number of countries", 2, getPropertyAsList(configAsObject, "_countries").size());
-
-        Object country0 = getProperty(configAsObject, "_countries.[0]");
-        assertEquals("Unexpected country name", "Country", getProperty(country0, "_name"));
-        assertEquals("Unexpected country iteration number", 0, getPropertyAsInt(country0, "_iterationNumber"));
-
-        assertEquals("Unexpected number of regions", 2, getPropertyAsList(country0, "_regions").size());
-        // Region names are produced by the QPID.times js function
-        assertEquals("Unexpected region name", "repeatingRegion0", getProperty(country0, "_regions.[0]._name"));
-        assertEquals("Unexpected region name", "repeatingRegion1", getProperty(country0, "_regions.[1]._name"));
-        // Iterating attribute are produced by the QPID.iterations js function
-        assertEquals("Unexpected iterating attribute", "0", getProperty(country0, "_regions.[0]._towns.[0]._iteratingAttribute"));
-
-        Object country1 = getProperty(configAsObject, "_countries.[1]");
-        assertEquals("Unexpected country iteration number", 1, getPropertyAsInt(country1, "_iterationNumber"));
-        assertEquals("Unexpected iterating attribute", "1", getProperty(country1, "_regions.[0]._towns.[0]._iteratingAttribute"));
+        Map configAsObject = getObject(rawConfig);
+        performTest(configAsObject);
     }
 
     public void testEvaluateJavaScriptWithReader() throws Exception
@@ -67,41 +75,17 @@ public class JavaScriptConfigEvaluatorTest extends QpidTestCase
         FileReader fileReader = new FileReader(jsFilePath);
         String rawConfig = new JavaScriptConfigEvaluator().evaluateJavaScript(fileReader);
 
-        Object configAsObject = getObject(rawConfig);
-
-        // Tests are produced by the QPID.iterations js function
-        assertEquals("Unexpected number of countries", 2, getPropertyAsList(configAsObject, "_countries").size());
-
-        Object country0 = getProperty(configAsObject, "_countries.[0]");
-        assertEquals("Unexpected country name", "Country", getProperty(country0, "_name"));
-        assertEquals("Unexpected country iteration number", 0, getPropertyAsInt(country0, "_iterationNumber"));
-
-        assertEquals("Unexpected number of regions", 2, getPropertyAsList(country0, "_regions").size());
-        // Region names are produced by the QPID.times js function
-        assertEquals("Unexpected region name", "repeatingRegion0", getProperty(country0, "_regions.[0]._name"));
-        assertEquals("Unexpected region name", "repeatingRegion1", getProperty(country0, "_regions.[1]._name"));
-        // Iterating attribute are produced by the QPID.iterations js function
-        assertEquals("Unexpected iterating attribute", "0", getProperty(country0, "_regions.[0]._towns.[0]._iteratingAttribute"));
-
-        Object country1 = getProperty(configAsObject, "_countries.[1]");
-        assertEquals("Unexpected country iteration number", 1, getPropertyAsInt(country1, "_iterationNumber"));
-        assertEquals("Unexpected iterating attribute", "1", getProperty(country1, "_regions.[0]._towns.[0]._iteratingAttribute"));
+        Map configAsObject = getObject(rawConfig);
+        performTest(configAsObject);
     }
 
-    private int getPropertyAsInt(Object configAsObject, String property) throws Exception
-    {
-        Number propertyValue = (Number) getProperty(configAsObject, property);
-
-        return propertyValue.intValue();
-    }
-
-    private List<?> getPropertyAsList(Object configAsObject, String property)
+    private List<?> getPropertyAsList(Map configAsMap, String property)
             throws Exception
     {
-        return (List<?>)getProperty(configAsObject, property);
+        return (List<?>)configAsMap.get(property);
     }
 
-    private Object getObject(String jsonStringIn)
+    private Map getObject(String jsonStringIn)
     {
         Gson gson = new Gson();
         @SuppressWarnings("rawtypes")

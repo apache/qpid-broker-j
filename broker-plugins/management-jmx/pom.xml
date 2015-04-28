@@ -64,13 +64,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>commons-beanutils</groupId>
-      <artifactId>commons-beanutils-core</artifactId>
-      <version>${commons-beanutils-version}</version>
-      <scope>test</scope>
-    </dependency>
-
   </dependencies>
 
   <build>

@@ -21,20 +21,56 @@ package org.apache.qpid.server.jmx.mbeans;
 
 import junit.framework.TestCase;
 
-import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.qpid.server.jmx.DefaultManagedObject;
+
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.InvocationTargetException;
 
 public class MBeanTestUtils
 {
 
     public static void assertMBeanAttribute(DefaultManagedObject managedObject, String jmxAttributeName, Object expectedValue) throws Exception
     {
-        Object actualValue = PropertyUtils.getSimpleProperty(managedObject, jmxAttributeName);
-        TestCase.assertEquals("Attribute " + jmxAttributeName  + " has unexpected value", expectedValue, actualValue);
+        Object actualValue = getProperty(managedObject, jmxAttributeName);
+        TestCase.assertEquals("Attribute " + jmxAttributeName + " has unexpected value", expectedValue, actualValue);
     }
 
     public static void setMBeanAttribute(DefaultManagedObject managedObject, String jmxAttributeName, Object newValue) throws Exception
     {
-        PropertyUtils.setSimpleProperty(managedObject, jmxAttributeName, newValue);
+        setProperty(managedObject, jmxAttributeName, newValue);
     }
+
+    private static void setProperty(Object bean, String propertyName, Object propertyValue) throws IllegalAccessException, InvocationTargetException, IntrospectionException, NoSuchMethodException
+    {
+        PropertyDescriptor propertyDescriptor = getPropertyDescriptor(bean, propertyName);
+        propertyDescriptor.getWriteMethod().invoke(bean, propertyValue);
+    }
+
+    private static Object getProperty(Object bean, String propertyName) throws IntrospectionException, IllegalAccessException, InvocationTargetException, NoSuchMethodException
+    {
+        PropertyDescriptor propertyDescriptor = getPropertyDescriptor(bean, propertyName);
+        return propertyDescriptor.getReadMethod().invoke(bean);
+    }
+
+    private static PropertyDescriptor getPropertyDescriptor(Object bean, String propertyName) throws IntrospectionException, NoSuchMethodException
+    {
+        for (PropertyDescriptor propertyDescriptor : getPropertyDescriptors(bean))
+        {
+            if (propertyDescriptor.getName().equals(propertyName))
+            {
+                return propertyDescriptor;
+            }
+        }
+        throw new NoSuchMethodException(propertyName);
+    }
+
+    private static PropertyDescriptor[] getPropertyDescriptors(Object bean) throws IntrospectionException
+    {
+        BeanInfo beanInfo = Introspector.getBeanInfo(bean.getClass());
+        return beanInfo.getPropertyDescriptors();
+    }
+
 }

@@ -18,14 +18,15 @@
  */
 package org.apache.qpid.disttest.message;
 
+import org.apache.qpid.disttest.client.utils.BeanUtils;
+
+import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.commons.beanutils.PropertyUtils;
 
 
 public class ParticipantAttributeExtractor
@@ -35,7 +36,15 @@ public class ParticipantAttributeExtractor
         Map<ParticipantAttribute, Object> attributes = new HashMap<ParticipantAttribute, Object>();
 
 
-        PropertyDescriptor[] descriptors = PropertyUtils.getPropertyDescriptors(targetObject);
+        PropertyDescriptor[] descriptors;
+        try
+        {
+            descriptors = BeanUtils.getPropertyDescriptors(targetObject);
+        }
+        catch (IntrospectionException e)
+        {
+            throw new RuntimeException(e);
+        }
         for (PropertyDescriptor propertyDescriptor : descriptors)
         {
             final Method readMethod = getPropertyReadMethod(targetObject, propertyDescriptor);
@@ -70,17 +79,9 @@ public class ParticipantAttributeExtractor
     {
         try
         {
-            return PropertyUtils.getProperty(targetObject, propertyName);
+            return BeanUtils.getProperty(targetObject, propertyName);
         }
-        catch (IllegalAccessException e)
-        {
-            throw new RuntimeException("Couldn't get value of property " + propertyName + " from " + targetObject, e);
-        }
-        catch (InvocationTargetException e)
-        {
-            throw new RuntimeException("Couldn't get value of property " + propertyName + " from " + targetObject, e);
-        }
-        catch (NoSuchMethodException e)
+        catch (IllegalAccessException | InvocationTargetException | IntrospectionException | NoSuchMethodException e)
         {
             throw new RuntimeException("Couldn't get value of property " + propertyName + " from " + targetObject, e);
         }
