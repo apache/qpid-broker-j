@@ -29,6 +29,10 @@
   <name>Qpid JMX Management Broker Plug-in</name>
   <description>JMX management broker plug-in</description>
 
+  <properties>
+    <qpid.home>${basedir}/../</qpid.home> <!-- override for broker tests -->
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.apache.qpid</groupId>
@@ -51,9 +55,9 @@
     </dependency>
 
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>${log4j-version}</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback-version}</version>
     </dependency>
 
     <!-- test dependencies -->

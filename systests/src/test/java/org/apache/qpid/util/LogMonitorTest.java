@@ -21,13 +21,15 @@
 package org.apache.qpid.util;
 
 import junit.framework.TestCase;
-import org.apache.log4j.Logger;
+import org.apache.qpid.test.utils.QpidTestCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-public class LogMonitorTest extends TestCase
+public class LogMonitorTest extends QpidTestCase
 {
 
     private LogMonitor _monitor;
@@ -137,7 +139,7 @@ public class LogMonitorTest extends TestCase
 
         String message = getName() + ": Test Message";
 
-        Logger.getRootLogger().warn(message);
+        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(message);
 
         validateLogContainsMessage(_monitor, message);
     }
@@ -151,7 +153,7 @@ public class LogMonitorTest extends TestCase
     {
         String message = getName() + ": Test Message";
 
-        Logger.getRootLogger().warn(message);
+        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(message);
 
         String notLogged = "This text was not logged";
 
@@ -178,7 +180,7 @@ public class LogMonitorTest extends TestCase
     public void testDiscardPoint() throws IOException
     {
         String firstMessage = getName() + ": Test Message1";
-        Logger.getRootLogger().warn(firstMessage);
+        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(firstMessage);
 
         validateLogContainsMessage(_monitor, firstMessage);
 
@@ -187,7 +189,7 @@ public class LogMonitorTest extends TestCase
         validateLogDoesNotContainMessage(_monitor, firstMessage);
 
         String secondMessage = getName() + ": Test Message2";
-        Logger.getRootLogger().warn(secondMessage);
+        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(secondMessage);
         validateLogContainsMessage(_monitor, secondMessage);
     }
 
@@ -195,7 +197,7 @@ public class LogMonitorTest extends TestCase
     {
         String message = getName() + ": Test Message";
 
-        Logger.getRootLogger().warn(message);
+        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(message);
 
         String fileContents = _monitor.readFile();
 
@@ -266,7 +268,7 @@ public class LogMonitorTest extends TestCase
                     //ignore
                 }
 
-                Logger.getRootLogger().warn(message);
+                LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(message);
             }
         }).start();
     }

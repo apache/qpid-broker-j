@@ -29,8 +29,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 
 import junit.framework.AssertionFailedError;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.logging.AbstractTestLogging;
@@ -122,10 +120,12 @@ public class BrokerStartupTest extends AbstractTestLogging
             // including -Dlog4j.debug so we can validate.
             setBrokerEnvironment("QPID_OPTS", "-Dlog4j.debug");
 
+/*
             // Disable all client logging so we can test for broker DEBUG only.
             setLoggerLevel(Logger.getRootLogger(), Level.WARN);
             setLoggerLevel(Logger.getLogger("qpid.protocol"), Level.WARN);
             setLoggerLevel(Logger.getLogger("org.apache.qpid"), Level.WARN);
+*/
 
             // Set the broker to use info level logging, which is the qpid-server
             // default. Rather than debug which is the test default.

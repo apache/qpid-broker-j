@@ -110,19 +110,6 @@ public class BrokerOptionsTest extends QpidTestCase
         assertEquals(testLogConfigFile, _options.getLogConfigFileLocation());
     }
 
-    public void testDefaultLogWatchFrequency()
-    {
-        assertEquals(0L, _options.getLogWatchFrequency());
-    }
-
-    public void testOverridenLogWatchFrequency()
-    {
-        final int myFreq = 10 * 1000;
-        
-        _options.setLogWatchFrequency(myFreq);
-        assertEquals(myFreq, _options.getLogWatchFrequency());
-    }
-
     public void testDefaultInitialConfigurationLocation()
     {
         assertEquals(BrokerOptions.DEFAULT_INITIAL_CONFIG_LOCATION, _options.getInitialConfigurationLocation());

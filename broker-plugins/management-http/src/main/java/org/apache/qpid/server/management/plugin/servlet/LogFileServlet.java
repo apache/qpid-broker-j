@@ -20,7 +20,6 @@ package org.apache.qpid.server.management.plugin.servlet;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -28,7 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.LogManager;
 import org.apache.qpid.server.management.plugin.log.LogFileDetails;
 import org.apache.qpid.server.management.plugin.log.LogFileHelper;
 import org.apache.qpid.server.management.plugin.servlet.rest.AbstractServlet;
@@ -65,7 +63,8 @@ public class LogFileServlet extends AbstractServlet
         }
 
         @SuppressWarnings("unchecked")
-        LogFileHelper helper = new LogFileHelper(Collections.list(LogManager.getRootLogger().getAllAppenders()));
+        // QPID-6516 : TODO
+        LogFileHelper helper = null; //new LogFileHelper(Collections.list(LogManager.getRootLogger().getAllAppenders()));
 
         List<LogFileDetails> logFiles = null;
 

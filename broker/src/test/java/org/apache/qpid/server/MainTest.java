@@ -51,7 +51,6 @@ public class MainTest extends QpidTestCase
         assertEquals("JSON", options.getConfigurationStoreType());
         assertEquals(expectedStorePath, options.getConfigurationStoreLocation());
         assertEquals(expectedLogConfigPath, options.getLogConfigFileLocation());
-        assertEquals(0, options.getLogWatchFrequency());
         assertEquals(BrokerOptions.DEFAULT_INITIAL_CONFIG_LOCATION, options.getInitialConfigurationLocation());
         assertFalse(options.isOverwriteConfigurationStore());
         assertFalse(options.isManagementMode());
@@ -92,13 +91,6 @@ public class MainTest extends QpidTestCase
         BrokerOptions options = startDummyMain("-l wxyz/log4j.xml");
 
         assertEquals("wxyz/log4j.xml", options.getLogConfigFileLocation());
-    }
-
-    public void testLogWatch()
-    {
-        BrokerOptions options = startDummyMain("-w 9");
-
-        assertEquals(9, options.getLogWatchFrequency());
     }
 
     public void testVersion()

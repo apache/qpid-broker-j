@@ -30,9 +30,6 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.QpidCompositeRollingAppender;
 
 public class LogFileHelper
 {
@@ -41,85 +38,20 @@ public class LogFileHelper
     public static final String ZIP_MIME_TYPE = "application/zip";
     public static final String GZIP_EXTENSION = ".gz";
     private static final int BUFFER_LENGTH = 1024 * 4;
-    private Collection<Appender> _appenders;
 
-    public LogFileHelper(Collection<Appender> appenders)
+    public LogFileHelper()
     {
-        super();
-        _appenders = appenders;
+        throw new UnsupportedOperationException();
     }
 
     public List<LogFileDetails> findLogFileDetails(String[] requestedFiles)
     {
-        List<LogFileDetails> logFiles = new ArrayList<LogFileDetails>();
-        Map<String, List<LogFileDetails>> cache = new HashMap<String, List<LogFileDetails>>();
-        for (int i = 0; i < requestedFiles.length; i++)
-        {
-            String logFile = requestedFiles[i];
-            if ("".equals(logFile))
-            {
-                throw new IllegalArgumentException("Log file parameter is empty");
-            }
-            int pos = logFile.indexOf("/");
-            if (pos == -1)
-            {
-                throw new IllegalArgumentException("Log file parameter '" + logFile + "' does not include an appender name");
-            }
-            if (pos == logFile.length())
-            {
-                throw new IllegalArgumentException("Log file parameter '" + logFile + "' does not include an file name");
-            }
-
-            String appenderName = logFile.substring(0, pos);
-            String fileName = logFile.substring(pos + 1);
-
-            List<LogFileDetails> appenderFiles = cache.get(appenderName);
-            if (appenderFiles == null)
-            {
-                Appender fileAppender = null;
-                for (Appender appender : _appenders)
-                {
-                    if (appenderName.equals(appender.getName()))
-                    {
-                        fileAppender = appender;
-                        break;
-                    }
-                }
-                if (fileAppender == null)
-                {
-                    continue;
-                }
-                appenderFiles = getAppenderFiles(fileAppender, true);
-                if (appenderFiles == null)
-                {
-                    continue;
-                }
-                cache.put(appenderName, appenderFiles);
-            }
-            for (LogFileDetails logFileDetails : appenderFiles)
-            {
-                if (logFileDetails.getName().equals(fileName))
-                {
-                    logFiles.add(logFileDetails);
-                    break;
-                }
-            }
-        }
-        return logFiles;
+        throw new UnsupportedOperationException();
     }
 
     public List<LogFileDetails> getLogFileDetails(boolean includeLogFileLocation)
     {
-        List<LogFileDetails> results = new ArrayList<LogFileDetails>();
-        for (Appender appender : _appenders)
-        {
-            List<LogFileDetails> appenderFiles = getAppenderFiles(appender, includeLogFileLocation);
-            if (appenderFiles != null)
-            {
-                results.addAll(appenderFiles);
-            }
-        }
-        return results;
+        throw new UnsupportedOperationException();
     }
 
     public void writeLogFiles(List<LogFileDetails> logFiles, OutputStream os) throws IOException
@@ -151,76 +83,6 @@ public class LogFileHelper
         {
             fis.close();
         }
-    }
-
-    private List<LogFileDetails> getAppenderFiles(Appender appender, boolean includeLogFileLocation)
-    {
-        if (appender instanceof QpidCompositeRollingAppender)
-        {
-            return listQpidCompositeRollingAppenderFiles((QpidCompositeRollingAppender) appender, includeLogFileLocation);
-        }
-        else if (appender instanceof FileAppender)
-        {
-            return listFileAppenderFiles((FileAppender) appender, includeLogFileLocation);
-        }
-        return null;
-    }
-
-    private List<LogFileDetails> listFileAppenderFiles(FileAppender appender, boolean includeLogFileLocation)
-    {
-        String appenderFilePath = appender.getFile();
-        File appenderFile = new File(appenderFilePath);
-        if (appenderFile.exists())
-        {
-            return listLogFiles(appenderFile.getParentFile(), appenderFile.getName(), appender.getName(), "", includeLogFileLocation);
-        }
-        return Collections.emptyList();
-    }
-
-    private List<LogFileDetails> listQpidCompositeRollingAppenderFiles(QpidCompositeRollingAppender appender, boolean includeLogFileLocation)
-    {
-        List<LogFileDetails> files = listFileAppenderFiles((FileAppender) appender, includeLogFileLocation);
-        String appenderFilePath = appender.getFile();
-        File appenderFile = new File(appenderFilePath);
-        File backupFolder = new File(appender.getBackupFilesToPath());
-        if (backupFolder.exists())
-        {
-            String backupFolderName = backupFolder.getName() + "/";
-            List<LogFileDetails> backedUpFiles = listLogFiles(backupFolder, appenderFile.getName(), appender.getName(),
-                    backupFolderName, includeLogFileLocation);
-            files.addAll(backedUpFiles);
-        }
-        return files;
-    }
-
-    private List<LogFileDetails> listLogFiles(File parent, String baseFileName, String appenderName, String relativePath,
-            boolean includeLogFileLocation)
-    {
-        List<LogFileDetails> files = new ArrayList<LogFileDetails>();
-        for (File file : parent.listFiles())
-        {
-            String name = file.getName();
-            if (name.startsWith(baseFileName))
-            {
-                String displayPath = name;
-                if (!relativePath.equals(""))
-                {
-                    displayPath = relativePath + name;
-                }
-                files.add(new LogFileDetails(displayPath, appenderName, includeLogFileLocation ? file : null, getMimeType(name), file.length(),
-                        file.lastModified()));
-            }
-        }
-        return files;
-    }
-
-    private String getMimeType(String fileName)
-    {
-        if (fileName.endsWith(GZIP_EXTENSION))
-        {
-            return GZIP_MIME_TYPE;
-        }
-        return TEXT_MIME_TYPE;
     }
 
     private void addLogFileEntries(List<LogFileDetails> files, ZipOutputStream out) throws IOException

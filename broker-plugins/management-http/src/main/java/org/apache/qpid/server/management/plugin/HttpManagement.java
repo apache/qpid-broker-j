@@ -361,8 +361,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new FileServlet()), "*.txt");
         root.addServlet(new ServletHolder(new FileServlet()), "*.xsl");
         root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
-        root.addServlet(new ServletHolder(new LogFileListingServlet()), "/service/logfilenames");
-        root.addServlet(new ServletHolder(new LogFileServlet()), "/service/logfile");
+        // QPID-6516
+//        root.addServlet(new ServletHolder(new LogFileListingServlet()), "/service/logfilenames");
+//        root.addServlet(new ServletHolder(new LogFileServlet()), "/service/logfile");
 
         final SessionManager sessionManager = root.getSessionHandler().getSessionManager();
         sessionManager.getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);

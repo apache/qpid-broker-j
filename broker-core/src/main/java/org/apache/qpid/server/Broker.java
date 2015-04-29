@@ -32,13 +32,15 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.LogManager;
 
 import javax.security.auth.Subject;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.server.configuration.BrokerProperties;
@@ -57,10 +59,12 @@ import org.apache.qpid.server.plugin.PluggableFactoryLoader;
 import org.apache.qpid.server.plugin.SystemConfigFactory;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.util.Action;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Broker
 {
-    private static final Logger LOGGER = Logger.getLogger(Broker.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Broker.class);
 
     private volatile Thread _shutdownHookThread;
     private EventLogger _eventLogger;
@@ -131,7 +135,8 @@ public class Broker
 
         if (_configuringOwnLogging)
         {
-            LogManager.shutdown();
+            LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+            loggerContext.stop();
         }
 
         if (_shutdownAction != null)
@@ -179,7 +184,7 @@ public class Broker
         //embedding the broker and want to configure it themselves.
         if(!options.isSkipLoggingConfiguration())
         {
-            configureLogging(new File(options.getLogConfigFileLocation()), options.getLogWatchFrequency(), options.isStartupLoggedToSystemOut());
+            configureLogging(new File(options.getLogConfigFileLocation()), options.isStartupLoggedToSystemOut());
         }
         // Create the RootLogger to be used during broker operation
         boolean statusUpdatesEnabled = Boolean.parseBoolean(System.getProperty(BrokerProperties.PROPERTY_STATUS_UPDATES, "true"));
@@ -198,7 +203,7 @@ public class Broker
         SystemConfigFactory configFactory = configFactoryLoader.get(storeType);
         if(configFactory == null)
         {
-            LOGGER.fatal("Unknown config store type '"+storeType+"', only the following types are supported: " + configFactoryLoader.getSupportedTypes());
+            LOGGER.error("Unknown config store type '" + storeType + "', only the following types are supported: " + configFactoryLoader.getSupportedTypes());
             throw new IllegalArgumentException("Unknown config store type '"+storeType+"', only the following types are supported: " + configFactoryLoader.getSupportedTypes());
         }
 
@@ -223,7 +228,7 @@ public class Broker
         }
         catch(RuntimeException e)
         {
-            LOGGER.fatal("Exception during startup", e);
+            LOGGER.error("Exception during startup", e);
             closeSystemConfig();
             throw e;
         }
@@ -246,7 +251,7 @@ public class Broker
         }
     }
 
-    private void configureLogging(File logConfigFile, int logWatchTime, boolean startupLoggedToSystemOutput) throws InitException, IOException
+    private void configureLogging(File logConfigFile, boolean startupLoggedToSystemOutput) throws InitException, IOException
     {
         _configuringOwnLogging = true;
         if (logConfigFile.exists() && logConfigFile.canRead())
@@ -256,52 +261,42 @@ public class Broker
                 _eventLogger.message(BrokerMessages.LOG_CONFIG(logConfigFile.getAbsolutePath()));
             }
 
-            if (logWatchTime > 0)
+            try
             {
-                System.out.println("log file " + logConfigFile.getAbsolutePath() + " will be checked for changes every "
-                        + logWatchTime + " seconds");
-                // log4j expects the watch interval in milliseconds
-                try
-                {
-                    LoggingManagementFacade.configureAndWatch(logConfigFile.getPath(), logWatchTime * 1000);
-                }
-                catch (Exception e)
-                {
-                    throw new InitException(e.getMessage(),e);
-                }
+                LoggingManagementFacade.configure(logConfigFile.getPath());
             }
-            else
+            catch (Exception e)
             {
-                try
-                {
-                    LoggingManagementFacade.configure(logConfigFile.getPath());
-                }
-                catch (Exception e)
-                {
-                    throw new InitException(e.getMessage(),e);
-                }
+                throw new InitException(e.getMessage(),e);
             }
         }
         else
         {
             System.err.println("Logging configuration error: unable to read file " + logConfigFile.getAbsolutePath());
-            System.err.println("Using the fallback internal fallback-log4j.properties configuration");
+            System.err.println("Using the fallback internal fallback-logback.xml configuration");
 
-            InputStream propsFile = this.getClass().getResourceAsStream("/fallback-log4j.properties");
+            InputStream propsFile = this.getClass().getResourceAsStream("/fallback-logback.xml");
             if(propsFile == null)
             {
-                throw new IOException("Unable to load the fallback internal fallback-log4j.properties configuration file");
+                throw new IOException("Unable to load the fallback internal fallback-logback.xml configuration file");
             }
             else
             {
+                LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
                 try
                 {
-                    Properties fallbackProps = new Properties();
-                    fallbackProps.load(propsFile);
-                    PropertyConfigurator.configure(fallbackProps);
+                    JoranConfigurator configurator = new JoranConfigurator();
+                    configurator.setContext(context);
+                    context.reset();
+                    configurator.doConfigure(propsFile);
+                }
+                catch (JoranException e)
+                {
+                    // StatusPrinter will handle this
                 }
                 finally
                 {
+                    StatusPrinter.printInCaseOfErrorsOrWarnings(context);
                     propsFile.close();
                 }
             }

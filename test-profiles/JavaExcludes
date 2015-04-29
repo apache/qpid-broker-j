@@ -34,3 +34,10 @@ org.apache.qpid.server.protocol.v0_8.AMQChannelTest#*
 org.apache.qpid.server.protocol.v0_8.QueueBrowserUsesNoAckTest#*
 org.apache.qpid.server.protocol.v0_8.MaxChannelsTest#*
 
+// QPID-6516: replace Log4J with LogBack
+org.apache.qpid.server.jmx.mbeans.LoggingManagementMBeanTest#*
+org.apache.qpid.systest.management.jmx.LoggingManagementTest#*
+org.apache.qpid.server.BrokerStartupTest#testInvalidLog4jConfigurationFile
+org.apache.qpid.systest.rest.acl.LogViewerACLTest#*
+org.apache.qpid.systest.rest.LogRecordsRestTest#*
+org.apache.qpid.util.LogMonitorTest#*

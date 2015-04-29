@@ -76,6 +76,7 @@
     <at.sign>@</at.sign>
     <bdb-version>5.0.104</bdb-version>
     <derby-version>10.11.1.1</derby-version>
+    <logback-version>1.1.3</logback-version>
   </properties>
 
   <modules>
@@ -209,6 +210,7 @@
           <includes>
             <include>**/*Test.java</include>
           </includes>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
             <!-- Defaults -->
             <QPID_HOME>${qpid.home}</QPID_HOME>

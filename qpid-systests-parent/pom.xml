@@ -59,9 +59,9 @@
     </dependency>
 
     <dependency>
-      <groupId>log4j</groupId>
-      <artifactId>log4j</artifactId>
-      <version>${log4j-version}</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback-version}</version>
     </dependency>
 
     <dependency>
@@ -86,13 +86,13 @@
           <systemPropertyVariables>
             <java.naming.provider.url>test-profiles${file.separator}test-provider.properties</java.naming.provider.url>
             <test.output.dir>${test.output.dir}</test.output.dir>
-            <log4j.configuration.file>${basedir}${file.separator}target${file.separator}classes/log4j.xml</log4j.configuration.file>
+            <log4j.configuration.file>${basedir}${file.separator}target${file.separator}classes/logback.xml</log4j.configuration.file>
               <!-- Let the tests themselves configure logging so that we can have a separate log file per test
                    named after the test. -->
               <log4j.debug>false</log4j.debug>
               <log4j.defaultInitOverride>true</log4j.defaultInitOverride>
               <!-- A log4j config file that sends all the Broker's output to stdout -->
-              <spawnedbroker.log4j.configuration.file>${basedir}${file.separator}target${file.separator}classes/spawned-broker-log4j.xml</spawnedbroker.log4j.configuration.file>
+              <spawnedbroker.log4j.configuration.file>${basedir}${file.separator}target${file.separator}classes/spawned-broker-logback.xml</spawnedbroker.log4j.configuration.file>
           </systemPropertyVariables>
         </configuration>
         <executions>

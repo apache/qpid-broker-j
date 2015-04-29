@@ -20,23 +20,23 @@
 */
 package org.apache.qpid.server.logging;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.FileAppender;
 import junit.framework.AssertionFailedError;
 
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.LogManager;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.transport.ConnectionException;
 import org.apache.qpid.util.LogMonitor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -178,8 +178,18 @@ public class BrokerLoggingTest extends AbstractTestLogging
             String TESTID = "BRK-1007";
 
             startBroker(0, false, customLog4j);
-            _outputFile = new File(((FileAppender) LogManager.getRootLogger().getAllAppenders().nextElement()).getFile());
 
+            // get log file from file appender
+            ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+            for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */ )
+            {
+                Appender<ILoggingEvent> appender = index.next();
+                if (appender instanceof FileAppender)
+                {
+                    _outputFile = new File(((FileAppender)appender).getFile());
+                    break;
+                }
+            }
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(_outputFile);

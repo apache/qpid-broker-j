@@ -20,9 +20,8 @@
  */
 package org.apache.qpid.util;
 
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -44,13 +43,10 @@ import java.util.Map;
  */
 public class LogMonitor
 {
-    private static final Logger _logger = Logger.getLogger(LogMonitor.class);
+    private static final Logger _logger = LoggerFactory.getLogger(LogMonitor.class);
 
     // The file that the log statements will be written to.
     private final File _logfile;
-
-    // The appender we added to the get messages
-    private final FileAppender _appender;
 
     private int _linesToSkip = 0;
 
@@ -82,17 +78,11 @@ public class LogMonitor
         if (file != null && file.exists())
         {
             _logfile = file;
-            _appender = null;
         }
         else
         {
             // This is mostly for running the test outside of the ant setup
             _logfile = File.createTempFile("LogMonitor", ".log");
-            _appender = new FileAppender(new SimpleLayout(),
-                                                     _logfile.getAbsolutePath());
-            _appender.setFile(_logfile.getAbsolutePath());
-            _appender.setImmediateFlush(true);
-            Logger.getRootLogger().addAppender(_appender);
         }
 
         _logger.info("Created LogMonitor. Monitoring file: " + _logfile.getAbsolutePath());
@@ -326,11 +316,6 @@ public class LogMonitor
      */
     public void close()
     {
-        //Remove the custom appender we added for this logger
-        if (_appender != null)
-        {
-            Logger.getRootLogger().removeAppender(_appender);
-        }
     }
 
 }

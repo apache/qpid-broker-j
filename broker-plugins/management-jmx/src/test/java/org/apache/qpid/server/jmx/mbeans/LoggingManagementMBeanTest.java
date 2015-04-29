@@ -40,8 +40,9 @@ import junit.framework.TestCase;
 import org.apache.qpid.management.common.mbeans.LoggingManagement;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
 import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class LoggingManagementMBeanTest extends TestCase
+public class LoggingManagementMBeanTest extends QpidTestCase
 {
     private static final String TEST_LEVEL1 = "LEVEL1";
     private static final String TEST_LEVEL2 = "LEVEL2";

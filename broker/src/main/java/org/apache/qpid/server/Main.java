@@ -81,11 +81,6 @@ public class Main
                                      + "default looks for a file named " + BrokerOptions.DEFAULT_LOG_CONFIG_FILE
                                      + " in the same directory as the configuration file").withLongOpt("logconfig").create("l");
 
-    private static final Option OPTION_LOG_WATCH =
-            OptionBuilder.withArgName("period").hasArg()
-                    .withDescription("monitor the log file configuration file for changes. Units are seconds. "
-                                     + "Zero means do not check for changes.").withLongOpt("logwatch").create("w");
-
     private static final Option OPTION_MANAGEMENT_MODE = OptionBuilder.withDescription("start broker in management mode, disabling the AMQP ports")
             .withLongOpt("management-mode").create("mm");
     private static final Option OPTION_MM_QUIESCE_VHOST = OptionBuilder.withDescription("make virtualhosts stay in the quiesced state during management mode.")
@@ -113,7 +108,6 @@ public class Main
         OPTIONS.addOption(OPTION_OVERWRITE_CONFIGURATION_STORE);
         OPTIONS.addOption(OPTION_CREATE_INITIAL_CONFIG);
         OPTIONS.addOption(OPTION_LOG_CONFIG_FILE);
-        OPTIONS.addOption(OPTION_LOG_WATCH);
         OPTIONS.addOption(OPTION_INITIAL_CONFIGURATION_PATH);
         OPTIONS.addOption(OPTION_MANAGEMENT_MODE);
         OPTIONS.addOption(OPTION_MM_QUIESCE_VHOST);
@@ -129,14 +123,6 @@ public class Main
 
     public static void main(String[] args)
     {
-        //if the -Dlog4j.configuration property has not been set, enable the init override
-        //to stop Log4J wondering off and picking up the first log4j.xml/properties file it
-        //finds from the classpath when we get the first Loggers
-        if(System.getProperty("log4j.configuration") == null)
-        {
-            System.setProperty("log4j.defaultInitOverride", "true");
-        }
-
         new Main(args);
     }
 
@@ -268,12 +254,6 @@ public class Main
             if (configurationStoreType != null)
             {
                 options.setConfigurationStoreType(configurationStoreType);
-            }
-
-            String logWatchConfig = _commandLine.getOptionValue(OPTION_LOG_WATCH.getOpt());
-            if(logWatchConfig != null)
-            {
-                options.setLogWatchFrequency(Integer.parseInt(logWatchConfig));
             }
 
             String logConfig = _commandLine.getOptionValue(OPTION_LOG_CONFIG_FILE.getOpt());

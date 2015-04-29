@@ -52,7 +52,7 @@ public class BrokerOptions
     public static final String DEFAULT_INITIAL_CONFIG_NAME = "initial-config.json";
     public static final String DEFAULT_STORE_TYPE = "JSON";
     public static final String DEFAULT_CONFIG_NAME_PREFIX = "config";
-    public static final String DEFAULT_LOG_CONFIG_FILE = "etc/log4j.xml";
+    public static final String DEFAULT_LOG_CONFIG_FILE = "etc/logback.xml";
     public static final String DEFAULT_INITIAL_CONFIG_LOCATION =
         BrokerOptions.class.getClassLoader().getResource(DEFAULT_INITIAL_CONFIG_NAME).toExternalForm();
 
@@ -61,7 +61,6 @@ public class BrokerOptions
     private static final File FALLBACK_WORK_DIR = new File(System.getProperty("user.dir"), "work");
 
     private String _logConfigFile;
-    private Integer _logWatchFrequency = 0;
 
     private String _configurationStoreLocation;
     private String _configurationStoreType;
@@ -106,20 +105,6 @@ public class BrokerOptions
     public void setManagementModePassword(String managementModePassword)
     {
         _managementModePassword = managementModePassword;
-    }
-
-    public int getLogWatchFrequency()
-    {
-        return _logWatchFrequency;
-    }
-
-    /**
-     * Set the frequency with which the log config file will be checked for updates.
-     * @param logWatchFrequency frequency in seconds
-     */
-    public void setLogWatchFrequency(final int logWatchFrequency)
-    {
-        _logWatchFrequency = logWatchFrequency;
     }
 
     public boolean isManagementMode()

@@ -32,8 +32,6 @@ import javax.jms.Session;
 import javax.jms.Topic;
 
 import junit.framework.AssertionFailedError;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 
 import org.apache.qpid.client.AMQConnection;
 
@@ -297,15 +295,6 @@ public class ConsumerLoggingTest extends AbstractTestLogging
      */
     public void testSubscriptionSuspend() throws Exception, IOException
     {
-        // Temporary code to better understand a failure in a CI environment.
-        Logger subscriptionLogger = Logger.getLogger("qpid.message.subscription.state");
-        getLogger().debug("Subscription Logger: level " + subscriptionLogger.getLevel() + " effective level " + subscriptionLogger.getEffectiveLevel());
-        if (subscriptionLogger.getEffectiveLevel() == Level.OFF)
-        {
-            getLogger().debug("Resetting subscription logger level to INFO");
-            subscriptionLogger.setLevel(Level.INFO);
-        }
-
         //Close session with large prefetch
         _session.close();
 

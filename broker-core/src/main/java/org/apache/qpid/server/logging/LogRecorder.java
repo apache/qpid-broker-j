@@ -18,20 +18,11 @@
 package org.apache.qpid.server.logging;
 
 import java.util.Iterator;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Logger;
-import org.apache.log4j.spi.ErrorHandler;
-import org.apache.log4j.spi.Filter;
-import org.apache.log4j.spi.LoggingEvent;
-import org.apache.log4j.spi.ThrowableInformation;
 import org.apache.qpid.server.configuration.BrokerProperties;
 
-public class LogRecorder implements Appender, Iterable<LogRecorder.Record>
+public class LogRecorder implements Iterable<LogRecorder.Record>
 {
     private static final int DEFAULT_BUFFER_SIZE = 4096;
-    private ErrorHandler _errorHandler;
-    private Filter _filter;
     private String _name;
     private long _recordId;
 
@@ -42,49 +33,16 @@ public class LogRecorder implements Appender, Iterable<LogRecorder.Record>
 
     public static class Record
     {
-        private final long _id;
-        private final String _logger;
-        private final long _timestamp;
-        private final String _threadName;
-        private final String _level;
-        private final String _message;
+        private long _id;
+        private String _logger;
+        private long _timestamp;
+        private String _threadName;
+        private String _level;
+        private String _message;
 
 
-        public Record(long id, LoggingEvent event)
+        public Record(long id)
         {
-            _id = id;
-            _logger = event.getLoggerName();
-            _timestamp = event.timeStamp;
-            _threadName = event.getThreadName();
-            _level = event.getLevel().toString();
-            StringBuilder message = new StringBuilder();
-            String renderedMessage = event.getRenderedMessage();
-            if (renderedMessage != null)
-            {
-                message.append(renderedMessage);
-            }
-            ThrowableInformation ti = event.getThrowableInformation();
-            if (ti != null)
-            {
-                Throwable t = ti.getThrowable();
-                if (t != null)
-                {
-                    if (message.length() > 0)
-                    {
-                        message.append(":");
-                    }
-                    String exceptionMessage = t.getMessage();
-                    if (exceptionMessage != null && !"".equals(exceptionMessage))
-                    {
-                        message.append(t.getMessage());
-                    }
-                    else
-                    {
-                        message.append(t.getClass().getName());
-                    }
-                }
-            }
-            _message = message.toString();
         }
 
         public long getId()
@@ -118,86 +76,8 @@ public class LogRecorder implements Appender, Iterable<LogRecorder.Record>
         }
     }
 
-    public LogRecorder()
-    {
-        Logger.getRootLogger().addAppender(this);
-    }
-
-    @Override
-    public void addFilter(Filter filter)
-    {
-        _filter = filter;
-    }
-
-    @Override
-    public void clearFilters()
-    {
-        _filter = null;
-    }
-
-    @Override
-    public void close()
-    {
-    }
-
     public void closeLogRecorder()
     {
-        Logger.getRootLogger().removeAppender(this);
-    }
-
-    @Override
-    public synchronized void doAppend(LoggingEvent loggingEvent)
-    {
-        _records[((int) (_recordId & _mask))] = new Record(_recordId, loggingEvent);
-        _recordId++;
-    }
-
-    @Override
-    public ErrorHandler getErrorHandler()
-    {
-        return _errorHandler;
-    }
-
-    @Override
-    public Filter getFilter()
-    {
-        return _filter;
-    }
-
-    @Override
-    public Layout getLayout()
-    {
-        return null;
-    }
-
-    @Override
-    public String getName()
-    {
-        return _name;
-    }
-
-    @Override
-    public boolean requiresLayout()
-    {
-        return false;
-    }
-
-    @Override
-    public void setErrorHandler(ErrorHandler errorHandler)
-    {
-        _errorHandler = errorHandler;
-    }
-
-    @Override
-    public void setLayout(Layout layout)
-    {
-
-    }
-
-    @Override
-    public void setName(String name)
-    {
-        _name = name;
     }
 
     @Override

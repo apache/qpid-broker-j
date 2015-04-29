@@ -32,8 +32,8 @@ import java.util.NoSuchElementException;
 
 import junit.framework.TestCase;
 import junit.framework.TestResult;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QpidTestCase extends TestCase
 {
@@ -48,9 +48,8 @@ public class QpidTestCase extends TestCase
     public static final String TMP_FOLDER = System.getProperty("java.io.tmpdir");
     public static final String SPAWNED_BROKER_LOG4J_CONFIG_FILE_PATH = System.getProperty("spawnedbroker.log4j.configuration.file");
 
-    private static final Logger _logger = Logger.getLogger(QpidTestCase.class);
+    private static final Logger _logger = LoggerFactory.getLogger(QpidTestCase.class);
 
-    private final Map<Logger, Level> _loggerLevelSetForTest = new HashMap<Logger, Level>();
     private final Map<String, String> _propertiesSetForTest = new HashMap<String, String>();
 
     private String _testName;
@@ -236,44 +235,10 @@ public class QpidTestCase extends TestCase
         }
     }
 
-    /**
-     * Adjust the VMs Log4j Settings just for this test run
-     *
-     * @param logger the logger to change
-     * @param level the level to set
-     */
-    protected void setLoggerLevel(Logger logger, Level level)
-    {
-        assertNotNull("Cannot set level of null logger", logger);
-        assertNotNull("Cannot set Logger("+logger.getName()+") to null level.",level);
-
-        if (!_loggerLevelSetForTest.containsKey(logger))
-        {
-            // Record the current value so we can revert it later.
-            _loggerLevelSetForTest.put(logger, logger.getLevel());
-        }
-
-        logger.setLevel(level);
-    }
-
-    /**
-     * Restore the logging levels defined by this test.
-     */
-    protected void revertLoggingLevels()
-    {
-        for (Logger logger : _loggerLevelSetForTest.keySet())
-        {
-            logger.setLevel(_loggerLevelSetForTest.get(logger));
-        }
-
-        _loggerLevelSetForTest.clear();
-    }
-
     protected void tearDown() throws java.lang.Exception
     {
         _logger.info("========== tearDown " + _testName + " ==========");
         revertTestSystemProperties();
-        revertLoggingLevels();
     }
 
     protected void setUp() throws Exception

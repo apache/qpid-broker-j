@@ -26,7 +26,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.log4j.LogManager;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
@@ -52,7 +51,8 @@ public class LogFileListingServlet extends AbstractServlet
         }
 
         @SuppressWarnings("unchecked")
-        LogFileHelper helper = new LogFileHelper(Collections.list(LogManager.getRootLogger().getAllAppenders()));
+        // QPID-6516 : TODO
+        LogFileHelper helper = null; // new LogFileHelper(Collections.list(LogManager.getRootLogger().getAllAppenders()));
         List<LogFileDetails> logFiles = helper.getLogFileDetails(false);
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);

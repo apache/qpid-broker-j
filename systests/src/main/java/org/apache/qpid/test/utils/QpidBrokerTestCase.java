@@ -19,13 +19,7 @@ package org.apache.qpid.test.utils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -45,11 +39,13 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.Logger;
-import org.apache.log4j.xml.DOMConfigurator;
-
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.FileAppender;
+import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.util.StatusPrinter;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
@@ -74,6 +70,8 @@ import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.url.URLSyntaxException;
 import org.apache.qpid.util.FileUtils;
 import org.apache.qpid.util.SystemUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Qpid base class for system testing test cases.
@@ -88,7 +86,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     private final File _configFile = new File(System.getProperty("broker.config"));
     private File _spawnedBrokerLogConfigFile;
     protected final String _brokerStoreType = System.getProperty("broker.config-store-type", "JSON");
-    protected static final Logger _logger = Logger.getLogger(QpidBrokerTestCase.class);
+    protected static final Logger _logger = LoggerFactory.getLogger(QpidBrokerTestCase.class);
     protected static final int LOGMONITOR_TIMEOUT = 5000;
 
     protected long RECEIVE_TIMEOUT = Long.getLong("qpid.test_receive_timeout", 1000l);
@@ -275,11 +273,32 @@ public class QpidBrokerTestCase extends QpidTestCase
         System.setProperty("qpid.testMethod", "-" + getName());
         System.setProperty("qpid.testClass", getClass().getName());
 
-        String log4jConfigFile = System.getProperty("log4j.configuration.file");
-        DOMConfigurator.configure(log4jConfigFile);
+        String logbackConfigFile = System.getProperty("log4j.configuration.file");
+
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        try
+        {
+            JoranConfigurator configurator = new JoranConfigurator();
+            configurator.setContext(context);
+            context.reset();
+            configurator.doConfigure(logbackConfigFile);
+        }
+        catch (JoranException e)
+        {
+            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+        }
 
         // get log file from file appender
-        _outputFile = new File(((FileAppender)LogManager.getRootLogger().getAllAppenders().nextElement()).getFile());
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */ )
+        {
+            Appender<ILoggingEvent> appender = index.next();
+            if (appender instanceof FileAppender)
+            {
+                _outputFile = new File(((FileAppender)appender).getFile());
+                break;
+            }
+        }
 
         try
         {
@@ -296,7 +315,6 @@ public class QpidBrokerTestCase extends QpidTestCase
 
             // reset properties used in the test
             revertSystemProperties();
-            revertLoggingLevels();
 
             if (_brokerCleanBetweenTests)
             {
@@ -307,7 +325,8 @@ public class QpidBrokerTestCase extends QpidTestCase
 
             _logger.info("==========  stop " + getTestName() + " ==========");
 
-            LogManager.resetConfiguration();
+            context.reset();
+            context.stop();
         }
     }
 

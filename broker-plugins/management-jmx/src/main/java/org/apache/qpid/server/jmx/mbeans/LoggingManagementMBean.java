@@ -87,7 +87,8 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
         super(LoggingManagement.class, LoggingManagement.TYPE, registry);
         register();
         _loggingManagementFacade = loggingManagementFacade;
-        _allAvailableLogLevels = buildAllAvailableLoggerLevelsWithInheritedPsuedoLogLevel(_loggingManagementFacade);
+        // QPID-6516 : TODO
+        _allAvailableLogLevels = null;//buildAllAvailableLoggerLevelsWithInheritedPsuedoLogLevel(_loggingManagementFacade);
     }
 
     @Override

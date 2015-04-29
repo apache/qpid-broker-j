@@ -25,8 +25,6 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
 import org.apache.qpid.management.common.mbeans.LoggingManagement;
-import org.apache.qpid.server.configuration.BrokerProperties;
-import org.apache.qpid.server.logging.log4j.LoggingManagementFacadeTest;
 import org.apache.qpid.test.utils.JMXTestUtils;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.util.FileUtils;
@@ -35,8 +33,6 @@ import org.apache.qpid.util.LogMonitor;
 /**
  * System test for Logging Management.  <b>These tests rely on value set within
  * test-profiles/log4j-test.xml</b>.
- *
- * @see LoggingManagementFacadeTest
  *
  */
 public class LoggingManagementTest extends QpidBrokerTestCase
