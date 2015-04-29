@@ -88,7 +88,10 @@ public class GroupRestACLTest extends QpidRestTestCase
         props.put(DENIED_GROUP + ".users", DENIED_USER);
         props.put(OTHER_GROUP + ".users", OTHER_USER);
 
-        props.store(new FileOutputStream(groupFile), "test group file");
+        try(final FileOutputStream out = new FileOutputStream(groupFile))
+        {
+            props.store(out, "test group file");
+        }
 
         return groupFile;
     }

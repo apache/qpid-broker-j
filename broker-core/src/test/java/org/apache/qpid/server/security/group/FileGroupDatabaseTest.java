@@ -427,7 +427,10 @@ public class FileGroupDatabaseTest extends TestCase
             props.put(group, users);
         }
 
-        props.store(new FileOutputStream(_groupFile), "test group file");
+        try(FileOutputStream fileOutputStream = new FileOutputStream(_groupFile))
+        {
+            props.store(fileOutputStream, "test group file");
+        }
     }
 
     private String createEmptyTestGroupFile() throws IOException

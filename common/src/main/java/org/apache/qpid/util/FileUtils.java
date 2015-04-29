@@ -20,6 +20,9 @@
  */
 package org.apache.qpid.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -41,6 +44,8 @@ import java.util.List;
  */
 public class FileUtils
 {
+    private static final Logger LOG = LoggerFactory.getLogger(FileUtils.class);
+
     private FileUtils()
     {
     }
@@ -294,6 +299,7 @@ public class FileUtils
                 // This can occur if the file is deleted outside the JVM
                 if (files == null)
                 {
+                    LOG.debug("Recursive delete failed as file was deleted outside JVM");
                     return false;
                 }
 
@@ -302,13 +308,23 @@ public class FileUtils
                     success = delete(files[i], true) && success;
                 }
 
-                return success && file.delete();
+                final boolean directoryDeleteSuccess = file.delete();
+                if(!directoryDeleteSuccess)
+                {
+                    LOG.debug("Failed to delete " + file.getPath());
+                }
+                return success && directoryDeleteSuccess;
             }
 
             return false;
         }
 
-        return file.delete();
+        success = file.delete();
+        if(!success)
+        {
+            LOG.debug("Failed to delete " + file.getPath());
+        }
+        return success;
     }
 
     public static class UnableToCopyException extends Exception

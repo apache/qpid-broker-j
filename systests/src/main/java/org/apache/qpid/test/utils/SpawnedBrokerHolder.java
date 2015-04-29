@@ -57,6 +57,7 @@ public class SpawnedBrokerHolder implements BrokerHolder
 
     private  Process _process;
     private  Integer _pid;
+    private List<String> _windowsPids;
     private Set<Integer> _portsUsedByBroker;
     private String _brokerCommand;
 
@@ -137,9 +138,10 @@ public class SpawnedBrokerHolder implements BrokerHolder
         // Add all the specified system properties to QPID_OPTS
         if (!_jvmOptions.isEmpty())
         {
+            boolean isWindows = SystemUtils.isWindows();
             for (String key : _jvmOptions.keySet())
             {
-                qpidOpts += " -D" + key + "=" + _jvmOptions.get(key);
+                qpidOpts += " -D" + key + "=" +(isWindows ? doWindowsCommandEscaping(_jvmOptions.get(key)) : _jvmOptions.get(key));
             }
         }
 
@@ -188,6 +190,8 @@ public class SpawnedBrokerHolder implements BrokerHolder
                     + standardOutputPiper.getStopLine());
         }
 
+        _windowsPids = retrieveWindowsPidsIfPossible();
+
         try
         {
             //test that the broker is still running and hasn't exited unexpectedly
@@ -201,6 +205,19 @@ public class SpawnedBrokerHolder implements BrokerHolder
             // this is expect if the broker started successfully
         }
 
+    }
+
+    private String doWindowsCommandEscaping(String value)
+    {
+        if(value.contains("\"") && !value.startsWith("\""))
+        {
+        return "\"" + value.replaceAll("\"", "\"\"") + "\"";
+
+        }
+        else
+        {
+            return value;
+        }
     }
 
     protected void createBrokerWork(final String qpidWork)
@@ -259,7 +276,7 @@ public class SpawnedBrokerHolder implements BrokerHolder
         waitUntilPortsAreFree();
     }
 
-    private void doWindowsKill()
+    private List<String> retrieveWindowsPidsIfPossible()
     {
         try
         {
@@ -295,35 +312,63 @@ public class SpawnedBrokerHolder implements BrokerHolder
                             }
                             children.add(processIdStr);
                         }
-                        if (line.substring(0, _brokerCommand.length() + 7)
-                                .toLowerCase()
+                        if (line.toLowerCase()
                                 .contains(_brokerCommand.toLowerCase()))
                         {
                             parentProcess = processIdStr;
                         }
 
                     }
-                    if (parentProcess != null)
-                    {
-                        List<String> children = parentProcessMap.get(parentProcess);
-                        if (children != null)
-                        {
-                            for (String child : children)
-                            {
-                                p = Runtime.getRuntime().exec(new String[]{"taskkill", "/PID", child, "/T", "/F"});
-                                consumeAllOutput(p);
-                            }
-                        }
-                        p = Runtime.getRuntime().exec(new String[]{"taskkill", "/PID", parentProcess, "/T", "/F"});
-                        consumeAllOutput(p);
-                    }
 
                 }
+                LOGGER.debug("Parent process: " + parentProcess);
+                if (parentProcess != null)
+                {
+                    List<String> returnVal = new ArrayList<>();
+                    returnVal.add(parentProcess);
+                    List<String> children = parentProcessMap.get(parentProcess);
+                    if (children != null)
+                    {
+                        for (String child : children)
+                        {
+                            returnVal.add(child);
+                        }
+                    }
+                    return returnVal;
+                }
+
+
             }
         }
         catch (IOException e)
         {
             LOGGER.error("Error whilst killing process " + _brokerCommand, e);
+        }
+        return null;
+    }
+
+    private void doWindowsKill()
+    {
+        if(_windowsPids != null && !_windowsPids.isEmpty())
+        {
+            String parentProcess = _windowsPids.remove(0);
+            try
+            {
+
+                Process p;
+                for (String child : _windowsPids)
+                {
+                    p = Runtime.getRuntime().exec(new String[]{"taskkill", "/PID", child, "/T", "/F"});
+                    consumeAllOutput(p);
+                }
+                p = Runtime.getRuntime().exec(new String[]{"taskkill", "/PID", parentProcess, "/T", "/F"});
+                consumeAllOutput(p);
+
+            }
+            catch (IOException e)
+            {
+                LOGGER.error("Error whilst killing process " + _brokerCommand, e);
+            }
         }
     }
 

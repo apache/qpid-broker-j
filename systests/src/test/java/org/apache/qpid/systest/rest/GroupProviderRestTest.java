@@ -375,7 +375,10 @@ public class GroupProviderRestTest extends QpidRestTestCase
         Properties props = new Properties();
         props.put("myGroup.users", "guest");
 
-        props.store(new FileOutputStream(groupFile), "test group file");
+        try(final FileOutputStream out = new FileOutputStream(groupFile))
+        {
+            props.store(out, "test group file");
+        }
 
         return groupFile;
     }

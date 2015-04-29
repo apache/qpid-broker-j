@@ -186,7 +186,7 @@ public class FileGroupDatabase implements GroupDatabase
             }
             catch (IOException e)
             {
-                throw new ServerScopedRuntimeException("Unable to persist change to file " + _groupFile);
+                throw new ServerScopedRuntimeException("Unable to persist change to file " + _groupFile,e);
             }
         }
     }
