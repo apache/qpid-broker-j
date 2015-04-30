@@ -440,6 +440,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         try
         {
             Object o = getMessageFromQueue(l);
+            _receivingThread = null;
             final AbstractJMSMessage m = returnMessageOrThrow(o);
             if (m != null)
             {
@@ -461,6 +462,9 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         finally
         {
             releaseReceiving();
+            // clear the interrupted flag - prevents spurious interrupts caused by the consumer being closed from
+            // another thread racing
+            Thread.interrupted();
         }
     }
 
