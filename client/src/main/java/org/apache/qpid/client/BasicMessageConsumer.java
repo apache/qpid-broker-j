@@ -118,7 +118,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
      * The thread that was used to call receive(). This is important for being able to interrupt that thread if a
      * receive() is in progress.
      */
-    private Thread _receivingThread;
+    private volatile Thread _receivingThread;
 
 
     /**
@@ -646,7 +646,12 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
                     _logger.info("Interrupting thread: " + _receivingThread);
                 }
 
-                _receivingThread.interrupt();
+
+                final Thread receivingThread = _receivingThread;
+                if(receivingThread != null)
+                {
+                    receivingThread.interrupt();
+                }
             }
 
 
