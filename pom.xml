@@ -77,6 +77,8 @@
     <bdb-version>5.0.104</bdb-version>
     <derby-version>10.11.1.1</derby-version>
     <logback-version>1.1.2</logback-version>
+    <guava-version>18.0</guava-version>
+
   </properties>
 
   <modules>
