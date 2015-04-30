@@ -20,8 +20,9 @@
 package org.apache.qpid.disttest.message;
 
 
-import org.apache.commons.lang.builder.ReflectionToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+
 import org.apache.qpid.disttest.Visitor;
 import org.apache.qpid.disttest.client.Client;
 import org.apache.qpid.disttest.controller.Controller;
@@ -51,6 +52,36 @@ public abstract class Command
     @Override
     public String toString()
     {
-        return ReflectionToStringBuilder.toString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+        StringBuilder builder = new StringBuilder(getClass().getSimpleName());
+        builder.append('[');
+        if(Command.class.isAssignableFrom(getClass().getSuperclass()))
+        {
+            builder.append(super.toString());
+        }
+        final Field[] fields = getClass().getDeclaredFields();
+        AccessibleObject.setAccessible(fields, true);
+        boolean first = true;
+        for(Field field : fields)
+        {
+            if(first)
+            {
+                first = false;
+            }
+            else
+            {
+                builder.append(',');
+            }
+            builder.append(field.getName().replaceFirst("^_",""));
+            builder.append('=');
+            try
+            {
+                builder.append(field.get(this));
+            }
+            catch (IllegalAccessException e)
+            {
+                builder.append("<<exception>>");
+            }
+        }
+        return builder.toString();
     }
 }

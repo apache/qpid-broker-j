@@ -34,7 +34,6 @@ import java.util.Set;
 
 import javax.security.auth.Subject;
 
-import org.apache.commons.lang.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -185,7 +184,8 @@ public class DefaultAccessControl implements AccessControl
 
         if(_logger.isDebugEnabled())
         {
-            _logger.debug("Checking " + operation + " " + objectType + " " + ObjectUtils.defaultIfNull(addressOfClient, ""));
+            _logger.debug("Checking " + operation + " " + objectType + " " +
+                          (addressOfClient == null ? "" : addressOfClient));
         }
 
         try
@@ -194,7 +194,8 @@ public class DefaultAccessControl implements AccessControl
         }
         catch(Exception e)
         {
-            _logger.error("Unable to check " + operation + " " + objectType + " " + ObjectUtils.defaultIfNull(addressOfClient, ""), e);
+            _logger.error("Unable to check " + operation + " " + objectType + " "
+                          + (addressOfClient == null ? "" : addressOfClient), e);
             return Result.DENIED;
         }
     }

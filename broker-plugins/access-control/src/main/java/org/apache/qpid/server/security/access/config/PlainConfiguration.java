@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +133,7 @@ public class PlainConfiguration implements ConfigurationFile
 
                         // check for and parse optional initial number for ACL lines
                         Integer number = null;
-                        if (StringUtils.isNumeric(first))
+                        if (first != null && first.matches("\\d+"))
                         {
                             // set the acl number and get the next element
                             number = Integer.valueOf(first);
@@ -142,17 +141,17 @@ public class PlainConfiguration implements ConfigurationFile
                             stack.removeElementAt(0);
                         }
 
-                        if (StringUtils.equalsIgnoreCase(ACL, first))
+                        if (ACL.equalsIgnoreCase(first))
                         {
                             parseAcl(number, stack);
                         }
                         else if (number == null)
                         {
-                            if(StringUtils.equalsIgnoreCase("GROUP", first))
+                            if("GROUP".equalsIgnoreCase(first))
                             {
                                 throw new IllegalConfigurationException(String.format("GROUP keyword not supported at line %d. Groups should defined via a Group Provider, not in the ACL file.", getLine()));
                             }
-                            else if (StringUtils.equalsIgnoreCase(CONFIG, first))
+                            else if (CONFIG.equalsIgnoreCase(first))
                             {
                                 parseConfig(stack);
                             }

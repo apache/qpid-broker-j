@@ -35,8 +35,6 @@ import java.util.WeakHashMap;
 
 import javax.security.auth.Subject;
 
-import org.apache.commons.lang.BooleanUtils;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,8 +244,8 @@ public class RuleSet implements EventLoggerProvider
         // check for '@' and '/' in name
         int atPos = name.indexOf(AT);
         int slashPos = name.indexOf(SLASH);
-        boolean atFound = atPos != StringUtils.INDEX_NOT_FOUND && atPos == name.lastIndexOf(AT);
-        boolean slashFound = slashPos != StringUtils.INDEX_NOT_FOUND && slashPos == name.lastIndexOf(SLASH);
+        boolean atFound = atPos != -1 && atPos == name.lastIndexOf(AT);
+        boolean slashFound = slashPos != -1 && slashPos == name.lastIndexOf(SLASH);
 
         // must be at least one character after '@' or '/'
         if (atFound && atPos > name.length() - 2)
@@ -365,7 +363,7 @@ public class RuleSet implements EventLoggerProvider
      */
     protected boolean isSet(String key)
     {
-        return BooleanUtils.isTrue(_config.get(key));
+        return Boolean.TRUE.equals(_config.get(key));
     }
 
     /**

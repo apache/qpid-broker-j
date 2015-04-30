@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
-import org.apache.commons.lang.ObjectUtils;
 import org.apache.qpid.disttest.message.CreateParticpantCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +72,8 @@ public abstract class ParticipantConfig
         createParticipantCommand.setNumberOfMessages(_numberOfMessages);
         createParticipantCommand.setBatchSize(_batchSize);
 
-        Long maximumDuration = (Long)ObjectUtils.defaultIfNull(getOverriddenDuration(), _maximumDuration);
+        Long overridenDuration = getOverriddenDuration();
+        Long maximumDuration = overridenDuration == null ? _maximumDuration : overridenDuration;
         createParticipantCommand.setMaximumDuration(maximumDuration);
     }
 

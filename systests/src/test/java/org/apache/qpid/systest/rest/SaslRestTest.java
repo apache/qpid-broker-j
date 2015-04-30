@@ -37,7 +37,6 @@ import java.util.Map;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.commons.codec.binary.Base64;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 
@@ -101,7 +100,7 @@ public class SaslRestTest extends QpidRestTestCase
         startBrokerNow();
 
         byte[] responseBytes = generatePlainClientResponse("admin", "admin");
-        String responseData = Base64.encodeBase64String(responseBytes);
+        String responseData = DatatypeConverter.printBase64Binary(responseBytes);
         String parameters= "mechanism=PLAIN&response=" + responseData;
 
         HttpURLConnection connection = getRestTestHelper().openManagementConnection("/service/sasl", "POST");
@@ -126,7 +125,7 @@ public class SaslRestTest extends QpidRestTestCase
         startBrokerNow();
 
         byte[] responseBytes = generatePlainClientResponse("admin", "incorrect");
-        String responseData = Base64.encodeBase64String(responseBytes);
+        String responseData = DatatypeConverter.printBase64Binary(responseBytes);
         String parameters= "mechanism=PLAIN&response=" + responseData;
 
         HttpURLConnection connection = getRestTestHelper().openManagementConnection("/service/sasl", "POST");
@@ -151,7 +150,7 @@ public class SaslRestTest extends QpidRestTestCase
         startBrokerNow();
 
         byte[] responseBytes = generatePlainClientResponse("nonexisting", "admin");
-        String responseData = Base64.encodeBase64String(responseBytes);
+        String responseData = DatatypeConverter.printBase64Binary(responseBytes);
         String parameters= "mechanism=PLAIN&response=" + responseData;
 
         HttpURLConnection connection = getRestTestHelper().openManagementConnection("/service/sasl", "POST");
@@ -307,9 +306,9 @@ public class SaslRestTest extends QpidRestTestCase
         List<String> cookies = requestChallengeConnection.getHeaderFields().get("Set-Cookie");
 
         // generate the authentication response for the challenge received
-        byte[] challengeBytes = Base64.decodeBase64(challenge);
+        byte[] challengeBytes = DatatypeConverter.parseBase64Binary(challenge);
         byte[] responseBytes = generateClientResponse(mechanism, userName, userPassword, challengeBytes);
-        String responseData = Base64.encodeBase64String(responseBytes);
+        String responseData = DatatypeConverter.printBase64Binary(responseBytes);
         String requestParameters = ("id=" + response.get("id") + "&response=" + responseData);
 
         // re-open connection

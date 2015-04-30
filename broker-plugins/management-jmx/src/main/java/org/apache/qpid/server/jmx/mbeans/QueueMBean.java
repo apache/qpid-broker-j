@@ -23,6 +23,8 @@ package org.apache.qpid.server.jmx.mbeans;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +47,6 @@ import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 
-import org.apache.commons.lang.time.FastDateFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,8 +127,6 @@ public class QueueMBean extends AMQManagedObject implements ManagedQueue, QueueN
 
     /** Date/time format used for message expiration and message timestamp formatting */
     public static final String JMSTIMESTAMP_DATETIME_FORMAT = "MM-dd-yy HH:mm:ss.SSS z";
-
-    private static final FastDateFormat FAST_DATE_FORMAT = FastDateFormat.getInstance(JMSTIMESTAMP_DATETIME_FORMAT);
 
     public QueueMBean(Queue queue, VirtualHostMBean virtualHostMBean) throws JMException
     {
@@ -348,41 +347,41 @@ public class QueueMBean extends AMQManagedObject implements ManagedQueue, QueueN
         TabularDataSupport messageTable = new TabularDataSupport(MSG_LIST_DATA_TYPE);
 
 
-            // Create the tabular list of message header contents
-            long position = startPosition;
+        // Create the tabular list of message header contents
+        long position = startPosition;
+        DateFormat dateFormat = new SimpleDateFormat(JMSTIMESTAMP_DATETIME_FORMAT);
+        for (QueueEntry queueEntry : messages)
+        {
+            ServerMessage serverMsg = queueEntry.getMessage();
+            AMQMessageHeader header = serverMsg.getMessageHeader();
+            String[] headerAttributes =
+                {"reply-to = " + header.getReplyTo(),
+                 "propertyFlags = ",
+                 "ApplicationID = " + header.getAppId(),
+                 "ClusterID = ",
+                 "UserId = " + header.getUserId(),
+                 "JMSMessageID = " + header.getMessageId(),
+                 "JMSCorrelationID = " + header.getCorrelationId(),
+                 "JMSDeliveryMode = " + (serverMsg.isPersistent() ? "Persistent" : "Non_Persistent"),
+                 "JMSPriority = " + header.getPriority(),
+                 "JMSType = " + header.getType(),
+                 "JMSExpiration = " + (header.getExpiration() == 0 ? null : dateFormat.format(header.getExpiration())),
+                 "JMSTimestamp = " + (header.getTimestamp() == 0 ? null : dateFormat.format(header.getTimestamp()))
+                 };
 
-            for (QueueEntry queueEntry : messages)
-            {
-                ServerMessage serverMsg = queueEntry.getMessage();
-                AMQMessageHeader header = serverMsg.getMessageHeader();
-                String[] headerAttributes =
-                    {"reply-to = " + header.getReplyTo(),
-                     "propertyFlags = ",
-                     "ApplicationID = " + header.getAppId(),
-                     "ClusterID = ",
-                     "UserId = " + header.getUserId(),
-                     "JMSMessageID = " + header.getMessageId(),
-                     "JMSCorrelationID = " + header.getCorrelationId(),
-                     "JMSDeliveryMode = " + (serverMsg.isPersistent() ? "Persistent" : "Non_Persistent"),
-                     "JMSPriority = " + header.getPriority(),
-                     "JMSType = " + header.getType(),
-                     "JMSExpiration = " + (header.getExpiration() == 0 ? null : FAST_DATE_FORMAT.format(header.getExpiration())),
-                     "JMSTimestamp = " + (header.getTimestamp() == 0 ? null : FAST_DATE_FORMAT.format(header.getTimestamp()))
-                     };
+            Object[] itemValues = new Object[]{ serverMsg.getMessageNumber(),
+                                                headerAttributes,
+                                                serverMsg.getSize(),
+                                                queueEntry.isRedelivered(),
+                                                position,
+                                                queueEntry.getDeliveryCount()};
 
-                Object[] itemValues = new Object[]{ serverMsg.getMessageNumber(),
-                                                    headerAttributes,
-                                                    serverMsg.getSize(),
-                                                    queueEntry.isRedelivered(),
-                                                    position,
-                                                    queueEntry.getDeliveryCount()};
+            position++;
 
-                position++;
-
-                CompositeData messageData =
-                        new CompositeDataSupport(MSG_DATA_TYPE, VIEW_MSGS_COMPOSITE_ITEM_NAMES_DESC_ARRAY, itemValues);
-                messageTable.put(messageData);
-            }
+            CompositeData messageData =
+                    new CompositeDataSupport(MSG_DATA_TYPE, VIEW_MSGS_COMPOSITE_ITEM_NAMES_DESC_ARRAY, itemValues);
+            messageTable.put(messageData);
+        }
 
         return messageTable;
 

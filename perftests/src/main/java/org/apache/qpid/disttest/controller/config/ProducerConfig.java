@@ -21,7 +21,6 @@ package org.apache.qpid.disttest.controller.config;
 
 import javax.jms.Message;
 
-import org.apache.commons.lang.ObjectUtils;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +85,8 @@ public class ProducerConfig extends ParticipantConfig
         command.setSessionName(sessionName);
         command.setDeliveryMode(_deliveryMode);
 
-        Integer messageSize = (Integer)ObjectUtils.defaultIfNull(getOverriddenMessageSize(), _messageSize);
+        final Integer overriddenMessageSize = getOverriddenMessageSize();
+        Integer messageSize = overriddenMessageSize == null ? _messageSize : overriddenMessageSize ;
 
         command.setMessageSize(messageSize);
         command.setPriority(_priority);

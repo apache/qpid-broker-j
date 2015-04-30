@@ -21,9 +21,6 @@ package org.apache.qpid.disttest.controller.config;
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.commons.lang.builder.ReflectionToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
-
 public class QueueConfig
 {
     private String _name;
@@ -61,6 +58,10 @@ public class QueueConfig
     @Override
     public String toString()
     {
-        return ReflectionToStringBuilder.toString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+        return "QueueConfig[" +
+               "name='" + _name + '\'' +
+               ", durable=" + _durable +
+               ", attributes=" + _attributes +
+               ']';
     }
 }

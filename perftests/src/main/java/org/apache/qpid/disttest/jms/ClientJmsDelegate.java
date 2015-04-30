@@ -42,8 +42,6 @@ import javax.jms.Topic;
 import javax.naming.Context;
 import javax.naming.NamingException;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.disttest.DistributedTestConstants;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.client.Client;
@@ -564,7 +562,9 @@ public class ClientJmsDelegate
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("clientName", _clientName).toString();
+        return "ClientJmsDelegate[" +
+               "clientName='" + _clientName + '\'' +
+               ']';
     }
 
     public void tearDownTest()

@@ -20,6 +20,7 @@ package org.apache.qpid.disttest.client;
 
 import java.beans.IntrospectionException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
@@ -33,7 +34,6 @@ import javax.jms.Message;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.client.utils.BeanUtils;
@@ -133,7 +133,7 @@ public class MessageProvider
 
     protected void setStandardProperty(Message message, String property, Object propertyValue) throws JMSException
     {
-        String propertyName = "JMS" + StringUtils.capitalize(property);
+        String propertyName = "JMS" + Character.toTitleCase(property.charAt(0)) + property.substring(1);
         try
         {
             BeanUtils.setProperty(message, propertyName, propertyValue);
@@ -188,7 +188,10 @@ public class MessageProvider
             @Override
             public String call() throws Exception
             {
-                return StringUtils.repeat("a", command.getMessageSize());
+                final int messageSize = command.getMessageSize();
+                char[] chars = new char[messageSize];
+                Arrays.fill(chars, 'a');
+                return new String(chars);
             }
         });
 

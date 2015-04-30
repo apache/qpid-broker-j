@@ -29,7 +29,6 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.CompositeDataSupport;
 import javax.management.openmbean.TabularData;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.management.common.mbeans.ManagedConnection;
 import org.apache.qpid.management.common.mbeans.ManagedQueue;
@@ -245,7 +244,7 @@ public class ConnectionManagementTest extends QpidBrokerTestCase
     private void checkClientVersion(ManagedConnection mBean) throws Exception
     {
         String expectedVersion = QpidProperties.getReleaseVersion();
-        assertTrue(StringUtils.isNotBlank(expectedVersion));
+        assertNotNull(expectedVersion);
 
         assertEquals("Unexpected version", expectedVersion, mBean.getVersion());
     }
@@ -253,7 +252,7 @@ public class ConnectionManagementTest extends QpidBrokerTestCase
     private void checkClientId(ManagedConnection mBean) throws Exception
     {
         String expectedClientId = _connection.getClientID();
-        assertTrue(StringUtils.isNotBlank(expectedClientId));
+        assertNotNull(expectedClientId);
 
         assertEquals("Unexpected ClientId", expectedClientId, mBean.getClientId());
     }

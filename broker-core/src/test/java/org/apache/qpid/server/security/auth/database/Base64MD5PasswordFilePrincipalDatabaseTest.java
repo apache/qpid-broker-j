@@ -21,12 +21,13 @@
 package org.apache.qpid.server.security.auth.database;
 
 import junit.framework.TestCase;
-import org.apache.commons.codec.binary.Base64;
 
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.AccountNotFoundException;
+import javax.xml.bind.DatatypeConverter;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -58,24 +59,13 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends TestCase
     
     static
     {
-        try
+        byte[] decoded = DatatypeConverter.parseBase64Binary(PASSWORD_B64MD5HASHED);
+        PASSWORD_MD5_CHARS = new char[decoded.length];
+        for(int i = 0; i < decoded.length; i++)
         {
-            Base64 b64 = new Base64();
-            byte[] md5passBytes = PASSWORD_B64MD5HASHED.getBytes(Base64MD5PasswordFilePrincipalDatabase.DEFAULT_ENCODING);
-            byte[] decoded = b64.decode(md5passBytes);
-
-            PASSWORD_MD5_CHARS = new char[decoded.length];
-
-            int index = 0;
-            for (byte c : decoded)
-            {
-                PASSWORD_MD5_CHARS[index++] = (char) c;
-            }
+            PASSWORD_MD5_CHARS[i] = (char) decoded[i];
         }
-        catch (UnsupportedEncodingException e)
-        {
-            fail("Unable to perform B64 decode to get the md5 char[] password");
-        }
+
     }
     
 
@@ -189,7 +179,8 @@ public class Base64MD5PasswordFilePrincipalDatabaseTest extends TestCase
         {
             fail("user account did not exist");
         }
-        assertTrue("Password returned was incorrect.", Arrays.equals(PASSWORD_MD5_CHARS, callback.getPassword()));
+        final char[] password = callback.getPassword();
+        assertTrue("Password returned was incorrect.", Arrays.equals(PASSWORD_MD5_CHARS, password));
 
         loadPasswordFile(testFile);
 

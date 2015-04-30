@@ -20,11 +20,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.commons.lang.builder.CompareToBuilder;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.server.security.access.Permission;
 
 /**
@@ -33,16 +28,16 @@ import org.apache.qpid.server.security.access.Permission;
  * A rule consists of {@link Permission} for a particular identity to perform an {@link Action}. The identity
  * may be either a user or a group.
  */
-public class Rule implements Comparable<Rule>
+public class Rule
 {
 	/** String indicating all identified. */
 	public static final String ALL = "all";
 
     private Integer _number;
-    private Boolean _enabled = Boolean.TRUE;
     private String _identity;
     private AclAction _action;
     private Permission _permission;
+    private Boolean _enabled = Boolean.TRUE;
 
     public Rule(Integer number, String identity, AclAction action, Permission permission)
     {
@@ -123,50 +118,56 @@ public class Rule implements Comparable<Rule>
     }
 
     @Override
-    public int compareTo(Rule r)
+    public boolean equals(final Object o)
     {
-        return new CompareToBuilder()
-                .append(getAction(), r.getAction())
-                .append(getIdentity(), r.getIdentity())
-                .append(getPermission(), r.getPermission())
-                .toComparison();
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if (!(o instanceof Rule))
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
-        Rule r = (Rule) o;
 
-        return new EqualsBuilder()
-                .append(getIdentity(), r.getIdentity())
-                .append(getAclAction(), r.getAclAction())
-                .append(getPermission(), r.getPermission())
-                .isEquals();
+        final Rule rule = (Rule) o;
+
+        if (getNumber() != null ? !getNumber().equals(rule.getNumber()) : rule.getNumber() != null)
+        {
+            return false;
+        }
+        if (getIdentity() != null ? !getIdentity().equals(rule.getIdentity()) : rule.getIdentity() != null)
+        {
+            return false;
+        }
+        if (getAction() != null ? !getAction().equals(rule.getAction()) : rule.getAction() != null)
+        {
+            return false;
+        }
+        return getPermission() == rule.getPermission();
+
     }
 
     @Override
     public int hashCode()
     {
-        return new HashCodeBuilder()
-                .append(getIdentity())
-                .append(getAclAction())
-                .append(getPermission())
-                .toHashCode();
+        int result = getNumber() != null ? getNumber().hashCode() : 0;
+        result = 31 * result + (getIdentity() != null ? getIdentity().hashCode() : 0);
+        result = 31 * result + (getAction() != null ? getAction().hashCode() : 0);
+        result = 31 * result + (getPermission() != null ? getPermission().hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("#", getNumber())
-                .append("identity", getIdentity())
-                .append("action", getAclAction())
-                .append("permission", getPermission())
-                .append("enabled", isEnabled())
-                .toString();
+        return "Rule[" +
+               "#=" + _number +
+               ", identity='" + _identity + '\'' +
+               ", action=" + _action +
+               ", permission=" + _permission +
+               ", enabled=" + _enabled +
+               ']';
     }
+
+
 }

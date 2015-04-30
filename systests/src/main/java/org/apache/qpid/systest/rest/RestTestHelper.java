@@ -50,8 +50,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.DatatypeConverter;
 
-import org.apache.commons.codec.binary.Base64;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -181,7 +181,7 @@ public class RestTestHelper
 
         if(_username != null)
         {
-            String encoded = new String(new Base64().encode((_username + ":" + _password).getBytes()));
+            String encoded = DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes());
             httpCon.setRequestProperty("Authorization", "Basic " + encoded);
         }
 

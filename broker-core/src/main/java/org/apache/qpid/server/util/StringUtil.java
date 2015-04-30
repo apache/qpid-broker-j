@@ -20,9 +20,13 @@
  */
 package org.apache.qpid.server.util;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
-import org.apache.commons.codec.digest.DigestUtils;
+import javax.xml.bind.DatatypeConverter;
+
 
 public class StringUtil
 {
@@ -68,7 +72,15 @@ public class StringUtil
         {
             builder.append("_");
         }
-        builder.append(DigestUtils.md5Hex(managerName));
+        try
+        {
+            byte[] digest = MessageDigest.getInstance("MD5").digest(managerName.getBytes(StandardCharsets.UTF_8));
+            builder.append(DatatypeConverter.printHexBinary(digest).toLowerCase());
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            throw new ServerScopedRuntimeException(e);
+        }
         return builder.toString();
     }
 

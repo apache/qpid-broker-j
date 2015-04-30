@@ -232,7 +232,7 @@ public final class Strings
     {
         if (input == null)
         {
-            throw new IllegalArgumentException("Expansion input cannot be null");
+            return null;
         }
         Matcher m = VAR.matcher(input);
         StringBuffer result = new StringBuffer();

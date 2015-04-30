@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
+import com.google.common.base.Joiner;
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.message.ParticipantAttribute;
 import org.apache.qpid.disttest.message.ParticipantResult;
@@ -71,7 +71,7 @@ public class CSVFormatter
             attributeValues.add(attributeValueFormatted);
         }
 
-        String row = StringUtils.join(attributeValues.toArray(), ",");
+        String row = Joiner.on(',').join(attributeValues.toArray());
         return row + "\n";
     }
 
@@ -84,7 +84,7 @@ public class CSVFormatter
             displayNames.add(attribute.getDisplayName());
         }
 
-        String header = StringUtils.join(displayNames.toArray(), ",");
+        String header = Joiner.on(',').join(displayNames.toArray());
         return header + "\n";
     }
 

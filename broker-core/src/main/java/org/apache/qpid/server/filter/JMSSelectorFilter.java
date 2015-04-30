@@ -20,16 +20,11 @@
  */
 package org.apache.qpid.server.filter;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.filter.BooleanExpression;
-import org.apache.qpid.filter.FilterableMessage;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.SelectorParser;
@@ -80,36 +75,34 @@ public class JMSSelectorFilter implements MessageFilter
     }
 
     @Override
-    public String toString()
+    public boolean equals(final Object o)
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append("selector", _selector)
-            .toString();
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+
+        final JMSSelectorFilter that = (JMSSelectorFilter) o;
+
+        return getSelector().equals(that.getSelector());
+
     }
 
     @Override
     public int hashCode()
     {
-        return new HashCodeBuilder().append(_selector).toHashCode();
+        return getSelector().hashCode();
     }
 
     @Override
-    public boolean equals(Object obj)
+    public String toString()
     {
-        if (obj == null)
-        {
-            return false;
-        }
-        if (obj == this)
-        {
-            return true;
-        }
-        if (obj.getClass() != getClass())
-        {
-            return false;
-        }
-        JMSSelectorFilter rhs = (JMSSelectorFilter) obj;
-        return new EqualsBuilder().append(_selector, rhs._selector).isEquals();
+        return "JMSSelectorFilter[" +
+               "selector='" + _selector + '\'' +
+               ']';
     }
-
 }

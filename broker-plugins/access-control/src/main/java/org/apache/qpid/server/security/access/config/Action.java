@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
@@ -134,38 +130,49 @@ public class Action
     }
 
     @Override
-    public boolean equals(Object o)
+    public boolean equals(final Object o)
     {
-        if (!(o instanceof Action))
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
-        Action a = (Action) o;
 
-        return new EqualsBuilder()
-                .append(_operation, a.getOperation())
-                .append(_object, a.getObjectType())
-                .append(_properties, a.getProperties())
-                .isEquals();
+        final Action action = (Action) o;
+
+        if (getOperation() != action.getOperation())
+        {
+            return false;
+        }
+        if (_object != action._object)
+        {
+            return false;
+        }
+        return !(getProperties() != null
+                ? !getProperties().equals(action.getProperties())
+                : action.getProperties() != null);
+
     }
 
     @Override
     public int hashCode()
     {
-        return new HashCodeBuilder()
-                .append(_operation)
-                .append(_object)
-                .append(_properties)
-                .toHashCode();
+        int result = getOperation() != null ? getOperation().hashCode() : 0;
+        result = 31 * result + (_object != null ? _object.hashCode() : 0);
+        result = 31 * result + (getProperties() != null ? getProperties().hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-                .append("operation", _operation)
-                .append("objectType", _object)
-                .append("properties", _properties)
-                .toString();
+        return "Action[" +
+               "operation=" + _operation +
+               ", object=" + _object +
+               ", properties=" + _properties +
+               ']';
     }
 }

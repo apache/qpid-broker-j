@@ -19,8 +19,7 @@
  */
 package org.apache.qpid.disttest.charting.definition;
 
-import static org.apache.commons.lang.text.StrSubstitutor.replaceSystemProperties;
-
+import org.apache.qpid.util.Strings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -41,10 +40,17 @@ public class SeriesDefinitionCreator
         boolean moreSeriesDefinitions = true;
         while(moreSeriesDefinitions)
         {
-            String seriesStatement = replaceSystemProperties(properties.getProperty(String.format(SERIES_STATEMENT_KEY_FORMAT, index)));
-            String seriesLegend = replaceSystemProperties(properties.getProperty(String.format(SERIES_LEGEND_KEY_FORMAT, index)));
-            String seriesDir = replaceSystemProperties(properties.getProperty(String.format(SERIES_DIRECTORY_KEY_FORMAT, index)));
-            String seriesColourName = replaceSystemProperties(properties.getProperty(String.format(SERIES_COLOUR_NAME_FORMAT, index)));
+
+            String seriesStatement = Strings.expand(properties.getProperty(String.format(SERIES_STATEMENT_KEY_FORMAT,
+                                                                                         index)),
+                                                    false,
+                                                    Strings.SYSTEM_RESOLVER);
+            String seriesLegend = Strings.expand(properties.getProperty(String.format(SERIES_LEGEND_KEY_FORMAT, index)),
+                                                 false,
+                                                 Strings.SYSTEM_RESOLVER);
+            String seriesDir = Strings.expand(properties.getProperty(String.format(SERIES_DIRECTORY_KEY_FORMAT, index)), false, Strings.SYSTEM_RESOLVER);
+            String seriesColourName = Strings.expand(properties.getProperty(String.format(SERIES_COLOUR_NAME_FORMAT,
+                                                                                          index)), false, Strings.SYSTEM_RESOLVER);
             Integer seriesStrokeWidth = properties.getProperty(String.format(SERIES_STROKE_WIDTH_FORMAT, index)) == null
                     ? null : Integer.parseInt(properties.getProperty(String.format(SERIES_STROKE_WIDTH_FORMAT, index)));
 

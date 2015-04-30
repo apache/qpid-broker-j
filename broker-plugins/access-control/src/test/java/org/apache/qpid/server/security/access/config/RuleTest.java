@@ -20,6 +20,7 @@ package org.apache.qpid.server.security.access.config;
 
 import static org.mockito.Mockito.*;
 
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.Permission;
 
 import junit.framework.TestCase;
@@ -42,10 +43,15 @@ public class RuleTest extends TestCase
         assertTrue(rule.hashCode() == equalRule.hashCode());
 
         assertFalse("Different identity should cause rules to be unequal",
-                rule.equals(new Rule("identity2", aclAction, allow)));
+                    rule.equals(new Rule("identity2", aclAction, allow)));
 
+        final AclAction differentAclAction = mock(AclAction.class);
+        Action action = new Action(Operation.PURGE);
+        Action differentAction = new Action(Operation.ACCESS);
+        when(aclAction.getAction()).thenReturn(action);
+        when(differentAclAction.getAction()).thenReturn(differentAction);
         assertFalse("Different action should cause rules to be unequal",
-                rule.equals(new Rule(identity, mock(AclAction.class), allow)));
+                    rule.equals(new Rule(identity, differentAclAction, allow)));
 
         assertFalse("Different permission should cause rules to be unequal",
                 rule.equals(new Rule(identity, aclAction, Permission.DENY)));

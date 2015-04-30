@@ -19,7 +19,6 @@
  */
 package org.apache.qpid.disttest.message;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
 
 public abstract class CreateParticpantCommand extends Command
 {
@@ -104,11 +103,5 @@ public abstract class CreateParticpantCommand extends Command
     public void setMaximumDuration(long maximumDuration)
     {
         _maximumDuration = maximumDuration;
-    }
-
-    @Override
-    public String toString()
-    {
-        return ToStringBuilder.reflectionToString(this);
     }
 }

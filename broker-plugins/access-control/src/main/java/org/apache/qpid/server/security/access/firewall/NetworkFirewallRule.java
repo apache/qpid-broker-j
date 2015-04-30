@@ -22,10 +22,6 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,34 +81,34 @@ public class NetworkFirewallRule implements FirewallRule
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(final Object o)
     {
-        return new HashCodeBuilder().append(_networks).toHashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (obj == null)
-        {
-            return false;
-        }
-        if (obj == this)
+        if (this == o)
         {
             return true;
         }
-        if (obj.getClass() != getClass())
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
-        NetworkFirewallRule rhs = (NetworkFirewallRule) obj;
-        return new EqualsBuilder().append(_networks, rhs._networks).isEquals();
+
+        final NetworkFirewallRule that = (NetworkFirewallRule) o;
+
+        return !(_networks != null ? !_networks.equals(that._networks) : that._networks != null);
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return _networks != null ? _networks.hashCode() : 0;
     }
 
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append(_networks).toString();
+        return "NetworkFirewallRule[" +
+               "networks=" + _networks +
+               ']';
     }
 }

@@ -24,9 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.builder.EqualsBuilder;
-
 /**
  * An set of properties for an access control v2 rule {@link ObjectType}.
  *
@@ -99,7 +96,7 @@ public class ObjectProperties
 
         private static String getCanonicalName(String name)
         {
-            return StringUtils.remove(name, '_').toLowerCase();
+            return name.replace("_","").toLowerCase();
         }
     }
 
@@ -110,7 +107,7 @@ public class ObjectProperties
         List<String> properties = new ArrayList<String>();
         for (Property property : Property.values())
         {
-            properties.add(StringUtils.remove(property.name(), '_').toLowerCase());
+            properties.add(property.name().replace("_","").toLowerCase());
         }
         return properties;
     }
@@ -209,8 +206,9 @@ public class ObjectProperties
 
     private boolean valueMatches(String thisValue, String ruleValue)
     {
-        return (StringUtils.isEmpty(ruleValue)
-                || StringUtils.equals(thisValue, ruleValue))
+        return (ruleValue == null
+                || ruleValue.equals("")
+                || ruleValue.equals(thisValue))
                 || ruleValue.equals(WILD_CARD)
                 || (ruleValue.endsWith(WILD_CARD)
                         && thisValue != null
@@ -219,23 +217,21 @@ public class ObjectProperties
     }
 
     @Override
-    public boolean equals(Object obj)
+    public boolean equals(final Object o)
     {
-        if (obj == null)
-        {
-            return false;
-        }
-        if (obj == this)
+        if (this == o)
         {
             return true;
         }
-        if (obj.getClass() != getClass())
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
-        ObjectProperties rhs = (ObjectProperties) obj;
-        return new EqualsBuilder()
-            .append(_properties, rhs._properties).isEquals();
+
+        final ObjectProperties that = (ObjectProperties) o;
+
+        return !(_properties != null ? !_properties.equals(that._properties) : that._properties != null);
+
     }
 
     @Override

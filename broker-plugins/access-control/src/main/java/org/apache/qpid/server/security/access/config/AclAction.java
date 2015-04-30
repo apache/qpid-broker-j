@@ -18,10 +18,6 @@
  */
 package org.apache.qpid.server.security.access.config;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
@@ -64,39 +60,43 @@ public class AclAction
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(final Object o)
     {
-        return new HashCodeBuilder()
-            .append(_action)
-            .append(_firewallRule).toHashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (obj == null)
-        {
-            return false;
-        }
-        if (obj == this)
+        if (this == o)
         {
             return true;
         }
-        if (obj.getClass() != getClass())
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
-        AclAction rhs = (AclAction) obj;
-        return new EqualsBuilder()
-            .append(_action, rhs._action)
-            .append(_firewallRule, rhs._firewallRule).isEquals();
+
+        final AclAction aclAction = (AclAction) o;
+
+        if (getAction() != null ? !getAction().equals(aclAction.getAction()) : aclAction.getAction() != null)
+        {
+            return false;
+        }
+        return !(getFirewallRule() != null
+                ? !getFirewallRule().equals(aclAction.getFirewallRule())
+                : aclAction.getFirewallRule() != null);
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = getAction() != null ? getAction().hashCode() : 0;
+        result = 31 * result + (getFirewallRule() != null ? getFirewallRule().hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append(_action)
-            .append(_firewallRule).toString();
+        return "AclAction[" +
+               "action=" + _action +
+               ", firewallRule=" + _firewallRule +
+               ']';
     }
 }

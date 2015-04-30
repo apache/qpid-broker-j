@@ -25,8 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.naming.NamingException;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.Visitor;
 import org.apache.qpid.disttest.jms.ClientJmsDelegate;
@@ -77,7 +75,9 @@ public class Client
     public void stop()
     {
         _clientJmsDelegate.setConnectionLostListener(null);
-        _clientJmsDelegate.sendResponseMessage(new Response(_clientJmsDelegate.getClientName(), CommandType.STOP_CLIENT, null));
+        _clientJmsDelegate.sendResponseMessage(new Response(_clientJmsDelegate.getClientName(),
+                                                            CommandType.STOP_CLIENT,
+                                                            null));
         transitToStopped();
     }
 
@@ -216,8 +216,9 @@ public class Client
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append("clientJmsDelegate", _clientJmsDelegate).toString();
+        return "Client[" +
+               "clientJmsDelegate=" + _clientJmsDelegate +
+               ']';
     }
 
     void setParticipantRegistry(ParticipantExecutorRegistry participantRegistry)

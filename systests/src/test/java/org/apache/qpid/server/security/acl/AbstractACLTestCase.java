@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.server.security.acl;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQConnectionURL;
@@ -62,7 +61,7 @@ public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements 
         getBrokerConfiguration().addGroupFileConfiguration(QPID_HOME + "/etc/groups-systests");
 
         // run test specific setup
-        String testSetup = StringUtils.replace(getName(), "test", "setUp");
+        String testSetup = getName().replace("test", "setUp");
         try
         {
             Method setup = getClass().getDeclaredMethod(testSetup);

@@ -21,9 +21,6 @@ package org.apache.qpid.disttest.charting.seriesbuilder;
 import java.util.Arrays;
 import java.util.Date;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-
 /**
  * A data point in a chart. Thinly wraps an array to provide a convenient place to validate the number of dimensions,
  * and to access dimensions in a typesafe manner.
@@ -70,29 +67,27 @@ public class SeriesRow
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(final Object o)
     {
-        return new HashCodeBuilder().append(_dimensions).toHashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (obj == null)
-        {
-            return false;
-        }
-        if (obj == this)
+        if (this == o)
         {
             return true;
         }
-        if (obj.getClass() != getClass())
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
-        SeriesRow rhs = (SeriesRow) obj;
-        return new EqualsBuilder().append(_dimensions, rhs._dimensions).isEquals();
+
+        final SeriesRow seriesRow = (SeriesRow) o;
+
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        return Arrays.equals(_dimensions, seriesRow._dimensions);
+
     }
 
-
+    @Override
+    public int hashCode()
+    {
+        return _dimensions != null ? Arrays.hashCode(_dimensions) : 0;
+    }
 }

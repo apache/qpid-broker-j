@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.security.access;
 
-import org.apache.commons.lang.StringUtils;
-
 /**
  * An enumeration of all possible permissions that can be applied to an access control v2 rule.
  */
@@ -37,7 +35,7 @@ public enum Permission
         
         for (Permission permission : values())
         {
-            if (permission.name().equalsIgnoreCase(StringUtils.replaceChars(text, '-', '_')))
+            if (permission.name().equalsIgnoreCase(text.replace('-', '_')))
             {
                 return permission;
             }

@@ -20,8 +20,6 @@ package org.apache.qpid.server.security.access.config;
 
 import java.net.InetAddress;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
@@ -82,7 +80,8 @@ public class ClientAction
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append(_clientAction).toString();
+        return "ClientAction[" +
+               "clientAction=" + _clientAction +
+               ']';
     }
 }

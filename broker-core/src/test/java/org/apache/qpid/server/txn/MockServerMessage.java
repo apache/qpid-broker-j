@@ -22,7 +22,6 @@ package org.apache.qpid.server.txn;
 
 import java.nio.ByteBuffer;
 
-import org.apache.commons.lang.NotImplementedException;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
@@ -55,13 +54,13 @@ class MockServerMessage implements ServerMessage
 
     public MessageReference newReference()
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public MessageReference newReference(final TransactionLogResource object)
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -76,45 +75,40 @@ class MockServerMessage implements ServerMessage
         return false;
     }
 
-    public boolean isImmediate()
-    {
-        throw new NotImplementedException();
-    }
-
     public long getSize()
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     public String getInitialRoutingAddress()
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     public AMQMessageHeader getMessageHeader()
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     public StoredMessage getStoredMessage()
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     public long getExpiration()
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     public int getContent(ByteBuffer buf, int offset)
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
 
     public ByteBuffer getContent(int offset, int size)
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -125,7 +119,7 @@ class MockServerMessage implements ServerMessage
 
     public long getArrivalTime()
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     public long getMessageNumber()

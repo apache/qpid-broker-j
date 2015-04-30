@@ -19,8 +19,6 @@
  */
 package org.apache.qpid.disttest.charting.definition;
 
-import static org.apache.commons.lang.text.StrSubstitutor.replaceSystemProperties;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
@@ -33,6 +31,7 @@ import java.util.Properties;
 
 import org.apache.qpid.disttest.charting.ChartType;
 import org.apache.qpid.disttest.charting.ChartingException;
+import org.apache.qpid.util.Strings;
 
 public class ChartingDefinitionCreator
 {
@@ -82,12 +81,12 @@ public class ChartingDefinitionCreator
 
             final String chartStemName = getStemNameFrom(file);
 
-            final ChartType chartType = ChartType.valueOf(replaceSystemProperties(props.getProperty(CHART_TYPE_KEY)));
-            final String chartTitle = replaceSystemProperties(props.getProperty(CHART_TITLE_KEY));
-            final String chartSubtitle = replaceSystemProperties(props.getProperty(CHART_SUBTITLE_KEY));
-            final String chartDescription = replaceSystemProperties(props.getProperty(CHART_DESCRIPTION_KEY));
-            final String xAxisTitle = replaceSystemProperties(props.getProperty(XAXIS_TITLE_KEY));
-            final String yAxisTitle = replaceSystemProperties(props.getProperty(YAXIS_TITLE_KEY));
+            final ChartType chartType = ChartType.valueOf(Strings.expand(props.getProperty(CHART_TYPE_KEY), false, Strings.SYSTEM_RESOLVER));
+            final String chartTitle = Strings.expand(props.getProperty(CHART_TITLE_KEY), false, Strings.SYSTEM_RESOLVER);
+            final String chartSubtitle = Strings.expand(props.getProperty(CHART_SUBTITLE_KEY), false, Strings.SYSTEM_RESOLVER);
+            final String chartDescription = Strings.expand(props.getProperty(CHART_DESCRIPTION_KEY), false, Strings.SYSTEM_RESOLVER);
+            final String xAxisTitle = Strings.expand(props.getProperty(XAXIS_TITLE_KEY), false, Strings.SYSTEM_RESOLVER);
+            final String yAxisTitle = Strings.expand(props.getProperty(YAXIS_TITLE_KEY), false, Strings.SYSTEM_RESOLVER);
 
             final List<SeriesDefinition> seriesDefinitions = createSeriesDefinitions(props);
 

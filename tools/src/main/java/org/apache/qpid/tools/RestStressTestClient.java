@@ -22,6 +22,8 @@ package org.apache.qpid.tools;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -39,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.qpid.tools.util.ArgumentsParser;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
@@ -239,7 +240,7 @@ public class RestStressTestClient
 
             if (saslMechanism == null)
             {
-                _authorizationHeader = "Basic " + new String(new Base64().encode((_username + ":" + _password).getBytes()));
+                _authorizationHeader = "Basic " + DatatypeConverter.printBase64Binary((_username + ":" + _password).getBytes());
             }
             else
             {
@@ -461,7 +462,7 @@ public class RestStressTestClient
         {
             try
             {
-                byte[] challengeBytes = Base64.decodeBase64(challenge);
+                byte[] challengeBytes = DatatypeConverter.parseBase64Binary(challenge);
 
                 String macAlgorithm = "HmacMD5";
                 Mac mac = Mac.getInstance(macAlgorithm);
@@ -469,7 +470,7 @@ public class RestStressTestClient
                 final byte[] messageAuthenticationCode = mac.doFinal(challengeBytes);
                 String responseAsString = username + " " + toHex(messageAuthenticationCode);
                 byte[] responseBytes = responseAsString.getBytes();
-                return Base64.encodeBase64String(responseBytes);
+                return DatatypeConverter.printBase64Binary(responseBytes);
             }
             catch (Exception e)
             {

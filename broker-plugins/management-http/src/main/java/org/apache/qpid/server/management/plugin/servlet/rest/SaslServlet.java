@@ -22,7 +22,6 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.net.SocketAddress;
 import java.security.Principal;
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
@@ -37,8 +36,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.xml.bind.DatatypeConverter;
 
-import org.apache.commons.codec.binary.Base64;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.slf4j.Logger;
@@ -227,7 +226,9 @@ public class SaslServlet extends AbstractServlet
         byte[] challenge;
         try
         {
-            challenge  = saslServer.evaluateResponse(saslResponse == null ? new byte[0] : Base64.decodeBase64(saslResponse.getBytes()));
+            challenge  = saslServer.evaluateResponse(saslResponse == null
+                                                             ? new byte[0]
+                                                             : DatatypeConverter.parseBase64Binary(saslResponse));
         }
         catch(SaslException e)
         {
@@ -267,7 +268,7 @@ public class SaslServlet extends AbstractServlet
             if(challenge != null && challenge.length != 0)
             {
                 Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
-                outputObject.put("challenge", new String(Base64.encodeBase64(challenge)));
+                outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
 
                 final Writer writer = getOutputWriter(request, response);
 
@@ -289,7 +290,7 @@ public class SaslServlet extends AbstractServlet
 
             Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
             outputObject.put("id", id);
-            outputObject.put("challenge", new String(Base64.encodeBase64(challenge)));
+            outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
 
             final Writer writer = getOutputWriter(request, response);
 

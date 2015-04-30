@@ -22,7 +22,6 @@
 package org.apache.qpid.server.security.auth.sasl;
 
 import junit.framework.TestCase;
-import org.apache.commons.codec.binary.Hex;
 
 import org.apache.qpid.server.security.auth.database.Base64MD5PasswordFilePrincipalDatabase;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexInitialiser;
@@ -34,6 +33,8 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.login.AccountNotFoundException;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
+import javax.xml.bind.DatatypeConverter;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -161,7 +162,7 @@ public class CRAMMD5HexServerTest extends TestCase
     private byte[] generateClientResponse(final String userId, final String clearTextPassword, final byte[] serverChallenge) throws Exception
     {
         byte[] digestedPasswordBytes = MessageDigest.getInstance("MD5").digest(clearTextPassword.getBytes());
-        char[] hexEncodedDigestedPassword = Hex.encodeHex(digestedPasswordBytes);
+        char[] hexEncodedDigestedPassword = DatatypeConverter.printHexBinary(digestedPasswordBytes).toLowerCase().toCharArray();
         byte[] hexEncodedDigestedPasswordBytes = new String(hexEncodedDigestedPassword).getBytes();
 
 
@@ -170,7 +171,7 @@ public class CRAMMD5HexServerTest extends TestCase
         final byte[] messageAuthenticationCode = hmacMd5.doFinal(serverChallenge);
 
         // Build client response
-        String responseAsString = userId + " " + new String(Hex.encodeHex(messageAuthenticationCode));
+        String responseAsString = userId + " " + DatatypeConverter.printHexBinary(messageAuthenticationCode).toLowerCase();
         byte[] resp = responseAsString.getBytes();
         return resp;
     }

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.qpid.disttest.client.property.ListPropertyValue;
 import org.apache.qpid.disttest.client.property.PropertyValue;
 import org.apache.qpid.disttest.json.JsonHandler;
@@ -110,9 +109,33 @@ public class JsonHandlerTest extends QpidTestCase
         }
 
         @Override
-        public boolean equals(final Object obj)
+        public boolean equals(final Object o)
         {
-            return EqualsBuilder.reflectionEquals(this, obj);
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+
+            final SendChristmasCards that = (SendChristmasCards) o;
+
+            if (getCardTypes() != null ? !getCardTypes().equals(that.getCardTypes()) : that.getCardTypes() != null)
+            {
+                return false;
+            }
+            return !(getPersons() != null ? !getPersons().equals(that.getPersons()) : that.getPersons() != null);
+
+        }
+
+        @Override
+        public int hashCode()
+        {
+            int result = getCardTypes() != null ? getCardTypes().hashCode() : 0;
+            result = 31 * result + (getPersons() != null ? getPersons().hashCode() : 0);
+            return result;
         }
     }
 
@@ -134,11 +157,30 @@ public class JsonHandlerTest extends QpidTestCase
         }
 
         @Override
-        public boolean equals(final Object obj)
+        public boolean equals(final Object o)
         {
-            return EqualsBuilder.reflectionEquals(this, obj);
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+
+            final Person person = (Person) o;
+
+            return !(getFirstName() != null
+                    ? !getFirstName().equals(person.getFirstName())
+                    : person.getFirstName() != null);
+
         }
 
+        @Override
+        public int hashCode()
+        {
+            return getFirstName() != null ? getFirstName().hashCode() : 0;
+        }
     }
 
     /**

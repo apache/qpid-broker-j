@@ -19,6 +19,7 @@
 package org.apache.qpid.server.security.access.firewall;
 
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,10 +27,6 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,34 +121,35 @@ public class HostnameFirewallRule implements FirewallRule
     }
 
     @Override
-    public int hashCode()
+    public boolean equals(final Object o)
     {
-        return new HashCodeBuilder().append(_hostnames).toHashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        if (obj == null)
-        {
-            return false;
-        }
-        if (obj == this)
+        if (this == o)
         {
             return true;
         }
-        if (obj.getClass() != getClass())
+        if (o == null || getClass() != o.getClass())
         {
             return false;
         }
-        HostnameFirewallRule rhs = (HostnameFirewallRule) obj;
-        return new EqualsBuilder().append(_hostnames, rhs._hostnames).isEquals();
+
+        final HostnameFirewallRule that = (HostnameFirewallRule) o;
+
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        return Arrays.equals(_hostnames, that._hostnames);
+
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return _hostnames != null ? Arrays.hashCode(_hostnames) : 0;
     }
 
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append(_hostnames).toString();
+        return "HostnameFirewallRule[" +
+               "hostnames=" + Arrays.toString(_hostnames) +
+               ']';
     }
 }

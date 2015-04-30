@@ -24,8 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.disttest.client.utils.BeanUtils;
 import org.apache.qpid.disttest.message.Command;
 
@@ -77,7 +75,8 @@ public class IterationValue
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE).append("iterationMap", _iterationPropertyValuesWithUnderscores).toString();
+        return "IterationValue[" +
+               "iterationMap=" + _iterationPropertyValuesWithUnderscores +
+               ']';
     }
-
 }

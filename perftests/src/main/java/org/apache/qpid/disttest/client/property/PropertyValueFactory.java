@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.disttest.client.property;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.qpid.disttest.DistributedTestException;
 
 /**
@@ -40,7 +39,10 @@ public class PropertyValueFactory
 
     public Class<?> getPropertyValueClass(String type) throws ClassNotFoundException
     {
-        String className = "org.apache.qpid.disttest.client.property." + StringUtils.capitalize(type) + "PropertyValue";
+        String className = "org.apache.qpid.disttest.client.property."
+                           + Character.toTitleCase(type.charAt(0))
+                           + type.substring(1)
+                           + "PropertyValue";
         return Class.forName(className);
     }
 }

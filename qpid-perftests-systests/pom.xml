@@ -61,23 +61,6 @@
     </dependency>
 
     <!-- other deps -->
-    <dependency>
-      <groupId>commons-lang</groupId>
-      <artifactId>commons-lang</artifactId>
-      <version>${commons-lang-version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-collections</groupId>
-      <artifactId>commons-collections</artifactId>
-      <version>${commons-collections-version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-beanutils</groupId>
-      <artifactId>commons-beanutils-core</artifactId>
-      <version>${commons-beanutils-version}</version>
-    </dependency>
 
     <dependency>
       <groupId>com.google.code.gson</groupId>

@@ -20,12 +20,11 @@
  */
 package org.apache.qpid.server.plugin;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.qpid.server.model.Protocol;
 
 public class AMQPProtocolVersionWrapper
 {
-    static final char DELIMITER = '_';
+    static final String DELIMITER = "_";
 
     private int _major;
     private int _minor;
@@ -38,7 +37,7 @@ public class AMQPProtocolVersionWrapper
             throw new IllegalArgumentException("Protocol must be of type " + Protocol.ProtocolType.AMQP);
         }
 
-        final String[] parts = StringUtils.split(amqpProtocol.name(), DELIMITER);
+        final String[] parts = amqpProtocol.name().split(DELIMITER);
         for (int i = 0; i < parts.length; i++)
         {
             switch (i)

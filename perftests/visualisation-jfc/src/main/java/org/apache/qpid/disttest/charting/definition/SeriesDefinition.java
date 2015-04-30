@@ -19,9 +19,6 @@
  */
 package org.apache.qpid.disttest.charting.definition;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
-
 public class SeriesDefinition
 {
     private final String _seriesStatement;
@@ -67,9 +64,10 @@ public class SeriesDefinition
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append("seriesLegend", _seriesLegend)
-            .append("seriesStatement", _seriesStatement)
-            .append("seriesDirectory", _seriesDirectory).toString();
+        return "SeriesDefinition[" +
+               "seriesLegend='" + _seriesLegend + '\'' +
+               ", seriesStatement='" + _seriesStatement + '\'' +
+               ", seriesDirectory='" + _seriesDirectory + '\'' +
+               ']';
     }
 }

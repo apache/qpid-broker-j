@@ -18,11 +18,6 @@
  */
 package org.apache.qpid.disttest.charting.seriesbuilder;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.apache.commons.lang.StringUtils.isNotBlank;
-
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
 
 public class JdbcUrlGenerator
@@ -55,7 +50,7 @@ public class JdbcUrlGenerator
 
         if(_providedJdbdUrl == null)
         {
-            if(isBlank(seriesDir))
+            if(seriesDir == null || "".equals(seriesDir.trim()))
             {
                 throw new IllegalArgumentException("Neither a series directory nor a JDBC url have been specified. Series definition: " + seriesDefinition);
             }
@@ -63,7 +58,7 @@ public class JdbcUrlGenerator
         }
         else
         {
-            if(isNotBlank(seriesDir))
+            if(seriesDir != null && !seriesDir.trim().equals(""))
             {
                 throw new IllegalArgumentException("Both a series directory '" + seriesDir + "' and a JDBC url have been specified. Series definition: " + seriesDefinition);
             }
@@ -74,8 +69,8 @@ public class JdbcUrlGenerator
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append("providedJdbdUrl", _providedJdbdUrl)
-            .toString();
+        return "JdbcUrlGenerator[" +
+               "providedJdbdUrl='" + _providedJdbdUrl + '\'' +
+               ']';
     }
 }

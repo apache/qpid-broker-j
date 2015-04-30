@@ -27,6 +27,8 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.security.cert.X509Certificate;
@@ -39,8 +41,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-
-import org.apache.commons.codec.binary.Base64;
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.management.plugin.servlet.ServletConnectionPrincipal;
 import org.apache.qpid.server.management.plugin.session.LoginLogoutReporter;
@@ -207,7 +208,8 @@ public class HttpManagementUtil
                     if (isBasicAuthSupported)
                     {
                         String base64UsernameAndPassword = tokens[1];
-                        String[] credentials = (new String(Base64.decodeBase64(base64UsernameAndPassword.getBytes()))).split(":", 2);
+                        String[] credentials = (new String(DatatypeConverter.parseBase64Binary(base64UsernameAndPassword),
+                                                           StandardCharsets.UTF_8)).split(":", 2);
                         if (credentials.length == 2)
                         {
                             subject = authenticateUser(subjectCreator, credentials[0], credentials[1]);

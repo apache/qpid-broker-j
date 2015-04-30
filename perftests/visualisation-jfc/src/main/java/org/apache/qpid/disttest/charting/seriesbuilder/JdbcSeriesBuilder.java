@@ -27,8 +27,6 @@ import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.qpid.disttest.charting.ChartingException;
 import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
 import org.jfree.data.general.Dataset;
@@ -150,8 +148,8 @@ public class JdbcSeriesBuilder implements SeriesBuilder
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-            .append("jdbcUrlGenerator", _jdbcUrlGenerator)
-            .toString();
+        return "JdbcSeriesBuilder[" +
+               "jdbcUrlGenerator=" + _jdbcUrlGenerator +
+               ']';
     }
 }

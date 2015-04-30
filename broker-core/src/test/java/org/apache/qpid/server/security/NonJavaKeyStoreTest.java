@@ -25,6 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import javax.net.ssl.KeyManager;
+import javax.xml.bind.DatatypeConverter;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -36,7 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -108,7 +109,15 @@ public class NonJavaKeyStoreTest extends QpidTestCase
             if (pem)
             {
                 kos.write("-----BEGIN PRIVATE KEY-----\n".getBytes());
-                kos.write(Base64.encodeBase64(pvt.getEncoded(), true));
+                String base64encoded = DatatypeConverter.printBase64Binary(pvt.getEncoded());
+                while(base64encoded.length() > 76)
+                {
+                    kos.write(base64encoded.substring(0,76).getBytes());
+                    kos.write("\n".getBytes());
+                    base64encoded = base64encoded.substring(76);
+                }
+
+                kos.write(base64encoded.getBytes());
                 kos.write("\n-----END PRIVATE KEY-----".getBytes());
             }
             else
@@ -126,7 +135,15 @@ public class NonJavaKeyStoreTest extends QpidTestCase
             if (pem)
             {
                 cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());
-                cos.write(Base64.encodeBase64(pub.getEncoded(), true));
+                String base64encoded = DatatypeConverter.printBase64Binary(pub.getEncoded());
+                while(base64encoded.length() > 76)
+                {
+                    cos.write(base64encoded.substring(0,76).getBytes());
+                    cos.write("\n".getBytes());
+                    base64encoded = base64encoded.substring(76);
+                }
+                cos.write(base64encoded.getBytes());
+
                 cos.write("\n-----END CERTIFICATE-----".getBytes());
             }
             else

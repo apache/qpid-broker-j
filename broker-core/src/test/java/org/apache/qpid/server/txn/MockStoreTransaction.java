@@ -22,7 +22,7 @@ package org.apache.qpid.server.txn;
 
 import java.util.UUID;
 
-import org.apache.commons.lang.NotImplementedException;
+
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -103,7 +103,7 @@ class MockStoreTransaction implements Transaction
 
     public FutureResult commitTranAsync()
     {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     public void abortTran()

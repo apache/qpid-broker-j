@@ -22,7 +22,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.builder.CompareToBuilder;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
+
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;
@@ -40,10 +42,10 @@ public class CSVOrderParticipantResultComparator implements Comparator<Participa
     @Override
     public int compare(ParticipantResult left, ParticipantResult right)
     {
-        return new CompareToBuilder()
-            .append(getTypeCode(left), getTypeCode(right))
-            .append(left.getParticipantName(), right.getParticipantName())
-            .toComparison();
+        return ComparisonChain.start()
+            .compare(getTypeCode(left), getTypeCode(right), Ordering.natural().nullsFirst())
+            .compare(left.getParticipantName(), right.getParticipantName(), Ordering.natural().nullsFirst())
+            .result();
     }
 
 

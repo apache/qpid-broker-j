@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-import org.apache.commons.lang.StringUtils;
+import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -243,7 +243,7 @@ public class FileGroupDatabase implements GroupDatabase
         for (String group : _groupToUserMap.keySet())
         {
             Set<String> users = _groupToUserMap.get(group);
-            String userList = StringUtils.join(users, ",");
+            final String userList = Joiner.on(",").join(users);
 
             propertiesFile.setProperty(group + ".users", userList);
         }

@@ -23,8 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,9 +135,9 @@ public class ParticipantExecutor
     @Override
     public String toString()
     {
-        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
-        .append("participantName", getParticipantName())
-        .append("client", _client)
-        .toString();
+        return "ParticipantExecutor[" +
+               "participantName=" + _participant.getName() +
+               ", client=" + _client +
+               ']';
     }
 }

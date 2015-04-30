@@ -20,15 +20,8 @@
  */
 package org.apache.qpid.client.util;
 
-import java.lang.reflect.InvocationTargetException;
-
 import javax.jms.JMSException;
 
-/**
- * Helper class to create correctly chained JMSExceptions
- *
- * Created by Lorenz Quack on 27/04/2015.
- */
 public class JMSExceptionHelper
 {
 

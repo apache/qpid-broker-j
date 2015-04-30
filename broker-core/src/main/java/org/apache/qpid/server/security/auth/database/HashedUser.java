@@ -21,10 +21,12 @@
 package org.apache.qpid.server.security.auth.database;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import org.apache.commons.codec.binary.Base64;
+
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
@@ -56,11 +58,8 @@ public class HashedUser implements PasswordPrincipal
             throw new ServerScopedRuntimeException("MD5 encoding not supported, even though the Java standard requires it",e);
         }
 
-        Base64 b64 = new Base64();
-        byte[] decoded = b64.decode(encoded_password);
-
         _encodedPassword = encoded_password;
-
+        byte[] decoded = DatatypeConverter.parseBase64Binary(data[1]);
         _password = new char[decoded.length];
 
         int index = 0;
@@ -123,7 +122,8 @@ public class HashedUser implements PasswordPrincipal
 
     void setPassword(char[] password, boolean alreadyHashed)
     {
-        if(alreadyHashed){
+        if(alreadyHashed)
+        {
             _password = password;
         }
         else
@@ -167,7 +167,7 @@ public class HashedUser implements PasswordPrincipal
         {
             byteArray[index++] = (byte) c;
         }
-        _encodedPassword = (new Base64()).encode(byteArray);
+        _encodedPassword = DatatypeConverter.printBase64Binary(byteArray).getBytes(StandardCharsets.UTF_8);
     }
 
     public boolean isModified()
