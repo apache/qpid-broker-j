@@ -24,10 +24,7 @@ import java.net.ConnectException;
 import java.nio.ByteBuffer;
 import java.nio.channels.UnresolvedAddressException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -508,6 +505,14 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
     public boolean isMessageCompressionSupported()
     {
         return _messageCompressionSupported;
+    }
+
+    @Override
+    public String getTemporaryQueuePrefix()
+    {
+        FieldTable serverProperties = _conn.getProtocolHandler().getProtocolSession().getConnectionStartServerProperties();
+        String temporaryQueuePrefix = serverProperties.getString(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX);
+        return (temporaryQueuePrefix == null ? "" : temporaryQueuePrefix);
     }
 
     public boolean isAddrSyntaxSupported()

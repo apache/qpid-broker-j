@@ -23,12 +23,7 @@ package org.apache.qpid.client;
 import java.io.Serializable;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -42,6 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import javax.jms.*;
 import javax.jms.IllegalStateException;
+import javax.jms.Queue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -3238,6 +3234,13 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     {
         Dispatcher dispatcher = _dispatcher;
         return dispatcher == null ? null : dispatcher._lock;
+    }
+
+    public String createTemporaryQueueName()
+    {
+        String prefix = _connection.getTemporaryQueuePrefix();
+        assert(prefix.isEmpty() || prefix.endsWith("/"));
+        return prefix + "TempQueue" + UUID.randomUUID();
     }
 
     public interface Dispatchable

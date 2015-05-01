@@ -36,7 +36,7 @@ final class AMQTemporaryQueue extends AMQQueue implements TemporaryQueue, Tempor
     /** Create a new instance of an AMQTemporaryQueue */
     public AMQTemporaryQueue(AMQSession session)
     {
-        super(session.getTemporaryQueueExchangeName(), new AMQShortString("TempQueue" + UUID.randomUUID()), true);
+        super(session.getTemporaryQueueExchangeName(), new AMQShortString(session.createTemporaryQueueName()), true);
         _session = session;
     }
 

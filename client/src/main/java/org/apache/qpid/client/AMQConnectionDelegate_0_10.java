@@ -605,6 +605,14 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         return _qpidConnection.isMessageCompressionSupported();
     }
 
+    @Override
+    public String getTemporaryQueuePrefix()
+    {
+        final Map<String, Object> serverProperties = _qpidConnection.getServerProperties();
+        String temporaryQueuePrefix = (String) serverProperties.get(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX);
+        return (temporaryQueuePrefix == null ? "" : temporaryQueuePrefix);
+    }
+
     private class RedirectConnectionException extends ConnectionException
     {
         private final String _host;

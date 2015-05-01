@@ -113,9 +113,31 @@ public class ServerConnectionDelegate extends ServerDelegate
         map.put(ServerPropertyNames.VERSION, QpidProperties.getReleaseVersion());
         map.put(ServerPropertyNames.QPID_BUILD, QpidProperties.getBuildVersion());
         map.put(ServerPropertyNames.QPID_INSTANCE_NAME, broker.getName());
+        map.put(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX, getTemporaryQueuePrefix(broker));
         map.put(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED, String.valueOf(broker.isMessageCompressionEnabled()));
 
         return map;
+    }
+
+    private static String getTemporaryQueuePrefix(final Broker<?> broker)
+    {
+        String prefix = "";
+        if (broker.getContextKeys(false).contains(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX))
+        {
+            prefix = broker.getContextValue(String.class, ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX);
+        }
+        if (prefix != null)
+        {
+            if (prefix.length() > 0 && !prefix.endsWith("/"))
+            {
+                prefix += "/";
+            }
+        }
+        else
+        {
+            prefix = "";
+        }
+        return prefix;
     }
 
     public ServerSession getSession(Connection conn, SessionAttach atc)

@@ -766,7 +766,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         if (amqd.getAMQQueueName() == null)
         {
             // generate a name for this queue
-            queueName = new AMQShortString("TempQueue" + UUID.randomUUID());
+            queueName = new AMQShortString(createTemporaryQueueName());
             amqd.setQueueName(queueName);
         }
         else

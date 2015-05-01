@@ -1688,4 +1688,8 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
     }
 
 
+    public String getTemporaryQueuePrefix()
+    {
+        return _delegate.getTemporaryQueuePrefix();
+    }
 }

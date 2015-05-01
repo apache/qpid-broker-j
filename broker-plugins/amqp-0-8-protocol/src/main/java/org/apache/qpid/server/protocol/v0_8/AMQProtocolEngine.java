@@ -509,6 +509,8 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
                     QpidProperties.getBuildVersion());
             serverProperties.setString(ServerPropertyNames.QPID_INSTANCE_NAME,
                     _broker.getName());
+            serverProperties.setString(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX,
+                    getTemporaryQueuePrefix());
             serverProperties.setString(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE,
                     String.valueOf(_closeWhenNoRoute));
             serverProperties.setString(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED,
@@ -535,8 +537,26 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
         }
     }
 
-
-
+    private String getTemporaryQueuePrefix()
+    {
+        String prefix = "";
+        if (_broker.getContextKeys(false).contains(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX))
+        {
+            prefix = _broker.getContextValue(String.class, ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX);
+        }
+        if (prefix != null)
+        {
+            if (prefix.length() > 0 && !prefix.endsWith("/"))
+            {
+                prefix += "/";
+            }
+        }
+        else
+        {
+            prefix = "";
+        }
+        return prefix;
+    }
 
     public synchronized void writeFrame(AMQDataBlock frame)
     {
