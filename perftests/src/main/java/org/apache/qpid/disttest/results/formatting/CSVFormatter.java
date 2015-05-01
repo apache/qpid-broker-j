@@ -70,8 +70,7 @@ public class CSVFormatter
             String attributeValueFormatted = attribute.format(attributeValue);
             attributeValues.add(attributeValueFormatted);
         }
-
-        String row = Joiner.on(',').join(attributeValues.toArray());
+        String row = Joiner.on(',').useForNull("").join(attributeValues.toArray());
         return row + "\n";
     }
 
@@ -84,7 +83,7 @@ public class CSVFormatter
             displayNames.add(attribute.getDisplayName());
         }
 
-        String header = Joiner.on(',').join(displayNames.toArray());
+        String header = Joiner.on(',').useForNull("").join(displayNames.toArray());
         return header + "\n";
     }
 

@@ -243,7 +243,7 @@ public class FileGroupDatabase implements GroupDatabase
         for (String group : _groupToUserMap.keySet())
         {
             Set<String> users = _groupToUserMap.get(group);
-            final String userList = Joiner.on(",").join(users);
+            final String userList = Joiner.on(",").useForNull("").join(users);
 
             propertiesFile.setProperty(group + ".users", userList);
         }
