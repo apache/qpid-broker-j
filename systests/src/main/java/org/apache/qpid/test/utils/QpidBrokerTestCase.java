@@ -1286,6 +1286,8 @@ public class QpidBrokerTestCase extends QpidTestCase
             copySystemProperty("test.port.alt.ssl", jvmOptions);
             copySystemProperty("test.amqp_port_protocols", jvmOptions);
 
+            copySystemProperty("qpid.globalAddressDomains", jvmOptions);
+
             copySystemProperty("virtualhostnode.type", jvmOptions);
             copySystemProperty("virtualhostnode.context.blueprint", jvmOptions);
         }

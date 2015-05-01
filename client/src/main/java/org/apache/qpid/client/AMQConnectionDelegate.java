@@ -84,5 +84,7 @@ public interface AMQConnectionDelegate
 
     boolean isMessageCompressionSupported();
 
-    String getTemporaryQueuePrefix();
+    boolean isVirtualHostPropertiesSupported();
+
+
 }

@@ -29,8 +29,15 @@ import javax.jms.TemporaryQueue;
 
 public class TemporaryQueuePrefixTest extends QpidBrokerTestCase
 {
+    @Override
+    public void setUp() throws Exception
+    {
+        // deliberately don't call setup
+    }
+
     public void testNoPrefixSet() throws Exception
     {
+        super.setUp();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TemporaryQueue queue = session.createTemporaryQueue();
@@ -41,8 +48,9 @@ public class TemporaryQueuePrefixTest extends QpidBrokerTestCase
 
     public void testEmptyPrefix() throws Exception
     {
-        String prefix = "";
-        setTestSystemProperty(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX, prefix);
+        String prefix = "[]";
+        setTestSystemProperty("qpid.globalAddressDomains", prefix);
+        super.setUp();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TemporaryQueue queue = session.createTemporaryQueue();
@@ -51,23 +59,26 @@ public class TemporaryQueuePrefixTest extends QpidBrokerTestCase
         connection.close();
     }
 
-    public void testPrefixWithSlash() throws Exception
+    public void testTwoDomains() throws Exception
     {
-        String prefix = "testPrefix/";
-        setTestSystemProperty(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX, prefix);
+        final String primaryPrefix = "/testPrefix";
+        String prefix = "[ \\\"" + primaryPrefix + "\\\", \\\"/foo\\\" ]";
+        setTestSystemProperty("qpid.globalAddressDomains", prefix);
+        super.setUp();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TemporaryQueue queue = session.createTemporaryQueue();
 
         assertFalse(queue.getQueueName() + " has superfluous slash in prefix.", queue.getQueueName().startsWith(prefix + "/"));
-        assertTrue(queue.getQueueName() + " does not start with expected prefix \"" + prefix + "\".", queue.getQueueName().startsWith(prefix));
+        assertTrue(queue.getQueueName() + " does not start with expected prefix \"" + primaryPrefix + "\".", queue.getQueueName().startsWith(primaryPrefix));
         connection.close();
     }
 
     public void testPrefix() throws Exception
     {
-        String prefix = "testPrefix";
-        setTestSystemProperty(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX, prefix);
+        String prefix = "/testPrefix";
+        setTestSystemProperty("qpid.globalAddressDomains", prefix);
+        super.setUp();
         Connection connection = getConnection();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         TemporaryQueue queue = session.createTemporaryQueue();

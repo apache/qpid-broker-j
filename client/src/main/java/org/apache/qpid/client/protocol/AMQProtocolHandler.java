@@ -961,4 +961,9 @@ public class AMQProtocolHandler implements ProtocolEngine
         _decoder = new ClientDecoder(_protocolSession.getMethodProcessor());
         _protocolSession.init(settings);
     }
+
+    public long getDefaultTimeout()
+    {
+        return DEFAULT_SYNC_TIMEOUT;
+    }
 }

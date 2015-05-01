@@ -49,11 +49,14 @@ import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.plugin.ConfigurationSecretEncrypterFactory;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
+import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
 public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> implements Broker<BrokerAdapter>, StatisticsGatherer
@@ -100,6 +103,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @ManagedAttributeField
     private String _confidentialConfigurationEncryptionProvider;
 
+    private final boolean _virtualHostPropertiesNodeEnabled;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -119,6 +123,11 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             authManager.addUser(BrokerOptions.MANAGEMENT_MODE_USER_NAME, _parent.getManagementModePassword());
             _managementModeAuthenticationProvider = authManager;
         }
+
+        QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
+        final Set<String> systemNodeCreatorTypes = qpidServiceLoader.getInstancesByType(SystemNodeCreator.class).keySet();
+        _virtualHostPropertiesNodeEnabled = systemNodeCreatorTypes.contains(VirtualHostPropertiesNodeCreator.TYPE);
+
         _messagesDelivered = new StatisticsCounter("messages-delivered");
         _dataDelivered = new StatisticsCounter("bytes-delivered");
         _messagesReceived = new StatisticsCounter("messages-received");
@@ -776,7 +785,11 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
     }
 
-
+    @Override
+    public boolean isVirtualHostPropertiesNodeEnabled()
+    {
+        return _virtualHostPropertiesNodeEnabled;
+    }
 
     public AuthenticationProvider<?> getManagementModeAuthenticationProvider()
     {

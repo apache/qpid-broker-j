@@ -24,6 +24,7 @@ import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 
 import javax.jms.Connection;
 import javax.jms.MessageConsumer;
@@ -37,8 +38,15 @@ public class ChannelLoggingTest extends AbstractTestLogging
     private static final String CHANNEL_CLOSE_FORCED_MESSAGE_PATTERN = "CHN-1003 : Close : \\d* - .*";
     private static final String CHANNEL_PREFIX = "CHN-";
 
-    // No explicit startup configuration is required for this test
-    // so no setUp() method
+    @Override
+    public void setUp() throws Exception
+    {
+
+        // disable the virtualhostPropertiesNode as it messes with the logging since it causes the client to
+        // create a session and then it sends a message
+        setTestSystemProperty("qpid.plugin.disabled:systemnodecreator."+ VirtualHostPropertiesNodeCreator.TYPE, "true");
+        super.setUp();
+    }
 
     /**
      * Description:

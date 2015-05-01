@@ -81,6 +81,7 @@ public class Connection extends ConnectionInvoker
     private FrameSizeObserver _frameSizeObserver;
     private boolean _messageCompressionSupported;
     private final AtomicBoolean _redirecting = new AtomicBoolean();
+    private boolean _virtualHostPropertiesSupported;
 
     public enum State { NEW, CLOSED, OPENING, OPEN, CLOSING, CLOSE_RCVD, RESUMING }
 
@@ -701,6 +702,8 @@ public class Connection extends ConnectionInvoker
     {
         _serverProperties = serverProperties == null ? Collections.<String, Object>emptyMap() : serverProperties;
         _messageCompressionSupported = Boolean.parseBoolean(String.valueOf(_serverProperties.get(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED)));
+        _virtualHostPropertiesSupported = Boolean.parseBoolean(String.valueOf(_serverProperties.get(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED)));
+
     }
 
     public Map<String, Object> getServerProperties()
@@ -858,6 +861,11 @@ public class Connection extends ConnectionInvoker
     public boolean isMessageCompressionSupported()
     {
         return _messageCompressionSupported;
+    }
+
+    public boolean isVirtualHostPropertiesSupported()
+    {
+        return _virtualHostPropertiesSupported;
     }
 
     public boolean isRedirecting()

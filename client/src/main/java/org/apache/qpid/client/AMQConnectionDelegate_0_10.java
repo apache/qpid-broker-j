@@ -606,11 +606,9 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
     }
 
     @Override
-    public String getTemporaryQueuePrefix()
+    public boolean isVirtualHostPropertiesSupported()
     {
-        final Map<String, Object> serverProperties = _qpidConnection.getServerProperties();
-        String temporaryQueuePrefix = (String) serverProperties.get(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX);
-        return (temporaryQueuePrefix == null ? "" : temporaryQueuePrefix);
+        return _qpidConnection.isVirtualHostPropertiesSupported();
     }
 
     private class RedirectConnectionException extends ConnectionException

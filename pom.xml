@@ -251,6 +251,7 @@
             <virtualhostnode.type>${profile.virtualhostnode.type}</virtualhostnode.type>
             <virtualhostnode.context.blueprint>${profile.virtualhostnode.context.blueprint}</virtualhostnode.context.blueprint>
             <broker.clean.between.tests>${profile.broker.clean.between.tests}</broker.clean.between.tests>
+            <qpid.globalAddressDomains>[]</qpid.globalAddressDomains>
 
             <!-- This must be a child of qpid home currently due to the horrible mechanics of QBTC  -->
             <test.output>${qpid.home.qbtc.output}</test.output>
@@ -409,7 +410,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -428,7 +429,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -447,7 +448,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>false</profile.broker.persistent>
         <profile.virtualhostnode.type>Memory</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -466,7 +467,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -485,7 +486,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -504,7 +505,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>BDB</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -523,7 +524,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -542,7 +543,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -561,7 +562,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -580,7 +581,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.test_receive_timeout>2000</profile.test_receive_timeout>
       </properties>
     </profile>
@@ -600,7 +601,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.test_receive_timeout>2000</profile.test_receive_timeout>
       </properties>
     </profile>
@@ -620,7 +621,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>DERBY</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"ProvidedStore","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
         <profile.test_receive_timeout>2000</profile.test_receive_timeout>
       </properties>
     </profile>
@@ -645,7 +646,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:QPID_WORK}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:QPID_WORK}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -664,7 +665,7 @@
               <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
               <profile.broker.persistent>true</profile.broker.persistent>
               <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
-              <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{QPID_WORK}/${dollar.sign}{this:name}/derby"}</profile.virtualhostnode.context.blueprint>
+              <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:QPID_WORK}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
           </properties>
       </profile>
 

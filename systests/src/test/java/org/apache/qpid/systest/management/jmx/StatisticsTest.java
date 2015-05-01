@@ -31,6 +31,7 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.management.common.mbeans.ManagedBroker;
 import org.apache.qpid.management.common.mbeans.ManagedConnection;
 import org.apache.qpid.management.common.mbeans.ServerInformation;
+import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.test.utils.JMXTestUtils;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -53,6 +54,9 @@ public class StatisticsTest extends QpidBrokerTestCase
     @Override
     public void setUp() throws Exception
     {
+        // disable the virtualhostPropertiesNode as it messes with the statistics counts since causes the client to
+        // create a session and then it sends a message
+        setTestSystemProperty("qpid.plugin.disabled:systemnodecreator."+ VirtualHostPropertiesNodeCreator.TYPE, "true");
         createTestVirtualHostNode(0, TEST_VIRTUALHOST1);
         createTestVirtualHostNode(0, TEST_VIRTUALHOST2);
 

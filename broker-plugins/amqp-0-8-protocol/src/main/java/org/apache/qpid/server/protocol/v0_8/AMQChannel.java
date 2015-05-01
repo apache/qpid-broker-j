@@ -265,7 +265,7 @@ public class AMQChannel
 
     }
 
-    private boolean performGet(final AMQQueue queue,
+    private boolean performGet(final MessageSource queue,
                                final boolean acks)
             throws MessageSource.ExistingConsumerPreventsExclusive,
                    MessageSource.ExistingExclusiveConsumer, MessageSource.ConsumerAccessRefused
@@ -1463,11 +1463,11 @@ public class AMQChannel
     {
 
         private final FlowCreditManager _singleMessageCredit;
-        private final AMQQueue _queue;
+        private final MessageSource _queue;
         private boolean _deliveredMessage;
 
         public GetDeliveryMethod(final FlowCreditManager singleMessageCredit,
-                                 final AMQQueue queue)
+                                 final MessageSource queue)
         {
             _singleMessageCredit = singleMessageCredit;
             _queue = queue;
@@ -1478,11 +1478,12 @@ public class AMQChannel
                                     final InstanceProperties props, final long deliveryTag)
         {
             _singleMessageCredit.useCreditForMessage(message.getSize());
+            int queueSize = _queue instanceof AMQQueue ? ((AMQQueue)_queue).getQueueDepthMessages() : 0;
             long size = _connection.getProtocolOutputConverter().writeGetOk(message,
                                                                             props,
                                                                             AMQChannel.this.getChannelId(),
                                                                             deliveryTag,
-                                                                            _queue.getQueueDepthMessages());
+                                                                            queueSize);
 
             _deliveredMessage = true;
             return size;
@@ -2074,7 +2075,7 @@ public class AMQChannel
         sync();
         String queueName = queue == null ? null : queue.asString();
 
-        MessageSource queue1 = queueName == null ? getDefaultQueue() : vHost.getQueue(queueName);
+        MessageSource queue1 = queueName == null ? getDefaultQueue() : vHost.getMessageSource(queueName);
         final Collection<MessageSource> sources = new HashSet<>();
         if (queue1 != null)
         {
@@ -2197,7 +2198,7 @@ public class AMQChannel
 
         VirtualHostImpl vHost = _connection.getVirtualHost();
         sync();
-        AMQQueue queue = queueName == null ? getDefaultQueue() : vHost.getQueue(queueName.toString());
+        MessageSource queue = queueName == null ? getDefaultQueue() : vHost.getMessageSource(queueName.toString());
         if (queue == null)
         {
             _logger.info("No queue for '" + queueName + "'");
@@ -2657,7 +2658,7 @@ public class AMQChannel
                 }
                 else
                 {
-                    AMQQueue queue = virtualHost.getQueue(queueName.toString());
+                    MessageSource queue = virtualHost.getMessageSource(queueName.toString());
                     if (queue == null)
                     {
                         replyCode = ExchangeBoundOkBody.QUEUE_NOT_FOUND;

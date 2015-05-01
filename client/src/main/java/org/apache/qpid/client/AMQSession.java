@@ -327,8 +327,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     protected AMQSession(AMQConnection con, int channelId, boolean transacted, int acknowledgeMode,
                MessageFactoryRegistry messageFactoryRegistry, int defaultPrefetchHighMark, int defaultPrefetchLowMark)
     {
-        _useAMQPEncodedMapMessage = con == null ? true : !con.isUseLegacyMapMessageFormat();
-        _useAMQPEncodedStreamMessage = con == null ? false : !con.isUseLegacyStreamMessageFormat();
+        _useAMQPEncodedMapMessage = con == null || !con.isUseLegacyMapMessageFormat();
+        _useAMQPEncodedStreamMessage = con != null && !con.isUseLegacyStreamMessageFormat();
         _strictAMQP = Boolean.parseBoolean(System.getProperties().getProperty(STRICT_AMQP, STRICT_AMQP_DEFAULT));
         _strictAMQPFATAL =
                 Boolean.parseBoolean(System.getProperties().getProperty(STRICT_AMQP_FATAL, STRICT_AMQP_FATAL_DEFAULT));
@@ -443,7 +443,12 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     AMQSession(AMQConnection con, int channelId, boolean transacted, int acknowledgeMode, int defaultPrefetchHigh,
                int defaultPrefetchLow)
     {
-        this(con, channelId, transacted, acknowledgeMode, MessageFactoryRegistry.newDefaultRegistry(), defaultPrefetchHigh,
+        this(con,
+             channelId,
+             transacted,
+             acknowledgeMode,
+             MessageFactoryRegistry.newDefaultRegistry(),
+             defaultPrefetchHigh,
              defaultPrefetchLow);
     }
 
@@ -3134,7 +3139,9 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     private void resubscribeProducers() throws AMQException
     {
         ArrayList producers = new ArrayList(_producers.values());
-        _logger.debug(MessageFormat.format("Resubscribing producers = {0} producers.size={1}", producers, producers.size())); // FIXME: removeKey
+        _logger.debug(MessageFormat.format("Resubscribing producers = {0} producers.size={1}",
+                                           producers,
+                                           producers.size())); // FIXME: removeKey
         for (Iterator it = producers.iterator(); it.hasNext();)
         {
             P producer = (P) it.next();

@@ -76,6 +76,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
     private boolean _addrSyntaxSupported;
     private boolean _confirmedPublishSupported;
     private boolean _confirmedPublishNonTransactionalSupported;
+    private boolean _virtualhostPropertiesSupported;
 
     public void closeConnection(long timeout) throws JMSException, AMQException
     {
@@ -163,8 +164,15 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
                 _conn.getFailoverPolicy().attainedConnection();
                 _conn.setConnected(true);
                 _conn.logConnected(network.getLocalAddress(), network.getRemoteAddress());
-                _messageCompressionSupported = checkMessageCompressionSupported();
-                _confirmedPublishSupported = checkConfirmedPublishSupported();
+
+                _messageCompressionSupported =
+                        checkBooleanConnectionStartProperty(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED);
+
+                _virtualhostPropertiesSupported =
+                        checkBooleanConnectionStartProperty(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED);
+
+                _confirmedPublishSupported =
+                        checkBooleanConnectionStartProperty(ConnectionStartProperties.QPID_CONFIRMED_PUBLISH_SUPPORTED);
                 _confirmedPublishNonTransactionalSupported = checkConfirmedPublishNonTransactionalSupported();
                 return null;
             }
@@ -319,7 +327,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
             throws AMQException, FailoverException
     {
         ChannelOpenBody channelOpenBody = _conn.getProtocolHandler().getMethodRegistry().createChannelOpenBody(null);
-        _conn.getProtocolHandler().syncWrite(channelOpenBody.generateFrame(channelId),  ChannelOpenOkBody.class);
+        _conn.getProtocolHandler().syncWrite(channelOpenBody.generateFrame(channelId), ChannelOpenOkBody.class);
 
         if (transacted)
         {
@@ -486,20 +494,11 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
         return connectedToQpid;
     }
 
-    private boolean checkMessageCompressionSupported()
+    private boolean checkBooleanConnectionStartProperty(final String property)
     {
         FieldTable serverProperties = _conn.getProtocolHandler().getProtocolSession().getConnectionStartServerProperties();
         return serverProperties != null
-           && Boolean.parseBoolean(serverProperties.getString(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED));
-
-    }
-
-    private boolean checkConfirmedPublishSupported()
-    {
-        FieldTable serverProperties = _conn.getProtocolHandler().getProtocolSession().getConnectionStartServerProperties();
-        return serverProperties != null
-               && Boolean.parseBoolean(serverProperties.getString(ConnectionStartProperties.QPID_CONFIRMED_PUBLISH_SUPPORTED));
-
+           && Boolean.parseBoolean(serverProperties.getString(property));
     }
 
     public boolean isMessageCompressionSupported()
@@ -508,12 +507,11 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
     }
 
     @Override
-    public String getTemporaryQueuePrefix()
+    public boolean isVirtualHostPropertiesSupported()
     {
-        FieldTable serverProperties = _conn.getProtocolHandler().getProtocolSession().getConnectionStartServerProperties();
-        String temporaryQueuePrefix = serverProperties.getString(ServerPropertyNames.QPID_TEMPORARY_QUEUE_PREFIX);
-        return (temporaryQueuePrefix == null ? "" : temporaryQueuePrefix);
+        return _virtualhostPropertiesSupported;
     }
+
 
     public boolean isAddrSyntaxSupported()
     {

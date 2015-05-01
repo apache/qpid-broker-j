@@ -37,6 +37,7 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Session;
+import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 
 public class ConnectionRestTest extends QpidRestTestCase
 {
@@ -53,6 +54,10 @@ public class ConnectionRestTest extends QpidRestTestCase
 
     public void setUp() throws Exception
     {
+        // disable the virtualhostPropertiesNode as it messes with the statistics counts since causes the client to
+        // create a session and then it sends a message
+        setTestSystemProperty("qpid.plugin.disabled:systemnodecreator."+ VirtualHostPropertiesNodeCreator.TYPE, "true");
+
         super.setUp();
 
         _connection = getConnection();

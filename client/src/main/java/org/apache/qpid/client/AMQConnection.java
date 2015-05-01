@@ -26,9 +26,13 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -41,6 +45,8 @@ import javax.jms.Destination;
 import javax.jms.ExceptionListener;
 import javax.jms.IllegalStateException;
 import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.QueueConnection;
 import javax.jms.QueueSession;
@@ -78,6 +84,7 @@ import org.apache.qpid.jms.Connection;
 import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jms.FailoverPolicy;
+import org.apache.qpid.jms.Session;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.url.URLSyntaxException;
 
@@ -211,6 +218,9 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
 
     private boolean _compressMessages;
     private int _messageCompressionThresholdSize;
+
+    private final Map<String, String> _virtualHostProperties = new HashMap<>();
+    private volatile boolean _virtualHostPropertiesPopulated;
 
     static
     {
@@ -735,7 +745,44 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
         synchronized (_sessionCreationLock)
         {
             checkNotClosed();
+
+            if(_delegate.isVirtualHostPropertiesSupported() && !_virtualHostPropertiesPopulated)
+            {
+                retrieveVirtualHostPropertiesIfNecessary();
+            }
             return _delegate.createSession(transacted, acknowledgeMode, prefetchHigh, prefetchLow);
+        }
+    }
+
+    private void retrieveVirtualHostPropertiesIfNecessary() throws JMSException
+    {
+        synchronized (_virtualHostProperties)
+        {
+            if(!_virtualHostPropertiesPopulated)
+            {
+                final Session session = _delegate.createSession(false, AMQSession.NO_ACKNOWLEDGE, 1,1);
+                final MessageConsumer consumer = session.createConsumer(session.createQueue(
+                        "ADDR: $virtualhostProperties; {assert: never, create: never, node:{ type: queue }}"));
+                try
+                {
+                    ((AMQSession)session).start();
+                }
+                catch (AMQException e)
+                {
+                    throw JMSExceptionHelper.chainJMSException(new JMSException(
+                            "Failed to retrieve virtual host properties"), e);
+                }
+                Message propertiesMessage = consumer.receive(getProtocolHandler().getDefaultTimeout());
+                if(propertiesMessage != null)
+                {
+                    for(String property : Collections.list((Enumeration<String>) propertiesMessage.getPropertyNames()))
+                    {
+                        _virtualHostProperties.put(property, propertiesMessage.getStringProperty(property));
+                    }
+                }
+                session.close();
+                _virtualHostPropertiesPopulated = true;
+            }
         }
     }
 
@@ -1690,6 +1737,21 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
 
     public String getTemporaryQueuePrefix()
     {
-        return _delegate.getTemporaryQueuePrefix();
+        if(_delegate.isVirtualHostPropertiesSupported())
+        {
+            final String prefix = getVirtualHostProperty("virtualHost.temporaryQueuePrefix");
+            return prefix == null ? "" : prefix;
+        }
+        else
+        {
+            return "";
+        }
+
     }
+
+    String getVirtualHostProperty(final String propertyName)
+    {
+        return _virtualHostProperties.get(propertyName);
+    }
+
 }

@@ -1164,7 +1164,8 @@ public class ServerSessionDelegate extends SessionDelegate
         ExchangeBoundResult result = new ExchangeBoundResult();
         VirtualHostImpl virtualHost = getVirtualHost(session);
         ExchangeImpl exchange;
-        AMQQueue queue;
+        MessageSource source;
+        AMQQueue<?> queue;
         boolean isDefaultExchange;
         if(!nameNullOrEmpty(method.getExchange()))
         {
@@ -1221,90 +1222,96 @@ public class ServerSessionDelegate extends SessionDelegate
         }
         else if(method.hasQueue())
         {
+            source = getMessageSource(session, method.getQueue());
 
-            queue = getQueue(session, method.getQueue());
-            if(queue == null)
+            if(source == null)
             {
                 result.setQueueNotFound(true);
             }
-
-
-            if(exchange != null && queue != null)
+            if(source == null || source instanceof AMQQueue)
             {
+                queue = (AMQQueue<?>) source;
 
-                boolean queueMatched = exchange.isBound(queue);
-
-                result.setQueueNotMatched(!queueMatched);
-
-
-                if(method.hasBindingKey())
+                if (exchange != null && queue != null)
                 {
 
-                    if(queueMatched)
+                    boolean queueMatched = exchange.isBound(queue);
+
+                    result.setQueueNotMatched(!queueMatched);
+
+
+                    if (method.hasBindingKey())
                     {
-                        final boolean keyMatched = exchange.isBound(method.getBindingKey(), queue);
-                        result.setKeyNotMatched(!keyMatched);
-                        if(method.hasArguments())
+
+                        if (queueMatched)
                         {
-                            if(keyMatched)
+                            final boolean keyMatched = exchange.isBound(method.getBindingKey(), queue);
+                            result.setKeyNotMatched(!keyMatched);
+                            if (method.hasArguments())
                             {
-                                result.setArgsNotMatched(!exchange.isBound(method.getBindingKey(), method.getArguments(), queue));
-                            }
-                            else
-                            {
-                                result.setArgsNotMatched(!exchange.isBound(method.getArguments(), queue));
+                                if (keyMatched)
+                                {
+                                    result.setArgsNotMatched(!exchange.isBound(method.getBindingKey(),
+                                                                               method.getArguments(),
+                                                                               queue));
+                                }
+                                else
+                                {
+                                    result.setArgsNotMatched(!exchange.isBound(method.getArguments(), queue));
+                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        boolean keyMatched = exchange.isBound(method.getBindingKey());
-                        result.setKeyNotMatched(!keyMatched);
-                        if(method.hasArguments())
+                        else
                         {
-                            if(keyMatched)
+                            boolean keyMatched = exchange.isBound(method.getBindingKey());
+                            result.setKeyNotMatched(!keyMatched);
+                            if (method.hasArguments())
                             {
-                                result.setArgsNotMatched(!exchange.isBound(method.getBindingKey(), method.getArguments()));
+                                if (keyMatched)
+                                {
+                                    result.setArgsNotMatched(!exchange.isBound(method.getBindingKey(),
+                                                                               method.getArguments()));
+                                }
+                                else
+                                {
+                                    result.setArgsNotMatched(!exchange.isBound(method.getArguments()));
+                                }
                             }
-                            else
-                            {
-                                result.setArgsNotMatched(!exchange.isBound(method.getArguments()));
-                            }
+                        }
+
+                    }
+                    else if (method.hasArguments())
+                    {
+                        if (queueMatched)
+                        {
+                            result.setArgsNotMatched(!exchange.isBound(method.getArguments(), queue));
+                        }
+                        else
+                        {
+                            result.setArgsNotMatched(!exchange.isBound(method.getArguments()));
                         }
                     }
 
                 }
-                else if (method.hasArguments())
+                else if (exchange != null && method.hasBindingKey())
                 {
-                    if(queueMatched)
+                    final boolean keyMatched = exchange.isBound(method.getBindingKey());
+                    result.setKeyNotMatched(!keyMatched);
+
+                    if (method.hasArguments())
                     {
-                        result.setArgsNotMatched(!exchange.isBound(method.getArguments(), queue));
+                        if (keyMatched)
+                        {
+                            result.setArgsNotMatched(!exchange.isBound(method.getBindingKey(), method.getArguments()));
+                        }
+                        else
+                        {
+                            result.setArgsNotMatched(!exchange.isBound(method.getArguments()));
+                        }
                     }
-                    else
-                    {
-                        result.setArgsNotMatched(!exchange.isBound(method.getArguments()));
-                    }
+
+
                 }
-
-            }
-            else if(exchange != null && method.hasBindingKey())
-            {
-                final boolean keyMatched = exchange.isBound(method.getBindingKey());
-                result.setKeyNotMatched(!keyMatched);
-
-                if(method.hasArguments())
-                {
-                    if(keyMatched)
-                    {
-                        result.setArgsNotMatched(!exchange.isBound(method.getBindingKey(), method.getArguments()));
-                    }
-                    else
-                    {
-                        result.setArgsNotMatched(!exchange.isBound(method.getArguments()));
-                    }
-                }
-
-
             }
 
         }
@@ -1335,6 +1342,11 @@ public class ServerSessionDelegate extends SessionDelegate
         session.executionResult((int) method.getId(), result);
 
 
+    }
+
+    private MessageSource getMessageSource(Session session, String queue)
+    {
+        return getVirtualHost(session).getMessageSource(queue);
     }
 
     private AMQQueue getQueue(Session session, String queue)
