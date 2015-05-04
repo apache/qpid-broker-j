@@ -37,7 +37,7 @@ define(["dojo/_base/lang",
             {
                 if(source.hasOwnProperty(fieldName))
                 {
-                    if (excludes && excludes.indexOf(fieldName) != -1)
+                    if (excludes && array.indexOf(excludes,fieldName) != -1)
                     {
                         continue;
                     }
@@ -72,26 +72,26 @@ define(["dojo/_base/lang",
     // request: Object?
     //        request object can have the same fields as dojo.request.xhr options and  additional 'url' field:
     //          data: String|Object|FormData?
-    //		        Data to transfer. This is ignored for GET and DELETE requests.
+    //                Data to transfer. This is ignored for GET and DELETE requests.
     //          headers: Object?
     //              Headers to use for the request.
     //          user: String?
-    //		        Username to use during the request.
+    //                Username to use during the request.
     //          password: String?
-    //		        Password to use during the request.
+    //                Password to use during the request.
     //          withCredentials: Boolean?
-    //		        For cross-site requests, whether to send credentials or not.
+    //                For cross-site requests, whether to send credentials or not.
     //          query: Object?
     //              the object send defining request query parameters
     //          handleAs: String
-    //		        Indicates how the response will be handled.
+    //                Indicates how the response will be handled.
     //          url: String?
     //              relative URL to broker REST API
     // successAction: function
-    //		Optional callback function to execute on successful response.
+    //        Optional callback function to execute on successful response.
     //      It can be specified if function does not need to return promise
     // failureAction: function
-    //		Optional callback function to execute on erroneous response.
+    //        Optional callback function to execute on erroneous response.
     //      It can be specified if function does not need to return promise
     //
     // returns: promise
@@ -183,10 +183,10 @@ define(["dojo/_base/lang",
     //   parameters: Object?
     //               is optional JSON to pass additional request parameters
     //   successAction: function
-    //		Optional callback function to execute on successful response.
+    //        Optional callback function to execute on successful response.
     //      It can be specified if function does not need to return promise
     //   failureAction: function
-    //		Optional callback function to execute on erroneous response.
+    //        Optional callback function to execute on erroneous response.
     //      It can be specified if function does not need to return promise
     //
     //   returns: promise
@@ -212,10 +212,10 @@ define(["dojo/_base/lang",
     //   data; Object?
     //              Object structure
     //   successAction: function
-    //		Optional callback function to execute on successful response.
+    //        Optional callback function to execute on successful response.
     //      It can be specified if function does not need to return promise
     //   failureAction: function
-    //		Optional callback function to execute on erroneous response.
+    //        Optional callback function to execute on erroneous response.
     //      It can be specified if function does not need to return promise
     //
     //   returns: promise
@@ -236,10 +236,10 @@ define(["dojo/_base/lang",
     //   data; Object?
     //              New attributes
     //   successAction: function
-    //		Optional callback function to execute on successful response.
+    //        Optional callback function to execute on successful response.
     //      It can be specified if function does not need to return promise
     //   failureAction: function
-    //		Optional callback function to execute on erroneous response.
+    //        Optional callback function to execute on erroneous response.
     //      It can be specified if function does not need to return promise
     //
     //   returns: promise
@@ -258,10 +258,10 @@ define(["dojo/_base/lang",
     //   parameters: Object?
     //               is optional JSON object to pass additional request parameters
     //   successAction: function
-    //		Optional callback function to execute on successful response.
+    //        Optional callback function to execute on successful response.
     //      It can be specified if function does not need to return promise
     //   failureAction: function
-    //		Optional callback function to execute on erroneous response.
+    //        Optional callback function to execute on erroneous response.
     //      It can be specified if function does not need to return promise
     //
     //   returns: promise

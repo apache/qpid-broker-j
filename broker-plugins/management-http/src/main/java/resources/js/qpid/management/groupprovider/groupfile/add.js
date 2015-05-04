@@ -19,7 +19,7 @@
  *
  */
 define(["dojo/dom","dojo/query", "dojo/_base/array", "dijit/registry","qpid/common/util",
-        "dojo/text!groupprovider/groupfile/add.html",],
+        "dojo/text!groupprovider/groupfile/add.html"],
     function (dom, query, array, registry, util, template)
     {
 
