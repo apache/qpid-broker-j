@@ -22,7 +22,6 @@ define(["dojo/dom",
         "dijit/registry",
         "dijit/layout/ContentPane",
         "dijit/form/CheckBox",
-        "qpid/management/UserPreferences",
         "dojox/html/entities",
         "qpid/management/Broker",
         "qpid/management/VirtualHost",
@@ -42,7 +41,7 @@ define(["dojo/dom",
         "qpid/management/VirtualHostNode",
         "dojo/ready",
         "dojo/domReady!"],
-       function (dom, registry, ContentPane, CheckBox, UserPreferences, entities, Broker, VirtualHost, Exchange, Queue, Connection, AuthProvider,
+       function (dom, registry, ContentPane, CheckBox, entities, Broker, VirtualHost, Exchange, Queue, Connection, AuthProvider,
                  GroupProvider, Group, KeyStore, TrustStore, AccessControlProvider, Port, Plugin, LogViewer, PreferencesProvider, VirtualHostNode, ready) {
            var controller = {};
 
@@ -104,10 +103,11 @@ define(["dojo/dom",
                                                            }
                        });
                        this.tabContainer.addChild( contentPane );
+                       var userPreferences = this.management.userPreferences;
                        if (objType != "broker")
                        {
                          var preferencesCheckBox = new dijit.form.CheckBox({
-                           checked: UserPreferences.isTabStored(obj.tabData),
+                           checked: userPreferences.isTabStored(obj.tabData),
                            title: "If checked the tab is saved in user preferences and restored on next login"
                          });
                          var tabs = this.tabContainer.tablist.getChildren();
@@ -115,11 +115,11 @@ define(["dojo/dom",
                          preferencesCheckBox.on("change", function(value){
                            if (value)
                            {
-                             UserPreferences.appendTab(obj.tabData);
+                             userPreferences.appendTab(obj.tabData);
                            }
                            else
                            {
-                             UserPreferences.removeTab(obj.tabData);
+                             userPreferences.removeTab(obj.tabData);
                            }
                          });
                        }
@@ -135,6 +135,10 @@ define(["dojo/dom",
 
            };
 
+            controller.init=function(management)
+            {
+                controller.management = management;
+            }
 
            return controller;
        });

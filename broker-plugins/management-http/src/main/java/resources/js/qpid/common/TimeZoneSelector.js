@@ -29,14 +29,13 @@ define([
         "dijit/_WidgetBase",
         "dijit/registry",
         "dojo/text!common/TimeZoneSelector.html",
-        "qpid/common/timezone",
         "dijit/form/ComboBox",
         "dijit/form/FilteringSelect",
         "dijit/form/CheckBox",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-function (declare, array, domConstruct, parser, query, domStyle, Memory, _WidgetBase, registry, template, timezone) {
+function (declare, array, domConstruct, parser, query, domStyle, Memory, _WidgetBase, registry, template) {
 
   var preferencesRegions = ["Africa","America","Antarctica","Arctic","Asia","Atlantic","Australia","Europe","Indian","Pacific"];
 
@@ -61,6 +60,7 @@ function (declare, array, domConstruct, parser, query, domStyle, Memory, _Widget
     constructor: function(args)
     {
       this._args = args;
+      this.timezones = args.timezones;
     },
 
     buildRendering: function(){
@@ -79,18 +79,18 @@ function (declare, array, domConstruct, parser, query, domStyle, Memory, _Widget
           domStyle.set(entry, self._args.labelStyle)
         });
       }
-      var supportedTimeZones = timezone.getAllTimeZones();
+      var supportedTimeZones = this.timezones;
 
       this._utcSelector = registry.byNode(query(".utcSelector", this.domNode)[0]);
       this._citySelector = registry.byNode(query(".timezoneCity", this.domNode)[0]);
       this._citySelector.set("searchAttr", "city");
       this._citySelector.set("query", {region: /.*/});
       this._citySelector.set("labelAttr", "city");
-      this._citySelector.set("store", new Memory({ data: supportedTimeZones }));
-      if (this._args.name)
+      if (this.timezones)
       {
-        this._citySelector.set("name", this._args.name);
+        this._setTimezonesAttr(this.timezones);
       }
+
       this._regionSelector = registry.byNode(query(".timezoneRegion", this.domNode)[0]);
       var supportedRegions = initSupportedRegions();
       this._regionSelector.set("store", new Memory({ data: supportedRegions }));
@@ -147,6 +147,15 @@ function (declare, array, domConstruct, parser, query, domStyle, Memory, _Widget
       });
 
       this._setValueAttr(this._args.value);
+    },
+
+    _setTimezonesAttr: function(supportedTimeZones)
+    {
+      this._citySelector.set("store", new Memory({ data: supportedTimeZones }));
+      if (this._args.name)
+      {
+        this._citySelector.set("name", this._args.name);
+      }
     },
 
     _setValueAttr: function(value)

@@ -28,7 +28,6 @@ define([
   "dojo/parser",
   "dojo/store/Memory",
   "dojo/data/ObjectStore",
-  "qpid/management/UserPreferences",
   "dojo/number",
   "dijit/registry",
   "dijit/Dialog",
@@ -36,7 +35,7 @@ define([
   "dojox/grid/EnhancedGrid",
   "dojo/text!../../../logs/showLogFileDownloadDialog.html",
   "dojo/domReady!"
-], function(declare, event, xhr, connect, domConstruct, query, parser, Memory, ObjectStore, UserPreferences, number,
+], function(declare, event, xhr, connect, domConstruct, query, parser, Memory, ObjectStore, number,
     registry, Dialog, Button, EnhancedGrid, template){
 
 
@@ -54,6 +53,7 @@ return declare("qpid.management.logs.LogFileDownloadDialog", null, {
         var that = this;
         this.containerNode = domConstruct.create("div", {innerHTML: template});
         parser.parse(this.containerNode).then(function(instances){that._postParse();});
+        this.userPreferences = args.userPreferences;
     },
     _postParse: function()
     {
@@ -83,7 +83,7 @@ return declare("qpid.management.logs.LogFileDownloadDialog", null, {
           },
           { name: "Last Modified", field: "lastModified", width: "250px",
               formatter: function(val) {
-                return UserPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
+                return that.userPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
               }
           }
         ];

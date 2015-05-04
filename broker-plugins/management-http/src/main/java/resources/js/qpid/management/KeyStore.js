@@ -19,7 +19,6 @@
  *
  */
 define(["dojo/dom",
-        "dojo/_base/xhr",
         "dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
@@ -30,14 +29,15 @@ define(["dojo/dom",
         "qpid/common/util",
         "qpid/common/formatter",
         "qpid/management/addStore",
+        "dojo/text!showStore.html",
         "dojo/domReady!"],
-       function (dom, xhr, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore) {
+       function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template) {
 
            function KeyStore(name, parent, controller) {
                this.keyStoreName = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "keystore", name: name, parent: parent};
-               this.url = "api/latest/keystore/" + encodeURIComponent(name);
            }
 
            KeyStore.prototype.getTitle = function() {
@@ -47,16 +47,12 @@ define(["dojo/dom",
            KeyStore.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showStore.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
-                            parser.parse(contentPane.containerNode).then(function(instances)
-                            {
+                contentPane.containerNode.innerHTML = template;
+                parser.parse(contentPane.containerNode).then(function(instances)
+                {
+                            that.keyStoreUpdater = new KeyStoreUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                            that.keyStoreUpdater.update(function(){updater.add( that.keyStoreUpdater );});
 
-                            that.keyStoreUpdater = new KeyStoreUpdater(contentPane.containerNode, that.modelObj, that.controller, that.url);
-                            that.keyStoreUpdater.update();
-                            updater.add( that.keyStoreUpdater );
 
                             var deleteKeyStoreButton = query(".deleteStoreButton", contentPane.containerNode)[0];
                             var node = registry.byNode(deleteKeyStoreButton);
@@ -69,26 +65,27 @@ define(["dojo/dom",
                             var node = registry.byNode(editKeyStoreButton);
                             connect.connect(node, "onClick",
                                 function(evt){
-                                  xhr.get({url: that.url, sync: properties.useSyncGet, handleAs: "json", content: { actuals: true }})
+                                  management.load(that.modelObj, { actuals: true })
                                     .then(function(data)
                                     {
-                                      addStore.setupTypeStore("KeyStore");
-                                      addStore.show(data[0], that.url);
-                                    });
+                                      addStore.setupTypeStore(that.management, "KeyStore", that.modelObj);
+                                      addStore.show(data[0]);
+                                    }, util.xhrErrorHandler);
                                 });
-                            });
-                        }});
+                });
+
            };
 
            KeyStore.prototype.close = function() {
                updater.remove( this.keyStoreUpdater );
            };
 
-           function KeyStoreUpdater(containerNode, keyStoreObj, controller, url)
+           function KeyStoreUpdater(containerNode, keyStoreObj, controller)
            {
                var that = this;
                this.keyStoreDetailsContainer = query(".typeFieldsContainer", containerNode)[0];
-
+               this.management = controller.management;
+               this.modelObj = keyStoreObj;
                function findNode(name) {
                    return query("." + name, containerNode)[0];
                }
@@ -104,15 +101,6 @@ define(["dojo/dom",
                            "type",
                            "state"
                            ]);
-
-               this.query = url;
-
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
-                               {
-                                  that.keyStoreData = data[0];
-                                  that.updateHeader();
-                               });
-
            }
 
            KeyStoreUpdater.prototype.updateHeader = function()
@@ -122,15 +110,20 @@ define(["dojo/dom",
               this.state.innerHTML = entities.encode(String(this.keyStoreData[ "state" ]));
            };
 
-           KeyStoreUpdater.prototype.update = function()
+           KeyStoreUpdater.prototype.update = function(callback)
            {
 
               var that = this;
 
-              xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
+              this.management.load(that.modelObj).then(function(data)
                    {
                       that.keyStoreData = data[0];
                       that.updateHeader();
+
+                      if (callback)
+                      {
+                        callback();
+                      }
 
                       if (that.details)
                       {
@@ -151,20 +144,15 @@ define(["dojo/dom",
 
            KeyStore.prototype.deleteKeyStore = function() {
                if(confirm("Are you sure you want to delete key store '" +this.keyStoreName+"'?")) {
-                   var query = this.url;
-                   this.success = true
                    var that = this;
-                   xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                   this.management.remove(this.modelObj).then(
                        function(data) {
                            that.contentPane.onClose()
                            that.controller.tabContainer.removeChild(that.contentPane);
                            that.contentPane.destroyRecursive();
                            that.close();
                        },
-                       function(error) {that.success = false; that.failureReason = error;});
-                   if(!this.success ) {
-                       util.xhrErrorHandler(this.failureReason);
-                   }
+                       util.xhrErrorHandler);
                }
            }
 

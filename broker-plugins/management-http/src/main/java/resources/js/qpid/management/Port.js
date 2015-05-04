@@ -19,7 +19,6 @@
  *
  */
 define(["dojo/dom",
-        "dojo/_base/xhr",
         "dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
@@ -30,13 +29,14 @@ define(["dojo/dom",
         "qpid/common/util",
         "qpid/common/formatter",
         "qpid/management/addPort",
-        "qpid/common/metadata",
+        "dojo/text!showPort.html",
         "dojo/domReady!"],
-       function (dom, xhr, parser, query, connect, registry, entities, properties, updater, util, formatter, addPort, metadata) {
+       function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addPort, template) {
 
            function Port(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "port", name: name, parent: parent};
            }
 
@@ -47,17 +47,11 @@ define(["dojo/dom",
            Port.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showPort.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
-                            parser.parse(contentPane.containerNode).then(function(instances)
-                            {
-                            that.portUpdater = new PortUpdater(contentPane.containerNode, that.modelObj, that.controller, "api/latest/port/" + encodeURIComponent(that.name));
 
-                            updater.add( that.portUpdater );
-
-                            that.portUpdater.update();
+                contentPane.containerNode.innerHTML = template;
+                parser.parse(contentPane.containerNode).then(function(instances)
+                {
+                            that.portUpdater = new PortUpdater(contentPane.containerNode, that.modelObj, that.controller);
 
                             var deletePortButton = query(".deletePortButton", contentPane.containerNode)[0];
                             var node = registry.byNode(deletePortButton);
@@ -72,8 +66,9 @@ define(["dojo/dom",
                                 function(evt){
                                   that.showEditDialog();
                                 });
-                            });
-                        }});
+
+                            that.portUpdater.update(function(){updater.add( that.portUpdater );});
+                });
            };
 
            Port.prototype.close = function() {
@@ -82,38 +77,36 @@ define(["dojo/dom",
 
 
            Port.prototype.deletePort = function() {
-               if(confirm("Are you sure you want to delete port '" +this.name+"'?")) {
-                   var query = "api/latest/port/" + encodeURIComponent(this.name);
-                   this.success = true
+               if(confirm("Are you sure you want to delete port '" + entities.encode(this.name) + "'?")) {
                    var that = this;
-                   xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                   this.management.remove(this.modelObj).then(
                        function(data) {
                            that.contentPane.onClose()
                            that.controller.tabContainer.removeChild(that.contentPane);
                            that.contentPane.destroyRecursive();
                            that.close();
                        },
-                       function(error) {that.success = false; that.failureReason = error;});
-                   if(!this.success ) {
-                       util.xhrErrorHandler(this.failureReason);
-                   }
+                       util.xhrErrorHandler);
                }
            }
 
            Port.prototype.showEditDialog = function() {
                var that = this;
-               xhr.get({url: "api/latest/broker", sync: properties.useSyncGet, handleAs: "json"})
+               this.management.load(that.modelObj.parent)
                .then(function(data)
                      {
                          var brokerData= data[0];
-                         addPort.show(that.name, that.portUpdater.portData.type, brokerData.authenticationproviders, brokerData.keystores, brokerData.truststores);
-                     }
+                         addPort.show(that.management, that.modelObj, that.portUpdater.portData.type, brokerData.authenticationproviders, brokerData.keystores, brokerData.truststores);
+                     },
+                     util.xhrErrorHandler
                );
            }
 
-           function PortUpdater(containerNode, portObj, controller, url)
+           function PortUpdater(containerNode, portObj, controller)
            {
                var that = this;
+               this.management = controller.management;
+               this.modelObj = portObj;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -148,16 +141,6 @@ define(["dojo/dom",
                            "trustStores",
                            "maxOpenConnections"
                            ]);
-
-               this.query = url;
-
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
-                               {
-                                  that.portData = data[0];
-                                  util.flattenStatistics( that.portData );
-                                  that.updateHeader();
-                               });
-
            }
 
            PortUpdater.prototype.updateHeader = function()
@@ -190,7 +173,7 @@ define(["dojo/dom",
               this.wantClientAuthValue.innerHTML = "<input type='checkbox' disabled='disabled' "+(this.portData[ "wantClientAuth" ] ? "checked='checked'": "")+" />" ;
               this.trustStoresValue.innerHTML = printArray( "trustStores", this.portData);
 
-              var typeMetaData = metadata.getMetaData("Port", this.portData["type"]);
+              var typeMetaData = this.management.metadata.getMetaData("Port", this.portData["type"]);
 
               this.authenticationProvider.style.display = "authenticationProvider" in typeMetaData.attributes ? "block" : "none";
               this.bindingAddress.style.display = "bindingAddress" in typeMetaData.attributes ? "block" : "none";
@@ -203,15 +186,19 @@ define(["dojo/dom",
 
            };
 
-           PortUpdater.prototype.update = function()
+           PortUpdater.prototype.update = function(callback)
            {
 
               var thisObj = this;
 
-              xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
+              this.management.load(this.modelObj).then(function(data)
                    {
                       thisObj.portData = data[0];
                       util.flattenStatistics( thisObj.portData );
+                      if (callback)
+                      {
+                        callback();
+                      }
                       thisObj.updateHeader();
                    });
            };

@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/dom-construct",
         "dojo/_base/window",
         "dijit/registry",
@@ -32,7 +31,7 @@ define(["dojo/_base/xhr",
         "dojo/dom-style",
         "dojo/_base/lang",
         "qpid/common/util",
-        "qpid/common/metadata",
+        "dojo/text!addPort.html",
         /* dojox/ validate resources */
         "dojox/validate/us",
         "dojox/validate/web",
@@ -55,20 +54,24 @@ define(["dojo/_base/xhr",
         "dojox/grid/EnhancedGrid",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojo/domReady!"],
-    function (xhr, dom, construct, win, registry, array, event, json, Memory, ObjectStore, FilteringSelect, domStyle, lang, util, metadata) {
+    function (dom, construct, win, registry, array, event, json, Memory, ObjectStore, FilteringSelect, domStyle, lang, util, template) {
 
         var addPort = {};
 
         var node = construct.create("div", null, win.body(), "last");
 
+        node.innerHTML = template;
+        addPort.dialogNode = dom.byId("addPort")
+
         addPort._typeChanged = function (newValue)
         {
-            var typeMetaData = metadata.getMetaData("Port", newValue);
+            var meta =  addPort.management.metadata;
+            var typeMetaData = meta.getMetaData("Port", newValue);
 
             //protocols
             var protocolsMultiSelect = dom.byId("formAddPort.protocols");
             var protocolValidValues = typeMetaData.attributes.protocols.validValues;
-            var protocolValues = metadata.extractUniqueListOfValues(protocolValidValues);
+            var protocolValues = meta.extractUniqueListOfValues(protocolValidValues);
             util.setMultiSelectOptions(protocolsMultiSelect, protocolValues.sort());
 
             //authenticationProvider
@@ -86,12 +89,12 @@ define(["dojo/_base/xhr",
             //transports
             var transportsMultiSelect = dom.byId("formAddPort.transports");
             var transportsValidValues = typeMetaData.attributes.transports.validValues;
-            var transportsValues = metadata.extractUniqueListOfValues(transportsValidValues);
+            var transportsValues = meta.extractUniqueListOfValues(transportsValidValues);
             util.setMultiSelectOptions(transportsMultiSelect, transportsValues.sort());
 
             addPort._toggleSslWidgets(newValue, transportsMultiSelect.value);
-            util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", newValue);
 
+            util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", newValue, meta);
         };
 
         addPort._isSecure = function(currentTransport)
@@ -203,6 +206,7 @@ define(["dojo/_base/xhr",
 
                 if (addPort._isSecure(transportType))
                 {
+                    var metadata =  addPort.management.metadata;
                     var typeMetaData = metadata.getMetaData("Port", portType);
                     var clientAuth = "needClientAuth" in typeMetaData.attributes || "wantClientAuth" in typeMetaData.attributes;
                     clientAuthPanel.style.display = clientAuth ? "block" : "none";
@@ -228,17 +232,7 @@ define(["dojo/_base/xhr",
 
             };
 
-        addPort._init = function()
-        {
-          xhr.get({url: "addPort.html", sync: true, load: function (data)
-          {
-            var theForm;
-            node.innerHTML = data;
-            addPort.dialogNode = dom.byId("addPort");
-          }});
-        }
-
-        addPort._prepareForm = function()
+        addPort._prepareForm = function(metadata)
         {
           //add the port types to formAddPort.type
           var portTypeSelect = registry.byId("formAddPort.type");
@@ -253,7 +247,8 @@ define(["dojo/_base/xhr",
             addPort._toggleSslWidgets(portType, newValue);
           });
 
-          theForm = registry.byId("formAddPort");
+          var that = this;
+          var theForm = registry.byId("formAddPort");
           theForm.on("submit", function (e)
           {
 
@@ -267,13 +262,15 @@ define(["dojo/_base/xhr",
                 alert("A trust store must be selected when requesting client certificates.");
                 return false;
               }
-              var url = "api/latest/port";
               if (registry.byId("formAddPort.name").get("disabled"))
               {
                 // update request
-                url += "/" + encodeURIComponent(newPort.name);
+                addPort.management.update(addPort.modelObj,newPort, function(x){registry.byId("addPort").hide()}, util.xhrErrorHandler);
               }
-              util.post(url, newPort, function(x){registry.byId("addPort").hide()});
+              else
+              {
+                addPort.management.create("port", addPort.modelObj ,newPort, function(x){registry.byId("addPort").hide()}, util.xhrErrorHandler);
+              }
               return false;
             } else
             {
@@ -284,12 +281,14 @@ define(["dojo/_base/xhr",
           });
         }
 
-        addPort.show = function(portName, portType, providers, keystores, truststores)
+        addPort.show = function(management, modelObj, portType, providers, keystores, truststores)
         {
-
+            addPort.management = management;
+            addPort.modelObj = modelObj;
+            var metadata = management.metadata;
             if (!this.formPrepared)
             {
-              this._prepareForm();
+              this._prepareForm(metadata);
               this.formPrepared = true;
             }
 
@@ -351,15 +350,11 @@ define(["dojo/_base/xhr",
                 this.typeChangeHandler.remove();
             }
 
-            if (portName)
+            if (modelObj.type == "port")
             {
                 editWarning.style.display = "block";
 
-                xhr.get({
-                    url: "api/latest/port/" + encodeURIComponent(portName),
-                    content: { actuals: true },
-                    handleAs: "json"
-                }).then(
+                management.load(modelObj, { actuals: true }).then(
                    function(data){
                        var port = data[0];
                        nameWidget.set("value", port.name);
@@ -443,8 +438,8 @@ define(["dojo/_base/xhr",
                        maxOpenConnectionsWidget.initialValue = maxOpenConnectionsWidget.value;
 
                        registry.byId("addPort").show();
-                       util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", portType);
-                   });
+                       util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", portType, management.metadata);
+                   }, util.xhrErrorHandler);
             }
             else
             {
@@ -465,12 +460,10 @@ define(["dojo/_base/xhr",
                 editWarning.style.display = "none";
                 registry.byId("addPort").show();
 
-                util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", portType);
+                util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", portType, management.metadata);
             }
 
         };
-
-        addPort._init();
 
         return addPort;
     });

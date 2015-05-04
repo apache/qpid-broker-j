@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 define(["dojo/_base/connect",
-        "dojo/_base/xhr",
         "dojo/dom",
         "dojo/dom-construct",
         "dojo/_base/window",
@@ -29,6 +28,7 @@ define(["dojo/_base/connect",
         "dojo/store/Memory",
         "dijit/form/FilteringSelect",
         "qpid/common/util",
+        "dojo/text!addBinding.html",
         "dijit/form/NumberSpinner", // required by the form
         /* dojox/ validate resources */
         "dojox/validate/us", "dojox/validate/web",
@@ -45,7 +45,7 @@ define(["dojo/_base/connect",
         "dojox/grid/EnhancedGrid",
         "dojo/data/ObjectStore",
         "dojo/domReady!"],
-    function (connect, xhr, dom, construct, win, registry, parser, array, event, json, lang, declare, Memory, FilteringSelect, util) {
+    function (connect, dom, construct, win, registry, parser, array, event, json, lang, declare, Memory, FilteringSelect, util, template) {
 
         var noLocalValues = new Memory({
             data: [
@@ -171,11 +171,8 @@ define(["dojo/_base/connect",
             };
 
 
-        xhr.get({url: "addBinding.html",
-                 sync: true,
-                 load:  function(data) {
                             var theForm;
-                            node.innerHTML = data;
+                            node.innerHTML = template;
                             addBinding.dialogNode = dom.byId("addBinding");
                             parser.instantiate([addBinding.dialogNode]);
 
@@ -306,13 +303,24 @@ define(["dojo/_base/connect",
                                 event.stop(e);
                                 if(theForm.validate()){
 
-                                    var newBinding = convertToBinding(theForm.getValues());
+                                    var newBinding = convertToBinding(util.getFormWidgetValues(registry.byId("formAddBinding")));
                                     var that = this;
-                                    var url = "api/latest/binding/"+encodeURIComponent(addBinding.vhostnode)
-                                            + "/"+encodeURIComponent(addBinding.vhost)
-                                            + "/"+encodeURIComponent(newBinding.exchange)
-                                            + "/"+encodeURIComponent(newBinding.queue);
-                                    util.post(url, newBinding, function(x){registry.byId("addBinding").hide();});
+                                    var model = null;
+                                    if (addBinding.modelObj.type == "exchange")
+                                    {
+                                        model = {name: newBinding.queue, type: "queue", parent: addBinding.modelObj};
+                                    }
+                                    else
+                                    {
+                                       model = {name: newBinding.queue,
+                                                type: "queue",
+                                                parent: { name: newBinding.exchange,
+                                                          type: "exchange",
+                                                          parent: addBinding.modelObj.parent
+                                                        }
+                                                };
+                                    }
+                                    addBinding.management.create("binding", model, newBinding, function(x){registry.byId("addBinding").hide();});
                                     return false;
                                 }else{
                                     alert('Form contains invalid data.  Please correct first');
@@ -320,15 +328,11 @@ define(["dojo/_base/connect",
                                 }
 
                             });
-                        }});
 
-        addBinding.show = function(obj) {
+        addBinding.show = function(management, obj) {
             var that = this;
-
-            addBinding.vhostnode = obj.virtualhostnode;
-            addBinding.vhost = obj.virtualhost;
-            addBinding.queue = obj.queue;
-            addBinding.exchange = obj.exchange;
+            addBinding.management = management;
+            addBinding.modelObj = obj;
             registry.byId("formAddBinding").reset();
 
             var grid = addBinding.bindingArgumentsGrid;
@@ -350,8 +354,7 @@ define(["dojo/_base/connect",
             array.forEach(lang.clone(defaultBindingArguments), function(item) {grid.store.newItem(item); });
             grid.store.save();
 
-            xhr.get({url: "api/latest/queue/" + encodeURIComponent(obj.virtualhostnode) + "/" + encodeURIComponent(obj.virtualhost) + "?depth=0",
-                     handleAs: "json"}).then(
+            management.load({type: "queue", parent: obj.parent }, {depth: 0}).then(
                 function(data) {
                     var queues =  [];
                     for(var i=0; i < data.length; i++) {
@@ -373,14 +376,12 @@ define(["dojo/_base/connect",
                                                               promptMessage: "Name of the queue",
                                                               title: "Select the name of the queue"}, input);
 
-                    if(obj.queue)
+                    if(obj.type == "queue")
                     {
-                        that.queueChooser.set("value", obj.queue);
+                        that.queueChooser.set("value", obj.name);
                         that.queueChooser.set("disabled", true);
                     }
-
-                    xhr.get({url: "api/latest/exchange/" + encodeURIComponent(obj.virtualhostnode) + "/" + encodeURIComponent(obj.virtualhost) + "?depth=0",
-                                         handleAs: "json"}).then(
+                    management.load({type: "exchange", parent: obj.parent }, {depth: 0}).then(
                         function(data) {
 
                             var exchanges =  [];
@@ -403,18 +404,18 @@ define(["dojo/_base/connect",
                                                                       promptMessage: "Name of the exchange",
                                                                       title: "Select the name of the exchange"}, input);
 
-                            if(obj.exchange)
+                            if(obj.type == "exchange")
                             {
-                                that.exchangeChooser.set("value", obj.exchange);
+                                that.exchangeChooser.set("value", obj.name);
                                 that.exchangeChooser.set("disabled", true);
                             }
 
 
                             registry.byId("addBinding").show();
-                        });
+                        }, util.xhrErrorHandler);
 
 
-                });
+                }, util.xhrErrorHandler);
 
 
         };

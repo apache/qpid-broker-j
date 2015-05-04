@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
         "dojo/_base/array",
@@ -27,7 +26,6 @@ define(["dojo/_base/xhr",
         "qpid/common/properties",
         "qpid/common/updater",
         "qpid/common/util",
-        "qpid/common/metadata",
         "qpid/common/UpdatableStore",
         "dojox/grid/EnhancedGrid",
         "dijit/registry",
@@ -37,13 +35,14 @@ define(["dojo/_base/xhr",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojo/domReady!"],
-       function (xhr, parser, query, connect, array, event, properties, updater, util, metadata, UpdatableStore,
+       function (parser, query, connect, array, event, properties, updater, util, UpdatableStore,
                  EnhancedGrid, registry, entities, template, addGroupProvider)
        {
 
            function GroupProvider(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "groupprovider", name: name, parent: parent};
            }
 
@@ -64,10 +63,13 @@ define(["dojo/_base/xhr",
                var that = this;
                var contentPane = this.contentPane;
                this.groupProviderUpdater = new GroupProviderUpdater(contentPane.containerNode, this.modelObj, this.controller);
+               this.groupProviderUpdater.update(function(){that._onOpenAfterUpdate();});
+           };
 
-               // load data
-               this.groupProviderUpdater.update();
-
+           GroupProvider.prototype._onOpenAfterUpdate = function()
+           {
+               var that = this;
+               var contentPane = this.contentPane;
                this.deleteButton = registry.byNode(query(".deleteGroupProviderButton", contentPane.containerNode)[0]);
                this.deleteButton.on("click", function(evt){ event.stop(evt); that.deleteGroupProvider(); });
 
@@ -84,7 +86,7 @@ define(["dojo/_base/xhr",
                             that.groupProviderUpdater.details.update(that.groupProviderUpdater.groupProviderData);
                         });
 
-               var managedInterfaces = metadata.getMetaData("GroupProvider", type).managedInterfaces;
+               var managedInterfaces = this.management.metadata.getMetaData("GroupProvider", type).managedInterfaces;
                if (managedInterfaces)
                {
 
@@ -117,46 +119,38 @@ define(["dojo/_base/xhr",
                warnMessage = "NOTE: provider deletion will also remove the group file on disk.\n\n";
              }
              if(confirm(warnMessage + "Are you sure you want to delete group provider '" + this.name + "'?")) {
-                 var query = "api/latest/groupprovider/" +encodeURIComponent(this.name);
-                 this.success = true
                  var that = this;
-                 xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                 this.controller.management.remove(this.modelObj).then(
                      function(data) {
                          that.close();
                          that.contentPane.onClose()
                          that.controller.tabContainer.removeChild(that.contentPane);
                          that.contentPane.destroyRecursive();
                      },
-                     function(error) {that.success = false; that.failureReason = error;});
-                 if(!this.success ) {
-                     util.xhrErrorHandler(this.failureReason);
-                 }
+                     util.xhrErrorHandler);
              }
            };
 
            GroupProvider.prototype.editGroupProvider = function()
            {
-                xhr.get(
-                        {
-                          url: this.groupProviderUpdater.query,
-                          sync: true,
-                          content: { actuals: true },
-                          handleAs: "json",
-                          load: function(actualData)
+                var management = this.controller.management;
+                management.load(this.modelObj,{ actuals: true }).then(
+                          function(actualData)
                           {
-                            addGroupProvider.show(actualData[0]);
-                          }
-                        }
-                );
+                            addGroupProvider.show(management, that.modelObj, actualData[0]);
+                          },
+                          util.xhrErrorHandler
+                        );
            }
 
            function GroupProviderUpdater(node, groupProviderObj, controller)
            {
                this.controller = controller;
+               this.management = controller.management;
+               this.modelObj = groupProviderObj;
                this.name = query(".name", node)[0];
                this.type = query(".type", node)[0];
                this.state = query(".state", node)[0];
-               this.query = "api/latest/groupprovider/"+encodeURIComponent(groupProviderObj.name);
                this.managedInterfaces = {};
                this.details = null;
            }
@@ -168,10 +162,19 @@ define(["dojo/_base/xhr",
                this.state.innerHTML = entities.encode(String(this.groupProviderData[ "state" ]));
            };
 
-           GroupProviderUpdater.prototype.update = function()
+           GroupProviderUpdater.prototype.update = function(callback)
            {
                var that = this;
-               xhr.get({url: this.query, sync: true, handleAs: "json"}).then(function(data) {that._update(data[0]);});
+               var management = this.controller.management;
+               management.load(this.modelObj).then(
+                               function(data)
+                               {
+                                that._update(data[0]);
+                                if (callback)
+                                {
+                                    callback();
+                                }
+                               });
            };
 
            GroupProviderUpdater.prototype._update = function(data)

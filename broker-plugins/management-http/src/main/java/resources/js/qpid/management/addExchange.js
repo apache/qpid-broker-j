@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/dom-construct",
         "dojo/_base/window",
         "dijit/registry",
@@ -28,6 +27,7 @@ define(["dojo/_base/xhr",
         "dojo/_base/event",
         "dojo/_base/json",
         "qpid/common/util",
+        "dojo/text!addExchange.html",
         "dijit/form/NumberSpinner", // required by the form
         /* dojox/ validate resources */
         "dojox/validate/us", "dojox/validate/web",
@@ -42,7 +42,7 @@ define(["dojo/_base/xhr",
         /* basic dojox classes */
         "dojox/form/BusyButton", "dojox/form/CheckedMultiSelect",
         "dojo/domReady!"],
-    function (xhr, dom, construct, win, registry, parser, array, event, json, util) {
+    function (dom, construct, win, registry, parser, array, event, json, util, template) {
 
         var addExchange = {};
 
@@ -74,11 +74,9 @@ define(["dojo/_base/xhr",
             };
 
 
-        xhr.get({url: "addExchange.html",
-                 sync: true,
-                 load:  function(data) {
+
                             var theForm;
-                            node.innerHTML = data;
+                            node.innerHTML = template;
                             addExchange.dialogNode = dom.byId("addExchange");
                             parser.instantiate([addExchange.dialogNode]);
 
@@ -110,8 +108,7 @@ define(["dojo/_base/xhr",
 
                                     var newExchange = convertToExchange(theForm.getValues());
                                     var that = this;
-                                    util.post("api/latest/exchange/" + encodeURIComponent(addExchange.vhostnode)
-                                            + "/" + encodeURIComponent(addExchange.vhost),
+                                    addExchange.management.create("exchange", addExchange.modelObj,
                                             newExchange, function(x){ registry.byId("addExchange").hide(); });
                                     return false;
 
@@ -122,11 +119,10 @@ define(["dojo/_base/xhr",
                                 }
 
                             });
-                        }});
 
-        addExchange.show = function(data) {
-                            addExchange.vhost = data.virtualhost;
-                            addExchange.vhostnode = data.virtualhostnode;
+        addExchange.show = function(management, modelObj) {
+                            addExchange.management = management
+                            addExchange.modelObj = modelObj;
                             registry.byId("formAddExchange").reset();
                             registry.byId("addExchange").show();
                         };

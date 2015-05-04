@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/parser",
         "dojo/query",
         "dojo/dom-construct",
@@ -35,6 +34,7 @@ define(["dojo/_base/xhr",
         "qpid/common/UpdatableStore",
         "dojox/grid/EnhancedGrid",
         "dojo/text!groupprovider/showGroupManagingGroupProvider.html",
+        "dojo/text!groupprovider/addGroup.html",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojox/validate/us", "dojox/validate/web",
@@ -45,8 +45,8 @@ define(["dojo/_base/xhr",
         "dijit/form/Form",
         "dijit/form/DateTextBox",
         "dojo/domReady!"],
-    function (xhr, dom, parser, query, construct, connect, win, event, json, registry, entities, util, properties,
-              updater, UpdatableStore, EnhancedGrid, template)
+    function (dom, parser, query, construct, connect, win, event, json, registry, entities, util, properties,
+              updater, UpdatableStore, EnhancedGrid, template, addGroupTemplate)
     {
         function GroupManagingGroupProvider(containerNode, groupProviderObj, controller)
         {
@@ -55,6 +55,7 @@ define(["dojo/_base/xhr",
             this.name = groupProviderObj.name;
             node.innerHTML = template;
             this.controller = controller;
+            this.modelObj = groupProviderObj;
             parser.parse(node).then(function(instances)
             {
                      var groupDiv = query(".groups", node)[0];
@@ -87,7 +88,7 @@ define(["dojo/_base/xhr",
                                               });
                                       }, gridProperties, EnhancedGrid);
                      var addGroupButton = query(".addGroupButton", node)[0];
-                     registry.byNode(addGroupButton).on("click", function(evt){ addGroup.show(groupProviderObj.name) });
+                     registry.byNode(addGroupButton).on("click", function(evt){ addGroup.show(groupProviderObj, controller.management) });
                      var deleteWidget = registry.byNode(query(".deleteGroupButton", node)[0]);
                      deleteWidget.on("click", function(evt){ event.stop(evt); that.deleteGroups(); });
             });
@@ -100,31 +101,21 @@ define(["dojo/_base/xhr",
             if(data.length) {
                 var that = this;
                 if(confirm("Delete " + data.length + " groups?")) {
-                    var i, queryParam;
+                    var i;
+                    var parameters ={id:[]};
                     for(i = 0; i<data.length; i++) {
-                        if(queryParam) {
-                            queryParam += "&";
-                        } else {
-                            queryParam = "?";
-                        }
-
-                        queryParam += "id=" + data[i].id;
+                        parameters.id.push(data[i].id);
                     }
-                    var query = "api/latest/group/"+ encodeURIComponent(that.name)
-                       + queryParam;
-                    that.success = true
-                    xhr.del({url: query, sync: true, handleAs: "json"}).then(
+
+                    this.controller.management.remove({type: "group", parent: this.modelObj}, parameters).then(
                         function(data) {
                             grid.setQuery({id: "*"});
                             grid.selection.deselectAll();
                             that.update();
                         },
-                        function(error) {that.success = false; that.failureReason = error;});
-                    if(!that.success ) {
-                        util.xhrErrorHandler(this.failureReason);
-                    }
+                        util.xhrErrorHandler);
                 }
-}
+            }
         };
 
         GroupManagingGroupProvider.prototype.update = function(data)
@@ -155,11 +146,9 @@ define(["dojo/_base/xhr",
             };
 
 
-        xhr.get({url: "groupprovider/addGroup.html",
-                 sync: true,
-                 load:  function(data) {
+                        {
                             var theForm;
-                            node.innerHTML = data;
+                            node.innerHTML = addGroupTemplate;
                             addGroup.dialogNode = dom.byId("addGroup");
                             parser.instantiate([addGroup.dialogNode]);
 
@@ -172,9 +161,7 @@ define(["dojo/_base/xhr",
                                 if(theForm.validate()){
 
                                     var newGroup = convertToGroup(theForm.getValues());
-
-                                    var url = "api/latest/group/"+encodeURIComponent(addGroup.groupProvider);
-                                    util.post(url, newGroup, function(x){registry.byId("addGroup").hide();});
+                                    addGroup.management.create("group", addGroup.groupProvider, newGroup, function(x){registry.byId("addGroup").hide();});
                                     return false;
 
 
@@ -184,9 +171,10 @@ define(["dojo/_base/xhr",
                                 }
 
                             });
-                        }});
+                        }
 
-        addGroup.show = function(groupProvider) {
+        addGroup.show = function(groupProvider, management) {
+            addGroup.management = management;
             addGroup.groupProvider = groupProvider;
             registry.byId("formAddGroup").reset();
             registry.byId("addGroup").show();

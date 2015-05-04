@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-define(["qpid/management/UserPreferences"], function (UserPreferences) {
+define([], function () {
     var updateList = new Array();
 
     function invokeUpdates()
@@ -30,7 +30,7 @@ define(["qpid/management/UserPreferences"], function (UserPreferences) {
       }
     }
 
-    var updatePeriod = UserPreferences.updatePeriod ? UserPreferences.updatePeriod: 5;
+    var updatePeriod =  5;
 
     var timer = setInterval(invokeUpdates, updatePeriod * 1000);
 
@@ -46,9 +46,12 @@ define(["qpid/management/UserPreferences"], function (UserPreferences) {
         }
     };
 
-    UserPreferences.addListener(updateIntervalListener);
 
     return {
+            registerUpdateIntervalListener: function(userPreferences)
+            {
+                userPreferences.addListener(updateIntervalListener);
+            },
             add: function(obj) {
                 updateList.push(obj);
             },

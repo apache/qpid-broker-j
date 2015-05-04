@@ -17,14 +17,14 @@
  * under the License.
  */
 
-define(["qpid/common/util", "qpid/common/metadata", "dojo/domReady!"],
-  function (util, metadata)
+define(["qpid/common/util", "dojo/domReady!"],
+  function (util)
   {
 
     function FileKeyStoreProvider(data)
     {
         this.fields = [];
-        var attributes = metadata.getMetaData("KeyStore", "FileKeyStore").attributes;
+        var attributes = data.parent.management.metadata.getMetaData("KeyStore", "FileKeyStore").attributes;
         for(var name in attributes)
         {
             this.fields.push(name);

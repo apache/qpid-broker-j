@@ -1,0 +1,58 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<div class="dijitHidden">
+    <div data-dojo-type="dijit/Dialog" data-dojo-props="title:'Edit JMX Management Settings'" id="editJmxManagementDialog">
+        <form id="editJmxManagementForm" method="post" data-dojo-type="dijit/form/Form">
+                <div id="editJmxManagement.contentPane">
+                    <div class="editNoteBanner">NOTE: All changes will only take effect after Broker restart.</div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Name*:</div>
+                        <div class="formLabel-controlCell tableContainer-valueCell">
+                            <input type="text" id="editJmxManagement.name"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                              name: 'name',
+                              placeHolder: 'name',
+                              required: true,
+                              disabled: true,
+                              title: 'Enter jmx management plugin name'" />
+                        </div>
+                    </div>
+
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Use Platform MBean Server:</div>
+                        <div class="tableContainer-valueCell formLabel-controlCell">
+                            <input type="checkbox" id="editJmxManagement.usePlatformMBeanServer"
+                                   data-dojo-type="dijit/form/CheckBox"
+                                   data-dojo-props="name: 'usePlatformMBeanServer'">
+                            </input>
+                            <div data-dojo-type="dijit/Tooltip"
+                                 data-dojo-props="connectId: ['editJmxManagement.usePlatformMBeanServer'],
+                                      label: 'If selected, JMX management uses platform MBeanServer'">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
+                    <button data-dojo-type="dijit/form/Button" id="editJmxManagement.saveButton" data-dojo-props="label: 'Save'">Save</button>
+                    <button data-dojo-type="dijit/form/Button" id="editJmxManagement.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
+                </div>
+        </form>
+    </div>
+</div>

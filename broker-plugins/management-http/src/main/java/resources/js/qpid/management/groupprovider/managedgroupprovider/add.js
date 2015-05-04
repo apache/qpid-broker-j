@@ -19,7 +19,7 @@
  *
  */
 define([],
-    function (dom, query, array, registry, util, metadata)
+    function ()
     {
         return { show: function(data) { /* nothing to do */ } };
     }

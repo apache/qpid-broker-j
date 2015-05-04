@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/dom-construct",
         "dojo/_base/window",
         "dijit/registry",
@@ -32,7 +31,6 @@ define(["dojo/_base/xhr",
         "dojo/_base/connect",
         "dojo/dom-style",
         "qpid/common/util",
-        "qpid/common/metadata",
         "dojo/text!addAuthenticationProvider.html",
         "qpid/management/preferencesprovider/PreferencesProviderForm",
         /* dojox/ validate resources */
@@ -48,7 +46,7 @@ define(["dojo/_base/xhr",
         "dojox/form/BusyButton", "dojox/form/CheckedMultiSelect",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (xhr, dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, connect, domStyle, util, metadata, template)
+    function (dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, connect, domStyle, util, template)
     {
         var addAuthenticationProvider =
         {
@@ -74,51 +72,49 @@ define(["dojo/_base/xhr",
                 this.authenticationProviderTypeFieldsContainer = dom.byId("addAuthenticationProvider.typeFields");
                 this.authenticationProviderForm = registry.byId("addAuthenticationProvider.form");
                 this.authenticationProviderType = registry.byId("addAuthenticationProvider.type");
-                this.supportedAuthenticationProviderTypes = metadata.getTypesForCategory("AuthenticationProvider");
-                this.supportedAuthenticationProviderTypes.sort();
-                var authenticationProviderTypeStore = util.makeTypeStore(this.supportedAuthenticationProviderTypes);
-                this.authenticationProviderType.set("store", authenticationProviderTypeStore);
                 this.authenticationProviderType.on("change", function(type){that._authenticationProviderTypeChanged(type);});
 
                 this.preferencesProviderForm = new qpid.preferencesprovider.PreferencesProviderForm({disabled: true});
                 this.preferencesProviderForm.placeAt(dom.byId("addPreferencesProvider.form"));
             },
-            show:function(effectiveData)
+            show:function(management, modelObj, effectiveData)
             {
+                this.management = management;
+                this.modelObj = modelObj;
                 this.authenticationProviderForm.reset();
+                this.preferencesProviderForm.setMetadata(management.metadata);
+
+                this.supportedAuthenticationProviderTypes = management.metadata.getTypesForCategory("AuthenticationProvider");
+                this.supportedAuthenticationProviderTypes.sort();
+                var authenticationProviderTypeStore = util.makeTypeStore(this.supportedAuthenticationProviderTypes);
+                this.authenticationProviderType.set("store", authenticationProviderTypeStore);
 
                 if (effectiveData)
                 {
                     // editing
-                    var actualData = null;
-                    xhr.get(
-                                {
-                                  url: "api/latest/authenticationprovider/" + encodeURIComponent(effectiveData.name),
-                                  sync: true,
-                                  content: { actuals: true },
-                                  handleAs: "json",
-                                  load: function(data)
+                    var that = this;
+                    management.load(modelObj, { actuals: true },
+                                  function(data)
                                   {
-                                    actualData = data[0];
-                                  }
-                                }
-                            );
-                    this.initialData = actualData;
-                    this.effectiveData = effectiveData;
-                    this.authenticationProviderType.set("value", actualData.type);
+                                    var actualData = data[0];
+                                    that.initialData = actualData;
+                                    that.effectiveData = effectiveData;
+                                    that.authenticationProviderType.set("value", actualData.type);
 
-                    this.authenticationProviderType.set("disabled", true);
-                    this.authenticationProviderName.set("disabled", true);
-                    if (actualData.preferencesproviders && actualData.preferencesproviders[0])
-                    {
-                        this.preferencesProviderForm.setData(actualData.preferencesproviders[0]);
-                    }
-                    else
-                    {
-                        this.preferencesProviderForm.reset();
-                        this.preferencesProviderForm.preferencesProviderNameWidget.set("value", actualData.name);
-                    }
-                    this.authenticationProviderName.set("value", actualData.name);
+                                    that.authenticationProviderType.set("disabled", true);
+                                    that.authenticationProviderName.set("disabled", true);
+                                    if (actualData.preferencesproviders && actualData.preferencesproviders[0])
+                                    {
+                                        that.preferencesProviderForm.setData(actualData.preferencesproviders[0]);
+                                    }
+                                    else
+                                    {
+                                        that.preferencesProviderForm.reset();
+                                        that.preferencesProviderForm.preferencesProviderNameWidget.set("value", actualData.name);
+                                    }
+                                    that.authenticationProviderName.set("value", actualData.name);
+                                    that._show();
+                                  }, util.xhrErrorHandler );
                 }
                 else
                 {
@@ -127,8 +123,11 @@ define(["dojo/_base/xhr",
                     this.authenticationProviderName.set("disabled", false);
                     this.initialData = {};
                     this.effectiveData = {};
+                    this._show();
                 }
-
+            },
+            _show: function()
+            {
                 this.dialog.show();
                 if (!this.resizeEventRegistered)
                 {
@@ -153,25 +152,48 @@ define(["dojo/_base/xhr",
                     var authenticationProviderData = util.getFormWidgetValues(this.authenticationProviderForm, this.initialData);
 
                     var that = this;
-                    var encodedAuthenticationProviderName = encodeURIComponent(this.authenticationProviderName.value);
-                    var url = "api/latest/authenticationprovider";
+
+                    var hideDialog = function(x)
+                    {
+                        that.dialog.hide();
+                    }
+
+                    var savePreferences = function(x)
+                    {
+                        that.preferencesProviderForm.submit(
+                            function(preferencesProviderData)
+                            {
+                                if (that.preferencesProviderForm.data)
+                                {
+                                    // update request
+                                    var name = that.preferencesProviderForm.getPreferencesProviderName();
+
+                                    var modelObj = {name: name, type: "preferencesprovider",  parent: that.modelObj};
+                                    that.management.update(modelObj, preferencesProviderData, hideDialog, util.xhrErrorHandler);
+                                }
+                                else
+                                {
+                                    var authProviderModelObj = that.modelObj;
+                                    if (authProviderModelObj.type != "authenticationprovider")
+                                    {
+                                        authProviderModelObj = { name: authenticationProviderData.name, type: "authenticationprovider", parent: that.modelObj};
+                                    }
+                                    that.management.create("preferencesprovider", authProviderModelObj, preferencesProviderData, hideDialog, util.xhrErrorHandler);
+                                }
+                            },
+                            hideDialog
+                        );
+                    }
+
                     if (this.initialData && this.initialData.id)
                     {
                         // update request
-                        url += "/" + encodedAuthenticationProviderName;
+                        this.management.update(that.modelObj, authenticationProviderData, savePreferences);
                     }
-                    util.post(url, authenticationProviderData,
-                     function(x){
-                        var preferencesProviderResult = that.preferencesProviderForm.submit(encodedAuthenticationProviderName);
-                        if (preferencesProviderResult.success == true)
-                        {
-                            that.dialog.hide();
-                        }
-                        else
-                        {
-                             util.xhrErrorHandler(preferencesProviderResult.failureReason);
-                        }
-                     });
+                    else
+                    {
+                        this.management.create("authenticationprovider", that.modelObj, authenticationProviderData, savePreferences);
+                    }
                 }
                 else
                 {
@@ -187,7 +209,12 @@ define(["dojo/_base/xhr",
                 var widgets = registry.findWidgets(typeFieldsContainer);
                 array.forEach(widgets, function(item) { item.destroyRecursive();});
                 construct.empty(typeFieldsContainer);
-                this.preferencesProviderForm.set("disabled", !type || !util.supportsPreferencesProvider(type));
+                var supportsPreferencesProvider = false;
+                if (type && this.management)
+                {
+                    supportsPreferencesProvider = this.management.metadata.implementsManagedInterface("AuthenticationProvider", type, "PreferencesSupportingAuthenticationProvider");
+                }
+                this.preferencesProviderForm.set("disabled", !type || !supportsPreferencesProvider);
                 if (type)
                 {
                     var that = this;
@@ -196,7 +223,7 @@ define(["dojo/_base/xhr",
                         try
                         {
                             typeUI.show({containerNode:typeFieldsContainer, parent: that, data: that.initialData, effectiveData: that.effectiveData});
-                            util.applyMetadataToWidgets(typeFieldsContainer, category, type);
+                            util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
                         }
                         catch(e)
                         {

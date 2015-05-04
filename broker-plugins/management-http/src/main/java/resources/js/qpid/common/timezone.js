@@ -19,53 +19,34 @@
  *
  */
 
-define(["dojo/_base/xhr"], function (xhr) {
+define([], function () {
 
-    var timezones = {};
 
-    var timeZoneSortFunction = function(a, b){
-      if (a.region == b.region)
-      {
-          if (a.city == b.city)
-          {
-            return 0;
-          }
-          return a.city < b.city ? -1 : 1;
-      }
-      return a.region < b.region ? -1 : 1;
-    }
-
-    function loadTimezones()
+    var timeZoneSortFunction = function(a, b)
     {
-      xhr.get({
-        url: "service/timezones",
-        sync: true,
-        handleAs: "json",
-        load: function(zones)
-        {
-          zones.sort(timeZoneSortFunction);
-          timezones.data = zones;
-        },
-        error: function(error)
-        {
-          if (console && console.error)
+          if (a.region == b.region)
           {
-            console.error(error);
+              if (a.city == b.city)
+              {
+                return 0;
+              }
+              return a.city < b.city ? -1 : 1;
           }
-        }
-      });
+          return a.region < b.region ? -1 : 1;
     }
 
-    return {
-      getAllTimeZones: function()
-      {
-        if (!timezones.data)
-        {
-          loadTimezones();
-        }
-        return timezones.data;
-      },
-      getTimeZoneInfo: function(timeZone) {
+    var Timezone = function(timezones)
+    {
+        this.timezones = timezones.sort(timeZoneSortFunction)
+    };
+
+    Timezone.prototype.getAllTimeZones= function()
+    {
+       return this.timezones;
+    }
+
+    Timezone.prototype.getTimeZoneInfo = function(timeZone)
+    {
         if (timeZone == "UTC")
         {
           return {
@@ -74,22 +55,23 @@ define(["dojo/_base/xhr"], function (xhr) {
             "offset" : 0
           }
         }
-        var tzi = timezones[timeZone];
+        var tzi = this[timeZone];
         if (!tzi)
         {
-          var data = this.getAllTimeZones();
+          var data = this.timezones;
           for(var i = 0; i < data.length; i++)
           {
             var zone = data[i];
             if (zone.id == timeZone)
             {
               tzi = zone;
-              timezones[timeZone] = zone;
+              this[timeZone] = zone;
               break;
             }
           }
         }
         return tzi;
-      }
-    };
+    }
+
+    return Timezone;
 });

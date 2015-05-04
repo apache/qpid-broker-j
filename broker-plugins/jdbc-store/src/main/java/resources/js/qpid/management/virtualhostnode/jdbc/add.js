@@ -28,12 +28,11 @@ define(["dojo/_base/xhr",
         "dojo/store/Memory",
         "dijit/registry",
         "dojo/text!virtualhostnode/jdbc/add.html",
-        "qpid/common/metadata",
         "qpid/common/util",
         "dijit/form/ValidationTextBox",
         "dijit/form/CheckBox",
         "dojo/domReady!"],
-  function (xhr, array, parser, dom, domConstruct, json, string, Memory, registry, template, metadata, util)
+  function (xhr, array, parser, dom, domConstruct, json, string, Memory, registry, template, util)
   {
     return {
         show: function (data)
@@ -51,7 +50,7 @@ define(["dojo/_base/xhr",
             registry.byId("addVirtualHostNode.connectionUrl").set("regExpGen", util.jdbcUrlOrContextVarRegexp);
             registry.byId("addVirtualHostNode.username").set("regExpGen", util.nameOrContextVarRegexp);
 
-            var typeMetaData = metadata.getMetaData("VirtualHostNode", "JDBC");
+            var typeMetaData = data.metadata.getMetaData("VirtualHostNode", "JDBC");
             var poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
             var poolTypesData = [];
             array.forEach(poolTypes,

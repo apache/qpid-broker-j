@@ -20,7 +20,6 @@
  */
 define([
         "dojo/_base/declare",
-        "dojo/_base/xhr",
         "dojo/_base/event",
         "dojo/_base/connect",
         "dojo/dom",
@@ -34,7 +33,6 @@ define([
         "qpid/common/TimeZoneSelector",
         "dojo/text!../../showPreferences.html",
         "qpid/common/util",
-        "qpid/management/UserPreferences",
         "dijit/Dialog",
         "dijit/form/NumberSpinner",
         "dijit/form/CheckBox",
@@ -51,7 +49,7 @@ define([
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory, ObjectStore, entities, registry, TimeZoneSelector, markup, util, UserPreferences) {
+function (declare, event, connect, dom, domConstruct, parser, json, Memory, ObjectStore, entities, registry, TimeZoneSelector, markup, util) {
 
   var preferenceNames = ["timeZone", "updatePeriod"];
 
@@ -59,10 +57,10 @@ function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory,
 
     preferencesDialog: null,
 
-    constructor: function()
+    constructor: function(management)
     {
       var that = this;
-
+      this.management = management;
       this.userPreferences = {};
       this.domNode = domConstruct.create("div", {innerHTML: markup});
       parser.parse(this.domNode).then(function(instances)
@@ -81,6 +79,8 @@ function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory,
         this[name].on("change", function(val){that._toggleSetButtons();});
       }
 
+      this.timeZoneSelector = registry.byId("preferences.timeZone");
+      this.timeZoneSelector.set("timezones", this.management.timezone.getAllTimeZones());
       this.setButton = registry.byId("preferences.setButton");
       this.setAndCloseButton = registry.byId("preferences.setAndCloseButton");
       this.setButton.on("click", function(e){that._savePreferences(e, false);});
@@ -111,8 +111,8 @@ function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory,
 
     showDialog: function(){
       this._setValues();
-      this._loadUserPreferences();
-      this.preferencesDialog.show();
+      var that = this;
+      this._loadUserPreferences(function(){that.preferencesDialog.show();});
     },
 
     destroy: function()
@@ -140,7 +140,7 @@ function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory,
           }
         }
 
-        UserPreferences.setPreferences(
+        this.management.userPreferences.save(
             preferences,
             function(preferences)
             {
@@ -170,37 +170,38 @@ function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory,
                 }
               }
               that._toggleSetButtons();
-            },
-            UserPreferences.defaultErrorHandler
-        );
+            });
       }
     },
 
     _deletePreferences: function(hideDialog){
-      var data = this.usersGrid.selection.getSelected();
-      if (util.deleteGridSelections(
-         null,
-         this.usersGrid,
-         "service/userpreferences",
-         "Are you sure you want to delete preferences for user",
-         "user"))
+    var that = this;
+    var postDelete = function(data)
        {
-        this._loadUserPreferences();
+        that._loadUserPreferences();
         var authenticatedUser = dom.byId("authenticatedUser").innerHTML;
         for(i = 0; i<data.length; i++)
         {
           if (data[i].name == authenticatedUser)
           {
-            UserPreferences.resetPreferences();
-            this._setValues();
+            that.management.userPreferences.resetPreferences();
+            that._setValues();
             break;
           }
         }
         if (hideDialog)
         {
-          this.preferencesDialog.hide();
+          that.preferencesDialog.hide();
         }
-       }
+       };
+
+      util.deleteSelectedRows(this.usersGrid,
+                              "Are you sure you want to delete preferences for user",
+                              this.management,
+                              "service/userpreferences",
+                              null,
+                              "user",
+                              postDelete );
     },
 
     _setValues: function()
@@ -211,7 +212,7 @@ function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory,
         var preferenceWidget = this[name];
         if (preferenceWidget)
         {
-          var value = UserPreferences[name]
+          var value = this.management.userPreferences[name]
           if (typeof value == "string")
           {
             value = entities.encode(String(value))
@@ -224,36 +225,37 @@ function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory,
           preferenceWidget.set("value", value);
           if (preferenceWidget.hasOwnProperty("checked"))
           {
-            preferenceWidget.set("checked", UserPreferences[name] ? true : false);
+            preferenceWidget.set("checked", this.management.userPreferences[name] ? true : false);
           }
         }
       }
       this._toggleSetButtons();
     },
 
-    _loadUserPreferences : function()
+    _loadUserPreferences : function(callback)
     {
       var that = this;
-      xhr.get({
-        url: "service/userpreferences",
-        sync: false,
-        handleAs: "json"
-      }).then(
-         function(users) {
-             for(var i=0; i<users.length; i++)
-             {
-               users[i].id = users[i].authenticationProvider + "/" + users[i].name;
-             }
-             that.users = users;
-             var usersStore = new Memory({data: users, idProperty: "id"});
-             var usersDataStore = new ObjectStore({objectStore: usersStore});
-             if (that.usersGrid.store)
-             {
-               that.usersGrid.store.close();
-             }
-             that.usersGrid.set("store", usersDataStore);
-             that.usersGrid._refresh();
-      });
+      this.management.get({url: "service/userpreferences"},
+                          function(users)
+                          {
+                                 for(var i=0; i<users.length; i++)
+                                 {
+                                   users[i].id = users[i].authenticationProvider + "/" + users[i].name;
+                                 }
+                                 that.users = users;
+                                 var usersStore = new Memory({data: users, idProperty: "id"});
+                                 var usersDataStore = new ObjectStore({objectStore: usersStore});
+                                 if (that.usersGrid.store)
+                                 {
+                                   that.usersGrid.store.close();
+                                 }
+                                 that.usersGrid.set("store", usersDataStore);
+                                 if (callback)
+                                 {
+                                    callback();
+                                 }
+                                 that.usersGrid._refresh();
+                          });
     },
 
     _toggleSetButtons: function()
@@ -266,7 +268,7 @@ function (declare, xhr, event, connect, dom, domConstruct, parser, json, Memory,
         if (preferenceWidget)
         {
           var value = preferenceWidget.hasOwnProperty("checked") ? preferenceWidget.checked : preferenceWidget.get("value");
-          if (value != UserPreferences[name])
+          if (value != this.management.userPreferences[name])
           {
             changed = true;
             break;

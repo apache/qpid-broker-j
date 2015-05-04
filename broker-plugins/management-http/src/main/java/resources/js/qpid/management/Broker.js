@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dojo/json",
         "dojo/_base/connect",
@@ -38,6 +37,7 @@ define(["dojo/_base/xhr",
         "qpid/management/addGroupProvider",
         "qpid/management/addAccessControlProvider",
         "qpid/management/editBroker",
+        "dojo/text!showBroker.html",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dijit/layout/AccordionContainer",
@@ -51,8 +51,8 @@ define(["dojo/_base/xhr",
         "dijit/Menu",
         "dijit/MenuItem",
         "dojo/domReady!"],
-       function (xhr, parser, query, json, connect, memory, properties, updater, util, UpdatableStore, EnhancedGrid, registry, entities,
-        addAuthenticationProvider, addVirtualHostNodeAndVirtualHost, addPort, addStore, addGroupProvider, addAccessControlProvider, editBroker) {
+       function (parser, query, json, connect, memory, properties, updater, util, UpdatableStore, EnhancedGrid, registry, entities,
+        addAuthenticationProvider, addVirtualHostNodeAndVirtualHost, addPort, addStore, addGroupProvider, addAccessControlProvider, editBroker, template) {
 
            var brokerAttributeNames = ["name", "operatingSystem", "platform", "productVersion", "modelVersion",
                                         "defaultVirtualHost", "statisticsReportingPeriod", "statisticsReportingResetEnabled",
@@ -61,12 +61,8 @@ define(["dojo/_base/xhr",
            function Broker(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "broker", name: name };
-
-               if(parent) {
-                    this.modelObj.parent = {};
-                    this.modelObj.parent[ parent.type] = parent;
-               }
            }
 
 
@@ -78,10 +74,8 @@ define(["dojo/_base/xhr",
            Broker.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showBroker.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
+                        {
+                            contentPane.containerNode.innerHTML = template;
                             parser.parse(contentPane.containerNode).then(function(instances)
                             {
                             that.brokerUpdater = new BrokerUpdater(contentPane.containerNode, that.modelObj, that.controller);
@@ -93,7 +87,9 @@ define(["dojo/_base/xhr",
 
 
                             var addProviderButton = query(".addAuthenticationProvider", contentPane.containerNode)[0];
-                            connect.connect(registry.byNode(addProviderButton), "onClick", function(evt){ addAuthenticationProvider.show(); });
+                            connect.connect(registry.byNode(addProviderButton), "onClick", function(evt){
+                                addAuthenticationProvider.show(that.management, that.modelObj);
+                            });
 
                             var deleteProviderButton = query(".deleteAuthenticationProvider", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(deleteProviderButton), "onClick",
@@ -112,31 +108,36 @@ define(["dojo/_base/xhr",
                                           }
                                         }
 
-                                        util.deleteGridSelections(
-                                                that.brokerUpdater,
+                                        util.deleteSelectedObjects(
                                                 that.brokerUpdater.authenticationProvidersGrid.grid,
-                                                "api/latest/authenticationprovider",
-                                                warning + "Are you sure you want to delete authentication provider");
+                                                warning + "Are you sure you want to delete authentication provider",
+                                                that.management,
+                                                {type: "authenticationprovider", parent:that.modelObj},
+                                                that.brokerUpdater);
                                 }
                             );
 
                             var addVHNAndVHButton = query(".addVirtualHostNodeAndVirtualHostButton", contentPane.containerNode)[0];
-                            connect.connect(registry.byNode(addVHNAndVHButton), "onClick", function(evt){ addVirtualHostNodeAndVirtualHost.show(); });
+                            connect.connect(registry.byNode(addVHNAndVHButton), "onClick", function(evt){
+                                addVirtualHostNodeAndVirtualHost.show(that.controller.management);
+                            });
 
                             var addPortButton = query(".addPort", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(addPortButton), "onClick", function(evt){
-                              addPort.show(null, "AMQP", that.brokerUpdater.brokerData.authenticationproviders,
+                              addPort.show(that.management, that.modelObj, "AMQP", that.brokerUpdater.brokerData.authenticationproviders,
                                   that.brokerUpdater.brokerData.keystores, that.brokerUpdater.brokerData.truststores);
                             });
 
                             var deletePort = query(".deletePort", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(deletePort), "onClick",
                                     function(evt){
-                                        util.deleteGridSelections(
-                                                that.brokerUpdater,
+                                        util.deleteSelectedObjects(
                                                 that.brokerUpdater.portsGrid.grid,
-                                                "api/latest/port",
-                                                "Are you sure you want to delete port");
+                                                "Are you sure you want to delete port",
+                                                that.management,
+                                                {type: "port", parent:that.modelObj},
+                                                that.brokerUpdater);
+
                                 }
                             );
 
@@ -144,7 +145,7 @@ define(["dojo/_base/xhr",
                             connect.connect(registry.byNode(editButton), "onClick",
                                 function(evt)
                                 {
-                                  editBroker.show(that.brokerUpdater.brokerData);
+                                  editBroker.show(that.management, that.brokerUpdater.brokerData);
                                 }
                             );
 
@@ -152,18 +153,19 @@ define(["dojo/_base/xhr",
                             connect.connect(registry.byNode(addKeystoreButton), "onClick",
                                 function(evt)
                                 {
-                                    addStore.setupTypeStore("KeyStore");
+                                    addStore.setupTypeStore(that.management, "KeyStore", that.modelObj);
                                     addStore.show();
                                 });
 
                             var deleteKeystore = query(".deleteKeystore", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(deleteKeystore), "onClick",
                                     function(evt){
-                                        util.deleteGridSelections(
-                                                that.brokerUpdater,
+                                        util.deleteSelectedObjects(
                                                 that.brokerUpdater.keyStoresGrid.grid,
-                                                "api/latest/keystore",
-                                                "Are you sure you want to delete key store");
+                                                "Are you sure you want to delete key store",
+                                                that.management,
+                                                {type: "keystore", parent:that.modelObj},
+                                                that.brokerUpdater);
                                 }
                             );
 
@@ -171,24 +173,25 @@ define(["dojo/_base/xhr",
                             connect.connect(registry.byNode(addTruststoreButton), "onClick",
                                 function(evt)
                                 {
-                                    addStore.setupTypeStore("TrustStore");
+                                    addStore.setupTypeStore(that.management, "TrustStore", that.modelObj);
                                     addStore.show();
                                 });
 
                             var deleteTruststore = query(".deleteTruststore", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(deleteTruststore), "onClick",
                                     function(evt){
-                                        util.deleteGridSelections(
-                                                that.brokerUpdater,
+                                        util.deleteSelectedObjects(
                                                 that.brokerUpdater.trustStoresGrid.grid,
-                                                "api/latest/truststore",
-                                                "Are you sure you want to delete trust store");
+                                                "Are you sure you want to delete trust store",
+                                                that.management,
+                                                {type: "truststore", parent:that.modelObj},
+                                                that.brokerUpdater);
                                 }
                             );
 
                             var addGroupProviderButton = query(".addGroupProvider", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(addGroupProviderButton), "onClick",
-                                function(evt){addGroupProvider.show();});
+                                function(evt){addGroupProvider.show(that.controller.management, that.modelObj);});
 
                             var deleteGroupProvider = query(".deleteGroupProvider", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(deleteGroupProvider), "onClick",
@@ -207,30 +210,32 @@ define(["dojo/_base/xhr",
                                           }
                                         }
 
-                                        util.deleteGridSelections(
-                                                that.brokerUpdater,
+                                        util.deleteSelectedObjects(
                                                 that.brokerUpdater.groupProvidersGrid.grid,
-                                                "api/latest/groupprovider",
-                                                warning + "Are you sure you want to delete group provider");
+                                                warning + "Are you sure you want to delete group provider",
+                                                that.management,
+                                                {type: "groupprovider", parent:that.modelObj},
+                                                that.brokerUpdater);
                                 }
                             );
 
                             var addAccessControlButton = query(".addAccessControlProvider", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(addAccessControlButton), "onClick",
-                                function(evt){addAccessControlProvider.show();});
+                                function(evt){addAccessControlProvider.show(that.management, that.modelObj);});
 
                             var deleteAccessControlProviderButton = query(".deleteAccessControlProvider", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(deleteAccessControlProviderButton), "onClick",
                                     function(evt){
-                                        util.deleteGridSelections(
-                                                that.brokerUpdater,
+                                        util.deleteSelectedObjects(
                                                 that.brokerUpdater.accessControlProvidersGrid.grid,
-                                                "api/latest/accesscontrolprovider",
-                                                "Are you sure you want to delete access control provider");
+                                                "Are you sure you want to delete access control provider",
+                                                that.management,
+                                                {type: "accesscontrolprovider", parent:that.modelObj},
+                                                that.brokerUpdater);
                                 }
                             );
                             });
-                        }});
+                        }
            };
 
            Broker.prototype.close = function() {
@@ -240,11 +245,12 @@ define(["dojo/_base/xhr",
            function BrokerUpdater(node, brokerObj, controller)
            {
                this.controller = controller;
-               this.query = "api/latest/broker?depth=2";
-               this.accessControlProvidersWarn = query(".broker-access-control-providers-warning", node)[0]
+               this.accessControlProvidersWarn = query(".broker-access-control-providers-warning", node)[0];
+               this.management = controller.management;
+               this.brokerObj = brokerObj;
                var that = this;
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"})
+               this.management.load(brokerObj, {depth:2})
                    .then(function(data)
                          {
                              that.brokerData= data[0];
@@ -369,11 +375,12 @@ define(["dojo/_base/xhr",
 
                              deleteNodeItem.on("click",
                                      function(evt){
-                                         util.deleteGridSelections(
-                                                 that,
+                                         util.deleteSelectedObjects(
                                                  that.vhostsGrid.grid,
-                                                 "api/latest/virtualhostnode",
-                                                 "Deletion of virtual host node will delete both configuration and message data.\n\n Are you sure you want to delete virtual host node");
+                                                 "Deletion of virtual host node will delete both configuration and message data.\n\n Are you sure you want to delete virtual host node",
+                                                 that.management,
+                                                 {type: "virtualhostnode", parent:that.modelObj},
+                                                 that.brokerUpdater);
                                  }
                              );
 
@@ -384,9 +391,9 @@ define(["dojo/_base/xhr",
                                  if (data.length == 1)
                                  {
                                    var item = data[0];
-                                   util.sendRequest("api/latest/virtualhostnode/" + encodeURIComponent(item.name),
-                                           "PUT", {desiredState: "ACTIVE"});
-                                   that.vhostsGrid.grid.selection.clear();
+                                   that.management.update({type:"virtualhostnode", name:item.name, parent: that.modelObj},
+                                           {desiredState: "ACTIVE"},
+                                           function(data){that.vhostsGrid.grid.selection.clear();});
                                  }
                                });
 
@@ -401,9 +408,9 @@ define(["dojo/_base/xhr",
                                            + "Are you sure you want to stop virtual host node '"
                                            + entities.encode(String(item.name)) +"'?"))
                                    {
-                                       util.sendRequest("api/latest/virtualhostnode/" + encodeURIComponent(item.name),
-                                               "PUT", {desiredState: "STOPPED"});
-                                       that.vhostsGrid.grid.selection.clear();
+                                       that.management.update({type:"virtualhostnode", name:item.name, parent: that.modelObj},
+                                               {desiredState: "STOPPED"},
+                                               function(data){that.vhostsGrid.grid.selection.clear();});
                                    }
                                  }
                                });
@@ -415,9 +422,9 @@ define(["dojo/_base/xhr",
                                  {
                                    var item = data[0];
                                    var host = item.virtualhosts[0];
-                                   util.sendRequest("api/latest/virtualhost/" + encodeURIComponent(item.name) + "/" + encodeURIComponent(host.name),
-                                           "PUT", {desiredState: "ACTIVE"});
-                                   that.vhostsGrid.grid.selection.clear();
+                                   that.management.update({type:"virtualhost", name:item.name, parent: {type:"virtualhostnode", name: host.name, parent: that.modelObj}},
+                                            {desiredState: "ACTIVE"},
+                                            function(data){that.vhostsGrid.grid.selection.clear();});
                                  }
                                });
 
@@ -431,9 +438,9 @@ define(["dojo/_base/xhr",
                                    if (confirm("Are you sure you want to stop virtual host '"
                                            + entities.encode(String(host.name)) +"'?"))
                                    {
-                                       util.sendRequest("api/latest/virtualhost/" + encodeURIComponent(item.name) + "/" + encodeURIComponent(host.name),
-                                               "PUT", {desiredState: "STOPPED"});
-                                       that.vhostsGrid.grid.selection.clear();
+                                       that.management.update({type:"virtualhost", name:item.name, parent: {type:"virtualhostnode", name: host.name, parent: that.modelObj}},
+                                               {desiredState: "STOPPED"},
+                                               function(data){that.vhostsGrid.grid.selection.clear();});
                                    }
                                  }
                                });
@@ -472,7 +479,16 @@ define(["dojo/_base/xhr",
                                                      { name: "Type", field: "type", width: "20%"},
                                                      { name: "User Management", field: "type", width: "20%",
                                                              formatter: function(val){
-                                                                 return "<input type='radio' disabled='disabled' "+(util.isProviderManagingUsers(val)?"checked='checked'": "")+" />";
+                                                                 var isProviderManagingUsers = false;
+                                                                 try
+                                                                 {
+                                                                    isProviderManagingUsers = that.management.metadata.implementsManagedInterface("AuthenticationProvider", val, "PasswordCredentialManagingAuthenticationProvider");
+                                                                 }
+                                                                 catch(e)
+                                                                 {
+                                                                    console.error(e);
+                                                                 }
+                                                                 return "<input type='radio' disabled='disabled' "+(isProviderManagingUsers?"checked='checked'": "")+" />";
                                                              }
                                                      }
                                                  ], function(obj) {
@@ -635,7 +651,7 @@ define(["dojo/_base/xhr",
 
                var that = this;
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
+               this.management.load(this.brokerObj, {depth:2}).then(function(data)
                    {
                        that.brokerData = data[0];
                        util.flattenStatistics( that.brokerData );

@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
         "dijit/registry",
@@ -33,13 +32,15 @@ define(["dojo/_base/xhr",
         "qpid/management/addExchange",
         "qpid/management/editVirtualHostNode",
         "dojox/grid/EnhancedGrid",
+        "dojo/text!showVirtualHostNode.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, addQueue, addExchange, editVirtualHostNode, EnhancedGrid) {
+       function (parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, addQueue, addExchange, editVirtualHostNode, EnhancedGrid, template) {
 
            function VirtualHostNode(name, parent, controller)
            {
                this.name = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "virtualhostnode", name: name, parent: parent};
            }
 
@@ -52,15 +53,11 @@ define(["dojo/_base/xhr",
            {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showVirtualHostNode.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
-                            parser.parse(contentPane.containerNode).then(function(instances)
-                            {
-                                that.onOpen(contentPane.containerNode)
-                            });
-                       }});
+               contentPane.containerNode.innerHTML = template;
+               parser.parse(contentPane.containerNode).then(function(instances)
+               {
+                   that.onOpen(contentPane.containerNode)
+               });
 
            };
 
@@ -78,10 +75,8 @@ define(["dojo/_base/xhr",
                    if (confirm("Deletion of virtual host node will delete both configuration and message data.\n\n"
                            + "Are you sure you want to delete virtual host node '" + entities.encode(String(that.name)) + "'?"))
                    {
-                     if (util.sendRequest("api/latest/virtualhostnode/" + encodeURIComponent( that.name) , "DELETE"))
-                     {
-                       that.destroy();
-                     }
+                     that.management.remove(that.modelObj).then(
+                        function(x){that.destroy();}, util.xhrErrorHandler);
                    }
                  }
              );
@@ -89,8 +84,7 @@ define(["dojo/_base/xhr",
                function(event)
                {
                  that.startNodeButton.set("disabled", true);
-                 util.sendRequest("api/latest/virtualhostnode/" + encodeURIComponent(that.name),
-                         "PUT", {desiredState: "ACTIVE"});
+                 that.management.update(that.modelObj, {desiredState: "ACTIVE"}, null, util.xhrErrorHandler);
                });
 
              this.stopNodeButton.on("click",
@@ -101,15 +95,14 @@ define(["dojo/_base/xhr",
                          + entities.encode(String(that.name)) +"'?"))
                  {
                      that.stopNodeButton.set("disabled", true);
-                     util.sendRequest("api/latest/virtualhostnode/" + encodeURIComponent(that.name),
-                             "PUT", {desiredState: "STOPPED"});
+                     that.management.update(that.modelObj, {desiredState: "STOPPED"}, null, util.xhrErrorHandler);
                  }
                });
 
                this.editNodeButton.on("click",
                 function(event)
                 {
-                    editVirtualHostNode.show(that.vhostNodeUpdater.nodeData);
+                    editVirtualHostNode.show(management, that.modelObj, that.vhostNodeUpdater.nodeData);
                 }
                );
 
@@ -128,9 +121,7 @@ define(["dojo/_base/xhr",
                     }, {height: 200, canSort : function(col) {return false;} }, EnhancedGrid);
 
              this.vhostNodeUpdater = new Updater(containerNode, this.modelObj, this);
-             this.vhostNodeUpdater.update();
-
-             updater.add( this.vhostNodeUpdater );
+             this.vhostNodeUpdater.update(function(x){updater.add( that.vhostNodeUpdater );});
            }
 
            VirtualHostNode.prototype.showVirtualHost=function(item)
@@ -154,6 +145,7 @@ define(["dojo/_base/xhr",
            function Updater(domNode, nodeObject, virtualHostNode)
            {
                this.virtualHostNode = virtualHostNode;
+               this.modelObj = nodeObject;
                var that = this;
 
                function findNode(name)
@@ -171,20 +163,22 @@ define(["dojo/_base/xhr",
 
                storeNodes(["name", "state", "type"]);
                this.detailsDiv = findNode("virtualhostnodedetails");
-
-               this.query = "api/latest/virtualhostnode/" + encodeURIComponent(nodeObject.name);
           }
 
-           Updater.prototype.update = function()
+           Updater.prototype.update = function(callback)
            {
                var that = this;
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(
+               that.virtualHostNode.management.load(this.modelObj).then(
                    function(data)
                    {
-                     that.nodeData = data[0];
-                     that.updateUI(data[0]);
-                   }
-               );
+                     that.nodeData = data[0] || {};
+                     that.updateUI(that.nodeData);
+
+                     if (callback)
+                     {
+                        callback();
+                     }
+                   });
            };
 
            Updater.prototype.updateUI = function(data)

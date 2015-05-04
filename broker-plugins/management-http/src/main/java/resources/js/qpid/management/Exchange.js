@@ -31,12 +31,14 @@ define(["dojo/_base/xhr",
         "qpid/management/addBinding",
         "dojox/grid/EnhancedGrid",
         "dojox/html/entities",
+        "dojo/text!showExchange.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, connect, registry, properties, updater, util, formatter, UpdatableStore, addBinding, EnhancedGrid, entities) {
+       function (xhr, parser, query, connect, registry, properties, updater, util, formatter, UpdatableStore, addBinding, EnhancedGrid, entities, template) {
 
            function Exchange(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "exchange", name: name, parent: parent};
            }
 
@@ -63,28 +65,18 @@ define(["dojo/_base/xhr",
            };
 
            Exchange.prototype.open = function(contentPane) {
-               var that = this;
-               this.contentPane = contentPane;
-               xhr.get({url: "showExchange.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
-                            parser.parse(contentPane.containerNode).then(function(instances)
-                            {
+                var that = this;
+                this.contentPane = contentPane;
+
+                contentPane.containerNode.innerHTML = template;
+                parser.parse(contentPane.containerNode).then(function(instances)
+                {
 
                             that.exchangeUpdater = new ExchangeUpdater(contentPane.containerNode, that.modelObj, that.controller);
-
-                            updater.add( that.exchangeUpdater );
-
-                            that.exchangeUpdater.update();
-
-
                             var addBindingButton = query(".addBindingButton", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(addBindingButton), "onClick",
                                             function(evt){
-                                                addBinding.show({ virtualhost: that.getVirtualHostName(),
-                                                                  virtualhostnode: that.getVirtualHostNodeName(),
-                                                                  exchange: that.getExchangeName()});
+                                                addBinding.show(that.management, that.modelObj);
                                             });
 
                             var deleteBindingButton = query(".deleteBindingButton", contentPane.containerNode)[0];
@@ -107,8 +99,9 @@ define(["dojo/_base/xhr",
                                             that.deleteExchange();
                                         });
                             }
-                            });
-                        }});
+
+                            that.exchangeUpdater.update( function(){updater.add( that.exchangeUpdater )});
+                });
            };
 
            Exchange.prototype.close = function() {
@@ -117,17 +110,20 @@ define(["dojo/_base/xhr",
 
            Exchange.prototype.deleteBindings = function()
            {
-               util.deleteGridSelections(
-                       this.exchangeUpdater,
-                       this.exchangeUpdater.bindingsGrid.grid,
-                       "api/latest/binding/" + encodeURIComponent(this.getVirtualHostNodeName())
-                           + "/" + encodeURIComponent(this.getVirtualHostName()) + "/" + encodeURIComponent(this.name),
-                       "Are you sure you want to delete binding for queue");
+               util.deleteSelectedObjects(
+                        this.exchangeUpdater.bindingsGrid.grid,
+                        "Are you sure you want to delete binding",
+                        this.management,
+                        {type: "binding", parent:that.modelObj},
+                        this.exchangeUpdater);
            }
 
            function ExchangeUpdater(containerNode, exchangeObj, controller)
            {
                var that = this;
+
+               this.management = controller.management;
+               this.modelObj = exchangeObj;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -161,18 +157,9 @@ define(["dojo/_base/xhr",
                            "bytesDropRate",
                            "bytesDropRateUnits"]);
 
+                                  that.exchangeData = {};
 
-
-               this.query = "api/latest/exchange/" + encodeURIComponent(exchangeObj.parent.parent.name)
-                               + "/" + encodeURIComponent(exchangeObj.parent.name) + "/" + encodeURIComponent(exchangeObj.name);
-
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
-                               {
-                                  that.exchangeData = data[0];
-                                  util.flattenStatistics( that.exchangeData );
-
-                                  that.updateHeader();
-                                  that.bindingsGrid = new UpdatableStore(that.exchangeData.bindings, findNode("bindings"),
+                                  that.bindingsGrid = new UpdatableStore([], findNode("bindings"),
                                                            [ { name: "Queue",    field: "queue",      width: "40%"},
                                                              { name: "Binding Key", field: "name",          width: "30%"},
                                                              { name: "Arguments",   field: "argumentString",     width: "30%"}
@@ -191,9 +178,6 @@ define(["dojo/_base/xhr",
                                                                          indirectSelection: true
 
                                                                 }}, EnhancedGrid);
-
-                               });
-
            }
 
            ExchangeUpdater.prototype.updateHeader = function()
@@ -207,14 +191,19 @@ define(["dojo/_base/xhr",
 
            };
 
-           ExchangeUpdater.prototype.update = function()
+           ExchangeUpdater.prototype.update = function(callback)
            {
 
               var thisObj = this;
 
-              xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
+              this.management.load(this.modelObj).then(function(data)
                    {
                       thisObj.exchangeData = data[0];
+
+                      if (callback)
+                      {
+                        callback();
+                      }
 
                       util.flattenStatistics( thisObj.exchangeData );
 
@@ -275,25 +264,18 @@ define(["dojo/_base/xhr",
                       // update bindings
                       thisObj.bindingsGrid.update(thisObj.exchangeData.bindings)
 
-                   });
+                   }, util.xhrErrorHandler);
            };
 
            Exchange.prototype.deleteExchange = function() {
                if(confirm("Are you sure you want to delete exchange '" +this.name+"'?")) {
-                   var query = "api/latest/exchange/" + encodeURIComponent(this.getVirtualHostNodeName())
-                                   + "/" + encodeURIComponent(this.getVirtualHostName()) +  "/" + encodeURIComponent(this.name);
-                   this.success = true
                    var that = this;
-                   xhr.del({url: query, sync: true, handleAs: "json"}).then(
-                       function(data) {
-                           that.contentPane.onClose()
-                           that.controller.tabContainer.removeChild(that.contentPane);
-                           that.contentPane.destroyRecursive();
-                       },
-                       function(error) {that.success = false; that.failureReason = error;});
-                   if(!this.success ) {
-                       util.xhrErrorHandler(this.failureReason);
-                   }
+                   this.management.remove(this.modelObj).then(
+                                       function(data) {
+                                           that.contentPane.onClose()
+                                           that.controller.tabContainer.removeChild(that.contentPane);
+                                           that.contentPane.destroyRecursive();
+                                       }, util.xhrErrorHandler);
                }
            }
 

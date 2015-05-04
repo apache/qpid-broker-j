@@ -18,18 +18,16 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/_base/connect",
+define(["dojo/_base/connect",
         "dojox/html/entities",
         "dojo/query",
         "dojo/json",
         "dijit/registry",
         "dojox/grid/EnhancedGrid",
         "qpid/common/UpdatableStore",
-        "qpid/management/UserPreferences",
         "qpid/common/util",
         "dojo/domReady!"],
-  function (xhr, connect, entities, query, json, registry, EnhancedGrid, UpdatableStore, UserPreferences, util)
+  function (connect, entities, query, json, registry, EnhancedGrid, UpdatableStore, util)
   {
     var priorityNames = {'_0': 'Never', '_1': 'Default', '_2': 'High', '_3': 'Highest'};
     var nodeFields = ["storePath", "groupName", "role", "address", "designatedPrimary", "priority", "quorumOverride"];
@@ -39,45 +37,16 @@ define(["dojo/_base/xhr",
       return query("." + nodeClass, containerNode)[0];
     }
 
-    function sendRequest(nodeName, remoteNodeName, method, attributes)
+    function getModelObj(nodeName, remoteNodeName, modelObj)
     {
-        var success = false;
-        var failureReason = "";
-        var url = null;
         if (nodeName == remoteNodeName)
         {
-          url = "api/latest/virtualhostnode/" + encodeURIComponent(nodeName);
+          return modelObj;
         }
         else
         {
-          url = "api/latest/replicationnode/" + encodeURIComponent(nodeName) + "/" + encodeURIComponent(remoteNodeName);
+          return {name: remoteNodeName, type: "replicationnode", parent : modelObj};
         }
-
-        if (method == "POST")
-        {
-          xhr.put({
-            url: url,
-            sync: true,
-            handleAs: "json",
-            headers: { "Content-Type": "application/json"},
-            putData: json.stringify(attributes),
-            load: function(x) {success = true; },
-            error: function(error) {success = false; failureReason = error;}
-          });
-        }
-        else if (method == "DELETE")
-        {
-          xhr.del({url: url, sync: true, handleAs: "json"}).then(
-                function(data) { success = true; },
-                function(error) {success = false; failureReason = error;}
-          );
-        }
-
-        if (!success)
-        {
-            util.xhrErrorHandler(failureReason);
-        }
-        return success;
     }
 
     function BDBHA(data)
@@ -90,6 +59,7 @@ define(["dojo/_base/xhr",
     {
       var that = this;
       var containerNode = data.containerNode;
+      this.management = data.parent.management;
       this.designatedPrimaryContainer = findNode("designatedPrimaryContainer", containerNode);
       this.priorityContainer = findNode("priorityContainer", containerNode);
       this.quorumOverrideContainer = findNode("quorumOverrideContainer", containerNode);
@@ -101,7 +71,10 @@ define(["dojo/_base/xhr",
            { name: 'Name', field: 'name', width: '10%' },
            { name: 'Role', field: 'role', width: '15%' },
            { name: 'Address', field: 'address', width: '30%' },
-           { name: 'Join Time', field: 'joinTime', width: '25%', formatter: function(value){ return value ? UserPreferences.formatDateTime(value) : "";} },
+           { name: 'Join Time', field: 'joinTime', width: '25%',
+                                                formatter: function(value){
+                                                    return value ? that.management.userPreferences.formatDateTime(value) : "";
+                                                }},
            { name: 'Replication Transaction ID', field: 'lastKnownReplicationTransactionId', width: '20%', formatter: function(value){ return value > 0 ? value : "N/A";} }
           ],
           null,
@@ -128,14 +101,15 @@ define(["dojo/_base/xhr",
       connect.connect(this.membersGrid.grid.selection, 'onSelected',  nodeControlsToggler);
       connect.connect(this.membersGrid.grid.selection, 'onDeselected',  nodeControlsToggler);
 
+      var modelObj = data.parent.modelObj;
       this.transferMasterButton.on("click",
           function(e)
           {
             var data = that.membersGrid.grid.selection.getSelected();
             if (data.length == 1 && confirm("Are you sure you would like to transfer mastership to node '" + data[0].name + "'?"))
             {
-                sendRequest(that.data.name, data[0].name, "POST", {role: "MASTER"});
-                that.membersGrid.grid.selection.clear();
+                that.management.update(getModelObj(that.data.name, data[0].name, modelObj),  {role: "MASTER"},
+                                function(data){that.membersGrid.grid.selection.clear();}, util.xhrErrorHandler);
             }
           }
       );
@@ -145,21 +119,27 @@ define(["dojo/_base/xhr",
             var data = that.membersGrid.grid.selection.getSelected();
             if (data.length == 1 && confirm("Are you sure you would like to delete node '" + data[0].name + "'?"))
             {
-                if (sendRequest(that.data.name, data[0].name, "DELETE"))
-                {
-                  that.membersGrid.grid.selection.clear();
-                  if (data[0].name == that.data.name)
-                  {
-                    that.parent.destroy();
-                  }
-                }
+                that.management.remove(getModelObj(that.data.name, data[0].name, modelObj)).then(
+                                    function(data){
+                                        that.membersGrid.grid.selection.clear();
+                                        if (data[0].name == that.data.name)
+                                        {
+                                            that.parent.destroy();
+                                        }
+                                    }, util.xhrErrorHandler);
             }
           }
       );
+      this._parsed = true;
     }
 
     BDBHA.prototype.update=function(data)
     {
+      if(!this._parsed)
+      {
+        return;
+      }
+
       this.parent.editNodeButton.set("disabled", false);
 
 

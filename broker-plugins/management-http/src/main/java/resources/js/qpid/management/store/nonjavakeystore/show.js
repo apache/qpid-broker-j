@@ -17,13 +17,13 @@
  * under the License.
  */
 
-define(["qpid/common/util", "qpid/common/metadata", "qpid/management/UserPreferences", "dojox/html/entities", "dojo/domReady!"],
-  function (util, metadata, UserPreferences, entities)
+define(["qpid/common/util", "dojox/html/entities", "dojo/domReady!"],
+  function (util, entities)
   {
 
-    function toDate(value)
+    function toDate(value, userPreferences)
     {
-        return value ? entities.encode(String(UserPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}))) : "";
+        return value ? entities.encode(String(userPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}))) : "";
     }
 
     var dateFields = ["certificateValidEnd","certificateValidStart"];
@@ -31,7 +31,8 @@ define(["qpid/common/util", "qpid/common/metadata", "qpid/management/UserPrefere
     function NonJavaKeyStore(data)
     {
         this.fields = [];
-        var attributes = metadata.getMetaData("KeyStore", "NonJavaKeyStore").attributes;
+        this.management = data.parent.management;
+        var attributes = this.management.metadata.getMetaData("KeyStore", "NonJavaKeyStore").attributes;
         for(var name in attributes)
         {
             if (dateFields.indexOf(name) == -1)
@@ -51,7 +52,7 @@ define(["qpid/common/util", "qpid/common/metadata", "qpid/management/UserPrefere
             for(var idx in dateFields)
             {
                 var name = dateFields[idx];
-                this[name].innerHTML = toDate(data[name]);
+                this[name].innerHTML = toDate(data[name], this.management.userPreferences);
             }
         }
     }

@@ -33,7 +33,6 @@ define(["dojo/_base/xhr",
         "dojo/window",
         "dojo/on",
         "dojox/html/entities",
-        "qpid/common/metadata",
         "qpid/common/widgetconfigurer",
         "dijit/registry",
         "dijit/TitlePane",
@@ -50,7 +49,7 @@ define(["dojo/_base/xhr",
         "dojox/validate/web",
         "dojo/domReady!"
         ],
-       function (xhr, array, event, lang, json, dom, geometry, domStyle, win, query, parser, Memory, w, on, entities, metadata, widgetconfigurer, registry) {
+       function (xhr, array, event, lang, json, dom, geometry, domStyle, win, query, parser, Memory, w, on, entities, widgetconfigurer, registry) {
            var util = {};
            if (Array.isArray) {
                util.isArray = function (object) {
@@ -89,249 +88,120 @@ define(["dojo/_base/xhr",
                return exchangeName == null || exchangeName == "" || "<<default>>" == exchangeName || exchangeName.indexOf("amq.") == 0 || exchangeName.indexOf("qpid.") == 0;
            };
 
-           util.deleteGridSelections = function(updater, grid, url, confirmationMessageStart, idParam)
+           util.confirmAndDeleteGridSelection = function(grid, confirmationMessageStart, deleteFunction )
            {
-               var data = grid.selection.getSelected();
-               var success = false;
-               if(data.length)
-               {
-                   var confirmationMessage = null;
-                   if (data.length == 1)
-                   {
-                       confirmationMessage = confirmationMessageStart + " '" + data[0].name + "'?";
-                   }
-                   else
-                   {
-                       var names = '';
-                       for(var i = 0; i<data.length; i++)
-                       {
-                           if (names)
-                           {
-                               names += ', ';
-                           }
-                           names += "\""+ data[i].name + "\"";
-                       }
-                       confirmationMessage = confirmationMessageStart + "s " + names + "?";
-                   }
-                   if(confirm(confirmationMessage))
-                   {
-                       var i, queryParam;
-                       for(i = 0; i<data.length; i++)
-                       {
-                           if(queryParam)
-                           {
-                               queryParam += "&";
-                           }
-                           else
-                           {
-                               queryParam = "?";
-                           }
-                           queryParam += ( idParam || "id" ) + "=" + encodeURIComponent(data[i].id);
-                       }
-                       var query = url + queryParam;
-                       var failureReason = "";
-                       xhr.del({url: query, sync: true, handleAs: "json"}).then(
-                           function(data)
-                           {
-                               success = true;
-                               grid.selection.deselectAll();
-                               if (updater)
-                               {
-                                 updater.update();
-                               }
-                           },
-                           function(error) {success = false; failureReason = error;});
-                       if(!success )
-                       {
-                           util.xhrErrorHandler(failureReason);
-                       }
-                   }
-               }
-               return success;
+                var data = grid.selection.getSelected();
+                var confirmed = false;
+                if(data.length)
+                {
+                    var confirmationMessage = null;
+                    if (data.length == 1)
+                    {
+                        confirmationMessage = confirmationMessageStart + " '" + data[0].name + "'?";
+                    }
+                    else
+                    {
+                        var names = '';
+                        for(var i = 0; i<data.length; i++)
+                        {
+                            if (names)
+                            {
+                                names += ', ';
+                            }
+                            names += "\""+ data[i].name + "\"";
+                        }
+                        confirmationMessage = confirmationMessageStart + "s " + names + "?";
+                    }
+
+                    if(confirm(confirmationMessage))
+                    {
+                      confirmed = true;
+                      deleteFunction(data);
+                    }
+                }
+                return confirmed;
            }
 
-           util.isProviderManagingUsers = function(type)
+           util.buildDeleteQuery = function(data, url, idParam)
            {
-               return metadata.implementsManagedInterface("AuthenticationProvider", type, "PasswordCredentialManagingAuthenticationProvider");
-           };
-
-           util.supportsPreferencesProvider = function(type)
-           {
-               return metadata.implementsManagedInterface("AuthenticationProvider", type, "PreferencesSupportingAuthenticationProvider");
-           };
-
-           util.showSetAttributesDialog = function(attributeWidgetFactories, data, putURL, dialogTitle, category, type, appendNameToUrl)
-           {
-              var layout = new dojox.layout.TableContainer({
-                   cols: 1,
-                   "labelWidth": "300",
-                   showLabels: true,
-                   orientation: "horiz",
-                   customClass: "formLabel"
-              });
-              var submitButton = new dijit.form.Button({label: "Submit", type: "submit"});
-              var form = new dijit.form.Form();
-
-              var dialogContent = dom.create("div");
-              var dialogContentArea = dom.create("div", {"style": {width: 600}});
-              var dialogActionBar = dom.create("div", { "class": "dijitDialogPaneActionBar"} );
-              dialogContent.appendChild(dialogContentArea);
-              dialogContent.appendChild(dialogActionBar);
-              dialogContentArea.appendChild(layout.domNode)
-              dialogActionBar.appendChild(submitButton.domNode);
-              form.domNode.appendChild(dialogContent);
-
-              var widgets = {};
-              var requiredFor ={};
-              var groups = {};
-              for(var i in attributeWidgetFactories)
+              var queryParam;
+              for(var i = 0; i<data.length; i++)
               {
-                 var attributeWidgetFactory = attributeWidgetFactories[i];
-                 var widget = attributeWidgetFactory.createWidget(data);
-                 var name = attributeWidgetFactory.name ? attributeWidgetFactory.name : widget.name;
-                 widgets[name] = widget;
-                 var dotPos = name.indexOf(".");
-                 if (dotPos == -1)
-                 {
-                   if (widget instanceof dijit.layout.ContentPane)
-                   {
-                     dialogContentArea.appendChild(widget.domNode);
-                   }
-                   else
-                   {
-                     layout.addChild(widget);
-                   }
-                 }
-                 else
-                 {
-                   var groupName = name.substring(0, dotPos);
-                   var groupFieldContainer = null;
-                   if (groups.hasOwnProperty(groupName))
-                   {
-                       groupFieldContainer = groups[groupName];
-                   }
-                   else
-                   {
-                     groupFieldContainer = new dojox.layout.TableContainer({
-                           cols: 1,
-                           "labelWidth": "300",
-                           showLabels: true,
-                           orientation: "horiz",
-                           customClass: "formLabel"
-                      });
-                     groups[groupName] = groupFieldContainer;
-                     var groupTitle = attributeWidgetFactory.groupName ? attributeWidgetFactory.groupName :
-                                         groupName.charAt(0).toUpperCase() + groupName.slice(1);
-                     var panel = new dijit.TitlePane({title: groupTitle, content: groupFieldContainer.domNode});
-                     dialogContentArea.appendChild(dom.create("br"));
-                     dialogContentArea.appendChild(panel.domNode);
-                   }
-                   groupFieldContainer.addChild(widget);
-                 }
-                 if (attributeWidgetFactory.hasOwnProperty("requiredFor") && !data[name])
-                 {
-                   requiredFor[attributeWidgetFactory.requiredFor] = widget;
-                 }
+                  if(queryParam)
+                  {
+                      queryParam += "&";
+                  }
+                  else
+                  {
+                      queryParam = "?";
+                  }
+                  queryParam += ( idParam || "id" ) + "=" + encodeURIComponent(data[i].id);
               }
+              return url + queryParam;
+           }
 
-              this.applyMetadataToWidgets(dialogContent, category, type);
+           util.deleteSelectedObjects = function(grid, confirmationMessageStart, management, modelObj, updater, idParam, callback)
+           {
+               return util.confirmAndDeleteGridSelection(grid, confirmationMessageStart,
+                                                           function(data)
+                                                           {
+                                                               util.deleteObjects(management, data, modelObj, idParam, grid, updater, callback);
+                                                           });
+           }
 
-              // add onchange handler to set required property for dependent widget
-              for(var widgetName in requiredFor)
-              {
-                var dependent = requiredFor[widgetName];
-                var widget = widgets[widgetName];
-                if (widget)
+           util.deleteObjects = function(management, data, modelObj, idParam, grid, updater, callback)
+           {
+                var name = idParam || "id";
+                var parameters = {};
+                parameters[name] = [];
+                for(var i = 0; i<data.length; i++)
                 {
-                  widget.dependent = dependent;
-                  widget.on("change", function(newValue){
-                    this.dependent.set("required", newValue != "");
-                  });
+                  parameters[name].push(data[i].id);
+
                 }
-              }
-              var setAttributesDialog = new dijit.Dialog({
-                 title: dialogTitle,
-                 content: form
-             });
-             form.on("submit", function(e)
-             {
-               event.stop(e);
-               try
-               {
-                 if(form.validate())
-                 {
-                   var values = {};
-                   var formWidgets = form.getDescendants();
-                   for(var i in formWidgets)
+                management.remove(modelObj, parameters).then(
+                   function(result)
                    {
-                       var widget = formWidgets[i];
-                       var value = widget.value;
-                       var propName = widget.name;
-                       if (propName && !widget.disabled){
-                           if ((widget instanceof dijit.form.CheckBox || widget instanceof dijit.form.RadioButton)) {
-                               if (widget.checked != widget.initialValue) {
-                                   values[ propName ] = widget.checked;
-                               }
-                           } else if (value != widget.initialValue) {
-                               values[ propName ] = value ? value: null;
-                           }
-                       }
-                   }
+                      grid.selection.deselectAll();
+                      if (updater)
+                      {
+                        updater.update();
+                      }
+                      if (callback)
+                      {
+                        callback(data);
+                      }
+                   },
+                   util.xhrErrorHandler);
+           }
 
-                     var that = this;
-                     var url = putURL;
-                     if (appendNameToUrl){
-                       url = url + "/" + encodeURIComponent(values["name"]);
-                     }
-                     xhr.put({url: url , sync: true, handleAs: "json",
-                              headers: { "Content-Type": "application/json"},
-                              putData: json.stringify(values),
-                              load: function(x) {that.success = true; },
-                              error: function(error) {that.success = false; that.failureReason = error;}});
-                     if(this.success === true)
-                     {
-                         setAttributesDialog.destroy();
-                     }
-                     else
-                     {
-                         util.xhrErrorHandler(this.failureReason);
+           util.deleteSelectedRows = function(grid, confirmationMessageStart, management, url, updater, idParam, callback)
+           {
+                return util.confirmAndDeleteGridSelection(grid, confirmationMessageStart,
+                                                            function(data)
+                                                            {
+                                                                util.deleteData(management, data, url, idParam, grid, updater, callback);
+                                                            });
+           }
 
-                     }
-                     return false;
-                 }
-                 else
-                 {
-                     alert('Form contains invalid data.  Please correct first');
-                     return false;
-                 }
-               }
-               catch(e)
-               {
-                  alert("Unexpected exception:" + e.message);
-                  return false;
-               }
-             });
-             form.connectChildren(true);
-             setAttributesDialog.startup();
-             var formWidgets = form.getDescendants();
-             var aproximateHeight = 0;
-             for(var i in formWidgets){
-                 var widget = formWidgets[i];
-                 var propName = widget.name;
-                 if (propName) {
-                     if ((widget instanceof dijit.form.CheckBox || widget instanceof dijit.form.RadioButton)) {
-                         widget.initialValue = widget.checked;
-                     } else {
-                         widget.initialValue = widget.value;
-                     }
-                     aproximateHeight += 30;
-                 }
-             }
-             dialogContentArea.style.overflow= "auto";
-             dialogContentArea.style.height = "300";
-             setAttributesDialog.on("hide", function(e){setAttributesDialog.destroy();});
-             setAttributesDialog.show();
-           };
+           util.deleteData = function(management, data, url, idParam, grid, updater, callback)
+           {
+                var query = util.buildDeleteQuery(data, url, idParam);
+                management.del({url: query}).then(
+                   function(result)
+                   {
+                      grid.selection.deselectAll();
+                      if (updater)
+                      {
+                        updater.update();
+                      }
+                      if (callback)
+                      {
+                        callback(data);
+                      }
+                   },
+                   util.xhrErrorHandler);
+           }
 
            util.findAllWidgets = function(root)
            {
@@ -347,35 +217,37 @@ define(["dojo/_base/xhr",
 
              if (error)
              {
-               if (error.hasOwnProperty("status"))
+               var status = error.status || error.response ? error.response.status : null;
+               if (status != undefined && status != null)
                {
-                 var hasMessage = error.hasOwnProperty("message");
                  var message;
 
-                 if (error.status == 0)
+                 if (status == 0)
                  {
                    message = "Unable to contact the Broker";
                  }
-                 else if (error.status == 401)
+                 else if (status == 401)
                  {
                    message = "Authentication required";
                    userMustReauth = true;
                  }
-                 else if (error.status == 403)
+                 else if (status == 403)
                  {
                    message =  "Access Forbidden";
                  }
                  else
                  {
-                   message = hasMessage ? error.message : fallback;
+                   message = error.message ? error.message : fallback;
+
+                   var responseText = error.responseText? error.responseText: (error.response ? error.response.text : null);
 
                    // Try for a more detail error sent by the Broker as json
-                   if (error.hasOwnProperty("responseText"))
+                   if (responseText)
                    {
                      try
                      {
-                       var errorObj = json.parse(error.responseText);
-                       message = errorObj.hasOwnProperty("errorMessage") ? errorObj.errorMessage : errorMessageNode;
+                       var errorObj = json.parse(responseText);
+                       message = errorObj.hasOwnProperty("errorMessage") ? errorObj.errorMessage : message;
                      }
                      catch (e)
                      {
@@ -385,7 +257,7 @@ define(["dojo/_base/xhr",
                  }
 
                  errorMessageNode.innerHTML = entities.encode(message ? message : fallback);
-                 statusCodeNode.innerHTML =  entities.encode(String(error.status));
+                 statusCodeNode.innerHTML =  entities.encode(String(status));
 
                  dojo.byId("errorDialog.advice.retry").style.display = userMustReauth ? "none" : "block";
                  dojo.byId("errorDialog.advice.reconnect").style.display = userMustReauth ? "block" : "none";
@@ -407,38 +279,6 @@ define(["dojo/_base/xhr",
                }
              }
            };
-
-           util.sendRequest = function (url, method, attributes, sync)
-           {
-               var success = false;
-               var failureReason = "";
-               var syncRequired = sync == undefined ? true : sync;
-               if (method == "POST" || method == "PUT")
-               {
-                 xhr.put({
-                   url: url,
-                   sync: syncRequired,
-                   handleAs: "json",
-                   headers: { "Content-Type": "application/json"},
-                   putData: json.stringify(attributes),
-                   load: function(x) {success = true; },
-                   error: function(error) {success = false; failureReason = error;}
-                 });
-               }
-               else if (method == "DELETE")
-               {
-                 xhr.del({url: url, sync: syncRequired, handleAs: "json"}).then(
-                       function(data) { success = true; },
-                       function(error) {success = false; failureReason = error;}
-                 );
-               }
-
-               if (syncRequired && !success)
-               {
-                   util.xhrErrorHandler(failureReason);
-               }
-               return success;
-           }
 
            util.equals = function(object1, object2)
            {
@@ -533,15 +373,20 @@ define(["dojo/_base/xhr",
                 xhr.get({url: htmlTemplateLocation,
                                   sync: true,
                                   load:  function(template) {
-                                    containerNode.innerHTML = template;
-                                    parser.parse(containerNode).then(function(instances)
-                                                                     {
-                                                                        if (postParseCallback && typeof postParseCallback == "function")
-                                                                        {
-                                                                            postParseCallback();
-                                                                        }
-                                                                     });
+                                    util.parse(containerNode, template, postParseCallback);
                                   }});
+           }
+
+           util.parse = function(containerNode, template, postParseCallback)
+           {
+                containerNode.innerHTML = template;
+                parser.parse(containerNode).then(function(instances)
+                             {
+                                if (postParseCallback && typeof postParseCallback == "function")
+                                {
+                                    postParseCallback();
+                                }
+                             });
            }
            util.buildUI = function(containerNode, parent, htmlTemplateLocation, fieldNames, obj, postParseCallback)
            {
@@ -579,18 +424,18 @@ define(["dojo/_base/xhr",
              }
            }
 
-           util.applyMetadataToWidgets = function(domRoot, category, type)
+           util.applyMetadataToWidgets = function(domRoot, category, type, meta)
            {
-             this.applyToWidgets(domRoot, category, type, null);
+             this.applyToWidgets(domRoot, category, type, null, meta);
            }
 
-           util.applyToWidgets = function(domRoot, category, type, data)
+           util.applyToWidgets = function(domRoot, category, type, data, meta)
            {
              var widgets = util.findAllWidgets(domRoot);
              array.forEach(widgets,
                function (widget)
                {
-                 widgetconfigurer.config(widget, category, type, data);
+                 widgetconfigurer.config(widget, category, type, data, meta);
                });
            }
 
@@ -791,51 +636,17 @@ define(["dojo/_base/xhr",
                 on(window, "resize", resize);
            }
 
-           util.submit = function(method, resourceUrl, data, successAction, failureAction)
+           util.setContextData = function(contextUI, management, modelObj, actualData, effectiveData, callback )
            {
-                var result = {success: true, failureReason: null};
-                var xhrArguments = {
-                    url: resourceUrl,
-                    sync: true,
-                    handleAs: "json",
-                    headers: { "Content-Type": "application/json"},
-                    load: function(x) {
-                            result.success = true;
-                            result.data = x;
-                            if (successAction)
-                            {
-                                successAction(x);
-                            }
-                          },
-                    error: function(error) {
-                             result.success = false;
-                             result.failureReason = error;
-                             if (failureAction)
-                             {
-                                 failureAction(error);
-                             }
-                             else
-                             {
-                                 util.xhrErrorHandler(error);
-                             }
-                           }
-                }
-                if (data && method != "del")
-                {
-                    xhrArguments[method + "Data"] = json.stringify(data);
-                }
-                xhr[method](xhrArguments);
-                return result;
-           }
-
-           util.post = function(resourceUrl, data, successAction, failureAction)
-           {
-                return util.submit("post", resourceUrl, data, successAction, failureAction)
-           }
-
-           util.put = function(resourceUrl, data, successAction, failureAction)
-           {
-                return util.submit("put", resourceUrl, data, successAction, failureAction)
+                management.load(modelObj, { actuals: true, inheritedActuals: true} ).then(
+                                     function(inheritedActuals){
+                                        contextUI.setData(actualData.context, effectiveData.context, inheritedActuals[0].context);
+                                        if (callback)
+                                        {
+                                            callback();
+                                        }
+                                     },
+                                     util.xhrErrorHandler);
            }
 
            return util;

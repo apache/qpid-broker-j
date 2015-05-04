@@ -47,6 +47,7 @@ define(["dojo/_base/xhr",
     function (xhr, dom, parser, query, construct, connect, win, event, json, registry, entities, util, properties, updater, UpdatableStore, EnhancedGrid) {
         function AclFile(containerNode, aclProviderObj, controller) {
             var node = construct.create("div", null, containerNode, "last");
+            this.modelObj = aclProviderObj;
             var that = this;
             this.name = aclProviderObj.name;
             xhr.get({url: "accesscontrolprovider/showAclFile.html",
@@ -72,7 +73,8 @@ define(["dojo/_base/xhr",
         function AclFileUpdater(node, aclProviderObj, controller)
         {
             this.controller = controller;
-            this.query = "api/latest/accesscontrolprovider/"+encodeURIComponent(aclProviderObj.name);
+            this.modelObj = aclProviderObj;
+            this.management = controller.management;
             this.name = aclProviderObj.name;
             this.path = query(".path", node)[0];
         }
@@ -81,14 +83,15 @@ define(["dojo/_base/xhr",
         {
             var that = this;
 
-            xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"})
+            this.management.load(this.modelObj)
                 .then(function(data) {
                   if (data[0])
                   {
                     that.aclProviderData = data[0];
                     that.path.innerHTML = entities.encode(String(that.aclProviderData.path));
                   }
-                });
+                },
+                util.xhrErrorHandler);
 
         };
 

@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dojo/dom-construct",
         "dojo/_base/array",
@@ -31,12 +30,14 @@ define(["dojo/_base/xhr",
         "dojo/dom-style",
         "dojox/html/entities",
         "qpid/management/addPreferencesProvider",
+        "dojo/text!showPreferencesProvider.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, construct, array, properties, updater, util, event, registry, domStyle, entities, addPreferencesProvider) {
+       function (parser, query, construct, array, properties, updater, util, event, registry, domStyle, entities, addPreferencesProvider, template) {
 
            function PreferencesProvider(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = management;
                this.modelObj = { type: "preferencesprovider", name: name, parent: parent};
                this.authenticationProviderName = parent.name;
            }
@@ -47,12 +48,9 @@ define(["dojo/_base/xhr",
 
            PreferencesProvider.prototype.init = function(node, parentObject) {
              var that = this;
-             xhr.get({url: "showPreferencesProvider.html",
-               sync: true,
-               load:  function(data) {
-                   node.innerHTML = data;
-                   parser.parse(node).then(function(instances)
-                   {
+               node.innerHTML = template;
+               parser.parse(node).then(function(instances)
+               {
                    that.containerNode = node;
                    that.parentObject = parentObject;
                    that.preferencesProviderType=query(".preferencesProviderType", node)[0];
@@ -65,8 +63,7 @@ define(["dojo/_base/xhr",
                    editPreferencesProviderWidget.on("click", function(evt){ event.stop(evt); that.editPreferencesProvider();});
                    var deletePreferencesProviderWidget = registry.byNode(that.deletePreferencesProviderButton);
                    deletePreferencesProviderWidget.on("click", function(evt){ event.stop(evt); that.deletePreferencesProvider();});
-                   });
-               }});
+               });
            };
 
            PreferencesProvider.prototype.open = function(contentPane) {
@@ -88,10 +85,8 @@ define(["dojo/_base/xhr",
              if (this.preferencesProviderData){
                var preferencesProviderData = this.preferencesProviderData;
                if(confirm("Are you sure you want to delete preferences provider '" + preferencesProviderData.name + "'?")) {
-                 var query = "api/latest/preferencesprovider/" + encodeURIComponent(this.authenticationProviderName) + "/" + encodeURIComponent(preferencesProviderData.name);
-                 this.success = true
                  var that = this;
-                 xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                 this.management.remove(this.modelObj).then(
                      function(data) {
                        that.update(null);
 
@@ -114,17 +109,14 @@ define(["dojo/_base/xhr",
                          }
                        }
                      },
-                     function(error) {that.success = false; that.failureReason = error;});
-                 if(!this.success ) {
-                     util.xhrErrorHandler(this.failureReason);
-                 }
+                     util.xhrErrorHandler);
                }
              }
            };
 
            PreferencesProvider.prototype.editPreferencesProvider = function() {
              if (this.preferencesProviderData){
-               addPreferencesProvider.show(this.authenticationProviderName, this.name);
+               addPreferencesProvider.show(this.management, this.modelObj);
              }
            };
 
@@ -163,9 +155,8 @@ define(["dojo/_base/xhr",
 
            PreferencesProvider.prototype.reload = function()
            {
-             var query = "api/latest/preferencesprovider/" + encodeURIComponent(this.authenticationProviderName) + "/" + encodeURIComponent(this.name);
              var that = this;
-             xhr.get({url: query, sync: properties.useSyncGet, handleAs: "json"})
+             that.management.load(that.modelObj)
                  .then(function(data) {
                      var preferencesProviderData = data[0];
                      util.flattenStatistics( preferencesProviderData );

@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojox/html/entities",
+define(["dojox/html/entities",
         "dojo/_base/array",
         "dojo/_base/event",
         "dojo/_base/lang",
@@ -42,7 +41,7 @@ define(["dojo/_base/xhr",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-  function (xhr, entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, util, template)
+  function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, util, template)
   {
     var fields = ["name",
                   "type",
@@ -99,40 +98,28 @@ define(["dojo/_base/xhr",
         this.form.on("submit", function(){return false;});
         this.typeSelector = registry.byId("formEditQueue.type");
       },
-      show: function(hostData)
+      show: function(management,modelObj)
       {
         var that=this;
+        this.management = management;
+        this.modelObj = modelObj;
         if (!this.context)
         {
          this.context = new qpid.common.ContextVariablesEditor({name: 'context', title: 'Context variables'});
          this.context.placeAt(dom.byId("formEditQueue.context"));
         }
-        this.query = "api/latest/queue/" + encodeURIComponent(hostData.nodeName) + "/" + encodeURIComponent(hostData.hostName) + "/" + encodeURIComponent(hostData.queueName);
-        this.dialog.set("title", "Edit Queue - " + entities.encode(String(hostData.queueName)));
-        xhr.get(
-            {
-              url: this.query,
-              sync: true,
-              content: { actuals: true },
-              handleAs: "json",
-              load: function(data)
+        this.dialog.set("title", "Edit Queue - " + entities.encode(String(modelObj.name)));
+        management.load(modelObj, { actuals: true },
+              function(actualData)
               {
-                that._show(data[0], hostData);
-              }
-            }
-        );
-        var queueType = this.typeSelector.get("value");
-        query(".typeSpecificDiv").forEach(function(node, index, arr){
-            if (node.id === "formEditQueueType:" + queueType)
-            {
-                node.style.display = "block";
-                util.applyMetadataToWidgets(node, "Queue", queueType);
-            }
-            else
-            {
-                node.style.display = "none";
-            }
-        });
+                management.load(modelObj).then(
+                               function(effectiveData)
+                               {
+                                 that._show(actualData[0], effectiveData[0]);
+                               },
+                               util.xhrErrorHandler);
+              },
+              util.xhrErrorHandler);
       },
       destroy: function()
       {
@@ -164,7 +151,7 @@ define(["dojo/_base/xhr",
                 data["context"] = context;
               }
               var that = this;
-              util.post(this.query, data, function(x){that.dialog.hide()});
+              this.management.update(that.modelObj, data, function(x){that.dialog.hide()});
           }
           else
           {
@@ -192,9 +179,9 @@ define(["dojo/_base/xhr",
           }
 
           var that = this;
-          util.applyMetadataToWidgets(that.allFieldsContainer, "Queue", actualData.type);
+          util.applyMetadataToWidgets(that.allFieldsContainer, "Queue", actualData.type, this.management.metadata);
 
-          this.context.load(this.query, {actualValues:actualData.context, effectiveValues:effectiveData.context});
+          util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData);
 
           // Add regexp to the numeric fields
           for(var i = 0; i < numericFieldNames.length; i++)
@@ -202,6 +189,18 @@ define(["dojo/_base/xhr",
             this[numericFieldNames[i]].set("regExpGen", util.numericOrContextVarRegexp);
           }
 
+          var queueType = this.typeSelector.get("value");
+          query(".typeSpecificDiv").forEach(function(node, index, arr){
+              if (node.id === "formEditQueueType:" + queueType)
+              {
+                  node.style.display = "block";
+                  util.applyMetadataToWidgets(node, "Queue", queueType, that.management.metadata);
+              }
+              else
+              {
+                  node.style.display = "none";
+              }
+          });
           this.dialog.startup();
           this.dialog.show();
           if (!this.resizeEventRegistered)

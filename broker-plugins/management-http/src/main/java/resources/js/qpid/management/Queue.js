@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dijit/registry",
         "dojo/_base/connect",
@@ -33,21 +32,24 @@ define(["dojo/_base/xhr",
         "qpid/management/addBinding",
         "qpid/management/moveCopyMessages",
         "qpid/management/showMessage",
-        "qpid/management/UserPreferences",
         "qpid/management/editQueue",
         "dojo/store/JsonRest",
         "dojox/grid/EnhancedGrid",
         "dojo/data/ObjectStore",
         "dojox/html/entities",
+        "dojo/text!showQueue.html",
+        "dojox/data/JsonRestStore",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojo/domReady!"],
-       function (xhr, parser, query, registry, connect, event, json, properties, updater, util, formatter,
-                 UpdatableStore, addBinding, moveMessages, showMessage, UserPreferences, editQueue, JsonRest, EnhancedGrid, ObjectStore, entities) {
+       function (parser, query, registry, connect, event, json, properties, updater, util, formatter,
+                 UpdatableStore, addBinding, moveMessages, showMessage, editQueue, JsonRest,
+                 EnhancedGrid, ObjectStore, entities, template, JsonRestStore) {
 
            function Queue(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "queue", name: name, parent: parent };
            }
 
@@ -75,23 +77,18 @@ define(["dojo/_base/xhr",
            Queue.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showQueue.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
-                            parser.parse(contentPane.containerNode).then(function(instances)
-                            {
 
-                            that.queueUpdater = new QueueUpdater(contentPane.containerNode, that, that.controller);
+                contentPane.containerNode.innerHTML = template;
+                parser.parse(contentPane.containerNode).then(function(instances)
+                {
 
-                            updater.add( that.queueUpdater );
+                            that.queueUpdater = new QueueUpdater(contentPane.containerNode, that.modelObj, that.controller);
 
-                            that.queueUpdater.update();
-
-                            var myStore = new JsonRest({target:"service/message/"+ encodeURIComponent(that.getVirtualHostName()) +
-                                                                               "/" + encodeURIComponent(that.getQueueName())});
+                            var myStore = new JsonRest({target: that.management.getFullUrl("service/message/"+ encodeURIComponent(that.getVirtualHostName()) +
+                                                                               "/" + encodeURIComponent(that.getQueueName()))});
                             var messageGridDiv = query(".messages",contentPane.containerNode)[0];
-                            that.dataStore = new ObjectStore({objectStore: myStore});
+                            that.dataStore =  new ObjectStore({objectStore: myStore});
+                            var userPreferences = this.management.userPreferences;
                             that.grid = new EnhancedGrid({
                                 store: that.dataStore,
                                 autoHeight: 10,
@@ -102,7 +99,7 @@ define(["dojo/_base/xhr",
 
                                     {name:"Arrival", field:"arrivalTime", width: "30%",
                                         formatter: function(val) {
-                                            return UserPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
+                                            return userPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
                                         } }
                                 ],
                                 plugins: {
@@ -124,7 +121,7 @@ define(["dojo/_base/xhr",
                                                  var idx = evt.rowIndex,
                                                      theItem = this.getItem(idx);
                                                  var id = that.dataStore.getValue(theItem,"id");
-                                                 showMessage.show({ messageNumber: id,
+                                                 showMessage.show(that.management, { messageNumber: id,
                                                                     queue: that.getQueueName(),
                                                                     virtualhost: that.getVirtualHostName(),
                                                                     virtualhostnode: that.getVirtualHostNodeName()});
@@ -163,9 +160,7 @@ define(["dojo/_base/xhr",
                             connect.connect(registry.byNode(addBindingButton), "onClick",
                                             function(evt){
                                                 event.stop(evt);
-                                                addBinding.show({ virtualhost: that.getVirtualHostName(),
-                                                                  queue: that.getQueueName(),
-                                                                  virtualhostnode: that.getVirtualHostNodeName()});
+                                                addBinding.show(that.management, that.modelObj);
                                             });
 
                             var deleteQueueButton = query(".deleteQueueButton", contentPane.containerNode)[0];
@@ -178,15 +173,11 @@ define(["dojo/_base/xhr",
                             connect.connect(registry.byNode(editQueueButton), "onClick",
                                     function(evt){
                                         event.stop(evt);
-                                        editQueue.show({nodeName:that.modelObj.parent.parent.name, hostName:that.modelObj.parent.name,queueName:that.name});
+                                        editQueue.show(that.management, that.modelObj);
                                     });
-                            UserPreferences.addListener(that);
-
-                            });
-                        }});
-
-
-
+                            userPreferences.addListener(that);
+                            that.queueUpdater.update(function(){ updater.add( that.queueUpdater );});
+                });
            };
 
            Queue.prototype.deleteMessages = function() {
@@ -194,29 +185,15 @@ define(["dojo/_base/xhr",
                if(data.length) {
                    var that = this;
                    if(confirm("Delete " + data.length + " messages?")) {
-                       var i, queryParam;
-                       for(i = 0; i<data.length; i++) {
-                           if(queryParam) {
-                               queryParam += "&";
-                           } else {
-                               queryParam = "?";
-                           }
-
-                           queryParam += "id=" + data[i].id;
-                       }
-                       var query = "service/message/"+ encodeURIComponent(that.getVirtualHostName())
-                           + "/" + encodeURIComponent(that.getQueueName()) + queryParam;
-                       that.success = true
-                       xhr.del({url: query, sync: true, handleAs: "json"}).then(
-                           function(data) {
+                       var query = util.buildDeleteQuery(data, "service/message/" + encodeURIComponent(this.getVirtualHostName()) + "/" + encodeURIComponent(this.getQueueName()));
+                       management.del({url: query}).then(
+                           function(result)
+                           {
                                that.grid.setQuery({id: "*"});
                                that.grid.selection.deselectAll();
                                that.queueUpdater.update();
                            },
-                           function(error) {that.success = false; that.failureReason = error;});
-                        if(!that.success ) {
-                            alert("Error:" + this.failureReason);
-                        }
+                           util.xhrErrorHandler);
                    }
                }
            };
@@ -226,16 +203,13 @@ define(["dojo/_base/xhr",
                    var query = "service/message/"+ encodeURIComponent(that.getVirtualHostName())
                        + "/" + encodeURIComponent(that.getQueueName()) + "?clear=true";
                    that.success = true
-                   xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                   this.management.del({url: query}).then(
                        function(data) {
                            that.grid.setQuery({id: "*"});
                            that.grid.selection.deselectAll();
                            that.queueUpdater.update();
                        },
-                       function(error) {that.success = false; that.failureReason = error;});
-                   if(!that.success ) {
-                       alert("Error:" + this.failureReason);
-                   }
+                       util.xhrErrorHandler);
                }
            };
            Queue.prototype.moveOrCopyMessages = function(obj) {
@@ -251,9 +225,8 @@ define(["dojo/_base/xhr",
                    for(i = 0; i<data.length; i++) {
                        putData.messages.push(data[i].id);
                    }
-                   moveMessages.show({ virtualhost: this.getVirtualHostName(),
-                                       queue: this.getQueueName(),
-                                       data: putData}, function() {
+                   moveMessages.show(that.management, that.modelObj,
+                                       putData, function() {
                                          if(move)
                                          {
                                             that.grid.setQuery({id: "*"});
@@ -273,12 +246,12 @@ define(["dojo/_base/xhr",
 
            Queue.prototype.close = function() {
                updater.remove( this.queueUpdater );
-               UserPreferences.removeListener(this);
+               this.management.userPreferences.removeListener(this);
            };
 
            Queue.prototype.onPreferencesChange = function(data)
            {
-             this.grid._refresh();
+             //this.grid._refresh();
            };
 
            var queueTypeKeys = {
@@ -296,6 +269,8 @@ define(["dojo/_base/xhr",
            function QueueUpdater(containerNode, queueObj, controller)
            {
                var that = this;
+               this.management = controller.management;
+               this.modelObj = queueObj;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -349,24 +324,14 @@ define(["dojo/_base/xhr",
                            "maximumDeliveryAttempts",
                            "oldestMessageAge"]);
 
-
-
-               this.query = "api/latest/queue/" + encodeURIComponent(queueObj.getVirtualHostNodeName()) + "/"  + encodeURIComponent(queueObj.getVirtualHostName()) + "/" + encodeURIComponent(queueObj.getQueueName());
-
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
-                               {
-                                   that.queueData = data[0];
-
-                                   util.flattenStatistics( that.queueData );
-
-                                   that.updateHeader();
-                                   that.bindingsGrid = new UpdatableStore(that.queueData.bindings, findNode("bindings"),
+                                   that.queueData = {}
+                                   that.bindingsGrid = new UpdatableStore([], findNode("bindings"),
                                                             [ { name: "Exchange",    field: "exchange",      width: "40%"},
                                                               { name: "Binding Key", field: "name",          width: "30%"},
                                                               { name: "Arguments",   field: "argumentString",     width: "30%"}
                                                             ]);
 
-                                   that.consumersGrid = new UpdatableStore(that.queueData.consumers, findNode("consumers"),
+                                   that.consumersGrid = new UpdatableStore([], findNode("consumers"),
                                                             [ { name: "Name",    field: "name",      width: "40%"},
                                                               { name: "Mode", field: "distributionMode", width: "20%"},
                                                               { name: "Msgs Rate", field: "msgRate",
@@ -378,7 +343,6 @@ define(["dojo/_base/xhr",
 
 
 
-                               });
 
            }
 
@@ -436,16 +400,19 @@ define(["dojo/_base/xhr",
                this.maximumDeliveryAttempts.innerHTML = entities.encode(String( maximumDeliveryAttempts == 0 ? "" : maximumDeliveryAttempts));
            };
 
-           QueueUpdater.prototype.update = function()
+           QueueUpdater.prototype.update = function(callback)
            {
 
                var thisObj = this;
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data) {
+               this.management.load(this.modelObj).then(function(data) {
                        var i,j;
                        thisObj.queueData = data[0];
                        util.flattenStatistics( thisObj.queueData );
-
+                       if (callback)
+                       {
+                          callback();
+                       }
                        var bindings = thisObj.queueData[ "bindings" ];
                        var consumers = thisObj.queueData[ "consumers" ];
 
@@ -545,20 +512,14 @@ define(["dojo/_base/xhr",
 
            Queue.prototype.deleteQueue = function() {
                if(confirm("Are you sure you want to delete queue '" +this.name+"'?")) {
-                   var query = "api/latest/queue/" + encodeURIComponent(this.getVirtualHostNodeName())
-                                   + "/" + encodeURIComponent(this.getVirtualHostName()) + "/" + encodeURIComponent(this.name);
-                   this.success = true
                    var that = this;
-                   xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                   this.management.remove(this.modelObj).then(
                        function(data) {
                            that.contentPane.onClose()
                            that.controller.tabContainer.removeChild(that.contentPane);
                            that.contentPane.destroyRecursive();
                        },
-                       function(error) {that.success = false; that.failureReason = error;});
-                   if(!this.success ) {
-                       util.xhrErrorHandler(this.failureReason);
-                   }
+                       util.xhrErrorHandler);
                }
            }
 

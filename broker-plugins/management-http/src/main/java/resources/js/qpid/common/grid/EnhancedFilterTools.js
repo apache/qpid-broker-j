@@ -28,9 +28,8 @@ define([
   "dijit/form/ToggleButton",
   "qpid/common/grid/RowNumberLimitDialog",
   "qpid/common/grid/ColumnDefDialog",
-  "qpid/common/grid/FilterSummary",
-  "qpid/management/UserPreferences"
-], function(declare, event, domConstruct, locale, Button, ToggleButton, RowNumberLimitDialog, ColumnDefDialog, FilterSummary, UserPreferences){
+  "qpid/common/grid/FilterSummary"
+], function(declare, event, domConstruct, locale, Button, ToggleButton, RowNumberLimitDialog, ColumnDefDialog, FilterSummary){
 
   var _stopEvent = function (evt){
     try{
@@ -62,6 +61,7 @@ define([
     {
       this.inherited(arguments);
 
+      this.userPreferences = params.userPreferences;
       this.filterBar = params.toolbar;
       this.grid = params.grid;
       this.filterStatusTip= params.filterStatusTip;
@@ -182,15 +182,16 @@ define([
         var updateTimeLabelBrowserTZ = domConstruct.create("span", {innerHTML: "Browser timezone:", "style": "padding-right: 5px"}, updateStatusPanel);
         var updateTimeBrowserTZ = domConstruct.create("span", {"style": "padding-right: 5px"}, updateStatusPanel);
 
+        var userPreferences = this.userPreferences;
         var lastUpdateTimeUpdater = function(data)
         {
-          var userTimeZone = UserPreferences.timeZone;
+          var userTimeZone = userPreferences.timeZone;
           var displayStyle = userTimeZone? "inline" : "none";
           updateTimeLabelPreferredTZ.style.display = displayStyle;
           updateTimePreferredTZ.style.display = displayStyle;
           var formatOptions = {selector: "time", timePattern: "HH:mm:ss.SSS", appendTimeZone: true, addOffset: true};
           var updateTime = new Date();
-          updateTimePreferredTZ.innerHTML = UserPreferences.formatDateTime(updateTime.getTime(), formatOptions);
+          updateTimePreferredTZ.innerHTML = userPreferences.formatDateTime(updateTime.getTime(), formatOptions);
           updateTimeBrowserTZ.innerHTML = locale.format(updateTime, formatOptions);
         };
 

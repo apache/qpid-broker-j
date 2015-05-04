@@ -54,9 +54,7 @@
     </script>
 
     <script>
-          require(["dojo/_base/xhr",
-                   "dojo/parser",
-                   "dijit/form/Form",
+          require(["dijit/form/Form",
                    "dijit/form/Button",
                    "dijit/form/TextBox",
                    "dijit/form/ValidationTextBox",
@@ -83,16 +81,17 @@
                 <script type="dojo/on" data-dojo-event="submit" data-dojo-args="e">
                     e.preventDefault()
                     if(this.validate()){
-                        require(["qpid/authorization/sasl"], function(sasl){
+                        require(["qpid/authorization/sasl","qpid/management/Management"], function(sasl, Management){
+                            var management = new Management();
                             var redirectIfAuthenticated = function redirectIfAuthenticated(){
-                                sasl.getUser(function(data){
+                                sasl.getUser(management, function(data){
                                     if(data.user){
                                         window.location = "index.html";
                                     }
                                 });
                             };
 
-                            sasl.authenticate(dijit.byId("username").value, dijit.byId("password").value, redirectIfAuthenticated);
+                            sasl.authenticate(management, dijit.byId("username").value, dijit.byId("password").value, redirectIfAuthenticated);
                         });
                     }
                     return false;

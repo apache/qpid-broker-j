@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/dom-construct",
         "dojo/dom-class",
         "dojo/_base/window",
@@ -29,9 +28,10 @@ define(["dojo/_base/xhr",
         "dojo/_base/connect",
         "qpid/common/properties",
         "dojox/html/entities",
-        "qpid/management/UserPreferences",
+        "qpid/common/util",
+        "dojo/text!showMessage.html",
         "dojo/domReady!"],
-    function (xhr, dom, construct, domClass, win, registry, parser, array, event, json, query, connect, properties, entities, UserPreferences) {
+    function (dom, construct, domClass, win, registry, parser, array, event, json, query, connect, properties, entities, util, template) {
 
 
         function encode(val){
@@ -89,7 +89,7 @@ define(["dojo/_base/xhr",
                                 }
                                 tableStr += "</table>";
                             } else if(domClass.contains(field,"datetime")) {
-                                field.innerHTML = UserPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
+                                field.innerHTML = showMessage.management.userPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
                             } else {
                                 field.innerHTML = encode(val);
                             }
@@ -100,16 +100,16 @@ define(["dojo/_base/xhr",
             var contentField = query(".message-content", this.dialogNode)[0];
 
             if(data.mimeType && data.mimeType.match(/text\/.*/)) {
-                xhr.get({url: "service/message-content/" + encodeURIComponent(showMessage.virtualhost)
+                showMessage.management.get({url: "service/message-content/" + encodeURIComponent(showMessage.virtualhost)
                                             + "/" + encodeURIComponent(showMessage.queue)
                                             + "/" + encodeURIComponent(showMessage.messageNumber),
-                                     sync: true
-
-                                    }).then(function(obj) { contentField.innerHTML = encode(obj) });
+                                            headers: { "Content-Type": "text/html"},
+                                            handleAs: "text"
+                                    }).then(function(obj) { contentField.innerHTML = encode(obj); }, util.xhrErrorHandler);
             } else {
-                contentField.innerHTML = "<a href=\"" + "service/message-content/" + encodeURIComponent(showMessage.virtualhost)
+                contentField.innerHTML = "<a href=\"" + showMessage.management.getFullUrl("service/message-content/" + encodeURIComponent(showMessage.virtualhost)
                                                             + "/" + encodeURIComponent(showMessage.queue)
-                                                            + "/" + encodeURIComponent(showMessage.messageNumber)
+                                                            + "/" + encodeURIComponent(showMessage.messageNumber))
                                         + "\" target=\"_blank\">Download</a>";
             }
             populatedFields.push(contentField);
@@ -117,26 +117,22 @@ define(["dojo/_base/xhr",
             registry.byId("showMessage").show();
         };
 
-        showMessage.show = function(obj) {
+        showMessage.show = function(management, obj) {
+            showMessage.management = management;
             showMessage.virtualhost = obj.virtualhost;
             showMessage.queue = obj.queue;
             showMessage.messageNumber = obj.messageNumber;
 
-            xhr.get({url: "service/message/" + encodeURIComponent(obj.virtualhost)
+            showMessage.management.get({url: "service/message/" + encodeURIComponent(obj.virtualhost)
                             + "/" + encodeURIComponent(obj.queue)
-                            + "/" + encodeURIComponent(obj.messageNumber),
-                     sync: properties.useSyncGet,
-                     handleAs: "json",
-                     load: this.populateShowMessage
-                    });
+                            + "/" + encodeURIComponent(obj.messageNumber)},
+                     showMessage.populateShowMessage, util.xhrErrorHandler
+                    );
         };
 
         var node = construct.create("div", null, win.body(), "last");
 
-        xhr.get({url: "showMessage.html",
-                 sync: true,
-                 load: showMessage.loadViewMessage
-                });
+        showMessage.loadViewMessage(template);
 
         return showMessage;
     });

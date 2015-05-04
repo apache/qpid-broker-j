@@ -36,7 +36,6 @@ define([
         "dijit/form/FilteringSelect",
         "qpid/common/properties",
         "qpid/common/util",
-        "qpid/common/metadata",
         "dojo/text!addVirtualHostNodeAndVirtualHost.html",
         "qpid/common/ContextVariablesEditor",
         "dijit/TitlePane",
@@ -48,7 +47,7 @@ define([
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-  function (event, lang, array, dom, domConstruct, json, parser, Memory, win, on, fobject, registry, Dialog, Button, FilteringSelect, properties, util, metadata, template)
+  function (event, lang, array, dom, domConstruct, json, parser, Memory, win, on, fobject, registry, Dialog, Button, FilteringSelect, properties, util, template)
   {
 
     var addVirtualHostNodeAndVirtualHost =
@@ -93,11 +92,6 @@ define([
 
         this.virtualHostType.set("disabled", true);
 
-        var supportedVirtualHostNodeTypes = metadata.getTypesForCategory("VirtualHostNode");
-        supportedVirtualHostNodeTypes.sort();
-
-        var virtualHostNodeTypeStore = util.makeTypeStore(supportedVirtualHostNodeTypes);
-        this.virtualHostNodeType.set("store", virtualHostNodeTypeStore);
         this.virtualHostNodeType.set("disabled", false);
         this.virtualHostNodeType.on("change", function(type){that._vhnTypeChanged(type, that.virtualHostNodeTypeFieldsContainer, "qpid/management/virtualhostnode/");});
 
@@ -121,13 +115,21 @@ define([
 
         this.virtualHostNodeUploadFields.style.display = "none";
       },
-      show: function()
+      show: function(management)
       {
+        this.management = management;
         this.virtualHostNodeForm.reset();
         this.virtualHostNodeType.set("value", null);
 
         this.virtualHostForm.reset();
         this.virtualHostType.set("value", null);
+
+        var supportedVirtualHostNodeTypes = management.metadata.getTypesForCategory("VirtualHostNode");
+        supportedVirtualHostNodeTypes.sort();
+
+        var virtualHostNodeTypeStore = util.makeTypeStore(supportedVirtualHostNodeTypes);
+        this.virtualHostNodeType.set("store", virtualHostNodeTypeStore);
+
         if (!this.virtualHostNodeContext)
         {
                 this.virtualHostNodeContext = new qpid.common.ContextVariablesEditor({name: 'context', title: 'Context variables'});
@@ -159,8 +161,17 @@ define([
 
         }
 
-        this.virtualHostNodeContext.loadInheritedData("api/latest/broker");
-        this.virtualHostContext.setData({}, this.virtualHostNodeContext.effectiveValues,this.virtualHostNodeContext.inheritedActualValues);
+        var that = this;
+        management.load({ type: "broker"}).then(
+             function(effectiveData)
+             {
+                util.setContextData(that.virtualHostNodeContext, management, {type: "broker"}, {}, effectiveData[0],
+                     function()
+                     {
+                        that.virtualHostContext.setData({}, that.virtualHostNodeContext.effectiveValues,that.virtualHostNodeContext.inheritedActualValues);
+                     });
+             },
+             util.xhrErrorHandler);
 
         this.dialog.show();
         if (!this.resizeEventRegistered)
@@ -185,7 +196,7 @@ define([
       },
       _vhnTypeChanged: function (type, typeFieldsContainer, urlStem)
       {
-        var validChildTypes = metadata.validChildTypes("VirtualHostNode", type, "VirtualHost");
+        var validChildTypes = this.management ? this.management.metadata.validChildTypes("VirtualHostNode", type, "VirtualHost") : [];
         validChildTypes.sort();
 
         var virtualHostTypeStore = util.makeTypeStore( validChildTypes );
@@ -236,9 +247,9 @@ define([
               {
                   try
                   {
-                      typeUI.show({containerNode:typeFieldsContainer, parent: that});
-
-                      util.applyMetadataToWidgets(typeFieldsContainer,category, type);
+                      var metadata = that.management.metadata;
+                      typeUI.show({containerNode:typeFieldsContainer, parent: that, metadata:metadata});
+                      util.applyMetadataToWidgets(typeFieldsContainer,category, type, metadata);
                   }
                   catch(e)
                   {
@@ -340,7 +351,7 @@ define([
         }
 
         var that = this;
-        util.post("api/latest/virtualhostnode", virtualHostNodeData, function(x){that.dialog.hide();});
+        that.management.create("virtualhostnode", {type: "broker"}, virtualHostNodeData, function(x){that.dialog.hide();});
       },
       _getValues: function (form)
       {

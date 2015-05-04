@@ -19,7 +19,7 @@
  *
  */
 define(["qpid/common/util", "dojo/domReady!"],
-  function (util, metadata)
+  function (util)
   {
 
     function GroupFile(data)

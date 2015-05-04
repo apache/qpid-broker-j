@@ -18,14 +18,15 @@
  * under the License.
  *
  */
-define(["dojo/dom","dojo/query", "dojo/_base/array", "dijit/registry","qpid/common/util", "qpid/common/metadata"],
-    function (dom, query, array, registry, util, metadata)
+define(["dojo/dom","dojo/query", "dojo/_base/array", "dijit/registry","qpid/common/util",
+        "dojo/text!groupprovider/groupfile/add.html",],
+    function (dom, query, array, registry, util, template)
     {
 
         return {    show: function(data)
                     {
                         var that=this;
-                        util.parseHtmlIntoDiv(data.containerNode, "groupprovider/groupfile/add.html",
+                        util.parse(data.containerNode, template,
                         function()
                         {
                             if (data.data)

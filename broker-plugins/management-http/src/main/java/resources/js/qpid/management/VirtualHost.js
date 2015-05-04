@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
         "dijit/registry",
@@ -33,12 +32,14 @@ define(["dojo/_base/xhr",
         "qpid/management/addExchange",
         "dojox/grid/EnhancedGrid",
         "qpid/management/editVirtualHost",
+        "dojo/text!showVirtualHost.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, addQueue, addExchange, EnhancedGrid, editVirtualHost) {
+       function (parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, addQueue, addExchange, EnhancedGrid, editVirtualHost, template) {
 
            function VirtualHost(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "virtualhost", name: name, parent: parent};
            }
 
@@ -50,43 +51,45 @@ define(["dojo/_base/xhr",
            VirtualHost.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showVirtualHost.html",
-                        sync: true,
-                        load:  function(data) {
-                            var containerNode = contentPane.containerNode;
-                            containerNode.innerHTML = data;
-                            parser.parse(containerNode).then(function(instances)
-                            {
+
+                    var containerNode = contentPane.containerNode;
+                    containerNode.innerHTML = template;
+                    parser.parse(containerNode).then(function(instances)
+                    {
                             that.vhostUpdater = new Updater(containerNode, that.modelObj, that.controller, that);
 
                             var addQueueButton = query(".addQueueButton", containerNode)[0];
                             connect.connect(registry.byNode(addQueueButton), "onClick", function(evt){
-                                addQueue.show({virtualhost:that.name,virtualhostnode:that.modelObj.parent.name})
+                                addQueue.show(that.management, that.modelObj)
                             });
 
                             var deleteQueueButton = query(".deleteQueueButton", containerNode)[0];
                             connect.connect(registry.byNode(deleteQueueButton), "onClick",
                                     function(evt){
-                                        util.deleteGridSelections(
-                                                that.vhostUpdater,
-                                                that.vhostUpdater.queuesGrid.grid,
-                                                "api/latest/queue/" + encodeURIComponent(that.modelObj.parent.name) + "/" + encodeURIComponent(that.name),
-                                                "Are you sure you want to delete queue");
+                                        util.deleteSelectedObjects(
+                                            that.vhostUpdater.queuesGrid.grid,
+                                            "Are you sure you want to delete queue",
+                                            that.management,
+                                            {type: "queue", parent:that.modelObj},
+                                            that.vhostUpdater);
                                 }
                             );
 
                             var addExchangeButton = query(".addExchangeButton", containerNode)[0];
-                            connect.connect(registry.byNode(addExchangeButton), "onClick", function(evt){ addExchange.show({virtualhost:that.name,virtualhostnode:that.modelObj.parent.name}) });
+                            connect.connect(registry.byNode(addExchangeButton), "onClick", function(evt){
+                                addExchange.show(that.management, that.modelObj);
+                            });
 
                             var deleteExchangeButton = query(".deleteExchangeButton", containerNode)[0];
                             connect.connect(registry.byNode(deleteExchangeButton), "onClick",
                                     function(evt)
                                     {
-                                        util.deleteGridSelections(
-                                                that.vhostUpdater,
-                                                that.vhostUpdater.exchangesGrid.grid,
-                                                "api/latest/exchange/"+ encodeURIComponent(that.modelObj.parent.name) + "/" + encodeURIComponent(that.name),
-                                                "Are you sure you want to delete exchange");
+                                        util.deleteSelectedObjects(
+                                            that.vhostUpdater.exchangesGrid.grid,
+                                            "Are you sure you want to delete exchange",
+                                            that.management,
+                                            {type: "exchange", parent:that.modelObj},
+                                            that.vhostUpdater);
                                     }
                             );
 
@@ -97,12 +100,8 @@ define(["dojo/_base/xhr",
                             that.downloadButton.on("click",
                               function(e)
                               {
-                                var iframe = document.createElement('iframe');
-                                iframe.id = "downloader_" + that.name;
-                                document.body.appendChild(iframe);
                                 var suggestedAttachmentName = encodeURIComponent(that.name + ".json");
-                                iframe.src = "/api/latest/virtualhost/" + encodeURIComponent(that.modelObj.parent.name) + "/" + encodeURIComponent(that.name) + "?extractInitialConfig=true&contentDispositionAttachmentFilename=" + suggestedAttachmentName;
-                                // It seems there is no way to remove this iframe in a manner that is cross browser compatible.
+                                that.management.download(that.modelObj, {extractInitialConfig: true, contentDispositionAttachmentFilename: suggestedAttachmentName });
                               }
                             );
 
@@ -113,10 +112,7 @@ define(["dojo/_base/xhr",
                                    if (confirm("Deletion of virtual host will delete message data.\n\n"
                                            + "Are you sure you want to delete virtual host  '" + entities.encode(String(that.name)) + "'?"))
                                    {
-                                     if (util.sendRequest("api/latest/virtualhost/" + encodeURIComponent(that.modelObj.parent.name) + "/" + encodeURIComponent( that.name) , "DELETE"))
-                                     {
-                                       that.destroy();
-                                     }
+                                     that.management.remove(that.modelObj).then(function(result){that.destroy();});
                                    }
                                  }
                             );
@@ -124,8 +120,7 @@ define(["dojo/_base/xhr",
                                function(event)
                                {
                                  that.startButton.set("disabled", true);
-                                 util.sendRequest("api/latest/virtualhost/" + encodeURIComponent(that.modelObj.parent.name) + "/" + encodeURIComponent( that.name),
-                                         "PUT", {desiredState: "ACTIVE"});
+                                 that.management.update(that.modelObj, {desiredState: "ACTIVE"}, null, util.xhrErrorHandler);
                                });
 
                             that.stopButton.on("click",
@@ -136,23 +131,18 @@ define(["dojo/_base/xhr",
                                          + entities.encode(String(that.name)) +"'?"))
                                  {
                                      that.stopButton.set("disabled", true);
-                                     util.sendRequest("api/latest/virtualhost/" + encodeURIComponent(that.modelObj.parent.name) + "/" + encodeURIComponent( that.name),
-                                             "PUT", {desiredState: "STOPPED"});
+                                     that.management.update(that.modelObj, {desiredState: "STOPPED"}, null, util.xhrErrorHandler);
                                  }
                                });
 
                             that.editButton.on("click",
                                 function(event)
                                 {
-                                    editVirtualHost.show({nodeName:that.modelObj.parent.name,hostName:that.name});
+                                    editVirtualHost.show(that.management, that.modelObj);
                                 });
 
-                            that.vhostUpdater.update();
-                            updater.add( that.vhostUpdater );
-                            });
-
-                        }});
-
+                            that.vhostUpdater.update(function(){updater.add( that.vhostUpdater );});
+                    });
            };
 
            VirtualHost.prototype.close = function() {
@@ -170,6 +160,8 @@ define(["dojo/_base/xhr",
            function Updater(node, vhost, controller, virtualHost)
            {
                this.virtualHost = virtualHost;
+               this.management = controller.management;
+               this.modelObj = vhost;
                var that = this;
 
                function findNode(name) {
@@ -206,15 +198,9 @@ define(["dojo/_base/xhr",
                            "virtualHostChildren"
                            ]);
 
-               this.query = "api/latest/virtualhost/"+ encodeURIComponent(vhost.parent.name) + "/" + encodeURIComponent(vhost.name);
-
                var that = this;
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data) {
-                   that.vhostData = data[0];
-
-                       // flatten statistics into attributes
-                       util.flattenStatistics( that.vhostData );
+                   that.vhostData = {};
 
                        var gridProperties = {
                                keepSelection: true,
@@ -232,8 +218,7 @@ define(["dojo/_base/xhr",
 
                                 }};
 
-                   that.updateHeader();
-                   that.queuesGrid = new UpdatableStore(that.vhostData.queues, findNode("queues"),
+                   that.queuesGrid = new UpdatableStore([], findNode("queues"),
                                                         [ { name: "Name",    field: "name",      width: "30%"},
                                                           { name: "Type",    field: "type",      width: "20%"},
                                                           { name: "Consumers", field: "consumerCount", width: "10%"},
@@ -262,7 +247,7 @@ define(["dojo/_base/xhr",
                                                                          });
                                                         } , gridProperties, EnhancedGrid);
 
-                   that.exchangesGrid = new UpdatableStore(that.vhostData.exchanges, findNode("exchanges"),
+                   that.exchangesGrid = new UpdatableStore([], findNode("exchanges"),
                                                            [
                                                              { name: "Name",    field: "name", width: "50%"},
                                                              { name: "Type", field: "type", width: "30%"},
@@ -280,7 +265,7 @@ define(["dojo/_base/xhr",
                                                            } , gridProperties, EnhancedGrid);
 
 
-                   that.connectionsGrid = new UpdatableStore(that.vhostData.connections,
+                   that.connectionsGrid = new UpdatableStore([],
                                                              findNode("connections"),
                                                              [ { name: "Name",    field: "name",      width: "20%"},
                                                                  { name: "User", field: "principal", width: "10%"},
@@ -307,10 +292,6 @@ define(["dojo/_base/xhr",
                                                                               });
                                                              } );
 
-
-
-               });
-
            }
 
            Updater.prototype.updateHeader = function()
@@ -331,13 +312,19 @@ define(["dojo/_base/xhr",
                             this)
            };
 
-           Updater.prototype.update = function()
+           Updater.prototype.update = function(callback)
            {
                var thisObj = this;
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"})
+               this.management.load(this.modelObj)
                    .then(function(data) {
                        thisObj.vhostData = data[0] || {name: thisObj.virtualHost.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};
+
+                       if (callback)
+                       {
+                        callback();
+                       }
+
                        try
                        {
                             thisObj._update();
@@ -349,7 +336,7 @@ define(["dojo/_base/xhr",
                                 console.error(e);
                             }
                        }
-                   });
+                   }, util.xhrErrorHandler);
            }
 
            Updater.prototype._update = function()

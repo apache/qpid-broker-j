@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr", "dojo/domReady!"], function (xhr) {
+define(["dojo/domReady!"], function () {
 
     var preferencesDialog = null;
     var helpURL = null;
@@ -29,7 +29,7 @@ define(["dojo/_base/xhr", "dojo/domReady!"], function (xhr) {
           {
              require(["qpid/management/Preferences", "dojo/ready"], function(PreferencesDialog, ready){
                 ready(function(){
-                  preferencesDialog = new PreferencesDialog();
+                  preferencesDialog = new PreferencesDialog(this.management);
                   preferencesDialog.showDialog();
                 });
              });
@@ -39,16 +39,10 @@ define(["dojo/_base/xhr", "dojo/domReady!"], function (xhr) {
               preferencesDialog.showDialog();
           }
         },
-        getHelpUrl: function()
+        getHelpUrl: function(callback)
         {
-          if (!helpURL)
-          {
-            xhr.get({
-              sync: true,
-              url: "api/latest/broker",
-              content: { "depth" : 1, "includeSysContext" : true },
-              handleAs: "json"
-             }).then(function(data) {
+            this.management.load({type: "broker"}, {depth: 1}).then(
+             function(data) {
               var broker = data[0];
               if ("context" in broker && "qpid.helpURL" in broker["context"] )
               {
@@ -58,14 +52,28 @@ define(["dojo/_base/xhr", "dojo/domReady!"], function (xhr) {
               {
                 helpURL = "http://qpid.apache.org/";
               }
+              if (callback)
+              {
+                callback(helpURL);
+              }
              });
-          }
-          return helpURL;
         },
         showHelp: function()
         {
-          var newWindow = window.open(this.getHelpUrl(),'QpidHelp','height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=0,titlebar=1,menubar=0', true);
-          newWindow.focus();
+          var openWindow = function(url)
+          {
+              var newWindow = window.open(url,'QpidHelp','height=600,width=600,scrollbars=1,location=1,resizable=1,status=0,toolbar=0,titlebar=1,menubar=0', true);
+              newWindow.focus();
+          }
+
+          if (helpURL)
+          {
+            openWindow(helpURL)
+          }
+          else
+          {
+            this.getHelpUrl(openWindow);
+          }
         }
     };
 

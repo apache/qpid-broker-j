@@ -1,0 +1,131 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<div class="dijitHidden">
+    <div data-dojo-type="dijit/Dialog" data-dojo-props="title:'Edit HTTP Management Settings'" id="editHttpManagementDialog">
+        <form id="editHttpManagementForm" method="post" data-dojo-type="dijit/form/Form">
+                <div id="editHttpManagement.contentPane">
+                    <div class="editNoteBanner">NOTE: All changes will only take effect after Broker restart.</div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Name*:</div>
+                        <div class="formLabel-controlCell tableContainer-valueCell">
+                            <input type="text" id="editHttpManagement.name"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                              name: 'name',
+                              placeHolder: 'name',
+                              required: true,
+                              disabled: true,
+                              title: 'Enter http management plugin name'" />
+                        </div>
+                    </div>
+
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">HTTP Basic Authentication Enabled:</div>
+                        <div class="tableContainer-valueCell formLabel-controlCell">
+                            <input type="checkbox" id="editHttpManagement.httpBasicAuthenticationEnabled"
+                                   data-dojo-type="dijit/form/CheckBox"
+                                   data-dojo-props="name: 'httpBasicAuthenticationEnabled'">
+                            </input>
+                            <div data-dojo-type="dijit/Tooltip"
+                                 data-dojo-props="connectId: ['editHttpManagement.httpBasicAuthenticationEnabled'],
+                                      label: 'If selected, it enables basic Authentication over HTTP'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">HTTPS Basic Authentication Enabled:</div>
+                        <div class="tableContainer-valueCell formLabel-controlCell">
+                            <input type="checkbox" id="editHttpManagement.httpsBasicAuthenticationEnabled"
+                                   data-dojo-type="dijit/form/CheckBox"
+                                   data-dojo-props="name: 'httpsBasicAuthenticationEnabled'">
+                            </input>
+                            <div data-dojo-type="dijit/Tooltip"
+                                 data-dojo-props="connectId: ['editHttpManagement.httpsBasicAuthenticationEnabled'],
+                                      label: 'If selected, it enables basic Authentication over HTTPS'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">HTTP SASL Authentication Enabled:</div>
+                        <div class="tableContainer-valueCell formLabel-controlCell">
+                            <input type="checkbox" id="editHttpManagement.httpSaslAuthenticationEnabled"
+                                   data-dojo-type="dijit/form/CheckBox"
+                                   data-dojo-props="name: 'httpSaslAuthenticationEnabled'">
+                            </input>
+                            <div data-dojo-type="dijit/Tooltip"
+                                 data-dojo-props="connectId: ['editHttpManagement.httpSaslAuthenticationEnabled'],
+                                      label: 'If selected, enables SASL Authentication over HTTP'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">HTTPS SASL Authentication Enabled:</div>
+                        <div class="tableContainer-valueCell formLabel-controlCell">
+                            <input type="checkbox" id="editHttpManagement.httpsSaslAuthenticationEnabled"
+                                   data-dojo-type="dijit/form/CheckBox"
+                                   data-dojo-props="name: 'httpsSaslAuthenticationEnabled'">
+                            </input>
+                            <div data-dojo-type="dijit/Tooltip"
+                                 data-dojo-props="connectId: ['editHttpManagement.httpsSaslAuthenticationEnabled'],
+                                      label: 'If selected, enables SASL Authentication over HTTPS'">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Session timeout (s)*:</div>
+                        <div class="formLabel-controlCell tableContainer-valueCell">
+                            <input type="text" id="editHttpManagement.sessionTimeout"
+                                   data-dojo-type="dijit/form/NumberSpinner"
+                                   data-dojo-props="
+                              name: 'sessionTimeout',
+                              placeHolder: 'sessionTimeout',
+                              required: false,
+                              disabled: false,
+                              invalidMessage: 'Invalid value',
+                              smallDelta: 1,
+                              constraints: {min:1,places:0, pattern: '#####'}," />
+                        </div>
+                    </div>
+
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Compress responses:</div>
+                        <div class="tableContainer-valueCell formLabel-controlCell">
+                            <input type="checkbox" id="editHttpManagement.compressResponses"
+                                   data-dojo-type="dijit/form/CheckBox"
+                                   data-dojo-props="name: 'compressResponses'">
+                            </input>
+                            <div data-dojo-type="dijit/Tooltip"
+                                 data-dojo-props="connectId: ['editHttpManagement.compressResponses'],
+                                      label: 'If selected, enables compression of HTTP responses'">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
+                    <button data-dojo-type="dijit/form/Button" id="editHttpManagement.saveButton" data-dojo-props="label: 'Save'">Save</button>
+                    <button data-dojo-type="dijit/form/Button" id="editHttpManagement.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
+                </div>
+        </form>
+    </div>
+</div>

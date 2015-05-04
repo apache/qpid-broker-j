@@ -20,8 +20,6 @@
  */
 define([
         "qpid/common/util",
-        "qpid/common/metadata",
-        "dojo/_base/xhr",
         "dojo/_base/declare",
         "dojo/_base/array",
         "dojo/dom-construct",
@@ -40,7 +38,7 @@ define([
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-function (util, metadata, xhr, declare, array, domConstruct, win, query, json, _WidgetBase,
+function (util, declare, array, domConstruct, win, query, json, _WidgetBase,
             _OnDijitClickMixin, _TemplatedMixin, _WidgetsInTemplateMixin, registry, template, entities)
  {
 
@@ -53,6 +51,7 @@ function (util, metadata, xhr, declare, array, domConstruct, win, query, json, _
     preferencesProviderNameWidget : null,
     preferencesProviderTypeWidget : null,
     preferencesProviderTypeFieldsContainer: null,
+    metadata: null,
 
     buildRendering: function()
     {
@@ -67,11 +66,10 @@ function (util, metadata, xhr, declare, array, domConstruct, win, query, json, _
 
         this.preferencesProviderNameWidget.set("regExpGen", util.nameOrContextVarRegexp);
 
-        var supportedPreferencesProviderTypes = metadata.getTypesForCategory("PreferencesProvider");
-        supportedPreferencesProviderTypes.sort();
-        supportedPreferencesProviderTypes.splice(0,0,"None");
-        var preferencesProviderTypeStore = util.makeTypeStore(supportedPreferencesProviderTypes);
-        this.preferencesProviderTypeWidget.set("store", preferencesProviderTypeStore);
+        if (this.metadata)
+        {
+            setMetadata(this.metadata);
+        }
         this.preferencesProviderTypeWidget.on("change", function(type){that._preferencesProviderTypeChanged(type);});
         this.preferencesProviderForm.on("submit", function() { return false; })
     },
@@ -81,33 +79,34 @@ function (util, metadata, xhr, declare, array, domConstruct, win, query, json, _
         this.preferencesProviderForm.reset();
         this.preferencesProviderTypeWidget.set("value", "None");
     },
-    submit: function(encodedAuthenticationProviderName)
+    submit: function(submitFunction, providerNotDefinedCallback)
     {
         if (this.preferencesProviderTypeWidget.get("value") != "None")
         {
             var preferencesProviderData = util.getFormWidgetValues(this.preferencesProviderForm, this.data)
-            var encodedPreferencesProviderName = encodeURIComponent(this.preferencesProviderNameWidget.get("value"));
-            var url = "api/latest/preferencesprovider/" + encodedAuthenticationProviderName;
-            if (this.data)
-            {
-                // update request
-                url += "/" + encodedPreferencesProviderName;
-            }
-            return util.post(url, preferencesProviderData);
+            submitFunction(preferencesProviderData);
         }
-        return { success: true, failureReason: null };
+        else
+        {
+            providerNotDefinedCallback();
+        }
+    },
+    getPreferencesProviderName: function()
+    {
+        return this.preferencesProviderNameWidget.get("value");
+    },
+    setMetadata: function(metadata)
+    {
+        this.metadata = metadata;
+        var supportedPreferencesProviderTypes = metadata.getTypesForCategory("PreferencesProvider");
+        supportedPreferencesProviderTypes.sort();
+        supportedPreferencesProviderTypes.splice(0,0,"None");
+        var preferencesProviderTypeStore = util.makeTypeStore(supportedPreferencesProviderTypes);
+        this.preferencesProviderTypeWidget.set("store", preferencesProviderTypeStore);
     },
     validate: function()
     {
         return this.preferencesProviderForm.validate();
-    },
-    load: function(authenticationProviderName, providerName)
-    {
-        var that = this;
-        xhr.get({
-            url: "api/latest/preferencesprovider/" + encodeURIComponent(authenticationProviderName) + "/" + encodeURIComponent(providerName),
-            handleAs: "json"
-        }).then(function(data){that._load(data[0])});
     },
     setData: function(data)
     {
@@ -149,7 +148,10 @@ function (util, metadata, xhr, declare, array, domConstruct, win, query, json, _
                     try
                     {
                         typeUI.show({containerNode:typeFieldsContainer, parent: that, data: that.data});
-                        util.applyMetadataToWidgets(typeFieldsContainer, "PreferencesProvider", type);
+                        if (that.metadata)
+                        {
+                            util.applyMetadataToWidgets(typeFieldsContainer, "PreferencesProvider", type, that.metadata);
+                        }
                     }
                     catch(e)
                     {

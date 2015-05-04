@@ -38,7 +38,7 @@ define(["dojo/_base/xhr",
            function GridUpdater(args, store) {
              this.updatable = args.hasOwnProperty("updatable") ? args.updatable : true ;
              this.serviceUrl = args.serviceUrl;
-
+             this.userPreferences = args.userPreferences;
              this.onUpdate = [];
              if (args.onUpdate)
              {
@@ -70,7 +70,8 @@ define(["dojo/_base/xhr",
                      position: "bottom"
                  },
                  enhancedFilter: {
-                     disableFiltering: filterPluginFound
+                     disableFiltering: filterPluginFound,
+                     userPreferences: this.userPreferences
                  }
                 }
              };

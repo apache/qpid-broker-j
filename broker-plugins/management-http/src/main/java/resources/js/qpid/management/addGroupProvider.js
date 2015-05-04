@@ -19,7 +19,6 @@
  *
  */
 define([
-        "dojo/_base/xhr",
         "dojo/dom",
         "dojo/dom-construct",
         "dijit/registry",
@@ -28,7 +27,6 @@ define([
         "dojo/_base/event",
         'dojo/json',
         "qpid/common/util",
-        "qpid/common/metadata",
         "dojo/text!addGroupProvider.html",
         "dojo/store/Memory",
         "dojox/validate/us",
@@ -44,7 +42,7 @@ define([
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (xhr, dom, construct, registry, parser, array, event, json, util, metadata, template)
+    function (dom, construct, registry, parser, array, event, json, util, template)
     {
 
         var addGroupProvider =
@@ -72,14 +70,11 @@ define([
 
                 this.groupProviderType = registry.byId("addGroupProvider.type");
                 this.groupProviderType.on("change", function(type){that._groupProviderTypeChanged(type);});
-
-                var supportedTypes = metadata.getTypesForCategory("GroupProvider");
-                supportedTypes.sort();
-                var supportedTypesStore = util.makeTypeStore(supportedTypes);
-                this.groupProviderType.set("store", supportedTypesStore);
             },
-            show: function(actualData)
+            show: function(management, modelObj, actualData)
             {
+                this.management = management;
+                this.modelObj = modelObj;
                 this.initialData = actualData;
                 this.groupProviderForm.reset();
 
@@ -90,13 +85,17 @@ define([
                 }
                 this.groupProviderName.set("disabled", actualData == null ? false : true);
                 this.groupProviderType.set("disabled", actualData == null ? false : true);
-                this.dialog.set("title", actualData == null ? "Add Group Provider" : "Edit Group Provider - " + actualData.name)
+                this.dialog.set("title", actualData == null ? "Add Group Provider" : "Edit Group Provider - " + actualData.name);
+                var supportedTypes = management.metadata.getTypesForCategory("GroupProvider");
+                supportedTypes.sort();
+                var supportedTypesStore = util.makeTypeStore(supportedTypes);
+                this.groupProviderType.set("store", supportedTypesStore);
                 this.dialog.show();
             },
             _initFields:function(data)
             {
                 var type = data["type"];
-                var attributes = metadata.getMetaData("GroupProvider", type).attributes;
+                var attributes = this.management.metadata.getMetaData("GroupProvider", type).attributes;
                 for(var name in attributes)
                 {
                     var widget = registry.byId("addGroupProvider."+name);
@@ -123,14 +122,16 @@ define([
                     var groupProviderData = util.getFormWidgetValues(this.groupProviderForm, this.initialData);
 
                     var that = this;
-                    var url = "api/latest/groupprovider";
+
                     if (this.initialData)
                     {
                         // update request
-                        url += "/" +  encodeURIComponent(this.groupProviderName.value)
+                        this.management.update(this.modelObj, groupProviderData, function(x){that.dialog.hide();});
                     }
-
-                    util.post( url,groupProviderData, function(x){that.dialog.hide();});
+                    else
+                    {
+                        this.management.create("groupprovider", this.modelObj,groupProviderData, function(x){that.dialog.hide();});
+                    }
                 }
                 else
                 {
@@ -148,7 +149,7 @@ define([
                          try
                          {
                              typeUI.show({containerNode: that.groupProviderTypeFieldsContainer, parent: that, data: that.initialData});
-                             util.applyMetadataToWidgets(that.groupProviderTypeFieldsContainer, "GroupProvider", type);
+                             util.applyMetadataToWidgets(that.groupProviderTypeFieldsContainer, "GroupProvider", type, that.management.metadata);
                          }
                          catch(e)
                          {

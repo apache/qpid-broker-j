@@ -19,19 +19,18 @@
 
 define(["dojo/query",
         "qpid/common/util",
-        "qpid/common/metadata",
         "dojox/grid/DataGrid",
         "qpid/common/UpdatableStore",
-        "qpid/management/UserPreferences",
         "dojo/domReady!"],
-  function (query, util, metadata, DataGrid, UpdatableStore, UserPreferences)
+  function (query, util, DataGrid, UpdatableStore)
   {
 
 
     function NonJavaTrustStore(data)
     {
         this.fields = [];
-        var attributes = metadata.getMetaData("TrustStore", "NonJavaTrustStore").attributes;
+        this.management = data.parent.management;
+        var attributes = this.management.metadata.getMetaData("TrustStore", "NonJavaTrustStore").attributes;
         for(var name in attributes)
         {
             this.fields.push(name);
@@ -40,7 +39,7 @@ define(["dojo/query",
         util.buildUI(data.containerNode, data.parent, "store/nonjavatruststore/show.html", this.fields, this, function()
         {
             var gridNode = query(".details", data.containerNode)[0];
-            var dateTimeFormatter = function(value){ return value ? UserPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}) : "";};
+            var dateTimeFormatter = function(value){ return value ? that.management.userPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}) : "";};
             that.detailsGrid = new UpdatableStore([],
                   gridNode,
                   [

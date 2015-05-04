@@ -18,8 +18,8 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr", "dojox/encoding/base64", "dojox/encoding/digests/_base", "dojox/encoding/digests/MD5", "dojox/uuid/generateRandomUuid", "dojo/request/script"],
-    function (xhr, base64, digestsBase, MD5, uuid, script) {
+define(["dojox/encoding/base64", "dojox/encoding/digests/_base", "dojox/encoding/digests/MD5", "dojox/uuid/generateRandomUuid", "dojo/request/script"],
+    function (base64, digestsBase, MD5, uuid, script) {
 
 var encodeUTF8 = function encodeUTF8(str) {
     var byteArray = [];
@@ -65,35 +65,31 @@ var errorHandler = function errorHandler(error)
 
 var saslServiceUrl="service/sasl";
 
-var saslPlain = function saslPlain(user, password, callbackFunction)
+var saslPlain = function saslPlain(management, user, password, callbackFunction)
 {
     var responseArray = [ 0 ].concat(encodeUTF8( user )).concat( [ 0 ] ).concat( encodeUTF8( password ) );
     var plainResponse = base64.encode(responseArray);
 
-    // Using dojo.xhrGet, as very little information is being sent
-    dojo.xhrPost({
+    management.submit({
         // The URL of the request
         url: saslServiceUrl,
-        content: {
+        data: {
             mechanism: "PLAIN",
             response: plainResponse
         },
-        handleAs: "json",
-        failOk: true
-    }).then(callbackFunction, errorHandler);
+        method: "POST"}).then(callbackFunction, errorHandler);
 };
 
-var saslCramMD5 = function saslCramMD5(user, password, saslMechanism, callbackFunction)
+var saslCramMD5 = function saslCramMD5(management, user, password, saslMechanism, callbackFunction)
 {
-            dojo.xhrPost({
+            management.submit({
                 // The URL of the request
                 url: saslServiceUrl,
-                content: {
+                data: {
                     mechanism: saslMechanism
                 },
-                handleAs: "json",
-                failOk: true
-            }).then(function(data)
+                headers: {},
+                method: "POST"}).then(function(data)
                 {
 
                     var challengeBytes = base64.decode(data.challenge);
@@ -110,43 +106,33 @@ var saslCramMD5 = function saslCramMD5(user, password, saslMechanism, callbackFu
 
                     var response = base64.encode(encodeUTF8( digest ));
 
-                    dojo.xhrPost({
+                    management.submit({
                         // The URL of the request
                         url: saslServiceUrl,
-                        content: {
+                        data: {
                             id: id,
                             response: response
                         },
-                        handleAs: "json",
-                        failOk: true
+                        headers: {},
+                        method: "POST"
                     }).then(callbackFunction, errorHandler);
 
                 },
-                function(error)
-                {
-                    if(error.status == 403)
-                    {
-                        alert("Authentication Failed");
-                    }
-                    else
-                    {
-                        alert(error);
-                    }
-                });
+                errorHandler);
 
 
 
 };
 
-        var saslScramSha1 = function saslScramSha1(user, password, saslMechanism, callbackFunction) {
-            saslScram("sha1",user,password,saslMechanism,callbackFunction);
+        var saslScramSha1 = function saslScramSha1(management, user, password, saslMechanism, callbackFunction) {
+            saslScram(management, "sha1",user,password,saslMechanism,callbackFunction);
         };
 
-        var saslScramSha256 = function saslScramSha1(user, password, saslMechanism, callbackFunction) {
-            saslScram("sha256",user,password,saslMechanism,callbackFunction);
+        var saslScramSha256 = function saslScramSha1(management, user, password, saslMechanism, callbackFunction) {
+            saslScram(management, "sha256",user,password,saslMechanism,callbackFunction);
         };
 
-        var saslScram = function saslScramSha1(mechanism, user, password, saslMechanism, callbackFunction) {
+        var saslScram = function saslScramSha1(management, mechanism, user, password, saslMechanism, callbackFunction) {
 
             var DIGEST = mechanism.toUpperCase();
             var HMAC = "Hmac"+DIGEST;
@@ -224,15 +210,15 @@ var saslCramMD5 = function saslCramMD5(user, password, saslMechanism, callbackFu
 
                         clientNonce = uuid();
                         clientFirstMessageBare = "n=" + user + ",r=" + clientNonce;
-                        dojo.xhrPost({
+                        management.submit({
                             // The URL of the request
                             url: saslServiceUrl,
-                            content: {
+                            data: {
                                 mechanism: saslMechanism,
                                 response: toBase64(GS2_HEADER + clientFirstMessageBare)
                             },
-                            handleAs: "json",
-                            failOk: true
+                            headers: {},
+                            method: "POST"
                         }).then(function (data) {
                             var serverFirstMessage = fromBase64(data.challenge);
                             var id = data.id;
@@ -254,16 +240,16 @@ var saslCramMD5 = function saslCramMD5(user, password, saslMechanism, callbackFu
                                 var clientProof = xor(clientKey, clientSignature);
                                 var serverKey = CryptoJS[HMAC]("Server Key", saltedPassword);
                                 serverSignature = CryptoJS[HMAC](authMessage, serverKey);
-                                dojo.xhrPost({
+                                management.submit({
                                     // The URL of the request
                                     url: saslServiceUrl,
-                                    content: {
+                                    data: {
                                         id: id,
                                         response: toBase64(clientFinalMessageWithoutProof
                                             + ",p=" + clientProof.toString(CryptoJS.enc.Base64))
                                     },
-                                    handleAs: "json",
-                                    failOk: true
+                                    headers: {},
+                                    method: "POST"
                                 }).then(function (data) {
                                     var serverFinalMessage = fromBase64(data.challenge);
                                     if (serverSignature.toString(CryptoJS.enc.Base64) == serverFinalMessage.substring(2)) {
@@ -301,50 +287,44 @@ var containsMechanism = function containsMechanism(mechanisms, mech)
 
 var SaslClient = {};
 
-SaslClient.authenticate = function(username, password, callbackFunction)
+SaslClient.authenticate = function(management, username, password, callbackFunction)
 {
-    dojo.xhrGet({
-        url: saslServiceUrl,
-        handleAs: "json",
-        failOk: true
-    }).then(function(data)
+    management.get({url: saslServiceUrl}).then(
+            function(data)
             {
                var mechMap = data.mechanisms;
                if(containsMechanism(mechMap, "SCRAM-SHA-256"))
                {
-                   saslScramSha256(username, password, "SCRAM-SHA-256", callbackFunction)
+                   saslScramSha256(management, username, password, "SCRAM-SHA-256", callbackFunction)
                }
                else if(containsMechanism(mechMap, "SCRAM-SHA-1"))
                {
-                   saslScramSha1(username, password, "SCRAM-SHA-1", callbackFunction)
+                   saslScramSha1(management, username, password, "SCRAM-SHA-1", callbackFunction)
                }
                else if (containsMechanism(mechMap, "CRAM-MD5"))
                {
-                   saslCramMD5(username, password, "CRAM-MD5", callbackFunction);
+                   saslCramMD5(management, username, password, "CRAM-MD5", callbackFunction);
                }
                else if (containsMechanism(mechMap, "CRAM-MD5-HEX"))
                {
                    var hashedPassword = MD5(password, digestsBase.outputTypes.Hex);
-                   saslCramMD5(username, hashedPassword, "CRAM-MD5-HEX", callbackFunction);
+                   saslCramMD5(management, username, hashedPassword, "CRAM-MD5-HEX", callbackFunction);
                }
                else if (containsMechanism(mechMap, "PLAIN"))
                {
-                   saslPlain(username, password, callbackFunction);
+                   saslPlain(management, username, password, callbackFunction);
                }
                else
                {
                    alert("No supported SASL mechanism offered: " + mechMap);
                }
-            }, errorHandler);
+            },
+            errorHandler);
 };
 
-SaslClient.getUser = function(callbackFunction)
+SaslClient.getUser = function(management, callbackFunction)
 {
-    dojo.xhrGet({
-        url: saslServiceUrl,
-        handleAs: "json",
-        failOk: true
-    }).then(callbackFunction, errorHandler);
+    management.get({url: saslServiceUrl}).then(callbackFunction, errorHandler);
 };
 
 return SaslClient;

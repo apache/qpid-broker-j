@@ -15,8 +15,7 @@
  * limitations under the License.
  */
 
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/dom-construct",
         "dojo/_base/window",
         "dijit/registry",
@@ -28,18 +27,18 @@ define(["dojo/_base/xhr",
         "dijit/form/FilteringSelect",
         "dojo/query",
         "dojo/_base/connect",
+        "qpid/common/util",
+        "dojo/text!moveCopyMessages.html",
         "dojo/domReady!"],
-    function (xhr, dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, query, connect) {
+    function (dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, query, connect, util, template) {
 
         var moveMessages = {};
 
         var node = construct.create("div", null, win.body(), "last");
 
-        xhr.get({url: "moveCopyMessages.html",
-                 sync: true,
-                 load:  function(data) {
+
                             var theForm;
-                            node.innerHTML = data;
+                            node.innerHTML = template;
                             moveMessages.dialogNode = dom.byId("moveMessages");
                             parser.instantiate([moveMessages.dialogNode]);
 
@@ -62,23 +61,17 @@ define(["dojo/_base/xhr",
                                     moveMessages.data.destinationQueue = theForm.getValues()["queue"];
                                     var that = this;
 
-                                    xhr.post({url: "service/message/"+encodeURIComponent(moveMessages.vhost)
+                                    moveMessages.management.post({url: "service/message/"+encodeURIComponent(moveMessages.vhost)
                                                       +"/"+encodeURIComponent(moveMessages.queue),
-                                             sync: true, handleAs: "json",
-                                             headers: { "Content-Type": "application/json"},
-                                             postData: json.toJson(moveMessages.data),
-                                             load: function(x) {that.success = true; },
-                                             error: function(error) {that.success = false; that.failureReason = error;}});
-
-                                    if(this.success === true) {
-                                        registry.byId("moveMessages").hide();
-                                        if(moveMessages.next) {
-                                            moveMessages.next();
-                                        }
-                                    } else {
-                                        alert("Error:" + this.failureReason);
-                                    }
-
+                                             headers: { "Content-Type": "application/json"}},
+                                             moveMessages.data,
+                                             function(x) {
+                                                          registry.byId("moveMessages").hide();
+                                                          if(moveMessages.next) {
+                                                              moveMessages.next();
+                                                          }
+                                             },
+                                             util.xhrErrorHandler);
                                     return false;
 
 
@@ -89,21 +82,18 @@ define(["dojo/_base/xhr",
 
                             });
 
-                        }});
-
-        moveMessages.show = function(obj, next) {
+        moveMessages.show = function(management, modelObj, data, next) {
             var that = this;
-
-            moveMessages.vhost = obj.virtualhost;
-            moveMessages.queue = obj.queue;
-            moveMessages.data = obj.data;
+            moveMessages.management = management;
+            moveMessages.vhost = modelObj.parent.name;
+            moveMessages.queue = modelObj.name;
+            moveMessages.data = data;
             moveMessages.next = next;
             registry.byId("formMoveMessages").reset();
 
 
 
-            xhr.get({url: "api/latest/queue/" + encodeURIComponent(obj.virtualhost) + "?depth=0",
-                     handleAs: "json"}).then(
+            management.load({type: "queue", parent: modelObj.parent},  {depth:0}).then(
                 function(data) {
                     var queues =  [];
                     for(var i=0; i < data.length; i++) {
@@ -128,7 +118,7 @@ define(["dojo/_base/xhr",
                     registry.byId("moveMessages").show();
 
 
-                });
+                }, util.xhrErrorHandler);
 
 
         };

@@ -28,7 +28,6 @@ define(["dojo/_base/lang",
         "dojo/_base/event",
         'dojo/json',
         "qpid/common/util",
-        "qpid/common/metadata",
         "dojo/text!addStore.html",
         "dojo/store/Memory",
         "dojox/validate/us",
@@ -44,7 +43,7 @@ define(["dojo/_base/lang",
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (lang, dom, construct, registry, parser, memory, array, event, json, util, metadata, template)
+    function (lang, dom, construct, registry, parser, memory, array, event, json, util, template)
     {
         var addStore =
         {
@@ -72,8 +71,11 @@ define(["dojo/_base/lang",
                 this.storeType = registry.byId("addStore.type");
                 this.storeType.on("change", function(type){that._storeTypeChanged(type);});
             },
-            setupTypeStore: function(category)
+            setupTypeStore: function(management, category, modelObj)
             {
+                this.management = management;
+                this.modelObj = modelObj;
+                var metadata = management.metadata;
                 this.category = category;
                 var storeTypeSupportedTypes = metadata.getTypesForCategory(category);
                 storeTypeSupportedTypes.sort();
@@ -98,6 +100,7 @@ define(["dojo/_base/lang",
             _initFields:function(data)
             {
                 var type = data["type"];
+                var metadata = this.management.metadata;
                 var attributes = metadata.getMetaData(this.category, type).attributes;
                 for(var name in attributes)
                 {
@@ -130,14 +133,16 @@ define(["dojo/_base/lang",
 
                     var storeData = util.getFormWidgetValues(this.storeForm, this.initialData);
                     var that = this;
-                    var url = "api/latest/" + encodeURIComponent(this.category.toLowerCase());
 
                     if (this.effectiveData)
                     {
                         // update request
-                        url += "/" + encodeURIComponent(this.storeName.value);
+                        this.management.update(this.modelObj, storeData, function(x){that.dialog.hide();});
                     }
-                    util.post(url, storeData, function(x){that.dialog.hide();});
+                    else
+                    {
+                        this.management.create(this.category, this.modelObj, storeData, function(x){that.dialog.hide();});
+                    }
                 }
                 else
                 {
@@ -165,8 +170,9 @@ define(["dojo/_base/lang",
                      {
                          try
                          {
-                             typeUI.show({containerNode:typeFieldsContainer, parent: that, data: that.initialData, effectiveData: that.effectiveData});
-                             util.applyMetadataToWidgets(typeFieldsContainer, category, type);
+                             var metadata = that.management.metadata;
+                             typeUI.show({containerNode:typeFieldsContainer, parent: that, data: that.initialData, effectiveData: that.effectiveData, metadata: metadata});
+                             util.applyMetadataToWidgets(typeFieldsContainer, category, type, metadata);
                          }
                          catch(e)
                          {

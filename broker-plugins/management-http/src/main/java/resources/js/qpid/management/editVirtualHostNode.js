@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojox/html/entities",
+define(["dojox/html/entities",
         "dojo/_base/array",
         "dojo/_base/event",
         "dojo/_base/lang",
@@ -44,7 +43,7 @@ define(["dojo/_base/xhr",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-  function (xhr, entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
+  function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
   {
     var virtualHostNodeEditor =
     {
@@ -68,28 +67,18 @@ define(["dojo/_base/xhr",
         this.form = registry.byId("editVirtualHostNodeForm");
         this.form.on("submit", function(){return false;});
       },
-      show: function(effectiveData)
+      show: function(management, modelObj, effectiveData)
       {
+        this.management = management;
+        this.modelObj = modelObj;
         var that=this;
         if (!this.context)
         {
          this.context = new qpid.common.ContextVariablesEditor({name: 'context', title: 'Context variables'});
          this.context.placeAt(dom.byId("editVirtualHostNode.context"));
         }
-        this.query = "api/latest/virtualhostnode/" + encodeURIComponent(effectiveData.name);
         this.dialog.set("title", "Edit Virtual Host Node - " + entities.encode(String(effectiveData.name)));
-        xhr.get(
-            {
-              url: this.query,
-              sync: true,
-              content: { actuals: true },
-              handleAs: "json",
-              load: function(data)
-              {
-                that._show(data[0], effectiveData);
-              }
-            }
-        );
+        management.load( modelObj, { actuals: true }, function(data){that._show(data[0], effectiveData);});
       },
       destroy: function()
       {
@@ -121,7 +110,7 @@ define(["dojo/_base/xhr",
                 data["context"] = context;
               }
               var that = this;
-              util.post(this.query, data, function(x){ that.dialog.hide();} );
+              this.management.update(that,modelObj, data, function(x){ that.dialog.hide();}, util.xhrErrorHandler );
           }
           else
           {
@@ -132,9 +121,10 @@ define(["dojo/_base/xhr",
       {
           this.initialData = actualData;
           this.name.set("value", actualData.name);
-          this.context.load( this.query, {actualValues: actualData.context, effectiveValues: effectiveData.context});
 
           var that = this;
+
+          util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData );
 
           var widgets = registry.findWidgets(this.typeFieldsContainer);
           array.forEach(widgets, function(item) { item.destroyRecursive();});
@@ -145,10 +135,11 @@ define(["dojo/_base/xhr",
              {
                 try
                 {
-                    TypeUI.show({containerNode:that.typeFieldsContainer, parent: that, data: actualData, effectiveData: effectiveData});
+                    var metadata = that.management.metadata;
+                    TypeUI.show({containerNode:that.typeFieldsContainer, parent: that, data: actualData, effectiveData: effectiveData, metadata: metadata});
                     that.form.connectChildren();
 
-                    util.applyToWidgets(that.allFieldsContainer, "VirtualHostNode", actualData.type, actualData);
+                    util.applyToWidgets(that.allFieldsContainer, "VirtualHostNode", actualData.type, actualData, metadata);
                 }
                 catch(e)
                 {

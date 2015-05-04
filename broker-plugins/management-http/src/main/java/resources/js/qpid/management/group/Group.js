@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dijit/registry",
         "dojo/_base/connect",
@@ -35,21 +34,18 @@ define(["dojo/_base/xhr",
         "dojo/data/ObjectStore",
         "qpid/management/group/addGroupMember",
         "dojox/html/entities",
+        "dojo/text!group/showGroup.html",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojo/domReady!"],
-       function (xhr, parser, query, registry, connect, event, json, properties, updater, util, formatter,
-                 UpdatableStore, JsonRest, EnhancedGrid, ObjectStore, addGroupMember, entities) {
+       function (parser, query, registry, connect, event, json, properties, updater, util, formatter,
+                 UpdatableStore, JsonRest, EnhancedGrid, ObjectStore, addGroupMember, entities, showGroup) {
 
            function Group(name, parent, controller) {
                this.name = name;
                this.controller = controller;
-               this.modelObj = { type: "group", name: name };
-
-               if(parent) {
-                   this.modelObj.parent = {};
-                   this.modelObj.parent[ parent.type] = parent;
-               }
+               this.management = management;
+               this.modelObj = { type: "group", name: name, parent: parent };
            }
 
            Group.prototype.getGroupName = function()
@@ -60,7 +56,7 @@ define(["dojo/_base/xhr",
 
            Group.prototype.getGroupProviderName = function()
            {
-               return this.modelObj.parent.groupprovider.name;
+               return this.modelObj.parent.name;
            };
 
            Group.prototype.getTitle = function()
@@ -72,36 +68,36 @@ define(["dojo/_base/xhr",
                var that = this;
                this.contentPane = contentPane;
 
-               xhr.get({url: "group/showGroup.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
-                            parser.parse(contentPane.containerNode).then(function(instances)
-                            {
-                            that.groupUpdater = new GroupUpdater(contentPane.containerNode, that, that.controller);
-                            that.groupUpdater.update();
-                            updater.add( that.groupUpdater );
-                            
+                {
+                    contentPane.containerNode.innerHTML = showGroup;
+                    parser.parse(contentPane.containerNode).then(function(instances)
+                    {
+                        that.groupUpdater = new GroupUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                        that.groupUpdater.update(
+                        function()
+                        {
                             var addGroupMemberButton = query(".addGroupMemberButton", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(addGroupMemberButton), "onClick",
                                     function(evt){
-                                      addGroupMember.show(that.getGroupProviderName(), that.getGroupName())
+                                      addGroupMember.show(that.getGroupProviderName(), that.modelObj, that.controller.management);
                                }
                             );
 
                             var removeGroupMemberButton = query(".removeGroupMemberButton", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(removeGroupMemberButton), "onClick",
                                     function(evt){
-                                        util.deleteGridSelections(
-                                                that.groupUpdater,
+                                        util.deleteSelectedObjects(
                                                 that.groupUpdater.groupMembersUpdatableStore.grid,
-                                                "api/latest/groupmember/"+ encodeURIComponent(that.getGroupProviderName()) +
-                                                 "/" + encodeURIComponent(that.getGroupName()),
-                                                "Are you sure you want to remove group member");
+                                                "Are you sure you want to remove group member",
+                                                that.management,
+                                                {type: "groupmember", parent: that.modelObj},
+                                                that.groupUpdater);
                                 }
                             );
-                            });
-                        }});
+                            updater.add( that.groupUpdater);
+                        });
+                    });
+                };
            };
 
            Group.prototype.close = function() {
@@ -110,6 +106,8 @@ define(["dojo/_base/xhr",
 
            function GroupUpdater(containerNode, groupObj, controller)
            {
+               this.management = controller.management;
+               this.modelObj = {type: "groupmember", parent:groupObj};
                var that = this;
 
                function findNode(name) {
@@ -128,10 +126,9 @@ define(["dojo/_base/xhr",
                            "durable",
                            "lifetimePolicy",
                            "type"]);
-               this.name.innerHTML = entities.encode(String(groupObj.getGroupName()));
-               this.query = "api/latest/groupmember/"+ encodeURIComponent(groupObj.getGroupProviderName()) + "/" + encodeURIComponent(groupObj.getGroupName());
+               this.name.innerHTML = entities.encode(String(groupObj.name));
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
+               this.management.load(this.modelObj).then(function(data)
                                {
                                    that.groupMemberData = data;
 
@@ -163,40 +160,40 @@ define(["dojo/_base/xhr",
                                                                          });
                                                         } , gridProperties, EnhancedGrid);
 
-                               });
+                               }, util.xhrErrorHandler);
 
            }
 
-           GroupUpdater.prototype.update = function()
+           GroupUpdater.prototype.update = function( callback)
            {
 
                var that = this;
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"})
+               this.management.load(this.modelObj)
                   .then(function(data) {
                       that.groupMemberData = data;
 
                       util.flattenStatistics( that.groupMemberData );
 
+                      if (callback)
+                      {
+                        callback();
+                      }
                       that.groupMembersUpdatableStore.update(that.groupMemberData);
-                  });
+                  }, util.xhrErrorHandler);
            };
 
            Group.prototype.deleteGroupMember = function() {
-               if(confirm("Are you sure you want to delete group member'" +this.name+"'?")) {
-                   var query = "api/latest/groupmember/"+ encodeURIComponent(this.getGroupProviderName()) + "/" + encodeURIComponent(this.name);
+               if(confirm("Are you sure you want to delete group members of group '" +this.name+"'?")) {
                    this.success = true
                    var that = this;
-                   xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                   this.management.remove({type: "groupmember", parent: this.modelObj}).then(
                        function(data) {
                            that.contentPane.onClose()
                            that.controller.tabContainer.removeChild(that.contentPane);
                            that.contentPane.destroyRecursive();
                        },
-                       function(error) {that.success = false; that.failureReason = error;});
-                   if(!this.success ) {
-                       util.xhrErrorHandler(this.failureReason);
-                   }
+                       util.xhrErrorHandler);
                }
            }
 

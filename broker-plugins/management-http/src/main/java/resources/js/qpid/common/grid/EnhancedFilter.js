@@ -84,7 +84,7 @@ define([
       //    See constructor of dojox.grid.enhanced._Plugin.
       this.grid = grid;
       this.nls = nls;
-
+      this.userPreferences = args.userPreferences;
       args = this.args = lang.isObject(args) ? args : {};
       if(typeof args.ruleCount != 'number' || args.ruleCount < 0){
         args.ruleCount = 0;
@@ -150,7 +150,8 @@ define([
           disableFiltering: this.disableFiltering,
           displayLastUpdateTime: this.displayLastUpdateTime,
           nls: nls,
-          ruleCountToConfirmClearFilter: this.ruleCountToConfirmClearFilter
+          ruleCountToConfirmClearFilter: this.ruleCountToConfirmClearFilter,
+          userPreferences: this.userPreferences
         });
 
       this.filterBar.placeAt(this.grid.viewsHeaderNode, "before");

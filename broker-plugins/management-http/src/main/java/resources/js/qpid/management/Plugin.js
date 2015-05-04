@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
         "qpid/common/properties",
@@ -28,12 +27,14 @@ define(["dojo/_base/xhr",
         "dijit/registry",
         "dojo/_base/event",
         "dojox/html/entities",
+        "dojo/text!showPlugin.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, connect, properties, updater, util, registry, event, entities) {
+       function (parser, query, connect, properties, updater, util, registry, event, entities, template) {
 
            function Plugin(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = controller.management;
                this.modelObj = { type: "plugin", name: name, parent: parent };
            }
 
@@ -44,15 +45,11 @@ define(["dojo/_base/xhr",
            Plugin.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showPlugin.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
-                            parser.parse(contentPane.containerNode).then(function(instances)
-                            {
-                                that.pluginUpdater = new PluginUpdater(contentPane.containerNode, that.modelObj, that.controller);
-                            });
-                        }});
+                contentPane.containerNode.innerHTML = template;
+                parser.parse(contentPane.containerNode).then(function(instances)
+                {
+                    that.pluginUpdater = new PluginUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                });
            };
 
            Plugin.prototype.close = function() {
@@ -62,13 +59,14 @@ define(["dojo/_base/xhr",
            function PluginUpdater(node, pluginObject, controller)
            {
                this.controller = controller;
+               this.modelObj = pluginObject;
+               this.management = controller.management;
                this.name = query(".name", node)[0];
                this.type = query(".type", node)[0];
-               this.query = "api/latest/plugin/"+encodeURIComponent(pluginObject.name);
 
                var that = this;
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"})
+               this.management.load(that.modelObj)
                    .then(function(data)
                          {
                              that.pluginData = data[0];
@@ -80,7 +78,7 @@ define(["dojo/_base/xhr",
                                  that.details = new SpecificPlugin(query(".pluginDetails", node)[0], pluginObject, controller);
                              });
 
-                         });
+                         }, util.xhrErrorHandler);
 
            }
 

@@ -40,6 +40,6 @@ var updateUI = function updateUI(data)
     }
 };
 
-return {getUserAndUpdateUI: function(){sasl.getUser(updateUI);}}
+return {getUserAndUpdateUI: function(management){sasl.getUser(management, updateUI);}}
 
 });

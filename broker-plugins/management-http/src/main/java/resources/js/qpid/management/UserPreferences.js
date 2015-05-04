@@ -18,296 +18,267 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/json",
-        "dojo/date",
+define(["dojo/date",
         "dojo/date/locale",
-        "dojo/number",
-        "qpid/common/timezone"], function (xhr, json, date, locale, number, timezone) {
+        "dojo/number"], function (date, locale, number) {
 
-  var listeners = [];
+  function UserPreferences(management)
+  {
+      this.listeners = [];
+      /* set time zone to 'UTC' by default*/
+      this.timeZone = "UTC";
+      this.tabs = [];
+      this.management = management;
+  }
 
-  var UserPreferences = {
-
-    /* set time zone to 'UTC' by default*/
-    timeZone: "UTC",
-    tabs: [],
-
-    loadPreferences : function(callbackSuccessFunction, callbackErrorFunction)
-    {
+  UserPreferences.prototype.load = function(successCallback, failureCallback)
+  {
       var that = this;
-      xhr.get({
-        url: "service/preferences",
-        sync: true,
-        handleAs: "json",
-        load: function(data)
-        {
-          for(var name in data)
-          {
-            that[name] = data[name];
-          }
-          if (callbackSuccessFunction)
-          {
-            callbackSuccessFunction();
-          }
-       },
-       error: function(error)
-       {
-         if (callbackErrorFunction)
-         {
-           callbackErrorFunction(error);
-         }
-       }
-      });
-    },
+      this.management.get({url: "service/preferences"},
+                       function(preferences)
+                       {
+                          that.preferences = preferences;
+                          for(var name in preferences)
+                          {
+                              that[name] = preferences[name];
+                          }
+                          if (successCallback)
+                          {
+                              successCallback();
+                          }
+                       },
+                       function(error){that.preferencesError = error;});
+  }
 
-    setPreferences : function(preferences, callbackSuccessFunction, callbackErrorFunction, noSync)
-    {
+  UserPreferences.prototype.save = function(preferences, successCallback, failureCallback)
+  {
       var that = this;
-      xhr.post({
-        url: "service/preferences",
-        sync: !noSync,
-        handleAs: "json",
-        headers: { "Content-Type": "application/json"},
-        postData: json.stringify(preferences),
-        load: function(x)
-        {
-          for(var name in preferences)
-          {
-            if (preferences.hasOwnProperty(name))
-            that[name] = preferences[name];
-          }
-          that._notifyListeners(preferences);
-          if (callbackSuccessFunction)
-          {
-            callbackSuccessFunction(preferences);
-          }
-        },
-        error: function(error)
-        {
-          if (callbackErrorFunction)
-          {
-            callbackErrorFunction(error);
-          }
-        }
-      });
-    },
+      this.management.post({url: "service/preferences"},
+                          preferences,
+                          function(x)
+                          {
+                            that.preferences = preferences;
+                            for(var name in preferences)
+                            {
+                              if (preferences.hasOwnProperty(name))
+                              {
+                                  that[name] = preferences[name];
+                              }
+                            }
+                            that._notifyListeners(preferences);
+                            if (successCallback)
+                            {
+                              successCallback(preferences);
+                            }
+                          },
+                          failureCallback);
+  };
 
-    resetPreferences : function()
-    {
+  var fields = ["preferencesError", "management", "listeners"];
+  UserPreferences.prototype.resetPreferences = function()
+  {
       var preferences = {};
       for(var name in this)
       {
-        if (this.hasOwnProperty(name) && typeof this[name] != "function")
-        {
-          if (name == "preferencesError")
+          if (this.hasOwnProperty(name) && typeof this[name] != "function")
           {
-            continue;
+              if (fields.indexOf(name) != -1)
+              {
+                  continue;
+              }
+              this[name] = null;
+              preferences[name] = undefined;
+              delete preferences[name];
           }
-          this[name] = null;
-          preferences[name] = undefined;
-          delete preferences[name];
-        }
       }
+      this.timeZone = "UTC";
+      this.preferences ="UTC";
+      this.preferences = preferences;
       this._notifyListeners(preferences);
-    },
+  };
 
-    addListener : function(obj)
+  UserPreferences.prototype.addListener = function(obj)
+  {
+    this.listeners.push(obj);
+    this._notifyListener(obj, this.preferences);
+  };
+
+  UserPreferences.prototype.removeListener = function(obj)
+  {
+    for(var i = 0; i < this.listeners.length; i++)
     {
-      listeners.push(obj);
-    },
-
-    removeListener : function(obj)
-    {
-      for(var i = 0; i < listeners.length; i++)
+      if(this.listeners[i] === obj)
       {
-        if(listeners[i] === obj)
-        {
-          listeners.splice(i,1);
-          return;
-        }
+        this.listeners.splice(i,1);
+        return;
       }
-    },
-
-    _notifyListeners : function(preferences)
-    {
-      for(var i = 0; i < listeners.length; i++)
-      {
-        try
-        {
-          listeners[i].onPreferencesChange(preferences);
-        }
-        catch(e)
-        {
-          if (console && console.warn)
-          {
-            console.warn(e);
-          }
-        }
-      }
-    },
-
-    getTimeZoneInfo : function(timeZoneName)
-    {
-      if (!timeZoneName && this.timeZone)
-      {
-        timeZoneName = this.timeZone;
-      }
-
-      if (!timeZoneName)
-      {
-        return null;
-      }
-
-      return timezone.getTimeZoneInfo(timeZoneName);
-    },
-
-    addTimeZoneOffsetToUTC : function(utcTimeInMilliseconds, timeZone)
-    {
-      var tzi = null;
-      if (timeZone && timeZone.hasOwnProperty("offset"))
-      {
-        tzi = timeZone;
-      }
-      else
-      {
-        tzi = this.getTimeZoneInfo(timeZone);
-      }
-
-      if (tzi)
-      {
-        var browserTimeZoneOffsetInMinutes = -new Date().getTimezoneOffset();
-        return utcTimeInMilliseconds + ( tzi.offset - browserTimeZoneOffsetInMinutes ) * 60000;
-      }
-      return utcTimeInMilliseconds;
-    },
-
-    getTimeZoneDescription : function(timeZone)
-    {
-      var tzi = null;
-      if (timeZone && timeZone.hasOwnProperty("offset"))
-      {
-        tzi = timeZone;
-      }
-      else
-      {
-        tzi = this.getTimeZoneInfo(timeZone);
-      }
-
-      if (tzi)
-      {
-        var timeZoneOfsetInMinutes = tzi.offset;
-        return (timeZoneOfsetInMinutes>0? "+" : "")
-          + number.format(timeZoneOfsetInMinutes/60, {pattern: "00"})
-          + ":" + number.format(timeZoneOfsetInMinutes%60, {pattern: "00"})
-          + " " + tzi.name;
-      }
-      return date.getTimezoneName(new Date());
-    },
-
-    formatDateTime : function(utcTimeInMilliseconds, options)
-    {
-      var dateTimeOptions = options || {};
-      var tzi = this.getTimeZoneInfo(dateTimeOptions.timeZoneName);
-      var timeInMilliseconds = utcTimeInMilliseconds;
-
-      if (tzi && dateTimeOptions.addOffset)
-      {
-        timeInMilliseconds = this.addTimeZoneOffsetToUTC(utcTimeInMilliseconds, tzi);
-      }
-
-      var d = new Date(timeInMilliseconds);
-
-      var formatOptions = {
-          datePattern: dateTimeOptions.datePattern || "yyyy-MM-dd",
-          timePattern: dateTimeOptions.timePattern || "HH:mm:ss.SSS"
-      };
-
-      if ("date" == dateTimeOptions.selector)
-      {
-        formatOptions.selector = "date";
-      }
-      else if ("time" == dateTimeOptions.selector)
-      {
-        formatOptions.selector = "time";
-      }
-
-      var result = locale.format(d, formatOptions);
-      if(dateTimeOptions.appendTimeZone)
-      {
-        result += " (" + this.getTimeZoneDescription(tzi) + ")";
-      }
-      return result;
-    },
-
-    defaultErrorHandler: function(error)
-    {
-      if (error.status == 404)
-      {
-        alert("Cannot perform preferences operation: authentication provider is not configured");
-      }
-      else
-      {
-        alert("Cannot perform preferences operation:" + error);
-      }
-    },
-
-    appendTab: function(tab)
-    {
-      if (!this.tabs)
-      {
-        this.tabs = [];
-      }
-      if (!this.isTabStored(tab))
-      {
-        this.tabs.push(tab);
-        this.setPreferences({tabs: this.tabs}, null, this.defaultErrorHandler, true);
-      }
-    },
-
-    removeTab: function(tab)
-    {
-      if (this.tabs)
-      {
-        var index = this._getTabIndex(tab);
-        if (index != -1)
-        {
-          this.tabs.splice(index, 1);
-          this.setPreferences({tabs: this.tabs}, null, this.defaultErrorHandler, true);
-        }
-      }
-    },
-
-    isTabStored: function(tab)
-    {
-      return this._getTabIndex(tab) != -1;
-    },
-
-    _getTabIndex: function(tab)
-    {
-      var index = -1;
-      if (this.tabs)
-      {
-        for(var i = 0 ; i < this.tabs.length ; i++)
-        {
-          var t = this.tabs[i];
-          if ( t.objectId == tab.objectId && t.objectType == tab.objectType )
-          {
-            index = i;
-            break;
-          }
-        }
-      }
-      return index;
     }
   };
 
-  UserPreferences.loadPreferences(null,
-      function(error)
+  UserPreferences.prototype._notifyListeners = function(preferences)
+  {
+    for(var i = 0; i < this.listeners.length; i++)
+    {
+      this._notifyListener(this.listeners[i], preferences);
+    }
+  };
+
+  UserPreferences.prototype._notifyListener = function(listener,preferences)
+  {
+     try
+     {
+       listener.onPreferencesChange(preferences);
+     }
+     catch(e)
+     {
+       if (console && console.warn)
+       {
+         console.warn(e);
+       }
+     }
+  };
+
+  UserPreferences.prototype.getTimeZoneInfo = function(timeZoneName)
+  {
+    if (!timeZoneName && this.timeZone)
+    {
+      timeZoneName = this.timeZone;
+    }
+
+    if (!timeZoneName)
+    {
+      return null;
+    }
+
+    return this.management.timezone.getTimeZoneInfo(timeZoneName);
+  };
+
+  UserPreferences.prototype.addTimeZoneOffsetToUTC = function(utcTimeInMilliseconds, timeZone)
+  {
+    var tzi = null;
+    if (timeZone && timeZone.hasOwnProperty("offset"))
+    {
+      tzi = timeZone;
+    }
+    else
+    {
+      tzi = this.getTimeZoneInfo(timeZone);
+    }
+
+    if (tzi)
+    {
+      var browserTimeZoneOffsetInMinutes = -new Date().getTimezoneOffset();
+      return utcTimeInMilliseconds + ( tzi.offset - browserTimeZoneOffsetInMinutes ) * 60000;
+    }
+    return utcTimeInMilliseconds;
+  };
+
+  UserPreferences.prototype.getTimeZoneDescription = function(timeZone)
+  {
+    var tzi = null;
+    if (timeZone && timeZone.hasOwnProperty("offset"))
+    {
+      tzi = timeZone;
+    }
+    else
+    {
+      tzi = this.getTimeZoneInfo(timeZone);
+    }
+
+    if (tzi)
+    {
+      var timeZoneOfsetInMinutes = tzi.offset;
+      return (timeZoneOfsetInMinutes>0? "+" : "")
+        + number.format(timeZoneOfsetInMinutes/60, {pattern: "00"})
+        + ":" + number.format(timeZoneOfsetInMinutes%60, {pattern: "00"})
+        + " " + tzi.name;
+    }
+    return date.getTimezoneName(new Date());
+  };
+
+  UserPreferences.prototype.formatDateTime = function(utcTimeInMilliseconds, options)
+  {
+    var dateTimeOptions = options || {};
+    var tzi = this.getTimeZoneInfo(dateTimeOptions.timeZoneName);
+    var timeInMilliseconds = utcTimeInMilliseconds;
+
+    if (tzi && dateTimeOptions.addOffset)
+    {
+      timeInMilliseconds = this.addTimeZoneOffsetToUTC(utcTimeInMilliseconds, tzi);
+    }
+
+    var d = new Date(timeInMilliseconds);
+
+    var formatOptions = {
+        datePattern: dateTimeOptions.datePattern || "yyyy-MM-dd",
+        timePattern: dateTimeOptions.timePattern || "HH:mm:ss.SSS"
+    };
+
+    if ("date" == dateTimeOptions.selector)
+    {
+      formatOptions.selector = "date";
+    }
+    else if ("time" == dateTimeOptions.selector)
+    {
+      formatOptions.selector = "time";
+    }
+
+    var result = locale.format(d, formatOptions);
+    if(dateTimeOptions.appendTimeZone)
+    {
+      result += " (" + this.getTimeZoneDescription(tzi) + ")";
+    }
+    return result;
+  };
+
+  UserPreferences.prototype.appendTab = function(tab)
+  {
+    if (!this.tabs)
+    {
+      this.tabs = [];
+    }
+    if (!this.isTabStored(tab))
+    {
+      this.tabs.push(tab);
+      this.save({tabs: this.tabs});
+    }
+  };
+
+  UserPreferences.prototype.removeTab = function(tab)
+  {
+    if (this.tabs)
+    {
+      var index = this._getTabIndex(tab);
+      if (index != -1)
       {
-        UserPreferences.preferencesError = error;
+        this.tabs.splice(index, 1);
+        this.save({tabs: this.tabs});
       }
-  );
+    }
+  };
+
+  UserPreferences.prototype.isTabStored = function(tab)
+  {
+    return this._getTabIndex(tab) != -1;
+  };
+
+  UserPreferences.prototype._getTabIndex = function(tab)
+  {
+    var index = -1;
+    if (this.tabs)
+    {
+      for(var i = 0 ; i < this.tabs.length ; i++)
+      {
+        var t = this.tabs[i];
+        if ( t.objectId == tab.objectId && t.objectType == tab.objectType )
+        {
+          index = i;
+          break;
+        }
+      }
+    }
+    return index;
+  }
 
   return UserPreferences;
 });

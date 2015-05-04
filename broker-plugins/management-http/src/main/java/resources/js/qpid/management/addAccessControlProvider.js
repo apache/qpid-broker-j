@@ -19,7 +19,6 @@
  *
  */
 define(["dojo/_base/lang",
-        "dojo/_base/xhr",
         "dojo/dom",
         "dojo/dom-construct",
         "dijit/registry",
@@ -28,7 +27,6 @@ define(["dojo/_base/lang",
         "dojo/_base/event",
         'dojo/json',
         "qpid/common/util",
-        "qpid/common/metadata",
         "dojo/text!addAccessControlProvider.html",
         "dojo/store/Memory",
         "dojox/validate/us",
@@ -44,7 +42,7 @@ define(["dojo/_base/lang",
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (lang, xhr, dom, construct, registry, parser, array, event, json, util, metadata, template)
+    function (lang, dom, construct, registry, parser, array, event, json, util, template)
     {
 
         var addAccessControlProvider =
@@ -70,15 +68,17 @@ define(["dojo/_base/lang",
                 this.accessControlProviderTypeFieldsContainer = dom.byId("addAccessControlProvider.typeFields");
                 this.accessControlProviderForm = registry.byId("addAccessControlProvider.form");
                 this.accessControlProviderType = registry.byId("addAccessControlProvider.type");
-                this.supportedAccessControlProviderTypes = metadata.getTypesForCategory("AccessControlProvider");
+                this.accessControlProviderType.on("change", function(type){that._accessControlProviderTypeChanged(type);});
+            },
+            show: function(management, modelObj, effectiveData)
+            {
+                this.management = management;
+                this.modelObj = modelObj;
+                this.accessControlProviderForm.reset();
+                this.supportedAccessControlProviderTypes = management.metadata.getTypesForCategory("AccessControlProvider");
                 this.supportedAccessControlProviderTypes.sort();
                 var accessControlProviderTypeStore = util.makeTypeStore(this.supportedAccessControlProviderTypes);
                 this.accessControlProviderType.set("store", accessControlProviderTypeStore);
-                this.accessControlProviderType.on("change", function(type){that._accessControlProviderTypeChanged(type);});
-            },
-            show: function(effectiveData)
-            {
-                this.accessControlProviderForm.reset();
                 this.dialog.show();
             },
             _cancel: function(e)
@@ -101,7 +101,7 @@ define(["dojo/_base/lang",
                 {
                     var accessControlProviderData = util.getFormWidgetValues(this.accessControlProviderForm, this.initialData);
                     var that = this;
-                    util.post("api/latest/accesscontrolprovider", accessControlProviderData, function(x){that.dialog.hide();});
+                    this.management.create("accesscontrolprovider", this.modelObj, accessControlProviderData, function(x){that.dialog.hide();}, util.xhrErrorHandler);
                 }
                 else
                 {
@@ -126,7 +126,7 @@ define(["dojo/_base/lang",
                          try
                          {
                              typeUI.show({containerNode:typeFieldsContainer, parent: that, data: that.initialData, effectiveData: that.effectiveData});
-                             util.applyMetadataToWidgets(typeFieldsContainer, category, type);
+                             util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
                          }
                          catch(e)
                          {

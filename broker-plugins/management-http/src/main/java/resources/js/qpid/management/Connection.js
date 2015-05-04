@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
         "qpid/common/properties",
@@ -27,15 +26,16 @@ define(["dojo/_base/xhr",
         "qpid/common/util",
         "qpid/common/formatter",
         "qpid/common/UpdatableStore",
-        "qpid/management/UserPreferences",
         "dojox/html/entities",
+        "dojo/text!showConnection.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, connect, properties, updater, util, formatter, UpdatableStore, UserPreferences, entities) {
+       function (parser, query, connect, properties, updater, util, formatter, UpdatableStore, entities, template) {
 
            function Connection(name, parent, controller) {
                this.name = name;
                this.controller = controller;
-               this.modelObj = { type: "exchange", name: name, parent: parent };
+               this.management = controller.management
+               this.modelObj = { type: "connection", name: name, parent: parent };
            }
 
            Connection.prototype.getTitle = function()
@@ -46,17 +46,13 @@ define(["dojo/_base/xhr",
            Connection.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showConnection.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
+
+                            contentPane.containerNode.innerHTML = template;
                             parser.parse(contentPane.containerNode).then(function(instances)
                             {
                                 that.connectionUpdater = new ConnectionUpdater(contentPane.containerNode, that.modelObj, that.controller);
-                                updater.add( that.connectionUpdater );
-                                that.connectionUpdater.update();
+                                that.connectionUpdater.update(function(){updater.add( that.connectionUpdater );});
                             });
-                        }});
            };
 
            Connection.prototype.close = function() {
@@ -66,6 +62,8 @@ define(["dojo/_base/xhr",
            function ConnectionUpdater(containerNode, connectionObj, controller)
            {
                var that = this;
+               this.management = controller.management;
+               this.modelObj = connectionObj;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -95,18 +93,11 @@ define(["dojo/_base/xhr",
                            "bytesOutRateUnits"]);
 
 
+               var userPreferences = this.management.userPreferences;
 
-               this.query = "api/latest/connection/"+ encodeURIComponent(connectionObj.parent.parent.name)
-                               + "/" + encodeURIComponent(connectionObj.parent.name) + "/" + encodeURIComponent(connectionObj.name);
 
-               xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
-                               {
-                                   that.connectionData = data[0];
-
-                                   util.flattenStatistics( that.connectionData );
-
-                                   that.updateHeader();
-                                   that.sessionsGrid = new UpdatableStore(that.connectionData.sessions, findNode("sessions"),
+                                   that.connectionData = {};
+                                   that.sessionsGrid = new UpdatableStore([], findNode("sessions"),
                                                             [ { name: "Name", field: "name", width: "20%"},
                                                               { name: "Consumers", field: "consumerCount", width: "15%"},
                                                               { name: "Unacknowledged messages", field: "unacknowledgedMessages", width: "15%"},
@@ -115,7 +106,7 @@ define(["dojo/_base/xhr",
                                                                 {
                                                                     if (transactionStartTime > 0)
                                                                     {
-                                                                        return UserPreferences.formatDateTime(transactionStartTime, {selector: "time", addOffset: true, appendTimeZone: true});
+                                                                        return userPreferences.formatDateTime(transactionStartTime, {selector: "time", addOffset: true, appendTimeZone: true});
                                                                     }
                                                                     else
                                                                     {
@@ -128,7 +119,7 @@ define(["dojo/_base/xhr",
                                                                 {
                                                                     if (transactionUpdateTime > 0)
                                                                     {
-                                                                        return UserPreferences.formatDateTime(transactionUpdateTime, {selector: "time", addOffset: true, appendTimeZone: true});
+                                                                        return userPreferences.formatDateTime(transactionUpdateTime, {selector: "time", addOffset: true, appendTimeZone: true});
                                                                     }
                                                                     else
                                                                     {
@@ -138,8 +129,6 @@ define(["dojo/_base/xhr",
                                                               }
                                                             ]);
 
-
-                               });
 
            }
 
@@ -153,20 +142,26 @@ define(["dojo/_base/xhr",
               this.transport.innerHTML = entities.encode(String(this.connectionData[ "transport" ]));
               var remoteProcessPid = this.connectionData[ "remoteProcessPid" ];
               this.remoteProcessPid.innerHTML = entities.encode(String(remoteProcessPid ? remoteProcessPid : "N/A"));
-              this.createdTime.innerHTML = UserPreferences.formatDateTime(this.connectionData[ "createdTime" ], {addOffset: true, appendTimeZone: true});
-              this.lastIoTime.innerHTML = UserPreferences.formatDateTime(this.connectionData[ "lastIoTime" ], {addOffset: true, appendTimeZone: true});
+              var userPreferences = this.management.userPreferences;
+              this.createdTime.innerHTML = userPreferences.formatDateTime(this.connectionData[ "createdTime" ], {addOffset: true, appendTimeZone: true});
+              this.lastIoTime.innerHTML = userPreferences.formatDateTime(this.connectionData[ "lastIoTime" ], {addOffset: true, appendTimeZone: true});
            };
 
-           ConnectionUpdater.prototype.update = function()
+           ConnectionUpdater.prototype.update = function(callback)
            {
 
               var that = this;
 
-              xhr.get({url: this.query, sync: properties.useSyncGet, handleAs: "json"}).then(function(data)
+              that.management.load(this.modelObj).then(function(data)
                    {
                        that.connectionData = data[0];
 
                        util.flattenStatistics( that.connectionData );
+
+                       if (callback)
+                       {
+                            callback();
+                       }
 
                        var sessions = that.connectionData[ "sessions" ];
 

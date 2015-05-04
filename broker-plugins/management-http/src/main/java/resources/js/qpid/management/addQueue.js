@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/dom-construct",
         "dojo/_base/window",
         "dijit/registry",
@@ -29,6 +28,7 @@ define(["dojo/_base/xhr",
         'dojo/_base/json',
         "dojo/query",
         'qpid/common/util',
+        "dojo/text!addQueue.html",
         "qpid/common/ContextVariablesEditor",
         "dijit/form/NumberSpinner", // required by the form
         /* dojox/ validate resources */
@@ -44,7 +44,7 @@ define(["dojo/_base/xhr",
         /* basic dojox classes */
         "dojox/form/BusyButton", "dojox/form/CheckedMultiSelect",
         "dojo/domReady!"],
-    function (xhr, dom, construct, win, registry, parser, array, event, json, query, util) {
+    function (dom, construct, win, registry, parser, array, event, json, query, util, template) {
 
         var addQueue = {};
 
@@ -111,11 +111,8 @@ define(["dojo/_base/xhr",
             };
 
 
-        xhr.get({url: "addQueue.html",
-                 sync: true,
-                 load:  function(data) {
                             var theForm;
-                            node.innerHTML = data;
+                            node.innerHTML = template;
                             addQueue.dialogNode = dom.byId("addQueue");
                             parser.instantiate([addQueue.dialogNode]);
 
@@ -130,7 +127,10 @@ define(["dojo/_base/xhr",
                                     if (node.id === "formAddQueueType:" + value)
                                     {
                                         node.style.display = "block";
-                                        util.applyMetadataToWidgets(node, "Queue", value);
+                                        if (addQueue.management)
+                                        {
+                                            util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
+                                        }
                                     }
                                     else
                                     {
@@ -149,8 +149,7 @@ define(["dojo/_base/xhr",
                                 if(theForm.validate()){
 
                                     var newQueue = convertToQueue(theForm.getValues());
-                                    util.post("api/latest/queue/" + encodeURIComponent(addQueue.vhostnode)
-                                            + "/"+encodeURIComponent(addQueue.vhost),
+                                    addQueue.management.create("queue", addQueue.modelObj,
                                             newQueue, function(x){registry.byId("addQueue").hide();});
                                     return false;
 
@@ -161,15 +160,14 @@ define(["dojo/_base/xhr",
                                 }
 
                             });
-                        }});
 
-        addQueue.show = function(data) {
-                            addQueue.vhost = data.virtualhost;
-                            addQueue.vhostnode = data.virtualhostnode;
+        addQueue.show = function(management, modelObj) {
+                            addQueue.management = management;
+                            addQueue.modelObj = modelObj;
                             var form = registry.byId("formAddQueue");
                             form.reset();
                             registry.byId("addQueue").show();
-                            util.applyMetadataToWidgets(form.domNode, "Queue", "standard");
+                            util.applyMetadataToWidgets(form.domNode, "Queue", "standard", addQueue.management.metadata);
 
                             if (!this.context)
                             {
@@ -177,8 +175,12 @@ define(["dojo/_base/xhr",
                              this.context.placeAt(dom.byId("formAddQueue.context"));
                             }
 
-                            var escapedUrl = "api/latest/virtualhost/" + encodeURIComponent(addQueue.vhostnode) + "/" + encodeURIComponent(addQueue.vhost);
-                            this.context.loadInheritedData(escapedUrl);
+                            management.load(modelObj).then(
+                                          function(effectiveData)
+                                          {
+                                            util.setContextData(addQueue.context, management, modelObj, {}, effectiveData[0]);
+                                          },
+                                          util.xhrErrorHandler);
         };
 
         return addQueue;

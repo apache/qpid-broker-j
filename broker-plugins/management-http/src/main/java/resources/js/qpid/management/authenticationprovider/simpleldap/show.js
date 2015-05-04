@@ -17,14 +17,14 @@
  * under the License.
  */
 
-define(["qpid/common/util", "qpid/common/metadata", "dojo/domReady!"],
-  function (util, metadata)
+define(["qpid/common/util", "dojo/domReady!"],
+  function (util)
   {
 
     function SimpleLdapAuthenticationProvider(data)
     {
         this.fields = [];
-        var attributes = metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
+        var attributes = data.parenet.management.metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
         for(var name in attributes)
         {
             this.fields.push(name);

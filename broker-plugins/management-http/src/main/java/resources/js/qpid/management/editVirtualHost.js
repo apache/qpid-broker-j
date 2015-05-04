@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojox/html/entities",
+define(["dojox/html/entities",
         "dojo/_base/array",
         "dojo/_base/event",
         "dojo/_base/lang",
@@ -44,7 +43,7 @@ define(["dojo/_base/xhr",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-  function (xhr, entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
+  function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
   {
     var fields = [ "name", "queue.deadLetterQueueEnabled", "storeTransactionIdleTimeoutWarn", "storeTransactionIdleTimeoutClose", "storeTransactionOpenTimeoutWarn", "storeTransactionOpenTimeoutClose", "housekeepingCheckPeriod", "housekeepingThreadCount"];
     var numericFieldNames = ["storeTransactionIdleTimeoutWarn", "storeTransactionIdleTimeoutClose", "storeTransactionOpenTimeoutWarn", "storeTransactionOpenTimeoutClose", "housekeepingCheckPeriod", "housekeepingThreadCount"];
@@ -76,28 +75,30 @@ define(["dojo/_base/xhr",
         this.form = registry.byId("editVirtualHostForm");
         this.form.on("submit", function(){return false;});
       },
-      show: function(hostData)
+      show: function(management, modelObj)
       {
+        this.management = management;
+        this.modelObj = modelObj;
         var that=this;
         if (!this.context)
         {
          this.context = new qpid.common.ContextVariablesEditor({name: 'context', title: 'Context variables'});
          this.context.placeAt(dom.byId("editVirtualHost.context"));
         }
-        this.query = "api/latest/virtualhost/" + encodeURIComponent(hostData.nodeName) + "/" + encodeURIComponent(hostData.hostName);
-        this.dialog.set("title", "Edit Virtual Host - " + entities.encode(String(hostData.hostName)));
-        xhr.get(
+        this.dialog.set("title", "Edit Virtual Host - " + entities.encode(String(modelObj.name)));
+
+        management.load(modelObj, { actuals: true },
+            function(actualData)
             {
-              url: this.query,
-              sync: true,
-              content: { actuals: true },
-              handleAs: "json",
-              load: function(data)
-              {
-                that._show(data[0], hostData);
-              }
-            }
-        );
+                management.load(modelObj).then(
+                    function(effectiveData)
+                    {
+                        that._show(actualData[0], effectiveData[0]);
+                    },
+                    util.xhrErrorHandler);
+            },
+            util.xhrErrorHandler);
+
       },
       destroy: function()
       {
@@ -129,7 +130,7 @@ define(["dojo/_base/xhr",
                 data["context"] = context;
               }
               var that=this;
-              util.post(this.query, data, function(x){ that.dialog.hide();} );
+              this.management.update(that.modelObj, data, function(x){ that.dialog.hide();} );
           }
           else
           {
@@ -156,7 +157,7 @@ define(["dojo/_base/xhr",
             }
           }
 
-          this.context.load(this.query, {actualValues:actualData.context, effectiveValues:effectiveData.context});
+          util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData );
 
           // Add regexp to the numeric fields
           for(var i = 0; i < numericFieldNames.length; i++)
@@ -175,10 +176,11 @@ define(["dojo/_base/xhr",
              {
                 try
                 {
-                    TypeUI.show({containerNode:that.typeFieldsContainer, parent: that, data: actualData});
+                    var metadata = that.management.metadata;
+                    TypeUI.show({containerNode:that.typeFieldsContainer, parent: that, data: actualData, metadata: metadata});
                     that.form.connectChildren();
 
-                    util.applyToWidgets(that.allFieldsContainer, "VirtualHost", actualData.type, actualData);
+                    util.applyToWidgets(that.allFieldsContainer, "VirtualHost", actualData.type, actualData, metadata);
                 }
                 catch(e)
                 {

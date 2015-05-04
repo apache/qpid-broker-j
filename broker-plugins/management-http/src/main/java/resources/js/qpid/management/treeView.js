@@ -18,20 +18,20 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
+define([
         "dojo/query",
         "dojo/io-query",
         "dijit/Tree",
         "qpid/common/util",
         "qpid/common/updater",
         "qpid/management/controller",
-        "qpid/management/UserPreferences",
         "dojo/ready",
         "dojo/domReady!"],
-       function (xhr, query, ioQuery, Tree, util, updater, controller, UserPreferences, ready) {
+       function (query, ioQuery, Tree, util, updater, controller, ready) {
 
-           function TreeViewModel(queryString) {
+           function TreeViewModel(queryString, management) {
                this.query = queryString;
+               this.management = management;
 
                this.onChildrenChange = function (parent, children) {
                    // fired when the set of children for an object change
@@ -299,39 +299,62 @@ define(["dojo/_base/xhr",
                }
            };
 
-           TreeViewModel.prototype.update = function () {
+           TreeViewModel.prototype.update = function (callback) {
                var thisObj = this;
 
-               xhr.get({url:this.query, sync: true, handleAs:"json"})
+               this.management.get({url: this.query})
                    .then(function (data) {
+                           try
+                           {
                              if (thisObj.model) {
                                  thisObj.updateModel(data);
                              }
                              else {
                                  thisObj.buildModel(data);
                              }
+
+                             if (callback)
+                             {
+                                callback();
+                             }
+                           }
+                           catch(e)
+                           {
+                             console.error(e);
+                           }
                          }, util.xhrErrorHandler);
 
            };
 
-           query('div[qpid-type="treeView"]').forEach(function(node, index, arr) {
-               var treeModel = new TreeViewModel("service/structure");
-               treeModel.update();
-               var tree = new Tree({ model: treeModel }, node);
-               tree.on("dblclick",
-                       function (object) {
-                           if (object && !object._dummyChild) {
-                               treeModel.relocate(object);
-                           }
 
-                       }, true);
-               tree.startup();
-               updater.add( treeModel );
+           TreeViewModel.create = function(structureUrl, management, node )
+           {
+               var treeModel = new TreeViewModel(structureUrl, management);
+               treeModel.update(function(){
+                    var tree = new Tree({ model: treeModel }, node);
+                    tree.on("dblclick",
+                           function (object) {
+                               if (object && !object._dummyChild) {
+                                   treeModel.relocate(object);
+                               }
 
-               ready(function() {
+                           }, true);
+                    tree.startup();
+                    updater.add( treeModel );
+                    try
+                    {
+                        onReady();
+                    }
+                    catch(e)
+                    {
+                        console.error(e);
+                    }
+               });
+
+               var onReady =function() {
                  controller.show("broker","");
 
-                 var tabs = UserPreferences.tabs;
+                 var tabs = management.userPreferences.tabs;
                  if (tabs)
                  {
                    for(var i in tabs)
@@ -348,7 +371,7 @@ define(["dojo/_base/xhr",
                          }
                          else
                          {
-                           UserPreferences.removeTab(tab);
+                           management.userPreferences.removeTab(tab);
                          }
                        }
                        else
@@ -358,8 +381,8 @@ define(["dojo/_base/xhr",
                      }
                    }
                  }
-             });
-           });
+             };
+           };
 
            return TreeViewModel;
        });

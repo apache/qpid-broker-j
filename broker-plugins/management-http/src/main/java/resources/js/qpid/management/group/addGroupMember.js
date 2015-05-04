@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/dom-construct",
         "dojo/_base/window",
         "dijit/registry",
@@ -28,6 +27,7 @@ define(["dojo/_base/xhr",
         "dojo/_base/event",
         "dojo/_base/json",
         "qpid/common/util",
+        "dojo/text!group/addGroupMember.html",
         "dijit/form/NumberSpinner", // required by the form
         /* dojox/ validate resources */
         "dojox/validate/us", "dojox/validate/web",
@@ -42,7 +42,7 @@ define(["dojo/_base/xhr",
         /* basic dojox classes */
         "dojox/form/BusyButton", "dojox/form/CheckedMultiSelect",
         "dojo/domReady!"],
-    function (xhr, dom, construct, win, registry, parser, array, event, json, util) {
+    function (dom, construct, win, registry, parser, array, event, json, util, template) {
 
         var addGroupMember = {};
 
@@ -55,11 +55,9 @@ define(["dojo/_base/xhr",
                 return newGroupMember;
             };
 
-        xhr.get({url: "group/addGroupMember.html",
-                 sync: true,
-                 load:  function(data) {
+                        {
                             var theForm;
-                            node.innerHTML = data;
+                            node.innerHTML = template;
                             addGroupMember.dialogNode = dom.byId("addGroupMember");
                             parser.instantiate([addGroupMember.dialogNode]);
 
@@ -71,10 +69,7 @@ define(["dojo/_base/xhr",
 
                                     var newGroupMember = convertToGroupMember(theForm.getValues());
                                     var that = this;
-
-                                    var url = "api/latest/groupmember/"+encodeURIComponent(addGroupMember.groupProvider) +
-                                              "/" + encodeURIComponent(addGroupMember.group);
-                                    util.post(url, newGroupMember, function(x){registry.byId("addGroupMember").hide();});
+                                    addGroupMember.management.create("groupmember", addGroupMember.group, newGroupMember, function(x){registry.byId("addGroupMember").hide();});
                                     return false;
 
 
@@ -84,11 +79,12 @@ define(["dojo/_base/xhr",
                                 }
 
                             });
-                        }});
+                        };
 
-        addGroupMember.show = function(groupProvider, group) {
+        addGroupMember.show = function(groupProvider, groupModel, management) {
+                            addGroupMember.management = management;
                             addGroupMember.groupProvider = groupProvider;
-                            addGroupMember.group = group;
+                            addGroupMember.group = groupModel;
                             registry.byId("formAddGroupMember").reset();
                             registry.byId("addGroupMember").show();
                         };

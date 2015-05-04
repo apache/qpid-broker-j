@@ -23,29 +23,28 @@ define(["dojo/_base/xhr",
         "dojo/query",
         "dojo/date/locale",
         "dijit/registry",
-        "qpid/management/UserPreferences",
         "qpid/common/grid/GridUpdater",
         "qpid/common/grid/UpdatableGrid",
         "qpid/management/logs/LogFileDownloadDialog",
         "dojo/text!../../../logs/showLogViewer.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, locale, registry, UserPreferences, GridUpdater, UpdatableGrid, LogFileDownloadDialog, markup) {
+       function (xhr, parser, query, locale, registry, GridUpdater, UpdatableGrid, LogFileDownloadDialog, markup) {
 
            var defaulGridRowLimit = 4096;
            var currentTimeZone;
 
-           function dataTransformer(data)
+           function dataTransformer(data, userPreferences)
            {
              for(var i=0; i < data.length; i++)
              {
-               data[i].time = UserPreferences.addTimeZoneOffsetToUTC(data[i].timestamp);
+               data[i].time = userPreferences.addTimeZoneOffsetToUTC(data[i].timestamp);
              }
              return data;
            }
 
            function LogViewer(name, parent, controller) {
                var self = this;
-
+               this.management = controller.management;
                this.name = name;
                this.lastLogId = 0;
                this.contentPane = null;
@@ -69,7 +68,7 @@ define(["dojo/_base/xhr",
                var self = this;
 
                this.downloadLogsButton = registry.byNode(query(".downloadLogs", this.contentPane.containerNode)[0]);
-               this.downloadLogDialog = new LogFileDownloadDialog();
+               this.downloadLogDialog = new LogFileDownloadDialog({userPreferences:this.management.userPreferences});
 
                this.downloadLogsButton.on("click", function(evt){
                    self.downloadLogDialog.showDialog();
@@ -79,8 +78,8 @@ define(["dojo/_base/xhr",
 
            LogViewer.prototype._buildGrid = function() {
                var self = this;
-               currentTimeZone = UserPreferences.getTimeZoneDescription();
-
+               var userPreferences = this.management.userPreferences;
+               currentTimeZone = userPreferences.getTimeZoneDescription();
                var gridStructure = [
                     {
                       hidden: false,
@@ -93,12 +92,12 @@ define(["dojo/_base/xhr",
                     {
                       name: "Date", field: "time", width: "100px", datatype: "date",
                         formatter: function(val) {
-                        return UserPreferences.formatDateTime(val, {selector:"date"});
+                        return userPreferences.formatDateTime(val, {selector:"date"});
                       }
                     },
                     { name: "Time ", field: "time", width: "100px", datatype: "time",
                      formatter: function(val) {
-                       return UserPreferences.formatDateTime(val, {selector:"time"});
+                       return userPreferences.formatDateTime(val, {selector:"time"});
                      }
                    },
                    {
@@ -122,6 +121,7 @@ define(["dojo/_base/xhr",
                try
                {
                  var updater = new GridUpdater({
+                     userPreferences: userPreferences,
                      updatable: false,
                      serviceUrl: function()
                      {
@@ -148,7 +148,7 @@ define(["dojo/_base/xhr",
                      },
                      append: true,
                      appendLimit: defaulGridRowLimit,
-                     dataTransformer: dataTransformer
+                     dataTransformer: function(data){ return dataTransformer(data, userPreferences);}
                  });
                  this.grid = new UpdatableGrid(updater.buildUpdatableGridArguments({
                      structure: gridStructure,
@@ -187,7 +187,7 @@ define(["dojo/_base/xhr",
                  };
                  this.grid.on("styleRow", onStyleRow);
                  this.grid.startup();
-                 UserPreferences.addListener(this);
+                 userPreferences.addListener(this);
                }
                catch(err)
                {
@@ -199,7 +199,7 @@ define(["dojo/_base/xhr",
            };
 
            LogViewer.prototype.close = function() {
-             UserPreferences.removeListener(this);
+             this.management.userPreferences.removeListener(this);
              if (this.grid)
              {
                  this.grid.destroy();
@@ -219,8 +219,9 @@ define(["dojo/_base/xhr",
 
            LogViewer.prototype.onPreferencesChange = function(data)
            {
-             currentTimeZone = UserPreferences.getTimeZoneDescription();
-             dataTransformer(this.grid.updater.memoryStore.data);
+             var userPreferences = this.management.userPreferences;
+             currentTimeZone = userPreferences.getTimeZoneDescription();
+             dataTransformer(this.grid.updater.memoryStore.data, userPreferences);
              this.grid._refresh();
            };
 

@@ -31,6 +31,7 @@ define(["dojo/query","dijit/registry","qpid/common/util"],
                     {
                         var useFullDN = registry.byNode(query(".useFullDN", data.containerNode)[0]);
                         useFullDN.set("value", data.data.useFullDN);
+                        useFullDN.set("checked", data.data.useFullDN);
                     }
                 });
             }

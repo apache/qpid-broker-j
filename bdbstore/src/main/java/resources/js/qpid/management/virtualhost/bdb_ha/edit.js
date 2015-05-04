@@ -16,8 +16,8 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-define(["qpid/common/util", "qpid/common/metadata", "dijit/registry", "dojo/domReady!"],
-   function (util, metadata, registry, win)
+define(["qpid/common/util",  "dijit/registry", "dojo/domReady!"],
+   function (util, registry, win)
    {
        return {
            show: function(data)

@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojox/html/entities",
+define(["dojox/html/entities",
         "dojo/_base/array",
         "dojo/_base/event",
         "dojo/_base/lang",
@@ -44,7 +43,7 @@ define(["dojo/_base/xhr",
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-  function (xhr, entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
+  function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
   {
     var fields = [ "name", "defaultVirtualHost", "statisticsReportingPeriod", "statisticsReportingResetEnabled", "connection.sessionCountLimit", "connection.heartBeatDelay"];
     var numericFieldNames = ["statisticsReportingPeriod", "connection.sessionCountLimit", "connection.heartBeatDelay"];
@@ -73,30 +72,22 @@ define(["dojo/_base/xhr",
         this.form = registry.byId("editBrokerForm");
         this.form.on("submit", function(){return false;});
         this.context = registry.byId("editBroker.context");
-        util.applyMetadataToWidgets(dom.byId("editBroker.allFields"), "Broker", "broker");
 
         for(var i = 0; i < numericFieldNames.length; i++)
         {
             this[numericFieldNames[i]].set("regExpGen", util.numericOrContextVarRegexp);
         }
       },
-      show: function(brokerData)
+      show: function(management, brokerData)
       {
+        this.management = management;
         var that=this;
-        this.query = "api/latest/broker";
         this.dialog.set("title", "Edit Broker - " + entities.encode(String(brokerData.name)));
-        xhr.get(
-            {
-              url: this.query,
-              sync: true,
-              content: { actuals: true },
-              handleAs: "json",
-              load: function(data)
+        management.load( {type:"broker"}, { actuals: true },
+              function(data)
               {
                 that._show(data[0], brokerData);
-              }
-            }
-        );
+              });
       },
       destroy: function()
       {
@@ -129,7 +120,7 @@ define(["dojo/_base/xhr",
               }
 
               var that = this;
-              util.post(this.query, data, function(x){that.dialog.hide()})
+              this.management.update({type: "broker"}, data, function(x){that.dialog.hide();}, util.xhrErrorHandler);
           }
           else
           {
@@ -170,7 +161,8 @@ define(["dojo/_base/xhr",
               widget.set("value", actualData[fieldName]);
             }
           }
-          this.context.load(this.query, {actualValues: actualData.context, effectiveValues: effectiveData.context});
+          util.applyMetadataToWidgets(dom.byId("editBroker.allFields"), "Broker", "broker", this.management.metadata);
+          util.setContextData(this.context, management, {type: "broker"}, actualData, effectiveData );
           this.dialog.startup();
           this.dialog.show();
           if (!this.resizeEventRegistered)

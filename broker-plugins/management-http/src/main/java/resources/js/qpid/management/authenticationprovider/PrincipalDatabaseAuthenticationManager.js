@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/parser",
         "dojo/query",
         "dojo/dom-construct",
@@ -32,6 +31,9 @@ define(["dojo/_base/xhr",
         "qpid/common/properties",
         "qpid/common/UpdatableStore",
         "dojox/grid/EnhancedGrid",
+        "dojo/text!authenticationprovider/showPrincipalDatabaseAuthenticationManager.html",
+        "dojo/text!authenticationprovider/addUser.html",
+        "dojo/text!authenticationprovider/setPassword.html",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojox/validate/us", "dojox/validate/web",
@@ -42,20 +44,18 @@ define(["dojo/_base/xhr",
         "dijit/form/Form",
         "dijit/form/DateTextBox",
         "dojo/domReady!"],
-    function (xhr, dom, parser, query, construct, connect, win, event, json, registry, util, properties, UpdatableStore, EnhancedGrid) {
+    function (dom, parser, query, construct, connect, win, event, json, registry, util, properties, UpdatableStore, EnhancedGrid, template, addUserTemplate, setPasswordTemplate) {
         function DatabaseAuthManager(containerNode, authProviderObj, controller) {
             var node = construct.create("div", null, containerNode, "last");
             var that = this;
             this.name = authProviderObj.name;
-            xhr.get({url: "authenticationprovider/showPrincipalDatabaseAuthenticationManager.html",
-                                    sync: true,
-                                    load:  function(data) {
-                                        node.innerHTML = data;
-                                        parser.parse(node).then(function(instances)
-                                        {
-                                            that.init(node, authProviderObj, controller);
-                                        });
-                                    }});
+            this.modelObj = authProviderObj;
+            this.management = controller.management;
+            node.innerHTML = template;
+            parser.parse(node).then(function(instances)
+            {
+                that.init(node, authProviderObj, controller);
+            });
         }
 
         DatabaseAuthManager.prototype.update = function() {
@@ -71,7 +71,7 @@ define(["dojo/_base/xhr",
             this.controller = controller;
             var that = this;
 
-                     that.authProviderData = authProviderObj;
+                     that.authProviderData = {};
 
                      var userDiv = query(".users")[0];
 
@@ -103,13 +103,13 @@ define(["dojo/_base/xhr",
                                                     theItem = this.getItem(idx);
                                                     var name = obj.dataStore.getValue(theItem,"name");
                                                     var id = obj.dataStore.getValue(theItem,"id");
-                                                    setPassword.show(that.name, {name: name, id: id});
+                                                    setPassword.show(that.management, that.modelObj, {name: name, id: id});
                                                 });
                                         }, gridProperties, EnhancedGrid);
 
 
                      var addUserButton = query(".addUserButton", node)[0];
-                     connect.connect(registry.byNode(addUserButton), "onClick", function(evt){ addUser.show(that.name) });
+                     connect.connect(registry.byNode(addUserButton), "onClick", function(evt){ addUser.show(that.management, that.modelObj) });
 
                      var deleteUserButton = query(".deleteUserButton", node)[0];
                      var deleteWidget = registry.byNode(deleteUserButton);
@@ -127,29 +127,19 @@ define(["dojo/_base/xhr",
             if(data.length) {
                 var that = this;
                 if(confirm("Delete " + data.length + " users?")) {
-                    var i, queryParam;
+                    var i;
+                    var parameters ={id:[]};
                     for(i = 0; i<data.length; i++) {
-                        if(queryParam) {
-                            queryParam += "&";
-                        } else {
-                            queryParam = "?";
-                        }
-
-                        queryParam += "id=" + data[i].id;
+                        parameters.id.push(data[i].id);
                     }
-                    var query = "api/latest/user/"+ encodeURIComponent(that.name)
-                       + queryParam;
+
                     that.success = true
-                    xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                    this.management.remove({type: "user", parent: this.modelObj}, parameters).then(
                         function(data) {
                             grid.setQuery({id: "*"});
                             grid.selection.deselectAll();
-                            that.update();
                         },
-                        function(error) {that.success = false; that.failureReason = error;});
-                    if(!that.success ) {
-                        util.xhrErrorHandler(this.failureReason);
-                    }
+                        util.xhrErrorHandler);
                 }
 }
         };
@@ -181,16 +171,12 @@ define(["dojo/_base/xhr",
             };
 
 
-        xhr.get({url: "authenticationprovider/addUser.html",
-                 sync: true,
-                 load:  function(data) {
+        node.innerHTML = addUserTemplate;
+        addUser.dialogNode = dom.byId("addUser");
+        parser.parse(node).then(
+                function(instances)
+                {
                             var theForm;
-                            node.innerHTML = data;
-                            addUser.dialogNode = dom.byId("addUser");
-                            parser.instantiate([addUser.dialogNode]);
-
-                            var that = this;
-
                             theForm = registry.byId("formAddUser");
                             theForm.on("submit", function(e) {
 
@@ -199,9 +185,7 @@ define(["dojo/_base/xhr",
 
                                     var newUser = convertToUser(theForm.getValues());
 
-
-                                    var url = "api/latest/user/"+encodeURIComponent(addUser.authProvider);
-                                    util.post(url, newUser, function(x){registry.byId("addUser").hide();});
+                                    addUser.management.create("user", addUser.authProvider, newUser, function(x){registry.byId("addUser").hide();}, util.xhrErrorHandler);
                                     return false;
 
 
@@ -211,9 +195,10 @@ define(["dojo/_base/xhr",
                                 }
 
                             });
-                        }});
+                });
 
-        addUser.show = function(authProvider) {
+        addUser.show = function(management, authProvider) {
+            addUser.management=management;
             addUser.authProvider = authProvider;
             registry.byId("formAddUser").reset();
             registry.byId("addUser").show();
@@ -224,17 +209,12 @@ define(["dojo/_base/xhr",
 
         var setPasswordNode = construct.create("div", null, win.body(), "last");
 
-        xhr.get({url: "authenticationprovider/setPassword.html",
-                 sync: true,
-                 load:  function(data) {
-                    var theForm;
-                    setPasswordNode.innerHTML = data;
-                    setPassword.dialogNode = dom.byId("setPassword");
-                    parser.instantiate([setPassword.dialogNode]);
-
-                    var that = this;
-
-                    theForm = registry.byId("formSetPassword");
+        setPasswordNode.innerHTML = setPasswordTemplate;
+        setPassword.dialogNode = dom.byId("setPassword");
+        parser.parse(setPasswordNode).then(
+                function(instances)
+                {
+                    var theForm = registry.byId("formSetPassword");
                     theForm.on("submit", function(e) {
 
                         event.stop(e);
@@ -244,10 +224,9 @@ define(["dojo/_base/xhr",
                             newUser.name = setPassword.name;
                             newUser.id = setPassword.id;
 
-                            var url = "api/latest/user/"+encodeURIComponent(setPassword.authProvider) +
-                                "/"+encodeURIComponent(newUser.name);
-
-                            util.post(url, newUser, function(x){registry.byId("setPassword").hide();});
+                            var model = {type: "user", name: setPassword.name, parent: setPassword.authProvider};
+                            setPassword.management.update(model, newUser,
+                                function(x){registry.byId("setPassword").hide();}, util.xhrErrorHandler);
                             return false;
 
 
@@ -257,9 +236,10 @@ define(["dojo/_base/xhr",
                         }
 
                     });
-                }});
+                });
 
-        setPassword.show = function(authProvider, user) {
+        setPassword.show = function(management, authProvider, user) {
+            setPassword.management = management;
             setPassword.authProvider = authProvider;
             setPassword.name = user.name;
             setPassword.id = user.id;

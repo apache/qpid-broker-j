@@ -23,17 +23,17 @@ define(["dojo/dom",
         "dojo/_base/array",
         "dijit/registry",
         "qpid/common/util",
-        "qpid/common/metadata",
         "dojo/parser",
         "dojo/text!store/nonjavatruststore/add.html",
         "dojo/domReady!"],
-    function (dom, query, array, registry, util, metadata, parser, template)
+    function (dom, query, array, registry, util, parser, template)
     {
         var addKeyStore =
         {
             show: function(data)
             {
                 var that=this;
+                this.metadata = data.metadata
                 this.containerNode = data.containerNode;
                 data.containerNode.innerHTML = template;
                 parser.parse(this.containerNode).then(function(instances)
@@ -51,12 +51,12 @@ define(["dojo/dom",
                         that.update(data.effectiveData);
                     }
 
-                    util.applyMetadataToWidgets(data.containerNode, "TrustStore", "NonJavaTrustStore");
+                    util.applyMetadataToWidgets(data.containerNode, "TrustStore", "NonJavaTrustStore", data.metadata);
                 });
             },
             update: function(effectiveData)
             {
-                var attributes = metadata.getMetaData("TrustStore", "NonJavaTrustStore").attributes;
+                var attributes = this.metadata.getMetaData("TrustStore", "NonJavaTrustStore").attributes;
                 var widgets = registry.findWidgets(this.containerNode);
                 array.forEach(widgets, function(item)
                     {

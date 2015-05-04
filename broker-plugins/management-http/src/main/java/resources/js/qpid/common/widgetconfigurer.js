@@ -25,11 +25,10 @@ define(["dojo/_base/xhr",
         "dojo/dom-attr",
         "dijit/registry",
         "qpid/common/properties",
-        "qpid/common/metadata",
         "dojo/text!strings.html",
         "dojo/domReady!"
         ],
-  function (xhr, string, query, dom, domConstruct, domAttr, registry, properties, metadata, template)
+  function (xhr, string, query, dom, domConstruct, domAttr, registry, properties, template)
   {
    var widgetconfigurer =
    {
@@ -43,7 +42,7 @@ define(["dojo/_base/xhr",
 
        domConstruct.destroy(stringsTemplate);
      },
-     _processWidgetPrompt: function (widget, category, type)
+     _processWidgetPrompt: function (widget, category, type, meta)
      {
        var widgetName = widget.name;
        if (widgetName && (widget instanceof dijit.form.ValidationTextBox || widget instanceof dijit.form.FilteringSelect))
@@ -57,7 +56,7 @@ define(["dojo/_base/xhr",
            }
 
            var promptMessage = widget.get("qpid.originalPromptMessage");
-           var defaultValue = metadata.getDefaultValueForAttribute(category, type, widgetName);
+           var defaultValue = meta.getDefaultValueForAttribute(category, type, widgetName);
            if (defaultValue)
            {
                var newPromptMessage = string.substitute(this.promptTemplateWithDefault, { 'default': defaultValue, 'prompt': promptMessage });
@@ -82,7 +81,7 @@ define(["dojo/_base/xhr",
          if (connectWidget)
          {
            var connectWidgetName = connectWidget.get("name");
-           var defaultValue = metadata.getDefaultValueForAttribute(category, type, connectWidgetName);
+           var defaultValue = meta.getDefaultValueForAttribute(category, type, connectWidgetName);
            if (defaultValue)
            {
              var newMessage = string.substitute(this.promptTemplateWithDefault, { 'default': defaultValue, 'prompt': message });
@@ -95,13 +94,12 @@ define(["dojo/_base/xhr",
          }
        }
      },
-     _processWidgetValue: function (widget, category, type, data)
+     _processWidgetValue: function (widget, category, type, data, meta)
      {
        var widgetName = widget.name;
-
        if (widgetName)
        {
-         var defaultValue = metadata.getDefaultValueForAttribute(category, type, widgetName);
+         var defaultValue = meta.getDefaultValueForAttribute(category, type, widgetName);
          var dataValue = data && widgetName in data ? data[widgetName] : null;
 
          // Stash the default value and initial value so we can later differentiate
@@ -139,10 +137,13 @@ define(["dojo/_base/xhr",
          }
        }
      },
-     config: function (widget, category, type, data)
+     config: function (widget, category, type, data, meta)
      {
-         this._processWidgetPrompt(widget, category, type);
-         this._processWidgetValue(widget, category, type, data);
+         this._processWidgetPrompt(widget, category, type, meta);
+         if (data != null)
+         {
+            this._processWidgetValue(widget, category, type, data, meta);
+         }
      }
    };
 

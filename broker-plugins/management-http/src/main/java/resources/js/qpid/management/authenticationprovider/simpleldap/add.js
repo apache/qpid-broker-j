@@ -18,8 +18,8 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr","dojo/query","dijit/registry","qpid/common/util","qpid/common/metadata","dojo/store/Memory","dijit/form/FilteringSelect","dijit/form/ValidationTextBox","dijit/form/CheckBox"],
-    function (xhr, query, registry, util, metadata, Memory)
+define(["dojo/query","dijit/registry","qpid/common/util","dojo/store/Memory","dijit/form/FilteringSelect","dijit/form/ValidationTextBox","dijit/form/CheckBox"],
+    function (query, registry, util, Memory)
     {
         return {
             show: function(data)
@@ -30,17 +30,19 @@ define(["dojo/_base/xhr","dojo/query","dijit/registry","qpid/common/util","qpid/
             _postParse: function(data)
             {
                 var that = this;
-                xhr.get({url: "api/latest/truststore", sync: true, handleAs: "json"}).then(
+                var obj = {type:"truststore", parent: {type: "broker"}};
+                data.parent.management.load(obj).then(
                     function(trustStores)
                     {
                         that._initTrustStores(trustStores, data.containerNode);
-                    }
+                        if (data.data)
+                        {
+                            that._initFields(data.data, data.containerNode, data.parent.management.metadata );
+                        }
+                    },
+                    util.xhrErrorHandler
                 );
 
-                if (data.data)
-                {
-                    this._initFields(data.data, data.containerNode );
-                }
             },
             _initTrustStores: function(trustStores, containerNode)
             {
@@ -54,7 +56,7 @@ define(["dojo/_base/xhr","dojo/query","dijit/registry","qpid/common/util","qpid/
                 var trustStore = registry.byNode(query(".trustStore", containerNode)[0]);
                 trustStore.set("store", trustStoresStore);
             },
-            _initFields:function(data, containerNode)
+            _initFields:function(data, containerNode, metadata)
             {
                 var attributes = metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
                 for(var name in attributes)

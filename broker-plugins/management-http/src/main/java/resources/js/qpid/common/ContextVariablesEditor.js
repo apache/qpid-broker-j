@@ -20,7 +20,6 @@
  */
 define([
         "qpid/common/util",
-        "dojo/_base/xhr",
         "dojo/_base/declare",
         "dojo/_base/array",
         "dojo/_base/connect",
@@ -40,7 +39,7 @@ define([
         "dojox/validate/us",
         "dojox/validate/web",
         "dojo/domReady!"],
-function (util, xhr, declare, array, connect, lang, domConstruct, parser, query, Memory, ObjectStore, _WidgetBase, registry, template)
+function (util, declare, array, connect, lang, domConstruct, parser, query, Memory, ObjectStore, _WidgetBase, registry, template)
  {
 
   return declare("qpid.common.ContextVariablesEditor", [_WidgetBase], {
@@ -123,91 +122,6 @@ function (util, xhr, declare, array, connect, lang, domConstruct, parser, query,
     resize: function()
     {
         this._grid.render();
-    },
-    load: function(restUrl, data)
-    {
-        data = data || {};
-        var actualValues = data.actualValues;
-        var allEffectiveValues = data.effectiveValues;
-        var inheritedActualValues = data.inheritedActualValues;
-        if (!actualValues)
-        {
-            xhr.get(
-                {
-                  url: restUrl,
-                  sync: true,
-                  content: { actuals: true },
-                  handleAs: "json",
-                  load: function(data)
-                  {
-                    actualValues = data[0].context;
-                  }
-                }
-            );
-        }
-        if (!allEffectiveValues)
-        {
-            xhr.get(
-                {
-                  url: restUrl,
-                  sync: true,
-                  content: { actuals: false },
-                  handleAs: "json",
-                  load: function(data)
-                  {
-                    allEffectiveValues = data[0].context;
-                  }
-                }
-            );
-        }
-        if (!inheritedActualValues)
-        {
-            xhr.get(
-                {
-                  url: restUrl,
-                  sync: true,
-                  content: { actuals: true, inheritedActuals: true},
-                  handleAs: "json",
-                  load: function(data)
-                  {
-                    inheritedActualValues = data[0].context;
-                  }
-                }
-            );
-        }
-        this.setData(actualValues, allEffectiveValues, inheritedActualValues);
-    },
-    loadInheritedData: function(restUrl)
-    {
-        var allEffectiveValues = null;
-        xhr.get(
-            {
-              url: restUrl,
-              sync: true,
-              content: { actuals: false },
-              handleAs: "json",
-              load: function(data)
-              {
-                allEffectiveValues = data[0].context;
-              }
-            }
-        );
-
-        var inheritedActualValues = null;
-        xhr.get(
-            {
-              url: restUrl,
-              sync: true,
-              content: { actuals: true, inheritedActuals: true},
-              handleAs: "json",
-              load: function(data)
-              {
-                inheritedActualValues = data[0].context;
-              }
-            }
-        );
-
-        this.setData({}, allEffectiveValues, inheritedActualValues);
     },
     setData: function(actualValues, allEffectiveValues, inheritedActualValues)
     {

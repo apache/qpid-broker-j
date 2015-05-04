@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/parser",
+define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
         "qpid/common/properties",
@@ -35,13 +34,15 @@ define(["dojo/_base/xhr",
         "dojo/dom",
         "qpid/management/PreferencesProvider",
         "qpid/management/authenticationprovider/PrincipalDatabaseAuthenticationManager",
+        "dojo/text!showAuthProvider.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, connect, properties, updater, util, UpdatableStore, EnhancedGrid,
-           addAuthenticationProvider, event, registry, domStyle, entities, dom, PreferencesProvider, PrincipalDatabaseAuthenticationManager) {
+       function (parser, query, connect, properties, updater, util, UpdatableStore, EnhancedGrid,
+           addAuthenticationProvider, event, registry, domStyle, entities, dom, PreferencesProvider, PrincipalDatabaseAuthenticationManager, template) {
 
            function AuthenticationProvider(name, parent, controller) {
                this.name = name;
                this.controller = controller;
+               this.management = management;
                this.modelObj = { type: "authenticationprovider", name: name, parent: parent};
            }
 
@@ -52,12 +53,9 @@ define(["dojo/_base/xhr",
            AuthenticationProvider.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-               xhr.get({url: "showAuthProvider.html",
-                        sync: true,
-                        load:  function(data) {
-                            contentPane.containerNode.innerHTML = data;
-                            parser.parse(contentPane.containerNode).then(function(instances)
-                            {
+                contentPane.containerNode.innerHTML = template;
+                parser.parse(contentPane.containerNode).then(function(instances)
+                {
 
                             var authProviderUpdater = new AuthProviderUpdater(contentPane.containerNode, that.modelObj, that.controller, that);
                             that.authProviderUpdater = authProviderUpdater;
@@ -67,7 +65,7 @@ define(["dojo/_base/xhr",
                             editButtonWidget.on("click",
                                             function(evt){
                                                 event.stop(evt);
-                                                addAuthenticationProvider.show(authProviderUpdater.authProviderData);
+                                                addAuthenticationProvider.show(that.management, that.modelObj, authProviderUpdater.authProviderData);
                                             });
                             authProviderUpdater.editButton = editButtonWidget;
 
@@ -79,17 +77,26 @@ define(["dojo/_base/xhr",
                                                 that.deleteAuthenticationProvider();
                                             });
 
-                            authProviderUpdater.update();
-                            if (util.isProviderManagingUsers(authProviderUpdater.authProviderData.type))
+                            authProviderUpdater.update( function()
                             {
-                                 authProviderUpdater.managingUsersUI = new PrincipalDatabaseAuthenticationManager(contentPane.containerNode, authProviderUpdater.authProviderData, that.controller);
+                            if (that.management.metadata.implementsManagedInterface("AuthenticationProvider",
+                                authProviderUpdater.authProviderData.type, "PasswordCredentialManagingAuthenticationProvider"))
+                            {
+                                 authProviderUpdater.managingUsersUI = new PrincipalDatabaseAuthenticationManager(contentPane.containerNode, authProviderUpdater.modelObj, that.controller);
                                  authProviderUpdater.managingUsersUI.update(authProviderUpdater.authProviderData);
                             }
 
-                            if (!util.supportsPreferencesProvider(authProviderUpdater.authProviderData.type))
+
+                            var supportsPreferencesProvider = that.management.metadata.implementsManagedInterface("AuthenticationProvider",
+                            authProviderUpdater.authProviderData.type, "PreferencesSupportingAuthenticationProvider");
+                            if (!supportsPreferencesProvider)
                             {
-                                var authenticationProviderPanel =  registry.byNode( query(".preferencesPanel", contentPane.containerNode)[0]);
-                                domStyle.set(authenticationProviderPanel.domNode, "display","none");
+                                var preferencesPanel = query(".preferencesPanel", contentPane.containerNode);
+                                if (preferencesPanel && preferencesPanel[0])
+                                {
+                                    var preferencesProviderPanel =  registry.byNode( preferencesPanel[0]);
+                                    domStyle.set(preferencesProviderPanel.domNode, "display","none");
+                                }
                             }
                             else
                             {
@@ -99,7 +106,7 @@ define(["dojo/_base/xhr",
 
                             updater.add( that.authProviderUpdater );
                             });
-                        }});
+                });
            };
 
            AuthenticationProvider.prototype.close = function() {
@@ -112,26 +119,23 @@ define(["dojo/_base/xhr",
 
            AuthenticationProvider.prototype.deleteAuthenticationProvider = function() {
                if(confirm("Are you sure you want to delete authentication provider '" + this.name + "'?")) {
-                   var query = "api/latest/authenticationprovider/" +encodeURIComponent(this.name);
-                   this.success = true
                    var that = this;
-                   xhr.del({url: query, sync: true, handleAs: "json"}).then(
+                   this.management.remove(this.modelObj).then(
                        function(data) {
                            that.close();
                            that.contentPane.onClose()
                            that.controller.tabContainer.removeChild(that.contentPane);
                            that.contentPane.destroyRecursive();
                        },
-                       function(error) {that.success = false; that.failureReason = error;});
-                   if(!this.success ) {
-                       util.xhrErrorHandler(this.failureReason);
-                   }
+                       util.xhrErrorHandler);
                }
            };
 
            function AuthProviderUpdater(node, authProviderObj, controller, authenticationProvider)
            {
                this.controller = controller;
+               this.management = management;
+               this.modelObj = authProviderObj;
                this.name = query(".name", node)[0];
                this.type = query(".type", node)[0];
                this.state = query(".state", node)[0];
@@ -143,10 +147,7 @@ define(["dojo/_base/xhr",
                this.deletePreferencesProviderButton = query(".deletePreferencesProviderButton", node)[0];
                this.preferencesProviderAttributes = dom.byId("preferencesProviderAttributes")
                this.preferencesNode = query(".preferencesProviderDetails", node)[0];
-
-this.authenticationProviderDetailsContainer = query(".authenticationProviderDetails", node)[0];
-               this.query = "api/latest/authenticationprovider/" + encodeURIComponent(authProviderObj.name);
-
+               this.authenticationProviderDetailsContainer = query(".authenticationProviderDetails", node)[0];
            }
 
            AuthProviderUpdater.prototype.updatePreferencesProvider = function(preferencesProviderData)
@@ -183,10 +184,18 @@ this.authenticationProviderDetailsContainer = query(".authenticationProviderDeta
                this.state.innerHTML = entities.encode(String(this.authProviderData[ "state" ]));
            };
 
-           AuthProviderUpdater.prototype.update = function()
+           AuthProviderUpdater.prototype.update = function(callback)
            {
              var that = this;
-             xhr.get({url: this.query, sync: true, handleAs: "json"}).then(function(data) {that._update(data[0]);});
+             this.management.load(this.modelObj).then(
+                 function(data)
+                 {
+                    that._update(data[0]);
+                    if (callback)
+                    {
+                        callback();
+                    }
+                 });
            };
 
             AuthProviderUpdater.prototype._update = function(data)

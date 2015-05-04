@@ -59,24 +59,37 @@
 
     <script>
         var qpidManagementHelper = null;
+        var management = null;
         require([
                     "dojo/parser",
+                    "dojo/query",
                     "qpid/authorization/checkUser",
                     "qpid/common/ConsoleHelper",
+                    "qpid/management/Management",
+                    "qpid/common/util",
+                    "qpid/management/treeView",
+                    "qpid/management/controller",
+                    "qpid/common/updater",
                     "dijit/layout/BorderContainer",
                     "dijit/layout/TabContainer",
                     "dijit/layout/ContentPane",
                     "dijit/TitlePane",
                     "dijit/Menu",
                     "dijit/MenuItem",
-                    "qpid/management/treeView",
-                    "qpid/management/controller",
                     "qpid/common/footer"
-                    ], function(parser, User, ConsoleHelper){
+                    ], function(parser, query, User, ConsoleHelper, Management, util, treeView, controller, updater){
                         parser.parse();
                         qpidManagementHelper = ConsoleHelper;
-                        User.getUserAndUpdateUI();
-                        dijit.Tooltip.defaultPosition = ["after-centered", "below-centered"];
+                        management = new Management("",util.xhrErrorHandler);
+                        management.init(function()
+                        {
+                            updater.registerUpdateIntervalListener(management.userPreferences);
+                            qpidManagementHelper.management = management;
+                            User.getUserAndUpdateUI(management);
+                            controller.init(management);
+                            treeView.create(getContextPath() + 'service/structure', management, query('div[qpid-type="treeView"]')[0]);
+                            dijit.Tooltip.defaultPosition = ["after-centered", "below-centered"];
+                        });
                     });
     </script>
 

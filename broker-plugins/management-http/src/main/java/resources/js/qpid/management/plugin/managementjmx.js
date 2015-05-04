@@ -18,8 +18,7 @@
  * under the License.
  *
  */
-define(["dojo/_base/xhr",
-        "dojo/dom",
+define(["dojo/dom",
         "dojo/parser",
         "dojo/query",
         "dojo/dom-construct",
@@ -31,28 +30,27 @@ define(["dojo/_base/xhr",
         "qpid/common/util",
         "qpid/common/properties",
         "qpid/common/updater",
+        "dojo/text!plugin/showManagementJmx.html",
+        "qpid/management/plugin/managementjmx/edit",
         "dojo/domReady!"],
-    function (xhr, dom, parser, query, construct, connect, win, event, json, registry, util, properties, updater) {
+    function (dom, parser, query, construct, connect, win, event, json, registry, util, properties, updater, template, edit) {
 
         function ManagementJmx(containerNode, pluginObject, controller) {
             var node = construct.create("div", null, containerNode, "last");
             var that = this;
             this.name = pluginObject.name;
-            xhr.get({
-                      url: "plugin/showManagementJmx.html",
-                      sync: true,
-                      load:  function(data) {
-                          node.innerHTML = data;
-                          parser.parse(node).then(function(instances)
-                          {
+            this.modelObj = pluginObject;
+            this.management = controller.management;
+            node.innerHTML = template;
+            parser.parse(node).then(function(instances)
+            {
                           that.managementJmxUpdater= new ManagementJmxUpdater(node, pluginObject, controller);
-                          that.managementJmxUpdater.update(true);
-                          updater.add( that.managementJmxUpdater);
+                          that.managementJmxUpdater.update(function(){updater.add( that.managementJmxUpdater);});
+
 
                           var editButton = query(".editPluginButton", node)[0];
                           connect.connect(registry.byNode(editButton), "onClick", function(evt){ that.edit(); });
-                          });
-                      }});
+            });
         }
 
         ManagementJmx.prototype.close = function() {
@@ -60,47 +58,19 @@ define(["dojo/_base/xhr",
         };
 
         ManagementJmx.prototype.edit = function() {
-          var widgetFactories = [{
-                  name: "name",
-                  createWidget: function(plugin) {
-                      return new dijit.form.ValidationTextBox({
-                        required: true,
-                        value: plugin.name,
-                        disabled: true,
-                        label: "Name:",
-                        regexp: "^[\x20-\x2e\x30-\x7F]{1,255}$",
-                        name: "name"});
-                  }
-              }, {
-                    name: "usePlatformMBeanServer",
-                    createWidget: function(plugin) {
-                        return new dijit.form.CheckBox({
-                          required: false,
-                          checked: plugin.usePlatformMBeanServer,
-                          label: "Use Platform MBean Server:",
-                          name: "usePlatformMBeanServer"});
-                }
-              }
-          ];
-          var data = this.managementJmxUpdater.pluginData;
-          util.showSetAttributesDialog(
-              widgetFactories,
-              data,
-              "api/latest/plugin/" + encodeURIComponent(data.name),
-              "Edit plugin - " + data.name,
-              "Plugin",
-              "MANAGEMENT-JMX");
+          edit.show(this.management, this.modelObj, this.managementJmxUpdater.pluginData);
         };
 
         function ManagementJmxUpdater(node, pluginObject, controller)
         {
             this.controller = controller;
-            this.query = "api/latest/plugin/"+encodeURIComponent(pluginObject.name);
+            this.modelObj = pluginObject;
             this.name = pluginObject.name;
             this.usePlatformMBeanServer = query(".usePlatformMBeanServer", node)[0];
+            this.management = controller.management;
         }
 
-        ManagementJmxUpdater.prototype.update = function(syncRequest)
+        ManagementJmxUpdater.prototype.update = function(callback)
         {
             var that = this;
 
@@ -109,10 +79,14 @@ define(["dojo/_base/xhr",
               return "<input type='checkbox' disabled='disabled' "+(val ? "checked='checked'": "")+" />" ;
             }
 
-            xhr.get({url: this.query, sync: syncRequest ? syncRequest : properties.useSyncGet, handleAs: "json"})
+            this.management.load(this.modelObj)
                 .then(function(data) {
                     that.pluginData = data[0];
                     that.usePlatformMBeanServer.innerHTML = showBoolean(that.pluginData.usePlatformMBeanServer);
+                    if (callback)
+                    {
+                        callback();
+                    }
                 });
 
         };

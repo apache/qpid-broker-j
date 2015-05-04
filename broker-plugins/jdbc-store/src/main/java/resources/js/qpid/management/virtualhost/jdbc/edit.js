@@ -17,7 +17,6 @@
  * under the License.
  */
 define(["qpid/common/util",
-        "qpid/common/metadata",
         "dojo/_base/array",
         "dojo/json",
         "dojo/string",
@@ -26,7 +25,7 @@ define(["qpid/common/util",
         "dojo/dom-construct",
         "dijit/registry",
         "dojo/domReady!"],
-   function (util, metadata, array, json, string, Memory, dom, domConstruct, registry)
+   function (util, array, json, string, Memory, dom, domConstruct, registry)
    {
 
        return {
@@ -41,7 +40,7 @@ define(["qpid/common/util",
               registry.byId("editVirtualHost.connectionUrl").set("regExpGen", util.jdbcUrlOrContextVarRegexp);
               registry.byId("editVirtualHost.username").set("regExpGen", util.nameOrContextVarRegexp);
 
-              var typeMetaData = metadata.getMetaData("VirtualHost", "JDBC");
+              var typeMetaData = data.metadata.getMetaData("VirtualHost", "JDBC");
               var poolTypes = typeMetaData.attributes.connectionPoolType.validValues;
               var poolTypesData = [];
               array.forEach(poolTypes,
