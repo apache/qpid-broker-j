@@ -1264,8 +1264,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             try
             {
-                if (!sub.isSuspended()
-                    && consumerReadyAndHasInterest(sub, entry)
+                // get available queue entry first in order to avoid referring old deleted queue entry in sub._queueContext._lastSeen
+                if ((getNextAvailableEntry(sub) == entry)
+                    && !sub.isSuspended()
+                    && sub.hasInterest(entry)
                     && mightAssign(sub, entry)
                     && !sub.wouldSuspend(entry))
                 {
@@ -1359,11 +1361,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _deliveredMessages.incrementAndGet();
 
         sub.send(entry, batch);
-    }
-
-    private boolean consumerReadyAndHasInterest(final QueueConsumer<?> sub, final QueueEntry entry)
-    {
-        return sub.hasInterest(entry) && (getNextAvailableEntry(sub) == entry);
     }
 
 
@@ -2008,6 +2005,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         boolean atTail = false;
         final boolean keepSendLockHeld = iterations <=  getMaxAsyncDeliveries();
         boolean queueEmpty = false;
+        boolean deliveryAttempted = false;
 
         try
         {
@@ -2025,6 +2023,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     }
 
                     atTail = attemptDelivery(sub, true);
+                    deliveryAttempted = true;
                     if (atTail && getNextAvailableEntry(sub) == null)
                     {
                         queueEmpty = true;
@@ -2041,6 +2040,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         sub.releaseSendLock();
                     }
                 }
+            }
+
+            if (!deliveryAttempted )
+            {
+                // avoid referring old deleted queue entry in sub._queueContext._lastSeen
+                getNextAvailableEntry(sub);
             }
         }
         finally
@@ -2084,13 +2089,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         boolean atTail = false;
 
+        // avoid referring old deleted queue entry in sub._queueContext._lastSeen
+        QueueEntry node  = getNextAvailableEntry(sub);
         boolean subActive = sub.isActive() && !sub.isSuspended();
 
         if (subActive)
         {
-
-            QueueEntry node  = getNextAvailableEntry(sub);
-
 
             if (_virtualHost.getState() != State.ACTIVE)
             {
