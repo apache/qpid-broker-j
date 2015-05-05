@@ -760,7 +760,7 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
         {
             if(!_virtualHostPropertiesPopulated)
             {
-                final Session session = _delegate.createSession(false, AMQSession.NO_ACKNOWLEDGE, 3,1);
+                final Session session = _delegate.createSession(false, AMQSession.NO_ACKNOWLEDGE, 3,3);
                 final MessageConsumer consumer = session.createConsumer(session.createQueue(
                         "ADDR: $virtualhostProperties; {assert: never, create: never, node:{ type: queue }}"));
                 try
