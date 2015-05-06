@@ -82,11 +82,6 @@
   </properties>
 
   <modules>
-    <module>amqp-1-0-common</module>
-    <module>amqp-1-0-client</module>
-    <module>amqp-1-0-client-jms</module>
-    <module>amqp-1-0-client-jms/example</module>
-    <module>amqp-1-0-client-websocket</module>
     <module>broker-codegen</module>
     <module>broker-core</module>
     <module>broker</module>

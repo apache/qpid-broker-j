@@ -45,12 +45,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-amqp-1-0-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>${logback-version}</version>
