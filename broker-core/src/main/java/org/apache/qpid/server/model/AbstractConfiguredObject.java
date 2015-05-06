@@ -47,8 +47,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -60,14 +58,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.Module;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +73,6 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.util.Strings;
 
@@ -961,7 +951,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     }
                 }
             });
+            postResolveChildren();
         }
+    }
+
+    protected void postResolveChildren()
+    {
+
     }
 
     protected void postResolve()
@@ -2398,27 +2394,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private static class OwnAttributeResolver implements Strings.Resolver
     {
-        private static final Module _module;
-        static
-        {
-            SimpleModule module= new SimpleModule("ConfiguredObjectSerializer", new Version(1,0,0,null));
-
-            final JsonSerializer<ConfiguredObject> serializer = new JsonSerializer<ConfiguredObject>()
-            {
-                @Override
-                public void serialize(final ConfiguredObject value,
-                                      final JsonGenerator jgen,
-                                      final SerializerProvider provider)
-                        throws IOException, JsonProcessingException
-                {
-                    jgen.writeString(value.getId().toString());
-                }
-            };
-            module.addSerializer(ConfiguredObject.class, serializer);
-
-            _module = module;
-        }
-
 
         public static final String PREFIX = "this:";
         private final ThreadLocal<Set<String>> _stack = new ThreadLocal<>();
@@ -2428,8 +2403,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         public OwnAttributeResolver(final ConfiguredObject<?> object)
         {
             _object = object;
-            _objectMapper = new ObjectMapper();
-            _objectMapper.registerModule(_module);
+            _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
         }
 
         @Override

@@ -18,18 +18,17 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.logging;
 
-import java.util.Map;
+import org.apache.qpid.server.model.BrokerLogger;
+import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedObject;
 
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
-import org.apache.qpid.server.model.SystemConfig;
-
-public interface SystemConfigFactory<X extends SystemConfig<X>> extends Pluggable
+@ManagedObject( category = false, type = BrokerConsoleLogger.TYPE)
+public interface BrokerConsoleLogger<X extends BrokerConsoleLogger<X>> extends BrokerLogger<X>
 {
-    public X newInstance(final TaskExecutor taskExecutor,
-                         final EventLogger eventLogger,
-                         final Map<String, Object> options);
+    String TYPE = "Console";
+
+    @ManagedAttribute(defaultValue = "%d %-5p [%t] \\(%c{2}\\) - %m%n")
+    String getLayout();
 }

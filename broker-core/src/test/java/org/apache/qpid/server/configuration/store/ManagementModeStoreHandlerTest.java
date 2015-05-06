@@ -43,7 +43,6 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.AbstractSystemConfig;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -80,7 +79,7 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         _taskExecutor.start();
 
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor, mock(EventLogger.class),
-                                               mock(LogRecorder.class), new BrokerOptions().convertToSystemConfigAttributes());
+                                                 new BrokerOptions().convertToSystemConfigAttributes());
 
 
         ConfiguredObjectRecord systemContextRecord = _systemConfig.asObjectRecord();
@@ -125,7 +124,6 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         attributes.put(ConfiguredObject.DESIRED_STATE, State.QUIESCED);
         _systemConfig = new AbstractSystemConfig(_taskExecutor,
                                                  mock(EventLogger.class),
-                                                 mock(LogRecorder.class),
                                                  attributes)
         {
             @Override

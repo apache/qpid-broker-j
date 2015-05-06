@@ -46,9 +46,10 @@ public final class BrokerModel extends Model
      *     Remove Broker#supportedVirtualHostNodeTypes, #supportedVirtualHostTypes, #supportedAuthenticationProviders,
      *            supportedPreferencesProviderTypes, VH#supportedExchangeTypes, VH#supportedQueueTypes
      *     Renamed FileTrustStore/FileKeyStore.path => FileTrustStore/FileKeyStore.storeUrl
+     * 3.1 Add BrokerLogger as a child of Broker
      */
     public static final int MODEL_MAJOR_VERSION = 3;
-    public static final int MODEL_MINOR_VERSION = 0;
+    public static final int MODEL_MINOR_VERSION = 1;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();
     private final Map<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>> _parents =
@@ -78,6 +79,9 @@ public final class BrokerModel extends Model
         addRelationship(Broker.class, TrustStore.class);
         addRelationship(Broker.class, KeyStore.class);
         addRelationship(Broker.class, Plugin.class);
+        addRelationship(Broker.class, BrokerLogger.class);
+
+        addRelationship(BrokerLogger.class, BrokerLoggerFilter.class);
 
         addRelationship(VirtualHostNode.class, VirtualHost.class);
         addRelationship(VirtualHostNode.class, RemoteReplicationNode.class);
@@ -87,7 +91,6 @@ public final class BrokerModel extends Model
         addRelationship(VirtualHost.class, Queue.class);
 
         addRelationship(Port.class, VirtualHostAlias.class);
-
 
         addRelationship(AuthenticationProvider.class, User.class);
         addRelationship(AuthenticationProvider.class, PreferencesProvider.class);

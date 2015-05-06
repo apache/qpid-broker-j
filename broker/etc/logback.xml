@@ -20,11 +20,11 @@
  -
  -->
 <configuration scan="true" scanPeriod="10 seconds">
-    <appender name="ArchivingFileAppender" class="ch.qos.logback.core.RollingFileAppender">
-        <file>${QPID_WORK}/log/${logprefix}qpid${logsuffix}.log</file>
+    <appender name="ArchivingFileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${QPID_WORK}/log/qpid.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- rollover daily -->
-            <fileNamePattern>${QPID_WORK}/log/${logprefix}qpid${logsuffix}.log.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <fileNamePattern>${QPID_WORK}/log/qpid.log.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy
                     class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>1MB</maxFileSize>
@@ -36,29 +36,14 @@
     </appender>
 
     <appender name="FileAppender" class="ch.qos.logback.core.FileAppender">
-        <file>${QPID_WORK}/log/${logprefix}qpid${logsuffix}.log</file>
+        <file>${QPID_WORK}/log/qpid.log</file>
         <append>false</append>
         <encoder>
             <pattern>%d %-5p [%t] \(%c{2}\) - %m%n</pattern>
         </encoder>
     </appender>
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d %-5p [%t] \(%c{2}\) - %m%n</pattern>
-        </encoder>
-    </appender>
-
-    <logger name="org.apache.qpid" level="warn" additivity="true"/>
-    <logger name="qpid.message" level="info" additivity="true"/>
-    <logger name="qpid.message.subscription.state" level="off" additivity="true"/>
-    <logger name="org.apache.qpid.server.queue.NotificationCheck" level="info" additivity="true"/>
-    <logger name="org.apache.commons" level="warn"/>
-
     <root level="info">
         <appender-ref ref="FileAppender"/>
-        <!--appender-ref ref="ArchivingFileAppender"/-->
     </root>
-    <!-- General logging hierarchy --><!-- Operational logging hierarchy --><!-- Subscription state may toggle frequently for clients with low prefetch
-    so switch off this operational logging by default--><!-- Enable log messages for the queue notifications --><!-- Set the commons logging that the XML parser uses to WARN, it is very chatty at debug --><!-- Log all info events to file -->
 </configuration>

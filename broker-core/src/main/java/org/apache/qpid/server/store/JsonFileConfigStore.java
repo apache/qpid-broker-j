@@ -41,20 +41,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.Module;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.module.SimpleModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.util.BaseAction;
@@ -89,7 +83,7 @@ public class JsonFileConfigStore implements DurableConfigurationStore
 
     private final Map<UUID, ConfiguredObjectRecord> _objectsById = new HashMap<UUID, ConfiguredObjectRecord>();
     private final Map<String, List<UUID>> _idsByType = new HashMap<String, List<UUID>>();
-    private final ObjectMapper _objectMapper = new ObjectMapper();
+    private final ObjectMapper _objectMapper;
     private final Class<? extends ConfiguredObject> _rootClass;
     private final FileHelper _fileHelper;
 
@@ -102,32 +96,12 @@ public class JsonFileConfigStore implements DurableConfigurationStore
     private String _tempFileName;
     private String _lockFileName;
 
-    private static final Module _module;
-    static
-    {
-        SimpleModule module= new SimpleModule("ConfiguredObjectSerializer", new Version(1,0,0,null));
-
-        final JsonSerializer<ConfiguredObject> serializer = new JsonSerializer<ConfiguredObject>()
-        {
-            @Override
-            public void serialize(final ConfiguredObject value,
-                                  final JsonGenerator jgen,
-                                  final SerializerProvider provider)
-                    throws IOException, JsonProcessingException
-            {
-                jgen.writeString(value.getId().toString());
-            }
-        };
-        module.addSerializer(ConfiguredObject.class, serializer);
-
-        _module = module;
-    }
-
     private ConfiguredObject<?> _parent;
 
     public JsonFileConfigStore(Class<? extends ConfiguredObject> rootClass)
     {
-        _objectMapper.registerModule(_module);
+
+        _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
         _objectMapper.enable(SerializationConfig.Feature.INDENT_OUTPUT);
         _rootClass = rootClass;
         _fileHelper = new FileHelper();

@@ -25,7 +25,7 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 
 import com.sleepycat.bind.tuple.TupleBinding;
@@ -33,43 +33,14 @@ import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBConfiguredObjectRecord;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.Version;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.Module;
+
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.module.SimpleModule;
 
 public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord>
 {
     private static final ConfiguredObjectBinding INSTANCE = new ConfiguredObjectBinding(null);
 
     private final UUID _uuid;
-
-    private static final Module _module;
-    static
-    {
-        SimpleModule module= new SimpleModule("ConfiguredObjectSerializer", new Version(1,0,0,null));
-
-        final JsonSerializer<ConfiguredObject> serializer = new JsonSerializer<ConfiguredObject>()
-        {
-            @Override
-            public void serialize(final ConfiguredObject value,
-                                  final JsonGenerator jgen,
-                                  final SerializerProvider provider)
-                    throws IOException, JsonProcessingException
-            {
-                jgen.writeString(value.getId().toString());
-            }
-        };
-        module.addSerializer(ConfiguredObject.class, serializer);
-
-        _module = module;
-    }
 
     public static ConfiguredObjectBinding getInstance()
     {
@@ -105,19 +76,10 @@ public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord
         try
         {
             StringWriter writer = new StringWriter();
-            final ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.registerModule(_module);
+            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
             objectMapper.writeValue(writer, object.getAttributes());
             tupleOutput.writeString(object.getType());
             tupleOutput.writeString(writer.toString());
-        }
-        catch (JsonMappingException e)
-        {
-            throw new StoreException(e);
-        }
-        catch (JsonGenerationException e)
-        {
-            throw new StoreException(e);
         }
         catch (IOException e)
         {

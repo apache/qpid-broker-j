@@ -35,7 +35,6 @@ import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -64,8 +63,8 @@ public class BrokerRecovererTest extends TestCase
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
         _systemConfig = new JsonSystemConfigImpl(_taskExecutor,
-                                               mock(EventLogger.class), mock(LogRecorder.class),
-                                               new BrokerOptions().convertToSystemConfigAttributes());
+                                               mock(EventLogger.class),
+                                                 new BrokerOptions().convertToSystemConfigAttributes());
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());

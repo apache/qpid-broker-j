@@ -18,18 +18,28 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.logging;
 
-import java.util.Map;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.spi.FilterReply;
 
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
-import org.apache.qpid.server.model.SystemConfig;
-
-public interface SystemConfigFactory<X extends SystemConfig<X>> extends Pluggable
+public class DenyAllFilter extends Filter<ILoggingEvent>
 {
-    public X newInstance(final TaskExecutor taskExecutor,
-                         final EventLogger eventLogger,
-                         final Map<String, Object> options);
+    private static final Filter<ILoggingEvent> INSTANCE = new DenyAllFilter();
+
+    private DenyAllFilter()
+    {
+    }
+
+    public static Filter<ILoggingEvent> getInstance()
+    {
+        return INSTANCE;
+    }
+
+    public FilterReply decide(final ILoggingEvent event)
+    {
+        return FilterReply.DENY;
+    }
+
 }

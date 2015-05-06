@@ -23,14 +23,14 @@ package org.apache.qpid.server.logging;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Log4jMessageLogger extends AbstractMessageLogger
+public class LoggingMessageLogger extends AbstractMessageLogger
 {
-    public Log4jMessageLogger()
+    public LoggingMessageLogger()
     {
         super();
     }
 
-    public Log4jMessageLogger(boolean statusUpdatesEnabled)
+    public LoggingMessageLogger(boolean statusUpdatesEnabled)
     {
         super(statusUpdatesEnabled);
     }

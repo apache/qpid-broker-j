@@ -47,10 +47,9 @@ public class DerbySystemConfigImpl extends AbstractSystemConfig<DerbySystemConfi
     @SystemConfigFactoryConstructor
     public DerbySystemConfigImpl(final TaskExecutor taskExecutor,
                                  final EventLogger eventLogger,
-                                 final LogRecorder logRecorder,
-                                 final Map<String,Object> attributes)
+                                 final Map<String, Object> attributes)
     {
-        super(taskExecutor, eventLogger, logRecorder, attributes);
+        super(taskExecutor, eventLogger, attributes);
     }
 
     @Override

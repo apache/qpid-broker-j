@@ -41,7 +41,6 @@ import java.util.UUID;
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
@@ -90,8 +89,7 @@ public class TestBrokerConfiguration
         brokerOptions.setInitialConfigurationLocation(initialStoreLocation);
         final AbstractSystemConfig parentObject = new JsonSystemConfigImpl(taskExecutor,
                                                                mock(EventLogger.class),
-                                                               mock(LogRecorder.class),
-                                                               brokerOptions.convertToSystemConfigAttributes());
+                                                                           brokerOptions.convertToSystemConfigAttributes());
 
         ConfiguredObjectRecordConverter converter = new ConfiguredObjectRecordConverter(BrokerModel.getInstance());
 
@@ -203,8 +201,7 @@ public class TestBrokerConfiguration
         attributes.put(ConfiguredObject.DESIRED_STATE, State.QUIESCED);
         final SystemConfig parentObject = configFactory.newInstance(_taskExecutor,
                                                                    mock(EventLogger.class),
-                                                                   mock(LogRecorder.class),
-                                                                   attributes);
+                                                                    attributes);
 
         parentObject.open();
         DurableConfigurationStore configurationStore = parentObject.getConfigurationStore();

@@ -62,7 +62,7 @@ public class LoggingManagementTest extends QpidBrokerTestCase
         _jmxUtils.open();
 
         _loggingManagement = _jmxUtils.getLoggingManagement();
-        _monitor = new LogMonitor(_outputFile);
+        _monitor = new LogMonitor(getOutputFile());
     }
 
     public void startBroker() throws Exception

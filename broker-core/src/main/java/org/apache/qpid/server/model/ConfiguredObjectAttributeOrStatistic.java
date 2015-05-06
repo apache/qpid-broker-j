@@ -37,88 +37,10 @@ abstract class ConfiguredObjectAttributeOrStatistic<C extends ConfiguredObject, 
     {
 
         _getter = getter;
-        _type = (Class<T>) getTypeFromMethod(getter);
-        _name = getNameFromMethod(getter, getType());
+        _type = (Class<T>) AttributeValueConverter.getTypeFromMethod(getter);
+        _name = AttributeValueConverter.getNameFromMethod(getter, getType());
         _converter = AttributeValueConverter.getConverter(getType(), getter.getGenericReturnType());
 
-    }
-
-    private static String getNameFromMethod(final Method m, final Class<?> type)
-    {
-        String methodName = m.getName();
-        String baseName;
-
-        if(type == Boolean.class )
-        {
-            if((methodName.startsWith("get") || methodName.startsWith("has")) && methodName.length() >= 4)
-            {
-                baseName = methodName.substring(3);
-            }
-            else if(methodName.startsWith("is") && methodName.length() >= 3)
-            {
-                baseName = methodName.substring(2);
-            }
-            else
-            {
-                throw new IllegalArgumentException("Method name " + methodName + " does not conform to the required pattern for ManagedAttributes");
-            }
-        }
-        else
-        {
-            if(methodName.startsWith("get") && methodName.length() >= 4)
-            {
-                baseName = methodName.substring(3);
-            }
-            else
-            {
-                throw new IllegalArgumentException("Method name " + methodName + " does not conform to the required pattern for ManagedAttributes");
-            }
-        }
-
-        String name = baseName.length() == 1 ? baseName.toLowerCase() : baseName.substring(0,1).toLowerCase() + baseName.substring(1);
-        name = name.replace('_','.');
-        return name;
-    }
-
-    private static Class<?> getTypeFromMethod(final Method m)
-    {
-        Class<?> type = m.getReturnType();
-        if(type.isPrimitive())
-        {
-            if(type == Boolean.TYPE)
-            {
-                type = Boolean.class;
-            }
-            else if(type == Byte.TYPE)
-            {
-                type = Byte.class;
-            }
-            else if(type == Short.TYPE)
-            {
-                type = Short.class;
-            }
-            else if(type == Integer.TYPE)
-            {
-                type = Integer.class;
-            }
-            else if(type == Long.TYPE)
-            {
-                type = Long.class;
-            }
-            else if(type == Float.TYPE)
-            {
-                type = Float.class;
-            }
-            else if(type == Double.TYPE)
-            {
-                type = Double.class;
-            }
-            else if(type == Character.TYPE)
-            {
-                type = Character.class;
-            }
-        }
-        return type;
     }
 
     public String getName()

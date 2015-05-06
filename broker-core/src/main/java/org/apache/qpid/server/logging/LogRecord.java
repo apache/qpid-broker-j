@@ -18,18 +18,48 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.logging;
 
-import java.util.Map;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
-import org.apache.qpid.server.model.SystemConfig;
-
-public interface SystemConfigFactory<X extends SystemConfig<X>> extends Pluggable
+public class LogRecord
 {
-    public X newInstance(final TaskExecutor taskExecutor,
-                         final EventLogger eventLogger,
-                         final Map<String, Object> options);
+    private final ILoggingEvent _event;
+    private final int _id;
+
+    public LogRecord(int id, ILoggingEvent event)
+    {
+        _id = id;
+        _event = event;
+    }
+
+    public long getId()
+    {
+        return _id;
+    }
+
+    public long getTimestamp()
+    {
+        return _event.getTimeStamp();
+    }
+
+    public String getThreadName()
+    {
+        return _event.getThreadName();
+    }
+
+    public String getLevel()
+    {
+        return _event.getLevel().toString();
+    }
+
+    public String getMessage()
+    {
+        return _event.getFormattedMessage();
+    }
+
+    public String getLogger()
+    {
+        return _event.getLoggerName();
+    }
 }

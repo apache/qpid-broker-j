@@ -33,6 +33,10 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.FileAppender;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -42,8 +46,10 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.BrokerMemoryLogger;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogRecorder;
+import org.apache.qpid.server.logging.RecordEventAppender;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.model.*;
@@ -55,6 +61,7 @@ import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
+import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
@@ -74,7 +81,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
     private SystemConfig<?> _parent;
     private EventLogger _eventLogger;
-    private final LogRecorder _logRecorder;
+    private LogRecorder _logRecorder;
 
     private final SecurityManager _securityManager;
 
@@ -104,6 +111,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private String _confidentialConfigurationEncryptionProvider;
 
     private final boolean _virtualHostPropertiesNodeEnabled;
+    private FileAppender<ILoggingEvent> _logFileAppender;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -111,7 +119,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     {
         super(parentsMap(parent), attributes);
         _parent = parent;
-        _logRecorder = parent.getLogRecorder();
         _eventLogger = parent.getEventLogger();
         _securityManager = new SecurityManager(this, parent.isManagementMode());
         if (parent.isManagementMode())
@@ -150,6 +157,34 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             }
             setEncrypter(factory.createEncrypter(this));
         }
+
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        super.postResolveChildren();
+
+
+        ch.qos.logback.classic.Logger rootLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        rootLogger.setLevel(Level.ALL);
+        Collection<BrokerLogger> loggers = getChildren(BrokerLogger.class);
+        for(BrokerLogger<?> logger : loggers)
+        {
+            final Appender<ILoggingEvent> appender = logger.asAppender();
+            rootLogger.addAppender(appender);
+            if(_logRecorder == null && logger instanceof BrokerMemoryLogger)
+            {
+                _logRecorder = new LogRecorder((RecordEventAppender) appender);
+            }
+
+        }
+
+        final SystemConfig parent = getParent(SystemConfig.class);
+        _eventLogger.message(BrokerMessages.CONFIG(parent instanceof FileBasedSettings
+                                                           ? ((FileBasedSettings) parent).getStorePath()
+                                                           : "N/A"));
 
     }
 
@@ -475,26 +510,24 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     protected void onOpen()
     {
         super.onOpen();
-        assignTargetSizes();
-    }
+        getEventLogger().message(BrokerMessages.STARTUP(QpidProperties.getReleaseVersion(),
+                                                        QpidProperties.getBuildVersion()));
 
-    public AuthenticationProvider<?> findAuthenticationProviderByName(String authenticationProviderName)
-    {
-        if (isManagementMode())
+        getEventLogger().message(BrokerMessages.PLATFORM(System.getProperty("java.vendor"),
+                                                         System.getProperty("java.runtime.version",
+                                                                            System.getProperty("java.version")),
+                                                         SystemUtils.getOSName(),
+                                                         SystemUtils.getOSVersion(),
+                                                         SystemUtils.getOSArch()));
+
+        getEventLogger().message(BrokerMessages.MAX_MEMORY(Runtime.getRuntime().maxMemory()));
+
+        if (SystemUtils.getProcessPid() != null)
         {
-            return _managementModeAuthenticationProvider;
+            getEventLogger().message(BrokerMessages.PROCESS(SystemUtils.getProcessPid()));
         }
-        return getChildByName(AuthenticationProvider.class, authenticationProviderName);
-    }
 
-    public KeyStore<?> findKeyStoreByName(String keyStoreName)
-    {
-        return getChildByName(KeyStore.class, keyStoreName);
-    }
-
-    public TrustStore<?> findTrustStoreByName(String trustStoreName)
-    {
-        return getChildByName(TrustStore.class, trustStoreName);
+        assignTargetSizes();
     }
 
     @Override
@@ -575,11 +608,27 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     protected void onClose()
     {
-
         if (_reportingTimer != null)
         {
             _reportingTimer.cancel();
         }
+
+        _eventLogger.message(BrokerMessages.STOPPED());
+
+        if(_logRecorder != null)
+        {
+            _logRecorder.closeLogRecorder();
+        }
+        if(_logFileAppender != null)
+        {
+
+            ch.qos.logback.classic.Logger rootLogger =
+                    (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+            rootLogger.detachAppender(_logFileAppender);
+            _logFileAppender.stop();
+
+        }
+
     }
     @Override
     public SecurityManager getSecurityManager()

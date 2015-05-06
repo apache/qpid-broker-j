@@ -1,4 +1,4 @@
-/*
+package org.apache.qpid.server.model;/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,18 +18,14 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
 
-import java.util.Map;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
-import org.apache.qpid.server.model.SystemConfig;
-
-public interface SystemConfigFactory<X extends SystemConfig<X>> extends Pluggable
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface ManagedAttributeValueType
 {
-    public X newInstance(final TaskExecutor taskExecutor,
-                         final EventLogger eventLogger,
-                         final Map<String, Object> options);
 }

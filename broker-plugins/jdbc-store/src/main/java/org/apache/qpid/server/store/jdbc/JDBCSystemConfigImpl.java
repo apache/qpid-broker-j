@@ -49,10 +49,9 @@ public class JDBCSystemConfigImpl extends AbstractSystemConfig<JDBCSystemConfigI
     @SystemConfigFactoryConstructor
     public JDBCSystemConfigImpl(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
-                                final LogRecorder logRecorder,
-                                final Map<String,Object> attributes)
+                                final Map<String, Object> attributes)
     {
-        super(taskExecutor, eventLogger, logRecorder, attributes);
+        super(taskExecutor, eventLogger, attributes);
     }
 
     @Override

@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
@@ -383,7 +384,7 @@ public class RestServlet extends AbstractServlet
 
 
         Writer writer = getOutputWriter(request, response);
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
         mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
         mapper.writeValue(writer, extractInitialConfig && output.size() == 1 ? output.get(0) : output);
     }

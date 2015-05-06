@@ -17,107 +17,35 @@
 
 package org.apache.qpid.server.logging;
 
+import java.util.Collections;
 import java.util.Iterator;
-import org.apache.qpid.server.configuration.BrokerProperties;
 
-public class LogRecorder implements Iterable<LogRecorder.Record>
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.core.helpers.CyclicBuffer;
+import org.slf4j.LoggerFactory;
+
+public class LogRecorder implements Iterable<LogRecord>
 {
-    private static final int DEFAULT_BUFFER_SIZE = 4096;
-    private String _name;
-    private long _recordId;
 
-    private final int _bufferSize = Integer.getInteger(BrokerProperties.PROPERTY_LOG_RECORDS_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
-    private final int _mask = _bufferSize - 1;
-    private Record[] _records = new Record[_bufferSize];
-
-
-    public static class Record
-    {
-        private long _id;
-        private String _logger;
-        private long _timestamp;
-        private String _threadName;
-        private String _level;
-        private String _message;
-
-
-        public Record(long id)
-        {
-        }
-
-        public long getId()
-        {
-            return _id;
-        }
-
-        public long getTimestamp()
-        {
-            return _timestamp;
-        }
-
-        public String getThreadName()
-        {
-            return _threadName;
-        }
-
-        public String getLevel()
-        {
-            return _level;
-        }
-
-        public String getMessage()
-        {
-            return _message;
-        }
-
-        public String getLogger()
-        {
-            return _logger;
-        }
-    }
+    private final RecordEventAppender _eventAppender;
 
     public void closeLogRecorder()
     {
+        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        rootLogger.detachAppender(_eventAppender);
+        _eventAppender.stop();
     }
 
     @Override
-    public Iterator<Record> iterator()
+    public Iterator<LogRecord> iterator()
     {
-        return new RecordIterator(Math.max(_recordId-_bufferSize, 0l));
+        final CyclicBuffer<LogRecord> buffer = _eventAppender.getBuffer();
+        return buffer != null ?  buffer.asList().iterator() : Collections.<LogRecord>emptyIterator();
     }
 
-    private class RecordIterator implements Iterator<Record>
+    public LogRecorder(RecordEventAppender eventAppender)
     {
-        private long _id;
-
-        public RecordIterator(long currentRecordId)
-        {
-            _id = currentRecordId;
-        }
-
-        @Override
-        public boolean hasNext()
-        {
-            return _id < _recordId;
-        }
-
-        @Override
-        public Record next()
-        {
-            Record record = _records[((int) (_id & _mask))];
-            while(_id < _recordId-_bufferSize)
-            {
-                _id = _recordId-_bufferSize;
-                record = _records[((int) (_id & _mask))];
-            }
-            _id++;
-            return record;
-        }
-
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
+        _eventAppender = eventAppender;
     }
+
 }

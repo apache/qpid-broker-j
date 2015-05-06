@@ -38,7 +38,6 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -78,10 +77,10 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
             config.setBrokerAttribute(Broker.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SECONDS);
         }
 
-        _monitor = new LogMonitor(_outputFile);
         _startTestTime = System.currentTimeMillis();
 
         super.setUp();
+        _monitor = new LogMonitor(getOutputFile());
 
         _brokerUrl = getBroker().toString();
         _conToVhost1 = new AMQConnection(_brokerUrl, USER, USER, "clientid", VHOST_NAME1);

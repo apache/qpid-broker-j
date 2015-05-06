@@ -68,7 +68,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
 
         // We either do this here or have a null check in tearDown.
         // As when this test is run against profiles other than java it will NPE
-        _monitor = new LogMonitor(_outputFile);
+        _monitor = new LogMonitor(getOutputFile());
         //We explicitly do not call super.setUp as starting up the broker is
         //part of the test case.
     }
@@ -103,7 +103,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
             startBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
-            _monitor = new LogMonitor(_outputFile);
+            _monitor = new LogMonitor(getOutputFile());
 
 
             String configFilePath = getConfigPath();
@@ -147,111 +147,6 @@ public class BrokerLoggingTest extends AbstractTestLogging
         return getPathRelativeToWorkingDirectory(getTestConfigFile(DEFAULT_PORT));
     }
 
-    /**
-     * Description:
-     * On startup the broker must report correctly report the log4j file in use. This is important as it can help diagnose why logging messages are not being reported. The broker must also be capable of correctly recognising the command line property to specify the custom logging configuration.
-     * Input:
-     * The value of -l specified on the command line.
-     * Output:
-     *
-     * <date> MESSAGE BRK-1007 : Using logging configuration : <log4j file>
-     *
-     * Validation Steps:
-     *
-     * 1. The BRK ID is correct
-     * 2. This should occur before the BRK-1001 : Startup message
-     * 3. The log4j file is the full path to the file specified on the commandline.
-     *
-     * @throws Exception caused by broker startup
-     */
-    public void testBrokerStartupCustomLog4j() throws Exception
-    {
-        // This logging startup code only occurs when you run a Java broker
-        if (isJavaBroker())
-        {
-            // Log4j properties expects this to be set
-            System.setProperty("qpid.testMethod", "-" + getName() + ".customLog4j");
-            System.setProperty("qpid.testClass", getClass().getName() );
-
-            String customLog4j = System.getProperty("log4j.configuration.file");
-
-            String TESTID = "BRK-1007";
-
-            startBroker(0, false, customLog4j);
-
-            // get log file from file appender
-            ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-            for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */ )
-            {
-                Appender<ILoggingEvent> appender = index.next();
-                if (appender instanceof FileAppender)
-                {
-                    _outputFile = new File(((FileAppender)appender).getFile());
-                    break;
-                }
-            }
-
-            // Now we can create the monitor as _outputFile will now be defined
-            _monitor = new LogMonitor(_outputFile);
-
-
-            // Ensure broker has fully started up.
-            getConnection();
-
-            // Ensure we wait for TESTID to be logged
-            waitAndFindMatches(TESTID);
-
-            List<String> results = waitAndFindMatches(BRK_LOG_PREFIX);
-            try
-            {
-                // Validation
-
-                assertTrue("BRKer message not logged", results.size() > 0);
-
-                boolean validation = false;
-                for (String rawLog : results)
-                {
-                    // We don't care about messages after we have our log config
-                    if (validation)
-                    {
-                        break;
-                    }
-                    String log = getLog(rawLog);
-
-                    // Ensure we do not have a BRK-1001 message before
-                    if (!getMessageID(log).equals(TESTID))
-                    {
-                        assertFalse(getMessageID(log).equals("BRK-1001"));
-                        continue;
-                    }
-
-                    //1
-                    validateMessageID(TESTID, log);
-
-                    //2
-                    //There will be 1 copy of this startup message (via SystemOut)
-                    assertEquals("Unexpected log4j configuration message count.",
-                                 1, findMatches(TESTID).size());
-
-                    //3
-                    String messageString = getMessageString(log);
-                    assertTrue("Log4j file details not correctly logged. Message '"
-                            + messageString + "' should contain '" +customLog4j + "'",
-                            messageString.endsWith(customLog4j));
-
-                    validation = true;
-                }
-
-                assertTrue("Validation not performed: " + TESTID + " not logged", validation);
-            }
-            catch (AssertionFailedError afe)
-            {
-                dumpLogs(results, _monitor);
-
-                throw afe;
-            }
-        }
-    }
 
     /**
      * Description: On startup the broker reports the broker version number and svn build revision. This information is retrieved from the resource 'qpidversion.properties' which is located via the classloader.
@@ -278,7 +173,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
             startBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
-            _monitor = new LogMonitor(_outputFile);
+            _monitor = new LogMonitor(getOutputFile());
             
             // Ensure we wait for TESTID to be logged
             waitAndFindMatches(TESTID);
@@ -360,7 +255,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
             startBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
-            _monitor = new LogMonitor(_outputFile);
+            _monitor = new LogMonitor(getOutputFile());
 
             // Ensure broker has fully started up.
             getConnection();
@@ -474,7 +369,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
             startBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
-            _monitor = new LogMonitor(_outputFile);
+            _monitor = new LogMonitor(getOutputFile());
 
             // Ensure broker has fully started up.
             getConnection();
@@ -580,6 +475,9 @@ public class BrokerLoggingTest extends AbstractTestLogging
 
             startBroker();
 
+            // Now we can create the monitor as _outputFile will now be defined
+            _monitor = new LogMonitor(getOutputFile());
+
             //Ensure the broker has fully started up.
             getConnection();
             // Ensure we wait for TESTID to be logged
@@ -666,7 +564,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
             startBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
-            _monitor = new LogMonitor(_outputFile);
+            _monitor = new LogMonitor(getOutputFile());
 
             stopBroker();
 
@@ -767,7 +665,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
             startBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
-            _monitor = new LogMonitor(_outputFile);
+            _monitor = new LogMonitor(getOutputFile());
 
 
 //            //Clear any startup messages as we don't need them for validation
@@ -854,7 +752,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
             startBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
-            _monitor = new LogMonitor(_outputFile);
+            _monitor = new LogMonitor(getOutputFile());
 
             getConnection().close();
 

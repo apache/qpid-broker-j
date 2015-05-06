@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -51,6 +53,8 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     public static final String DERIVED_ATTRIBUTE_CLASS_NAME = "org.apache.qpid.server.model.DerivedAttribute";
 
     public static final String MANAGED_STATISTIC_CLASS_NAME = "org.apache.qpid.server.model.ManagedStatistic";
+
+
 
 
 
@@ -248,7 +252,13 @@ public class AttributeAnnotationValidator extends AbstractProcessor
         }
     }
 
-    private boolean isValidType(final TypeMirror type)
+    boolean isValidType(final TypeMirror type)
+    {
+        return isValidType(processingEnv, type);
+    }
+
+    static boolean isValidType(ProcessingEnvironment processingEnv,
+                               final TypeMirror type)
     {
         Types typeUtils = processingEnv.getTypeUtils();
         Elements elementUtils = processingEnv.getElementUtils();
@@ -271,14 +281,22 @@ public class AttributeAnnotationValidator extends AbstractProcessor
         }
 
         String className = "org.apache.qpid.server.model.ConfiguredObject";
-        TypeMirror configuredObjectType = getErasure(className);
+        TypeMirror configuredObjectType = getErasure(processingEnv, className);
 
         if(typeUtils.isAssignable(typeUtils.erasure(type), configuredObjectType))
         {
             return true;
         }
 
-
+        final TypeElement managedAttributeTypeValueElement =
+                elementUtils.getTypeElement(ManagedAttributeValueTypeValidator.MANAGED_ATTRIBUTE_VALUE_TYPE_CLASS_NAME);
+        for(AnnotationMirror annotation : typeElement.getAnnotationMirrors())
+        {
+            if(annotation.getAnnotationType().asElement().equals(managedAttributeTypeValueElement))
+            {
+                return true;
+            }
+        }
         if(typeUtils.isSameType(type,elementUtils.getTypeElement("java.lang.Object").asType()))
         {
             return true;
@@ -297,16 +315,16 @@ public class AttributeAnnotationValidator extends AbstractProcessor
         }
 
         TypeMirror erasedType = typeUtils.erasure(type);
-        if(typeUtils.isSameType(erasedType, getErasure("java.util.List"))
-                || typeUtils.isSameType(erasedType, getErasure("java.util.Set"))
-                || typeUtils.isSameType(erasedType, getErasure("java.util.Collection")))
+        if(typeUtils.isSameType(erasedType, getErasure(processingEnv, "java.util.List"))
+                || typeUtils.isSameType(erasedType, getErasure(processingEnv, "java.util.Set"))
+                || typeUtils.isSameType(erasedType, getErasure(processingEnv, "java.util.Collection")))
         {
 
 
             for(TypeMirror paramType : ((DeclaredType)type).getTypeArguments())
             {
 
-                if(!isValidType(paramType))
+                if(!isValidType(processingEnv, paramType))
                 {
                     return false;
                 }
@@ -314,14 +332,16 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             return true;
         }
 
-        if(typeUtils.isSameType(erasedType, getErasure("java.util.Map")))
+        if(typeUtils.isSameType(erasedType, getErasure(processingEnv, "java.util.Map")))
         {
             List<? extends TypeMirror> args = ((DeclaredType) type).getTypeArguments();
             if (args.size() != 2)
             {
                 throw new IllegalArgumentException("Map types " + type + " must have exactly two type arguments");
             }
-            return isValidType(args.get(0)) && (isValidType(args.get(1)) || typeUtils.isSameType(args.get(1), getErasure("java.lang.Object")));
+            return isValidType(processingEnv, args.get(0))
+                   && (isValidType(processingEnv, args.get(1))
+                       || typeUtils.isSameType(args.get(1), getErasure(processingEnv, "java.lang.Object")));
         }
 
 
@@ -329,6 +349,11 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     }
 
     private TypeMirror getErasure(final String className)
+    {
+        return getErasure(processingEnv, className);
+    }
+
+    private static TypeMirror getErasure(ProcessingEnvironment processingEnv, final String className)
     {
         final Types typeUtils = processingEnv.getTypeUtils();
         final Elements elementUtils = processingEnv.getElementUtils();

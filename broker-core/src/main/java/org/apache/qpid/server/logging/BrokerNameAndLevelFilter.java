@@ -18,18 +18,21 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.plugin;
+package org.apache.qpid.server.logging;
 
-import java.util.Map;
+import org.apache.qpid.server.model.BrokerLoggerFilter;
+import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedObject;
 
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
-import org.apache.qpid.server.model.SystemConfig;
-
-public interface SystemConfigFactory<X extends SystemConfig<X>> extends Pluggable
+@ManagedObject( category = false, type = BrokerNameAndLevelFilter.TYPE)
+public interface BrokerNameAndLevelFilter<X extends BrokerNameAndLevelFilter<X>> extends BrokerLoggerFilter<X>
 {
-    public X newInstance(final TaskExecutor taskExecutor,
-                         final EventLogger eventLogger,
-                         final Map<String, Object> options);
+
+    String TYPE = "NameAndLevel";
+
+    @ManagedAttribute( defaultValue = "" )
+    String getLoggerName();
+
+    @ManagedAttribute(defaultValue = "INFO" )
+    LogLevel getLevel();
 }

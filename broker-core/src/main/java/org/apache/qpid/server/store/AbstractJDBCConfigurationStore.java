@@ -40,19 +40,13 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.Version;
 import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.Module;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializerProvider;
-import org.codehaus.jackson.map.module.SimpleModule;
 import org.slf4j.Logger;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 
@@ -87,27 +81,6 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
     private static final String DELETE_FROM_CONFIGURED_OBJECT_HIERARCHY = "DELETE FROM " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME
                                                                           + " where child_id = ?";
     private static final String SELECT_FROM_CONFIGURED_OBJECT_HIERARCHY = "SELECT child_id, parent_type, parent_id FROM " + CONFIGURED_OBJECT_HIERARCHY_TABLE_NAME;
-
-    private static final Module _module;
-    static
-    {
-        SimpleModule module= new SimpleModule("ConfiguredObjectSerializer", new Version(1,0,0,null));
-
-        final JsonSerializer<ConfiguredObject> serializer = new JsonSerializer<ConfiguredObject>()
-        {
-            @Override
-            public void serialize(final ConfiguredObject value,
-                                  final JsonGenerator jgen,
-                                  final SerializerProvider provider)
-                    throws IOException, JsonProcessingException
-            {
-                jgen.writeString(value.getId().toString());
-            }
-        };
-        module.addSerializer(ConfiguredObject.class, serializer);
-
-        _module = module;
-    }
 
     @Override
     public void visitConfiguredObjectRecords(ConfiguredObjectRecordHandler handler)
@@ -305,8 +278,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
 
             Map<UUID,Map<String,Object>> bindingsToUpdate = new HashMap<UUID, Map<String, Object>>();
             List<UUID> others = new ArrayList<UUID>();
-            final ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.registerModule(_module);
+            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
 
             PreparedStatement stmt = connection.prepareStatement(SELECT_FROM_CONFIGURED_OBJECTS);
             try
@@ -673,8 +645,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
                         else
                         {
                             final Map<String, Object> attributes = configuredObject.getAttributes();
-                            final ObjectMapper objectMapper = new ObjectMapper();
-                            objectMapper.registerModule(_module);
+                            final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
                             byte[] attributesAsBytes = objectMapper.writeValueAsBytes(attributes);
 
                             ByteArrayInputStream bis = new ByteArrayInputStream(attributesAsBytes);
@@ -812,8 +783,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             ResultSet rs = stmt.executeQuery();
             try
             {
-                final ObjectMapper objectMapper = new ObjectMapper();
-                objectMapper.registerModule(_module);
+
+                final ObjectMapper objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
                 if (rs.next())
                 {
                     PreparedStatement stmt2 = conn.prepareStatement(UPDATE_CONFIGURED_OBJECTS);

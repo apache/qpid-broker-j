@@ -117,8 +117,6 @@ public class AlertingTest extends AbstractTestLogging
         _connection.close();
         stopBroker();
 
-        // Rest the monitoring clearing the current output file.
-        _monitor.markDiscardPoint();
         startBroker();
         wasAlertFired();
     }
@@ -148,7 +146,6 @@ public class AlertingTest extends AbstractTestLogging
 
         stopBroker();
 
-        _monitor.markDiscardPoint();
 
         RestTestHelper restTestHelper = new RestTestHelper(findFreePort());
         TestBrokerConfiguration config = getBrokerConfiguration();

@@ -81,12 +81,12 @@ public abstract class TransactionTimeoutTestCase extends QpidBrokerTestCase impl
         // Configure timeouts
         configure();
         
-        // Monitor log file
-        _monitor = new LogMonitor(_outputFile);
-        
         // Start broker
         super.setUp();
-        
+
+        // Monitor log file
+        _monitor = new LogMonitor(getOutputFile());
+
         // Connect to broker
         setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, String.valueOf(1));
         _con = getConnection();

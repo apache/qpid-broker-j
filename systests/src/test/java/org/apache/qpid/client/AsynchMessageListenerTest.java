@@ -269,7 +269,7 @@ public class AsynchMessageListenerTest extends QpidBrokerTestCase
 
         // Check that Error has been written to the application log.
 
-        LogMonitor _monitor = new LogMonitor(_outputFile);
+        LogMonitor _monitor = new LogMonitor(getOutputFile());
         assertTrue("The expected message not written to log file.",
                 _monitor.waitForMessage(javaLangErrorMessageText, LOGMONITOR_TIMEOUT));
 

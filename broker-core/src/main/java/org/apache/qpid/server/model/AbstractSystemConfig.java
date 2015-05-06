@@ -55,7 +55,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 {
     private static final UUID SYSTEM_ID = new UUID(0l, 0l);
     private final EventLogger _eventLogger;
-    private final LogRecorder _logRecorder;
 
     private DurableConfigurationStore _configurationStore;
 
@@ -86,15 +85,13 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
     public AbstractSystemConfig(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
-                                final LogRecorder logRecorder,
-                                final Map<String,Object> attributes)
+                                final Map<String, Object> attributes)
     {
         super(parentsMap(),
               updateAttributes(attributes),
               taskExecutor, BrokerModel.getInstance());
         _eventLogger = eventLogger;
         getTaskExecutor().start();
-        _logRecorder = logRecorder;
     }
 
     private static Map<String, Object> updateAttributes(Map<String, Object> attributes)
@@ -117,11 +114,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         return _eventLogger;
     }
 
-    public LogRecorder getLogRecorder()
-    {
-        return _logRecorder;
-    }
-
     @Override
     protected void onClose()
     {
@@ -132,10 +124,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
             {
                 getTaskExecutor().stop();
             }
-
-            _eventLogger.message(BrokerMessages.STOPPED());
-
-            _logRecorder.closeLogRecorder();
 
             _configurationStore.closeConfigurationStore();
 
@@ -212,22 +200,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
             startupLogger = eventLogger;
         }
 
-        startupLogger.message(BrokerMessages.STARTUP(QpidProperties.getReleaseVersion(),
-                                                     QpidProperties.getBuildVersion()));
-
-        startupLogger.message(BrokerMessages.PLATFORM(System.getProperty("java.vendor"),
-                                                      System.getProperty("java.runtime.version",
-                                                                         System.getProperty("java.version")),
-                                                      SystemUtils.getOSName(),
-                                                      SystemUtils.getOSVersion(),
-                                                      SystemUtils.getOSArch()));
-
-        startupLogger.message(BrokerMessages.MAX_MEMORY(Runtime.getRuntime().maxMemory()));
-
-        if (SystemUtils.getProcessPid() != null)
-        {
-            startupLogger.message(BrokerMessages.PROCESS(SystemUtils.getProcessPid()));
-        }
 
         BrokerStoreUpgraderAndRecoverer upgrader = new BrokerStoreUpgraderAndRecoverer(this);
         upgrader.perform();

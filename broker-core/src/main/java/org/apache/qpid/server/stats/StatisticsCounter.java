@@ -62,13 +62,11 @@ public class StatisticsCounter
     {
         _period = period;
         _name = name + "-" + + _counterIds.incrementAndGet();
-        reset();
+
+        _start = System.currentTimeMillis();
+        _last = _start / _period;
     }
     
-    public void registerEvent()
-    {
-        registerEvent(1L);
-    }
 
     public void registerEvent(long value)
     {

@@ -71,6 +71,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
         register(new Upgrader_0_3_to_0_4());
         register(new Upgrader_0_4_to_2_0());
         register(new Upgrader_2_0_to_3_0());
+        register(new Upgrader_3_0_to_3_1());
 
         Map<String, UUID> defaultExchangeIds = new HashMap<String, UUID>();
         for (String exchangeName : DEFAULT_EXCHANGES.keySet())
@@ -335,7 +336,7 @@ public class VirtualHostStoreUpgraderAndRecoverer
                 }
                 if(!record.getAttributes().containsKey("durable"))
                 {
-                    newAttributes.put("durable","true");
+                    newAttributes.put("durable", "true");
                 }
 
                 record = new ConfiguredObjectRecordImpl(record.getId(),record.getType(),newAttributes, record.getParents());
@@ -495,6 +496,31 @@ public class VirtualHostStoreUpgraderAndRecoverer
         public Upgrader_2_0_to_3_0()
         {
             super("modelVersion", "2.0", "3.0");
+        }
+
+        @Override
+        public void configuredObject(ConfiguredObjectRecord record)
+        {
+
+            if("VirtualHost".equals(record.getType()))
+            {
+                record = upgradeRootRecord(record);
+            }
+            getNextUpgrader().configuredObject(record);
+        }
+
+        @Override
+        public void complete()
+        {
+            getNextUpgrader().complete();
+        }
+
+    }
+    private class Upgrader_3_0_to_3_1 extends StoreUpgraderPhase
+    {
+        public Upgrader_3_0_to_3_1()
+        {
+            super("modelVersion", "3.0", "3.1");
         }
 
         @Override

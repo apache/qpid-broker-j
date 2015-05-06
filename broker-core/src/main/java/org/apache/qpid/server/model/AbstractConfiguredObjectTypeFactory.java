@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 

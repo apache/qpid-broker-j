@@ -48,10 +48,9 @@ public class BDBSystemConfigImpl extends AbstractSystemConfig<BDBSystemConfigImp
     @SystemConfigFactoryConstructor
     public BDBSystemConfigImpl(final TaskExecutor taskExecutor,
                                final EventLogger eventLogger,
-                               final LogRecorder logRecorder,
-                               final Map<String,Object> attributes)
+                               final Map<String, Object> attributes)
     {
-        super(taskExecutor, eventLogger, logRecorder, attributes);
+        super(taskExecutor, eventLogger, attributes);
     }
 
     @Override

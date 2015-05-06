@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
+import org.apache.qpid.server.logging.LogRecord;
 import org.apache.qpid.server.logging.LogRecorder;
 
 public class LogRecordsServlet extends AbstractServlet
@@ -72,7 +73,7 @@ public class LogRecordsServlet extends AbstractServlet
         List<Map<String,Object>> logRecords = new ArrayList<Map<String, Object>>();
 
         LogRecorder logRecorder = getBroker().getLogRecorder();
-        for(LogRecorder.Record record : logRecorder)
+        for(LogRecord record : logRecorder)
         {
             if (record.getId() > lastLogId)
             {
@@ -89,7 +90,7 @@ public class LogRecordsServlet extends AbstractServlet
 
     }
 
-    private Map<String, Object> logRecordToObject(LogRecorder.Record record)
+    private Map<String, Object> logRecordToObject(LogRecord record)
     {
         Map<String, Object> recordMap = new LinkedHashMap<String, Object>();
         recordMap.put("id",record.getId());

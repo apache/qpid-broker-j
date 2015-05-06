@@ -31,6 +31,7 @@ import java.util.UUID;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
+import org.apache.qpid.server.logging.LogLevel;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Port;
@@ -55,6 +56,8 @@ public class BrokerStoreUpgraderAndRecoverer
         register(new Upgrader_1_2_to_1_3());
         register(new Upgrader_1_3_to_2_0());
         register(new Upgrader_2_0_to_3_0());
+
+        register(new Upgrader_3_0_to_3_1());
     }
 
     private void register(StoreUpgraderPhase upgrader)
@@ -299,6 +302,86 @@ public class BrokerStoreUpgraderAndRecoverer
                                                                                  Collections.singletonMap("Port", parent.getId()));
             getUpdateMap().put(record.getId(), record);
             getNextUpgrader().configuredObject(record);
+        }
+
+        @Override
+        public void complete()
+        {
+            getNextUpgrader().complete();
+        }
+
+    }
+    private class Upgrader_3_0_to_3_1 extends StoreUpgraderPhase
+    {
+        public Upgrader_3_0_to_3_1()
+        {
+            super("modelVersion", "3.0", "3.1");
+        }
+
+        @Override
+        public void configuredObject(ConfiguredObjectRecord record)
+        {
+            if (record.getType().equals("Broker"))
+            {
+                record = upgradeRootRecord(record);
+                addMemoryLogger(record);
+                addFileLogger(record);
+                getNextUpgrader().configuredObject(record);
+
+            }
+
+        }
+
+        private void addMemoryLogger(final ConfiguredObjectRecord record)
+        {
+            Map<String,Object> attributes = new HashMap<>();
+            attributes.put("name", "memory");
+            attributes.put("type", "Memory");
+            final ConfiguredObjectRecord memoryLogger = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                                 "BrokerLogger",
+                                                                                 attributes,
+                                                                                 Collections.singletonMap("Broker",
+                                                                                                          record.getId()));
+            addNameValueFilter(1, memoryLogger, LogLevel.INFO, "");
+            getUpdateMap().put(memoryLogger.getId(), memoryLogger);
+            getNextUpgrader().configuredObject(memoryLogger);
+        }
+
+        private void addFileLogger(final ConfiguredObjectRecord record)
+        {
+            Map<String,Object> attributes = new HashMap<>();
+            attributes.put("name", "file");
+            attributes.put("type", "File");
+
+            final ConfiguredObjectRecord fileLogger = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                                       "BrokerLogger",
+                                                                                       attributes,
+                                                                                       Collections.singletonMap("Broker",
+                                                                                                                record.getId()));
+            addNameValueFilter(1, fileLogger, LogLevel.INFO, "");
+            getUpdateMap().put(fileLogger.getId(), fileLogger);
+            getNextUpgrader().configuredObject(fileLogger);
+        }
+        private void addNameValueFilter(int seqNo,
+                                        final ConfiguredObjectRecord loggerRecord,
+                                        final LogLevel level,
+                                        final String loggerName)
+        {
+            Map<String,Object> attributes = new HashMap<>();
+            attributes.put("name", String.valueOf(seqNo));
+            attributes.put("logLevel", level.name());
+            attributes.put("loggerName", loggerName);
+            attributes.put("type", "NameAndLevel");
+
+
+            final ConfiguredObjectRecord filterRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                                       "BrokerLoggerFilter",
+                                                                                       attributes,
+                                                                                       Collections.singletonMap("BrokerLogger",
+                                                                                                                loggerRecord.getId()));
+            getUpdateMap().put(filterRecord.getId(), filterRecord);
+            getNextUpgrader().configuredObject(filterRecord);
+
         }
 
         @Override

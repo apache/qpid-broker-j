@@ -69,8 +69,6 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
 
     Broker getBroker();
 
-    LogRecorder getLogRecorder();
-
     DurableConfigurationStore getConfigurationStore();
 
 }

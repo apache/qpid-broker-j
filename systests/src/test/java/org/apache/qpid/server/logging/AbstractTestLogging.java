@@ -50,7 +50,7 @@ public class AbstractTestLogging extends QpidBrokerTestCase
         setLogMessagePrefix();
         
         super.setUp();
-        _monitor = new LogMonitor(_outputFile);
+        _monitor = new LogMonitor(getOutputFile());
     }
 
     protected void setLogMessagePrefix()

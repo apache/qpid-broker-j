@@ -21,6 +21,7 @@
 package org.apache.qpid.server;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -32,12 +33,14 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.LogManager;
 
 import javax.security.auth.Subject;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.ConsoleAppender;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -47,8 +50,7 @@ import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.Log4jMessageLogger;
-import org.apache.qpid.server.logging.LogRecorder;
+import org.apache.qpid.server.logging.LoggingMessageLogger;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.SystemOutMessageLogger;
 import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
@@ -175,29 +177,18 @@ public class Broker
         String storeLocation = options.getConfigurationStoreLocation();
         String storeType = options.getConfigurationStoreType();
 
-        if (options.isStartupLoggedToSystemOut())
-        {
-            _eventLogger.message(BrokerMessages.CONFIG(storeLocation));
-        }
-
-        //Allow skipping the logging configuration for people who are
-        //embedding the broker and want to configure it themselves.
-        if(!options.isSkipLoggingConfiguration())
-        {
-            configureLogging(new File(options.getLogConfigFileLocation()), options.isStartupLoggedToSystemOut());
-        }
         // Create the RootLogger to be used during broker operation
         boolean statusUpdatesEnabled = Boolean.parseBoolean(System.getProperty(BrokerProperties.PROPERTY_STATUS_UPDATES, "true"));
-        MessageLogger messageLogger = new Log4jMessageLogger(statusUpdatesEnabled);
+
+        ch.qos.logback.classic.Logger logger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        logger.getLoggerContext().reset();
+        logger.setAdditive(true);
+        logger.setLevel(Level.INFO);
+
+        MessageLogger messageLogger = new LoggingMessageLogger(statusUpdatesEnabled);
         _eventLogger.setMessageLogger(messageLogger);
 
-        // Additionally, report BRK-1006 and BRK-1007 into log4j appenders
-        if(!options.isSkipLoggingConfiguration())
-        {
-            _eventLogger.message(BrokerMessages.LOG_CONFIG(new File(options.getLogConfigFileLocation()).getAbsolutePath()));
-        }
-
-        _eventLogger.message(BrokerMessages.CONFIG(storeLocation));
 
         PluggableFactoryLoader<SystemConfigFactory> configFactoryLoader = new PluggableFactoryLoader<>(SystemConfigFactory.class);
         SystemConfigFactory configFactory = configFactoryLoader.get(storeType);
@@ -208,11 +199,8 @@ public class Broker
         }
 
 
-
-        LogRecorder logRecorder = new LogRecorder();
-
         _taskExecutor.start();
-        _systemConfig = configFactory.newInstance(_taskExecutor, _eventLogger, logRecorder, options.convertToSystemConfigAttributes());
+        _systemConfig = configFactory.newInstance(_taskExecutor, _eventLogger, options.convertToSystemConfigAttributes());
         try
         {
             _systemConfig.open();
@@ -248,58 +236,6 @@ public class Broker
         finally
         {
             cleanUp(1);
-        }
-    }
-
-    private void configureLogging(File logConfigFile, boolean startupLoggedToSystemOutput) throws InitException, IOException
-    {
-        _configuringOwnLogging = true;
-        if (logConfigFile.exists() && logConfigFile.canRead())
-        {
-            if (startupLoggedToSystemOutput)
-            {
-                _eventLogger.message(BrokerMessages.LOG_CONFIG(logConfigFile.getAbsolutePath()));
-            }
-
-            try
-            {
-                LoggingManagementFacade.configure(logConfigFile.getPath());
-            }
-            catch (Exception e)
-            {
-                throw new InitException(e.getMessage(),e);
-            }
-        }
-        else
-        {
-            System.err.println("Logging configuration error: unable to read file " + logConfigFile.getAbsolutePath());
-            System.err.println("Using the fallback internal fallback-logback.xml configuration");
-
-            InputStream propsFile = this.getClass().getResourceAsStream("/fallback-logback.xml");
-            if(propsFile == null)
-            {
-                throw new IOException("Unable to load the fallback internal fallback-logback.xml configuration file");
-            }
-            else
-            {
-                LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-                try
-                {
-                    JoranConfigurator configurator = new JoranConfigurator();
-                    configurator.setContext(context);
-                    context.reset();
-                    configurator.doConfigure(propsFile);
-                }
-                catch (JoranException e)
-                {
-                    // StatusPrinter will handle this
-                }
-                finally
-                {
-                    StatusPrinter.printInCaseOfErrorsOrWarnings(context);
-                    propsFile.close();
-                }
-            }
         }
     }
 

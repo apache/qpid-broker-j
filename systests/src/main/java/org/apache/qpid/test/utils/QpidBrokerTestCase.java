@@ -40,12 +40,10 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.util.StatusPrinter;
+
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
@@ -139,16 +137,17 @@ public class QpidBrokerTestCase extends QpidTestCase
     public static final int DEFAULT_SSL_PORT = Integer.getInteger("test.port.ssl", DEFAULT_SSL_PORT_VALUE);
 
     protected String _brokerLanguage = System.getProperty(BROKER_LANGUAGE, JAVA);
-    protected BrokerHolder.BrokerType _brokerType = BrokerHolder.BrokerType.valueOf(System.getProperty(BROKER_TYPE, "").toUpperCase());
+    protected BrokerHolder.BrokerType _brokerType = BrokerHolder.BrokerType.valueOf(System.getProperty(BROKER_TYPE, "")
+                                                                                            .toUpperCase());
 
-    private static final String BROKER_COMMAND_TEMPLATE = System.getProperty(BROKER_COMMAND_PLATFORM, System.getProperty(BROKER_COMMAND));
+    private static final String BROKER_COMMAND_TEMPLATE = System.getProperty(BROKER_COMMAND_PLATFORM,
+                                                                             System.getProperty(BROKER_COMMAND));
 
     private Boolean _brokerCleanBetweenTests = Boolean.getBoolean(BROKER_CLEAN_BETWEEN_TESTS);
-    private final Protocol _brokerProtocol = Protocol.valueOf("AMQP_" + System.getProperty(BROKER_VERSION, " ").substring(1));
+    private final Protocol _brokerProtocol = Protocol.valueOf("AMQP_" + System.getProperty(BROKER_VERSION, " ")
+            .substring(1));
     protected String _output = System.getProperty(TEST_OUTPUT, System.getProperty("java.io.tmpdir"));
     protected Boolean _brokerPersistent = Boolean.getBoolean(BROKER_PERSITENT);
-
-    protected File _outputFile;
 
     protected Map<Integer, BrokerHolder> _brokers = new HashMap<Integer, BrokerHolder>();
 
@@ -170,6 +169,23 @@ public class QpidBrokerTestCase extends QpidTestCase
     /** Size to create our message*/
     private int _messageSize = DEFAULT_MESSAGE_SIZE;
     private String _brokerCommandTemplate;
+
+    public File getOutputFile()
+    {
+
+        // get log file from file appender
+        final ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */ )
+        {
+            Appender<ILoggingEvent> appender = index.next();
+            if (appender instanceof FileAppender)
+            {
+                return new File(((FileAppender)appender).getFile());
+            }
+        }
+
+        return null;
+    }
 
     /** Type of message*/
     protected enum MessageType
@@ -273,32 +289,6 @@ public class QpidBrokerTestCase extends QpidTestCase
         System.setProperty("qpid.testMethod", "-" + getName());
         System.setProperty("qpid.testClass", getClass().getName());
 
-        String logbackConfigFile = System.getProperty("log4j.configuration.file");
-
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        try
-        {
-            JoranConfigurator configurator = new JoranConfigurator();
-            configurator.setContext(context);
-            context.reset();
-            configurator.doConfigure(logbackConfigFile);
-        }
-        catch (JoranException e)
-        {
-            StatusPrinter.printInCaseOfErrorsOrWarnings(context);
-        }
-
-        // get log file from file appender
-        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */ )
-        {
-            Appender<ILoggingEvent> appender = index.next();
-            if (appender instanceof FileAppender)
-            {
-                _outputFile = new File(((FileAppender)appender).getFile());
-                break;
-            }
-        }
 
         try
         {
@@ -325,6 +315,9 @@ public class QpidBrokerTestCase extends QpidTestCase
 
             _logger.info("==========  stop " + getTestName() + " ==========");
 
+            final ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+
+            final LoggerContext context = logger.getLoggerContext();
             context.reset();
             context.stop();
         }

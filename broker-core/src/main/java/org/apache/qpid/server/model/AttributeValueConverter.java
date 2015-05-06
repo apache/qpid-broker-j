@@ -21,13 +21,17 @@
 package org.apache.qpid.server.model;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -445,11 +449,93 @@ abstract class AttributeValueConverter<T>
         {
             return (AttributeValueConverter<X>) new ConfiguredObjectConverter(type);
         }
+        else if(ManagedAttributeValue.class.isAssignableFrom(type))
+        {
+            return (AttributeValueConverter<X>) new ManageableAttributeTypeConverter(type);
+        }
         else if(Object.class == type)
         {
             return (AttributeValueConverter<X>) OBJECT_CONVERTER;
         }
         throw new IllegalArgumentException("Cannot create attribute converter of type " + type.getName());
+    }
+
+    static Class<?> getTypeFromMethod(final Method m)
+    {
+        Class<?> type = m.getReturnType();
+        if(type.isPrimitive())
+        {
+            if(type == Boolean.TYPE)
+            {
+                type = Boolean.class;
+            }
+            else if(type == Byte.TYPE)
+            {
+                type = Byte.class;
+            }
+            else if(type == Short.TYPE)
+            {
+                type = Short.class;
+            }
+            else if(type == Integer.TYPE)
+            {
+                type = Integer.class;
+            }
+            else if(type == Long.TYPE)
+            {
+                type = Long.class;
+            }
+            else if(type == Float.TYPE)
+            {
+                type = Float.class;
+            }
+            else if(type == Double.TYPE)
+            {
+                type = Double.class;
+            }
+            else if(type == Character.TYPE)
+            {
+                type = Character.class;
+            }
+        }
+        return type;
+    }
+
+    static String getNameFromMethod(final Method m, final Class<?> type)
+    {
+        String methodName = m.getName();
+        String baseName;
+
+        if(type == Boolean.class )
+        {
+            if((methodName.startsWith("get") || methodName.startsWith("has")) && methodName.length() >= 4)
+            {
+                baseName = methodName.substring(3);
+            }
+            else if(methodName.startsWith("is") && methodName.length() >= 3)
+            {
+                baseName = methodName.substring(2);
+            }
+            else
+            {
+                throw new IllegalArgumentException("Method name " + methodName + " does not conform to the required pattern for ManagedAttributes");
+            }
+        }
+        else
+        {
+            if(methodName.startsWith("get") && methodName.length() >= 4)
+            {
+                baseName = methodName.substring(3);
+            }
+            else
+            {
+                throw new IllegalArgumentException("Method name " + methodName + " does not conform to the required pattern for ManagedAttributes");
+            }
+        }
+
+        String name = baseName.length() == 1 ? baseName.toLowerCase() : baseName.substring(0,1).toLowerCase() + baseName.substring(1);
+        name = name.replace('_','.');
+        return name;
     }
 
     abstract T convert(Object value, final ConfiguredObject object);
@@ -774,6 +860,68 @@ abstract class AttributeValueConverter<T>
             }
         }
         throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);
+    }
+
+    static final class ManageableAttributeTypeConverter<X extends ManagedAttributeValue> extends AttributeValueConverter<X>
+    {
+        private final Class<X> _klazz;
+        private final Map<Method, AttributeValueConverter<?>> _propertyConverters = new HashMap<>();
+
+        private ManageableAttributeTypeConverter(final Class<X> klazz)
+        {
+            _klazz = klazz;
+            for(Method method : klazz.getMethods())
+            {
+                final String methodName = method.getName();
+                if(method.getParameterTypes().length == 0
+                   && !Arrays.asList(Object.class.getMethods()).contains(method)
+                   && (methodName.startsWith("get") || methodName.startsWith("is") || methodName.startsWith("has")))
+                {
+                    _propertyConverters.put(method, AttributeValueConverter.getConverter(getTypeFromMethod(method), method.getGenericReturnType()));
+                }
+            }
+
+        }
+
+        @Override
+        X convert(final Object value, final ConfiguredObject object)
+        {
+            if(value == null)
+            {
+                return null;
+            }
+            else if(_klazz.isInstance(value))
+            {
+                return (X) value;
+            }
+            else if(value instanceof Map)
+            {
+                return (X) Proxy.newProxyInstance(_klazz.getClassLoader(), new Class[]{_klazz}, new InvocationHandler()
+                {
+                    @Override
+                    public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
+                    {
+                        AttributeValueConverter<?> converter = _propertyConverters.get(method);
+                        return converter == null ? null : converter.convert(((Map)value).get(getNameFromMethod(method, getTypeFromMethod(method))), object);
+                    }
+                });
+            }
+            else if(value instanceof String)
+            {
+                String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
+                ObjectMapper objectMapper = new ObjectMapper();
+                try
+                {
+                    return convert(objectMapper.readValue(interpolated, Map.class), object);
+                }
+                catch (IOException e)
+                {
+
+                }
+
+            }
+            throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a " + _klazz.getName());
+        }
     }
 
 }

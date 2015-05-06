@@ -117,7 +117,6 @@ public class SystemConfigFactoryGenerator extends AbstractProcessor
             pw.println();
             pw.println("import org.apache.qpid.server.configuration.updater.TaskExecutor;");
             pw.println("import org.apache.qpid.server.logging.EventLogger;");
-            pw.println("import org.apache.qpid.server.logging.LogRecorder;");
             pw.println("import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;");
             pw.println("import org.apache.qpid.server.model.SystemConfig;");
             pw.println("import org.apache.qpid.server.plugin.PluggableService;");
@@ -139,10 +138,9 @@ public class SystemConfigFactoryGenerator extends AbstractProcessor
             pw.println("    @Override");
             pw.println("    public "+objectSimpleName+" newInstance(final TaskExecutor taskExecutor,");
             pw.println("                       final EventLogger eventLogger,");
-            pw.println("                       final LogRecorder logRecorder,");
             pw.println("                       final Map<String,Object> attributes)");
             pw.println("    {");
-            pw.println("        return new "+objectSimpleName+"(taskExecutor, eventLogger, logRecorder, attributes);");
+            pw.println("        return new "+objectSimpleName+"(taskExecutor, eventLogger, attributes);");
             pw.println("    }");
             pw.println("}");
 
