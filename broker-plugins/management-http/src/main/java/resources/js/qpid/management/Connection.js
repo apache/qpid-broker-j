@@ -21,6 +21,7 @@
 define(["dojo/parser",
         "dojo/query",
         "dojo/_base/connect",
+        "dijit/registry",
         "qpid/common/properties",
         "qpid/common/updater",
         "qpid/common/util",
@@ -29,7 +30,7 @@ define(["dojo/parser",
         "dojox/html/entities",
         "dojo/text!showConnection.html",
         "dojo/domReady!"],
-       function (parser, query, connect, properties, updater, util, formatter, UpdatableStore, entities, template) {
+       function (parser, query, connect, registry, properties, updater, util, formatter, UpdatableStore, entities, template) {
 
            function Connection(name, parent, controller) {
                this.name = name;
@@ -46,18 +47,36 @@ define(["dojo/parser",
            Connection.prototype.open = function(contentPane) {
                var that = this;
                this.contentPane = contentPane;
-
-                            contentPane.containerNode.innerHTML = template;
+                            var containerNode = contentPane.containerNode;
+                            containerNode.innerHTML = template;
                             parser.parse(contentPane.containerNode).then(function(instances)
                             {
                                 that.connectionUpdater = new ConnectionUpdater(contentPane.containerNode, that.modelObj, that.controller);
                                 that.connectionUpdater.update(function(){updater.add( that.connectionUpdater );});
+
+                                that.closeButton = registry.byNode(query(".closeButton", containerNode)[0]);
+                                that.closeButton.on("click",
+                                     function(e)
+                                     {
+                                       if (confirm("Are you sure you want to close the connection?"))
+                                       {
+                                         that.management.remove(that.modelObj, {}, function(result){ that.destroy(); } );
+                                       }
+                                     });
+
                             });
            };
 
            Connection.prototype.close = function() {
                updater.remove( this.connectionUpdater );
            };
+
+           Connection.prototype.destroy = function()
+           {
+             this.contentPane.onClose();
+             this.controller.tabContainer.removeChild(this.contentPane);
+             this.contentPane.destroyRecursive();
+           }
 
            function ConnectionUpdater(containerNode, connectionObj, controller)
            {
