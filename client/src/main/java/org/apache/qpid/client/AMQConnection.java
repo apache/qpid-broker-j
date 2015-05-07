@@ -22,6 +22,7 @@ package org.apache.qpid.client;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
@@ -33,6 +34,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -88,7 +90,7 @@ import org.apache.qpid.jms.Session;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.url.URLSyntaxException;
 
-public class AMQConnection extends Closeable implements Connection, QueueConnection, TopicConnection, Referenceable
+public class AMQConnection extends Closeable implements CommonConnection, Referenceable
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQConnection.class);
     private static final AtomicLong CONN_NUMBER_GENERATOR = new AtomicLong();
@@ -125,7 +127,7 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
     /** Maps from session id (Integer) to AMQSession instance */
     private final ChannelToSessionMap _sessions = new ChannelToSessionMap();
 
-    private final String _clientName;
+    private String _clientName;
 
     /** The user name to use for authentication */
     private String _username;
@@ -156,6 +158,8 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
      * _Connected should be refactored with a suitable wait object.
      */
     private boolean _connected;
+
+    private boolean _connectionAttempted;
 
     /*
      * The connection meta data
@@ -403,7 +407,6 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
         }
 
         _failoverPolicy = new FailoverPolicy(connectionURL, this);
-        BrokerDetails brokerDetails = _failoverPolicy.getCurrentBrokerDetails();
         if ("0-8".equals(amqpVersion))
         {
             _delegate = new AMQConnectionDelegate_8_0(this);
@@ -459,6 +462,31 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
         // We are not currently connected
         setConnected(false);
 
+        if(_clientName != null)
+        {
+            makeConnection();
+        }
+
+        _connectionMetaData = new QpidConnectionMetaData(this);
+    }
+
+    private void makeConnection() throws AMQException
+    {
+        _connectionAttempted = true;
+        if(_clientName == null)
+        {
+
+            try
+            {
+                InetAddress addr = InetAddress.getLocalHost();
+                _clientName =  addr.getHostName() + System.currentTimeMillis();
+            }
+            catch (UnknownHostException e)
+            {
+                _clientName = "UnknownHost" + UUID.randomUUID();
+            }
+        }
+        BrokerDetails brokerDetails = _failoverPolicy.getCurrentBrokerDetails();
         boolean retryAllowed = true;
         Exception connectionException = null;
         while (!isConnected() && retryAllowed && brokerDetails != null)
@@ -565,8 +593,6 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
 
         _sessions.setMaxChannelID(_delegate.getMaxChannelID());
         _sessions.setMinChannelID(_delegate.getMinChannelID());
-
-        _connectionMetaData = new QpidConnectionMetaData(this);
     }
 
     private void initDelegate(ProtocolVersion pe) throws AMQProtocolException
@@ -744,7 +770,20 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
     {
         synchronized (_sessionCreationLock)
         {
+
             checkNotClosed();
+
+            if(!_connectionAttempted)
+            {
+                try
+                {
+                    makeConnection();
+                }
+                catch (AMQException e)
+                {
+                    throw JMSExceptionHelper.chainJMSException(new JMSException("Unable to establish connection"),e);
+                }
+            }
 
             if(_delegate.isVirtualHostPropertiesSupported() && !_virtualHostPropertiesPopulated)
             {
@@ -843,16 +882,26 @@ public class AMQConnection extends Closeable implements Connection, QueueConnect
     public void setClientID(String clientID) throws JMSException
     {
         checkNotClosed();
-        // in AMQP it is not possible to change the client ID. If one is not specified
-        // upon connection construction, an id is generated automatically. Therefore
-        // we can always throw an exception.
-        if (!Boolean.getBoolean(ClientProperties.IGNORE_SET_CLIENTID_PROP_NAME))
+        synchronized(_sessionCreationLock)
         {
-            throw new IllegalStateException("Client name cannot be changed after being set");
-        }
-        else
-        {
-            _logger.info("Operation setClientID is ignored using ID: " + getClientID());
+            if(_connectionAttempted)
+            {
+                // in AMQP it is not possible to change the client ID. If one is not specified
+                // upon connection construction, an id is generated automatically. Therefore
+                // we can always throw an exception.
+                if (!Boolean.getBoolean(ClientProperties.IGNORE_SET_CLIENTID_PROP_NAME))
+                {
+                    throw new IllegalStateException("Client name cannot be changed after being set");
+                }
+                else
+                {
+                    _logger.info("Operation setClientID is ignored using ID: " + getClientID());
+                }
+            }
+            else
+            {
+                _clientName = clientID;
+            }
         }
     }
 

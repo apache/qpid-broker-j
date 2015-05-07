@@ -109,7 +109,7 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
         }
     }
 
-    public Connection createConnection() throws JMSException
+    public AMQConnection createConnection() throws JMSException
     {
         if(_connectionDetails == null)
         {
@@ -131,12 +131,12 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
         }
     }
 
-    public Connection createConnection(String userName, String password) throws JMSException
+    public AMQConnection createConnection(String userName, String password) throws JMSException
     {
         return createConnection(userName, password, null);
     }
     
-    public Connection createConnection(String userName, String password, String id) throws JMSException
+    public AMQConnection createConnection(String userName, String password, String id) throws JMSException
     {
         if (_connectionDetails != null)
         {
@@ -170,22 +170,22 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
 
     public QueueConnection createQueueConnection() throws JMSException
     {
-        return (QueueConnection) createConnection();
+        return createConnection();
     }
 
     public QueueConnection createQueueConnection(String username, String password) throws JMSException
     {
-        return (QueueConnection) createConnection(username, password);
+        return createConnection(username, password);
     }
 
     public TopicConnection createTopicConnection() throws JMSException
     {
-        return (TopicConnection) createConnection();
+        return createConnection();
     }
 
     public TopicConnection createTopicConnection(String username, String password) throws JMSException
     {
-        return (TopicConnection) createConnection(username, password);
+        return createConnection(username, password);
     }
 
 

@@ -236,7 +236,7 @@ public class FailoverPolicyTest extends TestCase
             }
 
             @Override
-            public javax.jms.Session createSession(boolean arg0, int arg1)
+            public Session createSession(boolean arg0, int arg1)
                     throws JMSException
             {
                 return null;
