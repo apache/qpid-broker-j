@@ -22,6 +22,7 @@ package org.apache.qpid.transport.network;
 
 import java.net.SocketAddress;
 import java.security.Principal;
+import java.security.cert.Certificate;
 
 import org.apache.qpid.transport.ByteBufferSender;
 
@@ -48,6 +49,8 @@ public interface NetworkConnection
     void setMaxReadIdle(int sec);
 
     Principal getPeerPrincipal();
+
+    Certificate getPeerCertificate();
 
     int getMaxReadIdle();
 

@@ -26,6 +26,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
+import java.security.cert.Certificate;
 
 import org.apache.qpid.protocol.ProtocolEngineFactory;
 import org.apache.qpid.ssl.SSLContextFactory;
@@ -76,6 +77,12 @@ public class TestNetworkConnection implements NetworkConnection
 
     @Override
     public Principal getPeerPrincipal()
+    {
+        return null;
+    }
+
+    @Override
+    public Certificate getPeerCertificate()
     {
         return null;
     }

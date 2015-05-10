@@ -28,8 +28,11 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -52,6 +55,7 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
@@ -72,6 +76,13 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
     private boolean _peersOnly;
     @ManagedAttributeField
     private String _password;
+
+    @ManagedAttributeField
+    private boolean _exposedAsMessageSource;
+    @ManagedAttributeField
+    private List<VirtualHost> _includedVirtualHostMessageSources;
+    @ManagedAttributeField
+    private List<VirtualHost> _excludedVirtualHostMessageSources;
 
     private final Broker<?> _broker;
 
@@ -301,6 +312,35 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         }
     }
 
+    public Certificate[] getCertificates() throws GeneralSecurityException
+    {
+        String trustStorePassword = getPassword();
+        String trustStoreType = _trustStoreType;
+
+        try
+        {
+            URL trustStoreUrl = getUrlFromString(_storeUrl);
+
+            KeyStore ts = SSLUtil.getInitializedKeyStore(trustStoreUrl, trustStorePassword, trustStoreType);
+
+            final Collection<Certificate> certificates = new ArrayList<>();
+
+            Enumeration<String> aliases = ts.aliases();
+            while (aliases.hasMoreElements())
+            {
+                certificates.add(ts.getCertificate(aliases.nextElement()));
+            }
+
+            return certificates.toArray(new Certificate[certificates.size()]);
+
+        }
+        catch (IOException e)
+        {
+            throw new GeneralSecurityException(e);
+        }
+    }
+
+
     private static URL getUrlFromString(String urlString) throws MalformedURLException
     {
         URL url;
@@ -328,5 +368,23 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         {
             _path = null;
         }
+    }
+
+    @Override
+    public boolean isExposedAsMessageSource()
+    {
+        return _exposedAsMessageSource;
+    }
+
+    @Override
+    public List<VirtualHost> getIncludedVirtualHostMessageSources()
+    {
+        return _includedVirtualHostMessageSources;
+    }
+
+    @Override
+    public List<VirtualHost> getExcludedVirtualHostMessageSources()
+    {
+        return _excludedVirtualHostMessageSources;
     }
 }

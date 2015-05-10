@@ -60,7 +60,6 @@ public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
         return consumer;
     }
 
-    @Override
     protected InternalMessage createMessage()
     {
 

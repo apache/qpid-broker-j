@@ -314,6 +314,12 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             return true;
         }
 
+
+        if(typeUtils.isSameType(type,elementUtils.getTypeElement("java.security.cert.Certificate").asType()))
+        {
+            return true;
+        }
+
         TypeMirror erasedType = typeUtils.erasure(type);
         if(typeUtils.isSameType(erasedType, getErasure(processingEnv, "java.util.List"))
                 || typeUtils.isSameType(erasedType, getErasure(processingEnv, "java.util.Set"))

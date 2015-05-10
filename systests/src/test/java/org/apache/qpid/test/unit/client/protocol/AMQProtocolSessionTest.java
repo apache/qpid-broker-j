@@ -26,6 +26,7 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.security.Principal;
+import java.security.cert.Certificate;
 
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.protocol.AMQProtocolHandler;
@@ -150,6 +151,12 @@ public class AMQProtocolSessionTest extends QpidBrokerTestCase
 
         @Override
         public Principal getPeerPrincipal()
+        {
+            return null;
+        }
+
+        @Override
+        public Certificate getPeerCertificate()
         {
             return null;
         }

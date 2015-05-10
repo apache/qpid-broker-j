@@ -29,8 +29,12 @@ public interface SystemNodeCreator extends Pluggable
     {
         void registerSystemNode(MessageNode node);
         void removeSystemNode(MessageNode node);
+        void removeSystemNode(String name);
+
 
         VirtualHostImpl getVirtualHost();
+
+        boolean hasSystemNode(String name);
     }
 
     void register(SystemNodeRegistry registry);

@@ -23,6 +23,7 @@ package org.apache.qpid.transport.network.io;
 
 import java.net.SocketAddress;
 import java.security.Principal;
+import java.security.cert.Certificate;
 
 import junit.framework.TestCase;
 
@@ -232,6 +233,12 @@ public class IdleTimeoutTickerTest extends TestCase implements TransportActivity
 
     @Override
     public Principal getPeerPrincipal()
+    {
+        return null;
+    }
+
+    @Override
+    public Certificate getPeerCertificate()
     {
         return null;
     }

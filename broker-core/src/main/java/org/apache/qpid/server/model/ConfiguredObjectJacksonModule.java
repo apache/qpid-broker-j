@@ -23,6 +23,8 @@ package org.apache.qpid.server.model;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -56,6 +58,30 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
         super("ConfiguredObjectSerializer", new Version(1,0,0,null));
         addConfiguredObjectSerializer();
         addManageableAttributeTypeSerializer();
+        addCertificateSerializer();
+    }
+
+    private void addCertificateSerializer()
+    {
+        final JsonSerializer<Certificate> serializer = new JsonSerializer<Certificate>()
+        {
+            @Override
+            public void serialize(final Certificate value,
+                                  final JsonGenerator jgen,
+                                  final SerializerProvider provider)
+                    throws IOException
+            {
+                try
+                {
+                    jgen.writeBinary(value.getEncoded());
+                }
+                catch (CertificateEncodingException e)
+                {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+        };
+        addSerializer(Certificate.class, serializer);
     }
 
     private void addManageableAttributeTypeSerializer()

@@ -1152,9 +1152,22 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
         @Override
+        public void removeSystemNode(final String name)
+        {
+            _systemNodeDestinations.remove(name);
+            _systemNodeSources.remove(name);
+        }
+
+        @Override
         public VirtualHostImpl getVirtualHost()
         {
             return AbstractVirtualHost.this;
+        }
+
+        @Override
+        public boolean hasSystemNode(final String name)
+        {
+            return _systemNodeSources.containsKey(name) || _systemNodeDestinations.containsKey(name);
         }
 
     }

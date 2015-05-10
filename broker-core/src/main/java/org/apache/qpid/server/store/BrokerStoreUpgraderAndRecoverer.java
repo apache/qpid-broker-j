@@ -369,7 +369,7 @@ public class BrokerStoreUpgraderAndRecoverer
         {
             Map<String,Object> attributes = new HashMap<>();
             attributes.put("name", String.valueOf(seqNo));
-            attributes.put("logLevel", level.name());
+            attributes.put("level", level.name());
             attributes.put("loggerName", loggerName);
             attributes.put("type", "NameAndLevel");
 

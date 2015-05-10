@@ -25,6 +25,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
+import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Set;
@@ -133,7 +134,8 @@ class WebSocketProvider implements AcceptingTransport
             public WebSocket doWebSocketConnect(final HttpServletRequest request, final String protocol)
             {
 
-                Principal principal = null;
+                Certificate certificate = null;
+
                 if(Collections.list(request.getAttributeNames()).contains(X509_CERTIFICATES))
                 {
                     X509Certificate[] certificates =
@@ -141,13 +143,13 @@ class WebSocketProvider implements AcceptingTransport
                     if(certificates != null && certificates.length != 0)
                     {
 
-                        principal = certificates[0].getSubjectDN();
+                        certificate = certificates[0];
                     }
                 }
 
                 SocketAddress remoteAddress = new InetSocketAddress(request.getRemoteHost(), request.getRemotePort());
                 SocketAddress localAddress = new InetSocketAddress(request.getLocalName(), request.getLocalPort());
-                return AMQP_WEBSOCKET_SUBPROTOCOL.equals(protocol) ? new AmqpWebSocket(_transport, localAddress, remoteAddress, principal) : null;
+                return AMQP_WEBSOCKET_SUBPROTOCOL.equals(protocol) ? new AmqpWebSocket(_transport, localAddress, remoteAddress, certificate) : null;
             }
         };
 
@@ -197,7 +199,7 @@ class WebSocketProvider implements AcceptingTransport
     {
         private final SocketAddress _localAddress;
         private final SocketAddress _remoteAddress;
-        private final Principal _userPrincipal;
+        private final Certificate _userCertificate;
         private Connection _connection;
         private final Transport _transport;
         private ProtocolEngine _engine;
@@ -205,12 +207,12 @@ class WebSocketProvider implements AcceptingTransport
         private AmqpWebSocket(final Transport transport,
                               final SocketAddress localAddress,
                               final SocketAddress remoteAddress,
-                              final Principal userPrincipal)
+                              final Certificate userCertificate)
         {
             _transport = transport;
             _localAddress = localAddress;
             _remoteAddress = remoteAddress;
-            _userPrincipal = userPrincipal;
+            _userCertificate = userCertificate;
         }
 
         @Override
@@ -228,7 +230,7 @@ class WebSocketProvider implements AcceptingTransport
 
             final ConnectionWrapper connectionWrapper =
                     new ConnectionWrapper(connection, _localAddress, _remoteAddress);
-            connectionWrapper.setPeerPrincipal(_userPrincipal);
+            connectionWrapper.setPeerCertificate(_userCertificate);
             _engine.setNetworkConnection(connectionWrapper, connectionWrapper.getSender());
 
         }
@@ -245,7 +247,7 @@ class WebSocketProvider implements AcceptingTransport
         private final WebSocket.Connection _connection;
         private final SocketAddress _localAddress;
         private final SocketAddress _remoteAddress;
-        private Principal _principal;
+        private Certificate _certificate;
         private int _maxWriteIdle;
         private int _maxReadIdle;
 
@@ -322,7 +324,13 @@ class WebSocketProvider implements AcceptingTransport
         @Override
         public Principal getPeerPrincipal()
         {
-            return _principal;
+            return _certificate instanceof X509Certificate ? ((X509Certificate)_certificate).getSubjectDN() : null;
+        }
+
+        @Override
+        public Certificate getPeerCertificate()
+        {
+            return _certificate;
         }
 
         @Override
@@ -337,9 +345,9 @@ class WebSocketProvider implements AcceptingTransport
             return _maxWriteIdle;
         }
 
-        void setPeerPrincipal(final Principal peerPrincipal)
+        void setPeerCertificate(final Certificate certificate)
         {
-            _principal = peerPrincipal;
+            _certificate = certificate;
         }
     }
 }

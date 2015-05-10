@@ -20,29 +20,21 @@
  */
 package org.apache.qpid.server.security;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.security.auth.x500.X500Principal;
+import javax.net.ssl.X509TrustManager;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -64,18 +56,17 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
-import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
+import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
+import org.apache.qpid.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 
 @ManagedObject( category = false )
-public class NonJavaTrustStoreImpl
-        extends AbstractConfiguredObject<NonJavaTrustStoreImpl> implements NonJavaTrustStore<NonJavaTrustStoreImpl>
+public class ManagedPeerCertificateTrustsStoreImpl
+        extends AbstractConfiguredObject<ManagedPeerCertificateTrustsStoreImpl> implements ManagedPeerCertificateTrustStore<ManagedPeerCertificateTrustsStoreImpl>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NonJavaTrustStoreImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ManagedPeerCertificateTrustsStoreImpl.class);
 
     private final Broker<?> _broker;
 
-    @ManagedAttributeField( afterSet = "updateTrustManagers" )
-    private String _certificatesUrl;
     @ManagedAttributeField
     private boolean _exposedAsMessageSource;
     @ManagedAttributeField
@@ -85,110 +76,26 @@ public class NonJavaTrustStoreImpl
 
     private volatile TrustManager[] _trustManagers = new TrustManager[0];
 
-
-
-    static
-    {
-        Handler.register();
-    }
-
-    private X509Certificate[] _certificates;
+    @ManagedAttributeField( afterSet = "updateTrustManagers")
+    private final List<Certificate> _storedCertificates = new ArrayList<>();
 
     @ManagedObjectFactoryConstructor
-    public NonJavaTrustStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
+    public ManagedPeerCertificateTrustsStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
         super(parentsMap(broker), attributes);
         _broker = broker;
     }
 
     @Override
-    public String getCertificatesUrl()
+    public TrustManager[] getTrustManagers()
     {
-        return _certificatesUrl;
-    }
-
-
-    @Override
-    public List<Map<CertificateDetails,Object>> getCertificateDetails()
-    {
-        List<Map<CertificateDetails,Object>> certificateDetails = new ArrayList<>();
-        if(_certificates != null)
-        {
-            for (X509Certificate certificate : _certificates)
-            {
-                Map<CertificateDetails, Object> details = new EnumMap<>(CertificateDetails.class);
-
-                details.put(CertificateDetails.SUBJECT_NAME, getNameFromCertificate(certificate));
-                details.put(CertificateDetails.ISSUER_NAME, certificate.getIssuerX500Principal().getName());
-                details.put(CertificateDetails.VALID_START, certificate.getNotBefore());
-                details.put(CertificateDetails.VALID_END, certificate.getNotAfter());
-                certificateDetails.add(details);
-            }
-        }
-        return certificateDetails;
-    }
-
-    private String getNameFromCertificate(final X509Certificate certificate)
-    {
-        String name;
-        X500Principal subjectX500Principal = certificate.getSubjectX500Principal();
-        name = getCommonNameFromPrincipal(subjectX500Principal);
-
-        return name;
-    }
-
-    private String getCommonNameFromPrincipal(final X500Principal subjectX500Principal)
-    {
-        String name;
-        String dn = subjectX500Principal.getName();
-        try
-        {
-            LdapName ldapDN = new LdapName(dn);
-            name = dn;
-            for (Rdn rdn : ldapDN.getRdns())
-            {
-                if (rdn.getType().equalsIgnoreCase("CN"))
-                {
-                    name = String.valueOf(rdn.getValue());
-                    break;
-                }
-            }
-
-        }
-        catch (InvalidNameException e)
-        {
-            LOGGER.error("Error getting subject name from certificate");
-            name =  null;
-        }
-        return name;
-    }
-
-
-    @Override
-    public TrustManager[] getTrustManagers() throws GeneralSecurityException
-    {
-
         return _trustManagers;
     }
 
     @Override
-    public Certificate[] getCertificates() throws GeneralSecurityException
+    public Certificate[] getCertificates()
     {
-        try
-        {
-            return readCertificates(getUrlFromString(getCertificatesUrl()));
-        }
-        catch (IOException e)
-        {
-            throw new GeneralSecurityException(e);
-        }
-    }
-
-    @Override
-    public void onValidate()
-    {
-        super.onValidate();
-        validateTrustStoreAttributes(this);
+        return _storedCertificates.toArray(new Certificate[_storedCertificates.size()]);
     }
 
     @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
@@ -197,7 +104,7 @@ public class NonJavaTrustStoreImpl
         // verify that it is not in use
         String storeName = getName();
 
-        Collection<Port<?>> ports = new ArrayList<Port<?>>(_broker.getPorts());
+        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
         for (Port port : ports)
         {
             Collection<TrustStore> trustStores = port.getTrustStores();
@@ -245,55 +152,68 @@ public class NonJavaTrustStoreImpl
         return Futures.immediateFuture(null);
     }
 
+
     @Override
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        NonJavaTrustStore changedStore = (NonJavaTrustStore) proxyForValidation;
+        ManagedPeerCertificateTrustStore<?> changedStore = (ManagedPeerCertificateTrustStore) proxyForValidation;
         if (changedAttributes.contains(NAME) && !getName().equals(changedStore.getName()))
         {
             throw new IllegalConfigurationException("Changing the key store name is not allowed");
         }
-        validateTrustStoreAttributes(changedStore);
     }
 
-    private void validateTrustStoreAttributes(NonJavaTrustStore<?> keyStore)
-    {
-        try
-        {
-            readCertificates(getUrlFromString(keyStore.getCertificatesUrl()));
-        }
-        catch (IOException | GeneralSecurityException e)
-        {
-            throw new IllegalArgumentException("Cannot validate certificate(s):" + e, e);
-        }
-    }
 
     @SuppressWarnings("unused")
     private void updateTrustManagers()
     {
         try
         {
-            if (_certificatesUrl != null)
+            java.security.KeyStore inMemoryKeyStore =
+                    java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+
+            inMemoryKeyStore.load(null, null);
+            int i = 1;
+            for (Certificate cert : _storedCertificates)
             {
-                X509Certificate[] certs = readCertificates(getUrlFromString(_certificatesUrl));
-                java.security.KeyStore inMemoryKeyStore = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
-
-                inMemoryKeyStore.load(null, null);
-                int i = 1;
-                for(Certificate cert : certs)
-                {
-                    inMemoryKeyStore.setCertificateEntry(String.valueOf(i++), cert);
-                }
-
-
-
-                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                tmf.init(inMemoryKeyStore);
-                _trustManagers = tmf.getTrustManagers();
-                _certificates = certs;
+                inMemoryKeyStore.setCertificateEntry(String.valueOf(i++), cert);
             }
 
+
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(inMemoryKeyStore);
+
+            final Collection<TrustManager> trustManagersCol = new ArrayList<TrustManager>();
+            final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
+            TrustManager[] delegateManagers = tmf.getTrustManagers();
+            for (TrustManager tm : delegateManagers)
+            {
+                if (tm instanceof X509TrustManager)
+                {
+                    // truststore is supposed to trust only clients which peers certificates
+                    // are directly in the store. CA signing will not be considered.
+                    mulTrustManager.addTrustManager(new QpidPeersOnlyTrustManager(inMemoryKeyStore, (X509TrustManager) tm));
+
+                }
+                else
+                {
+                    trustManagersCol.add(tm);
+                }
+            }
+            if (! mulTrustManager.isEmpty())
+            {
+                trustManagersCol.add(mulTrustManager);
+            }
+
+            if (trustManagersCol.isEmpty())
+            {
+                _trustManagers = null;
+            }
+            else
+            {
+                _trustManagers = trustManagersCol.toArray(new TrustManager[trustManagersCol.size()]);
+            }
         }
         catch (IOException | GeneralSecurityException e)
         {
@@ -301,44 +221,6 @@ public class NonJavaTrustStoreImpl
         }
     }
 
-    private URL getUrlFromString(String urlString) throws MalformedURLException
-    {
-        URL url;
-
-        try
-        {
-            url = new URL(urlString);
-        }
-        catch (MalformedURLException e)
-        {
-            File file = new File(urlString);
-            url = file.toURI().toURL();
-
-        }
-        return url;
-    }
-
-    public static X509Certificate[] readCertificates(URL certFile)
-            throws IOException, GeneralSecurityException
-    {
-        List<X509Certificate> crt = new ArrayList<>();
-        try (InputStream is = certFile.openStream())
-        {
-            do
-            {
-                CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                crt.add( (X509Certificate) cf.generateCertificate(is));
-            } while(is.available() != 0);
-        }
-        catch(CertificateException e)
-        {
-            if(crt.isEmpty())
-            {
-                throw e;
-            }
-        }
-        return crt.toArray(new X509Certificate[crt.size()]);
-    }
 
     @Override
     public boolean isExposedAsMessageSource()
@@ -356,5 +238,48 @@ public class NonJavaTrustStoreImpl
     public List<VirtualHost> getExcludedVirtualHostMessageSources()
     {
         return _excludedVirtualHostMessageSources;
+    }
+
+    @Override
+    public List<Certificate> getStoredCertificates()
+    {
+        return _storedCertificates;
+    }
+
+    @Override
+    public void addCertificate(final Certificate cert)
+    {
+        final Map<String, Object> updateMap = new HashMap<>();
+
+        doAfter(doOnConfigThread(new Callable<ListenableFuture<Void>>()
+                                    {
+                                        @Override
+                                        public ListenableFuture<Void> call() throws Exception
+                                        {
+                                            Set<Certificate> certs = new HashSet<>(_storedCertificates);
+                                            if(certs.add(cert))
+                                            {
+                                                updateMap.put("storedCertificates", new ArrayList<>(certs));
+                                            }
+                                            return Futures.immediateFuture(null);
+                                        }
+                                    }),
+                 new Callable<ListenableFuture<Void>>()
+                    {
+                        @Override
+                        public ListenableFuture<Void> call() throws Exception
+                        {
+                            if(updateMap.isEmpty())
+                            {
+                                return Futures.immediateFuture(null);
+                            }
+                            else
+                            {
+                                return setAttributesAsync(updateMap);
+                            }
+                        }
+
+                    });
+
     }
 }

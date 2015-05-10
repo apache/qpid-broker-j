@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -317,6 +318,12 @@ public class InternalTestProtocolSession extends AMQProtocolEngine implements Pr
 
         @Override
         public Principal getPeerPrincipal()
+        {
+            return null;
+        }
+
+        @Override
+        public Certificate getPeerCertificate()
         {
             return null;
         }

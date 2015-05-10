@@ -21,11 +21,26 @@
 package org.apache.qpid.server.model;
 
 import java.security.GeneralSecurityException;
+import java.security.cert.Certificate;
+import java.util.List;
+
 import javax.net.ssl.TrustManager;
 
 @ManagedObject( defaultType = "FileTrustStore" )
 public interface TrustStore<X extends TrustStore<X>> extends ConfiguredObject<X>
 {
+    @ManagedAttribute( defaultValue = "false" )
+    boolean isExposedAsMessageSource();
+
+    @ManagedAttribute( defaultValue = "[]" )
+    List<VirtualHost> getIncludedVirtualHostMessageSources();
+
+    @ManagedAttribute( defaultValue = "[]" )
+    List<VirtualHost> getExcludedVirtualHostMessageSources();
+
+
     public TrustManager[] getTrustManagers() throws GeneralSecurityException;
+
+    public Certificate[] getCertificates() throws GeneralSecurityException;
 
 }

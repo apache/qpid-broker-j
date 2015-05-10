@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -27,6 +28,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,6 +42,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import javax.xml.bind.DatatypeConverter;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -96,6 +102,82 @@ abstract class AttributeValueConverter<T>
             }
         }
     };
+
+    static final AttributeValueConverter<byte[]> BINARY_CONVERTER = new AttributeValueConverter<byte[]>()
+    {
+        @Override
+        byte[] convert(final Object value, final ConfiguredObject object)
+        {
+            if(value instanceof byte[])
+            {
+                return (byte[]) value;
+            }
+            else if(value == null)
+            {
+                return null;
+            }
+            else if(value instanceof String)
+            {
+                return DatatypeConverter.parseBase64Binary(AbstractConfiguredObject.interpolate(object, (String) value));
+            }
+            else
+            {
+                throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a byte[]");
+            }
+        }
+    };
+
+
+
+
+    static final AttributeValueConverter<Certificate> CERTIFICATE_CONVERTER = new AttributeValueConverter<Certificate>()
+    {
+        private final CertificateFactory _certFactory;
+
+        {
+            try
+            {
+                _certFactory=CertificateFactory.getInstance("X.509");
+            }
+            catch (CertificateException e)
+            {
+                throw new ServerScopedRuntimeException(e);
+            }
+        }
+        @Override
+        public Certificate convert(final Object value, final ConfiguredObject object)
+        {
+            if(value instanceof Certificate)
+            {
+                return (Certificate) value;
+            }
+            else if(value instanceof byte[])
+            {
+                try(ByteArrayInputStream is = new ByteArrayInputStream((byte[])value))
+                {
+                    return _certFactory.generateCertificate(is);
+                }
+                catch (IOException | CertificateException e)
+                {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+            else if(value instanceof String)
+            {
+                return convert(BINARY_CONVERTER.convert(AbstractConfiguredObject.interpolate(object, (String) value),object),object);
+            }
+            else if(value == null)
+            {
+                return null;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a Certificate");
+            }
+        }
+    };
+
+
     static final AttributeValueConverter<Long> LONG_CONVERTER = new AttributeValueConverter<Long>()
     {
 
@@ -390,6 +472,14 @@ abstract class AttributeValueConverter<T>
         else if(type == UUID.class)
         {
             return (AttributeValueConverter<X>) UUID_CONVERTER;
+        }
+        else if(type == byte[].class)
+        {
+            return (AttributeValueConverter<X>) BINARY_CONVERTER;
+        }
+        else if(Certificate.class.isAssignableFrom(type))
+        {
+            return (AttributeValueConverter<X>) CERTIFICATE_CONVERTER;
         }
         else if(Enum.class.isAssignableFrom(type))
         {

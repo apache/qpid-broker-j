@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
+import java.security.cert.Certificate;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -277,6 +278,12 @@ public class MultiVersionProtocolEngineFactoryTest extends QpidTestCase
 
         @Override
         public Principal getPeerPrincipal()
+        {
+            return null;
+        }
+
+        @Override
+        public Certificate getPeerCertificate()
         {
             return null;
         }

@@ -23,6 +23,7 @@ package org.apache.qpid.transport.network.io;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.security.Principal;
+import java.security.cert.Certificate;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
@@ -47,6 +48,7 @@ public class IoNetworkConnection implements NetworkConnection
     private Principal _principal;
     private boolean _principalChecked;
     private final Object _lock = new Object();
+    private Certificate _certificate;
 
     public IoNetworkConnection(Socket socket, ByteBufferReceiver delegate,
             int sendBufferSize, int receiveBufferSize, long timeout, Ticker ticker)
@@ -118,6 +120,12 @@ public class IoNetworkConnection implements NetworkConnection
                     try
                     {
                         _principal = ((SSLSocket) _socket).getSession().getPeerPrincipal();
+                        final Certificate[] certs =
+                                ((SSLSocket) _socket).getSession().getPeerCertificates();
+                        if(certs != null && certs.length != 0)
+                        {
+                            _certificate = certs[0];
+                        }
                     }
                     catch(SSLPeerUnverifiedException e)
                     {
@@ -130,6 +138,19 @@ public class IoNetworkConnection implements NetworkConnection
 
             return _principal;
         }
+    }
+
+    @Override
+    public Certificate getPeerCertificate()
+    {
+        synchronized (_lock)
+        {
+            if(!_principalChecked)
+            {
+                getPeerPrincipal();
+            }
+        }
+        return _certificate;
     }
 
     @Override

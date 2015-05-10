@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedStatistic;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
@@ -89,6 +90,9 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
 
     @ManagedAttribute( defaultValue = DEFAULT_AMQP_WANT_CLIENT_AUTH )
     boolean getWantClientAuth();
+
+    @ManagedAttribute
+    TrustStore<?> getClientCertRecorder();
 
     @ManagedAttribute( mandatory = true )
     AuthenticationProvider getAuthenticationProvider();

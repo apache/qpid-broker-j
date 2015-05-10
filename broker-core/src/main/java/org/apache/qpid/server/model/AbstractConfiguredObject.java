@@ -1160,6 +1160,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 try
                 {
                     returnVal = (ListenableFuture<Void>) stateChangingMethod.invoke(this);
+                    if(getState() != currentState)
+                    {
+                        notifyStateChanged(currentState, getState());
+                    }
                 }
                 catch (IllegalAccessException e)
                 {
@@ -1345,13 +1349,14 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected void notifyStateChanged(final State currentState, final State desiredState)
     {
+        List<ConfigurationChangeListener> copy;
         synchronized (_changeListeners)
         {
-            List<ConfigurationChangeListener> copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
-            for(ConfigurationChangeListener listener : copy)
-            {
-                listener.stateChanged(this, currentState, desiredState);
-            }
+            copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+        }
+        for(ConfigurationChangeListener listener : copy)
+        {
+            listener.stateChanged(this, currentState, desiredState);
         }
     }
 

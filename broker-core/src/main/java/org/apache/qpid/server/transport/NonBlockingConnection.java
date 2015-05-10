@@ -25,6 +25,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.Principal;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -85,6 +86,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private SSLEngineResult _status;
     private volatile boolean _fullyWritten = true;
     private boolean _workDone;
+    private Certificate _peerCertificate;
 
 
     public NonBlockingConnection(SocketChannel socketChannel,
@@ -200,26 +202,44 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     @Override
     public Principal getPeerPrincipal()
     {
+        checkPeerPrincipal();
+        return _principal;
+    }
+
+    @Override
+    public Certificate getPeerCertificate()
+    {
+        checkPeerPrincipal();
+        return _peerCertificate;
+    }
+
+    private void checkPeerPrincipal()
+    {
         synchronized (_peerPrincipalLock)
         {
-            if(!_principalChecked)
+            if (!_principalChecked)
             {
                 if (_sslEngine != null)
                 {
                     try
                     {
                         _principal = _sslEngine.getSession().getPeerPrincipal();
+                        final Certificate[] peerCertificates =
+                                _sslEngine.getSession().getPeerCertificates();
+                        if (peerCertificates != null && peerCertificates.length > 0)
+                        {
+                            _peerCertificate = peerCertificates[0];
+                        }
                     }
                     catch (SSLPeerUnverifiedException e)
                     {
-                        return null;
+                        _principal = null;
+                        _peerCertificate = null;
                     }
                 }
 
                 _principalChecked = true;
             }
-
-            return _principal;
         }
     }
 

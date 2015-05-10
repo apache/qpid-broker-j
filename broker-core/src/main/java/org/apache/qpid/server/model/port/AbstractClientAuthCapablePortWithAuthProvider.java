@@ -25,6 +25,8 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 
 abstract public class AbstractClientAuthCapablePortWithAuthProvider<X extends AbstractClientAuthCapablePortWithAuthProvider<X>> extends AbstractPortWithAuthProvider<X>
         implements ClientAuthCapablePort<X>
@@ -38,6 +40,9 @@ abstract public class AbstractClientAuthCapablePortWithAuthProvider<X extends Ab
     @ManagedAttributeField
     private boolean _wantClientAuth;
 
+    @ManagedAttributeField
+    private TrustStore<?> _clientCertRecorder;
+
     public AbstractClientAuthCapablePortWithAuthProvider(final Map<String, Object> attributes,
                                                          final Broker<?> broker)
     {
@@ -48,6 +53,12 @@ abstract public class AbstractClientAuthCapablePortWithAuthProvider<X extends Ab
     public boolean getNeedClientAuth()
     {
         return _needClientAuth;
+    }
+
+    @Override
+    public TrustStore<?> getClientCertRecorder()
+    {
+        return _clientCertRecorder;
     }
 
     @Override
@@ -73,6 +84,14 @@ abstract public class AbstractClientAuthCapablePortWithAuthProvider<X extends Ab
             throw new IllegalConfigurationException(
                     "Can't create port which requests SSL client certificates but doesn't use SSL transport.");
         }
+
+        if(useClientAuth && getClientCertRecorder() != null)
+        {
+            if(!(getClientCertRecorder() instanceof ManagedPeerCertificateTrustStore))
+            {
+                throw new IllegalConfigurationException("Only trust stores of type " + ManagedPeerCertificateTrustStore.TYPE_NAME + " may be used as the client certificate recorder");
+            }
+        }
     }
 
     @Override
@@ -96,6 +115,15 @@ abstract public class AbstractClientAuthCapablePortWithAuthProvider<X extends Ab
             if (requiresCertificate)
             {
                 throw new IllegalConfigurationException("Can't create port which requests SSL client certificates but doesn't use SSL transport.");
+            }
+        }
+
+
+        if(requiresCertificate && updated.getClientCertRecorder() != null)
+        {
+            if(!(updated.getClientCertRecorder() instanceof ManagedPeerCertificateTrustStore))
+            {
+                throw new IllegalConfigurationException("Only trust stores of type " + ManagedPeerCertificateTrustStore.TYPE_NAME + " may be used as the client certificate recorder");
             }
         }
     }

@@ -25,9 +25,9 @@ import java.util.Set;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.TrustStore;
 
 @ManagedObject( category = false, type = "HTTP")
 public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X>
@@ -43,6 +43,9 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
 
     @ManagedAttribute( defaultValue = DEFAULT_AMQP_WANT_CLIENT_AUTH )
     boolean getWantClientAuth();
+
+    @ManagedAttribute
+    TrustStore<?> getClientCertRecorder();
 
     @ManagedAttribute( mandatory = true )
     AuthenticationProvider getAuthenticationProvider();

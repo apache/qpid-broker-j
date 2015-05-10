@@ -52,6 +52,7 @@ import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.security.AuthorizationHolder;
+import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.util.Action;
@@ -673,7 +674,12 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
 
     public Principal getPeerPrincipal()
     {
-        return getNetworkConnection().getPeerPrincipal();
+        Principal peerPrincipal = getNetworkConnection().getPeerPrincipal();
+        if(peerPrincipal != null && getPort().getClientCertRecorder() != null)
+        {
+            ((ManagedPeerCertificateTrustStore)(getPort().getClientCertRecorder())).addCertificate(getNetworkConnection().getPeerCertificate());
+        }
+        return peerPrincipal;
     }
 
     @Override

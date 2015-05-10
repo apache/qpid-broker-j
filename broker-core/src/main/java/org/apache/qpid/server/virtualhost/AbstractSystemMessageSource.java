@@ -86,8 +86,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         return MessageDurability.NEVER;
     }
 
-    protected abstract InternalMessage createMessage();
-
     @Override
     public Consumer addConsumer(final ConsumerTarget target,
                                     final FilterManager filters,
@@ -108,7 +106,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     }
 
     @Override
-    public Collection<? extends ConsumerImpl> getConsumers()
+    public Collection<Consumer> getConsumers()
     {
         return new ArrayList<>(_consumers.values());
     }
@@ -131,7 +129,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         return true;
     }
 
-    class Consumer implements ConsumerImpl
+    protected class Consumer implements ConsumerImpl
     {
 
         private final long _id = ConsumerImpl.CONSUMER_NUMBER_GENERATOR.getAndIncrement();
@@ -271,7 +269,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
 
-        void send(final InternalMessage response)
+        public void send(final InternalMessage response)
         {
             _target.getSendLock();
             try
