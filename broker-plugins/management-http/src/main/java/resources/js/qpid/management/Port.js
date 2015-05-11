@@ -51,7 +51,7 @@ define(["dojo/dom",
                 contentPane.containerNode.innerHTML = template;
                 parser.parse(contentPane.containerNode).then(function(instances)
                 {
-                            that.portUpdater = new PortUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                            that.portUpdater = new PortUpdater(that);
 
                             var deletePortButton = query(".deletePortButton", contentPane.containerNode)[0];
                             var node = registry.byNode(deletePortButton);
@@ -102,11 +102,13 @@ define(["dojo/dom",
                );
            }
 
-           function PortUpdater(containerNode, portObj, controller)
+           function PortUpdater(portTab)
            {
                var that = this;
-               this.management = controller.management;
-               this.modelObj = portObj;
+               this.tabObject = portTab;
+               this.management = portTab.controller.management;
+               this.modelObj = portTab.modelObj;
+               var containerNode = portTab.contentPane.containerNode;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -200,6 +202,14 @@ define(["dojo/dom",
                         callback();
                       }
                       thisObj.updateHeader();
+                   },
+                   function(error)
+                   {
+                      util.tabErrorHandler(error, {updater:thisObj,
+                                                   contentPane: thisObj.tabObject.contentPane,
+                                                   tabContainer: thisObj.tabObject.controller.tabContainer,
+                                                   name: thisObj.modelObj.name,
+                                                   category: "Port"});
                    });
            };
 

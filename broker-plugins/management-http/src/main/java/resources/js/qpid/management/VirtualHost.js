@@ -56,7 +56,7 @@ define(["dojo/parser",
                     containerNode.innerHTML = template;
                     parser.parse(containerNode).then(function(instances)
                     {
-                            that.vhostUpdater = new Updater(containerNode, that.modelObj, that.controller, that);
+                            that.vhostUpdater = new Updater(that);
 
                             var addQueueButton = query(".addQueueButton", containerNode)[0];
                             connect.connect(registry.byNode(addQueueButton), "onClick", function(evt){
@@ -157,9 +157,13 @@ define(["dojo/parser",
              this.contentPane.destroyRecursive();
            }
 
-           function Updater(node, vhost, controller, virtualHost)
+           function Updater(virtualHost)
            {
-               this.virtualHost = virtualHost;
+               var vhost = virtualHost.modelObj;
+               var controller = virtualHost.controller;
+               var node = virtualHost.contentPane.containerNode;
+
+               this.tabObject = virtualHost;
                this.management = controller.management;
                this.modelObj = vhost;
                var that = this;
@@ -318,7 +322,7 @@ define(["dojo/parser",
 
                this.management.load(this.modelObj)
                    .then(function(data) {
-                       thisObj.vhostData = data[0] || {name: thisObj.virtualHost.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};
+                       thisObj.vhostData = data[0] || {name: thisObj.modelObj.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};
 
                        if (callback)
                        {
@@ -336,17 +340,25 @@ define(["dojo/parser",
                                 console.error(e);
                             }
                        }
-                   }, util.xhrErrorHandler);
-           }
+                   },
+                   function(error)
+                   {
+                       util.tabErrorHandler(error, { updater:thisObj,
+                                                     contentPane: thisObj.tabObject.contentPane,
+                                                     tabContainer: thisObj.tabObject.controller.tabContainer,
+                                                     name: thisObj.modelObj.name,
+                                                     category: "Virtual Host" });
+                   });
+           };
 
            Updater.prototype._update = function()
            {
                 var thisObj = this;
-                this.virtualHost.startButton.set("disabled", !this.vhostData.state || this.vhostData.state != "STOPPED");
-                this.virtualHost.stopButton.set("disabled", !this.vhostData.state || this.vhostData.state != "ACTIVE");
-                this.virtualHost.editButton.set("disabled", !this.vhostData.state || this.vhostData.state == "UNAVAILABLE");
-                this.virtualHost.downloadButton.set("disabled", !this.vhostData.state || this.vhostData.state != "ACTIVE");
-                this.virtualHost.deleteButton.set("disabled", !this.vhostData.state);
+                this.tabObject.startButton.set("disabled", !this.vhostData.state || this.vhostData.state != "STOPPED");
+                this.tabObject.stopButton.set("disabled", !this.vhostData.state || this.vhostData.state != "ACTIVE");
+                this.tabObject.editButton.set("disabled", !this.vhostData.state || this.vhostData.state == "UNAVAILABLE");
+                this.tabObject.downloadButton.set("disabled", !this.vhostData.state || this.vhostData.state != "ACTIVE");
+                this.tabObject.deleteButton.set("disabled", !this.vhostData.state);
 
                        util.flattenStatistics( thisObj.vhostData );
                        var connections = thisObj.vhostData[ "connections" ];

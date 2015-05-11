@@ -31,6 +31,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Plugin;
@@ -361,8 +363,6 @@ public class PortRestTest extends QpidRestTestCase
 
         int responseCode = getRestTestHelper().submitRequest("port/" + newPortName, "PUT", attributes);
         assertEquals("Unexpected response code for port creation", SC_UNPROCESSABLE_ENTITY, responseCode);
-
-        List<Map<String,Object>> ports  = getRestTestHelper().getJsonAsList("port/" + getRestTestHelper().encodeAsUTF(newPortName));
-        assertTrue("Port should not be created", ports.isEmpty());
+        getRestTestHelper().submitRequest("port/" + getRestTestHelper().encodeAsUTF(newPortName), "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 }

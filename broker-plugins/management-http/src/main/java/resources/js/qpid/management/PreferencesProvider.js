@@ -161,6 +161,14 @@ define(["dojo/parser",
                      var preferencesProviderData = data[0];
                      util.flattenStatistics( preferencesProviderData );
                      that.update(preferencesProviderData);
+                 },
+                 function(error)
+                 {
+                    util.tabErrorHandler(error, {updater:that.updater,
+                                                 contentPane: that.contentPane,
+                                                 tabContainer: that.controller.tabContainer,
+                                                 name: that.modelObj.name,
+                                                 category: "Preferences Provider"});
                  });
            };
 

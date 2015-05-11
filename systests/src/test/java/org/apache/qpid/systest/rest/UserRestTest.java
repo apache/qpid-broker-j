@@ -126,9 +126,7 @@ public class UserRestTest extends QpidRestTestCase
 
         String url = "user/" + TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER + "/" + userName;
         getRestTestHelper().submitRequest(url, "POST", userAttributes, HttpServletResponse.SC_NOT_FOUND);
-
-        List<Map<String, Object>> userDetails = getRestTestHelper().getJsonAsList(url);
-        assertTrue("User should not be created", userDetails.isEmpty());
+        getRestTestHelper().submitRequest(url, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testDelete() throws Exception
@@ -142,9 +140,8 @@ public class UserRestTest extends QpidRestTestCase
 
         getRestTestHelper().removeUserById(id);
 
-        List<Map<String, Object>> users = getRestTestHelper().getJsonAsList("user/"
-                + TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER + "/" + userName);
-        assertEquals("User should be deleted", 0, users.size());
+        getRestTestHelper().submitRequest("user/" + TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER
+                + "/" + userName, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     private void assertUser(Map<String, Object> user)

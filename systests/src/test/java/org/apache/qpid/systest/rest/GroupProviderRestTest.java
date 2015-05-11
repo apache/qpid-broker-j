@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -255,9 +257,7 @@ public class GroupProviderRestTest extends QpidRestTestCase
             responseCode = getRestTestHelper().submitRequest("groupprovider/" + providerName , "DELETE");
             assertEquals("Group provider was not deleted", 200, responseCode);
 
-            List<Map<String, Object>> providerDetails = getRestTestHelper().getJsonAsList("groupprovider/" + providerName);
-            assertEquals("Provider was not deleted", 0, providerDetails.size());
-            assertFalse("Groups file should be deleted", groupFile.exists());
+            getRestTestHelper().submitRequest("groupprovider/" + providerName, "GET", HttpServletResponse.SC_NOT_FOUND);
         }
         finally
         {
@@ -324,9 +324,8 @@ public class GroupProviderRestTest extends QpidRestTestCase
 
         int status = getRestTestHelper().submitRequest("groupprovider/" + TestBrokerConfiguration.ENTRY_NAME_GROUP_FILE, "DELETE");
         assertEquals("ACL was not deleted", 200, status);
-
-        List<Map<String, Object>> providers = getRestTestHelper().getJsonAsList("groupprovider/" + TestBrokerConfiguration.ENTRY_NAME_GROUP_FILE);
-        assertEquals("Provider exists", 0, providers.size());
+        getRestTestHelper().submitRequest("groupprovider/" + TestBrokerConfiguration.ENTRY_NAME_GROUP_FILE,
+                "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     private void assertProvider(String name, String type, Map<String, Object> provider)

@@ -35,6 +35,8 @@ define(["dojo/_base/xhr",
         "dojox/html/entities",
         "qpid/common/widgetconfigurer",
         "dijit/registry",
+        "qpid/common/WarningPane",
+        "qpid/common/updater",
         "dijit/TitlePane",
         "dijit/Dialog",
         "dijit/form/Form",
@@ -49,7 +51,7 @@ define(["dojo/_base/xhr",
         "dojox/validate/web",
         "dojo/domReady!"
         ],
-       function (xhr, array, event, lang, json, dom, geometry, domStyle, win, query, parser, Memory, w, on, entities, widgetconfigurer, registry) {
+       function (xhr, array, event, lang, json, dom, geometry, domStyle, win, query, parser, Memory, w, on, entities, widgetconfigurer, registry, WarningPane, updater) {
            var util = {};
            if (Array.isArray) {
                util.isArray = function (object) {
@@ -208,6 +210,88 @@ define(["dojo/_base/xhr",
                return query("[widgetid]", root).map(registry.byNode).filter(function(w){ return w;});
            };
 
+           util.tabErrorHandler = function(error, tabData)
+           {
+                var category = tabData.category;
+                var name = tabData.name;
+                var message = category.charAt(0).toUpperCase() + category.slice(1) + " '" + name + "' is unavailable or deleted. Tab auto-refresh is stopped.";
+
+                var cleanUpTab = function()
+                {
+                    // stop updating the tab
+                    updater.remove(tabData.updater);
+
+                    // delete tab widgets
+                    var widgets = registry.findWidgets(tabData.contentPane.containerNode);
+                    array.forEach(widgets, function(item) { item.destroyRecursive();});
+                    dom.empty(tabData.contentPane.containerNode);
+                }
+
+                var closeTab = function(e)
+                {
+                    tabData.contentPane.onClose()
+                    tabData.tabContainer.removeChild(tabData.contentPane);
+                    tabData.contentPane.destroyRecursive();
+                };
+
+                util.responseErrorHandler(error, {"404": util.warnOn404ErrorHandler(message, tabData.contentPane.containerNode, cleanUpTab, closeTab)});
+           }
+
+           util.warnOn404ErrorHandler = function(message, containerNode, cleanUpCallback, onClickHandler)
+           {
+                return function()
+                {
+                    try
+                    {
+                        if (cleanUpCallback)
+                        {
+                            cleanUpCallback();
+                        }
+
+                        var node = dom.create("div", {innerHTML: message }, containerNode);
+                        var warningPane = new WarningPane({message: message}, node);
+                        if (onClickHandler)
+                        {
+                            warningPane.on("click", onClickHandler);
+                        }
+                        else
+                        {
+                            warningPane.closeButton.set("disabled", true);
+                        }
+                    }
+                    catch(e)
+                    {
+                        console.error(e);
+                    }
+                };
+           };
+
+           util.responseErrorHandler = function(error, responseCodeHandlerMap, defaultCallback)
+           {
+                var handler;
+                if (error)
+                {
+                    var status = error.status || (error.response ? error.response.status : null);
+                    if (status != undefined && status != null)
+                    {
+                        handler = responseCodeHandlerMap[String(status)];
+                    }
+                }
+
+                if (!handler)
+                {
+                    handler =  defaultCallback || util.consoleLoggingErrorHandler;
+                }
+
+                handler(error);
+           };
+
+           util.consoleLoggingErrorHandler = function(error)
+           {
+                var message = util.getErrorMessage(error, "Unexpected error is reported by the broker");
+                console.error(message);
+           };
+
            util.xhrErrorHandler = function(error)
            {
              var fallback = "Unexpected error - see server logs";
@@ -217,7 +301,7 @@ define(["dojo/_base/xhr",
 
              if (error)
              {
-               var status = error.status || error.response ? error.response.status : null;
+               var status = error.status || (error.response ? error.response.status : null);
                if (status != undefined && status != null)
                {
                  var message;
@@ -237,23 +321,7 @@ define(["dojo/_base/xhr",
                  }
                  else
                  {
-                   message = error.message ? error.message : fallback;
-
-                   var responseText = error.responseText? error.responseText: (error.response ? error.response.text : null);
-
-                   // Try for a more detail error sent by the Broker as json
-                   if (responseText)
-                   {
-                     try
-                     {
-                       var errorObj = json.parse(responseText);
-                       message = errorObj.hasOwnProperty("errorMessage") ? errorObj.errorMessage : message;
-                     }
-                     catch (e)
-                     {
-                       // Ignore
-                     }
-                   }
+                   message = util.getErrorMessage(error, fallback);
                  }
 
                  errorMessageNode.innerHTML = entities.encode(message ? message : fallback);
@@ -278,6 +346,28 @@ define(["dojo/_base/xhr",
                  dialog.show();
                }
              }
+           };
+
+           util.getErrorMessage = function (error, fallback)
+           {
+                var message = error.message ? error.message : fallback;
+
+                var responseText = error.responseText? error.responseText : (error.response ? error.response.text : null);
+
+                // Try for a more detail error sent by the Broker as json
+                if (responseText)
+                {
+                    try
+                    {
+                      var errorObj = json.parse(responseText);
+                      message = errorObj.hasOwnProperty("errorMessage") ? errorObj.errorMessage : message;
+                    }
+                    catch (e)
+                    {
+                      // Ignore
+                    }
+                }
+                return message || fallback;
            };
 
            util.equals = function(object1, object2)

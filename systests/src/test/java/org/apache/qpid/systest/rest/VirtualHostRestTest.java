@@ -166,8 +166,8 @@ public class VirtualHostRestTest extends QpidRestTestCase
         Map<String, Object> data = submitVirtualHost(false, "POST", HttpServletResponse.SC_NOT_FOUND);
 
         String hostName = (String)data.get(VirtualHost.NAME);
-        List<Map<String, Object>> hostDetails = getRestTestHelper().getJsonAsList("virtualhost/" + EMPTY_VIRTUALHOSTNODE_NAME + "/" + hostName);
-        assertTrue("VH should not exist", hostDetails.isEmpty());
+        getRestTestHelper().submitRequest("virtualhost/" + EMPTY_VIRTUALHOSTNODE_NAME + "/" + hostName,
+                "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testDeleteHost() throws Exception
@@ -449,8 +449,8 @@ public class VirtualHostRestTest extends QpidRestTestCase
 
         int statusCode = getRestTestHelper().submitRequest(queueUrl, "DELETE");
         assertEquals("Unexpected response code", 200, statusCode);
-        queues = getRestTestHelper().getJsonAsList(queueUrl);
-        assertEquals("Queue should be deleted", 0, queues.size());
+
+        getRestTestHelper().submitRequest(queueUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testDeleteQueueById() throws Exception
@@ -460,8 +460,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         Map<String, Object> queueDetails = getRestTestHelper().getJsonAsSingletonList("queue/test/test/" + queueName);
         int statusCode = getRestTestHelper().submitRequest("queue/test/test?id=" + queueDetails.get(Queue.ID), "DELETE");
         assertEquals("Unexpected response code", 200, statusCode);
-        List<Map<String, Object>> queues = getRestTestHelper().getJsonAsList("queue/test/test/" + queueName);
-        assertEquals("Queue should be deleted", 0, queues.size());
+        getRestTestHelper().submitRequest("queue/test/test/" + queueName, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testDeleteExchange() throws Exception
@@ -472,8 +471,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         int statusCode = getRestTestHelper().submitRequest("exchange/test/test/" + exchangeName, "DELETE");
 
         assertEquals("Unexpected response code", 200, statusCode);
-        List<Map<String, Object>> queues = getRestTestHelper().getJsonAsList("exchange/test/test/" + exchangeName);
-        assertEquals("Exchange should be deleted", 0, queues.size());
+        getRestTestHelper().submitRequest("exchange/test/test/" + exchangeName, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testDeleteExchangeById() throws Exception
@@ -485,8 +483,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         int statusCode = getRestTestHelper().submitRequest("exchange/test/test?id=" + echangeDetails.get(Exchange.ID), "DELETE");
 
         assertEquals("Unexpected response code", 200, statusCode);
-        List<Map<String, Object>> queues = getRestTestHelper().getJsonAsList("exchange/test/test/" + exchangeName);
-        assertEquals("Exchange should be deleted", 0, queues.size());
+        getRestTestHelper().submitRequest("exchange/test/test/" + exchangeName, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testPutCreateQueueWithAttributes() throws Exception

@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -119,8 +121,7 @@ public class PreferencesProviderRestTest extends QpidRestTestCase
         int responseCode = getRestTestHelper().submitRequest(providerUrl, "DELETE");
         assertEquals("Failed to delete preferences provider", 200, responseCode);
 
-        List<Map<String, Object>> providerDetails = getRestTestHelper().getJsonAsList(providerUrl);
-        assertEquals("Unexpected number of providers", 0, providerDetails.size());
+        getRestTestHelper().submitRequest(providerUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testUpdateProvider() throws Exception

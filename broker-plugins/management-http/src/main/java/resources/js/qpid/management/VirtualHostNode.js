@@ -120,7 +120,7 @@ define(["dojo/parser",
                         });
                     }, {height: 200, canSort : function(col) {return false;} }, EnhancedGrid);
 
-             this.vhostNodeUpdater = new Updater(containerNode, this.modelObj, this);
+             this.vhostNodeUpdater = new Updater(this);
              this.vhostNodeUpdater.update(function(x){updater.add( that.vhostNodeUpdater );});
            }
 
@@ -142,10 +142,11 @@ define(["dojo/parser",
              this.contentPane.destroyRecursive();
            }
 
-           function Updater(domNode, nodeObject, virtualHostNode)
+           function Updater(virtualHostNode)
            {
-               this.virtualHostNode = virtualHostNode;
-               this.modelObj = nodeObject;
+               var domNode = virtualHostNode.contentPane.containerNode;
+               this.tabObject = virtualHostNode;
+               this.modelObj = virtualHostNode.modelObj;
                var that = this;
 
                function findNode(name)
@@ -168,7 +169,7 @@ define(["dojo/parser",
            Updater.prototype.update = function(callback)
            {
                var that = this;
-               that.virtualHostNode.management.load(this.modelObj).then(
+               that.tabObject.management.load(this.modelObj).then(
                    function(data)
                    {
                      that.nodeData = data[0] || {};
@@ -178,13 +179,21 @@ define(["dojo/parser",
                      {
                         callback();
                      }
+                   },
+                   function(error)
+                   {
+                     util.tabErrorHandler(error,{updater:that,
+                                                 contentPane: that.tabObject.contentPane,
+                                                 tabContainer: that.tabObject.controller.tabContainer,
+                                                 name: that.modelObj.name,
+                                                 category: "Virtual Host Node"});
                    });
            };
 
            Updater.prototype.updateUI = function(data)
            {
-             this.virtualHostNode.startNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
-             this.virtualHostNode.stopNodeButton.set("disabled", data.state != "ACTIVE");
+             this.tabObject.startNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
+             this.tabObject.stopNodeButton.set("disabled", data.state != "ACTIVE");
 
              this.name.innerHTML = entities.encode(String(data[ "name" ]));
              this.state.innerHTML = entities.encode(String(data[ "state" ]));
@@ -195,7 +204,7 @@ define(["dojo/parser",
                require(["qpid/management/virtualhostnode/" + data.type.toLowerCase() + "/show"],
                  function(VirtualHostNodeDetails)
                  {
-                   that.details = new VirtualHostNodeDetails({containerNode:that.detailsDiv, parent: that.virtualHostNode});
+                   that.details = new VirtualHostNodeDetails({containerNode:that.detailsDiv, parent: that.tabObject});
                    that.details.update(data);
                  }
                );
@@ -206,8 +215,8 @@ define(["dojo/parser",
              }
 
 
-             this.virtualHostNode.virtualHostGridPanel.domNode.style.display = data.virtualhosts? "block" : "none";
-             util.updateUpdatableStore(this.virtualHostNode.vhostsGrid, data.virtualhosts);
+             this.tabObject.virtualHostGridPanel.domNode.style.display = data.virtualhosts? "block" : "none";
+             util.updateUpdatableStore(this.tabObject.vhostsGrid, data.virtualhosts);
            }
 
            return VirtualHostNode;

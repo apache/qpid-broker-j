@@ -45,7 +45,7 @@ define(["dojo/_base/xhr",
         "dijit/form/DateTextBox",
         "dojo/domReady!"],
     function (xhr, dom, parser, query, construct, connect, win, event, json, registry, entities, util, properties, updater, UpdatableStore, EnhancedGrid) {
-        function AclFile(containerNode, aclProviderObj, controller) {
+        function AclFile(containerNode, aclProviderObj, controller, tabObject) {
             var node = construct.create("div", null, containerNode, "last");
             this.modelObj = aclProviderObj;
             var that = this;
@@ -56,7 +56,7 @@ define(["dojo/_base/xhr",
                                         node.innerHTML = data;
                                         parser.parse(node).then(function(instances)
                                         {
-                                        that.groupDatabaseUpdater= new AclFileUpdater(node, aclProviderObj, controller);
+                                        that.groupDatabaseUpdater= new AclFileUpdater(node, tabObject);
 
                                         updater.add( that.groupDatabaseUpdater);
 
@@ -70,8 +70,11 @@ define(["dojo/_base/xhr",
             updater.remove( this.groupDatabaseUpdater );
         };
 
-        function AclFileUpdater(node, aclProviderObj, controller)
+        function AclFileUpdater(node, tabObject)
         {
+            this.tabObject = tabObject;
+            var aclProviderObj = tabObject.modelObj;
+            var controller = tabObject.controller;
             this.controller = controller;
             this.modelObj = aclProviderObj;
             this.management = controller.management;
@@ -91,7 +94,14 @@ define(["dojo/_base/xhr",
                     that.path.innerHTML = entities.encode(String(that.aclProviderData.path));
                   }
                 },
-                util.xhrErrorHandler);
+                 function(error)
+                 {
+                      util.tabErrorHandler(error, {updater: that,
+                                                   contentPane: that.tabObject.contentPane,
+                                                   tabContainer: that.tabObject.controller.tabContainer,
+                                                   name: that.modelObj.name,
+                                                   category: "Access Control Provider"});
+                 });
 
         };
 

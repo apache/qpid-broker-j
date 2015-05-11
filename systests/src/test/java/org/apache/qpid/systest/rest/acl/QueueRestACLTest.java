@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.Queue;
@@ -182,7 +184,7 @@ public class QueueRestACLTest extends QpidRestTestCase
 
     private void assertQueueExistence(boolean exists) throws Exception
     {
-        List<Map<String, Object>> queues = getRestTestHelper().getJsonAsList(_queueUrl);
-        assertEquals("Unexpected result", exists, !queues.isEmpty());
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(_queueUrl, "GET", expectedResponseCode);
     }
 }

@@ -51,7 +51,7 @@ define(["dojo/parser",
                             containerNode.innerHTML = template;
                             parser.parse(contentPane.containerNode).then(function(instances)
                             {
-                                that.connectionUpdater = new ConnectionUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                                that.connectionUpdater = new ConnectionUpdater(that);
                                 that.connectionUpdater.update(function(){updater.add( that.connectionUpdater );});
 
                                 that.closeButton = registry.byNode(query(".closeButton", containerNode)[0]);
@@ -78,11 +78,13 @@ define(["dojo/parser",
              this.contentPane.destroyRecursive();
            }
 
-           function ConnectionUpdater(containerNode, connectionObj, controller)
+           function ConnectionUpdater(connectionTab)
            {
                var that = this;
-               this.management = controller.management;
-               this.modelObj = connectionObj;
+               this.tabObject = connectionTab;
+               this.management = connectionTab.controller.management;
+               this.modelObj = connectionTab.modelObj;
+               var containerNode = connectionTab.contentPane.containerNode;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -249,6 +251,14 @@ define(["dojo/parser",
 
                        // update sessions
                        that.sessionsGrid.update(that.connectionData.sessions)
+                   },
+                   function(error)
+                   {
+                      util.tabErrorHandler(error, {updater: that,
+                                                   contentPane: that.tabObject.contentPane,
+                                                   tabContainer: that.tabObject.controller.tabContainer,
+                                                   name: that.modelObj.name,
+                                                   category: "Connection"});
                    });
            };
 

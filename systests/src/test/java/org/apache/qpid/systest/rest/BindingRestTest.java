@@ -24,6 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.Binding;
 
@@ -79,8 +81,7 @@ public class BindingRestTest extends QpidRestTestCase
         int responseCode = getRestTestHelper().submitRequest(bindingUrl, "DELETE");
         assertEquals("Unexpected response code", 200, responseCode);
 
-        bindings = getRestTestHelper().getJsonAsList(bindingUrl);
-        assertEquals("Binding should be deleted", 0, bindings.size());
+        getRestTestHelper().submitRequest(bindingUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testDeleteBindingById() throws Exception

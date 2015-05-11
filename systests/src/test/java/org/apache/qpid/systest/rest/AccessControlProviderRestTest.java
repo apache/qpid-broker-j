@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
@@ -146,24 +148,16 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
         //create the replacement access control provider using the 'allowed' user.
         String accessControlProviderName2 = getTestName() + "2";
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
-        responseCode = createAccessControlProvider(getTestName(), _aclFileContent2);
-        assertEquals("Access control provider creation should be allowed", 200, responseCode);
+        responseCode = createAccessControlProvider(accessControlProviderName2, _aclFileContent2);
+        assertEquals("Access control provider creation should be allowed", 201, responseCode);
 
-        //Verify that it took effect immediately, replacing the first access control provider
+        //Verify that first access control provider is used
 
-        //verify the 'denied' user still can't access the management interface, but the 'other' user now CAN.
+        //verify the 'denied' user still can't access the management interface
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
         assertCanAccessManagementInterface(accessControlProviderName2, false);
         getRestTestHelper().setUsernameAndPassword(OTHER_USER, OTHER_USER);
-        assertCanAccessManagementInterface(accessControlProviderName2, true);
-
-
-        //verify the 'denied' user still can't access the management interface, the 'other' user still can, thus
-        //confirming that the second access control provider is still in effect
-        getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
         assertCanAccessManagementInterface(accessControlProviderName2, false);
-        getRestTestHelper().setUsernameAndPassword(OTHER_USER, OTHER_USER);
-        assertCanAccessManagementInterface(accessControlProviderName2, true);
     }
 
 
@@ -187,13 +181,12 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
         Map<String, Object> acl = getRestTestHelper().getJsonAsSingletonList("accesscontrolprovider/" + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE + "?" + RestServlet.OVERSIZE_PARAM + "=" + (file.getAbsolutePath().length()+10));
         assertEquals("Unexpected id", id.toString(), acl.get(AccessControlProvider.ID));
         assertEquals("Unexpected path", file.getAbsolutePath() , acl.get(FileAccessControlProviderConstants.PATH));
-        assertEquals("Unexpected state", State.ERRORED.name() , acl.get(AccessControlProvider.STATE));
+        assertEquals("Unexpected state", State.ERRORED.name(), acl.get(AccessControlProvider.STATE));
 
         int status = getRestTestHelper().submitRequest("accesscontrolprovider/" + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE, "DELETE");
         assertEquals("ACL was not deleted", 200, status);
 
-        List<Map<String, Object>> acls = getRestTestHelper().getJsonAsList("accesscontrolprovider/" + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE);
-        assertEquals("ACL exists", 0, acls.size());
+        getRestTestHelper().submitRequest("accesscontrolprovider/" + TestBrokerConfiguration.ENTRY_NAME_ACL_FILE, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     private void assertCanAccessManagementInterface(String accessControlProviderName, boolean canAccess) throws Exception
@@ -206,8 +199,8 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
     private void assertAccessControlProviderExistence(String accessControlProviderName, boolean exists) throws Exception
     {
         String path = "accesscontrolprovider/" + accessControlProviderName;
-        List<Map<String, Object>> providers = getRestTestHelper().getJsonAsList(path);
-        assertEquals("Unexpected result", exists, !providers.isEmpty());
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
     }
 
     private int createAccessControlProvider(String accessControlProviderName, String content) throws Exception

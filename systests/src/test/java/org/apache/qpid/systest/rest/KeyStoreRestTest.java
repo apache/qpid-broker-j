@@ -116,10 +116,7 @@ public class KeyStoreRestTest extends QpidRestTestCase
         assertNumberOfKeyStores(2);
 
         getRestTestHelper().submitRequest("keystore/" + name, "DELETE", HttpServletResponse.SC_OK);
-
-        List<Map<String, Object>> keyStore = getRestTestHelper().getJsonAsList("keystore/" + name + "?actuals=true");
-        assertNotNull("details should not be null", keyStore);
-        assertTrue("details should be empty as the keystore no longer exists", keyStore.isEmpty());
+        getRestTestHelper().submitRequest("keystore/" + name + "?actuals=true", "GET", HttpServletResponse.SC_NOT_FOUND);
 
         //check only the default systests key store remains
         List<Map<String, Object>> keyStores = assertNumberOfKeyStores(1);

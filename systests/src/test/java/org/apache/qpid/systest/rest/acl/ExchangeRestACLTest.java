@@ -37,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 public class ExchangeRestACLTest extends QpidRestTestCase
 {
     private static final String ALLOWED_USER = "user1";
@@ -212,8 +214,8 @@ public class ExchangeRestACLTest extends QpidRestTestCase
 
     private void assertExchangeExistence(boolean exists) throws Exception
     {
-        List<Map<String, Object>> exchanges = getRestTestHelper().getJsonAsList(_exchangeUrl);
-        assertEquals("Unexpected result", exists, !exchanges.isEmpty());
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(_exchangeUrl, "GET", expectedResponseCode);
     }
 
     private int createBinding(String bindingName) throws IOException, JsonGenerationException, JsonMappingException
@@ -239,7 +241,7 @@ public class ExchangeRestACLTest extends QpidRestTestCase
 
     private void assertBindingExistence(String bindingName, boolean exists) throws Exception
     {
-        List<Map<String, Object>> bindings = getRestTestHelper().getJsonAsList("binding/test/test/amq.direct/" + _queueName + "/" + bindingName);
-        assertEquals("Unexpected result", exists, !bindings.isEmpty());
+        String path = "binding/test/test/amq.direct/" + _queueName + "/" + bindingName;
+        getRestTestHelper().submitRequest(path, "GET", exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND);
     }
 }

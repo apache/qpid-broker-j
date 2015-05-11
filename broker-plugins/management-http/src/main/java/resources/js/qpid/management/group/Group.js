@@ -72,7 +72,7 @@ define(["dojo/parser",
                     contentPane.containerNode.innerHTML = showGroup;
                     parser.parse(contentPane.containerNode).then(function(instances)
                     {
-                        that.groupUpdater = new GroupUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                        that.groupUpdater = new GroupUpdater(that);
                         that.groupUpdater.update(
                         function()
                         {
@@ -104,11 +104,13 @@ define(["dojo/parser",
                updater.remove( this.groupUpdater );
            };
 
-           function GroupUpdater(containerNode, groupObj, controller)
+           function GroupUpdater(tabObject)
            {
-               this.management = controller.management;
-               this.modelObj = {type: "groupmember", parent:groupObj};
+               this.tabObject = tabObject;
+               this.management = tabObject.controller.management;
+               this.modelObj = {type: "groupmember", parent: tabObject.modelObj};
                var that = this;
+               var containerNode = tabObject.contentPane.containerNode;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -126,13 +128,10 @@ define(["dojo/parser",
                            "durable",
                            "lifetimePolicy",
                            "type"]);
-               this.name.innerHTML = entities.encode(String(groupObj.name));
+               this.name.innerHTML = entities.encode(String(tabObject.modelObj.name));
 
-               this.management.load(this.modelObj).then(function(data)
-                               {
-                                   that.groupMemberData = data;
+               this.groupMemberData = [];
 
-                                   util.flattenStatistics( that.groupMemberData );
 
                        var gridProperties = {
                                keepSelection: true,
@@ -150,7 +149,7 @@ define(["dojo/parser",
 
                                 }};
 
-                                   that.groupMembersUpdatableStore = new UpdatableStore(that.groupMemberData, findNode("groupMembers"),
+                                   this.groupMembersUpdatableStore = new UpdatableStore([], findNode("groupMembers"),
                                                             [ { name: "Group Member Name",    field: "name",      width: "100%" }],
                                                          function(obj)
                                                         {
@@ -160,9 +159,8 @@ define(["dojo/parser",
                                                                          });
                                                         } , gridProperties, EnhancedGrid);
 
-                               }, util.xhrErrorHandler);
 
-           }
+           };
 
            GroupUpdater.prototype.update = function( callback)
            {
@@ -180,7 +178,15 @@ define(["dojo/parser",
                         callback();
                       }
                       that.groupMembersUpdatableStore.update(that.groupMemberData);
-                  }, util.xhrErrorHandler);
+                  },
+                  function(error)
+                  {
+                    util.tabErrorHandler(error, {updater: that,
+                                              contentPane: that.tabObject.contentPane,
+                                              tabContainer: that.tabObject.controller.tabContainer,
+                                              name: that.modelObj.name,
+                                              category: "Group"});
+                  });
            };
 
            Group.prototype.deleteGroupMember = function() {

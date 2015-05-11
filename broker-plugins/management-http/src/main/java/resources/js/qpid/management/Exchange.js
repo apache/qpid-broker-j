@@ -72,7 +72,7 @@ define(["dojo/_base/xhr",
                 parser.parse(contentPane.containerNode).then(function(instances)
                 {
 
-                            that.exchangeUpdater = new ExchangeUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                            that.exchangeUpdater = new ExchangeUpdater(that);
                             var addBindingButton = query(".addBindingButton", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(addBindingButton), "onClick",
                                             function(evt){
@@ -118,12 +118,13 @@ define(["dojo/_base/xhr",
                         this.exchangeUpdater);
            }
 
-           function ExchangeUpdater(containerNode, exchangeObj, controller)
+           function ExchangeUpdater(exchangeTab)
            {
                var that = this;
-
-               this.management = controller.management;
-               this.modelObj = exchangeObj;
+               this.tabObject = exchangeTab;
+               this.management = exchangeTab.controller.management;
+               this.modelObj = exchangeTab.modelObj;
+               var containerNode = exchangeTab.contentPane.containerNode;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -264,7 +265,15 @@ define(["dojo/_base/xhr",
                       // update bindings
                       thisObj.bindingsGrid.update(thisObj.exchangeData.bindings)
 
-                   }, util.xhrErrorHandler);
+                   },
+                   function(error)
+                   {
+                      util.tabErrorHandler(error, {updater:thisObj,
+                                                   contentPane: thisObj.tabObject.contentPane,
+                                                   tabContainer: thisObj.tabObject.controller.tabContainer,
+                                                   name: thisObj.modelObj.name,
+                                                   category: "Exchange"});
+                   });
            };
 
            Exchange.prototype.deleteExchange = function() {

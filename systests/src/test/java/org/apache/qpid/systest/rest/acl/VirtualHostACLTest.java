@@ -133,8 +133,9 @@ public class VirtualHostACLTest extends QpidRestTestCase
 
     private void assertVirtualHostExistence(final String virtualHostNodeName, String virtualHostName, boolean exists) throws Exception
     {
-        List<Map<String, Object>> hosts = getRestTestHelper().getJsonAsList("virtualhost/" + virtualHostNodeName + "/" + virtualHostName);
-        assertEquals("Node " + virtualHostName + (exists ? " does not exist" : " exists"), exists, !hosts.isEmpty());
+        String path = "virtualhost/" + virtualHostNodeName + "/" + virtualHostName;
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
     }
 
     private String getStoreLocation(String hostName)

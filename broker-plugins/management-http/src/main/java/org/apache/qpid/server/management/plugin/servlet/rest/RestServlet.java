@@ -351,6 +351,12 @@ public class RestServlet extends AbstractServlet
 
         Collection<ConfiguredObject<?>> allObjects = getObjects(request);
 
+        if (allObjects.isEmpty() && isSingleObjectRequest(request) )
+        {
+            sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
+            return;
+        }
+
         int depth;
         boolean actuals;
         boolean includeSystemContext;
@@ -387,6 +393,17 @@ public class RestServlet extends AbstractServlet
         ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
         mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
         mapper.writeValue(writer, extractInitialConfig && output.size() == 1 ? output.get(0) : output);
+    }
+
+    private boolean isSingleObjectRequest(HttpServletRequest request)
+    {
+        if (_hierarchy.length > 0)
+        {
+            String[] pathInfoElements = getPathInfoElements(request);
+            return pathInfoElements != null && pathInfoElements.length == _hierarchy.length;
+        }
+
+        return false;
     }
 
     private void setContentDispositionHeaderIfNecessary(final HttpServletResponse response,

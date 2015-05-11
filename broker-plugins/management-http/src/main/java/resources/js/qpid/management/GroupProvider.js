@@ -62,7 +62,7 @@ define(["dojo/parser",
            {
                var that = this;
                var contentPane = this.contentPane;
-               this.groupProviderUpdater = new GroupProviderUpdater(contentPane.containerNode, this.modelObj, this.controller);
+               this.groupProviderUpdater = new GroupProviderUpdater(this);
                this.groupProviderUpdater.update(function(){that._onOpenAfterUpdate();});
            };
 
@@ -143,8 +143,12 @@ define(["dojo/parser",
                         );
            }
 
-           function GroupProviderUpdater(node, groupProviderObj, controller)
+           function GroupProviderUpdater(groupProviderTab)
            {
+               this.tabObject = groupProviderTab;
+               var controller = groupProviderTab.controller;
+               var groupProviderObj = groupProviderTab.modelObj;
+               var node = groupProviderTab.contentPane.containerNode;
                this.controller = controller;
                this.management = controller.management;
                this.modelObj = groupProviderObj;
@@ -174,6 +178,14 @@ define(["dojo/parser",
                                 {
                                     callback();
                                 }
+                               },
+                               function(error)
+                               {
+                                  util.tabErrorHandler(error, {updater:that,
+                                                               contentPane: that.tabObject.contentPane,
+                                                               tabContainer: that.tabObject.controller.tabContainer,
+                                                               name: that.modelObj.name,
+                                                               category: "Group Provider"});
                                });
            };
 

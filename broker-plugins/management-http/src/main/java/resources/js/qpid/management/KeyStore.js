@@ -50,7 +50,7 @@ define(["dojo/dom",
                 contentPane.containerNode.innerHTML = template;
                 parser.parse(contentPane.containerNode).then(function(instances)
                 {
-                            that.keyStoreUpdater = new KeyStoreUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                            that.keyStoreUpdater = new KeyStoreUpdater(that);
                             that.keyStoreUpdater.update(function(){updater.add( that.keyStoreUpdater );});
 
 
@@ -80,12 +80,14 @@ define(["dojo/dom",
                updater.remove( this.keyStoreUpdater );
            };
 
-           function KeyStoreUpdater(containerNode, keyStoreObj, controller)
+           function KeyStoreUpdater( tabObject)
            {
+               var containerNode = tabObject.contentPane.containerNode;
                var that = this;
                this.keyStoreDetailsContainer = query(".typeFieldsContainer", containerNode)[0];
-               this.management = controller.management;
-               this.modelObj = keyStoreObj;
+               this.management = tabObject.controller.management;
+               this.modelObj = tabObject.modelObj;
+               this.tabObject = tabObject
                function findNode(name) {
                    return query("." + name, containerNode)[0];
                }
@@ -139,6 +141,14 @@ define(["dojo/dom",
                            }
                          );
                       }
+                   },
+                   function(error)
+                   {
+                      util.tabErrorHandler(error, {updater:that,
+                                                   contentPane: that.tabObject.contentPane,
+                                                   tabContainer: that.tabObject.controller.tabContainer,
+                                                   name: that.modelObj.name,
+                                                   category: "Key Store"});
                    });
            };
 

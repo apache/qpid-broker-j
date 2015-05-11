@@ -48,7 +48,7 @@ define(["dojo/parser",
                 contentPane.containerNode.innerHTML = template;
                 parser.parse(contentPane.containerNode).then(function(instances)
                 {
-                    that.pluginUpdater = new PluginUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                    that.pluginUpdater = new PluginUpdater(contentPane, that.modelObj, that.controller);
                 });
            };
 
@@ -56,11 +56,12 @@ define(["dojo/parser",
                updater.remove( this.pluginUpdater );
            };
 
-           function PluginUpdater(node, pluginObject, controller)
+           function PluginUpdater(contentPane, pluginObject, controller)
            {
                this.controller = controller;
                this.modelObj = pluginObject;
                this.management = controller.management;
+               var node = contentPane.containerNode;
                this.name = query(".name", node)[0];
                this.type = query(".type", node)[0];
 
@@ -75,7 +76,7 @@ define(["dojo/parser",
 
                              require(["qpid/management/plugin/"+ that.pluginData.type.toLowerCase().replace('-','')],
                                  function(SpecificPlugin) {
-                                 that.details = new SpecificPlugin(query(".pluginDetails", node)[0], pluginObject, controller);
+                                 that.details = new SpecificPlugin(query(".pluginDetails", node)[0], pluginObject, controller, contentPane);
                              });
 
                          }, util.xhrErrorHandler);

@@ -97,12 +97,10 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
         Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(restUrl);
         Asserts.assertVirtualHostNode(nodeName, virtualhostNode);
         assertNull("Virtualhostnode should not automatically get a virtualhost child",
-                   virtualhostNode.get("virtualhosts"));
+                virtualhostNode.get("virtualhosts"));
 
         getRestTestHelper().submitRequest(restUrl, "DELETE", HttpServletResponse.SC_OK);
-
-        List<Map<String, Object>> virtualHostNodes = getRestTestHelper().getJsonAsList(restUrl);
-        assertEquals("Host should be deleted", 0, virtualHostNodes.size());
+        getRestTestHelper().submitRequest(restUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testRecoverVirtualHostNodeWithDesiredStateStopped() throws Exception
@@ -191,12 +189,10 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
         Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(restUrl);
         Asserts.assertVirtualHostNode(nodeName, virtualhostNode);
         assertNull("Virtualhostnode should not automatically get a virtualhost child",
-                   virtualhostNode.get("virtualhosts"));
+                virtualhostNode.get("virtualhosts"));
 
         getRestTestHelper().submitRequest(restUrl, "DELETE", HttpServletResponse.SC_OK);
-
-        List<Map<String, Object>> virtualHostNodes = getRestTestHelper().getJsonAsList(restUrl);
-        assertEquals("Host should be deleted", 0, virtualHostNodes.size());
+        getRestTestHelper().submitRequest(restUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     private void assertActualAndDesireStates(final String restUrl,

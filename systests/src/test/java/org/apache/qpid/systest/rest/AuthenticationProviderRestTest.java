@@ -248,9 +248,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest("authenticationprovider/" + providerName , "DELETE");
         assertEquals("Unexpected response code for provider deletion", 200, responseCode);
 
-        List<Map<String, Object>> providerDetails = getRestTestHelper().getJsonAsList("authenticationprovider/" + providerName);
-        assertNotNull("Providers details cannot be null", providerDetails);
-        assertEquals("Unexpected number of providers", 0, providerDetails.size());
+        getRestTestHelper().submitRequest("authenticationprovider/" + providerName, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testRemovalOfAuthenticationProviderInErrorStateUsingManagementMode() throws Exception
@@ -287,8 +285,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         int status = getRestTestHelper().submitRequest("authenticationprovider/" + providerName, "DELETE");
         assertEquals("ACL was not deleted", 200, status);
 
-        List<Map<String, Object>> providers = getRestTestHelper().getJsonAsList("authenticationprovider/" + providerName);
-        assertEquals("Provider exists", 0, providers.size());
+        getRestTestHelper().submitRequest("authenticationprovider/" + providerName, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testUpdateOfAuthenticationProviderInErrorStateUsingManagementMode() throws Exception

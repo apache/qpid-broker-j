@@ -119,11 +119,8 @@ public class TrustStoreRestTest extends QpidRestTestCase
         createTrustStore(name, false, TestSSLConstants.TRUSTSTORE, TestSSLConstants.TRUSTSTORE_PASSWORD);
         assertNumberOfTrustStores(2);
 
-        getRestTestHelper().submitRequest("truststore/" + name , "DELETE", HttpServletResponse.SC_OK);
-
-        List<Map<String, Object>> trustStore = getRestTestHelper().getJsonAsList("truststore/" + name);
-        assertNotNull("details should not be null", trustStore);
-        assertTrue("details should be empty as the truststore no longer exists", trustStore.isEmpty());
+        getRestTestHelper().submitRequest("truststore/" + name, "DELETE", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("truststore/" + name, "GET", HttpServletResponse.SC_NOT_FOUND);
 
         //check only the default systests trust store remains
         List<Map<String, Object>> trustStores = assertNumberOfTrustStores(1);

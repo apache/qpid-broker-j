@@ -178,8 +178,7 @@ public class UserRestACLTest extends QpidRestTestCase
     private void assertUserDoesNotExist(String newUser) throws JsonParseException, JsonMappingException, IOException
     {
         String path = "user/" + TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER + "/" + newUser;
-        List<Map<String, Object>> userDetailsList = getRestTestHelper().getJsonAsList(path);
-        assertTrue(userDetailsList.isEmpty());
+        getRestTestHelper().submitRequest(path, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     private void assertUserExists(String username) throws IOException

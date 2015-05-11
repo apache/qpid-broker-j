@@ -52,7 +52,7 @@ define(["dojo/parser",
                 contentPane.containerNode.innerHTML = template;
                 parser.parse(contentPane.containerNode).then(function(instances)
                 {
-                    that.accessControlProviderUpdater = new AccessControlProviderUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                    that.accessControlProviderUpdater = new AccessControlProviderUpdater(that);
                     var deleteButton = query(".deleteAccessControlProviderButton", contentPane.containerNode)[0];
                     var deleteWidget = registry.byNode(deleteButton);
                     connect.connect(deleteWidget, "onClick",
@@ -84,8 +84,13 @@ define(["dojo/parser",
              }
          };
 
-           function AccessControlProviderUpdater(node, groupProviderObj, controller)
+           function AccessControlProviderUpdater(aclTab)
            {
+               this.tabObject = aclTab;
+               var node = aclTab.contentPane.containerNode;
+               var groupProviderObj =  aclTab.modelObj;
+               var controller = aclTab.controller;
+
                this.controller = controller;
                this.management = controller.management;
                this.modelObj = groupProviderObj;
@@ -107,9 +112,17 @@ define(["dojo/parser",
                              var ui = that.accessControlProviderData.type;
                              require(["qpid/management/accesscontrolprovider/"+ ui],
                                  function(SpecificProvider) {
-                                 that.details = new SpecificProvider(query(".providerDetails", node)[0], groupProviderObj, controller);
+                                 that.details = new SpecificProvider(query(".providerDetails", node)[0], groupProviderObj, controller, aclTab);
                              });
-                         }, util.xhrErrorHandler);
+                         },
+                         function(error)
+                         {
+                              util.tabErrorHandler(error, {updater: that,
+                                                           contentPane: that.tabObject.contentPane,
+                                                           tabContainer: that.tabObject.controller.tabContainer,
+                                                           name: that.modelObj.name,
+                                                           category: "Access Control Provider"});
+                         });
            }
 
            AccessControlProviderUpdater.prototype.updateHeader = function()

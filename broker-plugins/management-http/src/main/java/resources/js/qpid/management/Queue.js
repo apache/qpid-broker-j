@@ -82,7 +82,7 @@ define(["dojo/parser",
                 parser.parse(contentPane.containerNode).then(function(instances)
                 {
 
-                            that.queueUpdater = new QueueUpdater(contentPane.containerNode, that.modelObj, that.controller);
+                            that.queueUpdater = new QueueUpdater(that);
 
                             var myStore = new JsonRest({target: that.management.getFullUrl("service/message/"+ encodeURIComponent(that.getVirtualHostName()) +
                                                                                "/" + encodeURIComponent(that.getQueueName()))});
@@ -266,11 +266,13 @@ define(["dojo/parser",
                    sorted: "Sort key"
                };
 
-           function QueueUpdater(containerNode, queueObj, controller)
+           function QueueUpdater(tabObject)
            {
                var that = this;
-               this.management = controller.management;
-               this.modelObj = queueObj;
+               this.management = tabObject.management;
+               this.modelObj = tabObject.modelObj;
+               this.tabObject = tabObject;
+               var containerNode = tabObject.contentPane.containerNode;
 
                function findNode(name) {
                    return query("." + name, containerNode)[0];
@@ -507,6 +509,14 @@ define(["dojo/parser",
                       // update consumers
                       thisObj.consumersGrid.update(thisObj.queueData.consumers)
 
+                   },
+                   function(error)
+                   {
+                      util.tabErrorHandler(error, {updater:thisObj,
+                                                   contentPane: thisObj.tabObject.contentPane,
+                                                   tabContainer: thisObj.tabObject.controller.tabContainer,
+                                                   name: thisObj.modelObj.name,
+                                                   category: "Queue"});
                    });
            };
 

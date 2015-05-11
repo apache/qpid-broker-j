@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -854,20 +856,24 @@ public class BrokerACLTest extends QpidRestTestCase
 
     private void assertPortExistence(String portName, boolean exists) throws Exception
     {
-        List<Map<String, Object>> hosts = getRestTestHelper().getJsonAsList("port/" + portName);
-        assertEquals("Unexpected result", exists, !hosts.isEmpty());
+        String path = "port/" + portName;
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
+
     }
 
     private void assertKeyStoreExistence(String keyStoreName, boolean exists) throws Exception
     {
-        List<Map<String, Object>> keyStores = getRestTestHelper().getJsonAsList("keystore/" + keyStoreName);
-        assertEquals("Unexpected result", exists, !keyStores.isEmpty());
+        String path = "keystore/" + keyStoreName;
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
     }
 
     private void assertTrustStoreExistence(String trustStoreName, boolean exists) throws Exception
     {
-        List<Map<String, Object>> trustStores = getRestTestHelper().getJsonAsList("truststore/" + trustStoreName);
-        assertEquals("Unexpected result", exists, !trustStores.isEmpty());
+        String path = "truststore/" + trustStoreName;
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
     }
 
     private int createAuthenticationProvider(String authenticationProviderName) throws Exception
@@ -892,8 +898,8 @@ public class BrokerACLTest extends QpidRestTestCase
     private void assertAuthenticationProviderExistence(String authenticationProviderName, boolean exists) throws Exception
     {
         String path = "authenticationprovider/" + authenticationProviderName;
-        List<Map<String, Object>> providers = getRestTestHelper().getJsonAsList(path);
-        assertEquals("Unexpected result", exists, !providers.isEmpty());
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
     }
 
     private int createKeyStore(String name, String certAlias) throws IOException, JsonGenerationException, JsonMappingException
@@ -921,8 +927,8 @@ public class BrokerACLTest extends QpidRestTestCase
     private void assertGroupProviderExistence(String groupProviderName, boolean exists) throws Exception
     {
         String path = "groupprovider/" + groupProviderName;
-        List<Map<String, Object>> providers = getRestTestHelper().getJsonAsList(path);
-        assertEquals("Unexpected result", exists, !providers.isEmpty());
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
     }
 
     private int createGroupProvider(String groupProviderName) throws Exception
@@ -939,8 +945,8 @@ public class BrokerACLTest extends QpidRestTestCase
     private void assertAccessControlProviderExistence(String accessControlProviderName, boolean exists) throws Exception
     {
         String path = "accesscontrolprovider/" + accessControlProviderName;
-        List<Map<String, Object>> providers = getRestTestHelper().getJsonAsList(path);
-        assertEquals("Unexpected result", exists, !providers.isEmpty());
+        int expectedResponseCode = exists ? HttpServletResponse.SC_OK : HttpServletResponse.SC_NOT_FOUND;
+        getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
     }
 
     private int createAccessControlProvider(String accessControlProviderName) throws Exception

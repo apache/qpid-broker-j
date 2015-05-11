@@ -35,7 +35,7 @@ define(["dojo/dom",
         "dojo/domReady!"],
     function (dom, parser, query, construct, connect, win, event, json, registry, util, properties, updater, template, edit) {
 
-        function ManagementJmx(containerNode, pluginObject, controller) {
+        function ManagementJmx(containerNode, pluginObject, controller, contentPane) {
             var node = construct.create("div", null, containerNode, "last");
             var that = this;
             this.name = pluginObject.name;
@@ -44,7 +44,7 @@ define(["dojo/dom",
             node.innerHTML = template;
             parser.parse(node).then(function(instances)
             {
-                          that.managementJmxUpdater= new ManagementJmxUpdater(node, pluginObject, controller);
+                          that.managementJmxUpdater= new ManagementJmxUpdater(node, pluginObject, controller, contentPane);
                           that.managementJmxUpdater.update(function(){updater.add( that.managementJmxUpdater);});
 
 
@@ -61,8 +61,9 @@ define(["dojo/dom",
           edit.show(this.management, this.modelObj, this.managementJmxUpdater.pluginData);
         };
 
-        function ManagementJmxUpdater(node, pluginObject, controller)
+        function ManagementJmxUpdater(node, pluginObject, controller, contentPane)
         {
+            this.contentPane = contentPane;
             this.controller = controller;
             this.modelObj = pluginObject;
             this.name = pluginObject.name;
@@ -87,7 +88,15 @@ define(["dojo/dom",
                     {
                         callback();
                     }
-                });
+                },
+                 function(error)
+                 {
+                    util.tabErrorHandler(error, {updater:that,
+                                                 contentPane: that.contentPane,
+                                                 tabContainer: that.controller.tabContainer,
+                                                 name: that.modelObj.name,
+                                                 category: "Plugin JMX Management"});
+                 });
 
         };
 

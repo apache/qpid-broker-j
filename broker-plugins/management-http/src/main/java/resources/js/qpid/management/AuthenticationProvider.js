@@ -139,7 +139,7 @@ define(["dojo/parser",
                this.name = query(".name", node)[0];
                this.type = query(".type", node)[0];
                this.state = query(".state", node)[0];
-               this.authenticationProvider = authenticationProvider;
+               this.tabObject = authenticationProvider;
                this.preferencesProviderType=dom.byId("preferencesProviderType");
                this.preferencesProviderName=dom.byId("preferencesProviderName");
                this.preferencesProviderState=dom.byId("preferencesProviderState");
@@ -178,7 +178,7 @@ define(["dojo/parser",
 
            AuthProviderUpdater.prototype.updateHeader = function()
            {
-               this.authenticationProvider.name = this.authProviderData[ "name" ]
+               this.tabObject.name = this.authProviderData[ "name" ]
                this.name.innerHTML = entities.encode(String(this.authProviderData[ "name" ]));
                this.type.innerHTML = entities.encode(String(this.authProviderData[ "type" ]));
                this.state.innerHTML = entities.encode(String(this.authProviderData[ "state" ]));
@@ -195,6 +195,14 @@ define(["dojo/parser",
                     {
                         callback();
                     }
+                 },
+                 function(error)
+                 {
+                    util.tabErrorHandler(error, {updater: that,
+                                                 contentPane: that.tabObject.contentPane,
+                                                 tabContainer: that.tabObject.controller.tabContainer,
+                                                 name: that.modelObj.name,
+                                                 category: "Authentication Provider"});
                  });
            };
 
