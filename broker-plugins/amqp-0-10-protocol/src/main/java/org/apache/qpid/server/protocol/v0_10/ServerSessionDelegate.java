@@ -201,7 +201,11 @@ public class ServerSessionDelegate extends SessionDelegate
         {
             String destination = method.getDestination();
 
-            if(((ServerSession)session).getSubscription(destination)!=null)
+            if (destination == null)
+            {
+                exception(session, method, ExecutionErrorCode.INVALID_ARGUMENT, "Subscriber must provide a destination. The protocol specification marking the destination argument as optional is considered a mistake.");
+            }
+            else if(((ServerSession)session).getSubscription(destination) != null)
             {
                 exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Subscription already exists with destination '"+destination+"'");
             }
