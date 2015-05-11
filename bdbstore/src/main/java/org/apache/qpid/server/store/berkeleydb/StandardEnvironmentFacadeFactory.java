@@ -20,13 +20,7 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-
-import com.sleepycat.je.config.ConfigParam;
-import com.sleepycat.je.config.EnvironmentParams;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.FileBasedSettings;
@@ -57,26 +51,10 @@ public class StandardEnvironmentFacadeFactory implements EnvironmentFacadeFactor
             @Override
             public Map<String, String> getParameters()
             {
-                return buildEnvironmentConfiguration(parent);
+                return BDBUtils.getContextSettingsWithNameMatchingRegExpPattern(parent, NON_REP_JE_PARAM_PATTERN);
             }
         };
 
         return new StandardEnvironmentFacade(sec);
-    }
-
-    private Map<String, String> buildEnvironmentConfiguration(ConfiguredObject<?> parent)
-    {
-        Map<String, String> envConfigMap = new HashMap<>();
-
-        for (ConfigParam cp : EnvironmentParams.SUPPORTED_PARAMS.values())
-        {
-            final String parameterName = cp.getName();
-            Set<String> contextKeys = parent.getContextKeys(false);
-            if (!cp.isForReplication() && contextKeys.contains(parameterName))
-            {
-                envConfigMap.put(parameterName, parent.getContextValue(String.class, parameterName));
-            }
-        }
-        return Collections.unmodifiableMap(envConfigMap);
     }
 }

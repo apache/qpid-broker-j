@@ -19,12 +19,18 @@
 
 package org.apache.qpid.server.store.berkeleydb;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,5 +114,20 @@ public class BDBUtils
             }
         }
 
+    }
+
+    public static Map<String, String> getContextSettingsWithNameMatchingRegExpPattern(ConfiguredObject<?> object, Pattern pattern)
+    {
+        Map<String, String> targetMap = new HashMap<>();
+        for (String name : object.getContextKeys(false))
+        {
+            if (pattern.matcher(name).matches())
+            {
+                String contextValue = object.getContextValue(String.class,name);
+                targetMap.put(name, contextValue);
+            }
+        }
+
+        return Collections.unmodifiableMap(targetMap);
     }
 }

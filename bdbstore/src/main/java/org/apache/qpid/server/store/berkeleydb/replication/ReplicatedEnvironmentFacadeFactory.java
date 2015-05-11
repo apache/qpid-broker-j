@@ -20,19 +20,17 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.store.berkeleydb.BDBUtils;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacadeFactory;
 import org.apache.qpid.server.store.berkeleydb.HASettings;
 
 public class ReplicatedEnvironmentFacadeFactory implements EnvironmentFacadeFactory
 {
-    public static final Pattern NON_REP_JE_PARAM_PATTERN = Pattern.compile("^je\\.(?!rep\\.).*");
     public static final Pattern REP_JE_PARAM_PATTERN = Pattern.compile("^je\\.rep\\..*");
 
     @Override
@@ -128,28 +126,13 @@ public class ReplicatedEnvironmentFacadeFactory implements EnvironmentFacadeFact
 
     private Map<String, String> buildEnvironmentConfigParameters(ConfiguredObject<?> parent)
     {
-        return buildConfig(parent, NON_REP_JE_PARAM_PATTERN);
+        return BDBUtils.getContextSettingsWithNameMatchingRegExpPattern(parent, NON_REP_JE_PARAM_PATTERN);
     }
 
     private Map<String, String> buildReplicationConfigParameters(ConfiguredObject<?> parent)
     {
 
-        return buildConfig(parent, REP_JE_PARAM_PATTERN);
-    }
-
-    private Map<String, String> buildConfig(ConfiguredObject<?> parent, Pattern paramName)
-    {
-        Map<String, String> targetMap = new HashMap<>();
-        for (String name : parent.getContextKeys(false))
-        {
-            if (paramName.matcher(name).matches())
-            {
-                String contextValue = parent.getContextValue(String.class,name);
-                targetMap.put(name, contextValue);
-            }
-        }
-
-        return Collections.unmodifiableMap(targetMap);
+        return BDBUtils.getContextSettingsWithNameMatchingRegExpPattern(parent, REP_JE_PARAM_PATTERN);
     }
 
 
