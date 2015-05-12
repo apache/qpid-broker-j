@@ -258,7 +258,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @ManagedAttributeField
     private boolean _ensureNondestructiveConsumers;
 
-    private final AtomicBoolean _recovering = new AtomicBoolean(true);
+    private static final int RECOVERING = 1;
+    private static final int COMPLETING_RECOVERY = 2;
+    private static final int RECOVERED = 3;
+
+    private final AtomicInteger _recovering = new AtomicInteger(RECOVERING);
+    private final AtomicInteger _enqueuingWhileRecovering = new AtomicInteger(0);
+
     private final ConcurrentLinkedQueue<EnqueueRequest> _postRecoveryQueue = new ConcurrentLinkedQueue<>();
 
     private final QueueRunner _queueRunner = new QueueRunner(this);
@@ -308,7 +314,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                          });
         }
 
-        _recovering.set(false);
+        _recovering.set(RECOVERED);
     }
 
     @Override
@@ -1058,14 +1064,36 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         _totalMessagesReceived.incrementAndGet();
 
-        if(_recovering.get())
+        if(_recovering.get() != RECOVERED)
         {
-            EnqueueRequest request = new EnqueueRequest(message, action, enqueueRecord);
-            _postRecoveryQueue.add(request);
+            _enqueuingWhileRecovering.incrementAndGet();
 
-            // deal with the case the recovering status changed just as we added to the post recovery queue
-            if(!_recovering.get() && _postRecoveryQueue.remove(request))
+            boolean enqueueImmediately;
+            try
             {
+                if(_recovering.get() == RECOVERING)
+                {
+                    EnqueueRequest request = new EnqueueRequest(message, action, enqueueRecord);
+                    _postRecoveryQueue.add(request);
+                    // deal with the case the recovering status changed just as we added to the post recovery queue
+                    enqueueImmediately = (_recovering.get() != RECOVERING) && _postRecoveryQueue.remove(request);
+                }
+                else
+                {
+                    enqueueImmediately = true;
+                }
+            }
+            finally
+            {
+                _enqueuingWhileRecovering.decrementAndGet();
+            }
+
+            if(enqueueImmediately)
+            {
+                while(_recovering.get() != RECOVERED)
+                {
+                    Thread.yield();
+                }
                 doEnqueue(message, action, enqueueRecord);
             }
         }
@@ -1090,14 +1118,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public final void completeRecovery()
     {
-        if(_recovering.get())
+        if(_recovering.compareAndSet(RECOVERING, COMPLETING_RECOVERY))
         {
+            while(_enqueuingWhileRecovering.get() != 0)
+            {
+                Thread.yield();
+            }
+
+            // at this point we can assert that any new enqueue to the queue will not try to put into the post recovery
+            // queue (because the state is no longer RECOVERING, but also no threads are currently trying to enqueue
+            // because the _enqueuingWhileRecovering count is 0.
+
             enqueueFromPostRecoveryQueue();
 
-            _recovering.set(false);
+            _recovering.set(RECOVERED);
 
-            // deal with any enqueues that occurred just as we cleared the queue
-            enqueueFromPostRecoveryQueue();
         }
     }
 
