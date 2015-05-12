@@ -22,11 +22,22 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import java.util.Map;
 
+import com.sleepycat.je.rep.impl.RepParams;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.FileBasedSettings;
 
 public class StandardEnvironmentFacadeFactory implements EnvironmentFacadeFactory
 {
+
+    static
+    {
+        // Force loading of RepParams class and adding its ConfigParam objects into EnvironmentParams.SUPPORTED_PARAMS
+        // It is needed to avoid CME thrown from Iterator of EnvironmentParams.SUPPORTED_PARAMS on creation of Environment
+        // when BDB HA VHN instance is activated at the same time causing loading of RepParams class and modification of
+        // EnvironmentParams.SUPPORTED_PARAMS
+        RepParams.GROUP_NAME.getName();
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public EnvironmentFacade createEnvironmentFacade(final ConfiguredObject<?> parent)
