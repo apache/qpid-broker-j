@@ -411,7 +411,7 @@ define(["dojo/_base/lang",
     Management.prototype.loadUserPreferences = function(callback)
     {
         this.userPreferences = new UserPreferences(this);
-        this.userPreferences.load(callback);
+        this.userPreferences.load(callback, callback);
     };
 
     return Management;

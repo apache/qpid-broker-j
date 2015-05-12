@@ -47,7 +47,14 @@ define(["dojo/date",
                               successCallback();
                           }
                        },
-                       function(error){that.preferencesError = error;});
+                       function(error)
+                       {
+                        that.preferencesError = error;
+                        if (failureCallback)
+                        {
+                            failureCallback();
+                        }
+                       });
   }
 
   UserPreferences.prototype.save = function(preferences, successCallback, failureCallback)
