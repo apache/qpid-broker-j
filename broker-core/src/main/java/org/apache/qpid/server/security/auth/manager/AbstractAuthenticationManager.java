@@ -61,6 +61,10 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     @ManagedAttributeField
     private List<String> _secureOnlyMechanisms;
 
+    @ManagedAttributeField
+    private List<String> _disabledMechanisms;
+
+
     protected AbstractAuthenticationManager(final Map<String, Object> attributes, final Broker<?> broker)
     {
         super(parentsMap(broker), attributes);
@@ -256,5 +260,11 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     public final List<String> getSecureOnlyMechanisms()
     {
         return _secureOnlyMechanisms;
+    }
+
+    @Override
+    public final List<String> getDisabledMechanisms()
+    {
+        return _disabledMechanisms;
     }
 }

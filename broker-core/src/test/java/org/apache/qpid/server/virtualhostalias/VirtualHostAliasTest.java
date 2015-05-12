@@ -24,6 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,6 +58,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         AuthenticationProvider dummyAuthProvider = mock(AuthenticationProvider.class);
         when(dummyAuthProvider.getName()).thenReturn("dummy");
         when(dummyAuthProvider.getId()).thenReturn(UUID.randomUUID());
+        when(dummyAuthProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
         when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(dummyAuthProvider));
         _vhosts = new HashMap<>();
         for(String name : new String[] { "red", "blue", "purple", "black" })

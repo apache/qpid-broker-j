@@ -122,19 +122,34 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
     protected final boolean isUsingTLSTransport(final Collection<Transport> transports)
     {
-        boolean usesTLS = false;
+        return hasTransportOfType(transports, true);
+    }
+
+    protected final boolean hasNonTLSTransport()
+    {
+        return hasNonTLSTransport(getTransports());
+    }
+    protected final boolean hasNonTLSTransport(final Collection<Transport> transports)
+    {
+        return hasTransportOfType(transports, false);
+    }
+
+    private boolean hasTransportOfType(Collection<Transport> transports, boolean secure)
+    {
+
+        boolean hasTransport = false;
         if(transports != null)
         {
             for (Transport transport : transports)
             {
-                if (transport.isSecure())
+                if (secure == transport.isSecure())
                 {
-                    usesTLS = true;
+                    hasTransport = true;
                     break;
                 }
             }
         }
-        return usesTLS;
+        return hasTransport;
     }
 
     @Override

@@ -87,6 +87,7 @@ public class PortFactoryTest extends QpidTestCase
         when(_authProvider.getModel()).thenReturn(objectFactory.getModel());
         when(_authProvider.getObjectFactory()).thenReturn(objectFactory);
         when(_authProvider.getCategoryClass()).thenReturn(AuthenticationProvider.class);
+        when(_authProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
 
 
         when(_keyStore.getModel()).thenReturn(objectFactory.getModel());
@@ -401,5 +402,20 @@ public class PortFactoryTest extends QpidTestCase
         {
             // pass
         }
+    }
+
+    public void testCreatePortWithoutAuthenticationMechanism()
+    {
+        when(_authProvider.getDisabledMechanisms()).thenReturn(Arrays.asList("PLAIN"));
+        try
+        {
+            createAmqpPortTestImpl(false, false, false, null, null);
+            fail("Port creation should fail due to no authentication mechanism being available.");
+        }
+        catch(IllegalConfigurationException e)
+        {
+            // pass
+        }
+        when(_authProvider.getDisabledMechanisms()).thenReturn(Collections.emptyList());
     }
 }

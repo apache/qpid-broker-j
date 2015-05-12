@@ -69,6 +69,11 @@ public interface AuthenticationProvider<X extends AuthenticationProvider<X>> ext
 
     @ManagedAttribute( defaultValue = "[ \"PLAIN\" ]")
     List<String> getSecureOnlyMechanisms();
+
+    @ManagedAttribute( defaultValue = "[]")
+    List<String> getDisabledMechanisms();
+
+
     /**
      * Creates a SASL server for the specified mechanism name for the given
      * fully qualified domain name.

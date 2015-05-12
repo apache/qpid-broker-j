@@ -72,10 +72,17 @@ public class SubjectCreator
     public List<String> getMechanisms()
     {
         List<String> mechanisms = _authenticationProvider.getMechanisms();
+        Set<String> filter = _authenticationProvider.getDisabledMechanisms() != null
+                ? new HashSet<>(_authenticationProvider.getDisabledMechanisms())
+                : new HashSet<String>() ;
         if(!_secure)
         {
+            filter.addAll(_authenticationProvider.getSecureOnlyMechanisms());
+        }
+        if (!filter.isEmpty())
+        {
             mechanisms = new ArrayList<>(mechanisms);
-            mechanisms.removeAll(_authenticationProvider.getSecureOnlyMechanisms());
+            mechanisms.removeAll(filter);
         }
         return mechanisms;
     }

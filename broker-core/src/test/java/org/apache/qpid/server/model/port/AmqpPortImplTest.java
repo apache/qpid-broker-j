@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,6 +74,7 @@ public class AmqpPortImplTest extends QpidTestCase
         AuthenticationProvider<?> provider = mock(AuthenticationProvider.class);
         when(provider.getName()).thenReturn(AUTHENTICATION_PROVIDER_NAME);
         when(provider.getParent(Broker.class)).thenReturn(_broker);
+        when(provider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
         when(_broker.getChildren(AuthenticationProvider.class)).thenReturn(Collections.<AuthenticationProvider>singleton(provider));
         when(_broker.getChildByName(AuthenticationProvider.class, AUTHENTICATION_PROVIDER_NAME)).thenReturn(provider);
     }

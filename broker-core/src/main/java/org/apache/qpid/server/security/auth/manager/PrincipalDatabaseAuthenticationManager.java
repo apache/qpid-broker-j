@@ -121,10 +121,15 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     protected void onOpen()
     {
         super.onOpen();
-        _principalDatabase = createDatabase();
         initialise();
     }
 
+    @Override
+    protected void postResolve()
+    {
+        super.postResolve();
+        _principalDatabase = createDatabase();
+    }
 
     protected abstract PrincipalDatabase createDatabase();
 

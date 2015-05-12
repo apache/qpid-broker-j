@@ -23,7 +23,7 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.TrustStore;
 
 
-public interface ClientAuthCapablePort<X extends Port<X>> extends Port<X>
+public interface ClientAuthCapablePort<X extends PortWithAuthProvider<X>> extends PortWithAuthProvider<X>
 {
     boolean getNeedClientAuth();
 
