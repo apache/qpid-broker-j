@@ -688,11 +688,14 @@ public class RestServlet extends AbstractServlet
             }
             else if (e instanceof IllegalConfigurationException || e instanceof IllegalArgumentException)
             {
-                if (LOGGER.isDebugEnabled())
+                LOGGER.warn(e.getClass().getSimpleName() + " processing request : " + message);
+                Throwable t = e;
+                int maxDepth = 10;
+                while((t = t.getCause())!=null && maxDepth-- != 0)
                 {
-                    LOGGER.debug(e.getClass().getSimpleName() + " processing request : " + message);
+                    LOGGER.warn("... caused by " + t.getClass().getSimpleName() + "  : " + t.getMessage());
                 }
-                else if (LOGGER.isTraceEnabled())
+                if (LOGGER.isTraceEnabled())
                 {
                     LOGGER.trace(e.getClass().getSimpleName() + " processing request", e);
                 }
