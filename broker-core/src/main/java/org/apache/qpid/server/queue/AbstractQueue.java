@@ -1068,19 +1068,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             _enqueuingWhileRecovering.incrementAndGet();
 
-            boolean enqueueImmediately;
+            boolean addedToRecoveryQueue;
             try
             {
-                if(_recovering.get() == RECOVERING)
+                if(addedToRecoveryQueue = (_recovering.get() == RECOVERING))
                 {
-                    EnqueueRequest request = new EnqueueRequest(message, action, enqueueRecord);
-                    _postRecoveryQueue.add(request);
-                    // deal with the case the recovering status changed just as we added to the post recovery queue
-                    enqueueImmediately = (_recovering.get() != RECOVERING) && _postRecoveryQueue.remove(request);
-                }
-                else
-                {
-                    enqueueImmediately = true;
+                    _postRecoveryQueue.add(new EnqueueRequest(message, action, enqueueRecord));
                 }
             }
             finally
@@ -1088,7 +1081,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _enqueuingWhileRecovering.decrementAndGet();
             }
 
-            if(enqueueImmediately)
+            if(!addedToRecoveryQueue)
             {
                 while(_recovering.get() != RECOVERED)
                 {
