@@ -23,6 +23,7 @@ package org.apache.qpid.systest.rest;
 import static  org.apache.qpid.server.management.plugin.servlet.rest.RestServlet.SC_UNPROCESSABLE_ENTITY;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -574,6 +575,26 @@ public class VirtualHostRestTest extends QpidRestTestCase
 
         Asserts.assertQueue(queueName, "standard", queue, queueAttributes);
         Asserts.assertQueue(queueName, "standard", queue, null);
+    }
+
+    public void testObjectsWithSlashes() throws Exception
+    {
+        String queueName = "testQueue/with/slashes";
+        String queueNameEncoded = URLEncoder.encode(queueName, "UTF-8");
+        String queueNameDoubleEncoded = URLEncoder.encode(queueNameEncoded, "UTF-8");
+        String queueUrl = "queue/test/test/" + queueNameDoubleEncoded;
+
+        // Test creation
+        createQueue(queueNameDoubleEncoded, "standard", null);
+        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test");
+        List<Map<String, Object>> queues = (List<Map<String, Object>>) hostDetails.get(VirtualHostRestTest.VIRTUALHOST_QUEUES_ATTRIBUTE);
+        Map<String, Object> queue = getRestTestHelper().find(Queue.NAME, queueName , queues);
+        Asserts.assertQueue(queueName, "standard", queue);
+
+        // Test deletion
+        int statusCode = getRestTestHelper().submitRequest(queueUrl, "DELETE");
+        assertEquals("Unexpected response code", 200, statusCode);
+        getRestTestHelper().submitRequest(queueUrl, "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     private void createExchange(String exchangeName, String exchangeType) throws IOException

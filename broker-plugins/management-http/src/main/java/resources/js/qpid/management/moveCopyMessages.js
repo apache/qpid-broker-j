@@ -61,8 +61,8 @@ define(["dojo/dom",
                                     moveMessages.data.destinationQueue = theForm.getValues()["queue"];
                                     var that = this;
 
-                                    moveMessages.management.post({url: "service/message/"+encodeURIComponent(moveMessages.vhost)
-                                                      +"/"+encodeURIComponent(moveMessages.queue),
+                                    moveMessages.management.post({url: "service/message/"+encodeURIComponent(encodeURIComponent(moveMessages.vhost))
+                                                      +"/"+encodeURIComponent(encodeURIComponent(moveMessages.queue)),
                                              headers: { "Content-Type": "application/json"}},
                                              moveMessages.data,
                                              function(x) {

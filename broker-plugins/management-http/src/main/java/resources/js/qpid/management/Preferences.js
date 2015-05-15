@@ -240,7 +240,9 @@ function (declare, event, connect, dom, domConstruct, parser, json, Memory, Obje
                           {
                                  for(var i=0; i<users.length; i++)
                                  {
-                                   users[i].id = users[i].authenticationProvider + "/" + users[i].name;
+                                     users[i].id = encodeURIComponent(users[i].authenticationProvider)
+                                         + "/"
+                                         + encodeURIComponent(users[i].name);
                                  }
                                  that.users = users;
                                  var usersStore = new Memory({data: users, idProperty: "id"});

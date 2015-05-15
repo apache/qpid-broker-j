@@ -84,8 +84,10 @@ define(["dojo/parser",
 
                             that.queueUpdater = new QueueUpdater(that);
 
-                            var myStore = new JsonRest({target: that.management.getFullUrl("service/message/"+ encodeURIComponent(that.getVirtualHostName()) +
-                                                                               "/" + encodeURIComponent(that.getQueueName()))});
+                            // double encode to allow slashes in object names.
+                            var myStore = new JsonRest({target: that.management.getFullUrl("service/message/" +
+                                                                                    encodeURIComponent(encodeURIComponent(that.getVirtualHostName())) +
+                                                                                   "/" + encodeURIComponent(encodeURIComponent(that.getQueueName())))});
                             var messageGridDiv = query(".messages",contentPane.containerNode)[0];
                             that.dataStore =  new ObjectStore({objectStore: myStore});
                             var userPreferences = this.management.userPreferences;
@@ -185,7 +187,7 @@ define(["dojo/parser",
                if(data.length) {
                    var that = this;
                    if(confirm("Delete " + data.length + " messages?")) {
-                       var query = util.buildDeleteQuery(data, "service/message/" + encodeURIComponent(this.getVirtualHostName()) + "/" + encodeURIComponent(this.getQueueName()));
+                       var query = util.buildDeleteQuery(data, "service/message/" + encodeURIComponent(encodeURIComponent(this.getVirtualHostName())) + "/" + encodeURIComponent(encodeURIComponent(this.getQueueName())));
                        management.del({url: query}).then(
                            function(result)
                            {
@@ -200,8 +202,8 @@ define(["dojo/parser",
            Queue.prototype.clearQueue = function() {
                var that = this;
                if(confirm("Clear all messages from queue?")) {
-                   var query = "service/message/"+ encodeURIComponent(that.getVirtualHostName())
-                       + "/" + encodeURIComponent(that.getQueueName()) + "?clear=true";
+                   var query = "service/message/"+ encodeURIComponent(encodeURIComponent(that.getVirtualHostName()))
+                       + "/" + encodeURIComponent(encodeURIComponent(that.getQueueName())) + "?clear=true";
                    that.success = true
                    this.management.del({url: query}).then(
                        function(data) {

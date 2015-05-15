@@ -22,6 +22,7 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -166,17 +167,17 @@ public class UserPreferencesServlet extends AbstractServlet
         Collection<AuthenticationProvider> authenticationProviders = broker.getAuthenticationProviders();
         Map<String, Set<String>> providerUsers = new HashMap<String, Set<String>>();
         Map<String, AuthenticationProvider> requestProviders = new HashMap<String, AuthenticationProvider>();
-        for (String path : request.getParameterValues("user"))
+        for (String value : request.getParameterValues("user"))
         {
-            String[] elements = path.split("/");
+            String[] elements = value.split("/");
             if (elements.length != 2)
             {
-                throw new IllegalArgumentException("Illegal user parameter " + path);
+                throw new IllegalArgumentException("Illegal user parameter " + value);
             }
 
-            String userId = elements[1];
+            String userId = URLDecoder.decode(elements[1], "UTF-8");
 
-            String providerName =  elements[0];
+            String providerName =  URLDecoder.decode(elements[0], "UTF-8");
             Set<String> users = providerUsers.get(providerName);
 
             if (users == null)

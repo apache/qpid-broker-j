@@ -100,16 +100,17 @@ define(["dojo/dom",
             var contentField = query(".message-content", this.dialogNode)[0];
 
             if(data.mimeType && data.mimeType.match(/text\/.*/)) {
-                showMessage.management.get({url: "service/message-content/" + encodeURIComponent(showMessage.virtualhost)
-                                            + "/" + encodeURIComponent(showMessage.queue)
-                                            + "/" + encodeURIComponent(showMessage.messageNumber),
+                showMessage.management.get({url: "service/message-content/" + encodeURIComponent(encodeURIComponent(showMessage.virtualhost))
+                                            + "/" + encodeURIComponent(encodeURIComponent(showMessage.queue))
+                                            + "/" + encodeURIComponent(encodeURIComponent(showMessage.messageNumber)),
                                             headers: { "Content-Type": "text/html"},
                                             handleAs: "text"
                                     }).then(function(obj) { contentField.innerHTML = encode(obj); }, util.xhrErrorHandler);
             } else {
-                contentField.innerHTML = "<a href=\"" + showMessage.management.getFullUrl("service/message-content/" + encodeURIComponent(showMessage.virtualhost)
-                                                            + "/" + encodeURIComponent(showMessage.queue)
-                                                            + "/" + encodeURIComponent(showMessage.messageNumber))
+                contentField.innerHTML = "<a href=\"" + showMessage.management.getFullUrl("service/message-content/"
+                                                            + encodeURIComponent(encodeURIComponent(showMessage.virtualhost))
+                                                            + "/" + encodeURIComponent(encodeURIComponent(showMessage.queue))
+                                                            + "/" + encodeURIComponent(encodeURIComponent(showMessage.messageNumber)))
                                         + "\" target=\"_blank\">Download</a>";
             }
             populatedFields.push(contentField);
@@ -123,9 +124,9 @@ define(["dojo/dom",
             showMessage.queue = obj.queue;
             showMessage.messageNumber = obj.messageNumber;
 
-            showMessage.management.get({url: "service/message/" + encodeURIComponent(obj.virtualhost)
-                            + "/" + encodeURIComponent(obj.queue)
-                            + "/" + encodeURIComponent(obj.messageNumber)},
+            showMessage.management.get({url: "service/message/" + encodeURIComponent(encodeURIComponent(obj.virtualhost))
+                            + "/" + encodeURIComponent(encodeURIComponent(obj.queue))
+                            + "/" + encodeURIComponent(encodeURIComponent(obj.messageNumber))},
                      showMessage.populateShowMessage, util.xhrErrorHandler
                     );
         };

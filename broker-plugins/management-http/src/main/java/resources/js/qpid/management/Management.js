@@ -321,7 +321,8 @@ define(["dojo/_base/lang",
                {
                     url = url + "/";
                }
-               url = url + encodeURIComponent(modelObj.name)
+               // Double encode the object name in case it contains slashes
+               url = url + encodeURIComponent(encodeURIComponent(modelObj.name))
             }
         }
         return "api/latest/" + url;
@@ -335,11 +336,11 @@ define(["dojo/_base/lang",
         {
             if (path)
             {
-                path = encodeURIComponent(parent.name) + "/" + path;
+                path = encodeURIComponent(encodeURIComponent(parent.name)) + "/" + path;
             }
             else
             {
-                path = encodeURIComponent(parent.name);
+                path = encodeURIComponent(encodeURIComponent(parent.name));
             }
             parent = parent.parent;
         }
