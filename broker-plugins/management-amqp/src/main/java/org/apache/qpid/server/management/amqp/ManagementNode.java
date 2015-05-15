@@ -1289,6 +1289,18 @@ class ManagementNode implements MessageSource, MessageDestination
         {
 
         }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+
+        }
     }
 
     private static class MutableMessageHeader implements AMQMessageHeader
