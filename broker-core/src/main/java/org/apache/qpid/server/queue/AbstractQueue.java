@@ -3166,6 +3166,18 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
 
         }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+
+        }
     }
 
     private static class EnqueueRequest

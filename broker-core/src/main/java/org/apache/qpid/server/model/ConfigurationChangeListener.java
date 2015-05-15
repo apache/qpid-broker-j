@@ -36,4 +36,26 @@ public interface ConfigurationChangeListener
     void childRemoved(ConfiguredObject<?> object, ConfiguredObject<?> child);
 
     void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue);
+
+    /**
+     * Inform the listener that several attributes of an object are about to change.
+     *
+     * The listener may choose to defer any action in attributeSet until bulkChangeEnd is called.
+     * There should not be multiple calls to bulkChangeStart without matching bulkChangeEnd calls in between.
+     * There should be no calls to attributeSet for objects other than the one passed as an argument until bulkChangeEnd is called.
+     * There should be no call to childRemove between bulkChangeStart/-End calls.
+     * @param object the object whose state is about to change
+     * @see #bulkChangeEnd
+     */
+    void bulkChangeStart(ConfiguredObject<?> object);
+
+    /**
+     * Inform the listener that the changes announced by bulkChangeStart are complete.
+     *
+     * The listener who has chosen to defer any action in attributeSet after bulkChangeStart was called should now act on those changes.
+     * A call to bulkChangeEnd without a prior matching call to bulkChangeStart should have no effect.
+     * @param object the object whose state has changed
+     * @see #bulkChangeStart
+     */
+    void bulkChangeEnd(ConfiguredObject<?> object);
 }

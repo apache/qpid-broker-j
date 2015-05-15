@@ -559,5 +559,17 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                                  final Object newAttributeValue)
         {
         }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+
+        }
     }
 }

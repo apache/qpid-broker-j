@@ -522,6 +522,18 @@ public class JMXManagementPluginImpl
                 createObjectMBeans(object);
             }
         }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+
+        }
     }
 
 }

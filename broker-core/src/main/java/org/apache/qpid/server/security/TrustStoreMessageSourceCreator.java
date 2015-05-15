@@ -99,6 +99,18 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
             {
 
             }
+
+            @Override
+            public void bulkChangeStart(final ConfiguredObject<?> object)
+            {
+
+            }
+
+            @Override
+            public void bulkChangeEnd(final ConfiguredObject<?> object)
+            {
+
+            }
         });
     }
 
@@ -168,6 +180,18 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
                                  final Object newAttributeValue)
         {
             updateTrustStoreSourceRegistration(_registry, (TrustStore<?>)object);
+        }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+
         }
     }
 }

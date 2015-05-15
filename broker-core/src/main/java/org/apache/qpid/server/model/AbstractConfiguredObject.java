@@ -2105,23 +2105,56 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
+    private void bulkChangeStart()
+    {
+        synchronized (_changeListeners)
+        {
+            List<ConfigurationChangeListener> copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+            for(ConfigurationChangeListener listener : copy)
+            {
+                listener.bulkChangeStart(this);
+            }
+        }
+    }
+
+    private void bulkChangeEnd()
+    {
+        synchronized (_changeListeners)
+        {
+            List<ConfigurationChangeListener> copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+            for(ConfigurationChangeListener listener : copy)
+            {
+                listener.bulkChangeEnd(this);
+            }
+        }
+    }
+
     protected void changeAttributes(final Map<String, Object> attributes)
     {
         Collection<String> names = getAttributeNames();
-        for (String name : names)
+        try
         {
-            if (attributes.containsKey(name))
+            bulkChangeStart();
+            for (Map.Entry<String, Object> entry : attributes.entrySet())
             {
-                Object desired = attributes.get(name);
-                Object expected = getAttribute(name);
-                Object currentValue = _attributes.get(name);
-                if(((currentValue != null && !currentValue.equals(desired))
-                     || (currentValue == null && desired != null))
-                    && changeAttribute(name, expected, desired))
+                String attributeName = entry.getKey();
+                if (names.contains(attributeName))
                 {
-                    attributeSet(name, expected, desired);
+                    Object desired = entry.getValue();
+                    Object expected = getAttribute(attributeName);
+                    Object currentValue = _attributes.get(attributeName);
+                    if (((currentValue != null && !currentValue.equals(desired))
+                         || (currentValue == null && desired != null))
+                        && changeAttribute(attributeName, expected, desired))
+                    {
+                        attributeSet(attributeName, expected, desired);
+                    }
                 }
             }
+        }
+        finally
+        {
+            bulkChangeEnd();
         }
     }
 

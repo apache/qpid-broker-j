@@ -50,4 +50,16 @@ public class NoopConfigurationChangeListener implements ConfigurationChangeListe
                              Object newAttributeValue)
     {
     }
+
+    @Override
+    public void bulkChangeStart(final ConfiguredObject<?> object)
+    {
+
+    }
+
+    @Override
+    public void bulkChangeEnd(final ConfiguredObject<?> object)
+    {
+
+    }
 }

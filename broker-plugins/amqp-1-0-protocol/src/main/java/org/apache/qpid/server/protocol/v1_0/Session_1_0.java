@@ -958,5 +958,17 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
         {
 
         }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+
+        }
     }
 }

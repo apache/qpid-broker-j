@@ -265,4 +265,15 @@ public class VirtualHostMBean extends AMQManagedObject implements ManagedVirtual
         // no-op
     }
 
+    @Override
+    public void bulkChangeStart(final ConfiguredObject<?> object)
+    {
+
+    }
+
+    @Override
+    public void bulkChangeEnd(final ConfiguredObject<?> object)
+    {
+
+    }
 }

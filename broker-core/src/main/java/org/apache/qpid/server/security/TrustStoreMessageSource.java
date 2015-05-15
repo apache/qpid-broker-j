@@ -95,6 +95,18 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
             {
                 updateCertCache();
             }
+
+            @Override
+            public void bulkChangeStart(final ConfiguredObject<?> object)
+            {
+
+            }
+
+            @Override
+            public void bulkChangeEnd(final ConfiguredObject<?> object)
+            {
+
+            }
         });
         if(_trustStore.getState() == State.ACTIVE)
         {

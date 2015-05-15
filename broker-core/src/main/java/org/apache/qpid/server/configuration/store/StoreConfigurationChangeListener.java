@@ -30,6 +30,7 @@ import org.apache.qpid.server.store.DurableConfigurationStore;
 public class StoreConfigurationChangeListener implements ConfigurationChangeListener
 {
     private final DurableConfigurationStore _store;
+    private boolean _bulkChanges = false;
 
     public StoreConfigurationChangeListener(DurableConfigurationStore store)
     {
@@ -77,6 +78,22 @@ public class StoreConfigurationChangeListener implements ConfigurationChangeList
     }
 
     @Override
+    public void bulkChangeStart(final ConfiguredObject<?> object)
+    {
+        _bulkChanges = true;
+    }
+
+    @Override
+    public void bulkChangeEnd(final ConfiguredObject<?> object)
+    {
+        if (object.isDurable() && _bulkChanges)
+        {
+            _store.update(false, object.asObjectRecord());
+        }
+        _bulkChanges = false;
+    }
+
+    @Override
     public void childRemoved(ConfiguredObject object, ConfiguredObject child)
     {
         if(child.isDurable())
@@ -89,7 +106,7 @@ public class StoreConfigurationChangeListener implements ConfigurationChangeList
     @Override
     public void attributeSet(ConfiguredObject object, String attributeName, Object oldAttributeValue, Object newAttributeValue)
     {
-        if(object.isDurable())
+        if (object.isDurable() && !_bulkChanges)
         {
             _store.update(false, object.asObjectRecord());
         }
