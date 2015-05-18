@@ -80,7 +80,7 @@ public class ExchangeMessagesTest extends AbstractTestMessages
         _logMessage = ExchangeMessages.DISCARDMSG(name, routingKey);
         List<Object> log = performLog();
 
-        String[] expected = {"Discarded Message :","Name:", name, "Routing Key:", routingKey};
+        String[] expected = {"Discarded Message :","Name:", "\"" + name + "\"", "Routing Key:", "\"" + routingKey + "\""};
 
         validateLogMessage(log, "EXH-1003", expected);
     }

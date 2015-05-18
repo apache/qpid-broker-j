@@ -239,7 +239,7 @@ public class ExchangeLoggingTest extends AbstractTestLogging
         final TextMessage msg = _session.createTextMessage("msg");
         producer.send(msg);
 
-        final String expectedMessageBody = "Discarded Message : Name: " + _name + " Routing Key: " + _queue.getQueueName();
+        final String expectedMessageBody = "Discarded Message : Name: \"" + _name + "\" Routing Key: \"" + _queue.getQueueName() + "\"";
 
         // Ensure we have received the EXH log msg.
         waitForMessage("EXH-1003");

@@ -61,7 +61,7 @@ public class ExchangeMessages
 
     /**
      * Log a Exchange message of the Format:
-     * <pre>EXH-1003 : Discarded Message : Name: {0} Routing Key: {1}</pre>
+     * <pre>EXH-1003 : Discarded Message : Name: "{0}" Routing Key: "{1}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
