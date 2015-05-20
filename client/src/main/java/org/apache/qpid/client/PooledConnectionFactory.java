@@ -64,6 +64,8 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(PooledConnectionFactory.class);
 
+    private static final AtomicInteger POOL_ID = new AtomicInteger();
+
     private static final ScheduledExecutorService SCHEDULER =
             Executors.newSingleThreadScheduledExecutor(
                     new ThreadFactory()
@@ -94,8 +96,11 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
 
     private final AtomicInteger _maxPoolSize = new AtomicInteger(10);
     private final AtomicLong _connectionTimeout = new AtomicLong(30000l);
-
     private final AtomicReference<ConnectionURL> _connectionDetails = new AtomicReference<>();
+
+    transient private final AtomicInteger _connectionInstanceId = new AtomicInteger();
+
+    transient private final int _poolId = POOL_ID.incrementAndGet();
 
     transient private final byte[] _factoryId = new byte[16];
     transient private final Map<ConnectionDetailsIdentifier, List<ConnectionHolder>> _pool = Collections.synchronizedMap(new HashMap<ConnectionDetailsIdentifier, List<ConnectionHolder>>());
@@ -423,12 +428,14 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
         private volatile boolean _exceptionThrown;
         private final List<Session> _openSessions = new ArrayList<>();
         private volatile ExceptionListener _exceptionListener;
+        private final int _instanceId;
 
         public ConnectionInvocationHandler(final CommonConnection underlying, ConnectionDetailsIdentifier identityHash) throws JMSException
         {
             _underlyingConnection = underlying;
             _underlyingConnection.setExceptionListener(this);
             _identityHash = identityHash;
+            _instanceId = _connectionInstanceId.incrementAndGet();
         }
 
         @Override
@@ -484,6 +491,21 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
                 }
 
                 return null;
+            }
+            else if(method.getName().equals("toString") && method.getParameterTypes().length == 0)
+            {
+                try
+                {
+                    Object returnVal = underlyingMethod.invoke(_underlyingConnection, args);
+                    return "[Pool:"+_poolId+"][conn:"+_instanceId+"]: " + String.valueOf(returnVal);
+
+                }
+                catch (InvocationTargetException e)
+                {
+                    _exceptionThrown = true;
+                    Throwable thrown = e.getCause();
+                    throw thrown == null ? e : thrown;
+                }
             }
             else
             {

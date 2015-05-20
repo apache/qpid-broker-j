@@ -103,16 +103,15 @@ public class PooledConnectionFactoryTest extends QpidTestCase
         assertNotNull(conn);
         assertEquals(1, createdConnections.size());
         final String connToString = conn.toString();
-        assertEquals(createdConnections.get(0).toString(), connToString);
+        assertTrue(connToString.endsWith(createdConnections.get(0).toString()));
 
         conn.close();
 
         Connection conn2 = _connectionFactory.createConnection();
         assertNotNull(conn2);
         assertEquals(1, createdConnections.size());
-        assertEquals(createdConnections.get(0).toString(), conn2.toString());
+        assertTrue(conn2.toString().endsWith(createdConnections.get(0).toString()));
 
-        assertEquals(connToString, conn2.toString());
 
         try
         {
@@ -127,14 +126,14 @@ public class PooledConnectionFactoryTest extends QpidTestCase
         Connection conn3 = _connectionFactory.createConnection();
         assertNotNull(conn3);
         assertEquals(2, createdConnections.size());
-        assertEquals(createdConnections.get(1).toString(), conn3.toString());
+        assertTrue(conn3.toString().endsWith(createdConnections.get(1).toString()));
         assertFalse(conn3.toString().equals(conn2.toString()));
 
         conn2.close();
         Connection conn4 = _connectionFactory.createConnection();
         assertNotNull(conn4);
         assertEquals(2, createdConnections.size());
-        assertEquals(createdConnections.get(0).toString(), conn4.toString());
+        assertTrue(conn4.toString().endsWith(createdConnections.get(0).toString()));
 
     }
 
@@ -179,7 +178,7 @@ public class PooledConnectionFactoryTest extends QpidTestCase
         Connection conn3 = _connectionFactory.createConnection("user1", "pass1");
         assertNotNull(conn3);
         assertEquals(2, createdConnections.size());
-        assertEquals(createdConnections.get(0).toString(), conn3.toString());
+        assertTrue(conn3.toString().endsWith(createdConnections.get(0).toString()));
 
 
     }
