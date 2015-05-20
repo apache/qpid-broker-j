@@ -462,7 +462,14 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
                     catch(JMSException | RuntimeException | Error e)
                     {
                         _exceptionThrown = true;
-                        throw e;
+                        try
+                        {
+                            _underlyingConnection.close();
+                        }
+                        finally
+                        {
+                            throw e;
+                        }
                     }
                 }
                 _openSessions.clear();
