@@ -390,7 +390,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
     {
         Map<String, Object> hostAttributes = new HashMap<>();
         hostAttributes.put("name", "nonAMQPPort");
-        hostAttributes.put("type", "AMQP");
+        hostAttributes.put("type", "HTTP");
 
         _brokerRecord.getAttributes().put("modelVersion", "2.0");
 
