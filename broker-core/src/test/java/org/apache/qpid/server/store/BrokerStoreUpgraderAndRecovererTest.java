@@ -386,6 +386,68 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         upgradeBrokerRecordAndAssertUpgradeResults();
     }
 
+    public void testUpgradeNonAMQPPort()
+    {
+        Map<String, Object> hostAttributes = new HashMap<>();
+        hostAttributes.put("name", "nonAMQPPort");
+        hostAttributes.put("type", "AMQP");
+
+        _brokerRecord.getAttributes().put("modelVersion", "2.0");
+
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                                  hostAttributes, Collections.singletonMap("Broker", _brokerRecord.getId()));
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        assertTrue("No virtualhostalias rescords should be returned",
+                   findRecordByType("VirtualHostAlias", records).isEmpty());
+
+    }
+
+    public void testUpgradeImpliedAMQPPort()
+    {
+        Map<String, Object> hostAttributes = new HashMap<>();
+        hostAttributes.put("name", "impliedPort");
+
+        _brokerRecord.getAttributes().put("modelVersion", "2.0");
+
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                           hostAttributes, Collections.singletonMap("Broker", _brokerRecord.getId()));
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        assertFalse("VirtualHostAlias rescords should be returned",
+                    findRecordByType("VirtualHostAlias", records).isEmpty());
+
+    }
+
+
+    public void testUpgradeImpliedNonAMQPPort()
+    {
+        Map<String, Object> hostAttributes = new HashMap<>();
+        hostAttributes.put("name", "nonAMQPPort");
+        hostAttributes.put("protocols", "HTTP");
+
+        _brokerRecord.getAttributes().put("modelVersion", "2.0");
+
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                           hostAttributes, Collections.singletonMap("Broker", _brokerRecord.getId()));
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        assertTrue("No virtualhostalias rescords should be returned",
+                   findRecordByType("VirtualHostAlias", records).isEmpty());
+
+    }
     private void upgradeBrokerRecordAndAssertUpgradeResults()
     {
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
@@ -429,6 +491,20 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
             }
         }
         return null;
+    }
+
+    private List<ConfiguredObjectRecord> findRecordByType(String type, List<ConfiguredObjectRecord> records)
+    {
+        List<ConfiguredObjectRecord> results = new ArrayList<>();
+
+        for (ConfiguredObjectRecord configuredObjectRecord : records)
+        {
+            if (configuredObjectRecord.getType().equals(type))
+            {
+                results.add(configuredObjectRecord);
+            }
+        }
+        return results;
     }
 
     class DurableConfigurationStoreStub implements DurableConfigurationStore

@@ -284,9 +284,10 @@ public class BrokerStoreUpgraderAndRecoverer
             Object protocols = attributes.get(Port.PROTOCOLS);
             String protocolString = protocols == null ? null : protocols.toString();
             return "AMQP".equals(type)
-                   || protocolString == null
-                   || !protocolString.matches(".*\\w.*")
-                   || protocolString.contains("AMQP");
+                   || ((type == null || "".equals(type.toString().trim()))
+                       && (protocolString == null
+                           || !protocolString.matches(".*\\w.*")
+                           || protocolString.contains("AMQP")));
 
         }
 
