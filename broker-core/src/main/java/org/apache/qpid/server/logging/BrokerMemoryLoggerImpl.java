@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
@@ -61,6 +62,12 @@ public class BrokerMemoryLoggerImpl extends AbstractConfiguredObject<BrokerMemor
         final RecordEventAppender appender = new RecordEventAppender(getMaxRecords());
         appender.setName(getName());
         appender.setContext(loggerContext);
+
+        for(BrokerLoggerFilter<?> filter : getChildren(BrokerLoggerFilter.class))
+        {
+            appender.addFilter(filter.asFilter());
+        }
+        appender.addFilter(DenyAllFilter.getInstance());
         appender.start();
         return appender;
     }
