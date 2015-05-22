@@ -32,7 +32,7 @@
         "path" : "${qpid.work_dir}${file.separator}user.preferences.json"
     }]
   } ],
-    "brokerLoggers" : [ {
+    "brokerloggers" : [ {
     "name" : "logfile",
     "type" : "File",
     "fileName" : "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
@@ -41,20 +41,20 @@
     "compressOldFiles" : false,
     "maxFileSize" : "200mb",
     "maxHistory" : 1,
-    "filters" : [ {
+    "brokerloggerfilters" : [ {
       "name" : "1",
       "type" : "NameAndLevel",
-      "logLevel" : "INFO", 
+      "level" : "INFO",
       "loggerName" : "" 
     } ]
   }, {
     "name" : "memory",
     "type" : "Memory",
     "maxRecords" : 4096,
-    "filters" : [ {          
+    "brokerloggerfilters" : [ {
       "name" : "1",
       "type" : "NameAndLevel",
-      "logLevel" : "INFO", 
+      "level" : "INFO",
       "loggerName" : "" 
     } ]
   } ],

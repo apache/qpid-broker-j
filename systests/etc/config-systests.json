@@ -40,12 +40,12 @@
     "brokerloggerfilters" : [ {
       "name" : "1",
       "type" : "NameAndLevel",
-      "logLevel" : "INFO", 
+      "level" : "INFO",
       "loggerName" : "" 
     }, {
       "name" : "2",
       "type" : "NameAndLevel",
-      "logLevel" : "DEBUG", 
+      "level" : "DEBUG",
       "loggerName" : "org.apache.qpid.*" 
     } ]
   }, {
@@ -55,7 +55,7 @@
     "brokerloggerfilters" : [ {          
       "name" : "1",
       "type" : "NameAndLevel",
-      "logLevel" : "INFO", 
+      "level" : "INFO",
       "loggerName" : "" 
     } ]
   } ],
