@@ -50,124 +50,90 @@ define(["dojo/dom",
 
         var node = construct.create("div", null, win.body(), "last");
 
-        var typeSpecificFields = { priorities: "priority", lvqKey: "lvq", sortKey: "sorted" };
         var requiredFields = { sorted: "sortKey"};
 
-        var fieldConverters = {
-                queueFlowControlSizeBytes:        parseInt,
-                queueFlowResumeSizeBytes:         parseInt,
-                alertThresholdMessageSize:        parseInt,
-                alertThresholdQueueDepthMessages: parseInt,
-                alertThresholdQueueDepthBytes:    parseInt,
-                maximumDeliveryAttempts:          parseInt,
-                alertThresholdMessageAge:         parseInt,
-                alertRepeatGap:                   parseInt
-            }
+        var numericFieldNames = ["maximumMessageTtl",
+        "minimumMessageTtl",
+        "queueFlowControlSizeBytes",
+        "queueFlowResumeSizeBytes",
+        "alertThresholdQueueDepthMessages",
+        "alertThresholdQueueDepthBytes",
+        "alertThresholdMessageAge",
+        "alertThresholdMessageSize",
+        "alertRepeatGap",
+        "maximumDeliveryAttempts"];
 
-        var convertToQueue = function convertToQueue(formValues)
+        var theForm;
+        node.innerHTML = template;
+        addQueue.dialogNode = dom.byId("addQueue");
+        parser.instantiate([addQueue.dialogNode]);
+
+        // for children which have name type, add a function to make all the associated atrributes
+        // visible / invisible as the select is changed
+        theForm = registry.byId("formAddQueue");
+        var typeSelector = registry.byId("formAddQueue.type");
+        typeSelector.on("change", function(value)
+        {
+            query(".typeSpecificDiv").forEach(function(node, index, arr)
             {
-                var newQueue = {};
-                newQueue.name = formValues.name;
-                for(var propName in formValues)
+                if (node.id === "formAddQueueType:" + value)
                 {
-                    if(formValues.hasOwnProperty(propName))
+                    node.style.display = "block";
+                    if (addQueue.management)
                     {
-                        if(propName === "durable")
-                        {
-                            if (formValues.durable[0] && formValues.durable[0] == "durable") {
-                                newQueue.durable = true;
-                            }
-                        }
-                        else if(propName === "dlqEnabled")
-                        {
-                            if (formValues.dlqEnabled[0] && formValues.dlqEnabled[0] == "dlqEnabled") {
-                                newQueue["x-qpid-dlq-enabled"] = true;
-                            }
-                        }
-                        else if(propName === "messageGroupSharedGroups")
-                        {
-                            if (formValues.messageGroupSharedGroups[0] && formValues.messageGroupSharedGroups[0] == "messageGroupSharedGroups") {
-                                newQueue["messageGroupSharedGroups"] = true;
-                            }
-                        }
-                        else if (!typeSpecificFields.hasOwnProperty(propName) || formValues[ "type" ] === typeSpecificFields[ propName ])
-                        {
-                            if(formValues[ propName ] !== "") {
-                                if (fieldConverters.hasOwnProperty(propName))
-                                {
-                                    newQueue[ propName ] = fieldConverters[propName](formValues[propName]);
-                                }
-                                else
-                                {
-                                    newQueue[ propName ] = formValues[propName];
-                                }
-                            }
-                        }
-
+                        util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
                     }
                 }
+                else
+                {
+                    node.style.display = "none";
+                }
+            });
+            for(var requiredField in requiredFields)
+            {
+                dijit.byId('formAddQueue.' + requiredFields[requiredField]).required = (requiredField == value);
+            }
+        });
 
-                return newQueue;
-            };
+        theForm.on("submit", function(e) {
 
+            event.stop(e);
+            if(theForm.validate())
+            {
 
-                            var theForm;
-                            node.innerHTML = template;
-                            addQueue.dialogNode = dom.byId("addQueue");
-                            parser.instantiate([addQueue.dialogNode]);
+                var newQueue = util.getFormWidgetValues(theForm);
+                var context = addQueue.context.get("value");
+                if (context)
+                {
+                  newQueue["context"] = context;
+                }
 
-                            // for children which have name type, add a function to make all the associated atrributes
-                            // visible / invisible as the select is changed
-                            theForm = registry.byId("formAddQueue");
-                            var typeSelector = registry.byId("formAddQueue.type");
-                            typeSelector.on("change", function(value)
-                            {
-                                query(".typeSpecificDiv").forEach(function(node, index, arr)
-                                {
-                                    if (node.id === "formAddQueueType:" + value)
-                                    {
-                                        node.style.display = "block";
-                                        if (addQueue.management)
-                                        {
-                                            util.applyMetadataToWidgets(node, "Queue", value, addQueue.management.metadata);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        node.style.display = "none";
-                                    }
-                                });
-                                for(var requiredField in requiredFields)
-                                {
-                                    dijit.byId('formAddQueue.' + requiredFields[requiredField]).required = (requiredField == value);
-                                }
-                            });
-
-                            theForm.on("submit", function(e) {
-
-                                event.stop(e);
-                                if(theForm.validate()){
-
-                                    var newQueue = convertToQueue(theForm.getValues());
-                                    addQueue.management.create("queue", addQueue.modelObj,
-                                            newQueue, function(x){registry.byId("addQueue").hide();});
-                                    return false;
+              addQueue.management.create("queue", addQueue.modelObj,
+                        newQueue, function(x){registry.byId("addQueue").hide();});
+                return false;
 
 
-                                }else{
-                                    alert('Form contains invalid data.  Please correct first');
-                                    return false;
-                                }
+            }else{
+                alert('Form contains invalid data.  Please correct first');
+                return false;
+            }
 
-                            });
+        });
 
         addQueue.show = function(management, modelObj) {
                             addQueue.management = management;
                             addQueue.modelObj = modelObj;
+
                             var form = registry.byId("formAddQueue");
                             form.reset();
                             registry.byId("addQueue").show();
                             util.applyMetadataToWidgets(form.domNode, "Queue", "standard", addQueue.management.metadata);
+
+                            // Add regexp to the numeric fields
+                            for(var i = 0; i < numericFieldNames.length; i++)
+                            {
+                              registry.byId("formAddQueue." + numericFieldNames[i]).set("regExpGen", util.numericOrContextVarRegexp);
+                            }
 
                             if (!this.context)
                             {

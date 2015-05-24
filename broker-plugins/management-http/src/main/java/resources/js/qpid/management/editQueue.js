@@ -43,23 +43,6 @@ define(["dojox/html/entities",
         "dojo/domReady!"],
   function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, util, template)
   {
-    var fields = ["name",
-                  "type",
-                  "durable",
-                  "messageDurability",
-                  "maximumMessageTtl",
-                  "minimumMessageTtl",
-                  "queueFlowControlSizeBytes",
-                  "queueFlowResumeSizeBytes",
-                  "alertThresholdQueueDepthMessages",
-                  "alertThresholdQueueDepthBytes",
-                  "alertThresholdMessageAge",
-                  "alertThresholdMessageSize",
-                  "alertRepeatGap",
-                  "maximumDeliveryAttempts",
-                  "priorities",
-                  "lvqKey",
-                  "sortKey"];
 
     var numericFieldNames = ["maximumMessageTtl",
                   "minimumMessageTtl",
@@ -89,11 +72,6 @@ define(["dojox/html/entities",
         this.cancelButton = registry.byId("formEditQueue.cancelButton");
         this.cancelButton.on("click", function(e){that._cancel(e);});
         this.saveButton.on("click", function(e){that._save(e);});
-        for(var i = 0; i < fields.length; i++)
-        {
-            var fieldName = fields[i];
-            this[fieldName] = registry.byId("formEditQueue." + fieldName);
-        }
         this.form = registry.byId("formEditQueue");
         this.form.on("submit", function(){return false;});
         this.typeSelector = registry.byId("formEditQueue.type");
@@ -162,31 +140,17 @@ define(["dojox/html/entities",
       {
 
           this.initialData = actualData;
-          for(var i = 0; i < fields.length; i++)
-          {
-            var fieldName = fields[i];
-            var widget = this[fieldName];
-            widget.reset();
-
-            if (widget instanceof dijit.form.CheckBox)
-            {
-              widget.set("checked", actualData[fieldName]);
-            }
-            else
-            {
-              widget.set("value", actualData[fieldName]);
-            }
-          }
+          this.form.reset();
 
           var that = this;
-          util.applyMetadataToWidgets(that.allFieldsContainer, "Queue", actualData.type, this.management.metadata);
+          util.applyToWidgets(that.allFieldsContainer, "Queue", actualData.type, actualData, this.management.metadata);
 
           util.setContextData(this.context, this.management, this.modelObj, actualData, effectiveData);
 
           // Add regexp to the numeric fields
           for(var i = 0; i < numericFieldNames.length; i++)
           {
-            this[numericFieldNames[i]].set("regExpGen", util.numericOrContextVarRegexp);
+            registry.byId("formEditQueue." +numericFieldNames[i]).set("regExpGen", util.numericOrContextVarRegexp);
           }
 
           var queueType = this.typeSelector.get("value");

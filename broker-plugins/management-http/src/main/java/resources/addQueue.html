@@ -170,7 +170,7 @@
                 <div class="clear">
                     <div class="formLabel-labelCell">Capacity:</div>
                     <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.capacity"
+                        <input type="text" id="formAddQueue.queueFlowControlSizeBytes"
                                data-dojo-type="dijit/form/ValidationTextBox"
                                data-dojo-props="
                                   name: 'queueFlowControlSizeBytes',
@@ -183,7 +183,7 @@
                 <div class="clear">
                     <div class="formLabel-labelCell">Resume Capacity:</div>
                     <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.flowResumeCapacity"
+                        <input type="text" id="formAddQueue.queueFlowResumeSizeBytes"
                                data-dojo-type="dijit/form/ValidationTextBox"
                                data-dojo-props="
                                   name: 'queueFlowResumeSizeBytes',
@@ -203,7 +203,7 @@
                 <div class="clear">
                     <div class="formLabel-labelCell">Queue Depth:</div>
                     <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.maximumMessageCount"
+                        <input type="text" id="formAddQueue.alertThresholdQueueDepthMessages"
                                data-dojo-type="dijit/form/ValidationTextBox"
                                data-dojo-props="
                                   name: 'alertThresholdQueueDepthMessages',
@@ -216,7 +216,7 @@
                 <div class="clear">
                     <div class="formLabel-labelCell">Queue Depth:</div>
                     <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.maximumQueueDepth"
+                        <input type="text" id="formAddQueue.alertThresholdQueueDepthBytes"
                                data-dojo-type="dijit/form/ValidationTextBox"
                                data-dojo-props="
                                   name: 'alertThresholdQueueDepthBytes',
@@ -229,7 +229,7 @@
                 <div class="clear">
                     <div class="formLabel-labelCell">Message Age:</div>
                     <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.maximumMessageAge"
+                        <input type="text" id="formAddQueue.alertThresholdMessageAge"
                                data-dojo-type="dijit/form/ValidationTextBox"
                                data-dojo-props="
                                   name: 'alertThresholdMessageAge',
@@ -242,7 +242,7 @@
                 <div class="clear">
                     <div class="formLabel-labelCell">Message Size:</div>
                     <div class="formLabel-controlCell">
-                        <input type="text" id="formAddQueue.maximumMessageSize"
+                        <input type="text" id="formAddQueue.alertThresholdMessageSize"
                                data-dojo-type="dijit/form/ValidationTextBox"
                                data-dojo-props="
                                   name: 'alertThresholdMessageSize',
@@ -291,7 +291,7 @@
                         <input type="checkbox" id="formAddQueue.dlqEnabled"
                                dojoType="dijit.form.CheckBox"
                                data-dojo-props="
-                              name: 'dlqEnabled',
+                              name: 'x-qpid-dlq-enabled',
                               value: 'dlqEnabled',
                               title: 'Controls where a dead letter queue is automatically created',
                               checked: false"/>

@@ -48,77 +48,50 @@ define(["dojo/dom",
 
         var node = construct.create("div", null, win.body(), "last");
 
-        var convertToExchange = function convertToExchange(formValues)
+        var theForm;
+        node.innerHTML = template;
+        addExchange.dialogNode = dom.byId("addExchange");
+        parser.instantiate([addExchange.dialogNode]);
+
+        theForm = registry.byId("formAddExchange");
+        array.forEach(theForm.getDescendants(), function(widget)
             {
-                var newExchange = {};
-                newExchange.name = formValues.name;
-                for(var propName in formValues)
-                {
-                    if(formValues.hasOwnProperty(propName))
-                    {
-                        if(propName === "durable")
-                        {
-                            if (formValues.durable[0] && formValues.durable[0] == "durable") {
-                                newExchange.durable = true;
-                            }
-                        } else {
-                            if(formValues[ propName ] !== "") {
-                                newExchange[ propName ] = formValues[propName];
+                if(widget.name === "type") {
+                    widget.on("change", function(isChecked) {
+
+                        var obj = registry.byId(widget.id + ":fields");
+                        if(obj) {
+                            if(isChecked) {
+                                obj.domNode.style.display = "block";
+                                obj.resize();
+                            } else {
+                                obj.domNode.style.display = "none";
+                                obj.resize();
                             }
                         }
-
-                    }
+                    })
                 }
 
-                return newExchange;
-            };
+            });
+
+        theForm.on("submit", function(e) {
+
+            event.stop(e);
+            if(theForm.validate())
+            {
+                var newExchange = util.getFormWidgetValues(theForm, null);
+                var that = this;
+                addExchange.management.create("exchange", addExchange.modelObj,
+                        newExchange, function(x){ registry.byId("addExchange").hide(); });
+                return false;
 
 
+            }else{
+                alert('Form contains invalid data.  Please correct first');
+                return false;
+            }
 
-                            var theForm;
-                            node.innerHTML = template;
-                            addExchange.dialogNode = dom.byId("addExchange");
-                            parser.instantiate([addExchange.dialogNode]);
-
-                            theForm = registry.byId("formAddExchange");
-                            array.forEach(theForm.getDescendants(), function(widget)
-                                {
-                                    if(widget.name === "type") {
-                                        widget.on("change", function(isChecked) {
-
-                                            var obj = registry.byId(widget.id + ":fields");
-                                            if(obj) {
-                                                if(isChecked) {
-                                                    obj.domNode.style.display = "block";
-                                                    obj.resize();
-                                                } else {
-                                                    obj.domNode.style.display = "none";
-                                                    obj.resize();
-                                                }
-                                            }
-                                        })
-                                    }
-
-                                });
-
-                            theForm.on("submit", function(e) {
-
-                                event.stop(e);
-                                if(theForm.validate()){
-
-                                    var newExchange = convertToExchange(theForm.getValues());
-                                    var that = this;
-                                    addExchange.management.create("exchange", addExchange.modelObj,
-                                            newExchange, function(x){ registry.byId("addExchange").hide(); });
-                                    return false;
-
-
-                                }else{
-                                    alert('Form contains invalid data.  Please correct first');
-                                    return false;
-                                }
-
-                            });
+        });
 
         addExchange.show = function(management, modelObj) {
                             addExchange.management = management

@@ -544,17 +544,7 @@ define(["dojo/_base/xhr",
                        {
                           continue;
                        }
-                       if (widget.contextvar)
-                       {
-                         var context = values["context"];
-                         if (!context)
-                         {
-                            context = {};
-                            values["context"] = context;
-                         }
-                         context[propName]=String(value);
-                       }
-                       else if (widget instanceof dijit.form.RadioButton)
+                       if (widget instanceof dijit.form.RadioButton)
                        {
                            if (widget.checked)
                            {
