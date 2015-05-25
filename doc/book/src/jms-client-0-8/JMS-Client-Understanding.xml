@@ -65,7 +65,9 @@
     <para>The examples in the previous chapter illustrated the Java code required to <link
         linkend="JMS-Client-0-8-Examples-PTP">create the InitialContext</link> and an <link
         linkend="JMS-Client-0-8-Examples-PTP-PropertiesFile">example properties file</link>.</para>
-    <para>Note that the Qpid Broker does not present a JNDI interface to the application.</para>
+    <para>The Qpid JMS client also provides an alternate connection factory implementation providing a
+      connection pool. This can be useful when utilsing frameworks such as Spring. 
+      <xref linkend="JMS-Client-0-8-Appendix-PooledConnecytionFactory"/>.</para>
     <figure>
       <title>JNDI overview</title>
       <mediaobject>
@@ -74,6 +76,7 @@
         </imageobject>
       </mediaobject>
     </figure>
+    <para>Note that the Qpid Broker does not present a JNDI interface to the application.</para>
   </section>
   <section id="JMS-Client-0-8-Client-Understanding-Connection">
     <title>Connection</title>
@@ -592,72 +595,5 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?key_store='/path/to/app1
       can refer to JMS administered objects declared in the JNDI properties file with the
         <literal>queue.</literal> and <literal>topic.</literal> prefix to create Queues and Topics
       objects respectively. </para>
-  </section>
-  <section id="JMS-Client-0-8-Client-Understanding-PooledConnectionFactory">
-    <title>PooledConnectionFactory</title>
-    <para>Qpid client provides <emphasis>PooledCollectionFactory</emphasis> which is a special
-      implementation of <ulink url="&oracleJeeDocUrl;javax/jms/ConnectionFactory.html">ConnectionFactory</ulink>
-      allowing <ulink url="&oracleJeeDocUrl;javax/jms/Connection.html" >Connection</ulink> pooling.
-    </para>
-    <para>
-      The <emphasis>PooledCollectionFactory</emphasis> can cache a predefined number of connections
-      saving the application time required to establish the connectivity. The <emphasis>Connection</emphasis>
-      instance is taken from a pool when method <emphasis>PooledCollectionFactory#createConnection()</emphasis>
-      is invoked and returned into a pool when method <emphasis>Connection#close()</emphasis> is called.
-      A user can configure a maximum allowed number of connections to retain in pool by calling
-      <emphasis>PooledCollectionFactory#setMaxPoolSize(int)</emphasis>. When number of connections exceeds the value
-      set for maximum pool size (10 by default), <emphasis>PooledCollectionFactory</emphasis> starts working
-      as ordinary <ulink url="&oracleJeeDocUrl;javax/jms/ConnectionFactory.html">ConnectionFactory</ulink> and
-      creates a new connection every time when method <emphasis>PooledCollectionFactory#createConnection()</emphasis>
-      is invoked. The <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link> can be set by invoking method
-      <emphasis>PooledCollectionFactory#setConnectionURLString(String)</emphasis>. A user can set a connection time
-      to remain open in pool (in milliseconds) by calling <emphasis>PooledCollectionFactory#setConnectionTimeout(long)</emphasis>.
-      If pooled <emphasis>Connection</emphasis> is not used during specified interval it is get closed automatically.
-    </para>
-    <para>This implementation can be handy in <emphasis>spring-jms</emphasis> based applications. An example below
-      demonstrates how to configure <emphasis>PooledCollectionFactory</emphasis> in spring xml configuration.
-      <example>
-        <title>Example of configuring  <emphasis>PooledCollectionFactory</emphasis> in spring xml configuration.</title>
-        <programlisting language="xml"><![CDATA[
-<bean id="pooledConnectionFactory" class="org.apache.qpid.client.PooledConnectionFactory">
-  <!-- set maximum pool size to 20-->
-  <property name="maxPoolSize" value="20"></property>
-  <!-- set the timeout for connection to remain open in pool without being used -->
-  <property name="connectionTimeout" value="60000"></property>
-  <!-- set connection URL as String -->
-  <property name="connectionURLString" value="amqp://guest:guest@clientid/default?brokerlist='tcp://localhost:5672?retries='300'&amp;failover='nofailover''&amp;maxprefetch='0'"></property>
-</bean>]]></programlisting>
-      </example>
-    </para>
-    <para>
-      <emphasis>PooledCollectionFactory</emphasis> spring bean can be configured with such
-      <emphasis>spring-jms</emphasis> beans like  <emphasis>DefaultMessageListenerContainer</emphasis> and
-      <emphasis>JmsTemplate</emphasis>. An example below demonstrates how to do that
-      <example>
-        <title>Examples of configuring  <emphasis>PooledCollectionFactory</emphasis> with
-          <emphasis>DefaultMessageListenerContainer</emphasis> and <emphasis>JmsTemplate</emphasis>.</title>
-        <programlisting language="xml"><![CDATA[
-<bean id="jmsProducerTemplate" class="org.springframework.jms.core.JmsTemplate">
-    <!-- set reference to pooledConnectionFactory bean -->
-    <property name="connectionFactory" ref="pooledConnectionFactory"></property>
-    <property name="defaultDestination" ref="destination" />
-</bean>
-
-<bean id="jmsContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
-    <!-- set reference to pooledConnectionFactory bean -->
-    <property name="connectionFactory" ref="pooledConnectionFactory"/>
-    <property name="destination" ref="destination"/>
-    <property name="messageListener" ref="messageListener" />
-</bean>]]></programlisting>
-      </example>
-    </para>
-    <note>
-      <para>Please note, that with  <emphasis>DefaultMessageListenerContainer</emphasis> having <emphasis>cachLevel</emphasis>
-        set to <emphasis>NONE</emphasis> the value set for <emphasis>maxConcurrentConsumer</emphasis> should not exceed
-        a value for maximum pool size set on  <emphasis>PooledCollectionFactory</emphasis> bean, otherwise, after reaching
-        a number of connections above <emphasis>PooledCollectionFactory#maxPoolSize</emphasis> a new connection will
-        be opened on each message receipt.
-      </para>
-    </note>
   </section>
 </chapter>

@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
+[
+<!ENTITY %  entities SYSTEM  "commonEntities.xml">
+%entities;
+]>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<appendix id="JMS-Client-0-8-Appendix-PooledConnecytionFactory">
+  <title>PooledConnectionFactory</title>
+  <para>Qpid client provides <literal>PooledConnectionFactory</literal> which is a special
+    implementation of <ulink url="&oracleJeeDocUrl;javax/jms/ConnectionFactory.html"
+      >ConnectionFactory</ulink> supporting <ulink url="&oracleJeeDocUrl;javax/jms/Connection.html"
+      >Connection</ulink> pooling. </para>
+  <para> The <literal>PooledConnectionFactory</literal> caches a predefined number of connections
+    thus saving an application which connects frequently time. The <literal>Connection</literal>
+    instance is taken from the pool whenever method
+      <literal>PooledConnectionFactory#createConnection()</literal> is invoked and returned into the
+    pool when method <literal>Connection#close()</literal> is called.</para>
+  <para>A user can configure a maximum allowed number of connections to remain in pool (10 by
+    default) by calling <literal>PooledConnectionFactory#setMaxPoolSize(int)</literal>. When number
+    of connections exceeds the value set for maximum pool size,
+      <literal>PooledConnectionFactory</literal> starts to work as a normal <ulink
+      url="&oracleJeeDocUrl;javax/jms/ConnectionFactory.html">ConnectionFactory</ulink> and creates
+    a new connection every time method <literal>PooledConnectionFactory#createConnection()</literal>
+    is invoked.</para>
+  <para>The <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link> is set by invoking
+    method <literal>PooledConnectionFactory#setConnectionURLString(String)</literal>.</para>
+  <para>A user can specify the maximum time a connection may remain idle in pool by calling
+      <literal>PooledConnectionFactory#setConnectionTimeout(long)</literal> passing a value in
+    milliseconds. If connection is not used within the specified interval it is closed
+    automatically. </para>
+  <para>This implementation can be useful in <emphasis>Spring JMS</emphasis> based applications. An
+    example below demonstrates how to configure <literal>PooledConnectionFactory</literal> in the
+    Spring xml configuration. <example>
+      <title>Example of configuring <emphasis>PooledConnectionFactory</emphasis> in spring xml
+        configuration.</title>
+      <programlisting language="xml"><![CDATA[
+<bean id="pooledConnectionFactory" class="org.apache.qpid.client.PooledConnectionFactory">
+  <!-- set maximum number of pool connections to 20-->
+  <property name="maxPoolSize" value="20"></property>
+  <!-- set the timeout for connection to remain open in pool without being used -->
+  <property name="connectionTimeout" value="60000"></property>
+  <!-- set connection URL as String -->
+  <property name="connectionURLString" value="amqp://guest:guest@clientid/default?brokerlist='tcp://localhost:5672?retries='300'&amp;failover='nofailover''&amp;maxprefetch='0'"></property>
+</bean>]]></programlisting>
+    </example>
+  </para>
+  <para>
+    <emphasis>PooledConnectionFactory</emphasis> spring bean can be configured with such
+      <emphasis>spring-jms</emphasis> beans like
+      <emphasis>DefaultMessageListenerContainer</emphasis> and <emphasis>JmsTemplate</emphasis>. The
+    example below demonstrates how to do that <example>
+      <title>Examples of configuring <emphasis>PooledConnectionFactory</emphasis> with
+          <emphasis>DefaultMessageListenerContainer</emphasis> and
+        <emphasis>JmsTemplate</emphasis>.</title>
+      <programlisting language="xml"><![CDATA[
+<bean id="jmsProducerTemplate" class="org.springframework.jms.core.JmsTemplate">
+    <!-- set reference to pooledConnectionFactory bean -->
+    <property name="connectionFactory" ref="pooledConnectionFactory"></property>
+    <property name="defaultDestination" ref="destination" />
+</bean>
+
+<bean id="jmsContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+    <!-- set reference to pooledConnectionFactory bean -->
+    <property name="connectionFactory" ref="pooledConnectionFactory"/>
+    <property name="destination" ref="destination"/>
+    <property name="messageListener" ref="messageListener" />
+</bean>]]></programlisting>
+    </example>
+  </para>
+  <note>
+    <para>If using <literal>DefaultMessageListenerContainer</literal> with
+        <literal>cacheLevel</literal> set to <literal>NONE</literal> it is important that
+        <literal>maxConcurrentConsumer</literal> does not exceed the value of maximum pool size set
+      on <literal>PooledConnectionFactory</literal> bean. If this is not the case, once the number
+      of in-use connections reaches the the <emphasis>PooledConnectionFactory#maxPoolSize</emphasis>
+      a new connection will be opened for each and every message receipt i.e. a connection per
+      message anti-pattern.</para>
+  </note>
+</appendix>
