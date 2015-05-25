@@ -41,7 +41,7 @@
    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="JMS-Client-Appendix-Maven.xml"/>
    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="JMS-Client-JMS-Extensions.xml"/>
    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="JMS-Client-Appendix-PooledConnectionFactory.xml"/>
- 
+   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="JMS-Client-Appendix-Tomcat-JNDI-Integration.xml"/>
  
 
 </book>

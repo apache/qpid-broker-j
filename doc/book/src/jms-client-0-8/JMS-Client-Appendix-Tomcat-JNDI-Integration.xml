@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
+[
+<!ENTITY %  entities SYSTEM  "commonEntities.xml">
+%entities;
+]>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<appendix id="JMS-Client-0-8-Appendix-Tomcat-JNDI-Integration">
+  <title>How to bind Qpid destinations and connection factories into Tomcat JNDI</title>
+  <para>
+      Qpid client destinations and connection factories can be registered in external JNDI containers, for example, Tomcat JNDI implementation.
+  </para>
+  <para>
+    <literal>AMQConnectionFactory</literal> implements
+    <ulink url="&oracleJdkDocUrl;javax/naming/spi/ObjectFactory.html">javax.naming.spi.ObjectFactory</ulink>
+    allowing to create instances of  <literal>AMQConnectionFactory</literal>, <literal>AMQConnection</literal>,
+    <literal>AMQQueue</literal> and <literal>AMQTopic</literal> in external JNID container from
+    <ulink url="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</ulink>s.
+    Both <literal>AMQConnectionFactory</literal> and <literal>AMQDestination</literal> (parent of
+    <literal>AMQQueue</literal> and <literal>AMQTopic</literal>) implement
+    <ulink url="&oracleJdkDocUrl;javax/naming/Referenceable.html">javax.naming.Referenceable</ulink>
+    allowing creation of <ulink url="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</ulink>
+    to itself for binding in external JNDI implementations.
+  </para>
+  <para>
+    <literal>AMQConnectionFactory</literal> allows to create:
+    <itemizedlist>
+      <listitem>
+        <para>
+          an instance of <literal>ConnectionFactory</literal> from a <literal>Reference</literal> containing reference
+          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>) of type
+          <literal>org.apache.qpid.client.AMQConnectionFactory</literal> with a content set to
+          <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          an instance of <literal>AMQConnection</literal> from a <literal>Reference</literal> containing reference
+          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>) of type
+          <literal>org.apache.qpid.client.AMQConnection</literal> with a content set to
+          <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          an instance of <literal>AMQQueue</literal> from a <literal>Reference</literal> containing reference
+          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>) of type
+          <literal>org.apache.qpid.client.AMQQueue</literal> with a content set to
+          <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          an instance of <literal>AMQTopic</literal> from a <literal>Reference</literal> containing reference
+          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>) of type
+          <literal>org.apache.qpid.client.AMQTopic</literal> with a content set to
+          <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>.
+        </para>
+      </listitem>
+    </itemizedlist>
+  </para>
+  <para>An example below demonstrates how to create JNDI resources in Tomcat container using Resource declaration in context.xml
+    (A Tomcat specific web application configuration file usually added into war under /META-INF/context.xml).
+  </para>
+  <example>
+      <title>An example of Tomcat context.xml declaring Qpid JNDI resources</title>
+      <programlisting language="xml"><![CDATA[
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE xml>
+<Context>
+
+  <Resource name="jms/connectionFactory" auth="Container"
+            type="org.apache.qpid.client.AMQConnectionFactory"
+            factory="org.apache.qpid.client.AMQConnectionFactory"
+            org.apache.qpid.client.AMQConnectionFactory="amqp://guest:guest@clientid/?brokerlist='localhost:5672'"/>
+
+  <Resource name="jms/queue" auth="Container"
+            type="org.apache.qpid.client.AMQQueue"
+            factory="org.apache.qpid.client.AMQConnectionFactory"
+            org.apache.qpid.client.AMQQueue="direct://amq.direct//myDurableQueue?durable='true'"/>
+
+  <Resource name="jms/topic" auth="Container"
+            type="org.apache.qpid.client.AMQTopic"
+            factory="org.apache.qpid.client.AMQConnectionFactory"
+            org.apache.qpid.client.AMQTopic="topic://amq.topic?routingkey='myTopic'"/>
+
+</Context>]]></programlisting>
+  </example>
+  <para>In the example above <literal>ConnectionFactory</literal> would be registered under JNDI name "jms/connectionFactory",
+  <literal>Queue</literal> "myDurableQueue" would be registered under JNDI name "jms/queue" and JMS <literal>Topic</literal>
+   destination "myTopic" would be registered under JNDI name "jms/topic". (All resources will be bound under "java:comp/env").
+  </para>
+  <para>
+    The client application can find the resources declared in Tomcat context.xml using the code below:
+  </para>
+  <example>
+    <title>An example of JNDI lookup for Qpid resources registered in Tomcat JNDI</title>
+    <programlisting language="java"><![CDATA[
+    Context context = new InitialContext();
+    Context environmentContext = (Context)context.lookup("java:comp/env");
+    ...
+    ConnectionFactory connectionFactory = (ConnectionFactory) environmentContext.lookup("jms/connectionFactory");
+    ...
+    Queue queue = (Queue)environmentContext.lookup("jms/queue");
+    ...
+    Topic topic = (Topic)environmentContext.lookup("jms/topic");
+    ...]]></programlisting>
+  </example>
+  <note>
+    <para>
+      Note, that only BURL-based destinations can be registered in external JNDI container. Address based destinations cannot be used.
+    </para>
+  </note>
+
+</appendix>
