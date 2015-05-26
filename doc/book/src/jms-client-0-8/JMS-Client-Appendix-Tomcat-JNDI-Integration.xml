@@ -34,8 +34,8 @@
   <para>
     <literal>AMQConnectionFactory</literal> implements
     <ulink url="&oracleJdkDocUrl;javax/naming/spi/ObjectFactory.html">javax.naming.spi.ObjectFactory</ulink>
-    allowing to create instances of  <literal>AMQConnectionFactory</literal>, <literal>AMQConnection</literal>,
-    <literal>AMQQueue</literal> and <literal>AMQTopic</literal> in external JNID container from
+    allowing it to create instances of <literal>AMQConnectionFactory</literal>, <literal>AMQConnection</literal>,
+    <literal>AMQQueue</literal> and <literal>AMQTopic</literal> in external JNDI container from
     <ulink url="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</ulink>s.
     Both <literal>AMQConnectionFactory</literal> and <literal>AMQDestination</literal> (parent of
     <literal>AMQQueue</literal> and <literal>AMQTopic</literal>) implement
@@ -44,13 +44,13 @@
     to itself for binding in external JNDI implementations.
   </para>
   <para>
-    <literal>AMQConnectionFactory</literal> allows to create:
+    <literal>AMQConnectionFactory</literal> allows the creation of:
     <itemizedlist>
       <listitem>
         <para>
           an instance of <literal>ConnectionFactory</literal> from a <literal>Reference</literal> containing reference
           address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>) of type
-          <literal>org.apache.qpid.client.AMQConnectionFactory</literal> with a content set to
+          <literal>org.apache.qpid.client.AMQConnectionFactory</literal> with content set to a
           <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.
         </para>
       </listitem>
@@ -58,7 +58,7 @@
         <para>
           an instance of <literal>AMQConnection</literal> from a <literal>Reference</literal> containing reference
           address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>) of type
-          <literal>org.apache.qpid.client.AMQConnection</literal> with a content set to
+          <literal>org.apache.qpid.client.AMQConnection</literal> with content set to a
           <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.
         </para>
       </listitem>
@@ -66,7 +66,7 @@
         <para>
           an instance of <literal>AMQQueue</literal> from a <literal>Reference</literal> containing reference
           address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>) of type
-          <literal>org.apache.qpid.client.AMQQueue</literal> with a content set to
+          <literal>org.apache.qpid.client.AMQQueue</literal> with content set to a
           <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>.
         </para>
       </listitem>
@@ -80,7 +80,7 @@
       </listitem>
     </itemizedlist>
   </para>
-  <para>An example below demonstrates how to create JNDI resources in Tomcat container using Resource declaration in context.xml
+  <para>An example below demonstrates how to create JNDI resources in the Tomcat container using Resource declarations in context.xml
     (A Tomcat specific web application configuration file usually added into war under /META-INF/context.xml).
   </para>
   <example>
