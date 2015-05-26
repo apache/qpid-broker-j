@@ -314,6 +314,10 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
                 {
                     connections.add(new ConnectionHolder(connection, System.currentTimeMillis()));
                 }
+                else
+                {
+                    connection.close();
+                }
             }
         }
     }
