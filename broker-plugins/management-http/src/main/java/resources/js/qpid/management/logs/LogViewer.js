@@ -221,8 +221,11 @@ define(["dojo/_base/xhr",
            {
              var userPreferences = this.management.userPreferences;
              currentTimeZone = userPreferences.getTimeZoneDescription();
-             dataTransformer(this.grid.updater.memoryStore.data, userPreferences);
-             this.grid._refresh();
+             if (this.grid.updater.memoryStore)
+             {
+                dataTransformer(this.grid.updater.memoryStore.data, userPreferences);
+                this.grid._refresh();
+             }
            };
 
            return LogViewer;

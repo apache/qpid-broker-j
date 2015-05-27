@@ -65,7 +65,7 @@ define(["dojo/_base/event",
         this.management = management;
         this.modelObj = modelObj;
         var that=this;
-        management.load(modelObj,  { actuals: true },
+        management.load(modelObj,  { actuals: true }).then(
             function(actualData)
             {
                 that._show(actualData[0]);
@@ -96,7 +96,7 @@ define(["dojo/_base/event",
           {
               var data = util.getFormWidgetValues(this.form, this.initialData);
               var that=this;
-              this.management.update(this.modelObj, data, function(x){ that.dialog.hide();} );
+              this.management.update(this.modelObj, data).then( function(x){ that.dialog.hide();} );
           }
           else
           {

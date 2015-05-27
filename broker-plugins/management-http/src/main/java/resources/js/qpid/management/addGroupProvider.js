@@ -126,11 +126,11 @@ define([
                     if (this.initialData)
                     {
                         // update request
-                        this.management.update(this.modelObj, groupProviderData, function(x){that.dialog.hide();});
+                        this.management.update(this.modelObj, groupProviderData).then(function(x){that.dialog.hide();});
                     }
                     else
                     {
-                        this.management.create("groupprovider", this.modelObj,groupProviderData, function(x){that.dialog.hide();});
+                        this.management.create("groupprovider", this.modelObj,groupProviderData).then( function(x){that.dialog.hide();});
                     }
                 }
                 else

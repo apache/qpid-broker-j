@@ -161,7 +161,7 @@ define(["dojo/dom",
                                 if(theForm.validate()){
 
                                     var newGroup = convertToGroup(theForm.getValues());
-                                    addGroup.management.create("group", addGroup.groupProvider, newGroup, function(x){registry.byId("addGroup").hide();});
+                                    addGroup.management.create("group", addGroup.groupProvider, newGroup).then(function(x){registry.byId("addGroup").hide();});
                                     return false;
 
 

@@ -108,8 +108,8 @@ define(["dojo/dom",
                   newQueue["context"] = context;
                 }
 
-              addQueue.management.create("queue", addQueue.modelObj,
-                        newQueue, function(x){registry.byId("addQueue").hide();});
+                addQueue.management.create("queue", addQueue.modelObj,
+                          newQueue).then(function(x){registry.byId("addQueue").hide();});
                 return false;
 
 

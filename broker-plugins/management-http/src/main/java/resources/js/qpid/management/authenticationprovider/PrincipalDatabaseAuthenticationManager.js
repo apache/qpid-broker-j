@@ -185,7 +185,7 @@ define(["dojo/dom",
 
                                     var newUser = convertToUser(theForm.getValues());
 
-                                    addUser.management.create("user", addUser.authProvider, newUser, function(x){registry.byId("addUser").hide();}, util.xhrErrorHandler);
+                                    addUser.management.create("user", addUser.authProvider, newUser).then(function(x){registry.byId("addUser").hide();});
                                     return false;
 
 
@@ -225,8 +225,7 @@ define(["dojo/dom",
                             newUser.id = setPassword.id;
 
                             var model = {type: "user", name: setPassword.name, parent: setPassword.authProvider};
-                            setPassword.management.update(model, newUser,
-                                function(x){registry.byId("setPassword").hide();}, util.xhrErrorHandler);
+                            setPassword.management.update(model, newUser).then(function(x){registry.byId("setPassword").hide();});
                             return false;
 
 

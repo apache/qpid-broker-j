@@ -351,7 +351,7 @@ define([
         }
 
         var that = this;
-        that.management.create("virtualhostnode", {type: "broker"}, virtualHostNodeData, function(x){that.dialog.hide();});
+        that.management.create("virtualhostnode", {type: "broker"}, virtualHostNodeData).then(function(x){that.dialog.hide();});
       },
       _getValues: function (form)
       {

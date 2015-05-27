@@ -93,7 +93,7 @@ define(["dojo/dom",
                 {
                     // editing
                     var that = this;
-                    management.load(modelObj, { actuals: true },
+                    management.load(modelObj, { actuals: true }).then(
                                   function(data)
                                   {
                                     var actualData = data[0];
@@ -114,7 +114,7 @@ define(["dojo/dom",
                                     }
                                     that.authenticationProviderName.set("value", actualData.name);
                                     that._show();
-                                  }, util.xhrErrorHandler );
+                                  });
                 }
                 else
                 {
@@ -169,7 +169,7 @@ define(["dojo/dom",
                                     var name = that.preferencesProviderForm.getPreferencesProviderName();
 
                                     var modelObj = {name: name, type: "preferencesprovider",  parent: that.modelObj};
-                                    that.management.update(modelObj, preferencesProviderData, hideDialog, util.xhrErrorHandler);
+                                    that.management.update(modelObj, preferencesProviderData).then(hideDialog);
                                 }
                                 else
                                 {
@@ -178,7 +178,7 @@ define(["dojo/dom",
                                     {
                                         authProviderModelObj = { name: authenticationProviderData.name, type: "authenticationprovider", parent: that.modelObj};
                                     }
-                                    that.management.create("preferencesprovider", authProviderModelObj, preferencesProviderData, hideDialog, util.xhrErrorHandler);
+                                    that.management.create("preferencesprovider", authProviderModelObj, preferencesProviderData).then(hideDialog);
                                 }
                             },
                             hideDialog
@@ -188,11 +188,11 @@ define(["dojo/dom",
                     if (this.initialData && this.initialData.id)
                     {
                         // update request
-                        this.management.update(that.modelObj, authenticationProviderData, savePreferences);
+                        this.management.update(that.modelObj, authenticationProviderData).then(savePreferences);
                     }
                     else
                     {
-                        this.management.create("authenticationprovider", that.modelObj, authenticationProviderData, savePreferences);
+                        this.management.create("authenticationprovider", that.modelObj, authenticationProviderData).then(savePreferences);
                     }
                 }
                 else

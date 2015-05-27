@@ -126,9 +126,7 @@ define(["dojo/dom",
 
             showMessage.management.get({url: "service/message/" + encodeURIComponent(encodeURIComponent(obj.virtualhost))
                             + "/" + encodeURIComponent(encodeURIComponent(obj.queue))
-                            + "/" + encodeURIComponent(encodeURIComponent(obj.messageNumber))},
-                     showMessage.populateShowMessage, util.xhrErrorHandler
-                    );
+                            + "/" + encodeURIComponent(encodeURIComponent(obj.messageNumber))}).then(showMessage.populateShowMessage);
         };
 
         var node = construct.create("div", null, win.body(), "last");

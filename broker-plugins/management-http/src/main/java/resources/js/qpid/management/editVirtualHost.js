@@ -87,7 +87,7 @@ define(["dojox/html/entities",
         }
         this.dialog.set("title", "Edit Virtual Host - " + entities.encode(String(modelObj.name)));
 
-        management.load(modelObj, { actuals: true },
+        management.load(modelObj, { actuals: true }).then(
             function(actualData)
             {
                 management.load(modelObj).then(
@@ -96,8 +96,7 @@ define(["dojox/html/entities",
                         that._show(actualData[0], effectiveData[0]);
                     },
                     util.xhrErrorHandler);
-            },
-            util.xhrErrorHandler);
+            });
 
       },
       destroy: function()
@@ -130,7 +129,7 @@ define(["dojox/html/entities",
                 data["context"] = context;
               }
               var that=this;
-              this.management.update(that.modelObj, data, function(x){ that.dialog.hide();} );
+              this.management.update(that.modelObj, data).then( function(x){ that.dialog.hide();} );
           }
           else
           {

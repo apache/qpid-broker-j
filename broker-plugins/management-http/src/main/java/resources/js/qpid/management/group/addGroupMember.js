@@ -69,7 +69,7 @@ define(["dojo/dom",
 
                                     var newGroupMember = convertToGroupMember(theForm.getValues());
                                     var that = this;
-                                    addGroupMember.management.create("groupmember", addGroupMember.group, newGroupMember, function(x){registry.byId("addGroupMember").hide();});
+                                    addGroupMember.management.create("groupmember", addGroupMember.group, newGroupMember).then(function(x){registry.byId("addGroupMember").hide();});
                                     return false;
 
 

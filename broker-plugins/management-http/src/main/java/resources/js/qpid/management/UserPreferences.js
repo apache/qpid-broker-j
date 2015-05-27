@@ -29,12 +29,13 @@ define(["dojo/date",
       this.timeZone = "UTC";
       this.tabs = [];
       this.management = management;
+      this.preferences = {};
   }
 
   UserPreferences.prototype.load = function(successCallback, failureCallback)
   {
       var that = this;
-      this.management.get({url: "service/preferences"},
+      this.management.get({url: "service/preferences"}).then(
                        function(preferences)
                        {
                           that.preferences = preferences;
@@ -61,7 +62,7 @@ define(["dojo/date",
   {
       var that = this;
       this.management.post({url: "service/preferences"},
-                          preferences,
+                          preferences).then(
                           function(x)
                           {
                             that.preferences = preferences;
@@ -99,7 +100,6 @@ define(["dojo/date",
           }
       }
       this.timeZone = "UTC";
-      this.preferences ="UTC";
       this.preferences = preferences;
       this._notifyListeners(preferences);
   };

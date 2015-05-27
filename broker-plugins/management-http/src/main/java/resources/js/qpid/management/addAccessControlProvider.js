@@ -101,7 +101,7 @@ define(["dojo/_base/lang",
                 {
                     var accessControlProviderData = util.getFormWidgetValues(this.accessControlProviderForm, this.initialData);
                     var that = this;
-                    this.management.create("accesscontrolprovider", this.modelObj, accessControlProviderData, function(x){that.dialog.hide();}, util.xhrErrorHandler);
+                    this.management.create("accesscontrolprovider", this.modelObj, accessControlProviderData).then(function(x){that.dialog.hide();});
                 }
                 else
                 {

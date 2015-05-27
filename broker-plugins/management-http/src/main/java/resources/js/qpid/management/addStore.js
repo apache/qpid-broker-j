@@ -137,11 +137,11 @@ define(["dojo/_base/lang",
                     if (this.effectiveData)
                     {
                         // update request
-                        this.management.update(this.modelObj, storeData, function(x){that.dialog.hide();});
+                        this.management.update(this.modelObj, storeData).then(function(x){that.dialog.hide();});
                     }
                     else
                     {
-                        this.management.create(this.category, this.modelObj, storeData, function(x){that.dialog.hide();});
+                        this.management.create(this.category, this.modelObj, storeData).then(function(x){that.dialog.hide();});
                     }
                 }
                 else

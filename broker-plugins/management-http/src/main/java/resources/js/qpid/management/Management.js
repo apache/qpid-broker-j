@@ -58,9 +58,8 @@ define(["dojo/_base/lang",
     }
 
     // summary:
-    // This is a proxy for sending management requests to broker at given host and port specified in brokerURL argument.
-    // Optional errorHandler method can be set and invoked on error responses when methods are invoked as non promise.
-
+    // This is a facade for sending management requests to broker at given brokerURL specifying schema, host and port.
+    // Optional errorHandler method can be set and invoked on error responses.
     function Management(brokerURL, errorHandler)
     {
         this.brokerURL = brokerURL;
@@ -82,21 +81,15 @@ define(["dojo/_base/lang",
     //          withCredentials: Boolean?
     //                For cross-site requests, whether to send credentials or not.
     //          query: Object?
-    //              the object send defining request query parameters
+    //              the query parameters to add to the request url
     //          handleAs: String
     //                Indicates how the response will be handled.
     //          url: String?
     //              relative URL to broker REST API
-    // successAction: function
-    //        Optional callback function to execute on successful response.
-    //      It can be specified if function does not need to return promise
-    // failureAction: function
-    //        Optional callback function to execute on erroneous response.
-    //      It can be specified if function does not need to return promise
     //
-    // returns: promise
-    //      Promise returned by dojo.request.xhr.
-    Management.prototype.submit = function(request, successAction, failureAction)
+    // returns: promise of type dojo.promise.Promise
+    //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
+    Management.prototype.submit = function(request)
     {
         var requestOptions = {
             sync: false,
@@ -123,56 +116,48 @@ define(["dojo/_base/lang",
 
         var url = this.getFullUrl(request.url);
         var promise = xhr(url, requestOptions);
-        if (successAction || failureAction)
-        {
-            var that = this;
-            promise.then(
-                function(data)
-                {
-                    if (successAction)
-                    {
-                        successAction(data);
-                    }
-                },
-                function(error)
-                {
-                    if (failureAction)
-                    {
-                        failureAction(error);
-                    }
-                    else
-                    {
-                        that.errorHandler(error);
-                    }
-                }
-            );
-        }
-        return promise;
+        var errorHandler = this.errorHandler;
+
+        // decorate promise in order to use a default error handler when 'then' method is invoked without providing error handler
+        return {
+                   then:          function(callback, errback, progback) { return promise.then(callback, errback||errorHandler, progback ); },
+                   cancel:        function(reason, strict) { return promise.cancel(reason, strict); },
+                   isResolved:    function(){return promise.isResolved();},
+                   isRejected:    function(){return promise.isRejected();},
+                   isFulfilled:   function(){return promise.isFulfilled();},
+                   isCanceled:    function(){return promise.isCanceled();},
+                   always:        function(callbackOrErrback){return promise.always(callbackOrErrback);},
+                   otherwise:     function(errback){return promise.otherwise(errback);},
+                   trace:         function(){ return promise.trace();},
+                   traceRejected: function(){return promise.traceRejected();},
+                   toString:      function(){return promise.toString();}
+               };
+
     };
 
-    Management.prototype.get = function(request, successAction, failureAction)
+    Management.prototype.get = function(request)
     {
         var requestOptions = merge(request, {method: "GET"});
-        return this.submit(requestOptions, successAction, failureAction);
+        return this.submit(requestOptions);
     };
 
-    Management.prototype.post = function(request, data, successAction, failureAction)
+    Management.prototype.post = function(request, data)
     {
         var requestOptions = merge(request, {method: "POST", data: data});
-        return this.submit(requestOptions, successAction, failureAction);
+        return this.submit(requestOptions);
     };
 
-    Management.prototype.del = function(request, successAction, failureAction)
+    Management.prototype.del = function(request)
     {
         var requestOptions = merge(request, {method: "DELETE"});
-        return this.submit(requestOptions, successAction, failureAction);
+        return this.submit(requestOptions);
     };
 
     // summary:
     //  Loads object data specified as modelObj argument
     //   modelObj: Object?
     //             is a JSON object specifying the hierarchy
-    //            It has the following fields:
+    //             It can have the following fields:
     //               name: String?
     //                     name of the object
     //               type: String?
@@ -181,17 +166,11 @@ define(["dojo/_base/lang",
     //                     parent of the object in the same format, having fields name, type, parent
     //
     //   parameters: Object?
-    //               is optional JSON to pass additional request parameters
-    //   successAction: function
-    //        Optional callback function to execute on successful response.
-    //      It can be specified if function does not need to return promise
-    //   failureAction: function
-    //        Optional callback function to execute on erroneous response.
-    //      It can be specified if function does not need to return promise
+    //               is optional JSON to pass additional request parameters which will be added into query of REST url
     //
-    //   returns: promise
-    //      Promise returned by dojo.request.xhr.
-    Management.prototype.load = function(modelObj, parameters, successAction, failureAction)
+    // returns: promise of type dojo.promise.Promise
+    //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
+    Management.prototype.load = function(modelObj, parameters)
     {
         var url = this.objectToURL(modelObj);
         var request = {url: url};
@@ -199,7 +178,7 @@ define(["dojo/_base/lang",
         {
             request.query = parameters;
         }
-        return this.get(request, successAction, failureAction);
+        return this.get(request);
     };
 
     // summary:
@@ -209,23 +188,24 @@ define(["dojo/_base/lang",
     //
     //   parentModelObject: Object?
     //              Parent object hierarchy
+    //              It can have the following fields:
+    //               name: String?
+    //                     name of the object
+    //               type: String?
+    //                     category of the object
+    //               parent: Object?
+    //                     parent of the object in the same format, having fields name, type, parent
     //   data; Object?
     //              Object structure
-    //   successAction: function
-    //        Optional callback function to execute on successful response.
-    //      It can be specified if function does not need to return promise
-    //   failureAction: function
-    //        Optional callback function to execute on erroneous response.
-    //      It can be specified if function does not need to return promise
     //
-    //   returns: promise
-    //      Promise returned by dojo.request.xhr.
-    Management.prototype.create = function(category, parentModelObject, data, successAction, failureAction)
+    // returns: promise of type dojo.promise.Promise
+    //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
+    Management.prototype.create = function(category, parentModelObject, data)
     {
         var newObjectModel ={type: category.toLowerCase(), parent: parentModelObject};
         var url = this.objectToURL(newObjectModel);
         var request = {url: url};
-        this.post(request, data, successAction, failureAction);
+        return this.post(request, data);
     };
 
     // summary:
@@ -233,40 +213,42 @@ define(["dojo/_base/lang",
     //
     //   modelObj: Object?
     //              Object specifying hierarchy
+    //              It can have the following fields:
+    //               name: String?
+    //                     name of the object
+    //               type: String?
+    //                     category of the object
+    //               parent: Object?
+    //                     parent of the object in the same format, having fields name, type, parent
     //   data; Object?
     //              New attributes
-    //   successAction: function
-    //        Optional callback function to execute on successful response.
-    //      It can be specified if function does not need to return promise
-    //   failureAction: function
-    //        Optional callback function to execute on erroneous response.
-    //      It can be specified if function does not need to return promise
     //
-    //   returns: promise
-    //      Promise returned by dojo.request.xhr.
-    Management.prototype.update = function(modelObj, data, successAction, failureAction)
+    // returns: promise of type dojo.promise.Promise
+    //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
+    Management.prototype.update = function(modelObj, data)
     {
         var url = this.objectToURL(modelObj);
         var request = {url: url};
-        return this.post(request, data, successAction, failureAction);
+        return this.post(request, data);
     };
 
     // summary:
     //  Removes object specified as modelObj argument
     //   modelObj: Object?
     //             hierarchy object
+    //             It can have the following fields:
+    //               name: String?
+    //                     name of the object
+    //               type: String?
+    //                     category of the object
+    //               parent: Object?
+    //                     parent of the object in the same format, having fields name, type, parent
     //   parameters: Object?
-    //               is optional JSON object to pass additional request parameters
-    //   successAction: function
-    //        Optional callback function to execute on successful response.
-    //      It can be specified if function does not need to return promise
-    //   failureAction: function
-    //        Optional callback function to execute on erroneous response.
-    //      It can be specified if function does not need to return promise
+    //               is optional JSON object to pass additional request parameters which will be added into query of REST url
     //
-    //   returns: promise
-    //      Promise returned by dojo.request.xhr.
-    Management.prototype.remove = function(modelObj, parameters, successAction, failureAction)
+    // returns: promise of type dojo.promise.Promise
+    //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
+    Management.prototype.remove = function(modelObj, parameters)
     {
         var url = this.objectToURL(modelObj);
         var request = {url: url};
@@ -274,21 +256,32 @@ define(["dojo/_base/lang",
         {
             request.query = parameters;
         }
-        return this.del(request, successAction, failureAction);
+        return this.del(request);
     };
 
     // summary:
     //  Downloads current JSON for object specified as modelObj argument
+    //
     //   modelObj: Object?
     //             hierarchy object
+    //             It can have the following fields:
+    //               name: String?
+    //                     name of the object
+    //               type: String?
+    //                     category of the object
+    //               parent: Object?
+    //                     parent of the object in the same format, having fields name, type, parent
     //   parameters: Object?
-    //               is optional JSON object to pass additional request parameters
+    //               is optional JSON object to pass additional request parameters  which will be added into query of REST url
+    //
     Management.prototype.download = function(modelObj, parameters)
     {
         var url = this.buildObjectURL(modelObj, parameters);
         setTimeout(function() {window.location  = url;}, 100);
     }
 
+    // summary:
+    //  Downloads current JSON for object specified as modelObj argument into iframe
     Management.prototype.downloadIntoFrame = function(modelObj, parameters)
     {
         var url = this.buildObjectURL(modelObj, parameters);
@@ -299,6 +292,22 @@ define(["dojo/_base/lang",
         // It seems there is no way to remove this iframe in a manner that is cross browser compatible.
     }
 
+    // summary:
+    //  Builds relative REST url (excluding schema, host and port) for the object representing CO hierarchy
+    //   modelObj: Object?
+    //             hierarchy object
+    //             It can have the following fields:
+    //               name: String?
+    //                     name of the object
+    //               type: String?
+    //                     category of the object
+    //               parent: Object?
+    //                     parent of the object in the same format, having fields name, type, parent
+    //   parameters: Object?
+    //             is optional JSON object to pass additional request parameters  which will be added into query of REST url
+    //
+    // returns: relative REST url for the hierarchy object
+    //
     Management.prototype.objectToURL = function(modelObj)
     {
         var url = null;
@@ -328,6 +337,22 @@ define(["dojo/_base/lang",
         return "api/latest/" + url;
     };
 
+    // summary:
+    //  Builds a servlet path of REST url for the object representing CO hierarchy
+    //   modelObj: Object?
+    //             hierarchy object
+    //             It can have the following fields:
+    //               name: String?
+    //                     name of the object
+    //               type: String?
+    //                     category of the object
+    //               parent: Object?
+    //                     parent of the object in the same format, having fields name, type, parent
+    //   parameters: Object?
+    //             is optional JSON object to pass additional request parameters  which will be added into query of REST url
+    //
+    // returns: relative REST servlet path for the hierarchy object
+    //
     Management.prototype.objectToPath = function(modelObj)
     {
         var path = "";
@@ -347,6 +372,22 @@ define(["dojo/_base/lang",
         return path;
     };
 
+    // summary:
+    //  Builds full REST url for the object representing CO hierarchy
+    //   modelObj: Object?
+    //             hierarchy object
+    //             It can have the following fields:
+    //               name: String?
+    //                     name of the object
+    //               type: String?
+    //                     category of the object
+    //               parent: Object?
+    //                     parent of the object in the same format, having fields name, type, parent
+    //   parameters: Object?
+    //             is optional JSON object to pass additional request parameters  which will be added into query of REST url
+    //
+    // returns: full REST url for the hierarchy object
+    //
     Management.prototype.buildObjectURL = function(modelObj, parameters)
     {
         var url = this.objectToURL(modelObj);
@@ -357,6 +398,11 @@ define(["dojo/_base/lang",
         return this.getFullUrl(url);
     }
 
+    // summary:
+    //  Returns full REST url for the relative REST url
+    //
+    // returns: full urk for the given relative URL
+    //
     Management.prototype.getFullUrl = function(url)
     {
         var baseUrl = this.brokerURL || "";
@@ -367,6 +413,9 @@ define(["dojo/_base/lang",
         return baseUrl + url;
     }
 
+    // summary:
+    //  Loads meta data, time zones, user preferences and invokes callback functions after loading user preferences
+    //
     Management.prototype.init = function(callback)
     {
         var that = this;
@@ -379,10 +428,14 @@ define(["dojo/_base/lang",
                           });
     };
 
+    // summary:
+    //  Loads meta data and store it under 'metadata' field as object of type qpid.common.metadata object.
+    //  When meta data are loaded successfully a callback function is executed, otherwise default error handler is invoked
+    //
     Management.prototype.loadMetadata = function(callback)
     {
         var that = this;
-        this.get({url: "service/metadata"},
+        this.get({url: "service/metadata"}).then(
                  function(data)
                  {
                     that.metadata = new Metadata(data);
@@ -390,14 +443,17 @@ define(["dojo/_base/lang",
                     {
                         callback();
                     }
-                 },
-                 this.errorHandler);
+                 });
     };
 
+    // summary:
+    //  Loads timezones and store them under 'timezone' field as  object of type qpid.common.timezone object
+    //  When timezones are loaded successfully a callback function is executed, otherwise default error handler is invoked
+    //
     Management.prototype.loadTimezones = function(callback)
     {
         var that = this;
-        that.get({url: "service/timezones"},
+        that.get({url: "service/timezones"}).then(
                  function(timezones)
                  {
                     that.timezone = new Timezone(timezones);
@@ -405,10 +461,13 @@ define(["dojo/_base/lang",
                     {
                         callback();
                     }
-                 },
-                 this.errorHandler);
+                 });
     };
 
+    // summary:
+    //  Loads user preferences and store them under 'userPreferences' field as object of type qpid.management.UserPreferences
+    //  Callback is invoked on both successful and unsuccessful preferences request
+    //
     Management.prototype.loadUserPreferences = function(callback)
     {
         this.userPreferences = new UserPreferences(this);

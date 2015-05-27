@@ -82,7 +82,7 @@ define(["dojo/dom",
                 var newExchange = util.getFormWidgetValues(theForm, null);
                 var that = this;
                 addExchange.management.create("exchange", addExchange.modelObj,
-                        newExchange, function(x){ registry.byId("addExchange").hide(); });
+                        newExchange).then(function(x){ registry.byId("addExchange").hide(); });
                 return false;
 
 

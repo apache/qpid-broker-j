@@ -265,11 +265,11 @@ define(["dojo/dom",
               if (registry.byId("formAddPort.name").get("disabled"))
               {
                 // update request
-                addPort.management.update(addPort.modelObj,newPort, function(x){registry.byId("addPort").hide()}, util.xhrErrorHandler);
+                addPort.management.update(addPort.modelObj,newPort).then(function(x){registry.byId("addPort").hide()});
               }
               else
               {
-                addPort.management.create("port", addPort.modelObj ,newPort, function(x){registry.byId("addPort").hide()}, util.xhrErrorHandler);
+                addPort.management.create("port", addPort.modelObj, newPort).then(function(x){registry.byId("addPort").hide()});
               }
               return false;
             } else

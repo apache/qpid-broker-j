@@ -108,8 +108,8 @@ define(["dojo/_base/connect",
             var data = that.membersGrid.grid.selection.getSelected();
             if (data.length == 1 && confirm("Are you sure you would like to transfer mastership to node '" + data[0].name + "'?"))
             {
-                that.management.update(getModelObj(that.data.name, data[0].name, modelObj),  {role: "MASTER"},
-                                function(data){that.membersGrid.grid.selection.clear();}, util.xhrErrorHandler);
+                that.management.update(getModelObj(that.data.name, data[0].name, modelObj),  {role: "MASTER"}).then(
+                                function(data){that.membersGrid.grid.selection.clear();});
             }
           }
       );

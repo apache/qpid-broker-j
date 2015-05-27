@@ -114,7 +114,7 @@ define(["dojo/_base/xhr",
                         this.exchangeUpdater.bindingsGrid.grid,
                         "Are you sure you want to delete binding",
                         this.management,
-                        {type: "binding", parent:that.modelObj},
+                        {type: "binding", parent:this.modelObj},
                         this.exchangeUpdater);
            }
 

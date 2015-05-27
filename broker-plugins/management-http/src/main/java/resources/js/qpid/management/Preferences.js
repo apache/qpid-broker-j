@@ -235,7 +235,7 @@ function (declare, event, connect, dom, domConstruct, parser, json, Memory, Obje
     _loadUserPreferences : function(callback)
     {
       var that = this;
-      this.management.get({url: "service/userpreferences"},
+      this.management.get({url: "service/userpreferences"}).then(
                           function(users)
                           {
                                  for(var i=0; i<users.length; i++)

@@ -59,11 +59,11 @@ define([
                                                 if (that.preferencesProviderForm.data)
                                                 {
                                                     // update request
-                                                    that.management.update(that.modelObj, preferencesProviderData, function(){that.dialog.hide();}, util.xhrErrorHandler);
+                                                    that.management.update(that.modelObj, preferencesProviderData).then(function(){that.dialog.hide();});
                                                 }
                                                 else
                                                 {
-                                                    that.management.create("preferencesprovider",that.modelObj, preferencesProviderData, function(){that.dialog.hide();}, util.xhrErrorHandler);
+                                                    that.management.create("preferencesprovider",that.modelObj, preferencesProviderData).then(function(){that.dialog.hide();});
                                                 }
                                             });
                 });

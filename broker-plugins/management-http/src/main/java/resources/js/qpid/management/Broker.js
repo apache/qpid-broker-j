@@ -392,8 +392,7 @@ define(["dojo/parser",
                                  {
                                    var item = data[0];
                                    that.management.update({type:"virtualhostnode", name:item.name, parent: that.modelObj},
-                                           {desiredState: "ACTIVE"},
-                                           function(data){that.vhostsGrid.grid.selection.clear();});
+                                           {desiredState: "ACTIVE"}).then(function(data){that.vhostsGrid.grid.selection.clear();});
                                  }
                                });
 
@@ -409,8 +408,7 @@ define(["dojo/parser",
                                            + entities.encode(String(item.name)) +"'?"))
                                    {
                                        that.management.update({type:"virtualhostnode", name:item.name, parent: that.modelObj},
-                                               {desiredState: "STOPPED"},
-                                               function(data){that.vhostsGrid.grid.selection.clear();});
+                                               {desiredState: "STOPPED"}).then(function(data){that.vhostsGrid.grid.selection.clear();});
                                    }
                                  }
                                });
@@ -423,8 +421,7 @@ define(["dojo/parser",
                                    var item = data[0];
                                    var host = item.virtualhosts[0];
                                    that.management.update({type:"virtualhost", name:item.name, parent: {type:"virtualhostnode", name: host.name, parent: that.modelObj}},
-                                            {desiredState: "ACTIVE"},
-                                            function(data){that.vhostsGrid.grid.selection.clear();});
+                                            {desiredState: "ACTIVE"}).then(function(data){that.vhostsGrid.grid.selection.clear();});
                                  }
                                });
 
@@ -439,8 +436,7 @@ define(["dojo/parser",
                                            + entities.encode(String(host.name)) +"'?"))
                                    {
                                        that.management.update({type:"virtualhost", name:item.name, parent: {type:"virtualhostnode", name: host.name, parent: that.modelObj}},
-                                               {desiredState: "STOPPED"},
-                                               function(data){that.vhostsGrid.grid.selection.clear();});
+                                               {desiredState: "STOPPED"}).then(function(data){that.vhostsGrid.grid.selection.clear();});
                                    }
                                  }
                                });

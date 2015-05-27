@@ -60,7 +60,7 @@ define(["dojo/parser",
                                      {
                                        if (confirm("Are you sure you want to close the connection?"))
                                        {
-                                         that.management.remove(that.modelObj, {}, function(result){ that.destroy(); } );
+                                         that.management.remove(that.modelObj).then(function(result){ that.destroy(); } );
                                        }
                                      });
 

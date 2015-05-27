@@ -83,7 +83,7 @@ define(["dojox/html/entities",
         this.management = management;
         var that=this;
         this.dialog.set("title", "Edit Broker - " + entities.encode(String(brokerData.name)));
-        management.load( {type:"broker"}, { actuals: true },
+        management.load( {type:"broker"}, { actuals: true }).then(
               function(data)
               {
                 that._show(data[0], brokerData);
@@ -120,7 +120,7 @@ define(["dojox/html/entities",
               }
 
               var that = this;
-              this.management.update({type: "broker"}, data, function(x){that.dialog.hide();}, util.xhrErrorHandler);
+              this.management.update({type: "broker"}, data).then(function(x){that.dialog.hide();});
           }
           else
           {

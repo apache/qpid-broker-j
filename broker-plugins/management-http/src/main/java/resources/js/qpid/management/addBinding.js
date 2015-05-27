@@ -320,7 +320,7 @@ define(["dojo/_base/connect",
                                                         }
                                                 };
                                     }
-                                    addBinding.management.create("binding", model, newBinding, function(x){registry.byId("addBinding").hide();});
+                                    addBinding.management.create("binding", model, newBinding).then(function(x){registry.byId("addBinding").hide();});
                                     return false;
                                 }else{
                                     alert('Form contains invalid data.  Please correct first');

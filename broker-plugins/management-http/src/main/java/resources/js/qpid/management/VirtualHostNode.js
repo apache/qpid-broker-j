@@ -84,7 +84,7 @@ define(["dojo/parser",
                function(event)
                {
                  that.startNodeButton.set("disabled", true);
-                 that.management.update(that.modelObj, {desiredState: "ACTIVE"}, null, util.xhrErrorHandler);
+                 that.management.update(that.modelObj, {desiredState: "ACTIVE"}).then();
                });
 
              this.stopNodeButton.on("click",
@@ -95,7 +95,7 @@ define(["dojo/parser",
                          + entities.encode(String(that.name)) +"'?"))
                  {
                      that.stopNodeButton.set("disabled", true);
-                     that.management.update(that.modelObj, {desiredState: "STOPPED"}, null, util.xhrErrorHandler);
+                     that.management.update(that.modelObj, {desiredState: "STOPPED"}).then();
                  }
                });
 
