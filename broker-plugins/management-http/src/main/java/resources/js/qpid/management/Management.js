@@ -23,10 +23,11 @@ define(["dojo/_base/lang",
         "dojo/request/xhr",
         "dojo/io-query",
         "dojo/json",
+        "dojo/promise/Promise",
         "qpid/common/metadata",
         "qpid/common/timezone",
         "qpid/management/UserPreferences"],
-  function (lang, array, xhr, ioQuery, json, Metadata, Timezone, UserPreferences)
+  function (lang, array, xhr, ioQuery, json, Promise, Metadata, Timezone, UserPreferences)
   {
 
     function shallowCopy(source, target, excludes)
@@ -119,7 +120,8 @@ define(["dojo/_base/lang",
         var errorHandler = this.errorHandler;
 
         // decorate promise in order to use a default error handler when 'then' method is invoked without providing error handler
-        return {
+        return lang.mixin(new Promise(),
+               {
                    then:          function(callback, errback, progback) { return promise.then(callback, errback||errorHandler, progback ); },
                    cancel:        function(reason, strict) { return promise.cancel(reason, strict); },
                    isResolved:    function(){return promise.isResolved();},
@@ -131,8 +133,7 @@ define(["dojo/_base/lang",
                    trace:         function(){ return promise.trace();},
                    traceRejected: function(){return promise.traceRejected();},
                    toString:      function(){return promise.toString();}
-               };
-
+               });
     };
 
     Management.prototype.get = function(request)
