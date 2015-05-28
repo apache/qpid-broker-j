@@ -24,6 +24,7 @@ import static com.sleepycat.je.rep.ReplicatedEnvironment.State.MASTER;
 import static com.sleepycat.je.rep.ReplicatedEnvironment.State.REPLICA;
 import static com.sleepycat.je.rep.ReplicatedEnvironment.State.UNKNOWN;
 
+import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -258,8 +259,17 @@ public class JMXManagementTest extends QpidBrokerTestCase
         while(!State.ACTIVE.name().equals(data.get(VirtualHost.STATE)) && (System.currentTimeMillis() - startTime) < 30000)
         {
             LOGGER.debug("Awaiting virtual host '" + nodeName + "' to transit into active state");
-            List<Map<String, Object>> results= restHelper.getJsonAsList("virtualhost/" + nodeName + "/" + VIRTUAL_HOST);
-            if (results.size()== 1)
+            List<Map<String, Object>> results= null;
+            try
+            {
+                results = restHelper.getJsonAsList("virtualhost/" + nodeName + "/" + VIRTUAL_HOST);
+            }
+            catch (FileNotFoundException e)
+            {
+                // ignore, as host might not be open
+            }
+
+            if (results != null && results.size() == 1)
             {
                 data = results.get(0);
             }

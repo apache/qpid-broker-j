@@ -20,6 +20,7 @@
 package org.apache.qpid.server.store.berkeleydb.replication;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.InetAddress;
@@ -450,8 +451,16 @@ public class GroupCreator
     public Map<String, Object> getNodeAttributes(int localNodePort, int remoteNodePort) throws IOException
     {
         RestTestHelper restHelper = createRestTestHelper(localNodePort);
-        List<Map<String, Object>> results= restHelper.getJsonAsList(getNodeRestUrl(localNodePort, remoteNodePort));
-        int size = results.size();
+        List<Map<String, Object>> results = null;
+        try
+        {
+            results = restHelper.getJsonAsList(getNodeRestUrl(localNodePort, remoteNodePort));
+        }
+        catch (FileNotFoundException e)
+        {
+            // node does not exist yet
+        }
+        int size = results == null ? 0 : results.size();
         if (size == 0)
         {
             return Collections.emptyMap();
