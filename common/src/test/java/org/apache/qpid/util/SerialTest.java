@@ -60,8 +60,8 @@ public class SerialTest extends TestCase
         {
             for (int n = 1; n < 4096; n += 512)
             {
-                assertTrue(Serial.gt(s+n, s));
-                assertTrue(Serial.lt(s, s+n));
+                assertTrue("Serial.gt returned false for: (" + (s + n) + " > " + s + "), n=" + n, Serial.gt(s + n, s));
+                assertTrue("Serial.lt returned false for: (" + s + " < " + (s + n) + "), n=" + n, Serial.lt(s, s + n));
             }
 
             s += 1024;
