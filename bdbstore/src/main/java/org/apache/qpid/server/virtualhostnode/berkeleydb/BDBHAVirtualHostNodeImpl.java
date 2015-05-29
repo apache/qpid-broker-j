@@ -1218,22 +1218,24 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     {
         LOGGER.info("Intruder detected (" + intruderHostAndPort + "), stopping and setting state to ERRORED");
 
-        State initialState = getState();
+        final State initialState = getState();
         try
         {
-            stopAndSetStateTo(State.ERRORED);
+            stopAndSetStateTo(State.ERRORED).addListener(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    _lastRole.set(NodeRole.DETACHED);
+                    attributeSet(ROLE, _role, NodeRole.DETACHED);
+                    notifyStateChanged(initialState, State.ERRORED);
+                }
+            }, getTaskExecutor().getExecutor());
         }
         catch (Exception e)
         {
             LOGGER.error("Unexpected exception on closing the node when intruder is detected ", e);
         }
-        finally
-        {
-            closeEnvironment();
-            _lastRole.set(NodeRole.DETACHED);
-            attributeSet(ROLE, _role, NodeRole.DETACHED);
-        }
-        notifyStateChanged(initialState, State.ERRORED);
     }
 
     private abstract class VirtualHostNodeGroupTask implements Task<Void>
