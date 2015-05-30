@@ -20,7 +20,7 @@
  */
 {
   "name": "Broker",
-  "defaultVirtualHost" : "test",
+  "defaultVirtualHostNode" : "test",
   "modelVersion": "3.1",
   "authenticationproviders" : [ {
     "name" : "plain",
@@ -102,6 +102,7 @@
   "virtualhostnodes" : [ {
     "name" : "test",
     "type" : "${virtualhostnode.type}",
+    "defaultVirtualHostNode" : "true",
     "storePath" : "${QPID_WORK}${file.separator}${test.port}${file.separator}test${file.separator}config",
     "context" : {
       "virtualhostBlueprint" : "${virtualhostnode.context.blueprint}"

@@ -55,7 +55,6 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.IConnectionRegistry.RegistryChangeListener;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
@@ -150,27 +149,6 @@ public class VirtualHostTest extends QpidTestCase
 
         assertEquals("Unexpected state", State.DELETED, virtualHost.getState());
         verify(_configStore).remove(matchesRecord(virtualHost.getId(), virtualHost.getType()));
-    }
-
-    public void testDeleteDefaultVirtualHostIsDisallowed()
-    {
-        String virtualHostName = getName();
-        when(_broker.getDefaultVirtualHost()).thenReturn(virtualHostName);
-
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
-
-        try
-        {
-            virtualHost.delete();
-            fail("Exception not thrown");
-        }
-        catch(IntegrityViolationException ive)
-        {
-            // PASS
-        }
-
-        assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
-        verify(_configStore, never()).remove(matchesRecord(virtualHost.getId(), virtualHost.getType()));
     }
 
     public void testStopAndStartVirtualHost()

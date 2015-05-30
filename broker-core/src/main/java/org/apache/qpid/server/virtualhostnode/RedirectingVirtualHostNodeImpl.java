@@ -23,6 +23,7 @@ package org.apache.qpid.server.virtualhostnode;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Port;
@@ -39,6 +41,7 @@ import org.apache.qpid.server.model.RemoteReplicationNode;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 
 
@@ -47,10 +50,13 @@ public class RedirectingVirtualHostNodeImpl
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectingVirtualHostImpl.class);
     public static final String VIRTUAL_HOST_NODE_TYPE = "Redirector";
-
+    private final Broker<?> _broker;
 
     @ManagedAttributeField
     private String _virtualHostInitialConfiguration;
+
+    @ManagedAttributeField
+    private boolean _defaultVirtualHostNode;
 
     @ManagedAttributeField
     private Map<Port<?>,String> _redirects;
@@ -62,6 +68,8 @@ public class RedirectingVirtualHostNodeImpl
     {
         super(Collections.<Class<? extends ConfiguredObject>,ConfiguredObject<?>>singletonMap(Broker.class, parent),
               attributes);
+        _broker = parent;
+
     }
 
     @StateTransition( currentState = {State.UNINITIALIZED, State.STOPPED, State.ERRORED }, desiredState = State.ACTIVE )
@@ -95,6 +103,12 @@ public class RedirectingVirtualHostNodeImpl
     }
 
     @Override
+    public boolean isDefaultVirtualHostNode()
+    {
+        return _defaultVirtualHostNode;
+    }
+
+    @Override
     public VirtualHost<?, ?, ?> getVirtualHost()
     {
         return _virtualHost;
@@ -116,6 +130,43 @@ public class RedirectingVirtualHostNodeImpl
     public Map<Port<?>, String> getRedirects()
     {
         return _redirects;
+    }
+
+
+    @Override
+    protected void validateOnCreate()
+    {
+        super.validateOnCreate();
+
+        if (isDefaultVirtualHostNode())
+        {
+            VirtualHostNode existingDefault = _broker.findDefautVirtualHostNode();
+
+            if (existingDefault != null)
+            {
+                throw new IntegrityViolationException("The existing virtual host node '" + existingDefault.getName()
+                                                      + "' is already the default for the Broker.");
+            }
+        }
+
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        VirtualHostNode updated = (VirtualHostNode) proxyForValidation;
+        if (changedAttributes.contains(DEFAULT_VIRTUAL_HOST_NODE) && updated.isDefaultVirtualHostNode())
+        {
+            VirtualHostNode existingDefault = _broker.findDefautVirtualHostNode();
+
+            if (existingDefault != null && existingDefault != this)
+            {
+                throw new IntegrityViolationException("Cannot make '" + getName() + "' the default virtual host node for"
+                                                      + " the Broker as virtual host node '" + existingDefault.getName()
+                                                      + "' is already the default.");
+            }
+        }
     }
 
     public static Map<String, Collection<String>> getSupportedChildTypes()

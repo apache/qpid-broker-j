@@ -17,20 +17,17 @@
  * under the License.
  */
 
-define([],
+define(["dojo/domReady!"],
   function ()
   {
     function Memory(data)
     {
         this.parent = data.parent;
-        this.parent.editNodeButton.set("disabled",true);
-        this.parent.editNodeButton.domNode.style.display = "none";
     }
 
     Memory.prototype.update = function(data)
     {
-        this.parent.editNodeButton.set("disabled", true);
-        this.parent.editNodeButton.domNode.style.display = "none";
+      this.parent.editNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
     }
 
     return Memory;

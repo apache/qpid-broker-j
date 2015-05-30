@@ -37,7 +37,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String PLATFORM = "platform";
     String PROCESS_PID = "processPid";
     String PRODUCT_VERSION = "productVersion";
-    String DEFAULT_VIRTUAL_HOST = "defaultVirtualHost";
     String STATISTICS_REPORTING_PERIOD = "statisticsReportingPeriod";
     String STATISTICS_REPORTING_RESET_ENABLED = "statisticsReportingResetEnabled";
     String STORE_PATH = "storePath";
@@ -102,9 +101,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @DerivedAttribute
     String getProductVersion();
-
-    @ManagedAttribute
-    String getDefaultVirtualHost();
 
     @ManagedAttribute( defaultValue = "256" )
     int getConnection_sessionCountLimit();
@@ -174,6 +170,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     LogRecorder getLogRecorder();
 
     VirtualHost<?,?,?> findVirtualHostByName(String name);
+
+    VirtualHostNode findDefautVirtualHostNode();
 
     Collection<KeyStore<?>> getKeyStores();
 

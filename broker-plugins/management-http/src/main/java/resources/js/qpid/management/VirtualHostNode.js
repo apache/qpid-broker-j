@@ -162,7 +162,7 @@ define(["dojo/parser",
                    }
                }
 
-               storeNodes(["name", "state", "type"]);
+               storeNodes(["name", "state", "type", "defaultVirtualHostNode"]);
                this.detailsDiv = findNode("virtualhostnodedetails");
           }
 
@@ -192,12 +192,19 @@ define(["dojo/parser",
 
            Updater.prototype.updateUI = function(data)
            {
+             function showBoolean(val)
+             {
+               return "<input type='checkbox' disabled='disabled' "+(val ? "checked='checked'": "")+" />" ;
+             }
+
              this.tabObject.startNodeButton.set("disabled", !(data.state == "STOPPED" || data.state == "ERRORED"));
              this.tabObject.stopNodeButton.set("disabled", data.state != "ACTIVE");
 
              this.name.innerHTML = entities.encode(String(data[ "name" ]));
              this.state.innerHTML = entities.encode(String(data[ "state" ]));
              this.type.innerHTML = entities.encode(String(data[ "type" ]));
+             this.defaultVirtualHostNode.innerHTML = showBoolean(data[ "defaultVirtualHostNode" ]);
+
              if (!this.details)
              {
                var that = this;

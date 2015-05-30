@@ -45,8 +45,8 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostAliasTest extends QpidTestCase
 {
+    private final Map<String, VirtualHost<?,?,?>> _vhosts = new HashMap<>();
     private Broker<?> _broker;
-    private Map<String, VirtualHost<?,?,?>> _vhosts;
     private AmqpPort _port;
 
     @Override
@@ -60,16 +60,20 @@ public class VirtualHostAliasTest extends QpidTestCase
         when(dummyAuthProvider.getId()).thenReturn(UUID.randomUUID());
         when(dummyAuthProvider.getMechanisms()).thenReturn(Arrays.asList("PLAIN"));
         when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(dummyAuthProvider));
-        _vhosts = new HashMap<>();
         for(String name : new String[] { "red", "blue", "purple", "black" })
         {
-            VirtualHostImpl<?, ?, ?> virtualHost = BrokerTestHelper.createVirtualHost(name, _broker);
+            boolean defaultVHN = "black".equals(name);
+            VirtualHostImpl<?, ?, ?> virtualHost = BrokerTestHelper.createVirtualHost(name, _broker, defaultVHN);
             VirtualHostNode vhn = virtualHost.getParent(VirtualHostNode.class);
             assertNotSame(vhn.getName(), virtualHost.getName());
             _vhosts.put(name, virtualHost);
+
+            if (defaultVHN)
+            {
+                when(_broker.findDefautVirtualHostNode()).thenReturn(vhn);
+            }
         }
         ConfiguredObjectFactory objectFactory = _broker.getObjectFactory();
-        when(_broker.getDefaultVirtualHost()).thenReturn("black");
 
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put(Port.NAME, getTestName());

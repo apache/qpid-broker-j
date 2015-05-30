@@ -115,11 +115,11 @@ public class BrokerTestHelper
     {
 
         Broker<?> broker = createBrokerMock();
-        return createVirtualHost(attributes, broker);
+        return createVirtualHost(attributes, broker, false);
     }
 
     private static VirtualHostImpl<?, ?, ?> createVirtualHost(final Map<String, Object> attributes,
-                                                                final Broker<?> broker)
+                                                                final Broker<?> broker, boolean defaultVHN)
     {
         ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
 
@@ -128,6 +128,7 @@ public class BrokerTestHelper
         when(virtualHostNode.getName()).thenReturn( virtualHostNodeName);
         when(virtualHostNode.getTaskExecutor()).thenReturn(TASK_EXECUTOR);
         when(virtualHostNode.getChildExecutor()).thenReturn(TASK_EXECUTOR);
+        when(virtualHostNode.isDefaultVirtualHostNode()).thenReturn(defaultVHN);
 
         when(virtualHostNode.getParent(eq(Broker.class))).thenReturn(broker);
 
@@ -152,19 +153,18 @@ public class BrokerTestHelper
         return host;
     }
 
-
     public static VirtualHostImpl<?,?,?> createVirtualHost(String name) throws Exception
     {
-        return createVirtualHost(name, createBrokerMock());
+        return createVirtualHost(name, createBrokerMock(), false);
     }
 
-    public static VirtualHostImpl<?,?,?> createVirtualHost(String name, Broker<?> broker) throws Exception
+    public static VirtualHostImpl<?,?,?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN) throws Exception
     {
-        Map<String,Object> attributes = new HashMap<String, Object>();
+        Map<String,Object> attributes = new HashMap<>();
         attributes.put(org.apache.qpid.server.model.VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         attributes.put(org.apache.qpid.server.model.VirtualHost.NAME, name);
 
-        return createVirtualHost(attributes, broker);
+        return createVirtualHost(attributes, broker, defaultVHN);
     }
 
     public static AMQSessionModel<?,?> createSession(int channelId, AMQConnectionModel<?,?> connection)

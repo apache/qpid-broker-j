@@ -27,7 +27,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
@@ -41,6 +45,8 @@ import org.apache.qpid.server.util.Action;
 
 public class BrokerStoreUpgraderAndRecoverer
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BrokerStoreUpgraderAndRecoverer.class);
+
     public static final String VIRTUALHOSTS = "virtualhosts";
     private final SystemConfig<?> _systemConfig;
     private final Map<String, StoreUpgraderPhase> _upgraders = new HashMap<String, StoreUpgraderPhase>();
@@ -314,6 +320,10 @@ public class BrokerStoreUpgraderAndRecoverer
     }
     private class Upgrader_3_0_to_3_1 extends StoreUpgraderPhase
     {
+        private String _defaultVirtualHost;
+        private final Set<ConfiguredObjectRecord> _knownBdbHaVirtualHostNode = new HashSet<>();
+        private final Map<String, ConfiguredObjectRecord> _knownNonBdbHaVirtualHostNode = new HashMap<>();
+
         public Upgrader_3_0_to_3_1()
         {
             super("modelVersion", "3.0", "3.1");
@@ -325,12 +335,37 @@ public class BrokerStoreUpgraderAndRecoverer
             if (record.getType().equals("Broker"))
             {
                 record = upgradeRootRecord(record);
+
+                Map<String, Object> brokerAttributes = new HashMap<>(record.getAttributes());
+                _defaultVirtualHost = (String)brokerAttributes.remove("defaultVirtualHost");
+
+                if (_defaultVirtualHost != null)
+                {
+                    record = new ConfiguredObjectRecordImpl(record.getId(),
+                                                            record.getType(),
+                                                            brokerAttributes,
+                                                            record.getParents());
+                    getUpdateMap().put(record.getId(), record);
+                }
+
                 addMemoryLogger(record);
                 addFileLogger(record);
                 getNextUpgrader().configuredObject(record);
+            }
+            else if (record.getType().equals("VirtualHostNode"))
+            {
+                if ("BDB_HA".equals(record.getAttributes().get("type")))
+                {
+                    _knownBdbHaVirtualHostNode.add(record);
+                }
+                else
+                {
+                    String nodeName = (String) record.getAttributes().get("name");
+                    _knownNonBdbHaVirtualHostNode.put(nodeName, record);
+                }
+                getNextUpgrader().configuredObject(record);
 
             }
-
         }
 
         private void addMemoryLogger(final ConfiguredObjectRecord record)
@@ -388,6 +423,42 @@ public class BrokerStoreUpgraderAndRecoverer
         @Override
         public void complete()
         {
+            if (_defaultVirtualHost != null)
+            {
+                final ConfiguredObjectRecord defaultVirtualHostNode;
+                if (_knownNonBdbHaVirtualHostNode.containsKey(_defaultVirtualHost))
+                {
+                    defaultVirtualHostNode = _knownNonBdbHaVirtualHostNode.get(_defaultVirtualHost);
+                }
+                else if (_knownBdbHaVirtualHostNode.size() == 1)
+                {
+                    // We had a default VHN but it didn't match the non-BDBHAVHNs and we have only one BDBHAVHN.
+                    // It has to be the target.
+                    defaultVirtualHostNode = _knownBdbHaVirtualHostNode.iterator().next();
+
+                }
+                else
+                {
+                    LOGGER.warn("Unable to identify the target virtual host node for old default virtualhost name : '{}'",
+                                _defaultVirtualHost);
+                    defaultVirtualHostNode = null;
+                }
+
+                if (defaultVirtualHostNode != null)
+                {
+                    final Map<String, Object> updatedAttributes = new HashMap<>(defaultVirtualHostNode.getAttributes());
+                    updatedAttributes.put("defaultVirtualHostNode", "true");
+
+                    ConfiguredObjectRecordImpl updateRecord =
+                            new ConfiguredObjectRecordImpl(defaultVirtualHostNode.getId(),
+                                                           defaultVirtualHostNode.getType(),
+                                                           updatedAttributes,
+                                                           defaultVirtualHostNode.getParents());
+                    getUpdateMap().put(updateRecord.getId(), updateRecord);
+
+                }
+
+            }
             getNextUpgrader().complete();
         }
 

@@ -99,7 +99,6 @@ public class BrokerRecovererTest extends TestCase
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Broker.NAME, getName());
-        attributes.put(Broker.DEFAULT_VIRTUAL_HOST, "test");
         attributes.put(Broker.CONNECTION_SESSION_COUNT_LIMIT, 1000);
         attributes.put(Broker.CONNECTION_HEART_BEAT_DELAY, 2000);
         attributes.put(Broker.STATISTICS_REPORTING_PERIOD, 4000);

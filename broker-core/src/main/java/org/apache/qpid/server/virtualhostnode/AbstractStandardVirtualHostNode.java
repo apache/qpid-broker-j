@@ -181,7 +181,7 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
     }
 
     @Override
-    public void validateOnCreate()
+    protected void validateOnCreate()
     {
         super.validateOnCreate();
         DurableConfigurationStore store = createConfigurationStore();

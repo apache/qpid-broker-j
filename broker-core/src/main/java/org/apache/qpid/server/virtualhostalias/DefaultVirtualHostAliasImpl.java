@@ -26,7 +26,6 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.DefaultVirtualHostAlias;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 
 public final class DefaultVirtualHostAliasImpl
@@ -46,17 +45,8 @@ public final class DefaultVirtualHostAliasImpl
         if(name == null || name.trim().equals(""))
         {
             Broker<?> broker = getPort().getParent(Broker.class);
-            String defaultHostName = broker.getDefaultVirtualHost();
-            for(VirtualHostNode<?> vhn : broker.getVirtualHostNodes())
-            {
-                VirtualHost vh = vhn.getVirtualHost();
-
-                if(vh != null && vh.getName().equals(defaultHostName))
-                {
-                    return vhn;
-                }
-            }
-
+            VirtualHostNode defaultVirtualHostNode = broker.findDefautVirtualHostNode();
+            return defaultVirtualHostNode != null && defaultVirtualHostNode.getVirtualHost() != null ? defaultVirtualHostNode : null;
         }
         return null;
     }

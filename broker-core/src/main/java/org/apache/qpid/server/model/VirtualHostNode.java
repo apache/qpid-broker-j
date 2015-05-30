@@ -31,6 +31,7 @@ public interface VirtualHostNode<X extends VirtualHostNode<X>> extends Configure
     @ManagedContextDefault(name = QPID_INITIAL_CONFIG_VIRTUALHOST_CONFIG_VAR)
     String DEFAULT_INITIAL_CONFIG_VIRTUALHOST_CONFIG_VAR = "{ \"type\" : \"DERBY\" }";
 
+    String DEFAULT_VIRTUAL_HOST_NODE = "defaultVirtualHostNode";
 
     String VIRTUALHOST_INITIAL_CONFIGURATION = "virtualHostInitialConfiguration";
 
@@ -38,6 +39,9 @@ public interface VirtualHostNode<X extends VirtualHostNode<X>> extends Configure
 
     @ManagedContextDefault(name = VIRTUALHOST_BLUEPRINT_CONTEXT_VAR)
     String DEFAULT_INITIAL_CONFIGURATION = "{}";
+
+    @ManagedAttribute( defaultValue = "false")
+    boolean isDefaultVirtualHostNode();
 
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_BLUEPRINT_CONTEXT_VAR + "}")
     String getVirtualHostInitialConfiguration();
@@ -52,4 +56,5 @@ public interface VirtualHostNode<X extends VirtualHostNode<X>> extends Configure
     void stop();
 
     void start();
+
 }

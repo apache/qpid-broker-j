@@ -55,7 +55,7 @@ define(["dojo/parser",
         addAuthenticationProvider, addVirtualHostNodeAndVirtualHost, addPort, addStore, addGroupProvider, addAccessControlProvider, editBroker, template) {
 
            var brokerAttributeNames = ["name", "operatingSystem", "platform", "productVersion", "modelVersion",
-                                        "defaultVirtualHost", "statisticsReportingPeriod", "statisticsReportingResetEnabled",
+                                        "statisticsReportingPeriod", "statisticsReportingResetEnabled",
                                         "connection.sessionCountLimit", "connection.heartBeatDelay"];
 
            function Broker(name, parent, controller) {
@@ -282,10 +282,15 @@ define(["dojo/parser",
                              that.vhostsGrid =
                                 new UpdatableStore(that.brokerData.virtualhostnodes, query(".broker-virtualhosts")[0],
                                                 [
-                                                  { name: "Node Name", field: "name", width: "10%"},
-                                                  { name: "Node State", field: "state", width: "10%"},
-                                                  { name: "Node Type", field: "type", width: "10%"},
-                                                  { name: "Host Name", field: "_item", width: "10%",
+                                                  { name: "Node Name", field: "name", width: "8%"},
+                                                  { name: "Node State", field: "state", width: "8%"},
+                                                  { name: "Node Type", field: "type", width: "8%"},
+                                                  { name: "Default", field: "defaultVirtualHostNode", width: "8%",
+                                                    formatter: function(item){
+                                                      return "<input type='checkbox' disabled='disabled' "+(item?"checked='checked'": "")+" />";
+                                                    }
+                                                  },
+                                                  { name: "Host Name", field: "_item", width: "8%",
                                                     formatter: function(item){
                                                       return item && item.virtualhosts? item.virtualhosts[0].name: "N/A";
                                                     }
@@ -313,13 +318,6 @@ define(["dojo/parser",
                                                   { name: "Exchanges", field: "_item", width: "8%",
                                                     formatter: function(item){
                                                         return isActiveVH(item)? item.virtualhosts[0].statistics.exchangeCount: "N/A";
-                                                    }
-                                                  },
-                                                  {
-                                                    name: "Default", field: "_item", width: "6%",
-                                                    formatter: function(item){
-                                                        var val = item && item.virtualhosts? item.virtualhosts[0].name: null;
-                                                        return "<input type='radio' disabled='disabled' "+(val == that.brokerData.defaultVirtualHost ? "checked='checked'": "")+" />";
                                                     }
                                                   }
                                                 ], function(obj) {

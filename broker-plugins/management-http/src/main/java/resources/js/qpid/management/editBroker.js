@@ -45,7 +45,7 @@ define(["dojox/html/entities",
         "dojo/domReady!"],
   function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
   {
-    var fields = [ "name", "defaultVirtualHost", "statisticsReportingPeriod", "statisticsReportingResetEnabled", "connection.sessionCountLimit", "connection.heartBeatDelay"];
+    var fields = [ "name", "statisticsReportingPeriod", "statisticsReportingResetEnabled", "connection.sessionCountLimit", "connection.heartBeatDelay"];
     var numericFieldNames = ["statisticsReportingPeriod", "connection.sessionCountLimit", "connection.heartBeatDelay"];
 
     var brokerEditor =
@@ -130,21 +130,6 @@ define(["dojox/html/entities",
       _show:function(actualData, effectiveData)
       {
           this.initialData = actualData;
-          var nodes = effectiveData.virtualhostnodes
-          var data = [];
-          if (nodes)
-          {
-             for (var i=0; i< nodes.length; i++)
-             {
-                 if (nodes[i].virtualhosts)
-                 {
-                     data.push({id: nodes[i].virtualhosts[0].name, name: nodes[i].virtualhosts[0].name});
-                 }
-             }
-          }
-          var hostsStore = new dojo.store.Memory({ data: data });
-          this["defaultVirtualHost"].set("store", hostsStore);
-
 
           for(var i = 0; i < fields.length; i++)
           {

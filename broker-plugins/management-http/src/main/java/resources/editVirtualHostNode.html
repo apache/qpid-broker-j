@@ -36,8 +36,18 @@
                               title: 'Enter virtual host name'" />
                       </div>
                   </div>
-
                   <div id="editVirtualHostNode.typeFields"></div>
+                  <div class="clear">
+                      <div class="formLabel-labelCell tableContainer-labelCell">Default Virtual Host Node: </div>
+                      <div class="formLabel-controlCell tableContainer-valueCell">
+                          <input type="checkbox" id="editVirtualHostNode.defaultVirtualHostNode" checked="checked"
+                                 data-dojo-type="dijit/form/CheckBox"
+                                 data-dojo-props="
+                                    name: 'defaultVirtualHostNode',
+                                    required: false,
+                                    title: 'Make this virtual host node default. Clients connecting without providing a virtualhost will connect to the virtual host beneath this node.'" />
+                      </div>
+                  </div>
 
                   <div class="clear"></div>
 

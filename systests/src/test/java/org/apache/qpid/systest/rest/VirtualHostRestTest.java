@@ -181,11 +181,6 @@ public class VirtualHostRestTest extends QpidRestTestCase
         assertEquals("Host should be deleted", 0, hosts.size());
     }
 
-    public void testDeleteDefaultHostFails() throws Exception
-    {
-        getRestTestHelper().submitRequest("virtualhost/" + TEST1_VIRTUALHOST, "DELETE", HttpServletResponse.SC_CONFLICT);
-    }
-
     public void testUpdateByPut() throws Exception
     {
         assertVirtualHostUpdate("PUT");

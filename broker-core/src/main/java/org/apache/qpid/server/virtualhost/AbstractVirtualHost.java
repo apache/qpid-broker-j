@@ -246,14 +246,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
         }
-        if (changedAttributes.contains(DESIRED_STATE))
-        {
-            if (State.DELETED == proxyForValidation.getDesiredState()
-                && getName().equals(_broker.getDefaultVirtualHost()))
-            {
-                throw new IntegrityViolationException("Cannot delete default virtual host '" + getName() + "'");
-            }
-        }
+
         if(changedAttributes.contains(GLOBAL_ADDRESS_DOMAINS))
         {
             VirtualHost<?, ?, ?> virtualHost = (VirtualHost<?, ?, ?>) proxyForValidation;

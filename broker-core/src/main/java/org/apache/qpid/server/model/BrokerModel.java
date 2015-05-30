@@ -47,6 +47,7 @@ public final class BrokerModel extends Model
      *            supportedPreferencesProviderTypes, VH#supportedExchangeTypes, VH#supportedQueueTypes
      *     Renamed FileTrustStore/FileKeyStore.path => FileTrustStore/FileKeyStore.storeUrl
      * 3.1 Add BrokerLogger as a child of Broker
+     *     Replace the defaultVirtualHost (at Broker) with defaultVirtualHostNode flag (at VHN)
      */
     public static final int MODEL_MAJOR_VERSION = 3;
     public static final int MODEL_MINOR_VERSION = 1;

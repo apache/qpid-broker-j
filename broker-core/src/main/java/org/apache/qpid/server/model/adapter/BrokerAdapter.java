@@ -22,6 +22,7 @@ package org.apache.qpid.server.model.adapter;
 
 import java.security.AccessControlException;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +34,6 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
@@ -93,8 +93,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     /** Flags used to control the reporting of flow to disk. Protected by this */
     private boolean _totalMessageSizeExceedThresholdReported = false,  _totalMessageSizeWithinThresholdReported = true;
 
-    @ManagedAttributeField
-    private String _defaultVirtualHost;
     @ManagedAttributeField
     private int _connection_sessionCountLimit;
     @ManagedAttributeField
@@ -246,20 +244,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             throw new IllegalConfigurationException("Cannot change the model version");
         }
 
-        if(changedAttributes.contains(DEFAULT_VIRTUAL_HOST))
-        {
-            String defaultVirtualHost = updated.getDefaultVirtualHost();
-            if (defaultVirtualHost != null)
-            {
-                VirtualHost foundHost = findVirtualHostByName(defaultVirtualHost);
-                if (foundHost == null)
-                {
-                    throw new IllegalConfigurationException("Virtual host with name " + defaultVirtualHost
-                                                            + " cannot be set as a default as it does not exist");
-                }
-            }
-        }
-
         for (String attributeName : POSITIVE_NUMERIC_ATTRIBUTES)
         {
             if(changedAttributes.contains(attributeName))
@@ -392,12 +376,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public String getProductVersion()
     {
         return QpidProperties.getReleaseVersion();
-    }
-
-    @Override
-    public String getDefaultVirtualHost()
-    {
-        return _defaultVirtualHost;
     }
 
     @Override
@@ -654,6 +632,22 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             }
         }
         return null;
+    }
+
+    @Override
+    public VirtualHostNode findDefautVirtualHostNode()
+    {
+        VirtualHostNode existingDefault = null;
+        Collection<VirtualHostNode<?>> virtualHostNodes = new ArrayList<>(getVirtualHostNodes());
+        for(VirtualHostNode node : virtualHostNodes)
+        {
+            if (node.isDefaultVirtualHostNode())
+            {
+                existingDefault = node;
+                break;
+            }
+        }
+        return existingDefault;
     }
 
     @Override

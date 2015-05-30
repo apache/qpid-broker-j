@@ -24,6 +24,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -354,23 +355,49 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         assertEquals("Virtual host node state changed unexpectedly", State.ACTIVE, node.getState());
     }
 
-    public void testValidateOnCreateFails() throws Exception
+    public void testValidateOnCreateFails_StoreFails() throws Exception
     {
         String nodeName = getTestName();
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
 
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
-        AbstractStandardVirtualHostNode node = createAbstractStandardVirtualHostNode(attributes, store);
+        AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
 
         try
         {
-            node.validateOnCreate();
-            fail("Cannot create node");
+            node.create();
+            fail("Exception not thrown");
         }
         catch (IllegalConfigurationException e)
         {
             assertTrue("Unexpected exception " + e.getMessage(), e.getMessage().startsWith("Cannot open node configuration store"));
+        }
+    }
+
+    public void testValidateOnCreateFails_ExistingDefaultVHN() throws Exception
+    {
+        String nodeName = getTestName();
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestVirtualHostNode.NAME, nodeName);
+        attributes.put(TestVirtualHostNode.DEFAULT_VIRTUAL_HOST_NODE, Boolean.TRUE);
+
+        VirtualHostNode existingDefault = mock(VirtualHostNode.class);
+        when(existingDefault.getName()).thenReturn("existingDefault");
+
+        when(_broker.findDefautVirtualHostNode()).thenReturn(existingDefault);
+
+        final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
+        AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
+
+        try
+        {
+            node.create();
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            assertTrue("Unexpected exception " + e.getMessage(), e.getMessage().startsWith("The existing virtual host node 'existingDefault' is already the default for the Broker"));
         }
     }
 
@@ -380,11 +407,11 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         Map<String, Object> attributes = Collections.<String, Object>singletonMap(TestVirtualHostNode.NAME, nodeName);
 
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
-        AbstractStandardVirtualHostNode node = createAbstractStandardVirtualHostNode(attributes, store);
+        AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
 
-        node.validateOnCreate();
-        verify(store).openConfigurationStore(node, false);
-        verify(store).closeConfigurationStore();
+        node.create();
+        verify(store, times(2)).openConfigurationStore(node, false); // once of validation, once for real
+        verify(store, times(1)).closeConfigurationStore();
     }
 
     public void testOpenFails() throws Exception
@@ -440,7 +467,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
         final DurableConfigurationStore store = mock(DurableConfigurationStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
-        AbstractStandardVirtualHostNode node = createAbstractStandardVirtualHostNode(attributes, store);
+        AbstractStandardVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
         assertEquals("Unexpected node state", State.ERRORED, node.getState());
 
@@ -455,7 +482,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
         DurableConfigurationStore store = mock(DurableConfigurationStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
-        AbstractVirtualHostNode node = createAbstractStandardVirtualHostNode(attributes, store);
+        AbstractVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
         assertEquals("Unexpected node state", State.ERRORED, node.getState());
         doNothing().when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
@@ -471,7 +498,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
         DurableConfigurationStore store = mock(DurableConfigurationStore.class);
         doThrow(new RuntimeException("Cannot open store")).when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
-        AbstractVirtualHostNode node = createAbstractStandardVirtualHostNode(attributes, store);
+        AbstractVirtualHostNode node = createTestStandardVirtualHostNode(attributes, store);
         node.open();
         assertEquals("Unexpected node state", State.ERRORED, node.getState());
         doNothing().when(store).openConfigurationStore(any(ConfiguredObject.class), any(boolean.class));
@@ -517,7 +544,8 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
     }
 
 
-    private AbstractStandardVirtualHostNode createAbstractStandardVirtualHostNode(final Map<String, Object> attributes, final DurableConfigurationStore store)
+    private AbstractStandardVirtualHostNode createTestStandardVirtualHostNode(final Map<String, Object> attributes,
+                                                                              final DurableConfigurationStore store)
     {
         return new AbstractStandardVirtualHostNode(attributes,  _broker){
 

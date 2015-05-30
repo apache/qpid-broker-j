@@ -41,7 +41,6 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.NetworkConnection;
@@ -56,8 +55,7 @@ public class MultiVersionProtocolEngineFactoryTest extends QpidTestCase
         super.setUp();
         BrokerTestHelper.setUp();
         _broker = BrokerTestHelper.createBrokerMock();
-        when(_broker.getAttribute(Broker.DEFAULT_VIRTUAL_HOST)).thenReturn("default");
-        when(_broker.getDefaultVirtualHost()).thenReturn("default");
+
         when(_broker.getContextValue(eq(Integer.class), eq(Broker.BROKER_FRAME_SIZE))).thenReturn(0xffff);
 
     }

@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -79,15 +81,15 @@ public class AnonymousAccessRestTest extends QpidRestTestCase
         startBrokerNow();
 
         Map<String, Object> brokerAttributes = new HashMap<String, Object>();
-        brokerAttributes.put(Broker.DEFAULT_VIRTUAL_HOST, TEST3_VIRTUALHOST);
+        String newBrokerName = getName();
+        brokerAttributes.put(Broker.NAME, newBrokerName);
 
-        int response = getRestTestHelper().submitRequest("broker", "PUT", brokerAttributes);
-        assertEquals("Unexpected update response", 200, response);
+        getRestTestHelper().submitRequest("broker", "PUT", brokerAttributes, HttpServletResponse.SC_OK);
 
         Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker");
         assertNotNull("Unexpected broker attributes", brokerDetails);
         assertNotNull("Unexpected value of attribute " + Broker.ID, brokerDetails.get(Broker.ID));
-        assertEquals("Unexpected default virtual host", TEST3_VIRTUALHOST, brokerDetails.get(Broker.DEFAULT_VIRTUAL_HOST));
+        assertEquals("Unexpected default virtual host", newBrokerName, brokerDetails.get(Broker.NAME));
     }
 
     public void testGetWithPasswordAuthProvider() throws Exception
@@ -96,20 +98,19 @@ public class AnonymousAccessRestTest extends QpidRestTestCase
                 TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
         startBrokerNow();
 
-        int response = getRestTestHelper().submitRequest("broker", "GET");
-        assertEquals("Anonymous access should be denied", 401, response);
+        getRestTestHelper().submitRequest("broker", "GET", HttpServletResponse.SC_UNAUTHORIZED);
     }
 
     public void testPutWithPasswordAuthProvider() throws Exception
     {
+        String newBrokerName = getName();
         getBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
                 TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
         startBrokerNow();
 
         Map<String, Object> brokerAttributes = new HashMap<String, Object>();
-        brokerAttributes.put(Broker.DEFAULT_VIRTUAL_HOST, TEST3_VIRTUALHOST);
+        brokerAttributes.put(Broker.NAME, newBrokerName);
 
-        int response = getRestTestHelper().submitRequest("broker", "PUT", brokerAttributes);
-        assertEquals("Anonymous access should be denied", 401, response);
+        getRestTestHelper().submitRequest("broker", "PUT", brokerAttributes, HttpServletResponse.SC_UNAUTHORIZED);
     }
 }

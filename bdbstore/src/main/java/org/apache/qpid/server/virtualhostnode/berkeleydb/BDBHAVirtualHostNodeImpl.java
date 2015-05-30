@@ -514,7 +514,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     }
 
     @Override
-    public void validateOnCreate()
+    protected void validateOnCreate()
     {
         super.validateOnCreate();
 

@@ -55,6 +55,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
@@ -93,6 +94,10 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     private MessageStoreLogSubject _configurationStoreLogSubject;
 
     private TaskExecutor _virtualHostExecutor;
+
+    @ManagedAttributeField
+    private boolean _defaultVirtualHostNode;
+
     @ManagedAttributeField
     private String _virtualHostInitialConfiguration;
 
@@ -106,7 +111,6 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         SystemConfig<?> systemConfig = _broker.getParent(SystemConfig.class);
         _eventLogger = systemConfig.getEventLogger();
     }
-
 
     @Override
     public void onOpen()
@@ -202,6 +206,42 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         else
         {
             throw new IllegalStateException(this + " has an unexpected number of virtualhost children, size " + children.size());
+        }
+    }
+
+    @Override
+    protected void validateOnCreate()
+    {
+        super.validateOnCreate();
+
+        if (isDefaultVirtualHostNode())
+        {
+            VirtualHostNode existingDefault = _broker.findDefautVirtualHostNode();
+
+            if (existingDefault != null)
+            {
+                throw new IllegalConfigurationException("The existing virtual host node '" + existingDefault.getName()
+                                                      + "' is already the default for the Broker.");
+            }
+        }
+
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        VirtualHostNode updated = (VirtualHostNode) proxyForValidation;
+        if (changedAttributes.contains(DEFAULT_VIRTUAL_HOST_NODE) && updated.isDefaultVirtualHostNode())
+        {
+            VirtualHostNode existingDefault = _broker.findDefautVirtualHostNode();
+
+            if (existingDefault != null && existingDefault != this)
+            {
+                throw new IntegrityViolationException("Cannot make '" + getName() + "' the default virtual host node for"
+                                                      + " the Broker as virtual host node '" + existingDefault.getName()
+                                                      + "' is already the default.");
+            }
         }
     }
 
@@ -350,11 +390,15 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
         return _virtualHostInitialConfiguration;
     }
 
+    @Override
+    public boolean isDefaultVirtualHostNode()
+    {
+        return _defaultVirtualHostNode;
+    }
+
     protected abstract DurableConfigurationStore createConfigurationStore();
 
     protected abstract ListenableFuture<Void> activate();
-
-
 
     protected abstract ConfiguredObjectRecord enrichInitialVirtualHostRootRecord(final ConfiguredObjectRecord vhostRecord);
 

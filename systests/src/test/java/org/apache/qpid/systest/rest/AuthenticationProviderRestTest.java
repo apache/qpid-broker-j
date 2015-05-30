@@ -154,7 +154,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
             getRestTestHelper().setUsernameAndPassword(userName, userPassword);
 
             ConnectionURL connectionURL = new AMQConnectionURL("amqp://"+ userName + ":" + userPassword +
-                    "@/?brokerlist='tcp://localhost:"+getFailingPort()+"'");
+                    "@/" + TEST1_VIRTUALHOST + "?brokerlist='tcp://localhost:"+getFailingPort()+"'");
             Connection connection = getConnection(connectionURL);
             try
             {

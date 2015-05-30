@@ -117,6 +117,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         expectedAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
         expectedAttributes.put("name", VIRTUALHOST_NAME);
         expectedAttributes.put("type", "JDBC");
+        expectedAttributes.put("defaultVirtualHostNode", "true");
 
         final Map<String, Object> context = new HashMap<>();
         context.put("qpid.jdbcstore.bigIntType", "mybigint");
@@ -166,6 +167,8 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         expectedAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
         expectedAttributes.put("name", VIRTUALHOST_NAME);
         expectedAttributes.put("type", "JDBC");
+        expectedAttributes.put("defaultVirtualHostNode", "true");
+
 
         final Map<String, Object> context = new HashMap<>();
         context.put("qpid.jdbcstore.bigIntType", "mybigint");
@@ -205,6 +208,8 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         expectedAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
         expectedAttributes.put("name", VIRTUALHOST_NAME);
         expectedAttributes.put("type", "DERBY");
+        expectedAttributes.put("defaultVirtualHostNode", "true");
+
         assertEquals("Unexpected attributes", expectedAttributes, upgradedVirtualHostNodeRecord.getAttributes());
         assertBrokerRecord(records);
     }
@@ -237,6 +242,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         expectedAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
         expectedAttributes.put("name", VIRTUALHOST_NAME);
         expectedAttributes.put("type", "BDB");
+        expectedAttributes.put("defaultVirtualHostNode", "true");
         expectedAttributes.put("context", Collections.singletonMap("je.stats.collect", "false"));
         assertEquals("Unexpected attributes", expectedAttributes, upgradedVirtualHostNodeRecord.getAttributes());
         assertBrokerRecord(records);
@@ -285,6 +291,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         expectedAttributes.put("helperAddress", "localhost:7000");
         expectedAttributes.put("name", "n1");
         expectedAttributes.put("context", expectedContext);
+        expectedAttributes.put("defaultVirtualHostNode", "true");
 
         assertEquals("Unexpected attributes", expectedAttributes, upgradedVirtualHostNodeRecord.getAttributes());
         assertBrokerRecord(records);
@@ -314,6 +321,8 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         expectedAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
         expectedAttributes.put("name", VIRTUALHOST_NAME);
         expectedAttributes.put("type", "Memory");
+        expectedAttributes.put("defaultVirtualHostNode", "true");
+
         assertEquals("Unexpected attributes", expectedAttributes, upgradedVirtualHostNodeRecord.getAttributes());
         assertBrokerRecord(records);
     }
@@ -453,11 +462,11 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);
         List<ConfiguredObjectRecord> records = new BrokerStoreUpgraderAndRecoverer(_systemConfig).upgrade(dcs);
 
-        assertVirtualHost(records);
+        assertVirtualHost(records, true);
         assertBrokerRecord(records);
     }
 
-    private void assertVirtualHost(List<ConfiguredObjectRecord> records)
+    private void assertVirtualHost(List<ConfiguredObjectRecord> records, final boolean isDefaultVHN)
     {
         ConfiguredObjectRecord upgradedVirtualHostNodeRecord = findRecordById(_hostId, records);
         assertEquals("Unexpected type", "VirtualHostNode", upgradedVirtualHostNodeRecord.getType());
@@ -466,6 +475,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         expectedAttributes.put("createdTime", VIRTUALHOST_CREATE_TIME);
         expectedAttributes.put("name", VIRTUALHOST_NAME);
         expectedAttributes.put("type", "Memory");
+        expectedAttributes.put("defaultVirtualHostNode", Boolean.toString(isDefaultVHN));
         assertEquals("Unexpected attributes", expectedAttributes, upgradedVirtualHostNodeRecord.getAttributes());
     }
 
@@ -474,7 +484,6 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         ConfiguredObjectRecord upgradedBrokerRecord = findRecordById(_brokerId, records);
         assertEquals("Unexpected type", "Broker", upgradedBrokerRecord.getType());
         Map<String,Object> expectedAttributes = new HashMap<>();
-        expectedAttributes.put("defaultVirtualHost", "test");
         expectedAttributes.put("name", "Broker");
         expectedAttributes.put("modelVersion", BrokerModel.MODEL_VERSION);
         expectedAttributes.put("createdTime", 1401385808828l);
