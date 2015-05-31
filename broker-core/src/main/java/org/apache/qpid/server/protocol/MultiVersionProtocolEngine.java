@@ -24,6 +24,8 @@ package org.apache.qpid.server.protocol;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.Principal;
+import java.security.cert.Certificate;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,6 +41,7 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
+import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.NetworkConnection;
@@ -547,6 +550,14 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
                     _delegate.setWorkListener(_workListener.get());
                     _header.flip();
                     _delegate.received(_header);
+
+                    Certificate peerCertificate = _network.getPeerCertificate();
+                    if(peerCertificate != null && _port.getClientCertRecorder() != null)
+                    {
+                        ((ManagedPeerCertificateTrustStore)(_port.getClientCertRecorder())).addCertificate(peerCertificate);
+                    }
+
+
                     if(msg.hasRemaining())
                     {
                         _delegate.received(msg);
