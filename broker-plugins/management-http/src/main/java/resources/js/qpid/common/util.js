@@ -729,5 +729,20 @@ define(["dojo/_base/xhr",
                                      util.xhrErrorHandler);
            }
 
-           return util;
+           util.abortReaderSafely = function(reader)
+           {
+             if (reader && reader.readyState > 0)
+             {
+               try
+               {
+                 this.reader.abort();
+               }
+               catch(ex)
+               {
+                 // Ignore - read no longer in progress
+               }
+             }
+           }
+
+         return util;
        });

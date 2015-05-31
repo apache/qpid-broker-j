@@ -84,10 +84,7 @@ define(["dojo/_base/lang",
             _cancel: function(e)
             {
                 event.stop(e);
-                if (this.reader)
-                {
-                    this.reader.abort();
-                }
+                this._destroyTypeFields(this.accessControlProviderTypeFieldsContainer);
                 this.dialog.hide();
             },
             _add: function(e)
@@ -112,11 +109,15 @@ define(["dojo/_base/lang",
             {
                 this._typeChanged(type, this.accessControlProviderTypeFieldsContainer, "qpid/management/accesscontrolprovider/", "AccessControlProvider" );
             },
+            _destroyTypeFields: function(typeFieldsContainer)
+            {
+              var widgets = registry.findWidgets(typeFieldsContainer);
+              array.forEach(widgets, function(item) { item.destroyRecursive();});
+              construct.empty(typeFieldsContainer);
+            },
             _typeChanged: function(type, typeFieldsContainer, baseUrl, category )
             {
-                 var widgets = registry.findWidgets(typeFieldsContainer);
-                 array.forEach(widgets, function(item) { item.destroyRecursive();});
-                 construct.empty(typeFieldsContainer);
+                 this._destroyTypeFields(typeFieldsContainer);
 
                  if (type)
                  {

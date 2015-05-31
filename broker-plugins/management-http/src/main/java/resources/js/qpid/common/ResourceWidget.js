@@ -104,6 +104,14 @@ function (declare, array, lang, util, _WidgetBase, _TemplatedMixin, _WidgetsInTe
                this.uploader.startup();
            }
        },
+       destroy: function()
+       {
+         if (this.fileReaderSupported && this.fileReader)
+         {
+           util.abortReaderSafely(this.fileReader);
+         }
+         this.inherited(arguments);
+       },
        _fileChanged: function (evt)
        {
            var file = this.uploader.domNode.children[0].files[0];

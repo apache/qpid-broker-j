@@ -114,10 +114,7 @@ define(["dojo/_base/lang",
             _cancel: function(e)
             {
                 event.stop(e);
-                if (this.reader)
-                {
-                    this.reader.abort();
-                }
+                this._destroyTypeFields(this.storeTypeFieldsContainer);
                 this.dialog.hide();
             },
             _add: function(e)

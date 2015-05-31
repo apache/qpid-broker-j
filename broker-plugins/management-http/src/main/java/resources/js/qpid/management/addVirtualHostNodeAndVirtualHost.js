@@ -292,10 +292,7 @@ define([
       },
       _cancel: function(e)
       {
-          if (this.reader)
-          {
-            this.reader.abort();
-          }
+          util.abortReaderSafely(this.reader);
           this.dialog.hide();
       },
       _add: function(e)
@@ -312,7 +309,7 @@ define([
         if (uploadVHConfig && this.virtualHostNodeFile.getFileList().length > 0 && this.virtualHostNodeForm.validate())
         {
           // VH config is being uploaded
-          virtualHostNodeData = this._getValues(this.virtualHostNodeForm);
+          virtualHostNodeData = util.getFormWidgetValues(this.virtualHostNodeForm);
           var virtualHostNodeContext = this.virtualHostNodeContext.get("value");
           if (virtualHostNodeContext)
           {
@@ -324,14 +321,14 @@ define([
         }
         else if (!uploadVHConfig && this.virtualHostNodeForm.validate() && this.virtualHostForm.validate())
         {
-          virtualHostNodeData = this._getValues(this.virtualHostNodeForm);
+          virtualHostNodeData = util.getFormWidgetValues(this.virtualHostNodeForm);
           var virtualHostNodeContext = this.virtualHostNodeContext.get("value");
           if (virtualHostNodeContext)
           {
             virtualHostNodeData["context"] = virtualHostNodeContext;
           }
 
-          var virtualHostData = this._getValues(this.virtualHostForm);
+          var virtualHostData = util.getFormWidgetValues(this.virtualHostForm);
           var virtualHostContext = this.virtualHostContext.get("value");
           if (virtualHostContext)
           {
@@ -352,64 +349,6 @@ define([
 
         var that = this;
         that.management.create("virtualhostnode", {type: "broker"}, virtualHostNodeData).then(function(x){that.dialog.hide();});
-      },
-      _getValues: function (form)
-      {
-        var values = {};
-        var contextMap = {};
-
-        var formWidgets = form.getChildren();
-        for(var i in formWidgets)
-        {
-            var widget = formWidgets[i];
-            var value = widget.value;
-            var propName = widget.name;
-            if (propName && (widget.required || value ))
-            {
-                if (widget.contextvar)
-                {
-                    contextMap [propName] = String(value); // Broker requires that context values are Strings
-                }
-                else
-                {
-                    if (widget instanceof dijit.form.CheckBox)
-                    {
-                        values[ propName ] = widget.checked;
-                    }
-                    else if (widget instanceof dijit.form.RadioButton && value)
-                    {
-                        var currentValue = values[propName];
-                        if (currentValue)
-                        {
-                            if (lang.isArray(currentValue))
-                            {
-                                currentValue.push(value)
-                            }
-                            else
-                            {
-                                values[ propName ] = [currentValue, value];
-                            }
-                        }
-                        else
-                        {
-                            values[ propName ] = value;
-                        }
-                    }
-                    else
-                    {
-                        values[ propName ] = value ? value: null;
-                    }
-
-                }
-            }
-        }
-
-        // One or more context variables were defined on form
-        if (fobject.keys(contextMap).length > 0)
-        {
-            values ["context"] = contextMap;
-        }
-        return values;
       }
     };
 
