@@ -113,11 +113,19 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         assertActualAndDesiredStates(node2Url, "ACTIVE", "ACTIVE");
         assertActualAndDesiredStates(node3Url, "ACTIVE", "ACTIVE");
 
+        // verify that remote nodes for node1 are created and their state is set to ACTIVE
+        waitForAttributeChanged("replicationnode/" + NODE2 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "ACTIVE");
+        waitForAttributeChanged("replicationnode/" + NODE3 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "ACTIVE");
+
         mutateDesiredState(node1Url, "STOPPED");
 
         assertActualAndDesiredStates(node1Url, "STOPPED", "STOPPED");
         assertActualAndDesiredStates(node2Url, "ACTIVE", "ACTIVE");
         assertActualAndDesiredStates(node3Url, "ACTIVE", "ACTIVE");
+
+        // verify that remote node state fro node1 is changed to UNAVAILABLE
+        waitForAttributeChanged("replicationnode/" + NODE2 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "UNAVAILABLE");
+        waitForAttributeChanged("replicationnode/" + NODE3 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "UNAVAILABLE");
 
         List<Map<String, Object>> remoteNodes = getRestTestHelper().getJsonAsList("replicationnode/" + NODE2);
         assertEquals("Unexpected number of remote nodes on " + NODE2, 2, remoteNodes.size());

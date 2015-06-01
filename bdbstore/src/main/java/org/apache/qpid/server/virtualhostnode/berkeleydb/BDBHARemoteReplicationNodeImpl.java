@@ -68,11 +68,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
         _broker = virtualHostNode.getParent(Broker.class);
         _address = (String)attributes.get(ADDRESS);
         _replicatedEnvironmentFacade = replicatedEnvironmentFacade;
-        setState(State.ACTIVE);
-
-        _role = NodeRole.UNREACHABLE;
-        _lastKnownRole = NodeRole.UNREACHABLE;
-
+        setRole(NodeRole.UNREACHABLE);
         _isMonitor = (Boolean)attributes.get(MONITOR);
     }
 
