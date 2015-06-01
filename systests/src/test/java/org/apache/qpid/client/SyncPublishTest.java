@@ -28,9 +28,11 @@ import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
+import javax.naming.NamingException;
 
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.url.URLSyntaxException;
 
 public class SyncPublishTest extends QpidBrokerTestCase
 {
@@ -41,9 +43,7 @@ public class SyncPublishTest extends QpidBrokerTestCase
     {
 
         super.setUp();
-        Map<String, String> options = new HashMap<>();
-        options.put(ConnectionURL.OPTIONS_SYNC_PUBLISH, "all");
-        _connection = getConnectionWithOptions(options);
+        _connection = getConnectionWithSyncPublishing();
     }
 
     @Override

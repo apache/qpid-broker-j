@@ -911,6 +911,13 @@ public class QpidBrokerTestCase extends QpidTestCase
         return getConnection(GUEST_USERNAME, GUEST_PASSWORD);
     }
 
+    protected Connection getConnectionWithSyncPublishing() throws URLSyntaxException, NamingException, JMSException
+    {
+        Map<String, String> options = new HashMap<>();
+        options.put(ConnectionURL.OPTIONS_SYNC_PUBLISH, "all");
+        return getConnectionWithOptions(options);
+    }
+
     public Connection getConnectionWithOptions(Map<String, String> options)
                 throws URLSyntaxException, NamingException, JMSException
     {

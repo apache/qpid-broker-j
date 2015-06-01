@@ -51,7 +51,7 @@ public class EnsureNondestructiveConsumersTest extends QpidBrokerTestCase
         super.setUp();
 
         _queueName = getTestQueueName();
-        _connection = getConnection();
+        _connection = getConnectionWithSyncPublishing();
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _connection.start();
     }
