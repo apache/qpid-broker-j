@@ -64,8 +64,12 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
             sendNextMessage();
         }
 
+        processStateChanged();
+
         processClosed();
     }
+
+    protected abstract void processStateChanged();
 
     protected abstract void processClosed();
 
@@ -169,7 +173,6 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
         _queue.add(new ConsumerMessageInstancePair(consumer, entry, batch));
-
         getSessionModel().getConnectionModel().notifyWork();
         return entry.getMessage().getSize();
     }

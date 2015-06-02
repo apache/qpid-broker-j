@@ -250,6 +250,8 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                 sendingLinkEndpoint.setLinkEventListener(new SubjectSpecificSendingLinkListener(previousLink));
                 link = previousLink;
                 endpoint.setLocalUnsettled(previousLink.getUnsettledOutcomeMap());
+                registerConsumer(previousLink);
+
             }
         }
         else
@@ -970,5 +972,11 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
         {
 
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Session_1_0[" + _connection + ": " + _endpoint.getSendingChannel() + ']';
     }
 }

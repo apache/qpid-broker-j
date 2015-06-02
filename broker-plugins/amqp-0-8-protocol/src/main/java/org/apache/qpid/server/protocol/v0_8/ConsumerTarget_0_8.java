@@ -524,6 +524,12 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         }
     }
 
+    @Override
+    protected void processStateChanged()
+    {
+
+    }
+
     public void flushBatched()
     {
         _channel.getConnection().setDeferFlush(false);

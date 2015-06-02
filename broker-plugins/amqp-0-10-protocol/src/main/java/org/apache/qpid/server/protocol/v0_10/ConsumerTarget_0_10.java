@@ -666,4 +666,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     {
 
     }
+
+    @Override
+    protected void processStateChanged()
+    {
+
+    }
 }

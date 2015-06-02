@@ -550,4 +550,15 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         }
 
     }
+
+    @Override
+    public String toString()
+    {
+        return "Connection_1_0["
+               +  _connectionId
+               + " "
+               + _protocolEngine.getRemoteAddress().toString()
+               + (_vhost == null ? "" : (" vh : " + _vhost.getName()))
+               + ']';
+    }
 }

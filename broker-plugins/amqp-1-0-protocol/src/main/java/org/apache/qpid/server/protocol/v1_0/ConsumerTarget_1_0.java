@@ -23,6 +23,9 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.amqp_1_0.codec.ValueHandler;
 import org.apache.qpid.amqp_1_0.messaging.SectionEncoder;
 import org.apache.qpid.amqp_1_0.messaging.SectionEncoderImpl;
@@ -54,6 +57,7 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 class ConsumerTarget_1_0 extends AbstractConsumerTarget
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_1_0.class);
     private final boolean _acquires;
     private SendingLink_1_0 _link;
 
@@ -63,6 +67,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     private final AMQPDescribedTypeRegistry _typeRegistry;
     private final SectionEncoder _sectionEncoder;
     private ConsumerImpl _consumer;
+    private boolean _queueEmpty;
 
     public ConsumerTarget_1_0(final SendingLink_1_0 link,
                               boolean acquires)
@@ -322,10 +327,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     {
         synchronized(_link.getLock())
         {
-            if(_link.drained())
-            {
-                updateState(State.ACTIVE, State.SUSPENDED);
-            }
+            _queueEmpty = true;
         }
     }
 
@@ -546,5 +548,22 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     protected void processClosed()
     {
 
+    }
+
+    @Override
+    protected void processStateChanged()
+    {
+        synchronized (_link.getLock())
+        {
+            if(_queueEmpty)
+            {
+                _queueEmpty = false;
+
+                if(_link.drained())
+                {
+                    updateState(State.ACTIVE, State.SUSPENDED);
+                }
+            }
+        }
     }
 }
