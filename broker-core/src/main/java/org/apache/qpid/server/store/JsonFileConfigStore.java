@@ -150,7 +150,27 @@ public class JsonFileConfigStore implements DurableConfigurationStore
             throw new StoreException("Cannot determine path for configuration storage");
         }
         File fileFromSettings = new File(configurationStoreSettings.getStorePath());
-        if(fileFromSettings.isFile() || (!fileFromSettings.exists() && (new File(fileFromSettings.getParent())).isDirectory()))
+        boolean isFile = fileFromSettings.exists() && fileFromSettings.isFile();
+        if(!isFile)
+        {
+            if(fileFromSettings.exists())
+            {
+                isFile = false;
+            }
+            else if(fileFromSettings.getName().endsWith(File.separator))
+            {
+                isFile = false;
+            }
+            else if(fileFromSettings.getName().endsWith(".json"))
+            {
+                isFile = true;
+            }
+            else if((new File(fileFromSettings.getParent())).isDirectory() && fileFromSettings.getName().contains("."))
+            {
+                isFile = true;
+            }
+        }
+        if(isFile)
         {
             _directoryName = fileFromSettings.getParent();
             _configFileName = fileFromSettings.getName();
