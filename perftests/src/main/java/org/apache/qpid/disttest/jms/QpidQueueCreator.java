@@ -31,8 +31,6 @@ import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.config.QueueConfig;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.FieldTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -20,11 +20,8 @@
  */
 package org.apache.qpid.client;
 
-import org.apache.qpid.framing.AMQShortString;
-
 import javax.jms.JMSException;
 import javax.jms.TemporaryQueue;
-import java.util.UUID;
 
 /** AMQ implementation of a TemporaryQueue. */
 final class AMQTemporaryQueue extends AMQQueue implements TemporaryQueue, TemporaryDestination

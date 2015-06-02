@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.client;
 
-import org.apache.qpid.framing.AMQShortString;
-
 import javax.jms.JMSException;
 import javax.jms.TemporaryTopic;
 import java.util.UUID;

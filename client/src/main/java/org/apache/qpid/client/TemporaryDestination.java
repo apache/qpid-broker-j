@@ -21,8 +21,6 @@
 
 package org.apache.qpid.client;
 
-import org.apache.qpid.framing.AMQShortString;
-
 import javax.jms.Destination;
 import javax.jms.JMSException;
 

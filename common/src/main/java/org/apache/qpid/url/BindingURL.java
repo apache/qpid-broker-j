@@ -26,8 +26,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.qpid.framing.AMQShortString;
-
 /*
     Binding URL format:
     <exch_class>://<exch_name>/[<destination>]/[<queue>]?<option>='<value>'[,<option>='<value>']*

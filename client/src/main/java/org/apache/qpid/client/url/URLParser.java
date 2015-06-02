@@ -24,7 +24,6 @@ package org.apache.qpid.client.url;
 import org.apache.qpid.client.AMQBrokerDetails;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.url.URLHelper;
 import org.apache.qpid.url.URLSyntaxException;
 

@@ -47,7 +47,6 @@ import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQDestination.DestSyntax;
 import org.apache.qpid.client.CustomJMSXProperty;
 import org.apache.qpid.client.util.JMSExceptionHelper;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.jms.Message;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.ExchangeQueryResult;

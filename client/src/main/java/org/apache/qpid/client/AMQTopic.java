@@ -28,7 +28,6 @@ import javax.jms.Topic;
 
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.messaging.Address;
 import org.apache.qpid.url.BindingURL;
 

@@ -28,7 +28,6 @@ import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.MessageProperties;

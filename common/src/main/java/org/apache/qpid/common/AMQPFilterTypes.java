@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.common;
 
-import org.apache.qpid.framing.AMQShortString;
-
 /**
  * Specifies the different filter types for consumers that filter their messages.
  */

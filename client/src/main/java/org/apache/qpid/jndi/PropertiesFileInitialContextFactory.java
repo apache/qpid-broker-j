@@ -47,7 +47,6 @@ import org.apache.qpid.client.AMQHeadersExchange;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.url.BindingURL;
 import org.apache.qpid.url.URLSyntaxException;
 import org.apache.qpid.util.Strings;

@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.AMQAnyDestination;
 import org.apache.qpid.client.AMQBrokerDetails;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.Connection;
 import org.apache.qpid.jms.ConnectionURL;
