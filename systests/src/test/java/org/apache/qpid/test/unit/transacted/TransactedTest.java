@@ -68,10 +68,10 @@ public class TransactedTest extends QpidBrokerTestCase
             _logger.info("Create Session");
             session = con.createSession(true, Session.SESSION_TRANSACTED);
             _logger.info("Create Q1");
-            queue1 = new AMQQueue(session.getDefaultQueueExchangeName(), new AMQShortString("Q1"),
-                                  new AMQShortString("Q1"), false, true);
+            queue1 = new AMQQueue(session.getDefaultQueueExchangeName(), "Q1",
+                                  "Q1", false, true);
             _logger.info("Create Q2");
-            AMQQueue queue2 = new AMQQueue(session.getDefaultQueueExchangeName(), new AMQShortString("Q2"), false);
+            AMQQueue queue2 = new AMQQueue(session.getDefaultQueueExchangeName(), "Q2", false);
 
             _logger.info("Create Consumer of Q1");
             consumer1 = session.createConsumer(queue1);
@@ -230,7 +230,7 @@ public class TransactedTest extends QpidBrokerTestCase
         AMQConnection con = (AMQConnection) getConnection("guest", "guest");
 
         Session consumerSession = con.createSession(true, Session.SESSION_TRANSACTED);
-        AMQQueue queue3 = new AMQQueue(consumerSession.getDefaultQueueExchangeName(), new AMQShortString("Q3"), false);
+        AMQQueue queue3 = new AMQQueue(consumerSession.getDefaultQueueExchangeName(), "Q3", false);
         MessageConsumer consumer = consumerSession.createConsumer(queue3);
 
         AMQConnection con2 = (AMQConnection) getConnection("guest", "guest");

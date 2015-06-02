@@ -69,7 +69,7 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                     ConnectionRedirectBody.process(in, methodProcessor);
                     break;
                 case 0x000a0032:
-                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v8_0))
+                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
                         ConnectionRedirectBody.process(in, methodProcessor);
                     }
@@ -79,7 +79,7 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                     }
                     break;
                 case 0x000a0033:
-                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v8_0))
+                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
                         throw newUnknownMethodException(classId, methodId,
                                                         methodProcessor.getProtocolVersion());
@@ -90,7 +90,7 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                     }
                     break;
                 case 0x000a003c:
-                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v8_0))
+                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
                         ConnectionCloseBody.process(in, methodProcessor);
                     }
@@ -101,7 +101,7 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
                     }
                     break;
                 case 0x000a003d:
-                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v8_0))
+                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
                         methodProcessor.receiveConnectionCloseOk();
                     }

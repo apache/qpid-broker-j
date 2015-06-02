@@ -63,7 +63,7 @@ public class MessageToStringTest extends QpidBrokerTestCase
         String queueName = getTestQueueName();
 
         //Create Queue
-        ((AMQSession) _session).createQueue(new AMQShortString(queueName), true, false, false);
+        ((AMQSession) _session).createQueue(queueName, true, false, false);
         _queue = _session.createQueue("direct://amq.direct/"+queueName+"/"+queueName+"?durable='false'&autodelete='true'");
 
 

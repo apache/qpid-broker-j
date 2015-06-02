@@ -93,7 +93,7 @@ public class AMQQueueDeferredOrderingTest extends QpidBrokerTestCase
         _logger.info("Create Session");
         session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _logger.info("Create Q");
-        queue = new AMQQueue(new AMQShortString("amq.direct"), new AMQShortString("Q"), new AMQShortString("Q"),
+        queue = new AMQQueue("amq.direct", "Q", "Q",
                 false, true);
         _logger.info("Create Consumer of Q");
         consumer = session.createConsumer(queue);

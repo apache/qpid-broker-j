@@ -41,7 +41,7 @@ public class TransportTest extends QpidTestCase
 
     public void testDefaultGetOutgoingTransportForv0_8() throws Exception
     {
-        final OutgoingNetworkTransport networkTransport = Transport.getOutgoingTransportInstance(ProtocolVersion.v8_0);
+        final OutgoingNetworkTransport networkTransport = Transport.getOutgoingTransportInstance(ProtocolVersion.v0_8);
         assertNotNull(networkTransport);
         assertTrue(networkTransport instanceof IoNetworkTransport);
     }
@@ -50,7 +50,7 @@ public class TransportTest extends QpidTestCase
     {
         setTestSystemProperty(Transport.QPID_TRANSPORT_PROPNAME, TestOutgoingNetworkTransport.class.getName());
 
-        final OutgoingNetworkTransport networkTransport = Transport.getOutgoingTransportInstance(ProtocolVersion.v8_0);
+        final OutgoingNetworkTransport networkTransport = Transport.getOutgoingTransportInstance(ProtocolVersion.v0_8);
         assertNotNull(networkTransport);
         assertTrue(networkTransport instanceof TestOutgoingNetworkTransport);
     }
@@ -59,7 +59,7 @@ public class TransportTest extends QpidTestCase
     {
         setTestSystemProperty(Transport.QPID_TRANSPORT_V0_8_PROPNAME, TestOutgoingNetworkTransport.class.getName());
 
-        final OutgoingNetworkTransport networkTransport = Transport.getOutgoingTransportInstance(ProtocolVersion.v8_0);
+        final OutgoingNetworkTransport networkTransport = Transport.getOutgoingTransportInstance(ProtocolVersion.v0_8);
         assertNotNull(networkTransport);
         assertTrue(networkTransport instanceof TestOutgoingNetworkTransport);
     }
@@ -106,7 +106,7 @@ public class TransportTest extends QpidTestCase
     {
         try
         {
-            Transport.getOutgoingTransportInstance(new ProtocolVersion((byte)0, (byte)0));
+            Transport.getOutgoingTransportInstance(ProtocolVersion.get((byte)0, (byte)0));
             fail("Should have failed to load the transport for invalid protocol version");
         }
         catch(IllegalArgumentException iae)

@@ -41,7 +41,7 @@ public class AMQSession_0_8Test extends QpidTestCase
 
     public void testQueueNameIsGeneratedOnDeclareQueueWithEmptyQueueName() throws Exception
     {
-        final AMQShortString testQueueName = AMQShortString.valueOf("tmp_127_0_0_1_1_1");
+        final String testQueueName = "tmp_127_0_0_1_1_1";
 
         _connection.setConnectionListener(new ConnectionListenerSupport()
         {
@@ -50,7 +50,7 @@ public class AMQSession_0_8Test extends QpidTestCase
             {
                 try
                 {
-                    _connection.getProtocolHandler().methodBodyReceived(1, new QueueDeclareOkBody(testQueueName, 0, 0));
+                    _connection.getProtocolHandler().methodBodyReceived(1, new QueueDeclareOkBody(AMQShortString.valueOf(testQueueName), 0, 0));
                 }
                 catch (AMQException e)
                 {
@@ -64,7 +64,7 @@ public class AMQSession_0_8Test extends QpidTestCase
         AMQBindingURL bindingURL = new AMQBindingURL("topic://amq.topic//?routingkey='testTopic'");
         AMQQueue queue = new AMQQueue(bindingURL);
 
-        assertEquals("Unexpected queue name", AMQShortString.EMPTY_STRING, queue.getAMQQueueName());
+        assertEquals("Unexpected queue name", "", queue.getAMQQueueName());
 
         session.declareQueue(queue, true);
 

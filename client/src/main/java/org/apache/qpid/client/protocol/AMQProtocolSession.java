@@ -386,7 +386,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         return _protocolHandler.getSender();
     }
 
-    protected AMQShortString generateQueueName()
+    protected String generateQueueName()
     {
         int id;
         synchronized (_queueIdLock)
@@ -396,7 +396,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         // convert '.', '/', ':' and ';' to single '_', for spec compliance and readability
         String localAddress = _protocolHandler.getLocalAddress().toString().replaceAll("[./:;]", "_");
         String queueName = "tmp_" + localAddress + "_" + id;
-        return new AMQShortString(queueName.replaceAll("_+", "_"));
+        return queueName.replaceAll("_+", "_");
     }
 
     public void confirmConsumerCancelled(int channelId, AMQShortString consumerTag)

@@ -1471,14 +1471,10 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
             _logger.debug("RECV ConnectionOpen[" +" virtualHost: " + virtualHostName + " capabilities: " + capabilities + " insist: " + insist + " ]");
         }
 
-        String virtualHostStr;
-        if ((virtualHostName != null) && virtualHostName.charAt(0) == '/')
+        String virtualHostStr = AMQShortString.toString(virtualHostName);
+        if ((virtualHostStr != null) && virtualHostStr.charAt(0) == '/')
         {
-            virtualHostStr = virtualHostName.toString().substring(1);
-        }
-        else
-        {
-            virtualHostStr = virtualHostName == null ? null : virtualHostName.toString();
+            virtualHostStr = virtualHostStr.substring(1);
         }
 
         VirtualHostImpl<?,?,?> virtualHost = ((AmqpPort)getPort()).getVirtualHost(virtualHostStr);

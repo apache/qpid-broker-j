@@ -25,6 +25,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,12 @@ public class EncodingUtils
         }
         else
         {
-            return (short) (1 + s.length());
+            int size =  1 + getUTF8Length(s);
+            if(size > 256)
+            {
+                throw new IllegalArgumentException("String '"+s+"' is too long - over 255 octets to encode");
+            }
+            return (short) size;
         }
     }
 
@@ -218,28 +224,20 @@ public class EncodingUtils
         }
     }
 
-    public static void writeShortStringBytes(DataOutput buffer, String s) throws IOException
+    public static void writeLongAsShortString(DataOutput buffer, long l) throws IOException
     {
-        if (s != null)
+        String s = Long.toString(l);
+        byte[] encodedString = new byte[1+s.length()];
+        char[] cha = s.toCharArray();
+        encodedString[0] = (byte) s.length();
+        for (int i = 0; i < cha.length; i++)
         {
-            byte[] encodedString = new byte[s.length()];
-            char[] cha = s.toCharArray();
-            for (int i = 0; i < cha.length; i++)
-            {
-                encodedString[i] = (byte) cha[i];
-            }
-
-            // TODO: check length fits in an unsigned byte
-            writeUnsignedByte(buffer,  (short)encodedString.length);
-            buffer.write(encodedString);
-
-
+            encodedString[i+1] = (byte) cha[i];
         }
-        else
-        {
-            // really writing out unsigned byte
-            buffer.write((byte) 0);
-        }
+        buffer.write(encodedString);
+
+
+
     }
 
     public static void writeShortStringBytes(DataOutput buffer, AMQShortString s) throws IOException
@@ -260,49 +258,10 @@ public class EncodingUtils
     {
         if (s != null)
         {
-            int len = s.length();
-            writeUnsignedInteger(buffer, s.length());
-            byte[] encodedString = new byte[len];
-            char[] cha = s.toCharArray();
-            for (int i = 0; i < cha.length; i++)
-            {
-                encodedString[i] = (byte) cha[i];
-            }
+            int len = getUTF8Length(s);
+            writeUnsignedInteger(buffer, len);
+            buffer.write(asUTF8Bytes(s));
 
-            buffer.write(encodedString);
-        }
-        else
-        {
-            writeUnsignedInteger(buffer, 0);
-        }
-    }
-
-    public static void writeLongStringBytes(DataOutput buffer, char[] s) throws IOException
-    {
-        if (s != null)
-        {
-            int len = s.length;
-            writeUnsignedInteger(buffer, s.length);
-            byte[] encodedString = new byte[len];
-            for (int i = 0; i < s.length; i++)
-            {
-                encodedString[i] = (byte) s[i];
-            }
-
-            buffer.write(encodedString);
-        }
-        else
-        {
-            writeUnsignedInteger(buffer, 0);
-        }
-    }
-
-    public static void writeLongStringBytes(DataOutput buffer, byte[] bytes) throws IOException
-    {
-        if (bytes != null)
-        {
-            writeUnsignedInteger(buffer, bytes.length);
-            buffer.write(bytes);
         }
         else
         {
@@ -686,20 +645,10 @@ public class EncodingUtils
         }
         else
         {
-            // this may seem rather odd to declare two array but testing has shown
-            // that constructing a string from a byte array is 5 (five) times slower
-            // than constructing one from a char array.
-            // this approach here is valid since we know that all the chars are
-            // ASCII (0-127)
             byte[] stringBytes = new byte[(int) length];
             buffer.readFully(stringBytes, 0, (int) length);
-            char[] stringChars = new char[(int) length];
-            for (int i = 0; i < stringChars.length; i++)
-            {
-                stringChars[i] = (char) stringBytes[i];
-            }
 
-            return new String(stringChars);
+            return new String(stringBytes, StandardCharsets.UTF_8);
         }
     }
 
@@ -1008,6 +957,92 @@ public class EncodingUtils
         l = l | (0xFF & buffer.readByte());
 
         return l;
+    }
+
+    public static byte[] asUTF8Bytes(CharSequence string)
+    {
+        byte[] bytes = new byte[getUTF8Length(string)];
+        int j = 0;
+        if(string != null)
+        {
+            final int length = string.length();
+            int c;
+
+            for (int i = 0; i < length; i++)
+            {
+                c = string.charAt(i);
+                if ((c & 0xFF80) == 0)          /* U+0000..U+007F */
+                {
+                    bytes[j++] = (byte) c;
+                }
+                else if ((c & 0xF800) == 0)     /* U+0080..U+07FF */
+                {
+                    bytes[j++] = (byte) (0xC0 | ((c >> 6) & 0x1F));
+                    bytes[j++] = (byte) (0x80 | (c & 0x3F));
+                }
+                else if ((c & 0xD800) != 0xD800 || (c > 0xDBFF))     /* U+0800..U+FFFF - excluding surrogate pairs */
+                {
+                    bytes[j++] = (byte) (0xE0 | ((c >> 12) & 0x0F));
+                    bytes[j++] = (byte) (0x80 | ((c >> 6) & 0x3F));
+                    bytes[j++] = (byte) (0x80 | (c & 0x3F));
+                }
+                else
+                {
+                    int low;
+
+                    if ((++i == length) || ((low = string.charAt(i)) & 0xDC00) != 0xDC00)
+                    {
+                        throw new IllegalArgumentException("String contains invalid Unicode code points");
+                    }
+
+                    c = 0x010000 + ((c & 0x03FF) << 10) + (low & 0x03FF);
+
+                    bytes[j++] = (byte) (0xF0 | ((c >> 18) & 0x07));
+                    bytes[j++] = (byte) (0x80 | ((c >> 12) & 0x3F));
+                    bytes[j++] = (byte) (0x80 | ((c >> 6) & 0x3F));
+                    bytes[j++] = (byte) (0x80 | (c & 0x3F));
+                }
+            }
+        }
+        return bytes;
+    }
+
+    public static int getUTF8Length(CharSequence string)
+    {
+        int size = 0;
+        if(string != null)
+        {
+            int c;
+
+            final int inputLength = string.length();
+            for (int i = 0; i < inputLength; i++)
+            {
+                c = string.charAt(i);
+                if ((c & 0xFF80) == 0)          /* U+0000..U+007F */
+                {
+                    size++;
+                }
+                else if ((c & 0xF800) == 0)     /* U+0080..U+07FF */
+                {
+                    size += 2;
+                }
+                else if ((c & 0xD800) != 0xD800 || (c > 0xDBFF))     /* U+0800..U+FFFF - excluding surrogate pairs */
+                {
+                    size += 3;
+                }
+                else
+                {
+                    if ((++i == size) || (string.charAt(i) & 0xDC00) != 0xDC00)
+                    {
+                        throw new IllegalArgumentException("String contains invalid Unicode code points");
+                    }
+
+                    size += 4;
+                }
+            }
+
+        }
+        return size;
     }
 
 }

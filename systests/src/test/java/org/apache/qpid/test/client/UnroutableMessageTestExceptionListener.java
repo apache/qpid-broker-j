@@ -106,8 +106,8 @@ public class UnroutableMessageTestExceptionListener implements ExceptionListener
     {
         JMSException exception = getReceivedException();
         assertNoRouteException(exception, message);
-        AMQShortString exchangeName = queue.getExchangeName();
-        String expectedMessage = "Error: No Route for message [Exchange: " + exchangeName.asString().substring(0, 220) + "...";
+        String exchangeName = queue.getExchangeName();
+        String expectedMessage = "Error: No Route for message [Exchange: " + exchangeName.substring(0, 220) + "...";
         assertTrue("Unexpected exception message: " + exception.getMessage(), exception.getMessage().contains(expectedMessage));
     }
 

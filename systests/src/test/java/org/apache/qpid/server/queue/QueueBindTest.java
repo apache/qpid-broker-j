@@ -71,13 +71,13 @@ public class QueueBindTest extends QpidBrokerTestCase
     private void runTestForTopicExchange(AMQDestination destination) throws AMQException, JMSException, Exception
     {
         // binding queue with empty arguments
-        _session.declareAndBind(destination, FieldTable.convertToFieldTable(Collections.<String, Object> emptyMap()));
+        _session.declareAndBind(destination,Collections.<String, Object>emptyMap());
 
         // try to re-bind queue with a selector
         Map<String, Object> bindArguments = new HashMap<String, Object>();
         bindArguments.put(AMQPFilterTypes.JMS_SELECTOR.getValue().toString(), INDEX + "=0");
         _session.bindQueue(destination.getAMQQueueName(), destination.getRoutingKey(),
-                FieldTable.convertToFieldTable(bindArguments), destination.getExchangeName(), destination);
+                           bindArguments, destination.getExchangeName(), destination);
 
         _connection.start();
 
@@ -103,13 +103,14 @@ public class QueueBindTest extends QpidBrokerTestCase
     private void runTestForNonTopicExhange(AMQQueue destination) throws AMQException, Exception, JMSException
     {
         // binding queue with empty arguments
-        _session.declareAndBind(destination, FieldTable.convertToFieldTable(Collections.<String, Object> emptyMap()));
+        _session.declareAndBind(destination,
+                                Collections.<String, Object>emptyMap());
 
         // try to re-bind queue with a selector
         Map<String, Object> bindArguments = new HashMap<String, Object>();
         bindArguments.put(AMQPFilterTypes.JMS_SELECTOR.getValue().toString(), INDEX + "=0");
         _session.bindQueue(destination.getAMQQueueName(), destination.getRoutingKey(),
-                FieldTable.convertToFieldTable(bindArguments), destination.getExchangeName(), destination);
+                           bindArguments, destination.getExchangeName(), destination);
 
         // send and receive to prove that selector is not used
         int numberOfMesssages = 2;

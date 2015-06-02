@@ -441,7 +441,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
 
     public ProtocolVersion getProtocolVersion()
     {
-        return ProtocolVersion.v8_0;
+        return ProtocolVersion.v0_8;
     }
 
     public boolean verifyClientID() throws JMSException

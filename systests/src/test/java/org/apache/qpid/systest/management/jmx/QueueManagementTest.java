@@ -170,7 +170,7 @@ public class QueueManagementTest extends QpidBrokerTestCase
     {
         String queueName = getTestQueueName();
         Map<String, Object> arguments = Collections.singletonMap(QueueArgumentsConverter.X_QPID_DESCRIPTION, (Object)TEST_QUEUE_DESCRIPTION);
-        ((AMQSession<?, ?>)_session).createQueue(AMQShortString.valueOf(queueName), false, true, false, arguments);
+        ((AMQSession<?, ?>)_session).createQueue(queueName, false, true, false, arguments);
 
         final ManagedQueue managedQueue = _jmxUtils.getManagedQueue(queueName);
         assertEquals(TEST_QUEUE_DESCRIPTION, managedQueue.getDescription());
@@ -184,7 +184,7 @@ public class QueueManagementTest extends QpidBrokerTestCase
         String queueName = getTestQueueName();
         Map<String, Object> arguments = Collections.singletonMap(QueueArgumentsConverter.X_QPID_DESCRIPTION, (Object)TEST_QUEUE_DESCRIPTION);
 
-        ((AMQSession<?, ?>)_session).createQueue(AMQShortString.valueOf(queueName), false, true, false, arguments);
+        ((AMQSession<?, ?>)_session).createQueue(queueName, false, true, false, arguments);
 
         ManagedQueue managedQueue = _jmxUtils.getManagedQueue(queueName);
         assertEquals(TEST_QUEUE_DESCRIPTION, managedQueue.getDescription());

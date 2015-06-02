@@ -118,8 +118,8 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
 
         if (destSyntax == AMQDestination.DestSyntax.BURL)
         {
-            dest = generateDestination(new AMQShortString(_deliveryProps.getExchange()),
-                                   new AMQShortString(_deliveryProps.getRoutingKey()));
+            dest = generateDestination(_deliveryProps.getExchange(),
+                                       _deliveryProps.getRoutingKey());
         }
         else
         {
@@ -277,7 +277,7 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
 
                 if (AMQDestination.getDefaultDestSyntax() == AMQDestination.DestSyntax.BURL)
                 {
-                    dest = generateDestination(new AMQShortString(exchange), new AMQShortString(routingKey));
+                    dest = generateDestination(exchange, routingKey);
                 }
                 else
                 {

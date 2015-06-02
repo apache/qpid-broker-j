@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.url.URLSyntaxException;
 
@@ -109,10 +108,9 @@ public class BDBStoreUpgradeTestPreparer
     {
         Connection connection = _connFac.createConnection();
         AMQSession<?, ?> session = (AMQSession<?,?>)connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        AMQShortString queueName = new AMQShortString(NON_DURABLE_QUEUE_NAME);
         AMQDestination destination = (AMQDestination) session.createQueue(NON_DURABLE_QUEUE_NAME);
-        session.sendCreateQueue(queueName, false, false, false, null);
-        session.bindQueue(queueName, queueName, null, new AMQShortString("amq.direct"), destination);
+        session.sendCreateQueue(NON_DURABLE_QUEUE_NAME, false, false, false, null);
+        session.bindQueue(NON_DURABLE_QUEUE_NAME, NON_DURABLE_QUEUE_NAME, null, "amq.direct", destination);
         MessageProducer messageProducer = session.createProducer(destination);
         sendMessages(session, messageProducer, destination, DeliveryMode.PERSISTENT, 1024, 3);
         connection.close();
@@ -218,7 +216,7 @@ public class BDBStoreUpgradeTestPreparer
 
     private Queue createAndBindQueueOnBroker(Session session, String queueName, final Map<String, Object> arguments, String exchangeName, String exchangeType) throws Exception
     {
-        ((AMQSession<?,?>) session).createQueue(new AMQShortString(queueName), false, true, false, arguments);
+        ((AMQSession<?,?>) session).createQueue(queueName, false, true, false, arguments);
         Queue queue = session.createQueue("BURL:" + exchangeType + "://" + exchangeName + "/" + queueName + "/" + queueName + "?durable='true'");
         ((AMQSession<?,?>) session).declareAndBind((AMQDestination)queue);
         return queue;

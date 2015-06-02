@@ -49,8 +49,8 @@ public abstract class AbstractJMSMessageFactory implements MessageFactory
 
     protected AbstractJMSMessage create08MessageWithBody(long messageNbr,
                                                          ContentHeaderBody contentHeader,
-                                                         AMQShortString exchange,
-                                                         AMQShortString routingKey,
+                                                         String exchange,
+                                                         String routingKey,
                                                          List bodies,
                                                          AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
                                                          AMQSession_0_8.DestinationCache<AMQTopic> topicDestinationCache,
@@ -168,7 +168,7 @@ public abstract class AbstractJMSMessageFactory implements MessageFactory
 
     @Override
     public AbstractJMSMessage createMessage(long messageNbr, boolean redelivered, ContentHeaderBody contentHeader,
-                                            AMQShortString exchange, AMQShortString routingKey, List bodies,
+                                            String exchange, String routingKey, List bodies,
                                                          AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
                                                          AMQSession_0_8.DestinationCache<AMQTopic> topicDestinationCache,
                                                          int addressType)

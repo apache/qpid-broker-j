@@ -34,6 +34,7 @@ import org.apache.qpid.url.BindingURL;
 
 public class AMQTopic extends AMQDestination implements Topic
 {
+
     private static final long serialVersionUID = -4773561540716587036L;
 
     public AMQTopic(String address) throws URISyntaxException
@@ -61,63 +62,53 @@ public class AMQTopic extends AMQDestination implements Topic
         super(binding);
     }
 
-    public AMQTopic(AMQShortString exchange, AMQShortString routingKey, AMQShortString queueName)
+    public AMQTopic(String exchange, String routingKey, String queueName)
     {
-        super(exchange, AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS), routingKey, true, true, queueName, false);
+        super(exchange, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, routingKey, true, true, queueName, false);
     }
 
-    public AMQTopic(AMQShortString exchange, AMQShortString routingKey, AMQShortString queueName,AMQShortString[] bindingKeys)
+    public AMQTopic(String exchange, String routingKey, String queueName, String[] bindingKeys)
     {
-        super(exchange, AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS), routingKey, true, true, queueName, false,bindingKeys);
+        super(exchange, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, routingKey, true, true, queueName, false, bindingKeys);
     }
 
     public AMQTopic(AMQConnection conn, String routingKey)
     {
-        this(conn.getDefaultTopicExchangeName(), new AMQShortString(routingKey));
+        this(conn.getDefaultTopicExchangeName(), routingKey);
     }
 
     public AMQTopic(String exchangeName, String routingKey)
     {
-        this(AMQShortString.valueOf(exchangeName), new AMQShortString(routingKey));
-    }
-
-    public AMQTopic(AMQShortString exchangeName, String routingKey)
-    {
-        this(exchangeName, new AMQShortString(routingKey));
-    }
-
-    public AMQTopic(AMQShortString exchangeName, AMQShortString routingKey)
-    {
         this(exchangeName, routingKey, null);
     }
 
-    public AMQTopic(AMQShortString exchangeName, AMQShortString name, boolean isAutoDelete, AMQShortString queueName, boolean isDurable)
+    public AMQTopic(String exchangeName, String name, boolean isAutoDelete, String queueName, boolean isDurable)
     {
-        super(exchangeName, AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS), name, true, isAutoDelete, queueName, isDurable);
+        super(exchangeName, ExchangeDefaults.TOPIC_EXCHANGE_CLASS, name, true, isAutoDelete, queueName, isDurable);
     }
 
 
-    protected AMQTopic(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString name, boolean isAutoDelete, AMQShortString queueName, boolean isDurable)
+    protected AMQTopic(String exchangeName, String exchangeClass, String name, boolean isAutoDelete, String queueName, boolean isDurable)
     {
         super(exchangeName, exchangeClass, name, true, isAutoDelete, queueName, isDurable);
     }
 
-    protected AMQTopic(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, boolean isExclusive,
-                               boolean isAutoDelete, AMQShortString queueName, boolean isDurable)
+    protected AMQTopic(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
+                               boolean isAutoDelete, String queueName, boolean isDurable)
     {
         super(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, isDurable );
     }
 
-    protected AMQTopic(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, boolean isExclusive,
-            boolean isAutoDelete, AMQShortString queueName, boolean isDurable,AMQShortString[] bindingKeys)
+    protected AMQTopic(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
+            boolean isAutoDelete, String queueName, boolean isDurable, String[] bindingKeys)
     {
-        super(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, isDurable,bindingKeys);
+        super(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, isDurable, bindingKeys);
     }
 
     public static AMQTopic createDurableTopic(Topic topic, String subscriptionName, AMQConnection connection)
             throws JMSException
     {
-        if (topic instanceof AMQDestination && topic instanceof javax.jms.Topic)
+        if (topic instanceof AMQDestination)
         {
             AMQDestination qpidTopic = (AMQDestination)topic;
             if (qpidTopic.getDestSyntax() == DestSyntax.ADDR)
@@ -125,9 +116,9 @@ public class AMQTopic extends AMQDestination implements Topic
                 try
                 {
                     AMQTopic t = new AMQTopic(qpidTopic.getAddress());
-                    AMQShortString queueName = getDurableTopicQueueName(subscriptionName, connection);
+                    String queueName = getDurableTopicQueueName(subscriptionName, connection);
                     // link is never null if dest was created using an address string.
-                    t.getLink().setName(queueName.asString());
+                    t.getLink().setName(queueName);
                     t.getLink().getSubscriptionQueue().setAutoDelete(false);
                     t.getLink().setDurable(true);
 
@@ -155,16 +146,16 @@ public class AMQTopic extends AMQDestination implements Topic
         }
     }
 
-    public static AMQShortString getDurableTopicQueueName(String subscriptionName, AMQConnection connection) throws JMSException
+    public static String getDurableTopicQueueName(String subscriptionName, AMQConnection connection) throws JMSException
     {
-        return new AMQShortString(connection.getClientID() + ":" + subscriptionName);
+        return connection.getClientID() + ":" + subscriptionName;
     }
 
     public String getTopicName() throws JMSException
     {
         if (getRoutingKey() != null)
         {
-            return getRoutingKey().asString();
+            return getRoutingKey().toString();
         }
         else if (getSubject() != null)
         {
@@ -177,11 +168,11 @@ public class AMQTopic extends AMQDestination implements Topic
     }
 
     @Override
-    public AMQShortString getExchangeName()
+    public String getExchangeName()
     {
         if (super.getExchangeName() == null && super.getAddressName() != null)
         {
-            return new AMQShortString(super.getAddressName());
+            return super.getAddressName();
         }
         else
         {
@@ -189,7 +180,7 @@ public class AMQTopic extends AMQDestination implements Topic
         }
     }
 
-    public AMQShortString getRoutingKey()
+    public String getRoutingKey()
     {
         if (super.getRoutingKey() != null)
         {
@@ -197,11 +188,11 @@ public class AMQTopic extends AMQDestination implements Topic
         }
         else if (getSubject() != null)
         {
-            return new AMQShortString(getSubject());
+            return getSubject();
         }
         else
         {
-            setRoutingKey(new AMQShortString(""));
+            setRoutingKey("");
             setSubject("");
             return super.getRoutingKey();
         }
@@ -210,19 +201,6 @@ public class AMQTopic extends AMQDestination implements Topic
     public boolean isNameRequired()
     {
         return !isDurable();
-    }
-
-    /**
-     * Override since the queue is always private and we must ensure it remains null. If not,
-     * reuse of the topic when registering consumers will make all consumers listen on the same (private) queue rather
-     * than getting their own (private) queue.
-     * <p>
-     * This is relatively nasty but it is difficult to come up with a more elegant solution, given
-     * the requirement in the case on AMQQueue and possibly other AMQDestination subclasses to
-     * use the underlying queue name even where it is server generated.
-     */
-    public void setQueueName(String queueName)
-    {
     }
 
     public boolean equals(Object o)

@@ -282,7 +282,7 @@ public class BasicContentHeaderProperties
                 }
                 else
                 {
-                    EncodingUtils.writeShortStringBytes(buffer, String.valueOf(_expiration));
+                    EncodingUtils.writeLongAsShortString(buffer, _expiration);
                 }
             }
 

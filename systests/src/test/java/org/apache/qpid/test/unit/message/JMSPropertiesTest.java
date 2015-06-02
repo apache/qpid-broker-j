@@ -77,8 +77,7 @@ public class JMSPropertiesTest extends QpidBrokerTestCase
         AMQConnection con = (AMQConnection) getConnection("guest", "guest");
         AMQSession consumerSession = (AMQSession) con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         Queue queue =
-            new AMQQueue(con.getDefaultQueueExchangeName(), new AMQShortString("someQ"), new AMQShortString("someQ"), false,
-                true);
+            new AMQQueue(con.getDefaultQueueExchangeName(), "someQ", "someQ", false, true);
         MessageConsumer consumer = consumerSession.createConsumer(queue);
 
         AMQConnection con2 = (AMQConnection) getConnection("guest", "guest");

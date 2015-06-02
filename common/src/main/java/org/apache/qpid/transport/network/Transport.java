@@ -46,7 +46,7 @@ public class Transport
     static
     {
         final Map<ProtocolVersion,String> map = new HashMap<ProtocolVersion, String>();
-        map.put(ProtocolVersion.v8_0, IO_TRANSPORT_CLASSNAME);
+        map.put(ProtocolVersion.v0_8, IO_TRANSPORT_CLASSNAME);
         map.put(ProtocolVersion.v0_9, IO_TRANSPORT_CLASSNAME);
         map.put(ProtocolVersion.v0_91, IO_TRANSPORT_CLASSNAME);
         map.put(ProtocolVersion.v0_10, IO_TRANSPORT_CLASSNAME);
@@ -124,7 +124,7 @@ public class Transport
         {
             protocolSpecificSystemProperty = QPID_TRANSPORT_V0_9_PROPNAME;
         }
-        else if (ProtocolVersion.v8_0.equals(protocolVersion))
+        else if (ProtocolVersion.v0_8.equals(protocolVersion))
         {
             protocolSpecificSystemProperty = QPID_TRANSPORT_V0_8_PROPNAME;
         }

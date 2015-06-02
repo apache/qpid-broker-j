@@ -73,7 +73,7 @@ public class AMQChannelTest extends QpidTestCase
                     int replyCode,
                     AMQShortString replyText)
                     {
-                        _replies.put(replyCode, replyText.asString());
+                        _replies.put(replyCode, replyText.toString());
                     }
         };
         _replies = new HashMap<Integer, String>();

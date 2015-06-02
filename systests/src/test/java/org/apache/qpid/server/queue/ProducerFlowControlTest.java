@@ -381,7 +381,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         producerConnection.close();
 
         // delete queue with a consumer session
-        ((AMQSession<?,?>) consumerSession).sendQueueDelete(new AMQShortString(queueName));
+        ((AMQSession<?,?>) consumerSession).sendQueueDelete(queueName);
 
         consumer = consumerSession.createConsumer(queue);
         consumerConnection.start();
@@ -400,7 +400,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put("x-qpid-capacity",capacity);
         arguments.put("x-qpid-flow-resume-capacity",resumeCapacity);
-        ((AMQSession<?,?>) session).createQueue(new AMQShortString(queueName), autoDelete, durable, false, arguments);
+        ((AMQSession<?,?>) session).createQueue(queueName, autoDelete, durable, false, arguments);
         queue = session.createQueue("direct://amq.direct/"+queueName+"/"+queueName+"?durable='" + durable + "'&autodelete='" + autoDelete + "'");
         ((AMQSession<?,?>) session).declareAndBind((AMQDestination)queue);
     }

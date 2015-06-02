@@ -813,7 +813,7 @@ public class AMQProtocolHandler implements ProtocolEngine
         }
     }
 
-    public AMQShortString generateQueueName()
+    public String generateQueueName()
     {
         return _protocolSession.generateQueueName();
     }

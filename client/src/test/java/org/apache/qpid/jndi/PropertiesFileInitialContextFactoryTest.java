@@ -65,10 +65,10 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
         Context ctx = prepareContext();
         Topic topic = (Topic)ctx.lookup("MultipleTopicNamesWithSpace");
         int i = 0;
-        for (AMQShortString bindingKey: ((AMQDestination)topic).getBindingKeys())
+        for (String bindingKey: ((AMQDestination)topic).getBindingKeys())
         {
             i++;
-            assertEquals("Topic" + i + "WithSpace",bindingKey.asString());
+            assertEquals("Topic" + i + "WithSpace", bindingKey);
         }
     }
 

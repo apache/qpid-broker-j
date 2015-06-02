@@ -51,7 +51,7 @@ public class ExhaustiveACLTest extends AbstractACLTestCase
 		Connection conn = getConnection(vhost, user, "guest");
 		Session sess = conn.createSession(true, Session.SESSION_TRANSACTED);
 		conn.start();
-		((AMQSession<?, ?>) sess).createQueue(new AMQShortString(name), autoDelete, durable, false);
+		((AMQSession<?, ?>) sess).createQueue(name, autoDelete, durable, false);
 		sess.commit();
 		conn.close();
 	}

@@ -175,7 +175,7 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
         _queue = new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, _queueName);
         if (!((AMQSession<?,?>) session).isQueueBound((AMQDestination) _queue))
         {
-            ((AMQSession<?,?>) session).createQueue(new AMQShortString(_queueName), false, true, false, null);
+            ((AMQSession<?,?>) session).createQueue(_queueName, false, true, false, null);
             ((AMQSession<?,?>) session).declareAndBind((AMQDestination) new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, _queueName));
         }
     }

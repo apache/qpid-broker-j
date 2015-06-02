@@ -61,7 +61,7 @@ public class EnsureNondestructiveConsumersTest extends QpidBrokerTestCase
         final Map<String,Object> arguments = new HashMap<>();
 
         arguments.put("qpid.ensure_nondestructive_consumers", String.valueOf(ensureNonDestructiveConsumer));
-        ((AMQSession<?,?>) _session).createQueue(new AMQShortString(_queueName), false, true, false, arguments);
+        ((AMQSession<?,?>) _session).createQueue(_queueName, false, true, false, arguments);
         _queue = new org.apache.qpid.client.AMQQueue("amq.direct", _queueName);
         ((AMQSession<?,?>) _session).declareAndBind((AMQDestination)_queue);
     }

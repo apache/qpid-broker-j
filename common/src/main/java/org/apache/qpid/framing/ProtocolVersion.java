@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.TreeSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ProtocolVersion  implements Comparable
 {
@@ -41,7 +42,7 @@ public class ProtocolVersion  implements Comparable
     private final byte _minorVersion;
     private final String _stringFormat;
 
-    public ProtocolVersion(byte majorVersion, byte minorVersion)
+    private ProtocolVersion(byte majorVersion, byte minorVersion)
     {
         _majorVersion = majorVersion;
         _minorVersion = minorVersion;
@@ -146,7 +147,9 @@ public class ProtocolVersion  implements Comparable
 
     public static final ProtocolVersion v0_9 = new ProtocolVersion((byte)0,(byte)9);
     public static final ProtocolVersion v0_91 = new ProtocolVersion((byte)0,(byte)91);
-    public static final ProtocolVersion v8_0 = new ProtocolVersion((byte)8,(byte)0);
+    public static final ProtocolVersion v0_8 = new ProtocolVersion((byte)8,(byte)0);
+
+    private static final Map<ProtocolVersion, ProtocolVersion> INSTANCES = new ConcurrentHashMap<ProtocolVersion,ProtocolVersion>();
 
     static
     {
@@ -158,8 +161,8 @@ public class ProtocolVersion  implements Comparable
         _nameToVersionMap.put("0-9", v0_9);
         versions.add(v0_91);
         _nameToVersionMap.put("0-91", v0_91);
-        versions.add(v8_0);
-        _nameToVersionMap.put("8-0", v8_0);
+        versions.add(v0_8);
+        _nameToVersionMap.put("8-0", v0_8);
         _supportedVersions = Collections.unmodifiableSortedSet(versions);
 
         ProtocolVersion systemDefinedVersion =
@@ -168,6 +171,10 @@ public class ProtocolVersion  implements Comparable
         _defaultVersion = (systemDefinedVersion == null)
                               ? getLatestSupportedVersion()
                               : systemDefinedVersion;
+        INSTANCES.put(v0_10,v0_10);
+        INSTANCES.put(v0_9,v0_9);
+        INSTANCES.put(v0_91,v0_91);
+        INSTANCES.put(v0_8, v0_8);
     }
 
     public static SortedSet<ProtocolVersion> getSupportedProtocolVersions()
@@ -184,5 +191,13 @@ public class ProtocolVersion  implements Comparable
     {
         return _defaultVersion;
     }
+
+    public static ProtocolVersion get(byte majorVersion, byte minorVersion)
+    {
+        ProtocolVersion pv = new ProtocolVersion(majorVersion, minorVersion);
+        ProtocolVersion instance = INSTANCES.get(pv);
+        return instance == null ? pv : instance;
+    }
+
 
 }

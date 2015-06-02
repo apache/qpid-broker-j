@@ -206,7 +206,7 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
         }
         else
         {
-            pv = new ProtocolVersion(_protocolMajor, _protocolMinor);
+            pv = ProtocolVersion.get(_protocolMajor, _protocolMinor);
         }
         
 

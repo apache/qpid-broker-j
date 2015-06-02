@@ -26,7 +26,6 @@ import javax.jms.JMSException;
 import javax.jms.Queue;
 import javax.jms.Topic;
 
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.messaging.Address;
 import org.apache.qpid.url.BindingURL;
 
@@ -41,7 +40,8 @@ import org.apache.qpid.url.BindingURL;
  */
 public class AMQAnyDestination extends AMQDestination implements Queue, Topic
 {
-    private static final long serialVersionUID = 2853054849716163231L;
+
+    private static final long serialVersionUID = 5973347887436103851L;
 
     public AMQAnyDestination()
     {
@@ -63,10 +63,10 @@ public class AMQAnyDestination extends AMQDestination implements Queue, Topic
         super(addr);
     }
     
-    public AMQAnyDestination(AMQShortString exchangeName,AMQShortString exchangeClass,
-                             AMQShortString routingKey,boolean isExclusive, 
-                             boolean isAutoDelete, AMQShortString queueName, 
-                             boolean isDurable, AMQShortString[] bindingKeys)
+    public AMQAnyDestination(String exchangeName, String exchangeClass,
+                             String routingKey, boolean isExclusive,
+                             boolean isAutoDelete, String queueName,
+                             boolean isDurable, String[] bindingKeys)
     {
         super(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, isDurable, bindingKeys);
     }
@@ -81,7 +81,7 @@ public class AMQAnyDestination extends AMQDestination implements Queue, Topic
     {
         if (getRoutingKey() != null)
         {
-            return getRoutingKey().asString();
+            return getRoutingKey();
         }
         else if (getSubject() != null)
         {

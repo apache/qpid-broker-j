@@ -201,7 +201,7 @@ public class DurableQueueLoggingTest extends AbstractTestLogging
         arguments.put("x-qpid-priorities", PRIORITIES);
         // Need to create a queue that does not exist so use test name
         final String queueName = getTestQueueName();
-        ((AMQSession) _session).createQueue(new AMQShortString(queueName), false, _durable, false, arguments);
+        ((AMQSession) _session).createQueue(queueName, false, _durable, false, arguments);
 
         Queue queue = (Queue) _session.createQueue("direct://amq.direct/"+queueName+"/"+queueName+"?durable='"+_durable+"'&autodelete='false'");
 
@@ -247,7 +247,7 @@ public class DurableQueueLoggingTest extends AbstractTestLogging
         arguments.put("x-qpid-priorities", PRIORITIES);
         // Need to create a queue that does not exist so use test name
         final String queueName = getTestQueueName() + "-autoDeletePriority";
-        ((AMQSession) _session).createQueue(new AMQShortString(queueName), true, _durable, false, arguments);
+        ((AMQSession) _session).createQueue(queueName, true, _durable, false, arguments);
 
         Queue queue = (Queue) _session.createQueue("direct://amq.direct/"+queueName+"/"+queueName+"?durable='"+_durable+"'&autodelete='true'");
 

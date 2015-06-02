@@ -88,7 +88,7 @@ public class QueueLoggingTest extends AbstractTestLogging
         _session.createConsumer(queue);
 
         // Delete Queue
-        ((AMQSession)_session).sendQueueDelete(new AMQShortString(queue.getQueueName()));
+        ((AMQSession)_session).sendQueueDelete(queue.getQueueName());
 
         //Perform a synchronous action to ensure that the above log will be on disk
         _session.close();

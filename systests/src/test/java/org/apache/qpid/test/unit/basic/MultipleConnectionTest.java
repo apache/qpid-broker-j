@@ -191,7 +191,7 @@ public class MultipleConnectionTest extends QpidBrokerTestCase
         String broker = _connectionString;
         int messages = 10;
 
-        AMQTopic topic = new AMQTopic(AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME), "amq.topic");
+        AMQTopic topic = new AMQTopic(ExchangeDefaults.TOPIC_EXCHANGE_NAME, "amq.topic");
 
         Receiver[] receivers = new Receiver[] { new Receiver(broker, topic, 2), new Receiver(broker, topic, 14) };
 

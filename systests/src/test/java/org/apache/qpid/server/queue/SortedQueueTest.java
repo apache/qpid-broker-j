@@ -339,7 +339,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
     {
         final Map<String, Object> arguments = new HashMap<String, Object>();
         arguments.put(QueueArgumentsConverter.QPID_QUEUE_SORT_KEY, TEST_SORT_KEY);
-        ((AMQSession<?,?>) _producerSession).createQueue(new AMQShortString(getTestQueueName()), false, true, false, arguments);
+        ((AMQSession<?,?>) _producerSession).createQueue(getTestQueueName(), false, true, false, arguments);
         final Queue queue = new AMQQueue("amq.direct", getTestQueueName());
         ((AMQSession<?,?>) _producerSession).declareAndBind((AMQDestination) queue);
         return queue;

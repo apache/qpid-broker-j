@@ -386,7 +386,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
                         Transaction transaction, DatabaseEntry key, DatabaseEntry value)
                 {
                     OldQueueEntryKey oldEntryRecord = oldBinding.entryToObject(key);
-                    UUID queueId = UUIDGenerator.generateQueueUUID(oldEntryRecord.getQueueName().asString(), virtualHostName);
+                    UUID queueId = UUIDGenerator.generateQueueUUID(oldEntryRecord.getQueueName().toString(), virtualHostName);
 
                     NewQueueEntryKey newEntryRecord = new NewQueueEntryKey(queueId, oldEntryRecord.getMessageId());
                     DatabaseEntry newKey = new DatabaseEntry();
@@ -415,9 +415,11 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
                 {
                     // TODO: check and remove orphaned bindings
                     BindingRecord bindingRecord = binding.entryToObject(key);
-                    String exchangeName = bindingRecord.getExchangeName() == null ? ExchangeDefaults.DEFAULT_EXCHANGE_NAME : bindingRecord.getExchangeName().asString();
-                    String queueName = bindingRecord.getQueueName().asString();
-                    String routingKey = bindingRecord.getRoutingKey().asString();
+                    String exchangeName = bindingRecord.getExchangeName() == null ? ExchangeDefaults.DEFAULT_EXCHANGE_NAME : bindingRecord
+                            .getExchangeName()
+                            .toString();
+                    String queueName = bindingRecord.getQueueName().toString();
+                    String routingKey = bindingRecord.getRoutingKey().toString();
                     FieldTable arguments = bindingRecord.getArguments();
 
                     UUID bindingId = UUIDGenerator.generateBindingUUID(exchangeName, queueName, routingKey, virtualHostName);
@@ -448,10 +450,10 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
                         Transaction transaction, DatabaseEntry key, DatabaseEntry value)
                 {
                     ExchangeRecord exchangeRecord = exchangeBinding.entryToObject(value);
-                    String exchangeName = exchangeRecord.getNameShortString().asString();
+                    String exchangeName = exchangeRecord.getNameShortString().toString();
                     if (!DEFAULT_EXCHANGES_SET.contains(exchangeName) && !"<<default>>".equals(exchangeName))
                     {
-                        String exchangeType = exchangeRecord.getType().asString();
+                        String exchangeType = exchangeRecord.getType().toString();
                         boolean autoDelete = exchangeRecord.isAutoDelete();
 
                         UUID exchangeId = UUIDGenerator.generateExchangeUUID(exchangeName, virtualHostName);
@@ -485,9 +487,9 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
                         Transaction transaction, DatabaseEntry key, DatabaseEntry value)
                 {
                     OldQueueRecord queueRecord = queueBinding.entryToObject(value);
-                    String queueName = queueRecord.getNameShortString().asString();
+                    String queueName = queueRecord.getNameShortString().toString();
                     queueNames.add(queueName);
-                    String owner = queueRecord.getOwner() == null ? null : queueRecord.getOwner().asString();
+                    String owner = queueRecord.getOwner() == null ? null : queueRecord.getOwner().toString();
                     boolean exclusive = queueRecord.isExclusive();
                     FieldTable arguments = queueRecord.getArguments();
 

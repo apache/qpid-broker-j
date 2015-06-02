@@ -161,15 +161,15 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
         BindingRecord record = null;
         for (BindingRecord bindingRecord : queueBindings)
         {
-            if (bindingRecord.getQueueName().asString().equals(queueName)
-                    && bindingRecord.getExchangeName().asString().equals(exchangeName))
+            if (bindingRecord.getQueueName().toString().equals(queueName)
+                    && bindingRecord.getExchangeName().toString().equals(exchangeName))
             {
                 record = bindingRecord;
                 break;
             }
         }
         assertNotNull("Binding is not found for queue " + queueName + " and exchange " + exchangeName, record);
-        assertEquals("Unexpected routing key", routingKey, record.getRoutingKey().asString());
+        assertEquals("Unexpected routing key", routingKey, record.getRoutingKey().toString());
 
         if (selectorKey != null)
         {
@@ -200,7 +200,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
                     DatabaseEntry key, DatabaseEntry value)
             {
                 QueueEntryKey entryKey = queueEntryKeyBinding.entryToObject(key);
-                String thisQueueName = entryKey.getQueueName().asString();
+                String thisQueueName = entryKey.getQueueName().toString();
                 if (thisQueueName.equals(queueName))
                 {
                     deliveryCounter.incrementAndGet();
@@ -285,7 +285,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
                     DatabaseEntry key, DatabaseEntry value)
             {
                 QueueRecord record = binding.entryToObject(value);
-                String queueName = record.getNameShortString().asString();
+                String queueName = record.getNameShortString().toString();
                 actualQueueNames.add(queueName);
             }
         };
@@ -309,7 +309,7 @@ public class UpgradeFrom4to5Test extends AbstractUpgradeTestCase
                     DatabaseEntry key, DatabaseEntry value)
             {
                 QueueRecord record = binding.entryToObject(value);
-                String queueName = record.getNameShortString().asString();
+                String queueName = record.getNameShortString().toString();
                 if (queueName.equals(queueName))
                 {
                     foundQueue.set(true);

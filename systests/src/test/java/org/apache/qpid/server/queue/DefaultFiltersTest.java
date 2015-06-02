@@ -63,7 +63,7 @@ public class DefaultFiltersTest extends QpidBrokerTestCase
         selector = selector.replace("\"", "\\\"");
 
         arguments.put("qpid.default_filters","{ \"x-filter-jms-selector\" : { \"x-filter-jms-selector\" : [ \""+selector+"\" ] } }");
-        ((AMQSession<?,?>) _session).createQueue(new AMQShortString(_queueName), false, true, false, arguments);
+        ((AMQSession<?,?>) _session).createQueue(_queueName, false, true, false, arguments);
         _queue = new org.apache.qpid.client.AMQQueue("amq.direct", _queueName);
         ((AMQSession<?,?>) _session).declareAndBind((AMQDestination)_queue);
     }

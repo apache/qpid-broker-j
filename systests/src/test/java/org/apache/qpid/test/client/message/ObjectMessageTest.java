@@ -53,7 +53,7 @@ public class ObjectMessageTest extends QpidBrokerTestCase
 
         //Create Queue
         String queueName = getTestQueueName();
-        ((AMQSession) _session).createQueue(new AMQShortString(queueName), true, false, false);
+        ((AMQSession) _session).createQueue(queueName, true, false, false);
         Queue queue = _session.createQueue("direct://amq.direct/"+queueName+"/"+queueName+"?durable='false'&autodelete='true'");
 
         //Create Consumer

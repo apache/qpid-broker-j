@@ -58,7 +58,7 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
     private void init(AMQConnection connection) throws Exception
     {
         init(connection,
-            new AMQQueue(connection.getDefaultQueueExchangeName(), new AMQShortString(randomize("SessionStartTest")), true));
+            new AMQQueue(connection.getDefaultQueueExchangeName(), randomize("SessionStartTest"), true));
     }
 
     private void init(AMQConnection connection, AMQDestination destination) throws Exception

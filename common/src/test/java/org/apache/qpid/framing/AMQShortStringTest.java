@@ -34,73 +34,6 @@ public class AMQShortStringTest extends TestCase
     public static final AMQShortString GOOD = new AMQShortString("Good");
     public static final AMQShortString BYE = new AMQShortString("BYE");
 
-    public void testStartsWith()
-    {
-        assertTrue(HELLO.startsWith(HELL));
-
-        assertFalse(HELL.startsWith(HELLO));
-
-        assertTrue(GOODBYE.startsWith(GOOD));
-
-        assertFalse(GOOD.startsWith(GOODBYE));
-    }
-
-    public void testEndWith()
-    {
-        assertFalse(HELL.endsWith(HELLO));
-
-        assertTrue(GOODBYE.endsWith(new AMQShortString("bye")));
-
-        assertFalse(GOODBYE.endsWith(BYE));
-    }
-
-
-    public void testTokenize()
-    {
-        AMQShortString dotSeparatedWords = new AMQShortString("this.is.a.test.with.1.2.3.-numbers-and-then--dashes-");
-        AMQShortStringTokenizer dotTokenizer = dotSeparatedWords.tokenize((byte) '.');
-
-        assertTrue(dotTokenizer.hasMoreTokens());
-        assertEquals(new AMQShortString("this"),(dotTokenizer.nextToken()));
-        assertTrue(dotTokenizer.hasMoreTokens());
-        assertEquals(new AMQShortString("is"),(dotTokenizer.nextToken()));
-        assertTrue(dotTokenizer.hasMoreTokens());
-        assertEquals(new AMQShortString("a"),(dotTokenizer.nextToken()));
-        assertTrue(dotTokenizer.hasMoreTokens());
-        assertEquals(new AMQShortString("test"),(dotTokenizer.nextToken()));
-        assertTrue(dotTokenizer.hasMoreTokens());
-        assertEquals(new AMQShortString("with"),(dotTokenizer.nextToken()));
-        assertTrue(dotTokenizer.hasMoreTokens());
-        assertEquals(dotTokenizer.nextToken().toIntValue() , 1);
-        assertTrue(dotTokenizer.hasMoreTokens());
-        assertEquals(dotTokenizer.nextToken().toIntValue() , 2);
-        assertTrue(dotTokenizer.hasMoreTokens());
-        assertEquals(dotTokenizer.nextToken().toIntValue() , 3);
-        assertTrue(dotTokenizer.hasMoreTokens());
-        AMQShortString dashString = dotTokenizer.nextToken();
-        assertEquals(new AMQShortString("-numbers-and-then--dashes-"),(dashString));
-
-        AMQShortStringTokenizer dashTokenizer = dashString.tokenize((byte)'-');
-        assertEquals(dashTokenizer.countTokens(), 7);
-
-        AMQShortString[] expectedResults = new AMQShortString[]
-                                                { AMQShortString.EMPTY_STRING,
-                                                  new AMQShortString("numbers"),
-                                                  new AMQShortString("and"),
-                                                  new AMQShortString("then"),
-                                                  AMQShortString.EMPTY_STRING,
-                                                  new AMQShortString("dashes"),
-                                                  AMQShortString.EMPTY_STRING };
-
-        for(int i = 0; i < 7; i++)
-        {
-            assertTrue(dashTokenizer.hasMoreTokens());
-            assertEquals(dashTokenizer.nextToken(), expectedResults[i]);
-        }
-
-        assertFalse(dotTokenizer.hasMoreTokens());
-    }
-
 
     public void testEquals()
     {
@@ -126,7 +59,8 @@ public class AMQShortStringTest extends TestCase
         }
         AMQShortString string = new AMQShortString(bytes);
         assertEquals("constructed amq short string length differs from expected", 4, string.length());
-        assertTrue("constructed amq short string differs from expected", string.equalsCharSequence("test"));
+
+        assertTrue("constructed amq short string differs from expected", string.toString().equals("test"));
     }
 
     /**
@@ -139,34 +73,8 @@ public class AMQShortStringTest extends TestCase
     {
         AMQShortString string = new AMQShortString("test");
         assertEquals("constructed amq short string length differs from expected", 4, string.length());
-        assertTrue("constructed amq short string differs from expected", string.equalsCharSequence("test"));
-    }
 
-    /**
-     * Test method for
-     * {@link org.apache.qpid.framing.AMQShortString#AMQShortString(char[])}.
-     * <p>
-     * Tests short string construction from char array with length less than 255.
-     */
-    public void testCreateAMQShortStringCharArray()
-    {
-        char[] chars = "test".toCharArray();
-        AMQShortString string = new AMQShortString(chars);
-        assertEquals("constructed amq short string length differs from expected", 4, string.length());
-        assertTrue("constructed amq short string differs from expected", string.equalsCharSequence("test"));
-    }
-
-    /**
-     * Test method for
-     * {@link org.apache.qpid.framing.AMQShortString#AMQShortString(java.lang.CharSequence)}
-     * <p>
-     * Tests short string construction from char sequence with length less than 255.
-     */
-    public void testCreateAMQShortStringCharSequence()
-    {
-        AMQShortString string = new AMQShortString((CharSequence) "test");
-        assertEquals("constructed amq short string length differs from expected", 4, string.length());
-        assertTrue("constructed amq short string differs from expected", string.equalsCharSequence("test"));
+        assertTrue("constructed amq short string differs from expected", string.toString().equals("test"));
     }
 
     /**
@@ -220,98 +128,19 @@ public class AMQShortStringTest extends TestCase
         }
     }
 
-    /**
-     * Test method for
-     * {@link org.apache.qpid.framing.AMQShortString#AMQShortString(char[])}.
-     * <p>
-     * Tests an attempt to create an AMQP short string from char array with length over 255.
-     */
-    public void testCreateAMQShortStringCharArrayOver255()
-    {
-        String test = buildString('a', 256);
-        char[] chars = test.toCharArray();
-        try
-        {
-            new AMQShortString(chars);
-            fail("It should not be possible to create AMQShortString with length over 255");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertEquals("Exception message differs from expected",
-                    "Cannot create AMQShortString with number of octets over 255!", e.getMessage());
-        }
-    }
-
-    /**
-     * Test method for
-     * {@link org.apache.qpid.framing.AMQShortString#AMQShortString(java.lang.CharSequence)}
-     * <p>
-     * Tests an attempt to create an AMQP short string from char sequence with length over 255.
-     */
-    public void testCreateAMQShortStringCharSequenceOver255()
-    {
-        String test = buildString('a', 256);
-        try
-        {
-            new AMQShortString((CharSequence) test);
-            fail("It should not be possible to create AMQShortString with length over 255");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertEquals("Exception message differs from expected",
-                    "Cannot create AMQShortString with number of octets over 255!", e.getMessage());
-        }
-    }
-
-    /**
-     * Tests joining of short strings into a short string with length over 255.
-     */
-    public void testJoinOverflow()
-    {
-        List<AMQShortString> data = new ArrayList<AMQShortString>();
-        for (int i = 0; i < 25; i++)
-        {
-            data.add(new AMQShortString("test data!"));
-        }
-        try
-        {
-            AMQShortString.join(data, new AMQShortString(" "));
-            fail("It should not be possible to create AMQShortString with length over 255");
-        }
-        catch (IllegalArgumentException e)
-        {
-            assertEquals("Exception message differs from expected",
-                    "Cannot create AMQShortString with number of octets over 255!", e.getMessage());
-        }
-    }
-
-    /**
-     * Tests joining of short strings into a short string with length less than 255.
-     */
-    public void testJoin()
-    {
-        StringBuilder expected = new StringBuilder();
-        List<AMQShortString> data = new ArrayList<AMQShortString>();
-        data.add(new AMQShortString("test data 1"));
-        expected.append("test data 1");
-        data.add(new AMQShortString("test data 2"));
-        expected.append(" test data 2");
-        AMQShortString result = AMQShortString.join(data, new AMQShortString(" "));
-        assertEquals("join result differs from expected", expected.toString(), result.asString());
-    }
-
     public void testValueOf()
     {
         String string = buildString('a', 255);
         AMQShortString shortString = AMQShortString.valueOf(string, true, true);
-        assertEquals("Unexpected string from valueOf", string, shortString.asString());
+        assertEquals("Unexpected string from valueOf", string, shortString.toString());
     }
 
     public void testValueOfTruncated()
     {
         String string = buildString('a', 256);
         AMQShortString shortString = AMQShortString.valueOf(string, true, true);
-        assertEquals("Unexpected truncated string from valueOf", string.substring(0, AMQShortString.MAX_LENGTH -3) + "...", shortString.asString());
+        assertEquals("Unexpected truncated string from valueOf", string.substring(0, AMQShortString.MAX_LENGTH -3) + "...",
+                     shortString.toString());
     }
 
     public void testValueOfNulAsEmptyString()

@@ -33,9 +33,9 @@ import javax.jms.JMSException;
 interface TemporaryDestination extends Destination
 {
 
-    public AMQShortString getAMQQueueName();
-    public void delete() throws JMSException;
-    public AMQSession getSession();
-    public boolean isDeleted();
+    String getAMQQueueName();
+    void delete() throws JMSException;
+    AMQSession getSession();
+    boolean isDeleted();
 
 }

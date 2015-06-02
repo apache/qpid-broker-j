@@ -107,8 +107,8 @@ public class MessageFactoryRegistry
      */
     public AbstractJMSMessage createMessage(long deliveryTag,
                                             boolean redelivered,
-                                            AMQShortString exchange,
-                                            AMQShortString routingKey,
+                                            String exchange,
+                                            String routingKey,
                                             ContentHeaderBody contentHeader,
                                             List bodies,
                                             AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
@@ -121,8 +121,7 @@ public class MessageFactoryRegistry
         // Get the message content type. This may be null for pure AMQP messages, but will always be set for JMS over
         // AMQP. When the type is null, it can only be assumed that the message is a byte message.
         AMQShortString contentTypeShortString = properties.getContentType();
-        contentTypeShortString = (contentTypeShortString == null) ? new AMQShortString(
-                JMSBytesMessage.MIME_TYPE) : contentTypeShortString;
+        contentTypeShortString = (contentTypeShortString == null) ? new AMQShortString(JMSBytesMessage.MIME_TYPE) : contentTypeShortString;
 
         MessageFactory mf = _mimeShortStringToFactoryMap.get(contentTypeShortString);
         if (mf == null)

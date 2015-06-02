@@ -219,22 +219,22 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
             {
                 AMQBindingURL burl = new AMQBindingURL(origReplyToString);
                 ReplyToComponents replyTo = new ReplyToComponents();
-                AMQShortString routingKey = burl.getRoutingKey();
+                String routingKey = burl.getRoutingKey();
                 if(routingKey != null)
                 {
-                    replyTo.setRoutingKey(routingKey.asString());
+                    replyTo.setRoutingKey(routingKey);
                 }
 
-                AMQShortString exchangeName = burl.getExchangeName();
+                String exchangeName = burl.getExchangeName();
                 if(exchangeName != null)
                 {
-                    replyTo.setExchange(exchangeName.asString());
+                    replyTo.setExchange(exchangeName);
                 }
 
-                AMQShortString queueName = burl.getQueueName();
+                String queueName = burl.getQueueName();
                 if(queueName != null)
                 {
-                    replyTo.setQueue(queueName.asString());
+                    replyTo.setQueue(queueName);
                 }
                 return replyTo;
             }

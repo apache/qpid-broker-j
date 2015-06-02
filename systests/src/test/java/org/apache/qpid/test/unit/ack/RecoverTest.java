@@ -179,10 +179,10 @@ public class RecoverTest extends QpidBrokerTestCase
 
         Session consumerSession = con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
         Queue queue =
-                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), new AMQShortString("Q1"), new AMQShortString("Q1"),
+                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), "Q1", "Q1",
                              false, true);
         Queue queue2 =
-                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), new AMQShortString("Q2"), new AMQShortString("Q2"),
+                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), "Q2", "Q2",
                              false, true);
         MessageConsumer consumer = consumerSession.createConsumer(queue);
         MessageConsumer consumer2 = consumerSession.createConsumer(queue2);
@@ -221,7 +221,7 @@ public class RecoverTest extends QpidBrokerTestCase
 
         final Session consumerSession = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Queue queue =
-                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), new AMQShortString("Q3"), new AMQShortString("Q3"),
+                new AMQQueue(consumerSession.getDefaultQueueExchangeName(), "Q3", "Q3",
                              false, true);
         MessageConsumer consumer = consumerSession.createConsumer(queue);
         MessageProducer producer = consumerSession.createProducer(queue);

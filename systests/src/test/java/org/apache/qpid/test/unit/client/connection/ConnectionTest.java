@@ -86,17 +86,13 @@ public class ConnectionTest extends QpidBrokerTestCase
 
             AMQSession sess = (AMQSession) conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-            sess.declareExchange(new AMQShortString("test.direct"),
-                    AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS), false);
+            sess.declareExchange("test.direct", ExchangeDefaults.DIRECT_EXCHANGE_CLASS, false);
 
-            sess.declareExchange(new AMQShortString("tmp.direct"),
-                    AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS), false);
+            sess.declareExchange("tmp.direct", ExchangeDefaults.DIRECT_EXCHANGE_CLASS, false);
 
-            sess.declareExchange(new AMQShortString("tmp.topic"),
-                    AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS), false);
+            sess.declareExchange("tmp.topic", ExchangeDefaults.TOPIC_EXCHANGE_CLASS, false);
 
-            sess.declareExchange(new AMQShortString("test.topic"),
-                    AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS), false);
+            sess.declareExchange("test.topic", ExchangeDefaults.TOPIC_EXCHANGE_CLASS, false);
 
             QueueSession queueSession = conn.createQueueSession(false, Session.AUTO_ACKNOWLEDGE);
 

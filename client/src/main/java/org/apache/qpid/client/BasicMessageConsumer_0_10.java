@@ -18,6 +18,7 @@
 package org.apache.qpid.client;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.jms.JMSException;
@@ -36,7 +37,6 @@ import org.apache.qpid.client.message.MessageFactoryRegistry;
 import org.apache.qpid.client.message.UnprocessedMessage_0_10;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.ServerPropertyNames;
-import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.jms.Session;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.transport.Acquired;
@@ -82,7 +82,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
 
     protected BasicMessageConsumer_0_10(int channelId, AMQConnection connection, AMQDestination destination,
                                         String messageSelector, boolean noLocal, MessageFactoryRegistry messageFactory,
-                                        AMQSession<?,?> session, FieldTable rawSelector,
+                                        AMQSession<?,?> session, Map<String,Object> rawSelector,
                                         int prefetchHigh, int prefetchLow, boolean exclusive,
                                         int acknowledgeMode, boolean browseOnly, boolean autoClose)
             throws JMSException

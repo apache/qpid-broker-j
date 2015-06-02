@@ -76,7 +76,7 @@ public class AMQProtocolHandlerTest extends TestCase
         //Create a new ProtocolHandler with a fake connection.
         _handler = new AMQProtocolHandler(new MockAMQConnection("amqp://guest:guest@client/test?brokerlist='tcp://localhost:1'"));
         _handler.setNetworkConnection(new TestNetworkConnection());
-         AMQBody body = new BasicRecoverSyncOkBody(ProtocolVersion.v8_0);
+         AMQBody body = new BasicRecoverSyncOkBody(ProtocolVersion.v0_8);
         _blockFrame = new AMQFrame(0, body);
 
         _handleCountDown = new CountDownLatch(1);

@@ -63,7 +63,7 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
             AMQShortString routingKey = messageMetaData.getMessagePublishInfo().getRoutingKey();
             if (routingKey != null)
             {
-                return routingKey.asString();
+                return routingKey.toString();
             }
         }
         return null;

@@ -53,7 +53,7 @@ public abstract class AbstractAMQMessageDelegate implements AMQMessageDelegate
     private static final Logger _logger = LoggerFactory.getLogger(AMQMessageDelegate.class);
 
     private static Map<String, Integer> _exchangeTypeToDestinationType = new ConcurrentHashMap<String, Integer>();
-    private static Map<String,ExchangeInfo> _exchangeMap = new  ConcurrentHashMap<String, ExchangeInfo>();
+    private static Map<String,ExchangeInfo> _exchangeMap = new  ConcurrentHashMap<>();
 
     /**
      * Add default Mappings for the Direct, Default, Topic and Fanout exchanges.
@@ -120,14 +120,22 @@ public abstract class AbstractAMQMessageDelegate implements AMQMessageDelegate
      * @param routingKey The routing key to be used for the Destination
      * @return AMQDestination of the correct subtype
      */
-    protected AMQDestination generateDestination(AMQShortString exchange, AMQShortString routingKey)
+    protected AMQDestination generateDestination(String exchange, String routingKey)
     {
         AMQDestination dest;
-        ExchangeInfo exchangeInfo = _exchangeMap.get(exchange.asString());
+        if(exchange == null)
+        {
+            exchange = ExchangeDefaults.DEFAULT_EXCHANGE_NAME;
+        }
+        if(routingKey == null)
+        {
+            routingKey = "";
+        }
+        ExchangeInfo exchangeInfo = _exchangeMap.get(exchange);
 
         if (exchangeInfo == null)
         {
-            exchangeInfo = new ExchangeInfo(exchange.asString(),"",AMQDestination.UNKNOWN_TYPE);
+            exchangeInfo = new ExchangeInfo(exchange,"",AMQDestination.UNKNOWN_TYPE);
         }
 
         if ("topic".equals(exchangeInfo.getExchangeType()))
@@ -141,13 +149,13 @@ public abstract class AbstractAMQMessageDelegate implements AMQMessageDelegate
         else
         {
             dest = new AMQAnyDestination(exchange,
-                                         new AMQShortString(exchangeInfo.getExchangeType()),
+                                         exchangeInfo.getExchangeType(),
                                          routingKey,
                                          false,
                                          false,
                                          routingKey,
                                          false,
-                                         new AMQShortString[] {routingKey});
+                                         new String[] {routingKey});
         }
 
         return dest;
@@ -276,14 +284,14 @@ public abstract class AbstractAMQMessageDelegate implements AMQMessageDelegate
                                                                                    useNodeTypeForDestinationType);
             if (isQueue)
             {
-                dest.setQueueName(new AMQShortString(routingKey));
-                dest.setRoutingKey(new AMQShortString(routingKey));
-                dest.setExchangeName(new AMQShortString(""));
+                dest.setQueueName(routingKey);
+                dest.setRoutingKey(routingKey);
+                dest.setExchangeName("");
             }
             else
             {
-                dest.setRoutingKey(new AMQShortString(routingKey));
-                dest.setExchangeName(new AMQShortString(exchange));
+                dest.setRoutingKey(routingKey);
+                dest.setExchangeName(exchange);
             }
             return dest;
         }
@@ -295,7 +303,7 @@ public abstract class AbstractAMQMessageDelegate implements AMQMessageDelegate
             _logger.error("Exception when constructing an address string from the ReplyTo struct");
 
             // falling back to the old way of doing it to ensure the application continues.
-            return generateDestination(new AMQShortString(exchange), new AMQShortString(routingKey));
+            return generateDestination(exchange, routingKey);
         }
     }
 }

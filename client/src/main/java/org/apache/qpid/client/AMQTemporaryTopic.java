@@ -40,7 +40,7 @@ class AMQTemporaryTopic extends AMQTopic implements TemporaryTopic, TemporaryDes
      */
     public AMQTemporaryTopic(AMQSession session)
     {
-        super(session.getTemporaryTopicExchangeName(),new AMQShortString("tmp_" + UUID.randomUUID()));
+        super(session.getTemporaryTopicExchangeName(),"tmp_" + UUID.randomUUID());
         _session = session;
     }
 

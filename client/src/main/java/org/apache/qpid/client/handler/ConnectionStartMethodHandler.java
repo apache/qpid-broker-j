@@ -70,7 +70,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
         _log.debug("public void methodReceived(AMQStateManager stateManager, AMQProtocolSession protocolSession, "
             + "AMQMethodEvent evt): called");
 
-        ProtocolVersion pv = new ProtocolVersion((byte) body.getVersionMajor(), (byte) body.getVersionMinor());
+        ProtocolVersion pv = ProtocolVersion.get((byte) body.getVersionMajor(), (byte) body.getVersionMinor());
 
         // 0-9-1 is indistinguishable from 0-9 using only major and minor ... if we established the connection as 0-9-1
         // and now get back major = 0 , minor = 9 then we can assume it means 0-9-1

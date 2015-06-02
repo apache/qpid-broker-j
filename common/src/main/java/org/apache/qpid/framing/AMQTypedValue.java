@@ -307,7 +307,7 @@ public abstract class AMQTypedValue
         }
         else if(val instanceof Map)
         {
-            return AMQType.FIELD_TABLE.asTypedValue(FieldTable.convertToFieldTable((Map)val));
+            return AMQType.FIELD_TABLE.asTypedValue(FieldTable.convertToFieldTable((Map<String,Object>)val));
         }
         else if(klass == FieldTable.class)
         {

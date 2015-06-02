@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.client;
 
+import java.util.Map;
+
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.Session;
@@ -40,7 +42,6 @@ import org.apache.qpid.framing.AMQFrame;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicCancelBody;
 import org.apache.qpid.framing.BasicCancelOkBody;
-import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.jms.ConnectionURL;
 
 public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMessage_0_8>
@@ -53,13 +54,13 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
 
     protected BasicMessageConsumer_0_8(int channelId, AMQConnection connection, AMQDestination destination,
                                        String messageSelector, boolean noLocal, MessageFactoryRegistry messageFactory, AMQSession_0_8 session,
-                                       FieldTable rawSelector, int prefetchHigh, int prefetchLow, boolean exclusive,
+                                       Map<String,Object> rawSelector, int prefetchHigh, int prefetchLow, boolean exclusive,
                                        int acknowledgeMode, boolean browseOnly, boolean autoClose) throws JMSException
     {
         super(channelId, connection, destination,messageSelector,noLocal,messageFactory,session,
               rawSelector, prefetchHigh, prefetchLow, exclusive, acknowledgeMode,
               browseOnly, autoClose);
-        final FieldTable consumerArguments = getArguments();
+        final Map<String,Object> consumerArguments = getArguments();
         if (isAutoClose())
         {
             consumerArguments.put(AMQPFilterTypes.AUTO_CLOSE.getValue(), Boolean.TRUE);
@@ -148,13 +149,20 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
         }
     }
 
+
     public AbstractJMSMessage createJMSMessageFromUnprocessedMessage(AMQMessageDelegateFactory delegateFactory, UnprocessedMessage_0_8 messageFrame)throws Exception
     {
 
         return getMessageFactory().createMessage(messageFrame.getDeliveryTag(),
-                messageFrame.isRedelivered(), messageFrame.getExchange() == null ? AMQShortString.EMPTY_STRING : messageFrame.getExchange(),
-                messageFrame.getRoutingKey(), messageFrame.getContentHeader(), messageFrame.getBodies(),
-                _queueDestinationCache, _topicDestinationCache, getAddressType());
+                                                 messageFrame.isRedelivered(),
+                                                 messageFrame.getExchange() == null ? "" : AMQShortString.toString(
+                                                         messageFrame.getExchange()),
+                                                 AMQShortString.toString(messageFrame.getRoutingKey()),
+                                                 messageFrame.getContentHeader(),
+                                                 messageFrame.getBodies(),
+                                                 _queueDestinationCache,
+                                                 _topicDestinationCache,
+                                                 getAddressType());
 
     }
 

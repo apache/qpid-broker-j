@@ -20,16 +20,14 @@
  */
 package org.apache.qpid.client;
 
-import org.apache.qpid.framing.AMQShortString;
-
 public class AMQUndefinedDestination extends AMQDestination
 {
 
-    private static final AMQShortString UNKNOWN_EXCHANGE_CLASS = new AMQShortString("unknown");
-    private static final long serialVersionUID = -1487224209485888847L;
+    private static final String UNKNOWN_EXCHANGE_CLASS = "unknown";
+    private static final long serialVersionUID = -3938019873332367947L;
 
 
-    public AMQUndefinedDestination(AMQShortString exchange, AMQShortString routingKey, AMQShortString queueName)
+    public AMQUndefinedDestination(String exchange, String routingKey, String queueName)
     {
         super(exchange, UNKNOWN_EXCHANGE_CLASS, routingKey, queueName);
     }

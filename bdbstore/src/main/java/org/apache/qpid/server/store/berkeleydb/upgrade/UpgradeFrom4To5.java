@@ -136,7 +136,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                             arguments = new FieldTable();
                         }
 
-                        AMQShortString selectorFilterKey = AMQPFilterTypes.JMS_SELECTOR.getValue();
+                        AMQShortString selectorFilterKey = AMQShortString.valueOf(AMQPFilterTypes.JMS_SELECTOR.getValue());
                         if (!arguments.containsKey(selectorFilterKey))
                         {
                             if (_logger.isDebugEnabled())
@@ -176,7 +176,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                     DatabaseEntry newValue = new DatabaseEntry();
                     binding.objectToEntry(record, newValue);
                     targetDatabase.put(transaction, key, newValue);
-                    existingQueues.add(record.getNameShortString().asString());
+                    existingQueues.add(record.getNameShortString().toString());
                     sourceDatabase.delete(transaction, key);
                 }
             };
@@ -227,7 +227,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             {
                 QueueEntryKey entryKey = queueEntryKeyBinding.entryToObject(key);
                 Long messageId = entryKey.getMessageId();
-                final String queueName = entryKey.getQueueName().asString();
+                final String queueName = entryKey.getQueueName().toString();
                 if (!existingQueues.contains(queueName))
                 {
                     if (queuesToDiscard.contains(queueName))

@@ -94,13 +94,13 @@ public interface Session extends TopicSession, QueueSession
     MessageProducer createProducer(Destination destination, boolean immediate)
             throws JMSException;
 
-    AMQShortString getTemporaryTopicExchangeName();
+    String getTemporaryTopicExchangeName();
 
-    AMQShortString getDefaultQueueExchangeName();
+    String getDefaultQueueExchangeName();
 
-    AMQShortString getDefaultTopicExchangeName();
+    String getDefaultTopicExchangeName();
 
-    AMQShortString getTemporaryQueueExchangeName();
+    String getTemporaryQueueExchangeName();
 
     ListMessage createListMessage() throws JMSException;
 }

@@ -143,7 +143,7 @@ public class QueueBrowserUsesNoAckTest extends QpidTestCase
     private AMQShortString browse(AMQChannel channel, AMQQueue queue) throws Exception
     {
         FieldTable filters = new FieldTable();
-        filters.put(AMQPFilterTypes.NO_CONSUME.getValue(), true);
+        filters.setBoolean(AMQPFilterTypes.NO_CONSUME.getValue(), true);
 
         return channel.consumeFromSource(null, Collections.<MessageSource>singleton(queue), true, filters, true, false);
     }

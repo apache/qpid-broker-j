@@ -287,7 +287,7 @@ public class ModelTest extends QpidBrokerTestCase
         AMQSession session = (AMQSession) connection.createSession(false,
                                                                    Session.AUTO_ACKNOWLEDGE);
 
-        session.createQueue(new AMQShortString(queueName),
+        session.createQueue(queueName,
                             autoDelete, durable, exclusive);
 
         validateQueueViaJMX(queueName, (exclusive && durable &&!isBroker010()) ? connection.getClientID() : null, durable, autoDelete || (exclusive && !isBroker010() && !durable));

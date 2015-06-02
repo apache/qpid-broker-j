@@ -70,8 +70,6 @@ import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.jms.ListMessage;
 import org.apache.qpid.jms.Session;
 import org.apache.qpid.protocol.AMQConstant;
@@ -530,21 +528,21 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     public void setLegacyFieldsForQueueType(AMQDestination dest)
     {
         // legacy support
-        dest.setQueueName(new AMQShortString(dest.getAddressName()));
-        dest.setExchangeName(new AMQShortString(""));
-        dest.setExchangeClass(new AMQShortString(""));
+        dest.setQueueName(dest.getAddressName());
+        dest.setExchangeName("");
+        dest.setExchangeClass("");
         dest.setRoutingKey(dest.getAMQQueueName());
     }
 
     public void setLegacyFieldsForTopicType(AMQDestination dest)
     {
         // legacy support
-        dest.setExchangeName(new AMQShortString(dest.getAddressName()));
+        dest.setExchangeName(dest.getAddressName());
         Node node = dest.getNode();
-        dest.setExchangeClass(node.getExchangeType() == null?
-                              AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS):
-                              new AMQShortString(node.getExchangeType()));
-        dest.setRoutingKey(new AMQShortString(dest.getSubject()));
+        dest.setExchangeClass(node.getExchangeType() == null
+                                      ? ExchangeDefaults.TOPIC_EXCHANGE_CLASS
+                                      : node.getExchangeType());
+        dest.setRoutingKey(dest.getSubject());
     }
 
     protected void verifySubject(AMQDestination dest) throws AMQException
@@ -552,14 +550,14 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         if (dest.getSubject() == null || dest.getSubject().trim().equals(""))
         {
 
-            if ("topic".equals(dest.getExchangeClass().toString()))
+            if ("topic".equals(dest.getExchangeClass()))
             {
-                dest.setRoutingKey(new AMQShortString("#"));
-                dest.setSubject(dest.getRoutingKey().toString());
+                dest.setRoutingKey("#");
+                dest.setSubject(dest.getRoutingKey());
             }
             else
             {
-                dest.setRoutingKey(new AMQShortString(""));
+                dest.setRoutingKey("");
                 dest.setSubject("");
             }
         }
@@ -677,14 +675,14 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * TODO  Be aware of possible changes to parameter order as versions change.
      * TODO  Document the additional arguments that may be passed in the field table. Are these for headers exchanges?
      */
-    public void bindQueue(final AMQShortString queueName, final AMQShortString routingKey, final FieldTable arguments,
-                          final AMQShortString exchangeName, final AMQDestination destination) throws AMQException
+    public void bindQueue(final String queueName, final String routingKey, final Map<String,Object> arguments,
+                          final String exchangeName, final AMQDestination destination) throws AMQException
     {
         bindQueue(queueName, routingKey, arguments, exchangeName, destination, false);
     }
 
-    public void bindQueue(final AMQShortString queueName, final AMQShortString routingKey, final FieldTable arguments,
-                          final AMQShortString exchangeName, final AMQDestination destination,
+    public void bindQueue(final String queueName, final String routingKey, final Map<String,Object> arguments,
+                          final String exchangeName, final AMQDestination destination,
                           final boolean nowait) throws AMQException
     {
         /*new FailoverRetrySupport<Object, AMQException>(new FailoverProtectedOperation<Object, AMQException>()*/
@@ -702,12 +700,12 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     {
         if (consumer.getQueuename() != null)
         {
-            bindQueue(consumer.getQueuename(), new AMQShortString(routingKey), new FieldTable(), amqd.getExchangeName(), amqd);
+            bindQueue(consumer.getQueuename(), routingKey, new HashMap<String, Object>(), amqd.getExchangeName(), amqd);
         }
     }
 
-    public abstract void sendQueueBind(final AMQShortString queueName, final AMQShortString routingKey, final FieldTable arguments,
-                                       final AMQShortString exchangeName, AMQDestination destination,
+    public abstract void sendQueueBind(final String queueName, final String routingKey, final Map<String,Object> arguments,
+                                       final String exchangeName, AMQDestination destination,
                                        final boolean nowait) throws AMQException, FailoverException;
 
     /**
@@ -1033,7 +1031,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     }
 
     public MessageConsumer createConsumer(Destination destination, int prefetchHigh, int prefetchLow, boolean noLocal,
-                                          boolean exclusive, String selector, FieldTable rawSelector) throws JMSException
+                                          boolean exclusive, String selector, Map<String,Object> rawSelector) throws JMSException
     {
         checkValidDestination(destination);
 
@@ -1086,7 +1084,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             if (subscriber == null)
             {
                 // After the address is resolved routing key will not be null.
-                AMQShortString topicName = dest.getRoutingKey();
+                String topicName = dest.getRoutingKey();
 
                 if (_strictAMQP)
                 {
@@ -1120,7 +1118,9 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                     // says we must trash the subscription.
                     boolean isQueueBound = isQueueBound(dest.getExchangeName(), dest.getAMQQueueName());
                     boolean isQueueBoundForTopicAndSelector =
-                                isQueueBound(dest.getExchangeName().asString(), dest.getAMQQueueName().asString(), topicName.asString(), args);
+                                isQueueBound(dest.getExchangeName().toString(),
+                                             dest.getAMQQueueName().toString(),
+                                             topicName.toString(), args);
 
                     if (isQueueBound && !isQueueBoundForTopicAndSelector)
                     {
@@ -1130,8 +1130,12 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                     {
                         try
                         {
-                            bindQueue(dest.getAMQQueueName(), dest.getRoutingKey(),
-                                                    FieldTable.convertToFieldTable(args), dest.getExchangeName(), dest, true);
+                            bindQueue(dest.getAMQQueueName(),
+                                      dest.getRoutingKey(),
+                                      args,
+                                      dest.getExchangeName(),
+                                      dest,
+                                      true);
                         }
                         catch(AMQException e)
                         {
@@ -1266,7 +1270,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 {
                     // For testing we may want to use the prefix
                     return new AMQQueue(getDefaultQueueExchangeName(),
-                                        new AMQShortString(AMQDestination.stripSyntaxPrefix(queueName)));
+                                        AMQDestination.stripSyntaxPrefix(queueName));
                 }
                 else
                 {
@@ -1301,7 +1305,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * @throws AMQException If the queue cannot be declared for any reason.
      * TODO  Be aware of possible changes to parameter order as versions change.
      */
-    public void createQueue(final AMQShortString name, final boolean autoDelete, final boolean durable,
+    public void createQueue(final String name, final boolean autoDelete, final boolean durable,
                             final boolean exclusive) throws AMQException
     {
         createQueue(name, autoDelete, durable, exclusive, null);
@@ -1321,7 +1325,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * @throws AMQException If the queue cannot be declared for any reason.
      * TODO  Be aware of possible changes to parameter order as versions change.
      */
-    public void createQueue(final AMQShortString name, final boolean autoDelete, final boolean durable,
+    public void createQueue(final String name, final boolean autoDelete, final boolean durable,
                             final boolean exclusive, final Map<String, Object> arguments) throws AMQException
     {
         new FailoverRetrySupport<Object, AMQException>(new FailoverProtectedOperation<Object, AMQException>()
@@ -1334,7 +1338,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }, _connection).execute();
     }
 
-    public abstract void sendCreateQueue(AMQShortString name, final boolean autoDelete, final boolean durable,
+    public abstract void sendCreateQueue(String name, final boolean autoDelete, final boolean durable,
                                          final boolean exclusive, final Map<String, Object> arguments) throws AMQException, FailoverException;
 
     /**
@@ -1498,7 +1502,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             createQueue(result.getAMQQueueName(), result.isAutoDelete(),
                         result.isDurable(), result.isExclusive());
             bindQueue(result.getAMQQueueName(), result.getRoutingKey(),
-                    new FieldTable(), result.getExchangeName(), result);
+                    new HashMap<String, Object>(), result.getExchangeName(), result);
             return result;
         }
         catch (AMQException e)
@@ -1558,7 +1562,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 topicName = AMQDestination.stripSyntaxPrefix(topicName);
                 if (syntax == AMQDestination.DestSyntax.BURL)
                 {
-                    return new AMQTopic(getDefaultTopicExchangeName(), new AMQShortString(topicName));
+                    return new AMQTopic(getDefaultTopicExchangeName(), topicName);
                 }
                 else
                 {
@@ -1578,7 +1582,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }
     }
 
-    public void declareExchange(AMQShortString name, AMQShortString type, boolean nowait) throws AMQException
+    public void declareExchange(String name, String type, boolean nowait) throws AMQException
     {
         declareExchange(name, type, nowait, false, false, false);
     }
@@ -1620,12 +1624,12 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         return _prefetchHighMark;
     }
 
-    public AMQShortString getDefaultQueueExchangeName()
+    public String getDefaultQueueExchangeName()
     {
         return _connection.getDefaultQueueExchangeName();
     }
 
-    public AMQShortString getDefaultTopicExchangeName()
+    public String getDefaultTopicExchangeName()
     {
         return _connection.getDefaultTopicExchangeName();
     }
@@ -1635,12 +1639,12 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         return _messageListener;
     }
 
-    public AMQShortString getTemporaryQueueExchangeName()
+    public String getTemporaryQueueExchangeName()
     {
         return _connection.getTemporaryQueueExchangeName();
     }
 
-    public AMQShortString getTemporaryTopicExchangeName()
+    public String getTemporaryTopicExchangeName()
     {
         return _connection.getTemporaryTopicExchangeName();
     }
@@ -1720,16 +1724,16 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             throws
             AMQException
     {
-        declareAndBind(amqd, new FieldTable());
+        declareAndBind(amqd, new HashMap<String,Object>());
     }
 
 
-    public void declareAndBind(AMQDestination amqd, FieldTable arguments)
+    public void declareAndBind(AMQDestination amqd, Map<String,Object> arguments)
             throws
             AMQException
     {
         declareExchange(amqd, false);
-        AMQShortString queueName = declareQueue(amqd, false);
+        String queueName = declareQueue(amqd, false);
         bindQueue(queueName, amqd.getRoutingKey(), arguments, amqd.getExchangeName(), amqd);
     }
 
@@ -2015,7 +2019,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
     protected C createConsumerImpl(final Destination destination, final int prefetchHigh,
                                    final int prefetchLow, final boolean noLocal,
-                                   final boolean exclusive, String selector, final FieldTable rawSelector,
+                                   final boolean exclusive, String selector, final Map<String,Object> rawSelector,
                                    final boolean noConsume, final boolean autoClose) throws JMSException
     {
         checkTemporaryDestination(destination);
@@ -2103,9 +2107,14 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 }, _connection).execute();
     }
 
-    public abstract C createMessageConsumer(final AMQDestination destination, final int prefetchHigh,
-                                                               final int prefetchLow, final boolean noLocal, final boolean exclusive, String selector, final FieldTable arguments,
-                                                               final boolean noConsume, final boolean autoClose) throws JMSException;
+    public abstract C createMessageConsumer(final AMQDestination destination,
+                                            final int prefetchHigh,
+                                            final int prefetchLow,
+                                            final boolean noLocal,
+                                            final boolean exclusive, String selector,
+                                            final Map<String,Object> arguments,
+                                            final boolean noConsume,
+                                            final boolean autoClose) throws JMSException;
 
     /**
      * Called by the MessageConsumer when closing, to deregister the consumer from the map from consumerTag to consumer
@@ -2165,7 +2174,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         return _sessionInRecovery;
     }
 
-    boolean isQueueBound(AMQShortString exchangeName, AMQShortString queueName) throws JMSException
+    boolean isQueueBound(String exchangeName, String queueName) throws JMSException
     {
         return isQueueBound(exchangeName, queueName, null);
     }
@@ -2184,7 +2193,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * @throws JMSException If the query fails for any reason.
      * TODO  Be aware of possible changes to parameter order as versions change.
      */
-    public abstract boolean isQueueBound(final AMQShortString exchangeName, final AMQShortString queueName, final AMQShortString routingKey)
+    public abstract boolean isQueueBound(final String exchangeName, final String queueName, final String routingKey)
             throws JMSException;
 
     public abstract boolean isQueueBound(final AMQDestination destination) throws JMSException;
@@ -2621,7 +2630,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * Register to consume from the queue.
      * @param queueName
      */
-    private void consumeFromQueue(C consumer, AMQShortString queueName, boolean nowait) throws AMQException, FailoverException
+    private void consumeFromQueue(C consumer, String queueName, boolean nowait) throws AMQException, FailoverException
     {
         int tagId = _nextTag++;
 
@@ -2696,7 +2705,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     abstract protected void doBind(final AMQDestination dest, final AMQDestination.Binding binding, final String queue, final String exchange)
             throws AMQException;
 
-    public abstract void sendConsume(C consumer, AMQShortString queueName,
+    public abstract void sendConsume(C consumer, String queueName,
                                      boolean nowait, int tag) throws AMQException, FailoverException;
 
     private P createProducerImpl(final Destination destination, final Boolean mandatory, final Boolean immediate)
@@ -2798,9 +2807,9 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * @throws AMQException If the exchange cannot be declared for any reason.
      * TODO  Be aware of possible changes to parameter order as versions change.
      */
-    void declareExchange(final AMQShortString name, final AMQShortString type,
-                                 final boolean nowait, final boolean durable,
-                                 final boolean autoDelete, final boolean internal) throws AMQException
+    void declareExchange(final String name, final String type,
+                         final boolean nowait, final boolean durable,
+                         final boolean autoDelete, final boolean internal) throws AMQException
     {
         new FailoverNoopSupport<Object, AMQException>(new FailoverProtectedOperation<Object, AMQException>()
         {
@@ -2812,9 +2821,9 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }, _connection).execute();
     }
 
-    void declareExchange(final AMQShortString name, final AMQShortString type,
+    void declareExchange(final String name, final String type,
                          final boolean nowait, final boolean durable,
-                         final boolean autoDelete, final FieldTable arguments,
+                         final boolean autoDelete, final Map<String,Object> arguments,
                          final boolean passive) throws AMQException
     {
         new FailoverNoopSupport<Object, AMQException>(new FailoverProtectedOperation<Object, AMQException>()
@@ -2827,8 +2836,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }, _connection).execute();
     }
 
-    protected AMQShortString preprocessAddressTopic(final C consumer,
-                                                    AMQShortString queueName) throws AMQException
+    protected String preprocessAddressTopic(final C consumer,
+                                            String queueName) throws AMQException
     {
         if (DestSyntax.ADDR == consumer.getDestination().getDestSyntax())
         {
@@ -2847,16 +2856,16 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
     abstract void createSubscriptionQueue(AMQDestination dest, boolean noLocal, String messageSelector) throws AMQException;
 
-    public abstract void sendExchangeDeclare(final AMQShortString name, final AMQShortString type, final boolean nowait,
+    public abstract void sendExchangeDeclare(final String name, final String type, final boolean nowait,
                                              boolean durable, boolean autoDelete, boolean internal) throws AMQException, FailoverException;
 
 
-    public abstract void sendExchangeDeclare(final AMQShortString name,
-                                             final AMQShortString type,
+    public abstract void sendExchangeDeclare(final String name,
+                                             final String type,
                                              final boolean nowait,
                                              boolean durable,
                                              boolean autoDelete,
-                                             FieldTable arguments,
+                                             Map<String,Object> arguments,
                                              final boolean passive) throws AMQException, FailoverException;
 
     /**
@@ -2879,21 +2888,21 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * TODO  Verify the destiation is valid or throw an exception.
      * TODO  Be aware of possible changes to parameter order as versions change.
      */
-    protected AMQShortString declareQueue(final AMQDestination amqd,
-                                          final boolean noLocal) throws AMQException
+    protected String declareQueue(final AMQDestination amqd,
+                                  final boolean noLocal) throws AMQException
     {
         return declareQueue(amqd, noLocal, false);
     }
 
-    protected AMQShortString declareQueue(final AMQDestination amqd,
-                                          final boolean noLocal, final boolean nowait)
+    protected String declareQueue(final AMQDestination amqd,
+                                  final boolean noLocal, final boolean nowait)
                 throws AMQException
     {
         return declareQueue(amqd, noLocal, nowait, false);
     }
 
-    protected abstract AMQShortString declareQueue(final AMQDestination amqd,
-                                          final boolean noLocal, final boolean nowait, final boolean passive) throws AMQException;
+    protected abstract String declareQueue(final AMQDestination amqd,
+                                           final boolean noLocal, final boolean nowait, final boolean passive) throws AMQException;
 
     /**
      * Undeclares the specified queue.
@@ -2905,7 +2914,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * @throws JMSException If the queue could not be deleted for any reason.
      * TODO  Be aware of possible changes to parameter order as versions change.
      */
-    protected void deleteQueue(final AMQShortString queueName) throws JMSException
+    protected void deleteQueue(final String queueName) throws JMSException
     {
         try
         {
@@ -2939,7 +2948,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         deleteQueue(amqQueue.getAMQQueueName());
     }
 
-    public abstract void sendQueueDelete(final AMQShortString queueName) throws AMQException, FailoverException;
+    public abstract void sendQueueDelete(final String queueName) throws AMQException, FailoverException;
 
     private long getNextProducerId()
     {
@@ -3030,7 +3039,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
         }
 
-        AMQShortString queueName = amqd.getAMQQueueName();
+        String queueName = amqd.getAMQQueueName();
 
         // store the consumer queue name
         consumer.setQueuename(queueName);
@@ -3073,7 +3082,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }
     }
 
-    protected abstract boolean isBound(AMQShortString exchangeName, AMQShortString amqQueueName, AMQShortString routingKey)
+    protected abstract boolean isBound(String exchangeName, String amqQueueName, String routingKey)
             throws AMQException;
 
     private void registerProducer(long producerId, MessageProducer producer)

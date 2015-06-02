@@ -150,7 +150,7 @@ public class MessageMetaData implements StorableMessageMetaData
         return _contentHeaderBody.getProperties().getDeliveryMode() ==  BasicContentHeaderProperties.PERSISTENT;
     }
 
-    private static class MetaDataFactory implements MessageMetaDataType.Factory
+    private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData>
     {
 
 
@@ -176,15 +176,7 @@ public class MessageMetaData implements StorableMessageMetaData
 
                 return new MessageMetaData(publishBody, chb, arrivalTime);
             }
-            catch (IOException e)
-            {
-                throw new ConnectionScopedRuntimeException(e);
-            }
-            catch (AMQProtocolVersionException e)
-            {
-                throw new ConnectionScopedRuntimeException(e);
-            }
-            catch (AMQFrameDecodingException e)
+            catch (IOException | AMQFrameDecodingException | AMQProtocolVersionException e)
             {
                 throw new ConnectionScopedRuntimeException(e);
             }

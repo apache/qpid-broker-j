@@ -453,13 +453,13 @@ public class ConnectionURLTest extends TestCase
 
         AMQConnectionURL conn = new AMQConnectionURL(url);
 
-        assertEquals(conn.getDefaultQueueExchangeName().asString(),"test.direct");
+        assertEquals(conn.getDefaultQueueExchangeName().toString(),"test.direct");
 
-        assertEquals(conn.getDefaultTopicExchangeName().asString(),"test.topic");
+        assertEquals(conn.getDefaultTopicExchangeName().toString(),"test.topic");
 
-        assertEquals(conn.getTemporaryQueueExchangeName().asString(),"tmp.direct");
+        assertEquals(conn.getTemporaryQueueExchangeName().toString(),"tmp.direct");
 
-        assertEquals(conn.getTemporaryTopicExchangeName().asString(),"tmp.topic");
+        assertEquals(conn.getTemporaryTopicExchangeName().toString(),"tmp.topic");
 
     }
 

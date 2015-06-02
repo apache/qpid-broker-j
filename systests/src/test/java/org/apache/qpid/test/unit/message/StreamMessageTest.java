@@ -43,6 +43,9 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.StreamMessage;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,9 +67,9 @@ public class StreamMessageTest extends QpidBrokerTestCase
                     ExchangeDefaults.HEADERS_EXCHANGE_CLASS + "://" + ExchangeDefaults.HEADERS_EXCHANGE_NAME
                     + "/test/queue1?" + BindingURL.OPTION_ROUTING_KEY + "='F0000=1'"));
 
-        FieldTable ft = new FieldTable();
-        ft.setString("x-match", "any");
-        ft.setString("F1000", "1");
+        Map<String,Object> ft = new HashMap<>();
+        ft.put("x-match", "any");
+        ft.put("F1000", "1");
         consumerSession.declareAndBind(queue, ft);
         MessageConsumer consumer = consumerSession.createConsumer(queue);
         // force synch to ensure the consumer has resulted in a bound queue
@@ -120,7 +123,7 @@ public class StreamMessageTest extends QpidBrokerTestCase
 
         AMQConnection con = (AMQConnection) getConnection("guest", "guest");
         AMQSession consumerSession = (AMQSession) con.createSession(false, Session.CLIENT_ACKNOWLEDGE);
-        AMQQueue queue = new AMQQueue(con.getDefaultQueueExchangeName(), new AMQShortString("testQ"));
+        AMQQueue queue = new AMQQueue(con.getDefaultQueueExchangeName(), "testQ");
         MessageConsumer consumer = consumerSession.createConsumer(queue);
         consumer.setMessageListener(new MessageListener()
             {

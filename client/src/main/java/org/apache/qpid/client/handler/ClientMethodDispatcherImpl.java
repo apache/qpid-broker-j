@@ -64,7 +64,7 @@ public class ClientMethodDispatcherImpl implements MethodDispatcher
 
     static
     {
-        _dispatcherFactories.put(ProtocolVersion.v8_0,
+        _dispatcherFactories.put(ProtocolVersion.v0_8,
                                  new DispatcherFactory()
                                  {
                                      public ClientMethodDispatcherImpl createMethodDispatcher(AMQProtocolSession session)

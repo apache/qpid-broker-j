@@ -105,7 +105,7 @@ public class BasicRecoverBody extends AMQMethodBodyImpl implements EncodableAMQD
                                final ServerChannelMethodProcessor dispatcher) throws IOException
     {
         boolean requeue = (in.readByte() & 0x01) == 0x01;
-        boolean sync = (ProtocolVersion.v8_0.equals(protocolVersion));
+        boolean sync = (ProtocolVersion.v0_8.equals(protocolVersion));
 
         if(!dispatcher.ignoreAllButCloseOk())
         {

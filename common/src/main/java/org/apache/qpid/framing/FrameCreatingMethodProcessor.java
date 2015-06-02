@@ -118,7 +118,7 @@ public class FrameCreatingMethodProcessor implements MethodProcessor<FrameCreati
     @Override
     public void receiveConnectionCloseOk()
     {
-        _processedMethods.add(new AMQFrame(0, ProtocolVersion.v8_0.equals(getProtocolVersion())
+        _processedMethods.add(new AMQFrame(0, ProtocolVersion.v0_8.equals(getProtocolVersion())
                 ? ConnectionCloseOkBody.CONNECTION_CLOSE_OK_0_8
                 : ConnectionCloseOkBody.CONNECTION_CLOSE_OK_0_9));
     }
@@ -204,7 +204,7 @@ public class FrameCreatingMethodProcessor implements MethodProcessor<FrameCreati
         @Override
         public void receiveChannelOpenOk()
         {
-            _processedMethods.add(new AMQFrame(_channelId, ProtocolVersion.v8_0.equals(getProtocolVersion())
+            _processedMethods.add(new AMQFrame(_channelId, ProtocolVersion.v0_8.equals(getProtocolVersion())
                     ? ChannelOpenOkBody.INSTANCE_0_8
                     : ChannelOpenOkBody.INSTANCE_0_9));
         }
@@ -479,7 +479,7 @@ public class FrameCreatingMethodProcessor implements MethodProcessor<FrameCreati
         @Override
         public void receiveBasicRecover(final boolean requeue, final boolean sync)
         {
-            if(ProtocolVersion.v8_0.equals(getProtocolVersion()) || !sync)
+            if(ProtocolVersion.v0_8.equals(getProtocolVersion()) || !sync)
             {
                 _processedMethods.add(new AMQFrame(_channelId, new BasicRecoverBody(requeue)));
             }

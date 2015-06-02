@@ -24,7 +24,9 @@ package org.apache.qpid.server.exchange;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.ExceptionListener;
@@ -86,8 +88,8 @@ public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase imp
 
             queue = new AMQHeadersExchange(new AMQBindingURL(ExchangeDefaults.HEADERS_EXCHANGE_CLASS + "://" + ExchangeDefaults.HEADERS_EXCHANGE_NAME + "/test/queue1?" + BindingURL.OPTION_ROUTING_KEY + "='F0000=1'"));
 
-            FieldTable ft = new FieldTable();
-            ft.setString("F1000", "1");
+            Map<String,Object> ft = new HashMap<>();
+            ft.put("F1000", "1");
             consumerSession.declareAndBind(queue, ft);
 
             consumer = consumerSession.createConsumer(queue);

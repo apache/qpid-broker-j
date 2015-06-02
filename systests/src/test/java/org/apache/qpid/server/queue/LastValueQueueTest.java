@@ -554,7 +554,7 @@ public class LastValueQueueTest extends QpidBrokerTestCase
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put("qpid.last_value_queue_key",KEY_PROPERTY);
-        ((AMQSession<?,?>) session).createQueue(new AMQShortString(_queueName), false, true, false, arguments);
+        ((AMQSession<?,?>) session).createQueue(_queueName, false, true, false, arguments);
         _queue = new AMQQueue("amq.direct", _queueName);
         ((AMQSession<?,?>) session).declareAndBind((AMQDestination)_queue);
     }

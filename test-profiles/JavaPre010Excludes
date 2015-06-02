@@ -44,7 +44,6 @@ org.apache.qpid.test.unit.message.JMSPropertiesTest#testApplicationProperties
 org.apache.qpid.server.queue.AddressBasedSortedQueueTest#*
 
 // Those tests are written against the 0.10 path
-org.apache.qpid.test.unit.message.UTF8Test#*
 org.apache.qpid.client.SynchReceiveTest#testReceiveNoWait
 org.apache.qpid.server.logging.ChannelLoggingTest#testChannelClosedOnExclusiveQueueDeclaredOnDifferentSession
 

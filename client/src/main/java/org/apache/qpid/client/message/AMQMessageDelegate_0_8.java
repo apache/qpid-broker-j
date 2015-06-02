@@ -97,8 +97,8 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
     }
 
     // Used when generating a received message object
-    protected AMQMessageDelegate_0_8(long deliveryTag, BasicContentHeaderProperties contentHeader, AMQShortString exchange,
-                                     AMQShortString routingKey, AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
+    protected AMQMessageDelegate_0_8(long deliveryTag, BasicContentHeaderProperties contentHeader, String exchange,
+                                     String routingKey, AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
                                                          AMQSession_0_8.DestinationCache<AMQTopic> topicDestinationCache,
                                     int addressType)
     {
@@ -144,8 +144,8 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
             {
                 type = addressType;
             }
-            dest = (AMQDestination) convertToAddressBasedDestination(AMQShortString.toString(exchange),
-                                                                     AMQShortString.toString(routingKey), subject,
+            dest = (AMQDestination) convertToAddressBasedDestination(exchange,
+                                                                     routingKey, subject,
                                                                      true, type);
         }
         setJMSDestination(dest);
@@ -228,7 +228,7 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
         messageIdBytes[37] = HEX_DIGITS[(int)((lsb >> 4) & 0xFl)];
         messageIdBytes[38] = HEX_DIGITS[(int)(lsb & 0xFl)];
 
-        return new AMQShortString(messageIdBytes,0,39);
+        return new AMQShortString(messageIdBytes);
     }
 
     public long getJMSTimestamp() throws JMSException
@@ -293,7 +293,7 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
                     }
                     else
                     {
-                        if(getAMQSession().isQueueBound(AMQShortString.valueOf(replyToEncoding), null, null))
+                        if(getAMQSession().isQueueBound(replyToEncoding, null, null))
                         {
                             dest = new NonBURLReplyToDestination(replyToEncoding, "");
                         }
@@ -329,7 +329,7 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
         final AMQDestination amqd = (AMQDestination) destination;
 
         final AMQShortString encodedDestination = amqd.getEncodedName();
-        _destinationCache.put(encodedDestination.asString(), destination);
+        _destinationCache.put(encodedDestination.toString(), destination);
         getContentHeaderProperties().setReplyTo(encodedDestination);
     }
 
@@ -637,10 +637,10 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
 
         public DefaultRouterDestination(final String replyToEncoding)
         {
-            super(AMQShortString.EMPTY_STRING,
-                  AMQShortString.valueOf("direct"),
-                  AMQShortString.valueOf(replyToEncoding),
-                  AMQShortString.valueOf(replyToEncoding));
+            super("",
+                  "direct",
+                  replyToEncoding,
+                  replyToEncoding);
         }
 
         @Override
@@ -662,10 +662,10 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
 
         public NonBURLReplyToDestination(final String exchange, final String routingKey)
         {
-            super(AMQShortString.valueOf(exchange),
+            super(exchange,
                   null,
-                  AMQShortString.valueOf(routingKey),
-                  AMQShortString.valueOf(routingKey));
+                  routingKey,
+                  routingKey);
         }
 
         @Override

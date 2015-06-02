@@ -151,22 +151,22 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
 
         if(properties.getReplyTo() != null && properties.getReplyTo().length() != 0)
         {
-            String origReplyToString = properties.getReplyTo().asString();
+            String origReplyToString = properties.getReplyTo().toString();
             ReplyTo replyTo = new ReplyTo();
             // if the string looks like a binding URL, then attempt to parse it...
             try
             {
                 AMQBindingURL burl = new AMQBindingURL(origReplyToString);
-                AMQShortString routingKey = burl.getRoutingKey();
+                String routingKey = burl.getRoutingKey();
                 if(routingKey != null)
                 {
-                    replyTo.setRoutingKey(routingKey.asString());
+                    replyTo.setRoutingKey(routingKey);
                 }
 
-                AMQShortString exchangeName = burl.getExchangeName();
+                String exchangeName = burl.getExchangeName();
                 if(exchangeName != null)
                 {
-                    replyTo.setExchange(exchangeName.asString());
+                    replyTo.setExchange(exchangeName);
                 }
             }
             catch (URISyntaxException e)

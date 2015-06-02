@@ -29,6 +29,8 @@
 
 package org.apache.qpid.framing;
 
+import java.util.Map;
+
 public final class MethodRegistry
 {
     private ProtocolVersion _protocolVersion;
@@ -80,22 +82,23 @@ public final class MethodRegistry
     }
 
     public final BasicConsumeBody createBasicConsumeBody(final int ticket,
-                                                         final AMQShortString queue,
-                                                         final AMQShortString consumerTag,
+                                                         final String queue,
+                                                         final String consumerTag,
                                                          final boolean noLocal,
                                                          final boolean noAck,
                                                          final boolean exclusive,
                                                          final boolean nowait,
-                                                         final FieldTable arguments)
+                                                         final Map<String,Object> arguments)
     {
+
         return new BasicConsumeBody(ticket,
-                                    queue,
-                                    consumerTag,
+                                    AMQShortString.valueOf(queue),
+                                    AMQShortString.valueOf(consumerTag),
                                     noLocal,
                                     noAck,
                                     exclusive,
                                     nowait,
-                                    arguments);
+                                    FieldTable.convertToFieldTable(arguments));
     }
 
     public final BasicConsumeOkBody createBasicConsumeOkBody(final AMQShortString consumerTag)
@@ -116,14 +119,14 @@ public final class MethodRegistry
     }
 
     public final BasicPublishBody createBasicPublishBody(final int ticket,
-                                                         final AMQShortString exchange,
-                                                         final AMQShortString routingKey,
+                                                         final String exchange,
+                                                         final String routingKey,
                                                          final boolean mandatory,
                                                          final boolean immediate)
     {
         return new BasicPublishBody(ticket,
-                                    exchange,
-                                    routingKey,
+                                    AMQShortString.valueOf(exchange),
+                                    AMQShortString.valueOf(routingKey),
                                     mandatory,
                                     immediate);
     }
@@ -231,7 +234,7 @@ public final class MethodRegistry
 
     public final ChannelOpenOkBody createChannelOpenOkBody()
     {
-        return _protocolVersion.equals(ProtocolVersion.v8_0)
+        return _protocolVersion.equals(ProtocolVersion.v0_8)
                 ? ChannelOpenOkBody.INSTANCE_0_8
                 : ChannelOpenOkBody.INSTANCE_0_9;
     }
@@ -353,31 +356,32 @@ public final class MethodRegistry
 
     public final ConnectionCloseOkBody createConnectionCloseOkBody()
     {
-        return ProtocolVersion.v8_0.equals(_protocolVersion)
+        return ProtocolVersion.v0_8.equals(_protocolVersion)
                 ? ConnectionCloseOkBody.CONNECTION_CLOSE_OK_0_8
                 : ConnectionCloseOkBody.CONNECTION_CLOSE_OK_0_9;
     }
 
 
     public final ExchangeDeclareBody createExchangeDeclareBody(final int ticket,
-                                                         final AMQShortString exchange,
-                                                         final AMQShortString type,
+                                                         final String exchange,
+                                                         final String type,
                                                          final boolean passive,
                                                          final boolean durable,
                                                          final boolean autoDelete,
                                                          final boolean internal,
                                                          final boolean nowait,
-                                                         final FieldTable arguments)
+                                                         final Map<String,Object> arguments)
     {
+
         return new ExchangeDeclareBody(ticket,
-                                       exchange,
-                                       type,
+                                       AMQShortString.valueOf(exchange),
+                                       AMQShortString.valueOf(type),
                                        passive,
                                        durable,
                                        autoDelete,
                                        internal,
                                        nowait,
-                                       arguments);
+                                       FieldTable.convertToFieldTable(arguments));
     }
 
     public final ExchangeDeclareOkBody createExchangeDeclareOkBody()
@@ -386,12 +390,12 @@ public final class MethodRegistry
     }
 
     public final ExchangeDeleteBody createExchangeDeleteBody(final int ticket,
-                                                       final AMQShortString exchange,
-                                                       final boolean ifUnused,
-                                                       final boolean nowait)
+                                                             final String exchange,
+                                                             final boolean ifUnused,
+                                                             final boolean nowait)
     {
         return new ExchangeDeleteBody(ticket,
-                                      exchange,
+                                      AMQShortString.valueOf(exchange),
                                       ifUnused,
                                       nowait
         );
@@ -402,13 +406,13 @@ public final class MethodRegistry
         return new ExchangeDeleteOkBody();
     }
 
-    public final ExchangeBoundBody createExchangeBoundBody(final AMQShortString exchange,
-                                                     final AMQShortString routingKey,
-                                                     final AMQShortString queue)
+    public final ExchangeBoundBody createExchangeBoundBody(final String exchange,
+                                                           final String routingKey,
+                                                           final String queue)
     {
-        return new ExchangeBoundBody(exchange,
-                                     routingKey,
-                                     queue);
+        return new ExchangeBoundBody(AMQShortString.valueOf(exchange),
+                                     AMQShortString.valueOf(routingKey),
+                                     AMQShortString.valueOf(queue));
     }
 
     public final ExchangeBoundOkBody createExchangeBoundOkBody(final int replyCode,
@@ -420,22 +424,23 @@ public final class MethodRegistry
 
 
     public final QueueDeclareBody createQueueDeclareBody(final int ticket,
-                                                   final AMQShortString queue,
-                                                   final boolean passive,
-                                                   final boolean durable,
-                                                   final boolean exclusive,
-                                                   final boolean autoDelete,
-                                                   final boolean nowait,
-                                                   final FieldTable arguments)
+                                                         final String queue,
+                                                         final boolean passive,
+                                                         final boolean durable,
+                                                         final boolean exclusive,
+                                                         final boolean autoDelete,
+                                                         final boolean nowait,
+                                                         final Map<String,Object> arguments)
     {
+
         return new QueueDeclareBody(ticket,
-                                    queue,
+                                    AMQShortString.valueOf(queue),
                                     passive,
                                     durable,
                                     exclusive,
                                     autoDelete,
                                     nowait,
-                                    arguments);
+                                    FieldTable.convertToFieldTable(arguments));
     }
 
     public final QueueDeclareOkBody createQueueDeclareOkBody(final AMQShortString queue,
@@ -448,19 +453,22 @@ public final class MethodRegistry
     }
 
     public final QueueBindBody createQueueBindBody(final int ticket,
-                                             final AMQShortString queue,
-                                             final AMQShortString exchange,
-                                             final AMQShortString routingKey,
+                                             final String queue,
+                                             final String exchange,
+                                             final String routingKey,
                                              final boolean nowait,
-                                             final FieldTable arguments)
+                                             final Map<String,Object> arguments)
     {
+
         return new QueueBindBody(ticket,
-                                 queue,
-                                 exchange,
-                                 routingKey,
+                                 AMQShortString.valueOf(queue),
+                                 AMQShortString.valueOf(exchange),
+                                 AMQShortString.valueOf(routingKey),
                                  nowait,
-                                 arguments);
+                                 FieldTable.convertToFieldTable(arguments));
+
     }
+
 
     public final QueueBindOkBody createQueueBindOkBody()
     {
@@ -482,13 +490,13 @@ public final class MethodRegistry
     }
 
     public final QueueDeleteBody createQueueDeleteBody(final int ticket,
-                                                 final AMQShortString queue,
+                                                 final String queue,
                                                  final boolean ifUnused,
                                                  final boolean ifEmpty,
                                                  final boolean nowait)
     {
         return new QueueDeleteBody(ticket,
-                                   queue,
+                                   AMQShortString.valueOf(queue),
                                    ifUnused,
                                    ifEmpty,
                                    nowait);

@@ -97,11 +97,11 @@ public class FailoverExchangeMethod implements FailoverMethod, MessageListener
         {
             _ssn = _conn.createSession(false,Session.AUTO_ACKNOWLEDGE);
             MessageConsumer cons = _ssn.createConsumer(
-                                        new AMQAnyDestination(new AMQShortString("amq.failover"),
-                                                              new AMQShortString("amq.failover"),
-                                                              new AMQShortString(""),
+                                        new AMQAnyDestination("amq.failover",
+                                                              "amq.failover",
+                                                              "",
                                                               true,true,null,false,
-                                                              new AMQShortString[0])); 
+                                                              new String[0]));
             cons.setMessageListener(this);
         }                               
     }

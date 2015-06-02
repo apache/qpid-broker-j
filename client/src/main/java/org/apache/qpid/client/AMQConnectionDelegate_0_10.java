@@ -232,7 +232,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         }
         catch (ProtocolVersionException pe)
         {
-            return new ProtocolVersion(pe.getMajor(), pe.getMinor());
+            return ProtocolVersion.get(pe.getMajor(), pe.getMinor());
         }
         catch (ConnectionException ce)
         {

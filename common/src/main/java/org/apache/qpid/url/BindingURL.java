@@ -34,15 +34,15 @@ import org.apache.qpid.framing.AMQShortString;
 */
 public interface BindingURL
 {
-    public static final String OPTION_EXCLUSIVE = "exclusive";
-    public static final String OPTION_AUTODELETE = "autodelete";
-    public static final String OPTION_DURABLE = "durable";
-    public static final String OPTION_BROWSE = "browse";
-    public static final String OPTION_ROUTING_KEY = "routingkey";
-    public static final String OPTION_BINDING_KEY = "bindingkey";
-    public static final String OPTION_EXCHANGE_AUTODELETE = "exchangeautodelete";
-    public static final String OPTION_EXCHANGE_DURABLE = "exchangedurable";
-    public static final String OPTION_EXCHANGE_INTERNAL = "exchangeinternal";
+    String OPTION_EXCLUSIVE = "exclusive";
+    String OPTION_AUTODELETE = "autodelete";
+    String OPTION_DURABLE = "durable";
+    String OPTION_BROWSE = "browse";
+    String OPTION_ROUTING_KEY = "routingkey";
+    String OPTION_BINDING_KEY = "bindingkey";
+    String OPTION_EXCHANGE_AUTODELETE = "exchangeautodelete";
+    String OPTION_EXCHANGE_DURABLE = "exchangedurable";
+    String OPTION_EXCHANGE_INTERNAL = "exchangeinternal";
 
     /**
      * This option is only applicable for 0-8/0-9/0-9-1 protocols connection
@@ -51,9 +51,9 @@ public interface BindingURL
      * server .If this option is not specified, the messages won't be moved to
      * the DLQ (or dropped) when delivery count exceeds the maximum.
      */
-    public static final String OPTION_REJECT_BEHAVIOUR = "rejectbehaviour";
+    String OPTION_REJECT_BEHAVIOUR = "rejectbehaviour";
 
-    public static final Set<String> NON_CONSUMER_OPTIONS =
+    Set<String> NON_CONSUMER_OPTIONS =
             Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(OPTION_EXCLUSIVE,
                                                                           OPTION_AUTODELETE,
                                                                           OPTION_DURABLE,
@@ -68,13 +68,13 @@ public interface BindingURL
 
     String getURL();
 
-    AMQShortString getExchangeClass();
+    String getExchangeClass();
 
-    AMQShortString getExchangeName();
+    String getExchangeName();
 
-    AMQShortString getDestinationName();
+    String getDestinationName();
 
-    AMQShortString getQueueName();
+    String getQueueName();
 
     String getOption(String key);
 
@@ -83,9 +83,9 @@ public interface BindingURL
 
     boolean containsOption(String key);
 
-    AMQShortString getRoutingKey();
+    String getRoutingKey();
 
-    AMQShortString[] getBindingKeys();
+    String[] getBindingKeys();
 
     String toString();
 }

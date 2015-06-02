@@ -79,7 +79,6 @@ import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.Connection;
@@ -166,10 +165,10 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
      */
     private QpidConnectionMetaData _connectionMetaData;
 
-    private AMQShortString _defaultTopicExchangeName = AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME);
-    private AMQShortString _defaultQueueExchangeName = AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_NAME);
-    private AMQShortString _temporaryTopicExchangeName = AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME);
-    private AMQShortString _temporaryQueueExchangeName = AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+    private String _defaultTopicExchangeName = ExchangeDefaults.TOPIC_EXCHANGE_NAME;
+    private String _defaultQueueExchangeName = ExchangeDefaults.DIRECT_EXCHANGE_NAME;
+    private String _temporaryTopicExchangeName = ExchangeDefaults.TOPIC_EXCHANGE_NAME;
+    private String _temporaryQueueExchangeName = ExchangeDefaults.DIRECT_EXCHANGE_NAME;
 
     /**
      * Thread Pool for executing connection level processes such as reporting asynchronous exceptions
@@ -1533,42 +1532,42 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                              AMQConnectionFactory.class.getName(), null); // factory location
     }
 
-    public AMQShortString getDefaultTopicExchangeName()
+    public String getDefaultTopicExchangeName()
     {
         return _defaultTopicExchangeName;
     }
 
-    public void setDefaultTopicExchangeName(AMQShortString defaultTopicExchangeName)
+    public void setDefaultTopicExchangeName(String defaultTopicExchangeName)
     {
         _defaultTopicExchangeName = defaultTopicExchangeName;
     }
 
-    public AMQShortString getDefaultQueueExchangeName()
+    public String getDefaultQueueExchangeName()
     {
         return _defaultQueueExchangeName;
     }
 
-    public void setDefaultQueueExchangeName(AMQShortString defaultQueueExchangeName)
+    public void setDefaultQueueExchangeName(String defaultQueueExchangeName)
     {
         _defaultQueueExchangeName = defaultQueueExchangeName;
     }
 
-    public AMQShortString getTemporaryTopicExchangeName()
+    public String getTemporaryTopicExchangeName()
     {
         return _temporaryTopicExchangeName;
     }
 
-    public AMQShortString getTemporaryQueueExchangeName()
+    public String getTemporaryQueueExchangeName()
     {
         return _temporaryQueueExchangeName;
     }
 
-    public void setTemporaryTopicExchangeName(AMQShortString temporaryTopicExchangeName)
+    public void setTemporaryTopicExchangeName(String temporaryTopicExchangeName)
     {
         _temporaryTopicExchangeName = temporaryTopicExchangeName;
     }
 
-    public void setTemporaryQueueExchangeName(AMQShortString temporaryQueueExchangeName)
+    public void setTemporaryQueueExchangeName(String temporaryQueueExchangeName)
     {
         _temporaryQueueExchangeName = temporaryQueueExchangeName;
     }

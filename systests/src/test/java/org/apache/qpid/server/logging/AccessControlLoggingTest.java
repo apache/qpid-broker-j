@@ -81,7 +81,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         Connection conn = getConnection(USER, PASS);
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
         conn.start();
-        ((AMQSession<?, ?>) sess).createQueue(new AMQShortString("allow"), false, false, false);
+        ((AMQSession<?, ?>) sess).createQueue("allow", false, false, false);
 
         List<String> matches = findMatches(ACL_LOG_PREFIX);
 
@@ -96,7 +96,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         Connection conn = getConnection(USER, PASS);
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
         conn.start();
-        ((AMQSession<?, ?>) sess).createQueue(new AMQShortString("allow-log"), false, false, false);
+        ((AMQSession<?, ?>) sess).createQueue("allow-log", false, false, false);
 
         List<String> matches = findMatches(ACL_LOG_PREFIX);
 
@@ -125,7 +125,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
         conn.start();
         try {
-            ((AMQSession<?, ?>) sess).createQueue(new AMQShortString("deny-log"), false, false, false);
+            ((AMQSession<?, ?>) sess).createQueue("deny-log", false, false, false);
 	        fail("Should have denied queue creation");
         }
         catch (AMQException amqe)
@@ -161,7 +161,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
         conn.start();
         try {
-            ((AMQSession<?, ?>) sess).createQueue(new AMQShortString("deny"), false, false, false);
+            ((AMQSession<?, ?>) sess).createQueue("deny", false, false, false);
             fail("Should have denied queue creation");
         }
         catch (AMQException amqe)

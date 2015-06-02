@@ -21,7 +21,6 @@
 package org.apache.qpid.client;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.url.BindingURL;
 
 /**
@@ -29,21 +28,17 @@ import org.apache.qpid.url.BindingURL;
  */
 public class AMQHeadersExchange extends AMQDestination
 {
-    private static final long serialVersionUID = 2187866678283988301L;
+
+    private static final long serialVersionUID = -4415654819705406921L;
 
     public AMQHeadersExchange(BindingURL binding)
     {
         super(binding);
     }
 
-    public AMQHeadersExchange(String name)
+    public AMQHeadersExchange(String queueName)
     {
-        this(new AMQShortString(name));
-    }
-
-    public AMQHeadersExchange(AMQShortString queueName)
-    {
-        super(queueName, AMQShortString.valueOf(ExchangeDefaults.HEADERS_EXCHANGE_CLASS), queueName, true, true, null);
+        super(queueName, ExchangeDefaults.HEADERS_EXCHANGE_CLASS, queueName, true, true, null);
     }
 
     public boolean isNameRequired()

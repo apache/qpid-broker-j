@@ -87,8 +87,7 @@ public class JavaServerCloseRaceConditionTest extends QpidBrokerTestCase
         // Also set a different exchange class string so the attempt to declare
         // the exchange causes an exchange. 
         ExchangeDeclareBody body = session.getMethodRegistry().createExchangeDeclareBody(session.getTicket(),
-                                                                                             new AMQShortString(
-                                                                                                     EXCHANGE_NAME),
+                                                                                             EXCHANGE_NAME,
                                                                                              null,
                                                                                              true,
                                                                                              false,

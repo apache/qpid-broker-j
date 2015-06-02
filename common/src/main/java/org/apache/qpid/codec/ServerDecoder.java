@@ -64,7 +64,7 @@ public class ServerDecoder extends AMQDecoder<ServerMethodProcessor<? extends Se
                     ConnectionOpenBody.process(in, methodProcessor);
                     break;
                 case 0x000a0032:
-                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v8_0))
+                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
                         throw newUnknownMethodException(classId, methodId,
                                                         methodProcessor.getProtocolVersion());
@@ -75,7 +75,7 @@ public class ServerDecoder extends AMQDecoder<ServerMethodProcessor<? extends Se
                     }
                     break;
                 case 0x000a0033:
-                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v8_0))
+                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
                         throw newUnknownMethodException(classId, methodId,
                                                         methodProcessor.getProtocolVersion());
@@ -86,7 +86,7 @@ public class ServerDecoder extends AMQDecoder<ServerMethodProcessor<? extends Se
                     }
                     break;
                 case 0x000a003c:
-                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v8_0))
+                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
                         ConnectionCloseBody.process(in, methodProcessor);
                     }
@@ -97,7 +97,7 @@ public class ServerDecoder extends AMQDecoder<ServerMethodProcessor<? extends Se
                     }
                     break;
                 case 0x000a003d:
-                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v8_0))
+                    if (methodProcessor.getProtocolVersion().equals(ProtocolVersion.v0_8))
                     {
                         methodProcessor.receiveConnectionCloseOk();
                     }

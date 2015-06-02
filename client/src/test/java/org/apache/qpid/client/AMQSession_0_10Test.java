@@ -260,7 +260,7 @@ public class AMQSession_0_10Test extends QpidTestCase
         AMQSession_0_10 session = createAMQSession_0_10();
         try
         {
-            session.sendQueueDelete(new AMQShortString("test"));
+            session.sendQueueDelete("test");
         }
         catch (Exception e)
         {
@@ -279,7 +279,7 @@ public class AMQSession_0_10Test extends QpidTestCase
         {
             BasicMessageConsumer_0_10 consumer = session.createMessageConsumer(createDestination(), 1, 1, true, false,
                     null, null, false, true);
-            session.sendConsume(consumer, new AMQShortString("test"), true, 1);
+            session.sendConsume(consumer, "test", true, 1);
         }
         catch (Exception e)
         {
@@ -462,8 +462,8 @@ public class AMQSession_0_10Test extends QpidTestCase
         AMQAnyDestination destination = null;
         try
         {
-            destination = new AMQAnyDestination(new AMQShortString("amq.direct"), new AMQShortString("direct"),
-                    new AMQShortString("test"), false, true, new AMQShortString("test"), true, null);
+            destination = new AMQAnyDestination("amq.direct", "direct",
+                    "test", false, true, "test", true, null);
         }
         catch (Exception e)
         {
@@ -477,12 +477,11 @@ public class AMQSession_0_10Test extends QpidTestCase
         AMQQueue destination = null;
         try
         {
-            destination = new AMQQueue(new AMQShortString("amq.direct"), new AMQShortString("test"),
-                    new AMQShortString("test"));
+            destination = new AMQQueue("amq.direct", "test", "test");
         }
         catch (Exception e)
         {
-            fail("Failued to create destination:" + e.getMessage());
+            fail("Failed to create destination:" + e.getMessage());
         }
         return destination;
     }

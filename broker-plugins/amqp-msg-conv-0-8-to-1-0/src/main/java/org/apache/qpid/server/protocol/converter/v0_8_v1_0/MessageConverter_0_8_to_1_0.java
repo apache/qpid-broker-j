@@ -117,21 +117,21 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
 
             if(burl.getExchangeName() != null && !burl.getExchangeName().equals(AMQShortString.EMPTY_STRING))
             {
-                replyTo = burl.getExchangeName().asString();
+                replyTo = burl.getExchangeName().toString();
 
                 if(burl.getRoutingKey() != null)
                 {
-                    replyTo += "/" + burl.getRoutingKey().asString();
+                    replyTo += "/" + burl.getRoutingKey().toString();
                 }
 
             }
             else if(burl.getQueueName() != null && !burl.getQueueName().equals(AMQShortString.EMPTY_STRING))
             {
-                replyTo = burl.getQueueName().asString();
+                replyTo = burl.getQueueName().toString();
             }
             else if(burl.getRoutingKey() != null)
             {
-                replyTo = burl.getRoutingKey().asString();
+                replyTo = burl.getRoutingKey().toString();
             }
             else
             {

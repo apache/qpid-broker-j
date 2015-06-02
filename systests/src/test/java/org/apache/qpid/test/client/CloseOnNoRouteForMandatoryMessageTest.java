@@ -103,8 +103,8 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
 
         StringBuilder longExchangeName = getLongExchangeName();
 
-        AMQShortString exchangeName = new AMQShortString(longExchangeName.toString());
-        transactedSession.declareExchange(exchangeName, new AMQShortString("direct"), false);
+        String exchangeName = longExchangeName.toString();
+        transactedSession.declareExchange(exchangeName, "direct", false);
 
         Destination testQueue = new AMQQueue(exchangeName, getTestQueueName());
         MessageProducer mandatoryProducer = transactedSession.createProducer(
@@ -150,8 +150,8 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
 
         StringBuilder longExchangeName = getLongExchangeName();
 
-        AMQShortString exchangeName = new AMQShortString(longExchangeName.toString());
-        transactedSession.declareExchange(exchangeName, new AMQShortString("direct"), false);
+        String exchangeName = longExchangeName.toString();
+        transactedSession.declareExchange(exchangeName, "direct", false);
 
         AMQQueue testQueue = new AMQQueue(exchangeName, getTestQueueName());
         MessageProducer mandatoryProducer = transactedSession.createProducer(

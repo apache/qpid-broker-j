@@ -35,11 +35,11 @@ public class AMQBindingURL implements BindingURL
     private static final Logger _logger = LoggerFactory.getLogger(AMQBindingURL.class);
 
     private String _url;
-    private AMQShortString _exchangeClass = AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
-    private AMQShortString _exchangeName = new AMQShortString("");
-    private AMQShortString _destinationName = new AMQShortString("");
-    private AMQShortString _queueName = new AMQShortString("");
-    private AMQShortString[] _bindingKeys = new AMQShortString[0];
+    private String _exchangeClass = ExchangeDefaults.DIRECT_EXCHANGE_CLASS;
+    private String _exchangeName = "";
+    private String _destinationName = "";
+    private String _queueName = "";
+    private String[] _bindingKeys = new String[0];
     private HashMap<String, String> _options;
 
     public AMQBindingURL(String url) throws URISyntaxException
@@ -60,73 +60,54 @@ public class AMQBindingURL implements BindingURL
         _logger.debug("URL Parsed: " + this);
     }
 
-    public void setExchangeClass(String exchangeClass)
-    {
-        setExchangeClass(new AMQShortString(exchangeClass));
-    }
-
-    public void setQueueName(String name)
-    {
-        setQueueName(new AMQShortString(name));
-    }
-
-    public void setDestinationName(String name)
-    {
-        setDestinationName(new AMQShortString(name));
-    }
-
-    public void setExchangeName(String exchangeName)
-    {
-        setExchangeName(new AMQShortString(exchangeName));
-    }
 
     public String getURL()
     {
         return _url;
     }
 
-    public AMQShortString getExchangeClass()
+    public String getExchangeClass()
     {
         return _exchangeClass;
     }
 
-    private void setExchangeClass(AMQShortString exchangeClass)
+    public void setExchangeClass(String exchangeClass)
     {
 
         _exchangeClass = exchangeClass;
-        if (exchangeClass.equals(AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS)))
+        if (exchangeClass.equals(ExchangeDefaults.TOPIC_EXCHANGE_CLASS))
         {
             setOption(BindingURL.OPTION_EXCLUSIVE, "true");
         }
 
     }
 
-    public AMQShortString getExchangeName()
+    public String getExchangeName()
     {
         return _exchangeName;
     }
 
-    private void setExchangeName(AMQShortString name)
+    public void setExchangeName(String name)
     {
         _exchangeName = name;
     }
 
-    public AMQShortString getDestinationName()
+    public String getDestinationName()
     {
         return _destinationName;
     }
 
-    private void setDestinationName(AMQShortString name)
+    public void setDestinationName(String name)
     {
         _destinationName = name;
     }
 
-    public AMQShortString getQueueName()
+    public String getQueueName()
     {
         return _queueName;
     }
 
-    public void setQueueName(AMQShortString name)
+    public void setQueueName(String name)
     {
         _queueName = name;
     }
@@ -160,13 +141,13 @@ public class AMQBindingURL implements BindingURL
         return _options.containsKey(key);
     }
 
-    public AMQShortString getRoutingKey()
+    public String getRoutingKey()
     {
-        if (_exchangeClass.equals(AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS)))
+        if (_exchangeClass.equals(ExchangeDefaults.DIRECT_EXCHANGE_CLASS))
         {
             if (containsOption(BindingURL.OPTION_ROUTING_KEY))
             {
-                return new AMQShortString(getOption(OPTION_ROUTING_KEY));
+                return getOption(OPTION_ROUTING_KEY);
             }
             else
             {
@@ -176,13 +157,13 @@ public class AMQBindingURL implements BindingURL
 
         if (containsOption(BindingURL.OPTION_ROUTING_KEY))
         {
-            return new AMQShortString(getOption(OPTION_ROUTING_KEY));
+            return getOption(OPTION_ROUTING_KEY);
         }
 
         return getDestinationName();
     }
 
-    public AMQShortString[] getBindingKeys()
+    public String[] getBindingKeys()
     {
         if (_bindingKeys != null && _bindingKeys.length>0)
         {
@@ -190,18 +171,18 @@ public class AMQBindingURL implements BindingURL
         }
         else
         {
-            return new AMQShortString[]{getRoutingKey()};
+            return new String[]{getRoutingKey()};
         }
     }
 
-    public void setBindingKeys(AMQShortString[] keys)
+    public void setBindingKeys(String[] keys)
     {
         _bindingKeys = keys;
     }
 
-    public void setRoutingKey(AMQShortString key)
+    public void setRoutingKey(String key)
     {
-        setOption(OPTION_ROUTING_KEY, key.toString());
+        setOption(OPTION_ROUTING_KEY, key);
     }
 
     public String toString()
@@ -219,7 +200,7 @@ public class AMQBindingURL implements BindingURL
         sb.append(URLHelper.printOptions(_options));
 
         // temp hack
-        if (getRoutingKey() == null || getRoutingKey().toString().equals(""))
+        if (getRoutingKey() == null || getRoutingKey().equals(""))
         {
 
             if (!sb.toString().contains("?"))
@@ -231,9 +212,9 @@ public class AMQBindingURL implements BindingURL
                 sb.append("&");
             }
 
-            for (AMQShortString key :_bindingKeys)
+            for (String key :_bindingKeys)
             {
-                sb.append(BindingURL.OPTION_BINDING_KEY).append("='").append(key.toString()).append("'&");
+                sb.append(BindingURL.OPTION_BINDING_KEY).append("='").append(key).append("'&");
             }
 
             return sb.toString().substring(0,sb.toString().length()-1);

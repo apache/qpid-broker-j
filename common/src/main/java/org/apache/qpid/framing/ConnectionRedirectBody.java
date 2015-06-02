@@ -46,14 +46,14 @@ public class ConnectionRedirectBody extends AMQMethodBodyImpl implements Encodab
     // Constructor
     public ConnectionRedirectBody(MarkableDataInput buffer, ProtocolVersion protocolVersion) throws AMQFrameDecodingException, IOException
     {
-        _ownMethodId = ProtocolVersion.v8_0.equals(protocolVersion) ? 50 : 42;
+        _ownMethodId = ProtocolVersion.v0_8.equals(protocolVersion) ? 50 : 42;
         _host = buffer.readAMQShortString();
         _knownHosts = buffer.readAMQShortString();
     }
 
     public ConnectionRedirectBody(ProtocolVersion protocolVersion, AMQShortString host, AMQShortString knownHosts)
     {
-        _ownMethodId = ProtocolVersion.v8_0.equals(protocolVersion) ? 50 : 42;
+        _ownMethodId = ProtocolVersion.v0_8.equals(protocolVersion) ? 50 : 42;
         _host = host;
         _knownHosts = knownHosts;
     }

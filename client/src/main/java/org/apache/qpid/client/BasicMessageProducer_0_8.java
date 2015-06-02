@@ -42,7 +42,6 @@ import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.AMQFrame;
 import org.apache.qpid.framing.AMQMethodBody;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicAckBody;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.BasicNackBody;
@@ -86,7 +85,6 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
                                                                  destination.getExchangeName(),
                                                                  destination.getExchangeClass(),
                                                                  destination.getExchangeName()
-                                                                         .toString()
                                                                          .startsWith("amq."),
                                                                  destination.isExchangeDurable(),
                                                                  destination.isExchangeAutoDelete(),
@@ -110,7 +108,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
         AMQMessageDelegate_0_8 delegate = (AMQMessageDelegate_0_8) message.getDelegate();
         BasicContentHeaderProperties contentHeaderProperties = delegate.getContentHeaderProperties();
 
-        AMQShortString routingKey = destination.getRoutingKey();
+        String routingKey = destination.getRoutingKey();
 
         FieldTable headers = delegate.getContentHeaderProperties().getHeaders();
 
@@ -127,7 +125,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
 
             if (destination.getAddressType() == AMQDestination.TOPIC_TYPE)
             {
-               routingKey = AMQShortString.valueOf(headers.getString(QpidMessageProperties.QPID_SUBJECT));
+               routingKey = headers.getString(QpidMessageProperties.QPID_SUBJECT);
             }
         }
 

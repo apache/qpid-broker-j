@@ -21,7 +21,6 @@
 package org.apache.qpid.jms;
 
 import java.util.List;
-import org.apache.qpid.framing.AMQShortString;
 
 /**
  Connection URL format
@@ -31,23 +30,23 @@ import org.apache.qpid.framing.AMQShortString;
   */
 public interface ConnectionURL
 {
-    public static final String AMQ_PROTOCOL = "amqp";
-    public static final String OPTIONS_SYNC_PERSISTENCE = "sync_persistence";
-    public static final String OPTIONS_MAXPREFETCH = "maxprefetch";
-    public static final String OPTIONS_SYNC_ACK = "sync_ack";
-    public static final String OPTIONS_SYNC_PUBLISH = "sync_publish";
-    public static final String OPTIONS_USE_LEGACY_MAP_MESSAGE_FORMAT = "use_legacy_map_msg_format";
-    public static final String OPTIONS_USE_LEGACY_STREAM_MESSAGE_FORMAT = "use_legacy_stream_msg_format";
-    public static final String OPTIONS_BROKERLIST = "brokerlist";
-    public static final String OPTIONS_FAILOVER = "failover";
-    public static final String OPTIONS_FAILOVER_CYCLE = "cyclecount";
+    String AMQ_PROTOCOL = "amqp";
+    String OPTIONS_SYNC_PERSISTENCE = "sync_persistence";
+    String OPTIONS_MAXPREFETCH = "maxprefetch";
+    String OPTIONS_SYNC_ACK = "sync_ack";
+    String OPTIONS_SYNC_PUBLISH = "sync_publish";
+    String OPTIONS_USE_LEGACY_MAP_MESSAGE_FORMAT = "use_legacy_map_msg_format";
+    String OPTIONS_USE_LEGACY_STREAM_MESSAGE_FORMAT = "use_legacy_stream_msg_format";
+    String OPTIONS_BROKERLIST = "brokerlist";
+    String OPTIONS_FAILOVER = "failover";
+    String OPTIONS_FAILOVER_CYCLE = "cyclecount";
 
     /**
      * This option is used to apply a connection level override of
      * the {@value BrokerDetails#OPTIONS_SSL} option values in the
      * {@value ConnectionURL#OPTIONS_BROKERLIST};
      */
-    public static final String OPTIONS_SSL = "ssl";
+    String OPTIONS_SSL = "ssl";
 
     /**
      * This option is only applicable for 0-8/0-9/0-9-1 protocols connection
@@ -56,7 +55,7 @@ public interface ConnectionURL
      * server .If this option is not specified, the messages won't be moved to
      * the DLQ (or dropped) when delivery count exceeds the maximum.
      */
-    public static final String OPTIONS_REJECT_BEHAVIOUR = "rejectbehaviour";
+    String OPTIONS_REJECT_BEHAVIOUR = "rejectbehaviour";
 
     /**
      * <p>
@@ -68,21 +67,21 @@ public interface ConnectionURL
      * the message to the client as it normally would.
      * </p>
      */
-    public static final String OPTIONS_CLOSE_WHEN_NO_ROUTE = "closeWhenNoRoute";
+    String OPTIONS_CLOSE_WHEN_NO_ROUTE = "closeWhenNoRoute";
 
 
-    public static final String OPTIONS_COMPRESS_MESSAGES = "compressMessages";
-    public static final String OPTIONS_MESSAGES_COMPRESSION_THRESHOLD_SIZE = "messageCompressionThresholdSize";
+    String OPTIONS_COMPRESS_MESSAGES = "compressMessages";
+    String OPTIONS_MESSAGES_COMPRESSION_THRESHOLD_SIZE = "messageCompressionThresholdSize";
 
 
-    public static final String OPTIONS_DEFAULT_TOPIC_EXCHANGE = "defaultTopicExchange";
-    public static final String OPTIONS_DEFAULT_QUEUE_EXCHANGE = "defaultQueueExchange";
-    public static final String OPTIONS_TEMPORARY_TOPIC_EXCHANGE = "temporaryTopicExchange";
-    public static final String OPTIONS_TEMPORARY_QUEUE_EXCHANGE = "temporaryQueueExchange";
-    public static final String OPTIONS_VERIFY_QUEUE_ON_SEND = "verifyQueueOnSend";
+    String OPTIONS_DEFAULT_TOPIC_EXCHANGE = "defaultTopicExchange";
+    String OPTIONS_DEFAULT_QUEUE_EXCHANGE = "defaultQueueExchange";
+    String OPTIONS_TEMPORARY_TOPIC_EXCHANGE = "temporaryTopicExchange";
+    String OPTIONS_TEMPORARY_QUEUE_EXCHANGE = "temporaryQueueExchange";
+    String OPTIONS_VERIFY_QUEUE_ON_SEND = "verifyQueueOnSend";
 
-    public static final byte  URL_0_8 = 1;
-    public static final byte  URL_0_10 = 2;
+    byte  URL_0_8 = 1;
+    byte  URL_0_10 = 2;
 
     String getURL();
 
@@ -120,12 +119,12 @@ public interface ConnectionURL
 
     void setOption(String key, String value);
 
-    AMQShortString getDefaultQueueExchangeName();
+    String getDefaultQueueExchangeName();
 
-    AMQShortString getDefaultTopicExchangeName();
+    String getDefaultTopicExchangeName();
 
-    AMQShortString getTemporaryQueueExchangeName();
+    String getTemporaryQueueExchangeName();
 
-    AMQShortString getTemporaryTopicExchangeName();
+    String getTemporaryTopicExchangeName();
 
 }

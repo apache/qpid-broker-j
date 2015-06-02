@@ -193,9 +193,9 @@ public class ExchangeLoggingTest extends AbstractTestLogging
         }
         else
         {
-            MethodRegistry registry = new MethodRegistry(ProtocolVersion.v8_0);
+            MethodRegistry registry = new MethodRegistry(ProtocolVersion.v0_8);
 
-            ExchangeDeleteBody body = registry.createExchangeDeleteBody(0, new AMQShortString(_name), false, true);
+            ExchangeDeleteBody body = registry.createExchangeDeleteBody(0, _name, false, true);
 
             AMQFrame exchangeDeclare = body.generateFrame(((AMQSession)_session).getChannelId());
 

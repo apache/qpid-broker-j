@@ -45,7 +45,7 @@ public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQ
     public static ChannelOpenOkBody getInstance(ProtocolVersion protocolVersion, MarkableDataInput input)
             throws IOException
     {
-        final boolean isAMQP08 = ProtocolVersion.v8_0.equals(protocolVersion);
+        final boolean isAMQP08 = ProtocolVersion.v0_8.equals(protocolVersion);
         ChannelOpenOkBody instance = isAMQP08 ? INSTANCE_0_8 : INSTANCE_0_9;
         if(!isAMQP08)
         {
@@ -100,7 +100,7 @@ public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQ
                                final ProtocolVersion protocolVersion,
                                final ClientChannelMethodProcessor dispatcher) throws IOException
     {
-        if(!ProtocolVersion.v8_0.equals(protocolVersion))
+        if(!ProtocolVersion.v0_8.equals(protocolVersion))
         {
             EncodingUtils.readBytes(in);
         }

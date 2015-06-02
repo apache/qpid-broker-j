@@ -22,20 +22,12 @@ package org.apache.qpid.client;
 
 import junit.framework.TestCase;
 
-import org.apache.qpid.framing.AMQShortString;
-
 public class AMQQueueTest extends TestCase
 {
-    private AMQShortString exchange = new AMQShortString("test.exchange");
-    private AMQShortString routingkey = new AMQShortString("test-route");
-    private AMQShortString qname = new AMQShortString("test-queue");
-    private AMQShortString[] oneBinding = new AMQShortString[]{new AMQShortString("bindingA")};
-    private AMQShortString[] bindings = new AMQShortString[]{new AMQShortString("bindingB"),
-                                                     new AMQShortString("bindingC")};
 
     public void testToURLNoBindings()
     {
-        AMQQueue dest = new AMQQueue(exchange, routingkey, qname);
+        AMQQueue dest = new AMQQueue("test.exchange", "test-route", "test-queue");
         String url = dest.toURL();
         assertEquals("direct://test.exchange/test-route/test-queue?routingkey='test-route'", url);
     }

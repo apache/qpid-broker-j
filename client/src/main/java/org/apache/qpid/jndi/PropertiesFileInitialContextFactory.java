@@ -198,9 +198,9 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
                     {
                         StringBuffer b = new StringBuffer();
                         b.append("Creating the topic: " + jndiName +  " with the following binding keys ");
-                        for (AMQShortString binding:((AMQTopic)t).getBindingKeys())
+                        for (String binding:((AMQTopic)t).getBindingKeys())
                         {
-                            b.append(binding.toString()).append(",");
+                            b.append(binding).append(",");
                         }
 
                         _logger.debug(b.toString());
@@ -254,13 +254,9 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
      */
     protected Queue createQueue(Object value)
     {
-        if (value instanceof AMQShortString)
+        if (value instanceof String)
         {
-            return new AMQQueue(AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_NAME), (AMQShortString) value);
-        }
-        else if (value instanceof String)
-        {
-            return new AMQQueue(AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_NAME), new AMQShortString((String) value));
+            return new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, (String) value);
         }
         else if (value instanceof BindingURL)
         {
@@ -275,23 +271,16 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
      */
     protected Topic createTopic(Object value)
     {
-        if (value instanceof AMQShortString)
+        if (value instanceof String)
         {
-            return new AMQTopic(AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME), (AMQShortString) value);
-        }
-        else if (value instanceof String)
-        {
-            String[] keys = ((String)value).split(",");
-            AMQShortString[] bindings = new AMQShortString[keys.length];
-            int i = 0;
-            for (String key:keys)
+            String[] bindings = ((String)value).split(",");
+            for (int i = 0; i < bindings.length; i++)
             {
-                bindings[i] = new AMQShortString(key.trim());
-                i++;
+                bindings[i] = bindings[i].trim();
             }
             // The Destination has a dual nature. If this was used for a producer the key is used
             // for the routing key. If it was used for the consumer it becomes the bindingKey
-            return new AMQTopic(AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME),bindings[0],null,bindings);
+            return new AMQTopic(ExchangeDefaults.TOPIC_EXCHANGE_NAME,bindings[0],null,bindings);
         }
         else if (value instanceof BindingURL)
         {

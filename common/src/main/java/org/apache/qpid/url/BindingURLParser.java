@@ -387,17 +387,17 @@ public class BindingURLParser
 
             if (obj instanceof String)
             {
-                AMQShortString[] bindingKeys = new AMQShortString[]{new AMQShortString((String)obj)};
+                String[] bindingKeys = new String[]{(String)obj};
                 _bindingURL.setBindingKeys(bindingKeys);
             }
             else // it would be a list
             {
                 List list = (List)obj;
-                AMQShortString[] bindingKeys = new AMQShortString[list.size()];
+                String[] bindingKeys = new String[list.size()];
                 int i=0;
                 for (Iterator it = list.iterator(); it.hasNext();)
                 {
-                    bindingKeys[i] = new AMQShortString((String)it.next());
+                    bindingKeys[i] = (String)it.next();
                     i++;
                 }
                 _bindingURL.setBindingKeys(bindingKeys);

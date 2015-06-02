@@ -25,13 +25,13 @@ import java.net.URISyntaxException;
 import javax.jms.Queue;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.messaging.Address;
 import org.apache.qpid.url.BindingURL;
 
 public class AMQQueue extends AMQDestination implements Queue
 {
-    private static final long serialVersionUID = -1283142598932655606L;
+
+    private static final long serialVersionUID = -6683926136231720218L;
 
     public AMQQueue()
     {
@@ -58,36 +58,6 @@ public class AMQQueue extends AMQDestination implements Queue
          super(binding);
     }
 
-    /**
-     * Create a reference to a non temporary queue. Note this does not actually imply the queue exists.
-     * @param name the name of the queue
-     */
-    public AMQQueue(AMQShortString exchangeName, String name)
-    {
-        this(exchangeName, new AMQShortString(name));
-    }
-
-
-    /**
-     * Create a reference to a non temporary queue. Note this does not actually imply the queue exists.
-     * @param name the name of the queue
-     */
-    public AMQQueue(AMQShortString exchangeName, AMQShortString name)
-    {
-        this(exchangeName, name, false);
-    }
-
-    public AMQQueue(AMQShortString exchangeName, AMQShortString routingKey, AMQShortString queueName)
-    {
-        super(exchangeName, AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS), routingKey, false,
-              false, queueName, false);
-    }
-
-    public AMQQueue(AMQShortString exchangeName, AMQShortString routingKey, AMQShortString queueName,AMQShortString[] bindingKeys)
-    {
-        super(exchangeName, AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS), routingKey, false,
-              false, queueName, false,bindingKeys);
-    }
 
     /**
      * Create a reference to a non temporary queue. Note this does not actually imply the queue exists.
@@ -95,9 +65,20 @@ public class AMQQueue extends AMQDestination implements Queue
      */
     public AMQQueue(String exchangeName, String name)
     {
-        this(new AMQShortString(exchangeName), new AMQShortString(name), false);
+        this(exchangeName, name, false);
     }
 
+    public AMQQueue(String exchangeName, String routingKey, String queueName)
+    {
+        super(exchangeName, ExchangeDefaults.DIRECT_EXCHANGE_CLASS, routingKey, false,
+              false, queueName, false);
+    }
+
+    public AMQQueue(String exchangeName, String routingKey, String queueName, String[] bindingKeys)
+    {
+        super(exchangeName, ExchangeDefaults.DIRECT_EXCHANGE_CLASS, routingKey, false,
+              false, queueName, false, bindingKeys);
+    }
 
     public AMQQueue(AMQConnection connection, String name)
     {
@@ -106,8 +87,9 @@ public class AMQQueue extends AMQDestination implements Queue
 
     public AMQQueue(AMQConnection connection, String name, boolean temporary)
     {
-        this(connection.getDefaultQueueExchangeName(), new AMQShortString(name),temporary);
+        this(connection.getDefaultQueueExchangeName(), name,temporary);
     }
+
 
 
     /**
@@ -119,22 +101,9 @@ public class AMQQueue extends AMQDestination implements Queue
      */
     public AMQQueue(String exchangeName, String name, boolean temporary)
     {
-        this(new AMQShortString(exchangeName), new AMQShortString(name),temporary);
-    }
-
-
-    /**
-     * Create a queue with a specified name.
-     *
-     * @param name the destination name (used in the routing key)
-     * @param temporary if true the broker will generate a queue name, also if true then the queue is autodeleted
-     * and exclusive
-     */
-    public AMQQueue(AMQShortString exchangeName, AMQShortString name, boolean temporary)
-    {
         // queue name is set to null indicating that the broker assigns a name in the case of temporary queues
         // temporary queues are typically used as response queues
-        this(exchangeName, name, temporary?null:name, temporary, temporary, !temporary);
+        this(exchangeName, name, temporary ? null : name, temporary, temporary, !temporary);
 
     }
 
@@ -146,23 +115,23 @@ public class AMQQueue extends AMQDestination implements Queue
      * @param exclusive true if the queue should only permit a single consumer
      * @param autoDelete true if the queue should be deleted automatically when the last consumers detaches
      */
-    public AMQQueue(AMQShortString exchangeName, AMQShortString routingKey, AMQShortString queueName, boolean exclusive, boolean autoDelete)
+    public AMQQueue(String exchangeName, String routingKey, String queueName, boolean exclusive, boolean autoDelete)
     {
         this(exchangeName, routingKey, queueName, exclusive, autoDelete, false);
     }
 
-    public AMQQueue(AMQShortString exchangeName, AMQShortString routingKey, AMQShortString queueName, boolean exclusive, boolean autoDelete, boolean durable)
+    public AMQQueue(String exchangeName, String routingKey, String queueName, boolean exclusive, boolean autoDelete, boolean durable)
     {
-        this(exchangeName,routingKey,queueName,exclusive,autoDelete,durable,null);
+        this(exchangeName, routingKey, queueName, exclusive, autoDelete, durable, null);
     }
 
-    public AMQQueue(AMQShortString exchangeName, AMQShortString routingKey, AMQShortString queueName, boolean exclusive, boolean autoDelete, boolean durable,AMQShortString[] bindingKeys)
+    public AMQQueue(String exchangeName, String routingKey, String queueName, boolean exclusive, boolean autoDelete, boolean durable, String[] bindingKeys)
     {
-        super(exchangeName, AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS), routingKey, exclusive,
+        super(exchangeName, ExchangeDefaults.DIRECT_EXCHANGE_CLASS, routingKey, exclusive,
               autoDelete, queueName, durable, bindingKeys);
     }
 
-    public AMQShortString getRoutingKey()
+    public String getRoutingKey()
     {
         if (getAMQQueueName() != null && getAMQQueueName().equals(super.getRoutingKey()))
         {
@@ -176,8 +145,8 @@ public class AMQQueue extends AMQDestination implements Queue
 
     public boolean isNameRequired()
     {
-        AMQShortString queueName = getAMQQueueName();
-        return queueName == null || AMQShortString.EMPTY_STRING.equals(queueName);
+        String queueName = getAMQQueueName();
+        return queueName == null || "".equals(queueName);
     }
 
     @Override

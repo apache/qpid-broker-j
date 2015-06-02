@@ -716,7 +716,7 @@ public class FieldTable
         }
         else if (object instanceof Map)
         {
-            return setFieldTable(string, FieldTable.convertToFieldTable((Map) object));
+            return setFieldTable(string, FieldTable.convertToFieldTable((Map<String,Object>) object));
         }
         else if (object instanceof Date)
         {
@@ -913,15 +913,19 @@ public class FieldTable
         if(fieldTable != null)
         {
             fieldTable.processOverElements(
-                        new FieldTableElementProcessor()
+                    new FieldTableElementProcessor()
                     {
 
                         public boolean processElement(String propertyName, AMQTypedValue value)
                         {
                             Object val = value.getValue();
-                            if(val instanceof AMQShortString)
+                            if (val instanceof AMQShortString)
                             {
                                 val = val.toString();
+                            }
+                            else if (val instanceof FieldTable)
+                            {
+                                val = FieldTable.convertToMap((FieldTable) val);
                             }
                             map.put(propertyName, val);
                             return true;
@@ -1159,6 +1163,7 @@ public class FieldTable
         return _properties.equals(f._properties);
     }
 
+
     public static FieldTable convertToFieldTable(Map<String, Object> map)
     {
         if (map != null)
@@ -1166,7 +1171,16 @@ public class FieldTable
             FieldTable table = new FieldTable();
             for(Map.Entry<String,Object> entry : map.entrySet())
             {
-                table.put(AMQShortString.valueOf(entry.getKey()), entry.getValue());
+                final AMQShortString propertyNameAsShotString = AMQShortString.valueOf(entry.getKey());
+                Object value = entry.getValue();
+                if(value instanceof Map)
+                {
+                    table.setFieldTable(propertyNameAsShotString, convertToFieldTable((Map<String,Object>)value));
+                }
+                else
+                {
+                    table.put(propertyNameAsShotString, value);
+                }
             }
 
             return table;

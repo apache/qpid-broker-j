@@ -88,7 +88,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put("x-qpid-priorities",10);
-        ((AMQSession) producerSession).createQueue(new AMQShortString(QUEUE), true, false, false, arguments);
+        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
         queue = (Queue) producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
 
         ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);
@@ -129,7 +129,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put("x-qpid-priorities",3);
-        ((AMQSession) producerSession).createQueue(new AMQShortString(QUEUE), true, false, false, arguments);
+        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
         queue = producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
 
         ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);
@@ -226,7 +226,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
         //declare a priority queue with 10 priorities
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put("x-qpid-priorities",10);
-        ((AMQSession<?,?>) producerSess).createQueue(new AMQShortString(getTestQueueName()), false, true, false, arguments);
+        ((AMQSession<?,?>) producerSess).createQueue(getTestQueueName(), false, true, false, arguments);
 
         Queue queue = producerSess.createQueue(getTestQueueName());
 

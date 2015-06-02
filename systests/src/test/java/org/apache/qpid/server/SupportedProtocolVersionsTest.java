@@ -119,7 +119,7 @@ public class SupportedProtocolVersionsTest extends QpidBrokerTestCase
         //Verify requesting a 0-8 connection works
         setTestClientSystemProperty(ClientProperties.AMQP_VERSION, "0-8");
         connection = (AMQConnection) getConnection();
-        assertEquals("Unexpected protocol version in use", ProtocolVersion.v8_0, connection.getProtocolVersion());
+        assertEquals("Unexpected protocol version in use", ProtocolVersion.v0_8, connection.getProtocolVersion());
         connection.close();
     }
 

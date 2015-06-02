@@ -18,7 +18,9 @@
  */
 package org.apache.qpid.disttest.jms;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -37,7 +39,7 @@ import org.slf4j.LoggerFactory;
 public class QpidQueueCreator implements QueueCreator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidQueueCreator.class);
-    private static final FieldTable EMPTY_QUEUE_BIND_ARGUMENTS = new FieldTable();
+    private static final Map<String,Object> EMPTY_QUEUE_BIND_ARGUMENTS = Collections.emptyMap();
     private static int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
 
     @Override
@@ -157,7 +159,7 @@ public class QpidQueueCreator implements QueueCreator
         }
     }
 
-    private void deleteQueue(AMQSession<?, ?> session, AMQShortString queueName)
+    private void deleteQueue(AMQSession<?, ?> session, String queueName)
     {
         try
         {

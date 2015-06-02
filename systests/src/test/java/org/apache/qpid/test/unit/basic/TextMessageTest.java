@@ -78,7 +78,7 @@ public class TextMessageTest extends QpidBrokerTestCase implements MessageListen
     private void init(AMQConnection connection) throws Exception
     {
         Destination destination =
-            new AMQQueue(connection.getDefaultQueueExchangeName(), new AMQShortString(randomize("TextMessageTest")), true);
+            new AMQQueue(connection.getDefaultQueueExchangeName(), randomize("TextMessageTest"), true);
         init(connection, destination);
     }
 

@@ -227,22 +227,22 @@ public class URLParser
 
         if (_url.getOptions().containsKey(AMQConnectionURL.OPTIONS_DEFAULT_TOPIC_EXCHANGE))
         {
-            _url.setDefaultTopicExchangeName(new AMQShortString(_url.getOptions().get(AMQConnectionURL.OPTIONS_DEFAULT_TOPIC_EXCHANGE)));
+            _url.setDefaultTopicExchangeName(_url.getOptions().get(AMQConnectionURL.OPTIONS_DEFAULT_TOPIC_EXCHANGE));
         }
 
         if (_url.getOptions().containsKey(AMQConnectionURL.OPTIONS_DEFAULT_QUEUE_EXCHANGE))
         {
-            _url.setDefaultQueueExchangeName(new AMQShortString(_url.getOptions().get(AMQConnectionURL.OPTIONS_DEFAULT_QUEUE_EXCHANGE)));
+            _url.setDefaultQueueExchangeName(_url.getOptions().get(AMQConnectionURL.OPTIONS_DEFAULT_QUEUE_EXCHANGE));
         }
 
         if (_url.getOptions().containsKey(AMQConnectionURL.OPTIONS_TEMPORARY_QUEUE_EXCHANGE))
         {
-            _url.setTemporaryQueueExchangeName(new AMQShortString(_url.getOptions().get(AMQConnectionURL.OPTIONS_TEMPORARY_QUEUE_EXCHANGE)));
+            _url.setTemporaryQueueExchangeName(_url.getOptions().get(AMQConnectionURL.OPTIONS_TEMPORARY_QUEUE_EXCHANGE));
         }
 
         if (_url.getOptions().containsKey(AMQConnectionURL.OPTIONS_TEMPORARY_TOPIC_EXCHANGE))
         {
-            _url.setTemporaryTopicExchangeName(new AMQShortString(_url.getOptions().get(AMQConnectionURL.OPTIONS_TEMPORARY_TOPIC_EXCHANGE)));
+            _url.setTemporaryTopicExchangeName(_url.getOptions().get(AMQConnectionURL.OPTIONS_TEMPORARY_TOPIC_EXCHANGE));
         }
     }
 

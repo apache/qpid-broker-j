@@ -51,7 +51,7 @@ public class AMQProtocolSessionTest extends QpidBrokerTestCase
             return (TestNetworkConnection) getProtocolHandler().getNetworkConnection();
         }
 
-        public AMQShortString genQueueName()
+        public String genQueueName()
         {
             return generateQueueName();
         }
@@ -99,7 +99,7 @@ public class AMQProtocolSessionTest extends QpidBrokerTestCase
     private void checkTempQueueName(SocketAddress address, String queueName)
     {
         _testSession.getNetworkConnection().setLocalAddress(address);
-        assertEquals("Wrong queue name", queueName, _testSession.genQueueName().asString());
+        assertEquals("Wrong queue name", queueName, _testSession.genQueueName().toString());
     }
 
     private static class TestNetworkConnection implements NetworkConnection

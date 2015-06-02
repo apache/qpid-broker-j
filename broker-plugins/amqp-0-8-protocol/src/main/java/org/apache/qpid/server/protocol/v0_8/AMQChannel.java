@@ -382,7 +382,7 @@ public class AMQChannel
 
     public void setPublishFrame(MessagePublishInfo info, final MessageDestination e)
     {
-        String routingKey = info.getRoutingKey() == null ? null : info.getRoutingKey().asString();
+        String routingKey = AMQShortString.toString(info.getRoutingKey());
         VirtualHostImpl virtualHost = getVirtualHost();
         SecurityManager securityManager = virtualHost.getSecurityManager();
 
@@ -569,10 +569,8 @@ public class AMQChannel
     {
         boolean mandatory = message.isMandatory();
 
-        String exchangeName = message.getMessagePublishInfo().getExchange() == null
-                ? null : message.getMessagePublishInfo().getExchange().asString();
-        String routingKey = message.getMessagePublishInfo().getRoutingKey() == null
-                ? null : message.getMessagePublishInfo().getRoutingKey().asString();
+        String exchangeName = AMQShortString.toString(message.getMessagePublishInfo().getExchange());
+        String routingKey = AMQShortString.toString(message.getMessagePublishInfo().getRoutingKey());
 
         final String description = String.format(
                 "[Exchange: %s, Routing key: %s]",
@@ -2085,7 +2083,7 @@ public class AMQChannel
         AMQShortString consumerTag1 = consumerTag;
         VirtualHostImpl<?, ?, ?> vHost = _connection.getVirtualHost();
         sync();
-        String queueName = queue == null ? null : queue.asString();
+        String queueName = AMQShortString.toString(queue);
 
         MessageSource queue1 = queueName == null ? getDefaultQueue() : vHost.getMessageSource(queueName);
         final Collection<MessageSource> sources = new HashSet<>();
@@ -2773,7 +2771,7 @@ public class AMQChannel
                 }
                 else
                 {
-                    String bindingKey = routingKey == null ? null : routingKey.asString();
+                    String bindingKey = routingKey == null ? null : routingKey.toString();
                     if (exchange.isBound(bindingKey, queue))
                     {
 
@@ -2791,7 +2789,7 @@ public class AMQChannel
             }
             else
             {
-                if (exchange.isBound(routingKey == null ? "" : routingKey.asString()))
+                if (exchange.isBound(routingKey == null ? "" : routingKey.toString()))
                 {
 
                     replyCode = ExchangeBoundOkBody.OK;
@@ -2862,7 +2860,7 @@ public class AMQChannel
                 {
                     closeChannel(AMQConstant.NOT_FOUND, "Unknown exchange: '" + exchangeName + "'");
                 }
-                else if (!(type == null || type.length() == 0) && !exchange.getType().equals(type.asString()))
+                else if (!(type == null || type.length() == 0) && !exchange.getType().equals(type.toString()))
                 {
 
                     _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Attempt to redeclare exchange: '"
@@ -2886,7 +2884,7 @@ public class AMQChannel
             {
                 try
                 {
-                    String name = exchangeName == null ? null : exchangeName.intern().toString();
+                    String name = exchangeName.intern().toString();
                     String typeString = type == null ? null : type.intern().toString();
 
                     Map<String, Object> attributes = new HashMap<String, Object>();

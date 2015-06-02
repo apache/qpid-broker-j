@@ -22,8 +22,10 @@ package org.apache.qpid.client;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -50,9 +52,6 @@ import org.apache.qpid.client.message.CloseConsumerMessage;
 import org.apache.qpid.client.message.MessageFactoryRegistry;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.AMQPFilterTypes;
-import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.FieldTable;
-import org.apache.qpid.framing.FieldTableFactory;
 import org.apache.qpid.jms.MessageConsumer;
 import org.apache.qpid.jms.Session;
 import org.apache.qpid.transport.TransportException;
@@ -91,7 +90,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
     /**
      * We need to store the "raw" field table so that we can resubscribe in the event of failover being required
      */
-    private final FieldTable _arguments;
+    private final Map<String,Object> _arguments;
 
     /**
      * We store the high water prefetch field in order to be able to reuse it when resubscribing in the event of
@@ -125,7 +124,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
      * Used to store this consumer queue name
      * Usefull when more than binding key should be used
      */
-    private AMQShortString _queuename;
+    private String _queuename;
 
     /**
      * autoClose denotes that the consumer will automatically cancel itself when there are no more messages to receive
@@ -141,7 +140,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
 
     protected BasicMessageConsumer(int channelId, AMQConnection connection, AMQDestination destination,
                                    String messageSelector, boolean noLocal, MessageFactoryRegistry messageFactory,
-                                   AMQSession session, FieldTable rawSelector,
+                                   AMQSession session, Map<String,Object> rawSelector,
                                    int prefetchHigh, int prefetchLow, boolean exclusive,
                                    int acknowledgeMode, boolean browseOnly, boolean autoClose) throws JMSException
     {
@@ -186,15 +185,15 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
             _acknowledgeMode = acknowledgeMode;
         }
 
-        final FieldTable ft = FieldTableFactory.newFieldTable();
+        final Map<String,Object> ft = new HashMap<>();
         if(destination.getConsumerArguments() != null)
         {
-            ft.addAll(FieldTable.convertToFieldTable(destination.getConsumerArguments()));
+            ft.putAll(destination.getConsumerArguments());
         }
         // rawSelector is used by HeadersExchange and is not a JMS Selector
         if (rawSelector != null)
         {
-            ft.addAll(rawSelector);
+            ft.putAll(rawSelector);
         }
 
         // We must always send the selector argument even if empty, so that we can tell when a selector is removed from a
@@ -353,7 +352,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         _receivingThread = null;
     }
 
-    public FieldTable getArguments()
+    public Map<String,Object> getArguments()
     {
         return _arguments;
     }
@@ -1019,12 +1018,12 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         return tags;    
     }
 
-    public AMQShortString getQueuename()
+    public String getQueuename()
     {
         return _queuename;
     }
 
-    public void setQueuename(AMQShortString queuename)
+    public void setQueuename(String queuename)
     {
         this._queuename = queuename;
     }

@@ -21,7 +21,6 @@
 package org.apache.qpid.client;
 
 import org.apache.qpid.client.url.URLParser;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.url.URLHelper;
@@ -184,44 +183,44 @@ public class AMQConnectionURL implements ConnectionURL, Serializable
         _options.put(key, value);
     }
 
-    public AMQShortString getDefaultQueueExchangeName()
+    public String getDefaultQueueExchangeName()
     {
-        return _defaultQueueExchangeName == null ? null : new AMQShortString(_defaultQueueExchangeName);
+        return _defaultQueueExchangeName;
     }
 
-    public void setDefaultQueueExchangeName(AMQShortString defaultQueueExchangeName)
+    public void setDefaultQueueExchangeName(String defaultQueueExchangeName)
     {
-        _defaultQueueExchangeName = defaultQueueExchangeName == null ? null : defaultQueueExchangeName.asString();
+        _defaultQueueExchangeName = defaultQueueExchangeName;
     }
 
-    public AMQShortString getDefaultTopicExchangeName()
+    public String getDefaultTopicExchangeName()
     {
-        return _defaultTopicExchangeName == null ? null : new AMQShortString(_defaultTopicExchangeName);
+        return _defaultTopicExchangeName;
     }
 
-    public void setDefaultTopicExchangeName(AMQShortString defaultTopicExchangeName)
+    public void setDefaultTopicExchangeName(String defaultTopicExchangeName)
     {
-        _defaultTopicExchangeName = defaultTopicExchangeName == null ? null : defaultTopicExchangeName.asString();
+        _defaultTopicExchangeName = defaultTopicExchangeName;
     }
 
-    public AMQShortString getTemporaryQueueExchangeName()
+    public String getTemporaryQueueExchangeName()
     {
-        return _temporaryQueueExchangeName == null ? null : new AMQShortString(_temporaryQueueExchangeName);
+        return _temporaryQueueExchangeName;
     }
 
-    public void setTemporaryQueueExchangeName(AMQShortString temporaryQueueExchangeName)
+    public void setTemporaryQueueExchangeName(String temporaryQueueExchangeName)
     {
-        _temporaryQueueExchangeName = temporaryQueueExchangeName == null ? null : temporaryQueueExchangeName.asString();
+        _temporaryQueueExchangeName = temporaryQueueExchangeName;
     }
 
-    public AMQShortString getTemporaryTopicExchangeName()
+    public String getTemporaryTopicExchangeName()
     {
-        return _temporaryTopicExchangeName == null ? null : new AMQShortString(_temporaryTopicExchangeName);
+        return _temporaryTopicExchangeName;
     }
 
-    public void setTemporaryTopicExchangeName(AMQShortString temporaryTopicExchangeName)
+    public void setTemporaryTopicExchangeName(String temporaryTopicExchangeName)
     {
-        _temporaryTopicExchangeName = temporaryTopicExchangeName == null ? null : temporaryTopicExchangeName.asString() ;
+        _temporaryTopicExchangeName = temporaryTopicExchangeName;
     }
 
     @Override

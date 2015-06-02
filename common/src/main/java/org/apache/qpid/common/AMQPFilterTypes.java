@@ -34,7 +34,7 @@ public enum AMQPFilterTypes
     REPLAY_PERIOD("x-qpid-replay-period");
 
     /** The identifying string for the filter type. */
-    private final AMQShortString _value;
+    private final String _value;
 
     /**
      * Creates a new filter type from its identifying string.
@@ -43,7 +43,7 @@ public enum AMQPFilterTypes
      */
     AMQPFilterTypes(String value)
     {
-        _value = new AMQShortString(value);
+        _value = value;
     }
 
     /**
@@ -51,7 +51,7 @@ public enum AMQPFilterTypes
      *
      * @return The identifying string of the filter type.
      */
-    public AMQShortString getValue()
+    public String getValue()
     {
         return _value;
     }
@@ -59,6 +59,6 @@ public enum AMQPFilterTypes
     @Override
     public String toString()
     {
-        return _value.asString();
+        return _value;
     }
 }

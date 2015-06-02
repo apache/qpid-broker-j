@@ -52,11 +52,12 @@ import org.apache.qpid.url.URLHelper;
 public abstract class AMQDestination implements Destination, Referenceable, Externalizable
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQDestination.class);
-    private static final long serialVersionUID = -3716263015355017537L;
+    private static final long serialVersionUID = -3152767926421156400L;
 
-    private AMQShortString _exchangeName;
 
-    private AMQShortString _exchangeClass;
+    private String _exchangeName;
+
+    private String _exchangeClass;
 
     private boolean _exchangeAutoDelete;
 
@@ -74,11 +75,11 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
 
     private AtomicLong _addressResolved = new AtomicLong(0);
 
-    private AMQShortString _queueName;
+    private String _queueName;
 
-    private AMQShortString _routingKey;
+    private String _routingKey;
 
-    private AMQShortString[] _bindingKeys;
+    private String[] _bindingKeys;
 
     private String _url;
     private AMQShortString _urlAsShortString;
@@ -298,55 +299,55 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _browseOnly = Boolean.parseBoolean(binding.getOption(BindingURL.OPTION_BROWSE));
         _queueName = binding.getQueueName() == null ? null : binding.getQueueName();
         _routingKey = binding.getRoutingKey() == null ? null : binding.getRoutingKey();
-        _bindingKeys = binding.getBindingKeys() == null || binding.getBindingKeys().length == 0 ? new AMQShortString[0] : binding.getBindingKeys();
+        _bindingKeys = binding.getBindingKeys() == null || binding.getBindingKeys().length == 0 ? new String[0] : binding.getBindingKeys();
         final String rejectBehaviourValue = binding.getOption(BindingURL.OPTION_REJECT_BEHAVIOUR);
         _rejectBehaviour = rejectBehaviourValue == null ? null : RejectBehaviour.valueOf(rejectBehaviourValue.toUpperCase());
         _consumerArguments = binding.getConsumerOptions();
     }
 
-    protected AMQDestination(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, AMQShortString queueName)
+    protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, String queueName)
     {
         this(exchangeName, exchangeClass, routingKey, false, false, queueName, null);
     }
 
-    protected AMQDestination(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, AMQShortString queueName, AMQShortString[] bindingKeys)
+    protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, String queueName, String[] bindingKeys)
     {
         this(exchangeName, exchangeClass, routingKey, false, false, queueName,bindingKeys);
     }
 
-    protected AMQDestination(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString destinationName)
+    protected AMQDestination(String exchangeName, String exchangeClass, String destinationName)
     {
         this(exchangeName, exchangeClass, destinationName, false, false, null,null);
     }
 
-    protected AMQDestination(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, boolean isExclusive,
-            boolean isAutoDelete, AMQShortString queueName)
+    protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
+            boolean isAutoDelete, String queueName)
     {
         this(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, false,null);
     }
 
-    protected AMQDestination(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, boolean isExclusive,
-                             boolean isAutoDelete, AMQShortString queueName,AMQShortString[] bindingKeys)
+    protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
+                             boolean isAutoDelete, String queueName, String[] bindingKeys)
     {
         this(exchangeName, exchangeClass, routingKey, isExclusive, isAutoDelete, queueName, false,bindingKeys);
     }
 
-    protected AMQDestination(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, boolean isExclusive,
-            boolean isAutoDelete, AMQShortString queueName, boolean isDurable){
+    protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
+            boolean isAutoDelete, String queueName, boolean isDurable){
         this (exchangeName, exchangeClass, routingKey, isExclusive,isAutoDelete,queueName,isDurable,null);
     }
 
-    protected AMQDestination(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, boolean isExclusive,
-                             boolean isAutoDelete, AMQShortString queueName, boolean isDurable,AMQShortString[] bindingKeys)
+    protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
+                             boolean isAutoDelete, String queueName, boolean isDurable, String[] bindingKeys)
     {
-        this (exchangeName, exchangeClass, routingKey, isExclusive,isAutoDelete,queueName,isDurable,bindingKeys, false);
+        this (exchangeName, exchangeClass, routingKey, isExclusive,isAutoDelete,queueName,isDurable, bindingKeys, false);
     }
 
-    protected AMQDestination(AMQShortString exchangeName, AMQShortString exchangeClass, AMQShortString routingKey, boolean isExclusive,
-                             boolean isAutoDelete, AMQShortString queueName, boolean isDurable,AMQShortString[] bindingKeys, boolean browseOnly)
+    protected AMQDestination(String exchangeName, String exchangeClass, String routingKey, boolean isExclusive,
+                             boolean isAutoDelete, String queueName, boolean isDurable, String[] bindingKeys, boolean browseOnly)
     {
-        if ( (AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS).equals(exchangeClass) ||
-              AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS).equals(exchangeClass))
+        if ( (ExchangeDefaults.DIRECT_EXCHANGE_CLASS.equals(exchangeClass) ||
+              ExchangeDefaults.TOPIC_EXCHANGE_CLASS.equals(exchangeClass))
               && routingKey == null)
         {
             throw new IllegalArgumentException("routing/binding key  must not be null");
@@ -366,7 +367,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _isAutoDelete = isAutoDelete;
         _queueName = queueName;
         _isDurable = isDurable;
-        _bindingKeys = bindingKeys == null || bindingKeys.length == 0 ? new AMQShortString[0] : bindingKeys;
+        _bindingKeys = bindingKeys == null || bindingKeys.length == 0 ? new String[0] : bindingKeys;
         _destSyntax = DestSyntax.BURL;
         _browseOnly = browseOnly;
         _rejectBehaviour = null;
@@ -418,12 +419,12 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         return _isDurable;
     }
 
-    public AMQShortString getExchangeName()
+    public String getExchangeName()
     {
         return _exchangeName;
     }
 
-    public AMQShortString getExchangeClass()
+    public String getExchangeClass()
     {
         return _exchangeClass;
     }
@@ -445,12 +446,12 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
 
     public boolean isTopic()
     {
-        return AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS).equals(_exchangeClass);
+        return ExchangeDefaults.TOPIC_EXCHANGE_CLASS.equals(_exchangeClass);
     }
 
     public boolean isQueue()
     {
-        return AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS).equals(_exchangeClass);
+        return ExchangeDefaults.DIRECT_EXCHANGE_CLASS.equals(_exchangeClass);
     }
 
     public String getQueueName()
@@ -458,12 +459,12 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         return _queueName == null ? null : _queueName.toString();
     }
 
-    public AMQShortString getAMQQueueName()
+    public String getAMQQueueName()
     {
         return _queueName;
     }
 
-    public void setQueueName(AMQShortString queueName)
+    public void setQueueName(String queueName)
     {
 
         _queueName = queueName;
@@ -472,12 +473,12 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _urlAsShortString = null;
     }
 
-    public AMQShortString getRoutingKey()
+    public String getRoutingKey()
     {
         return _routingKey;
     }
 
-    public AMQShortString[] getBindingKeys()
+    public String[] getBindingKeys()
     {
         if (_bindingKeys != null && _bindingKeys.length > 0)
         {
@@ -487,7 +488,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         {
             // catering to the common use case where the
             //routingKey is the same as the bindingKey.
-            return new AMQShortString[]{_routingKey};
+            return new String[]{_routingKey};
         }
     }
 
@@ -571,7 +572,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
             if (_routingKey == null && _bindingKeys != null && _bindingKeys.length>0)
             {
 
-                for (AMQShortString bindingKey:_bindingKeys)
+                for (String bindingKey:_bindingKeys)
                 {
                     sb.append(BindingURL.OPTION_BINDING_KEY);
                     sb.append("='");
@@ -737,17 +738,17 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
 
     public static Destination createDestination(BindingURL binding)
     {
-        AMQShortString type = binding.getExchangeClass();
+        String type = binding.getExchangeClass();
 
-        if (type.equals(AMQShortString.valueOf(ExchangeDefaults.DIRECT_EXCHANGE_CLASS)))
+        if (type.equals(ExchangeDefaults.DIRECT_EXCHANGE_CLASS))
         {
             return new AMQQueue(binding);
         }
-        else if (type.equals(AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_CLASS)))
+        else if (type.equals(ExchangeDefaults.TOPIC_EXCHANGE_CLASS))
         {
             return new AMQTopic(binding);
         }
-        else if (type.equals(AMQShortString.valueOf(ExchangeDefaults.HEADERS_EXCHANGE_CLASS)))
+        else if (type.equals(ExchangeDefaults.HEADERS_EXCHANGE_CLASS))
         {
             return new AMQHeadersExchange(binding);
         }
@@ -908,17 +909,17 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _link = link;
     }
 
-    public void setExchangeName(AMQShortString name)
+    public void setExchangeName(String name)
     {
         this._exchangeName = name;
     }
 
-    public void setExchangeClass(AMQShortString type)
+    public void setExchangeClass(String type)
     {
         this._exchangeClass = type;
     }
 
-    public void setRoutingKey(AMQShortString rk)
+    public void setRoutingKey(String rk)
     {
         this._routingKey = rk;
     }

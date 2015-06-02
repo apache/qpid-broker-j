@@ -58,42 +58,42 @@ public class QueueMessageDurabilityTest extends QpidBrokerTestCase
 
         Map<String,Object> arguments = new HashMap<>();
         arguments.put(QPID_MESSAGE_DURABILITY, MessageDurability.ALWAYS.name());
-        amqSession.createQueue(new AMQShortString(DURABLE_ALWAYS_PERSIST_NAME), false, true, false, arguments);
+        amqSession.createQueue(DURABLE_ALWAYS_PERSIST_NAME, false, true, false, arguments);
 
         arguments = new HashMap<>();
         arguments.put(QPID_MESSAGE_DURABILITY, MessageDurability.NEVER.name());
-        amqSession.createQueue(new AMQShortString(DURABLE_NEVER_PERSIST_NAME), false, true, false, arguments);
+        amqSession.createQueue(DURABLE_NEVER_PERSIST_NAME, false, true, false, arguments);
 
         arguments = new HashMap<>();
         arguments.put(QPID_MESSAGE_DURABILITY, MessageDurability.DEFAULT.name());
-        amqSession.createQueue(new AMQShortString(DURABLE_DEFAULT_PERSIST_NAME), false, true, false, arguments);
+        amqSession.createQueue(DURABLE_DEFAULT_PERSIST_NAME, false, true, false, arguments);
 
         arguments = new HashMap<>();
         arguments.put(QPID_MESSAGE_DURABILITY,MessageDurability.ALWAYS.name());
-        amqSession.createQueue(new AMQShortString(NONDURABLE_ALWAYS_PERSIST_NAME), false, false, false, arguments);
+        amqSession.createQueue(NONDURABLE_ALWAYS_PERSIST_NAME, false, false, false, arguments);
 
-        amqSession.bindQueue(AMQShortString.valueOf(DURABLE_ALWAYS_PERSIST_NAME),
-                             AMQShortString.valueOf("Y.*.*.*"),
+        amqSession.bindQueue(DURABLE_ALWAYS_PERSIST_NAME,
+                             "Y.*.*.*",
                              null,
-                             AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME),
+                             ExchangeDefaults.TOPIC_EXCHANGE_NAME,
                              null);
 
-        amqSession.bindQueue(AMQShortString.valueOf(DURABLE_NEVER_PERSIST_NAME),
-                             AMQShortString.valueOf("*.Y.*.*"),
+        amqSession.bindQueue(DURABLE_NEVER_PERSIST_NAME,
+                             "*.Y.*.*",
                              null,
-                             AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME),
+                             ExchangeDefaults.TOPIC_EXCHANGE_NAME,
                              null);
 
-        amqSession.bindQueue(AMQShortString.valueOf(DURABLE_DEFAULT_PERSIST_NAME),
-                             AMQShortString.valueOf("*.*.Y.*"),
+        amqSession.bindQueue(DURABLE_DEFAULT_PERSIST_NAME,
+                             "*.*.Y.*",
                              null,
-                             AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME),
+                             ExchangeDefaults.TOPIC_EXCHANGE_NAME,
                              null);
 
-        amqSession.bindQueue(AMQShortString.valueOf(NONDURABLE_ALWAYS_PERSIST_NAME),
-                             AMQShortString.valueOf("*.*.*.Y"),
+        amqSession.bindQueue(NONDURABLE_ALWAYS_PERSIST_NAME,
+                             "*.*.*.Y",
                              null,
-                             AMQShortString.valueOf(ExchangeDefaults.TOPIC_EXCHANGE_NAME),
+                             ExchangeDefaults.TOPIC_EXCHANGE_NAME,
                              null);
     }
 

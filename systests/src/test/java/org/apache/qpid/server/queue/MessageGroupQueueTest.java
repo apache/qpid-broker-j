@@ -121,7 +121,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         {
             arguments.put(QueueArgumentsConverter.QPID_SHARED_MSG_GROUP,"1");
         }
-        ((AMQSession) producerSession).createQueue(new AMQShortString(QUEUE), true, false, false, arguments);
+        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
         queue = (Queue) producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
 
         ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);
@@ -211,7 +211,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         {
             arguments.put(QueueArgumentsConverter.QPID_SHARED_MSG_GROUP,"1");
         }
-        ((AMQSession) producerSession).createQueue(new AMQShortString(QUEUE), true, false, false, arguments);
+        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
         queue = (Queue) producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
 
         ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);
@@ -311,7 +311,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             arguments.put(QueueArgumentsConverter.QPID_SHARED_MSG_GROUP,"1");
         }
 
-        ((AMQSession) producerSession).createQueue(new AMQShortString(QUEUE), true, false, false, arguments);
+        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
         queue = (Queue) producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
 
         ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);
@@ -403,7 +403,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
             arguments.put(QueueArgumentsConverter.QPID_SHARED_MSG_GROUP,"1");
         }
 
-        ((AMQSession) producerSession).createQueue(new AMQShortString(QUEUE), true, false, false, arguments);
+        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
         queue = (Queue) producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
 
         ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);
@@ -495,7 +495,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         arguments.put(QueueArgumentsConverter.QPID_GROUP_HEADER_KEY,"group");
         arguments.put(QueueArgumentsConverter.QPID_SHARED_MSG_GROUP,"1");
 
-        ((AMQSession) producerSession).createQueue(new AMQShortString(QUEUE), true, false, false, arguments);
+        ((AMQSession) producerSession).createQueue(QUEUE, true, false, false, arguments);
         queue = (Queue) producerSession.createQueue("direct://amq.direct/"+QUEUE+"/"+QUEUE+"?durable='false'&autodelete='true'");
 
         ((AMQSession) producerSession).declareAndBind((AMQDestination)queue);

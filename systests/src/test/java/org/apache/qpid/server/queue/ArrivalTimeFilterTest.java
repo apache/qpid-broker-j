@@ -97,7 +97,7 @@ public class ArrivalTimeFilterTest extends QpidBrokerTestCase
 
     private void createDestinationWithFilter(final int period) throws AMQException, JMSException
     {
-        ((AMQSession<?,?>) _session).createQueue(new AMQShortString(_queueName), false, true, false, null);
+        ((AMQSession<?,?>) _session).createQueue(_queueName, false, true, false, null);
         Queue queue = new org.apache.qpid.client.AMQQueue("amq.direct", _queueName);
         ((AMQSession<?,?>) _session).declareAndBind((AMQDestination)queue);
         _queue = _session.createQueue("direct://amq.direct/"+_queueName+"/"+_queueName+"?x-qpid-replay-period='"+period+"'");
