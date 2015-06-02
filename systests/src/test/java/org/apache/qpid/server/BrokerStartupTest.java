@@ -32,6 +32,7 @@ import junit.framework.AssertionFailedError;
 
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.logging.AbstractTestLogging;
+import org.apache.qpid.util.FileUtils;
 import org.apache.qpid.util.LogMonitor;
 
 /**
@@ -71,8 +72,7 @@ public class BrokerStartupTest extends AbstractTestLogging
             File brokerConfigFile = new File(getTestConfigFile(port));
             if (brokerConfigFile.exists())
             {
-                // Config exists from previous test run, delete it.
-                brokerConfigFile.delete();
+                FileUtils.delete(brokerConfigFile, true);
             }
 
             startBroker(port, null, null);
@@ -206,7 +206,7 @@ public class BrokerStartupTest extends AbstractTestLogging
             if (brokerConfigFile.exists())
             {
                 // Config exists from previous test run, delete it.
-                brokerConfigFile.delete();
+                FileUtils.delete(brokerConfigFile, true);
             }
 
             startBroker(port, null, null);
