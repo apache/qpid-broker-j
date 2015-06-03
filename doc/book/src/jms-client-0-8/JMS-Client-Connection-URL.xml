@@ -289,7 +289,32 @@
 					<entry> key_store_password </entry>
 					<entry> String </entry>
 					<entry> Key store password. Password used to open the key store. </entry>
-				</row>
+                                </row>
+
+				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertPath">
+					<entry> client_cert_path </entry>
+					<entry> String </entry>
+                                        <entry> Path to the client certificate file (in PEM or DER format). Used as an 
+                                                alternative to using a Java KeyStore to hold key information
+                                                for TLS client auth. When used, the <literal>client_cert_priv_key_path</literal>
+                                                must also be supplied. </entry>
+                                </row>
+				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertPrivKeyPath">
+					<entry> client_cert_priv_key_path </entry>
+					<entry> String </entry>
+                                        <entry> Path to the client certificate private key file (in PEM or DER format).
+                                                Used when supplying the key information for TLS client auth using PEM/DER
+                                                files rather than a Java KeyStore. </entry>
+                                </row>
+				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertsIntermediaryCertPath">
+					<entry> client_cert_intermediary_cert_path </entry>
+					<entry> String </entry>
+                                        <entry> Path to a file containing any intermediary certificates (in PEM or DER format).
+                                                Used when supplying the key information for TLS client auth using PEM/DER 
+                                                files rather than a Java KeyStore. Only required where intermediary certificates
+                                                are required in the certificate chain. </entry>
+                                </row>
+
 				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-SslCertAlias">
 					<entry> ssl_cert_alias </entry>
 					<entry> String </entry>

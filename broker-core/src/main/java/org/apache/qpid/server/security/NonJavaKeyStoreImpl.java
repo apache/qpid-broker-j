@@ -20,28 +20,16 @@
  */
 package org.apache.qpid.server.security;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,7 +42,6 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
-import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -73,6 +60,7 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 @ManagedObject( category = false )
 public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStoreImpl> implements NonJavaKeyStore<NonJavaKeyStoreImpl>
@@ -228,11 +216,11 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
     {
         try
         {
-            readPrivateKey(getUrlFromString(keyStore.getPrivateKeyUrl()));
-            readCertificates(getUrlFromString(keyStore.getCertificateUrl()));
+            SSLUtil.readPrivateKey(getUrlFromString(keyStore.getPrivateKeyUrl()));
+            SSLUtil.readCertificates(getUrlFromString(keyStore.getCertificateUrl()));
             if(keyStore.getIntermediateCertificateUrl() != null)
             {
-                readCertificates(getUrlFromString(keyStore.getIntermediateCertificateUrl()));
+                SSLUtil.readCertificates(getUrlFromString(keyStore.getIntermediateCertificateUrl()));
             }
         }
         catch (IOException | GeneralSecurityException e )
@@ -248,12 +236,12 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         {
             if (_privateKeyUrl != null && _certificateUrl != null)
             {
-                PrivateKey privateKey = readPrivateKey(getUrlFromString(_privateKeyUrl));
-                X509Certificate[] certs = readCertificates(getUrlFromString(_certificateUrl));
+                PrivateKey privateKey = SSLUtil.readPrivateKey(getUrlFromString(_privateKeyUrl));
+                X509Certificate[] certs = SSLUtil.readCertificates(getUrlFromString(_certificateUrl));
                 if(_intermediateCertificateUrl != null)
                 {
                     List<X509Certificate> allCerts = new ArrayList<>(Arrays.asList(certs));
-                    allCerts.addAll(Arrays.asList(readCertificates(getUrlFromString(_intermediateCertificateUrl))));
+                    allCerts.addAll(Arrays.asList(SSLUtil.readCertificates(getUrlFromString(_intermediateCertificateUrl))));
                     certs = allCerts.toArray(new X509Certificate[allCerts.size()]);
                 }
 
@@ -297,166 +285,5 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         return url;
     }
 
-    public static X509Certificate[] readCertificates(URL certFile)
-            throws IOException, GeneralSecurityException
-    {
-        List<X509Certificate> crt = new ArrayList<>();
-        try (InputStream is = certFile.openStream())
-        {
-            do
-            {
-                CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                crt.add( (X509Certificate) cf.generateCertificate(is));
-            } while(is.available() != 0);
-        }
-        catch(CertificateException e)
-        {
-            if(crt.isEmpty())
-            {
-                throw e;
-            }
-        }
-        return crt.toArray(new X509Certificate[crt.size()]);
-    }
-
-    private static PrivateKey readPrivateKey(final URL url)
-            throws IOException, GeneralSecurityException
-    {
-        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-        try (InputStream urlStream = url.openStream())
-        {
-            byte[] tmp = new byte[1024];
-            int read;
-            while((read = urlStream.read(tmp)) != -1)
-            {
-                buffer.write(tmp,0,read);
-            }
-        }
-
-        byte[] content = buffer.toByteArray();
-        String contentAsString = new String(content, StandardCharsets.US_ASCII);
-        if(contentAsString.contains("-----BEGIN ") && contentAsString.contains(" PRIVATE KEY-----"))
-        {
-            BufferedReader lineReader = new BufferedReader(new StringReader(contentAsString));
-
-            String line;
-            do
-            {
-                line = lineReader.readLine();
-            } while(line != null && !(line.startsWith("-----BEGIN ") && line.endsWith(" PRIVATE KEY-----")));
-
-            if(line != null)
-            {
-                StringBuilder keyBuilder = new StringBuilder();
-
-                while((line = lineReader.readLine()) != null)
-                {
-                    if(line.startsWith("-----END ") && line.endsWith(" PRIVATE KEY-----"))
-                    {
-                        break;
-                    }
-                    keyBuilder.append(line);
-                }
-
-                content = DatatypeConverter.parseBase64Binary(keyBuilder.toString());
-            }
-        }
-        PrivateKey key;
-        try
-        {
-            PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(content);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            key = kf.generatePrivate(keySpec);
-        }
-        catch(InvalidKeySpecException e)
-        {
-            // not in PCKS#8 format - try parsing as PKCS#1
-            RSAPrivateCrtKeySpec keySpec = getRSAKeySpec(content);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            try
-            {
-                key = kf.generatePrivate(keySpec);
-            }
-            catch(InvalidKeySpecException e2)
-            {
-                throw new InvalidKeySpecException("Cannot parse the provided key as either PKCS#1 or PCKS#8 format");
-            }
-
-        }
-        return key;
-    }
-
-
-    private static RSAPrivateCrtKeySpec getRSAKeySpec(byte[] keyBytes) throws InvalidKeySpecException
-    {
-
-        ByteBuffer buffer = ByteBuffer.wrap(keyBytes);
-        try
-        {
-            // PKCS#1 is encoded as a DER sequence of:
-            // (version, modulus, publicExponent, privateExponent, primeP, primeQ,
-            //  primeExponentP, primeExponentQ, crtCoefficient)
-
-            int tag = ((int)buffer.get()) & 0xff;
-
-            // check tag is that of a sequence
-            if(((tag & 0x20) != 0x20) || ((tag & 0x1F) != 0x10))
-            {
-                throw new InvalidKeySpecException("Unable to parse key as PKCS#1 format");
-            }
-
-            int length = getLength(buffer);
-
-            buffer = buffer.slice();
-            buffer.limit(length);
-
-            // first tlv is version - which we'll ignore
-            byte versionTag = buffer.get();
-            int versionLength = getLength(buffer);
-            buffer.position(buffer.position()+versionLength);
-
-
-            RSAPrivateCrtKeySpec keySpec = new RSAPrivateCrtKeySpec(
-                    getInteger(buffer), getInteger(buffer), getInteger(buffer), getInteger(buffer), getInteger(buffer),
-                    getInteger(buffer), getInteger(buffer), getInteger(buffer));
-
-            return keySpec;
-        }
-        catch(BufferUnderflowException e)
-        {
-            throw new InvalidKeySpecException("Unable to parse key as PKCS#1 format");
-        }
-    }
-
-    private static int getLength(ByteBuffer buffer)
-    {
-
-        int i = ((int) buffer.get()) & 0xff;
-
-        // length 0 <= i <= 127 encoded as a single byte
-        if ((i & ~0x7F) == 0)
-        {
-            return i;
-        }
-
-        // otherwise the first octet gives us the number of octets needed to read the length
-        byte[] bytes = new byte[i & 0x7f];
-        buffer.get(bytes);
-
-        return new BigInteger(1, bytes).intValue();
-    }
-
-    private static BigInteger getInteger(ByteBuffer buffer) throws InvalidKeySpecException
-    {
-        int tag = ((int) buffer.get()) & 0xff;
-        // 0x02 indicates an integer type
-        if((tag & 0x1f) != 0x02)
-        {
-            throw new InvalidKeySpecException("Unable to parse key as PKCS#1 format");
-        }
-        byte[] num = new byte[getLength(buffer)];
-        buffer.get(num);
-        return new BigInteger(num);
-    }
 
 }

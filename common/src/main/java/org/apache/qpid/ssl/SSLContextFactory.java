@@ -21,7 +21,6 @@
 package org.apache.qpid.ssl;
 
 import org.apache.qpid.transport.network.security.ssl.QpidClientX509KeyManager;
-import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 import javax.net.ssl.KeyManager;
@@ -29,14 +28,12 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Factory used to create SSLContexts. SSL needs to be configured
@@ -52,56 +49,25 @@ public class SSLContextFactory
         //no instances
     }
 
-    public static SSLContext buildClientContext(final String trustStorePath,
-            final String trustStorePassword, final String trustStoreType,
-            final String trustManagerFactoryAlgorithm, final String keyStorePath,
-            final String keyStorePassword, final String keyStoreType,
-            final String keyManagerFactoryAlgorithm, final String certAlias)
-            throws GeneralSecurityException, IOException
-    {
-        return buildContext(trustStorePath,
-                trustStorePassword,
-                trustStoreType,
-                trustManagerFactoryAlgorithm,
-                keyStorePath,
-                keyStorePassword,
-                keyStoreType,
-                keyManagerFactoryAlgorithm,
-                certAlias);
-    }
-
-    private static SSLContext buildContext(String trustStorePath,
-                                           String trustStorePassword,
-                                           String trustStoreType,
-                                           String trustManagerFactoryAlgorithm,
-                                           String keyStorePath,
-                                           String keyStorePassword,
-                                           String keyStoreType,
-                                           String keyManagerFactoryAlgorithm, String certAlias)
-            throws GeneralSecurityException, IOException
+    public static SSLContext buildClientContext(final TrustManager[] trustManagers, final KeyManager[] keyManagers)
+            throws NoSuchAlgorithmException, KeyManagementException
     {
         // Initialize the SSLContext to work with our key managers.
         final SSLContext sslContext = SSLContext
                 .getInstance(TRANSPORT_LAYER_SECURITY_CODE);
 
-        final TrustManager[] trustManagers;
+        sslContext.init(keyManagers, trustManagers, null);
+
+        return sslContext;
+    }
+
+    public static KeyManager[] getKeyManagers(final String keyStorePath,
+                                              final String keyStorePassword,
+                                              final String keyStoreType,
+                                              final String keyManagerFactoryAlgorithm,
+                                              final String certAlias) throws GeneralSecurityException, IOException
+    {
         final KeyManager[] keyManagers;
-
-        if (trustStorePath != null)
-        {
-            final KeyStore ts = SSLUtil.getInitializedKeyStore(trustStorePath,
-                    trustStorePassword, trustStoreType);
-            final TrustManagerFactory tmf = TrustManagerFactory
-                    .getInstance(trustManagerFactoryAlgorithm);
-            tmf.init(ts);
-
-            trustManagers = tmf.getTrustManagers();
-        }
-        else
-        {
-            trustManagers = null;
-        }
-
         if (keyStorePath != null)
         {
             if (certAlias != null)
@@ -127,9 +93,31 @@ public class SSLContextFactory
         {
             keyManagers = null;
         }
-
-        sslContext.init(keyManagers, trustManagers, null);
-
-        return sslContext;
+        return keyManagers;
     }
+
+    public static TrustManager[] getTrustManagers(final String trustStorePath,
+                                                  final String trustStorePassword,
+                                                  final String trustStoreType,
+                                                  final String trustManagerFactoryAlgorithm)
+            throws GeneralSecurityException, IOException
+    {
+        final TrustManager[] trustManagers;
+        if (trustStorePath != null)
+        {
+            final KeyStore ts = SSLUtil.getInitializedKeyStore(trustStorePath,
+                                                               trustStorePassword, trustStoreType);
+            final TrustManagerFactory tmf = TrustManagerFactory
+                    .getInstance(trustManagerFactoryAlgorithm);
+            tmf.init(ts);
+
+            trustManagers = tmf.getTrustManagers();
+        }
+        else
+        {
+            trustManagers = null;
+        }
+        return trustManagers;
+    }
+
 }

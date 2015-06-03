@@ -45,9 +45,11 @@ import java.util.List;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
@@ -141,11 +143,24 @@ public class RestTestHelper
                 // We have to use a SSLSocketFactory from a new SSLContext so that we don't re-use
                 // the JVM's defaults that may have been initialised in previous tests.
 
-                SSLContext sslContext = SSLContextFactory.buildClientContext(
-                        TRUSTSTORE, TRUSTSTORE_PASSWORD,
-                        KeyStore.getDefaultType(),
-                        TrustManagerFactory.getDefaultAlgorithm(),
-                        KEYSTORE, KEYSTORE_PASSWORD, KeyStore.getDefaultType(), KeyManagerFactory.getDefaultAlgorithm(), CERT_ALIAS_APP1);
+                final TrustManager[] trustManagers;
+                final KeyManager[] keyManagers;
+
+                trustManagers =
+                        SSLContextFactory.getTrustManagers(TRUSTSTORE,
+                                                           TRUSTSTORE_PASSWORD,
+                                                           KeyStore.getDefaultType(),
+                                                           TrustManagerFactory.getDefaultAlgorithm());
+
+                keyManagers =
+                        SSLContextFactory.getKeyManagers(KEYSTORE,
+                                                         KEYSTORE_PASSWORD,
+                                                         KeyStore.getDefaultType(),
+                                                         KeyManagerFactory.getDefaultAlgorithm(),
+                                                         CERT_ALIAS_APP1);
+
+
+                SSLContext sslContext = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
 
                 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
@@ -163,11 +178,20 @@ public class RestTestHelper
                 // We have to use a SSLSocketFactory from a new SSLContext so that we don't re-use
                 // the JVM's defaults that may have been initialised in previous tests.
 
-                SSLContext sslContext = SSLContextFactory.buildClientContext(
-                        TRUSTSTORE, TRUSTSTORE_PASSWORD,
-                        KeyStore.getDefaultType(),
-                        TrustManagerFactory.getDefaultAlgorithm(),
-                        null, null, null, null, null);
+                final TrustManager[] trustManagers;
+                final KeyManager[] keyManagers;
+
+                trustManagers =
+                        SSLContextFactory.getTrustManagers(TRUSTSTORE,
+                                                           TRUSTSTORE_PASSWORD,
+                                                           KeyStore.getDefaultType(),
+                                                           TrustManagerFactory.getDefaultAlgorithm());
+
+                keyManagers =
+                        SSLContextFactory.getKeyManagers(null, null, null, null, null);
+
+
+                SSLContext sslContext = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
 
                 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 

@@ -26,7 +26,13 @@ import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.security.Key;
+import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,6 +41,7 @@ import java.util.Map;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.Session;
+import javax.xml.bind.DatatypeConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +56,7 @@ import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNameAlias;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.test.utils.TestFileUtils;
 
 public class SSLTest extends QpidBrokerTestCase
 {
@@ -464,7 +472,31 @@ public class SSLTest extends QpidBrokerTestCase
         }
     }
 
+    public void testCreateSSLWithCertFileAndPrivateKey() throws Exception
+    {
+        if (shouldPerformTest())
+        {
+            clearSslStoreSystemProperties();
+            File[] certAndKeyFiles = extractResourcesFromTestKeyStore(true);
+            //Start the broker (WANTing client certificate authentication)
+            configureJavaBrokerIfNecessary(true, true, true, false, false);
+            super.setUp();
 
+
+            String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
+                         "?ssl='true'" +
+                         "&trust_store='%s'&ssl_verify_hostname='false'&trust_store_password='%s'" +
+                         "&client_cert_path='%s'&client_cert_priv_key_path='%s''";
+
+            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT, TRUSTSTORE,TRUSTSTORE_PASSWORD, certAndKeyFiles[1].getCanonicalPath(), certAndKeyFiles[0].getCanonicalPath());
+
+            final AMQConnectionURL connectionURL = new AMQConnectionURL(url);
+            Connection con = getConnection(connectionURL);
+            assertNotNull("connection should be successful", con);
+            Session ssn = con.createSession(false,Session.AUTO_ACKNOWLEDGE);
+            assertNotNull("create session should be successful", ssn);
+        }
+    }
     private boolean shouldPerformTest()
     {
         // We run the SSL tests on all the Java broker profiles
@@ -524,4 +556,57 @@ public class SSLTest extends QpidBrokerTestCase
         setSystemProperty("javax.net.ssl.trustStore", null);
         setSystemProperty("javax.net.ssl.trustStorePassword", null);
     }
+
+    private File[] extractResourcesFromTestKeyStore(boolean pem) throws Exception
+    {
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        try(InputStream is = new FileInputStream(KEYSTORE))
+        {
+            ks.load(is, KEYSTORE_PASSWORD.toCharArray() );
+        }
+
+
+        File privateKeyFile = TestFileUtils.createTempFile(this, ".private-key.der");
+        try(FileOutputStream kos = new FileOutputStream(privateKeyFile))
+        {
+            Key pvt = ks.getKey(CERT_ALIAS_APP1, KEYSTORE_PASSWORD.toCharArray());
+            kos.write("-----BEGIN PRIVATE KEY-----\n".getBytes());
+            String base64encoded = DatatypeConverter.printBase64Binary(pvt.getEncoded());
+            while(base64encoded.length() > 76)
+            {
+                kos.write(base64encoded.substring(0,76).getBytes());
+                kos.write("\n".getBytes());
+                base64encoded = base64encoded.substring(76);
+            }
+
+            kos.write(base64encoded.getBytes());
+            kos.write("\n-----END PRIVATE KEY-----".getBytes());
+            kos.flush();
+        }
+
+        File certificateFile = TestFileUtils.createTempFile(this, ".certificate.der");
+
+        try(FileOutputStream cos = new FileOutputStream(certificateFile))
+        {
+            Certificate[] chain = ks.getCertificateChain(CERT_ALIAS_APP1);
+            for(Certificate pub : chain)
+            {
+                cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());
+                String base64encoded = DatatypeConverter.printBase64Binary(pub.getEncoded());
+                while (base64encoded.length() > 76)
+                {
+                    cos.write(base64encoded.substring(0, 76).getBytes());
+                    cos.write("\n".getBytes());
+                    base64encoded = base64encoded.substring(76);
+                }
+                cos.write(base64encoded.getBytes());
+
+                cos.write("\n-----END CERTIFICATE-----\n".getBytes());
+            }
+            cos.flush();
+        }
+
+        return new File[]{privateKeyFile,certificateFile};
+    }
+
 }

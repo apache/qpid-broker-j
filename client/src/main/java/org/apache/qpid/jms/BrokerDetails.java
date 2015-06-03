@@ -43,14 +43,17 @@ public interface BrokerDetails
     public static final String OPTIONS_TCP_NO_DELAY = "tcp_nodelay";
     public static final String OPTIONS_SASL_PROTOCOL_NAME = "sasl_protocol";
     public static final String OPTIONS_SASL_SERVER_NAME = "sasl_server";
-    
+
     public static final String OPTIONS_TRUST_STORE = "trust_store";
     public static final String OPTIONS_TRUST_STORE_PASSWORD = "trust_store_password";
     public static final String OPTIONS_KEY_STORE = "key_store";
     public static final String OPTIONS_KEY_STORE_PASSWORD = "key_store_password";
     public static final String OPTIONS_SSL_VERIFY_HOSTNAME = "ssl_verify_hostname";
     public static final String OPTIONS_SSL_CERT_ALIAS = "ssl_cert_alias";
-    
+    String OPTIONS_CLIENT_CERT_PRIV_KEY_PATH = "client_cert_priv_key_path";
+    String OPTIONS_CLIENT_CERT_PATH = "client_cert_path";
+    String OPTIONS_CLIENT_CERT_INTERMEDIARY_CERT_PATH = "client_cert_intermediary_cert_path" ;
+
     public static final int DEFAULT_PORT = 5672;
 
     public static final String TCP = "tcp";
@@ -70,7 +73,7 @@ public interface BrokerDetails
     public static final String VIRTUAL_HOST = "virtualhost";
     public static final String CLIENT_ID = "client_id";
     public static final String USERNAME = "username";
-    public static final String PASSWORD = "password";    
+    public static final String PASSWORD = "password";
 
     String getHost();
 

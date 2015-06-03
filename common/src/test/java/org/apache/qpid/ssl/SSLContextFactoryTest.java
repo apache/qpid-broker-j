@@ -19,8 +19,10 @@ package org.apache.qpid.ssl;
 
 import org.apache.qpid.test.utils.QpidTestCase;
 
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 import java.io.IOException;
@@ -41,7 +43,26 @@ public class SSLContextFactoryTest extends QpidTestCase
     {
         try
         {
-            SSLContextFactory.buildClientContext("/path/to/nothing", STORE_PASSWORD, STORE_TYPE, DEFAULT_TRUST_MANAGER_ALGORITHM, CLIENT_KEYSTORE_PATH, STORE_PASSWORD, STORE_TYPE, DEFAULT_KEY_MANAGER_ALGORITHM, null);
+
+            final TrustManager[] trustManagers;
+            final KeyManager[] keyManagers;
+
+            trustManagers =
+                    SSLContextFactory.getTrustManagers("/path/to/nothing",
+                                                       STORE_PASSWORD,
+                                                       STORE_TYPE,
+                                                       DEFAULT_TRUST_MANAGER_ALGORITHM);
+
+            keyManagers =
+                    SSLContextFactory.getKeyManagers(CLIENT_KEYSTORE_PATH,
+                                                     STORE_PASSWORD,
+                                                     STORE_TYPE,
+                                                     DEFAULT_KEY_MANAGER_ALGORITHM,
+                                                     null);
+
+            SSLContextFactory.buildClientContext(trustManagers, keyManagers);
+
+
             fail("Exception was not thrown due to incorrect path");
         }
         catch (IOException e)
@@ -52,19 +73,69 @@ public class SSLContextFactoryTest extends QpidTestCase
 
     public void testBuildClientContextForSSLEncryptionOnly() throws Exception
     {
-        SSLContext context = SSLContextFactory.buildClientContext(CLIENT_TRUSTSTORE_PATH, STORE_PASSWORD, STORE_TYPE, DEFAULT_TRUST_MANAGER_ALGORITHM, null, null, null, null, null);
+
+        final TrustManager[] trustManagers;
+        final KeyManager[] keyManagers;
+
+        trustManagers =
+                SSLContextFactory.getTrustManagers(CLIENT_TRUSTSTORE_PATH,
+                                                   STORE_PASSWORD,
+                                                   STORE_TYPE,
+                                                   DEFAULT_TRUST_MANAGER_ALGORITHM);
+
+        keyManagers =
+                SSLContextFactory.getKeyManagers(null, null, null, null, null);
+
+
+        SSLContext context = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
         assertNotNull("SSLContext should not be null", context);
     }
 
     public void testBuildClientContextWithForClientAuth() throws Exception
     {
-        SSLContext context = SSLContextFactory.buildClientContext(CLIENT_TRUSTSTORE_PATH, STORE_PASSWORD, STORE_TYPE, DEFAULT_TRUST_MANAGER_ALGORITHM, CLIENT_KEYSTORE_PATH, STORE_PASSWORD, STORE_TYPE, DEFAULT_KEY_MANAGER_ALGORITHM, null);
+
+        final TrustManager[] trustManagers;
+        final KeyManager[] keyManagers;
+
+        trustManagers =
+                SSLContextFactory.getTrustManagers(CLIENT_TRUSTSTORE_PATH,
+                                                   STORE_PASSWORD,
+                                                   STORE_TYPE,
+                                                   DEFAULT_TRUST_MANAGER_ALGORITHM);
+
+        keyManagers =
+                SSLContextFactory.getKeyManagers(CLIENT_KEYSTORE_PATH,
+                                                 STORE_PASSWORD,
+                                                 STORE_TYPE,
+                                                 DEFAULT_KEY_MANAGER_ALGORITHM,
+                                                 null);
+
+
+        SSLContext context = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
         assertNotNull("SSLContext should not be null", context);
     }
 
     public void testBuildClientContextWithForClientAuthWithCertAlias() throws Exception
     {
-        SSLContext context = SSLContextFactory.buildClientContext(CLIENT_TRUSTSTORE_PATH, STORE_PASSWORD, STORE_TYPE, DEFAULT_TRUST_MANAGER_ALGORITHM, CLIENT_KEYSTORE_PATH, STORE_PASSWORD, STORE_TYPE, DEFAULT_KEY_MANAGER_ALGORITHM, CERT_ALIAS_APP1);
+
+        final TrustManager[] trustManagers;
+        final KeyManager[] keyManagers;
+
+        trustManagers =
+                SSLContextFactory.getTrustManagers(CLIENT_TRUSTSTORE_PATH,
+                                                   STORE_PASSWORD,
+                                                   STORE_TYPE,
+                                                   DEFAULT_TRUST_MANAGER_ALGORITHM);
+
+        keyManagers =
+                SSLContextFactory.getKeyManagers(CLIENT_KEYSTORE_PATH,
+                                                 STORE_PASSWORD,
+                                                 STORE_TYPE,
+                                                 DEFAULT_KEY_MANAGER_ALGORITHM,
+                                                 CERT_ALIAS_APP1);
+
+
+        SSLContext context = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
         assertNotNull("SSLContext should not be null", context);
     }
 }

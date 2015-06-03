@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.transport.network.security;
 
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
 
 import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.transport.ByteBufferReceiver;
@@ -74,16 +76,16 @@ public class SecurityLayerFactory
             _layer = layer;
             try
             {
-                sslCtx = SSLContextFactory
-                        .buildClientContext(settings.getTrustStorePath(),
-                                settings.getTrustStorePassword(),
-                                settings.getTrustStoreType(),
-                                settings.getTrustManagerFactoryAlgorithm(),
-                                settings.getKeyStorePath(),
-                                settings.getKeyStorePassword(),
-                                settings.getKeyStoreType(),
-                                settings.getKeyManagerFactoryAlgorithm(),
-                                settings.getCertAlias());
+
+                final TrustManager[] trustManagers;
+                final KeyManager[] keyManagers;
+
+                trustManagers = settings.getTrustManagers();
+
+                keyManagers = settings.getKeyManagers();
+
+
+                sslCtx = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
             }
             catch (Exception e)
             {

@@ -38,13 +38,29 @@ import static org.apache.qpid.configuration.ClientProperties.SEND_BUFFER_SIZE_PR
 import static org.apache.qpid.configuration.ClientProperties.LEGACY_RECEIVE_BUFFER_SIZE_PROP_NAME;
 import static org.apache.qpid.configuration.ClientProperties.LEGACY_SEND_BUFFER_SIZE_PROP_NAME;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.apache.qpid.configuration.QpidProperty;
+import org.apache.qpid.ssl.SSLContextFactory;
+import org.apache.qpid.transport.network.security.ssl.QpidClientX509KeyManager;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 
 /**
@@ -57,6 +73,7 @@ public class ConnectionSettings
 {
     public static final String WILDCARD_ADDRESS = "*";
 
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private String protocol = "tcp";
     private String host = "localhost";
@@ -86,7 +103,11 @@ public class ConnectionSettings
     private String trustStoreType = System.getProperty("javax.net.ssl.trustStoreType",KeyStore.getDefaultType());
     private String certAlias;
     private boolean verifyHostname;
-    
+
+    private String _clientCertificatePrivateKeyPath;
+    private String _clientCertificatePath;
+    private String _clientCertificateIntermediateCertsPath;
+
     // SASL props
     private String saslMechs = System.getProperty("qpid.sasl_mechs", null);
     private String saslProtocol = System.getProperty("qpid.sasl_protocol", "AMQP");
@@ -398,6 +419,36 @@ public class ConnectionSettings
         this.trustStoreType = trustStoreType;
     }
 
+    public String getClientCertificatePrivateKeyPath()
+    {
+        return _clientCertificatePrivateKeyPath;
+    }
+
+    public void setClientCertificatePrivateKeyPath(final String clientCertificatePrivateKeyPath)
+    {
+        _clientCertificatePrivateKeyPath = clientCertificatePrivateKeyPath;
+    }
+
+    public String getClientCertificatePath()
+    {
+        return _clientCertificatePath;
+    }
+
+    public void setClientCertificatePath(final String clientCertificatePath)
+    {
+        _clientCertificatePath = clientCertificatePath;
+    }
+
+    public String getClientCertificateIntermediateCertsPath()
+    {
+        return _clientCertificateIntermediateCertsPath;
+    }
+
+    public void setClientCertificateIntermediateCertsPath(final String clientCertificateIntermediateCertsPath)
+    {
+        _clientCertificateIntermediateCertsPath = clientCertificateIntermediateCertsPath;
+    }
+
     public int getConnectTimeout()
     {
         return connectTimeout;
@@ -428,4 +479,80 @@ public class ConnectionSettings
         this.writeBufferSize = writeBufferSize;
     }
 
+    public KeyManager[] getKeyManagers()
+            throws GeneralSecurityException, IOException
+    {
+        if(getKeyStorePath() != null)
+        {
+            return SSLContextFactory.getKeyManagers(getKeyStorePath(),
+                                                    getKeyStorePassword(),
+                                                    getKeyStoreType(),
+                                                    getKeyManagerFactoryAlgorithm(),
+                                                    getCertAlias());
+        }
+        else if(getClientCertificatePrivateKeyPath() != null)
+        {
+            return getKeyManagers(getClientCertificatePrivateKeyPath(), getClientCertificatePath(), getClientCertificateIntermediateCertsPath(), getKeyManagerFactoryAlgorithm());
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public TrustManager[] getTrustManagers()
+            throws GeneralSecurityException, IOException
+    {
+        final TrustManager[] trustManagers;
+        trustManagers =
+                SSLContextFactory.getTrustManagers(getTrustStorePath(),
+                                                   getTrustStorePassword(),
+                                                   getTrustStoreType(),
+                                                   getTrustManagerFactoryAlgorithm());
+        return trustManagers;
+    }
+
+    private KeyManager[] getKeyManagers(String privateKeyFile,
+                                        String certFile,
+                                        String intermediateFile,
+                                        String keyManagerFactoryAlgorithm) throws GeneralSecurityException, IOException
+    {
+        System.err.println("**** RG : in getKeyManagers[] privateKey: "
+                           + privateKeyFile
+                           + " ; certFile: "
+                           + certFile
+                           + " ; intermediate: "
+                           + intermediateFile);
+        try (FileInputStream privateKeyStream = new FileInputStream(privateKeyFile);
+             FileInputStream certFileStream = new FileInputStream(certFile))
+        {
+            PrivateKey privateKey = SSLUtil.readPrivateKey(privateKeyStream);
+            X509Certificate[] certs = SSLUtil.readCertificates(certFileStream);
+            if (intermediateFile != null)
+            {
+                try (FileInputStream intermediateFileStream = new FileInputStream(intermediateFile))
+                {
+                    List<X509Certificate> allCerts = new ArrayList<>(Arrays.asList(certs));
+                    allCerts.addAll(Arrays.asList(SSLUtil.readCertificates(intermediateFileStream)));
+                    certs = allCerts.toArray(new X509Certificate[allCerts.size()]);
+                }
+            }
+            System.err.println("*** RG : cert count - " + certs.length);
+            java.security.KeyStore inMemoryKeyStore =
+                    java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+
+            byte[] bytes = new byte[64];
+            char[] chars = new char[64];
+            RANDOM.nextBytes(bytes);
+            StandardCharsets.US_ASCII.decode(ByteBuffer.wrap(bytes)).get(chars);
+            inMemoryKeyStore.load(null, chars);
+            inMemoryKeyStore.setKeyEntry("1", privateKey, chars, certs);
+
+
+            return new KeyManager[]{new QpidClientX509KeyManager("1",
+                                                                 inMemoryKeyStore,
+                                                                 new String(chars),
+                                                                 keyManagerFactoryAlgorithm)};
+        }
+    }
 }

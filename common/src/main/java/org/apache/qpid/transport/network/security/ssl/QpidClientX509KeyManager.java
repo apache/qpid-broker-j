@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.transport.network.security.ssl;
 
+import org.apache.qpid.transport.util.Functions;
 import org.apache.qpid.transport.util.Logger;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -44,7 +45,7 @@ public class QpidClientX509KeyManager extends X509ExtendedKeyManager
     public QpidClientX509KeyManager(String alias, String keyStorePath, String keyStoreType,
                            String keyStorePassword, String keyManagerFactoryAlgorithmName) throws GeneralSecurityException, IOException
     {
-        this.alias = alias;    
+        this.alias = alias;
         KeyStore ks = SSLUtil.getInitializedKeyStore(keyStorePath,keyStorePassword,keyStoreType);
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactoryAlgorithmName);
         kmf.init(ks, keyStorePassword.toCharArray());
@@ -60,6 +61,16 @@ public class QpidClientX509KeyManager extends X509ExtendedKeyManager
         kmf.init(ks, keyStorePassword.toCharArray());
         this.delegate = (X509ExtendedKeyManager)kmf.getKeyManagers()[0];
     }
+
+    public QpidClientX509KeyManager(String alias, KeyStore ks,
+                                    String keyStorePassword, String keyManagerFactoryAlgorithmName) throws GeneralSecurityException, IOException
+    {
+        this.alias = alias;
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactoryAlgorithmName);
+        kmf.init(ks, keyStorePassword.toCharArray());
+        this.delegate = (X509ExtendedKeyManager)kmf.getKeyManagers()[0];
+    }
+
 
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {

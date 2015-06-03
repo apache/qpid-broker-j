@@ -230,6 +230,18 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?trust_store='/path/to/ac
 amqp://guest:guest@clientid/?brokerlist='localhost:5671?key_store='/path/to/app1_client_cert.ks'&key_store_password='secret''&ssl='true']]>
             </screen>
           </example>
+          <para>Alternatively we can use <link
+              linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertPath"
+                ><literal>client_cert_path</literal></link> and <link
+              linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertPrivKeyPath"
+                ><literal>client_cert_priv_key_ath</literal></link> to specify a path to a certificate file (in PEM or DER format)
+            and the private key information (again in either PEM or DER format) respectively.</para>
+          <example>
+            <title>Connection URL configured for SSL - SSL client-auth (2)</title>
+            <screen><![CDATA[
+amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/to/app1_client.crt'&client_cert_priv_key_path='/path/to/app1_client.key''&ssl='true']]>
+            </screen>
+          </example>
         </listitem>
       </itemizedlist>
     </section>
