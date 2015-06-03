@@ -496,6 +496,11 @@ public class AMQBrokerDetails implements BrokerDetails, Serializable
                     getProperty(BrokerDetails.OPTIONS_CLIENT_CERT_INTERMEDIARY_CERT_PATH));
         }
 
+        if (getProperty(BrokerDetails.OPTIONS_TRUSTED_CERTIFICATES_PATH) != null)
+        {
+            conSettings.setTrustedCertificatesFile(
+                    getProperty(BrokerDetails.OPTIONS_TRUSTED_CERTIFICATES_PATH));
+        }
         // ----------------------------
 
         boolean defaultSSLVerifyHostName = Boolean.parseBoolean(

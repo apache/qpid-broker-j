@@ -277,6 +277,13 @@
 					<entry> String </entry>
 					<entry> Trust store password. Password used to open the trust store. </entry>
 				</row>
+				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-TrustedCertsPath">
+					<entry> trusted_certs_path </entry>
+					<entry> String </entry>
+                                        <entry> Path to a file containing trusted peer certificates(in PEM or DER format).
+                                                Used when supplying the trust information for TLS client auth using PEM/DER
+                                                files rather than a Java KeyStore. </entry>
+                                </row>
 				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-KeyStore">
 					<entry> key_store </entry>
 					<entry> String </entry>

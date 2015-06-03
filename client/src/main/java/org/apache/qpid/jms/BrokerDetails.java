@@ -53,6 +53,7 @@ public interface BrokerDetails
     String OPTIONS_CLIENT_CERT_PRIV_KEY_PATH = "client_cert_priv_key_path";
     String OPTIONS_CLIENT_CERT_PATH = "client_cert_path";
     String OPTIONS_CLIENT_CERT_INTERMEDIARY_CERT_PATH = "client_cert_intermediary_cert_path" ;
+    String OPTIONS_TRUSTED_CERTIFICATES_PATH = "trusted_certs_path";
 
     public static final int DEFAULT_PORT = 5672;
 

@@ -65,6 +65,7 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 @ManagedObject( category = false )
 public class NonJavaTrustStoreImpl
@@ -176,7 +177,7 @@ public class NonJavaTrustStoreImpl
     {
         try
         {
-            return readCertificates(getUrlFromString(getCertificatesUrl()));
+            return SSLUtil.readCertificates(getUrlFromString(getCertificatesUrl()));
         }
         catch (IOException e)
         {
@@ -261,7 +262,7 @@ public class NonJavaTrustStoreImpl
     {
         try
         {
-            readCertificates(getUrlFromString(keyStore.getCertificatesUrl()));
+            SSLUtil.readCertificates(getUrlFromString(keyStore.getCertificatesUrl()));
         }
         catch (IOException | GeneralSecurityException e)
         {
@@ -276,7 +277,7 @@ public class NonJavaTrustStoreImpl
         {
             if (_certificatesUrl != null)
             {
-                X509Certificate[] certs = readCertificates(getUrlFromString(_certificatesUrl));
+                X509Certificate[] certs = SSLUtil.readCertificates(getUrlFromString(_certificatesUrl));
                 java.security.KeyStore inMemoryKeyStore = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
 
                 inMemoryKeyStore.load(null, null);
@@ -318,27 +319,6 @@ public class NonJavaTrustStoreImpl
         return url;
     }
 
-    public static X509Certificate[] readCertificates(URL certFile)
-            throws IOException, GeneralSecurityException
-    {
-        List<X509Certificate> crt = new ArrayList<>();
-        try (InputStream is = certFile.openStream())
-        {
-            do
-            {
-                CertificateFactory cf = CertificateFactory.getInstance("X.509");
-                crt.add( (X509Certificate) cf.generateCertificate(is));
-            } while(is.available() != 0);
-        }
-        catch(CertificateException e)
-        {
-            if(crt.isEmpty())
-            {
-                throw e;
-            }
-        }
-        return crt.toArray(new X509Certificate[crt.size()]);
-    }
 
     @Override
     public boolean isExposedAsMessageSource()
