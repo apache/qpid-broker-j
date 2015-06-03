@@ -102,6 +102,32 @@ public class SSLTest extends QpidBrokerTestCase
         }
     }
 
+    public void testCreateSSLConnectionWithCertificateTrust() throws Exception
+    {
+        if (shouldPerformTest())
+        {
+            clearSslStoreSystemProperties();
+
+            //Start the broker (NEEDing client certificate authentication)
+            configureJavaBrokerIfNecessary(true, true, false, false, false);
+            super.setUp();
+
+            String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
+                         "?ssl='true'" +
+                         "&trusted_certs_path='%s'" +
+                         "'";
+            File trustCertFile = extractCertFileFromTestTrustStore();
+
+            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT,
+                                trustCertFile.getCanonicalPath());
+
+            Connection con = getConnection(new AMQConnectionURL(url));
+            assertNotNull("connection should be successful", con);
+            Session ssn = con.createSession(false,Session.AUTO_ACKNOWLEDGE);
+            assertNotNull("create session should be successful", ssn);
+        }
+    }
+
     public void testSSLConnectionToPlainPortRejected() throws Exception
     {
         if (shouldPerformTest())
@@ -477,7 +503,7 @@ public class SSLTest extends QpidBrokerTestCase
         if (shouldPerformTest())
         {
             clearSslStoreSystemProperties();
-            File[] certAndKeyFiles = extractResourcesFromTestKeyStore(true);
+            File[] certAndKeyFiles = extractResourcesFromTestKeyStore();
             //Start the broker (WANTing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, true, false, false);
             super.setUp();
@@ -557,7 +583,7 @@ public class SSLTest extends QpidBrokerTestCase
         setSystemProperty("javax.net.ssl.trustStorePassword", null);
     }
 
-    private File[] extractResourcesFromTestKeyStore(boolean pem) throws Exception
+    private File[] extractResourcesFromTestKeyStore() throws Exception
     {
         java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
         try(InputStream is = new FileInputStream(KEYSTORE))
@@ -608,5 +634,42 @@ public class SSLTest extends QpidBrokerTestCase
 
         return new File[]{privateKeyFile,certificateFile};
     }
+
+    private File extractCertFileFromTestTrustStore() throws Exception
+    {
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        try(InputStream is = new FileInputStream(TRUSTSTORE))
+        {
+            ks.load(is, TRUSTSTORE_PASSWORD.toCharArray() );
+        }
+
+
+
+        File certificateFile = TestFileUtils.createTempFile(this, ".crt");
+
+        try(FileOutputStream cos = new FileOutputStream(certificateFile))
+        {
+
+            for(String alias : Collections.list(ks.aliases()))
+            {
+                Certificate pub = ks.getCertificate(alias);
+                cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());
+                String base64encoded = DatatypeConverter.printBase64Binary(pub.getEncoded());
+                while (base64encoded.length() > 76)
+                {
+                    cos.write(base64encoded.substring(0, 76).getBytes());
+                    cos.write("\n".getBytes());
+                    base64encoded = base64encoded.substring(76);
+                }
+                cos.write(base64encoded.getBytes());
+
+                cos.write("\n-----END CERTIFICATE-----\n".getBytes());
+            }
+            cos.flush();
+        }
+
+        return certificateFile;
+    }
+
 
 }
