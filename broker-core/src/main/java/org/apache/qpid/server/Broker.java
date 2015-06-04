@@ -21,7 +21,6 @@
 package org.apache.qpid.server;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -38,11 +37,6 @@ import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.ConsoleAppender;
-import ch.qos.logback.core.joran.spi.JoranException;
-import ch.qos.logback.core.util.StatusPrinter;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.common.QpidProperties;
@@ -52,9 +46,8 @@ import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LoggingMessageLogger;
 import org.apache.qpid.server.logging.MessageLogger;
+import org.apache.qpid.server.logging.StartupAppender;
 import org.apache.qpid.server.logging.SystemOutMessageLogger;
-import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
-import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.plugin.PluggableFactoryLoader;
@@ -73,7 +66,7 @@ public class Broker
     private boolean _configuringOwnLogging = false;
     private final TaskExecutor _taskExecutor = new TaskExecutorImpl();
 
-    private SystemConfig _systemConfig;
+    private volatile SystemConfig _systemConfig;
 
     private final Action<Integer> _shutdownAction;
 
@@ -163,7 +156,32 @@ public class Broker
             @Override
             public Object run() throws Exception
             {
-                startupImpl(options);
+                ch.qos.logback.classic.Logger logger =
+                        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+                logger.getLoggerContext().reset();
+                logger.setAdditive(true);
+                logger.setLevel(Level.ALL);
+
+                StartupAppender startupAppender = new StartupAppender();
+                startupAppender.setContext(logger.getLoggerContext());
+                startupAppender.start();
+                logger.addAppender(startupAppender);
+
+                try
+                {
+                    startupImpl(options);
+                }
+                catch (RuntimeException e)
+                {
+                    LOGGER.error("Exception during startup", e);
+                    startupAppender.logToConsole();
+                    closeSystemConfigAndCleanUp();
+                }
+                finally
+                {
+                    logger.detachAppender(startupAppender);
+                    startupAppender.stop();
+                }
                 return null;
             }
         });
@@ -174,18 +192,10 @@ public class Broker
     {
         populateSystemPropertiesFromDefaults(options.getInitialSystemProperties());
 
-        String storeLocation = options.getConfigurationStoreLocation();
         String storeType = options.getConfigurationStoreType();
 
         // Create the RootLogger to be used during broker operation
         boolean statusUpdatesEnabled = Boolean.parseBoolean(System.getProperty(BrokerProperties.PROPERTY_STATUS_UPDATES, "true"));
-
-        ch.qos.logback.classic.Logger logger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        logger.getLoggerContext().reset();
-        logger.setAdditive(true);
-        logger.setLevel(Level.INFO);
-
         MessageLogger messageLogger = new LoggingMessageLogger(statusUpdatesEnabled);
         _eventLogger.setMessageLogger(messageLogger);
 
@@ -201,37 +211,32 @@ public class Broker
 
         _taskExecutor.start();
         _systemConfig = configFactory.newInstance(_taskExecutor, _eventLogger, options.convertToSystemConfigAttributes());
-        try
+        _systemConfig.open();
+        if (_systemConfig.getBroker().getState() == State.ERRORED)
         {
-            _systemConfig.open();
-            if (_systemConfig.getBroker().getState() == State.ERRORED)
-            {
-                LOGGER.warn("Closing broker as it cannot operate due to errors");
-                closeSystemConfig();
-            }
-            else
-            {
-                addShutdownHook();
-            }
+            throw new RuntimeException("Closing broker as it cannot operate due to errors");
         }
-        catch(RuntimeException e)
+        else
         {
-            LOGGER.error("Exception during startup", e);
-            closeSystemConfig();
-            throw e;
+            addShutdownHook();
         }
-
     }
 
-    private void closeSystemConfig()
+    private void closeSystemConfigAndCleanUp()
     {
         try
         {
-            _systemConfig.close();
-        }
-        catch(Exception ce)
-        {
-            LOGGER.debug("An error occurred when closing the system config following initialization failure", ce);
+            if (_systemConfig != null)
+            {
+                try
+                {
+                    _systemConfig.close();
+                }
+                catch (Exception ce)
+                {
+                    LOGGER.debug("An error occurred when closing the system config following initialization failure", ce);
+                }
+            }
         }
         finally
         {

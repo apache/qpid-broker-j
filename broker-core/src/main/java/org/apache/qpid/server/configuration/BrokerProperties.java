@@ -49,6 +49,7 @@ public class BrokerProperties
     public static final String PROPERTY_QPID_WORK = "QPID_WORK";
     public static final String PROPERTY_LOG_RECORDS_BUFFER_SIZE = "qpid.broker_log_records_buffer_size";
     public static final String POSIX_FILE_PERMISSIONS = "qpid.default_posix_file_permissions";
+    public static final String PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL = "qpid.startup_failover_console_log_level";
 
     private BrokerProperties()
     {

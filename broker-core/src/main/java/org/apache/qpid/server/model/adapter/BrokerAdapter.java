@@ -34,13 +34,13 @@ import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.logging.StartupAppender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,7 +167,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        rootLogger.setLevel(Level.ALL);
+
+        StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
         Collection<BrokerLogger> loggers = getChildren(BrokerLogger.class);
         for(BrokerLogger<?> logger : loggers)
         {
@@ -178,6 +179,16 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                 _logRecorder = new LogRecorder((RecordEventAppender) appender);
             }
 
+            if (startupAppender != null)
+            {
+                startupAppender.replayAccumulatedEvents(appender);
+            }
+        }
+
+        if (startupAppender != null)
+        {
+            rootLogger.detachAppender(startupAppender);
+            startupAppender.stop();
         }
 
         final SystemConfig parent = getParent(SystemConfig.class);

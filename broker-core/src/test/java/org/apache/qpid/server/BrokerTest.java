@@ -21,8 +21,12 @@
 package org.apache.qpid.server;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -32,6 +36,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.util.FileUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.MDC;
 
 public class BrokerTest extends QpidTestCase
 {
@@ -97,5 +102,61 @@ public class BrokerTest extends QpidTestCase
 
         // existing system property should not be overridden
         assertEquals("Unexpected QPID_WORK system property", _brokerWork.getAbsolutePath(), System.getProperty("QPID_WORK"));
+    }
+
+    public void testConsoleLogsOnSuccessfulStartup() throws Exception
+    {
+        String startupConsoleAppenderLogPrefix = getTestName() + "__$$ ";
+        byte[] outputBytes = startBrokerAndCollectSystemOutput(startupConsoleAppenderLogPrefix);
+        assertFalse("Detected unexpected startup console appender prefix", new String(outputBytes).contains(startupConsoleAppenderLogPrefix));
+    }
+
+    public void testConsoleLogsOnUnsuccessfulStartup() throws Exception
+    {
+        Map<String,Object> initialConfig = new HashMap<>();
+        initialConfig.put(ConfiguredObject.NAME, "test");
+        initialConfig.put(org.apache.qpid.server.model.Broker.MODEL_VERSION, new Integer(Integer.MAX_VALUE).toString());
+
+        ObjectMapper mapper = new ObjectMapper();
+        String config = mapper.writeValueAsString(initialConfig);
+        TestFileUtils.saveTextContentInFile(config, _initialConfiguration);
+
+        String startupConsoleAppenderLogPrefix = getTestName() + "__$$ ";
+        byte[] outputBytes = startBrokerAndCollectSystemOutput(startupConsoleAppenderLogPrefix);
+        assertTrue("Startup console appender prefix is not found", new String(outputBytes).contains(startupConsoleAppenderLogPrefix));
+    }
+
+    private byte[] startBrokerAndCollectSystemOutput(String startupConsoleAppenderLogPrefix) throws Exception
+    {
+        try(ByteArrayOutputStream out = new ByteArrayOutputStream())
+        {
+
+            PrintStream originalOutput = System.out;
+            String originalPrefix = MDC.get("qpid.log.prefix");
+            MDC.put("qpid.log.prefix", startupConsoleAppenderLogPrefix);
+            try
+            {
+                System.setOut(new PrintStream(out));
+                BrokerOptions options = new BrokerOptions();
+                options.setInitialConfigurationLocation(_initialConfiguration.getAbsolutePath());
+                _broker = new Broker();
+                _broker.startup(options);
+            }
+            finally
+            {
+                System.setOut(originalOutput);
+                if (originalPrefix == null)
+                {
+                    MDC.remove("qpid.log.prefix");
+                }
+                else
+                {
+                    MDC.put("qpid.log.prefix", originalPrefix);
+                }
+            }
+
+            return out.toByteArray();
+        }
+
     }
 }
