@@ -36,9 +36,8 @@ import org.apache.qpid.server.configuration.BrokerProperties;
 
 public class StartupAppender  extends AppenderBase<ILoggingEvent>
 {
-    private List<ILoggingEvent> _list = new ArrayList<>();
+    private List<ILoggingEvent> _accumulatedLoggingEvents = new ArrayList<>();
     private Level _consoleAppenderAcceptLogLevel = Level.INFO;
-
 
     public StartupAppender()
     {
@@ -51,14 +50,15 @@ public class StartupAppender  extends AppenderBase<ILoggingEvent>
         }
     }
 
-    protected void append(ILoggingEvent e)
+    @Override
+    protected synchronized void append(ILoggingEvent e)
     {
-        _list.add(e);
+        _accumulatedLoggingEvents.add(e);
     }
 
     public synchronized void replayAccumulatedEvents(Appender<ILoggingEvent> appender)
     {
-        for (ILoggingEvent event: _list)
+        for (ILoggingEvent event: _accumulatedLoggingEvents)
         {
             appender.doAppend(event);
         }
@@ -97,7 +97,7 @@ public class StartupAppender  extends AppenderBase<ILoggingEvent>
         super.stop();
         synchronized (this)
         {
-            _list.clear();
+            _accumulatedLoggingEvents.clear();
         }
     }
 }
