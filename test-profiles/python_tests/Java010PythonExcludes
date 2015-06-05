@@ -56,8 +56,9 @@ qpid_tests.broker_0_10.priority.PriorityTests.test_prioritised_delivery_with_ali
 #QPID-6299 broker does not support ring queue on lvq
 qpid_tests.broker_0_10.lvq.LVQTests.test_ring_lvq2
 
-#The broker does not support the autodelete property on exchanges
-qpid_tests.broker_0_10.exchange.AutodeleteTests.testAutodelete*
+#QPID-6572 These tests pass a empty binding key argument, which won't match with the Java Broker's stricter impl.
+qpid_tests.broker_0_10.exchange.AutodeleteTests.testAutodeleteFanout
+qpid_tests.broker_0_10.exchange.AutodeleteTests.testAutodeleteHeaders
 
 # QPID-5531 : Changes to the C++ behaviour in having a default timeout for every transaction not implemented in Java Broker
 qpid_tests.broker_0_10.dtx.DtxTests.test_get_timeout

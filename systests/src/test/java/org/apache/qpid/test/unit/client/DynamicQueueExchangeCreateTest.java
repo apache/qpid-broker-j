@@ -23,6 +23,7 @@ package org.apache.qpid.test.unit.client;
 import java.io.IOException;
 
 import org.apache.qpid.AMQException;
+import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.management.common.mbeans.ManagedExchange;
 import org.apache.qpid.protocol.AMQConstant;
@@ -33,12 +34,16 @@ import org.apache.qpid.url.BindingURL;
 import javax.jms.Connection;
 import javax.jms.InvalidDestinationException;
 import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
 public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
 {
     private JMXTestUtils _jmxUtils;
+    private static final String TEST_VHOST = "test";
+
 
     @Override
     public void setUp() throws Exception
@@ -115,7 +120,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         }
 
         //verify the exchange was not declared
-        String exchangeObjectName = _jmxUtils.getExchangeObjectName("test", exchangeName);
+        String exchangeObjectName = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName);
         assertFalse("exchange should not exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName));
     }
 
@@ -138,7 +143,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         session1.close();
 
         //verify the exchange was declared
-        String exchangeObjectName = _jmxUtils.getExchangeObjectName("test", exchangeName1);
+        String exchangeObjectName = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName1);
         assertTrue("exchange should exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName));
 
         //Now disable the implicit exchange declares and try again
@@ -155,7 +160,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         session2.close();
 
         //verify the exchange was not declared
-        String exchangeObjectName2 = _jmxUtils.getExchangeObjectName("test", exchangeName2);
+        String exchangeObjectName2 = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName2);
         assertFalse("exchange should not exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName2));
     }
 
@@ -181,6 +186,49 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
             //PASS
         }
     }
+
+    public void testTemporaryExchangeDeletedWhenLastBindingRemoved() throws Exception
+    {
+
+        Connection connection = getConnection();
+        connection.start();
+        AMQSession session = (AMQSession) connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        final String exchangeName = getTestName() + "_exch";
+        final String queueName = getTestName() + "_queue";
+
+
+        String tmpQueueBoundToTmpExchange = String.format("direct://%s/%s/%s?%s='%b'&%s='%b'",
+                                                          exchangeName,
+                                                          queueName,
+                                                          queueName,
+                                                          BindingURL.OPTION_AUTODELETE,
+                                                          true,
+                                                          BindingURL.OPTION_EXCHANGE_AUTODELETE,
+                                                          true);
+        Queue queue = session.createQueue(tmpQueueBoundToTmpExchange);
+
+        MessageConsumer consumer = session.createConsumer(queue);
+
+        String exchangeObjectName = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName);
+        assertTrue("Exchange " + exchangeName + " should exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName));
+        ManagedExchange exchange = _jmxUtils.getManagedExchange(exchangeName);
+        assertTrue("Exchange " + exchangeName + " should be autodelete", exchange.isAutoDelete());
+
+        sendMessage(session, queue, 1);
+
+        Message message = consumer.receive(1000);
+        session.commit();
+        assertNotNull("Message not received", message);
+
+        // Closing the session will cause the temporary queue to be deleted, causing the
+        // binding to be deleted.  This will trigger the auto deleted exchange to be removed too
+        consumer.close();
+
+        assertFalse("Exchange " + exchangeName + " should not longer exist",
+                    _jmxUtils.doesManagedObjectExist(exchangeObjectName));
+    }
+
     private void checkExceptionErrorCode(JMSException original, AMQConstant code)
     {
         Exception linked = original.getLinkedException();
@@ -249,7 +297,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
 
     private void verifyDeclaredExchange(String exchangeName, boolean isAutoDelete, boolean isDurable) throws IOException
     {
-        String exchangeObjectName = _jmxUtils.getExchangeObjectName("test", exchangeName);
+        String exchangeObjectName = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName);
         assertTrue("exchange should exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName));
         ManagedExchange exchange = _jmxUtils.getManagedExchange(exchangeName);
         assertEquals(isAutoDelete, exchange.isAutoDelete());
