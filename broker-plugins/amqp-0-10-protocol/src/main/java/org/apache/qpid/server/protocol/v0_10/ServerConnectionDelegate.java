@@ -198,8 +198,8 @@ public class ServerConnectionDelegate extends ServerDelegate
                 final String redirectHost = vhost.getRedirectHost(port);
                 if(redirectHost == null)
                 {
-                    sconn.invoke(new ConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
-                                                     "Virtual host '" + vhostName + "' is not active"));
+                    sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED,
+                                                     "Virtual host '" + vhostName + "' is not active");
                 }
                 else
                 {
@@ -214,14 +214,14 @@ public class ServerConnectionDelegate extends ServerDelegate
                 if(!vhost.authoriseCreateConnection(sconn))
                 {
                     sconn.setState(Connection.State.CLOSING);
-                    sconn.invoke(new ConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, "Connection not authorized"));
+                    sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, "Connection not authorized");
                     return;
                 }
             }
             catch (AccessControlException e)
             {
                 sconn.setState(Connection.State.CLOSING);
-                sconn.invoke(new ConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage()));
+                sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());
                 return;
             }
 
@@ -231,8 +231,8 @@ public class ServerConnectionDelegate extends ServerDelegate
         else
         {
             sconn.setState(Connection.State.CLOSING);
-            sconn.invoke(new ConnectionClose(ConnectionCloseCode.INVALID_PATH,
-                                             "Unknown virtualhost '" + vhostName + "'"));
+            sconn.sendConnectionClose(ConnectionCloseCode.INVALID_PATH,
+                                             "Unknown virtualhost '" + vhostName + "'");
         }
 
     }

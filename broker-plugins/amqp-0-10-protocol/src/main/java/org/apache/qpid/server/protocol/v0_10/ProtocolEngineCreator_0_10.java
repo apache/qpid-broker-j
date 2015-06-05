@@ -32,6 +32,7 @@ import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.transport.ConnectionDelegate;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 @PluggableService
@@ -69,7 +70,7 @@ public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
                                                   NetworkConnection network,
                                                   AmqpPort<?> port,
                                                   Transport transport,
-                                                  long id)
+                                                  long id, final AggregateTicker aggregateTicker)
     {
         String fqdn = null;
         SocketAddress address = network.getLocalAddress();
@@ -86,7 +87,7 @@ public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
         conn.setRemoteAddress(network.getRemoteAddress());
         conn.setLocalAddress(network.getLocalAddress());
 
-        ProtocolEngine_0_10 protocolEngine = new ProtocolEngine_0_10(conn, network);
+        ProtocolEngine_0_10 protocolEngine = new ProtocolEngine_0_10(conn, network, aggregateTicker);
         conn.setProtocolEngine(protocolEngine);
 
         return protocolEngine;

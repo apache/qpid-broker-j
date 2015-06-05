@@ -41,6 +41,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.Constant;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.Assembler;
 import org.apache.qpid.transport.network.InputHandler;
 import org.apache.qpid.transport.network.NetworkConnection;
@@ -50,6 +51,7 @@ public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocol
 {
     public static final int MAX_FRAME_SIZE = 64 * 1024 - 1;
     private static final Logger _logger = LoggerFactory.getLogger(ProtocolEngine_0_10.class);
+    private final AggregateTicker _aggregateTicker;
 
 
     private NetworkConnection _network;
@@ -69,15 +71,22 @@ public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocol
 
 
     public ProtocolEngine_0_10(ServerConnection conn,
-                               NetworkConnection network)
+                               NetworkConnection network, final AggregateTicker aggregateTicker)
     {
         super(new ServerAssembler(conn));
         _connection = conn;
+        _aggregateTicker = aggregateTicker;
 
         if(network != null)
         {
             setNetworkConnection(network, network.getSender());
         }
+    }
+
+    @Override
+    public AggregateTicker getAggregateTicker()
+    {
+        return _aggregateTicker;
     }
 
     @Override

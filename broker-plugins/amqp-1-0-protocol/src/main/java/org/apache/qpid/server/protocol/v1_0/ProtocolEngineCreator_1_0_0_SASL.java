@@ -27,6 +27,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 @PluggableService
@@ -62,9 +63,9 @@ public class ProtocolEngineCreator_1_0_0_SASL implements ProtocolEngineCreator
                                                   NetworkConnection network,
                                                   AmqpPort<?> port,
                                                   Transport transport,
-                                                  long id)
+                                                  long id, final AggregateTicker aggregateTicker)
     {
-        return new ProtocolEngine_1_0_0_SASL(network, broker, id, port, transport);
+        return new ProtocolEngine_1_0_0_SASL(network, broker, id, port, transport, aggregateTicker);
     }
 
     private static ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_1_0_0_SASL();

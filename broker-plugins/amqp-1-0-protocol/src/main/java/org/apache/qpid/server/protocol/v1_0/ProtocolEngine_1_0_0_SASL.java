@@ -52,6 +52,7 @@ import org.apache.qpid.amqp_1_0.type.FrameBody;
 import org.apache.qpid.amqp_1_0.type.Symbol;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
+import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.model.Broker;
@@ -63,13 +64,16 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOutputHandler
 {
 
+    public static final long CLOSE_REPONSE_TIMEOUT = 10000l;
     private final AmqpPort<?> _port;
     private final Transport _transport;
+    private final AggregateTicker _aggregateTicker;
     private long _readBytes;
     private long _writtenBytes;
 
@@ -143,19 +147,29 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
 
 
 
-    public ProtocolEngine_1_0_0_SASL(final NetworkConnection networkDriver, final Broker<?> broker,
-                                     long id, AmqpPort<?> port, Transport transport)
+    public ProtocolEngine_1_0_0_SASL(final NetworkConnection networkDriver,
+                                     final Broker<?> broker,
+                                     long id,
+                                     AmqpPort<?> port,
+                                     Transport transport,
+                                     final AggregateTicker aggregateTicker)
     {
         _connectionId = id;
         _broker = broker;
         _port = port;
         _transport = transport;
+        _aggregateTicker = aggregateTicker;
         if(networkDriver != null)
         {
             setNetworkConnection(networkDriver, networkDriver.getSender());
         }
     }
 
+    @Override
+    public AggregateTicker getAggregateTicker()
+    {
+        return _aggregateTicker;
+    }
 
     @Override
     public boolean isMessageAssignmentSuspended()
@@ -544,7 +558,8 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
 
     public void close()
     {
-        _sender.close();
+        getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis()+ CLOSE_REPONSE_TIMEOUT, _network));
+
     }
 
     public void setLogOutput(final PrintWriter out)

@@ -39,6 +39,7 @@ import org.apache.qpid.server.protocol.MultiVersionProtocolEngineFactory;
 import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.transport.NetworkTransportConfiguration;
 import org.apache.qpid.transport.TransportException;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.TransportEncryption;
 import org.apache.qpid.transport.network.io.AbstractNetworkTransport;
 import org.apache.qpid.transport.network.io.IdleTimeoutTicker;
@@ -161,13 +162,16 @@ public class NonBlockingNetworkTransport
 
                 socketChannel.configureBlocking(false);
 
-                final IdleTimeoutTicker ticker = new IdleTimeoutTicker(engine, _timeout);
+                AggregateTicker aggregateTicker = engine.getAggregateTicker();
+
+                final IdleTimeoutTicker idleTimeoutTicker = new IdleTimeoutTicker(engine, _timeout);
+                aggregateTicker.addTicker(idleTimeoutTicker);
 
                 NonBlockingConnection connection =
                         new NonBlockingConnection(socketChannel,
                                                   engine,
                                                   receiveBufferSize,
-                                                  ticker,
+                                                  idleTimeoutTicker,
                                                   _encryptionSet,
                                                   _sslContext,
                                                   _config.wantClientAuth(),
@@ -188,7 +192,7 @@ public class NonBlockingNetworkTransport
                 engine.setNetworkConnection(connection, connection.getSender());
                 connection.setMaxReadIdle(HANDSHAKE_TIMEOUT);
 
-                ticker.setConnection(connection);
+                idleTimeoutTicker.setConnection(connection);
 
                 connection.start();
 

@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
@@ -64,6 +65,7 @@ import org.apache.qpid.transport.ConnectionCloseOk;
 import org.apache.qpid.transport.ExecutionErrorCode;
 import org.apache.qpid.transport.ExecutionException;
 import org.apache.qpid.transport.Method;
+import org.apache.qpid.transport.Option;
 import org.apache.qpid.transport.ProtocolEvent;
 import org.apache.qpid.transport.Session;
 
@@ -71,6 +73,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
                                                             LogSubject, AuthorizationHolder
 {
 
+    public static final long CLOSE_OK_TIMEOUT = 10000l;
     private final Broker<?> _broker;
     private AtomicBoolean _logClosed = new AtomicBoolean(false);
 
@@ -175,7 +178,10 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
                 _virtualHost.getConnectionRegistry().deregisterConnection(this);
             }
         }
-
+        if(state == State.CLOSING)
+        {
+            getProtocolEngine().getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_OK_TIMEOUT, getNetworkConnection()));
+        }
         if (state == State.CLOSED)
         {
             logClosed();
@@ -414,6 +420,14 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
                 }
             }
         });
+    }
+
+    @Override
+    protected void sendConnectionClose(final ConnectionCloseCode replyCode,
+                                       final String replyText,
+                                       final Option... _options)
+    {
+        super.sendConnectionClose(replyCode, replyText, _options);
     }
 
     protected void performDeleteTasks()

@@ -24,7 +24,6 @@ package org.apache.qpid.server.protocol;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,6 +43,7 @@ import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 public class MultiVersionProtocolEngine implements ServerProtocolEngine
@@ -65,6 +65,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
 
     private volatile ServerProtocolEngine _delegate = new SelfDelegateProtocolEngine();
     private final AtomicReference<Action<ServerProtocolEngine>> _workListener = new AtomicReference<>();
+    private final AggregateTicker _aggregateTicker = new AggregateTicker();
 
     public MultiVersionProtocolEngine(final Broker<?> broker,
                                       final Set<Protocol> supported,
@@ -250,6 +251,12 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
         _delegate.clearWork();
     }
 
+    @Override
+    public AggregateTicker getAggregateTicker()
+    {
+        return _aggregateTicker;
+    }
+
     private class ClosedDelegateProtocolEngine implements ServerProtocolEngine
     {
 
@@ -384,6 +391,12 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
         public void setTransportBlockedForWriting(final boolean blocked)
         {
         }
+
+        @Override
+        public AggregateTicker getAggregateTicker()
+        {
+            return _aggregateTicker;
+        }
     }
 
     private class SelfDelegateProtocolEngine implements ServerProtocolEngine
@@ -448,6 +461,12 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
         }
 
         @Override
+        public AggregateTicker getAggregateTicker()
+        {
+            return _aggregateTicker;
+        }
+
+        @Override
         public void clearWork()
         {
             _hasWork.set(false);
@@ -499,8 +518,8 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
                         if(equal)
                         {
                             newDelegate = _creators[i].newProtocolEngine(_broker,
-                                                                         _network, _port, _transport, _id
-                                                                        );
+                                                                         _network, _port, _transport, _id,
+                                                                         _aggregateTicker);
                         }
                     }
 
@@ -565,6 +584,8 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
                 }
 
             }
+
+
 
         }
 

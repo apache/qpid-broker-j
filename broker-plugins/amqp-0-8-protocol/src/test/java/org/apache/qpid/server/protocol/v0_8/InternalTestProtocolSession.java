@@ -53,6 +53,7 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 public class InternalTestProtocolSession extends AMQProtocolEngine implements ProtocolOutputConverter
@@ -65,7 +66,7 @@ public class InternalTestProtocolSession extends AMQProtocolEngine implements Pr
 
     public InternalTestProtocolSession(VirtualHostImpl virtualHost, Broker<?> broker, final AmqpPort<?> port) throws AMQException
     {
-        super(broker, new TestNetworkConnection(), ID_GENERATOR.getAndIncrement(), port, null);
+        super(broker, new TestNetworkConnection(), ID_GENERATOR.getAndIncrement(), port, null, new AggregateTicker());
 
         _channelDelivers = new HashMap<Integer, Map<String, LinkedList<DeliveryPair>>>();
 

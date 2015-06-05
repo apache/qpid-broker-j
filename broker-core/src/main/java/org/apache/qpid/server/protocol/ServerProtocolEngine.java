@@ -24,6 +24,7 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.protocol.ProtocolEngine;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.transport.network.AggregateTicker;
 
 public interface ServerProtocolEngine extends ProtocolEngine
 {
@@ -51,4 +52,6 @@ public interface ServerProtocolEngine extends ProtocolEngine
     void notifyWork();
 
     void setWorkListener(Action<ServerProtocolEngine> listener);
+
+    AggregateTicker getAggregateTicker();
 }

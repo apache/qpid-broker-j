@@ -1,4 +1,4 @@
-package org.apache.qpid.server.plugin;/*
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,23 +18,36 @@ package org.apache.qpid.server.plugin;/*
  * under the License.
  *
  */
+package org.apache.qpid.server.protocol;
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
+import org.apache.qpid.transport.network.Ticker;
 
-public interface ProtocolEngineCreator extends Pluggable
+public class ConnectionClosingTicker implements Ticker
 {
-    Protocol getVersion();
-    byte[] getHeaderIdentifier();
-    ServerProtocolEngine newProtocolEngine(Broker<?> broker,
-                                           NetworkConnection network,
-                                           AmqpPort<?> port,
-                                           Transport transport,
-                                           long id, final AggregateTicker aggregateTicker);
-}
+    private final long _timeoutTime;
+    private final NetworkConnection _network;
 
+    public ConnectionClosingTicker(final long timeoutTime, final NetworkConnection network)
+    {
+        _timeoutTime = timeoutTime;
+        _network = network;
+    }
+
+    @Override
+    public int getTimeToNextTick(final long currentTime)
+    {
+        return (int) (_timeoutTime - currentTime);
+    }
+
+    @Override
+    public int tick(final long currentTime)
+    {
+        int nextTick = getTimeToNextTick(currentTime);
+        if(nextTick <= 0)
+        {
+            _network.close();
+        }
+        return nextTick;
+    }
+}

@@ -59,7 +59,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private static final int NUMBER_OF_BYTES_FOR_TLS_CHECK = 6;
 
     private final SocketChannel _socketChannel;
-    private final Ticker _ticker;
     private final Object _peerPrincipalLock = new Object();
     private final SelectorThread _selector;
     private final ConcurrentLinkedQueue<ByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
@@ -103,7 +102,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                                  final SelectorThread selectorThread)
     {
         _socketChannel = socketChannel;
-        _ticker = ticker;
         _selector = selectorThread;
 
         _protocolEngine = delegate;
@@ -152,7 +150,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     Ticker getTicker()
     {
-        return _ticker;
+        return _protocolEngine.getAggregateTicker();
     }
 
     SocketChannel getSocketChannel()
@@ -282,10 +280,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 _workDone = false;
 
                 long currentTime = System.currentTimeMillis();
-                int tick = _ticker.getTimeToNextTick(currentTime);
+                int tick = getTicker().getTimeToNextTick(currentTime);
                 if (tick <= 0)
                 {
-                    _ticker.tick(currentTime);
+                    getTicker().tick(currentTime);
                 }
 
                 _protocolEngine.setMessageAssignmentSuspended(true);

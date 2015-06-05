@@ -59,6 +59,7 @@ import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
@@ -91,6 +92,7 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.SenderClosedException;
 import org.apache.qpid.transport.SenderException;
 import org.apache.qpid.transport.TransportException;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 public class AMQProtocolEngine implements ServerProtocolEngine,
@@ -99,6 +101,7 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
 {
 
 
+    private final AggregateTicker _aggregateTicker;
 
     enum ConnectionState
     {
@@ -118,6 +121,9 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
     private static final String BROKER_DEBUG_BINARY_DATA_LENGTH = "broker.debug.binaryDataLength";
     private static final int DEFAULT_DEBUG_BINARY_DATA_LENGTH = 80;
     private static final long AWAIT_CLOSED_TIMEOUT = 60000;
+
+    private static final long CLOSE_OK_TIMEOUT = 10000l;
+
     private final AmqpPort<?> _port;
     private final long _creationTime;
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
@@ -206,48 +212,16 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
 
     private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
 
-
-    @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        Thread lock = _messageAssignmentSuspended.get();
-        return lock != null && _messageAssignmentSuspended.get() != Thread.currentThread();
-    }
-
-    @Override
-    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
-    {
-        _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
-        for(AMQSessionModel<?,?> session : getSessionModels())
-        {
-            for (Consumer<?> consumer : session.getConsumers())
-            {
-                ConsumerImpl consumerImpl = (ConsumerImpl) consumer;
-                if (!messageAssignmentSuspended)
-                {
-                    consumerImpl.getTarget().notifyCurrentState();
-                }
-                else
-                {
-                    // ensure that by the time the method returns, no consumer can be in the process of
-                    // delivering a message.
-                    consumerImpl.getSendLock();
-                    consumerImpl.releaseSendLock();
-                }
-            }
-        }
-    }
-
-
     public AMQProtocolEngine(Broker<?> broker,
                              final NetworkConnection network,
                              final long connectionId,
                              AmqpPort<?> port,
-                             Transport transport)
+                             Transport transport, final AggregateTicker aggregateTicker)
     {
         _broker = broker;
         _port = port;
         _transport = transport;
+        _aggregateTicker = aggregateTicker;
         _maxNoOfChannels = broker.getConnection_sessionCountLimit();
         _decoder = new BrokerDecoder(this);
         _connectionId = connectionId;
@@ -281,6 +255,44 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
         _messagesReceived = new StatisticsCounter("messages-received-" + _connectionId);
         _dataReceived = new StatisticsCounter("data-received-" + _connectionId);
         _creationTime = System.currentTimeMillis();
+    }
+
+
+    @Override
+    public AggregateTicker getAggregateTicker()
+    {
+        return _aggregateTicker;
+    }
+
+    @Override
+    public boolean isMessageAssignmentSuspended()
+    {
+        Thread lock = _messageAssignmentSuspended.get();
+        return lock != null && _messageAssignmentSuspended.get() != Thread.currentThread();
+    }
+
+    @Override
+    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
+    {
+        _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
+        for(AMQSessionModel<?,?> session : getSessionModels())
+        {
+            for (Consumer<?> consumer : session.getConsumers())
+            {
+                ConsumerImpl consumerImpl = (ConsumerImpl) consumer;
+                if (!messageAssignmentSuspended)
+                {
+                    consumerImpl.getTarget().notifyCurrentState();
+                }
+                else
+                {
+                    // ensure that by the time the method returns, no consumer can be in the process of
+                    // delivering a message.
+                    consumerImpl.getSendLock();
+                    consumerImpl.releaseSendLock();
+                }
+            }
+        }
     }
 
     private <T> T runAsSubject(PrivilegedAction<T> action)
@@ -913,7 +925,10 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
                 }
                 finally
                 {
-                    closeNetworkConnection();
+                    final long timeoutTime = System.currentTimeMillis() + CLOSE_OK_TIMEOUT;
+                    final NetworkConnection network = _network;
+                    _aggregateTicker.addTicker(new ConnectionClosingTicker(timeoutTime, network));
+
                 }
             }
         }
