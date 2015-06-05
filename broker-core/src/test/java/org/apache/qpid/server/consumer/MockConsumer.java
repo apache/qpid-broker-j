@@ -53,11 +53,13 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
+import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.transport.network.Ticker;
 
 public class MockConsumer implements ConsumerTarget
 {
@@ -507,6 +509,18 @@ public class MockConsumer implements ConsumerTarget
         {
 
         }
+
+        @Override
+        public void addTicker(final Ticker ticker)
+        {
+
+        }
+
+        @Override
+        public void removeTicker(final Ticker ticker)
+        {
+
+        }
     }
 
     private static class MockConnectionModel implements AMQConnectionModel
@@ -642,6 +656,12 @@ public class MockConsumer implements ConsumerTarget
         public boolean isMessageAssignmentSuspended()
         {
             return false;
+        }
+
+        @Override
+        public ServerProtocolEngine getProtocolEngine()
+        {
+            return null;
         }
 
         @Override

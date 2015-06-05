@@ -207,6 +207,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         super.setConnectionDelegate(delegate);
     }
 
+    @Override
     public ServerProtocolEngine getProtocolEngine()
     {
         return _serverProtocolEngine;

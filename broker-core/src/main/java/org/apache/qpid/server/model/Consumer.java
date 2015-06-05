@@ -29,6 +29,11 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>
     public String SELECTOR = "selector";
     public String SETTLEMENT_MODE = "settlementMode";
 
+    String SUSPEND_NOTIFICATION_PERIOD = "consumer.suspendNotificationPeriod";
+
+    @ManagedContextDefault( name = SUSPEND_NOTIFICATION_PERIOD)
+    long SUSPEND_NOTIFICATION_PERIOD_DEFAULT = 10000;
+
     @ManagedAttribute
     String getDistributionMode();
 

@@ -30,6 +30,7 @@ import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.util.Deletable;
+import org.apache.qpid.transport.network.Ticker;
 
 /**
  * Session model interface.
@@ -117,4 +118,7 @@ public interface AMQSessionModel<T extends AMQSessionModel<T,C>, C extends AMQCo
     void transportStateChanged();
 
     void processPending();
+
+    void addTicker(Ticker ticker);
+    void removeTicker(Ticker ticker);
 }

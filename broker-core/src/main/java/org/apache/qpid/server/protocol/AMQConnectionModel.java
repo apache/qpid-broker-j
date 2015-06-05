@@ -109,4 +109,6 @@ public interface AMQConnectionModel<T extends AMQConnectionModel<T,S>, S extends
 
     boolean isMessageAssignmentSuspended();
 
+    ServerProtocolEngine getProtocolEngine();
+
 }

@@ -72,15 +72,5 @@ public class ConsumerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "SUB-1002", expected);
     }
 
-    public void testSubscriptionState()
-    {
-        String state = "ACTIVE";
 
-        _logMessage = SubscriptionMessages.STATE(state);
-        List<Object> log = performLog();
-
-        String[] expected = {"State :", state};
-
-        validateLogMessage(log, "SUB-1003", expected);
-    }
 }

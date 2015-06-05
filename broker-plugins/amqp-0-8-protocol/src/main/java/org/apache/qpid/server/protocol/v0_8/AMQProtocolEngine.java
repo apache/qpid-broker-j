@@ -272,6 +272,12 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
     }
 
     @Override
+    public ServerProtocolEngine getProtocolEngine()
+    {
+        return this;
+    }
+
+    @Override
     public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
     {
         _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);

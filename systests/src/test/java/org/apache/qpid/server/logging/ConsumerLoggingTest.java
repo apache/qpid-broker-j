@@ -34,6 +34,7 @@ import javax.jms.Topic;
 import junit.framework.AssertionFailedError;
 
 import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.server.model.Consumer;
 
 /**
  * Subscription
@@ -58,6 +59,7 @@ public class ConsumerLoggingTest extends AbstractTestLogging
     @Override
     public void setUp() throws Exception
     {
+        setSystemProperty(Consumer.SUSPEND_NOTIFICATION_PERIOD, "100");
         super.setUp();
         //Remove broker startup logging messages
         _monitor.markDiscardPoint();
@@ -319,89 +321,26 @@ public class ConsumerLoggingTest extends AbstractTestLogging
         int SEND_COUNT = 16;
         sendMessage(_session, _queue, SEND_COUNT);
         _session.commit();
-        // Retreive the first message, and start the flow of messages
-        Message msg = consumer.receive(1000);
-        assertNotNull("First message not retrieved", msg);
-        _session.commit();
-        
-        // Drain the queue to ensure there is time for the ACTIVE log message
-        // Check that we can received all the messages
-        int receivedCount = 0;
-        while (msg != null)
-        {
-            receivedCount++;
-            msg = consumer.receive(1000);
-            _session.commit();
-        }
 
-        //Validate we received all the messages
-        assertEquals("Not all sent messages received.", SEND_COUNT, receivedCount);
+        Thread.sleep(2000l);
 
-        // Fill the queue again to suspend the consumer
-        sendMessage(_session, _queue, SEND_COUNT);
-        _session.commit();
-
-        //Validate
         List<String> results = waitAndFindMatches("SUB-1003");
 
-        try
-        {
-            // Validation expects three messages.
-            // The Actor can be any one of the following depending on the exactly what is going on on the broker.
-            // Ideally we would test that we can get all of them but setting up
-            // the timing to do this in a consistent way is not beneficial.
-            // Ensuring the State is as expected is sufficient.
-// INFO - MESSAGE [vh(/test)/qu(example.queue)] [sub:6(qu(example.queue))] SUB-1003 : State :
-// INFO - MESSAGE [con:6(guest@anonymous(26562441)/test)/ch:3] [sub:6(qu(example.queue))] SUB-1003 : State :
-// INFO - MESSAGE [sub:6(vh(test)/qu(example.queue))] [sub:6(qu(example.queue))] SUB-1003 : State :
+        assertTrue("Expected at least two suspension messages, but got " + results.size(), results.size() >= 2);
 
-            assertTrue("Result set not expected size:", 3 <= results.size());
+        // Retreive the first message, and start the flow of messages
+        Message msg = consumer.receive(1000);
+        assertNotNull("Message not retrieved", msg);
+        _session.commit();
+        msg = consumer.receive(1000);
+        assertNotNull("Message not retrieved", msg);
+        _session.commit();
 
-            // Validate Initial Suspension
-            String expectedState = "SUSPENDED";
-            String log = getLogMessage(results, 0);
-            validateSubscriptionState(log, expectedState);
+        int count = waitAndFindMatches("SUB-1003").size();
+        Thread.sleep(2000l);
+        assertEquals("More suspension messages were received unexpectedly", count, waitAndFindMatches("SUB-1003").size());
 
-            // After being suspended the subscription should become active.
-            expectedState = "ACTIVE";
-            log = getLogMessage(results, 1);
-            validateSubscriptionState(log, expectedState);
-
-            // Validate that it was re-suspended
-            expectedState = "SUSPENDED";
-            log = getLogMessage(results, 2);
-            validateSubscriptionState(log, expectedState);
-            // We only need validate the state.
-        }
-        catch (AssertionFailedError afe)
-        {
-            System.err.println("Log Dump:");
-            for (String log : results)
-            {
-                System.err.println(log);
-            }
-            throw afe;
-        }
         _connection.close();
-    }
-
-    /**
-     * Validate that the given log statement is a well formatted SUB-1003
-     * message. That means the ID and expected state are correct.
-     *
-     * @param log           the log to test
-     * @param expectedState the state that should be logged.
-     */
-    private void validateSubscriptionState(String log, String expectedState)
-    {
-        validateMessageID("SUB-1003", log);
-        String logMessage = getMessageString(fromMessage(log));
-        assertTrue("Log Message does not start with 'State'" + logMessage,
-                   logMessage.startsWith("State"));
-
-        assertTrue("Log Message does not have expected State of '"
-                   + expectedState + "'" + logMessage,
-                   logMessage.endsWith(expectedState));
     }
 
 }

@@ -114,6 +114,7 @@ import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.TransportException;
+import org.apache.qpid.transport.network.Ticker;
 
 public class AMQChannel
         implements AMQSessionModel<AMQChannel, AMQProtocolEngine>,
@@ -3677,5 +3678,17 @@ public class AMQChannel
         {
             target.processPending();
         }
+    }
+
+    @Override
+    public void addTicker(final Ticker ticker)
+    {
+        getConnection().getAggregateTicker().addTicker(ticker);
+    }
+
+    @Override
+    public void removeTicker(final Ticker ticker)
+    {
+        getConnection().getAggregateTicker().removeTicker(ticker);
     }
 }

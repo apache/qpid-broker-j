@@ -44,6 +44,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
@@ -51,6 +52,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.transport.network.AggregateTicker;
 
 class QueueConsumerImpl
     extends AbstractConfiguredObject<QueueConsumerImpl>
@@ -72,6 +74,8 @@ class QueueConsumerImpl
     private final Object _sessionReference;
     private final AbstractQueue _queue;
 
+    private final SuspendedConsumerLoggingTicker _suspendedConsumerLoggingTicker;
+
     static final EnumMap<ConsumerTarget.State, State> STATE_MAP =
             new EnumMap<ConsumerTarget.State, State>(ConsumerTarget.State.class);
 
@@ -89,7 +93,7 @@ class QueueConsumerImpl
     {
         public void stateChanged(QueueConsumerImpl sub, State oldState, State newState)
         {
-            getEventLogger().message(QueueConsumerImpl.this, SubscriptionMessages.STATE(newState.toString()));
+            // no-op
         }
     };
     @ManagedAttributeField
@@ -103,7 +107,7 @@ class QueueConsumerImpl
     @ManagedAttributeField
     private String _selector;
 
-    QueueConsumerImpl(final AbstractQueue queue,
+    QueueConsumerImpl(final AbstractQueue<?> queue,
                       ConsumerTarget target, final String consumerName,
                       final FilterManager filters,
                       final Class<? extends ServerMessage> messageClass,
@@ -139,6 +143,15 @@ class QueueConsumerImpl
             }
         };
         _target.addStateListener(_listener);
+
+        _suspendedConsumerLoggingTicker = new SuspendedConsumerLoggingTicker(queue.getContextValue(Long.class, Consumer.SUSPEND_NOTIFICATION_PERIOD))
+        {
+            @Override
+            protected void log(final long period)
+            {
+                getEventLogger().message(getLogSubject(), SubscriptionMessages.STATE(period));
+            }
+        };
     }
 
     @Override
@@ -185,9 +198,16 @@ class QueueConsumerImpl
                     getEventLogger().message(getLogSubject(), SubscriptionMessages.CLOSE());
                 }
             }
+
+
+            if(newState == ConsumerTarget.State.SUSPENDED)
+            {
+                _suspendedConsumerLoggingTicker.setStartTime(System.currentTimeMillis());
+                getSessionModel().addTicker(_suspendedConsumerLoggingTicker);
+            }
             else
             {
-                getEventLogger().message(getLogSubject(), SubscriptionMessages.STATE(newState.toString()));
+                getSessionModel().removeTicker(_suspendedConsumerLoggingTicker);
             }
         }
 

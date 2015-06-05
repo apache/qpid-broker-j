@@ -61,12 +61,12 @@ public class SubscriptionMessages
 
     /**
      * Log a Subscription message of the Format:
-     * <pre>SUB-1003 : State : {0}</pre>
+     * <pre>SUB-1003 : Suspended for {0,number} ms</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage STATE(String param1)
+    public static LogMessage STATE(Number param1)
     {
         String rawMessage = _messages.getString("STATE");
 

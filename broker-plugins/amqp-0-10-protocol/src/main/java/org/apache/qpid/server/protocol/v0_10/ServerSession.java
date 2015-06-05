@@ -109,6 +109,7 @@ import org.apache.qpid.transport.RangeSetFactory;
 import org.apache.qpid.transport.Session;
 import org.apache.qpid.transport.SessionDelegate;
 import org.apache.qpid.transport.Xid;
+import org.apache.qpid.transport.network.Ticker;
 
 public class ServerSession extends Session
         implements AuthorizationHolder,
@@ -1159,6 +1160,18 @@ public class ServerSession extends Session
         {
             target.processPending();
         }
+    }
+
+    @Override
+    public void addTicker(final Ticker ticker)
+    {
+        getConnection().getProtocolEngine().getAggregateTicker().addTicker(ticker);
+    }
+
+    @Override
+    public void removeTicker(final Ticker ticker)
+    {
+        getConnection().getProtocolEngine().getAggregateTicker().removeTicker(ticker);
     }
 
 

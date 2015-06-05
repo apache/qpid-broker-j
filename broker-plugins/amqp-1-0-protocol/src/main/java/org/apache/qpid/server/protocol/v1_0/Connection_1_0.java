@@ -394,6 +394,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         return _port;
     }
 
+    @Override
     public ServerProtocolEngine getProtocolEngine()
     {
         return _protocolEngine;

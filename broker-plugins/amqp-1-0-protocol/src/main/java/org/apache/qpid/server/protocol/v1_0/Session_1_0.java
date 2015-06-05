@@ -90,6 +90,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.transport.network.Ticker;
 
 public class Session_1_0 implements SessionEventListener, AMQSessionModel<Session_1_0, Connection_1_0>, LogSubject
 {
@@ -911,6 +912,18 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
 
             ((ConsumerImpl)consumer).getTarget().processPending();
         }
+    }
+
+    @Override
+    public void addTicker(final Ticker ticker)
+    {
+        getConnection().getProtocolEngine().getAggregateTicker().addTicker(ticker);
+    }
+
+    @Override
+    public void removeTicker(final Ticker ticker)
+    {
+        getConnection().getProtocolEngine().getAggregateTicker().removeTicker(ticker);
     }
 
     private void consumerAdded(Consumer<?> consumer)
