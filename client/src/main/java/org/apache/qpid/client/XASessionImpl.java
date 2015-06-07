@@ -59,20 +59,19 @@ public class XASessionImpl extends AMQSession_0_10 implements XASession, XATopic
     public XASessionImpl(org.apache.qpid.transport.Connection qpidConnection, AMQConnection con, int channelId,
                          int defaultPrefetchHigh, int defaultPrefetchLow)
     {
-        this(qpidConnection, con, channelId, false, Session.AUTO_ACKNOWLEDGE,
-             MessageFactoryRegistry.newDefaultRegistry(), defaultPrefetchHigh, defaultPrefetchLow, null);
+        this(qpidConnection, con, channelId, false, Session.AUTO_ACKNOWLEDGE, defaultPrefetchHigh, defaultPrefetchLow, null);
      }
 
      public XASessionImpl(org.apache.qpid.transport.Connection qpidConnection, AMQConnection con, int channelId,
                 int ackMode, int defaultPrefetchHigh, int defaultPrefetchLow)
      {
-        this(qpidConnection, con, channelId, false, ackMode, MessageFactoryRegistry.newDefaultRegistry(),
+        this(qpidConnection, con, channelId, false, ackMode,
                         defaultPrefetchHigh, defaultPrefetchLow, null);
 
      }
 
      public XASessionImpl(org.apache.qpid.transport.Connection qpidConnection, AMQConnection con, int channelId,
-               boolean transacted, int ackMode, MessageFactoryRegistry registry, int defaultPrefetchHigh, int defaultPrefetchLow,
+               boolean transacted, int ackMode, int defaultPrefetchHigh, int defaultPrefetchLow,
                String name)
      {
         super(qpidConnection,
@@ -80,7 +79,6 @@ public class XASessionImpl extends AMQSession_0_10 implements XASession, XATopic
               channelId,
               transacted,
               ackMode,
-              registry,
               defaultPrefetchHigh,
               defaultPrefetchLow,
               name);

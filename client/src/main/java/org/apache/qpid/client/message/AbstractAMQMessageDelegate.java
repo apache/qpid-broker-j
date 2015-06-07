@@ -305,6 +305,9 @@ public abstract class AbstractAMQMessageDelegate implements AMQMessageDelegate
             return generateDestination(exchange, routingKey);
         }
     }
+
+    abstract Object getProperty(String name);
+    abstract boolean hasProperty(String name);
 }
 
 class ExchangeInfo

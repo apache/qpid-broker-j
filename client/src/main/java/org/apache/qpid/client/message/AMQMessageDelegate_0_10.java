@@ -337,7 +337,7 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
         _messageProps.setReplyTo(replyTo);
     }
 
-    public Destination getJMSDestination() throws JMSException
+    public Destination getJMSDestination()
     {
         return _destination;
     }
@@ -994,5 +994,17 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
     public DeliveryProperties getDeliveryProperties()
     {
         return _deliveryProps;
+    }
+
+    @Override
+    Object getProperty(final String name)
+    {
+        return _messageProps.getApplicationHeaders().get(name);
+    }
+
+    @Override
+    boolean hasProperty(final String name)
+    {
+        return _messageProps.getApplicationHeaders().containsKey(name);
     }
 }

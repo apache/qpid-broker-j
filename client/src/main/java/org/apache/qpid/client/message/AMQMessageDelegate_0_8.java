@@ -78,7 +78,7 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
     private BasicContentHeaderProperties _contentHeaderProperties;
 
     // The base set of items that needs to be set. 
-    private AMQMessageDelegate_0_8(BasicContentHeaderProperties properties, long deliveryTag)
+    public AMQMessageDelegate_0_8(BasicContentHeaderProperties properties, long deliveryTag)
     {
         super(deliveryTag);
         _contentHeaderProperties = properties;
@@ -333,7 +333,7 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
         getContentHeaderProperties().setReplyTo(encodedDestination);
     }
 
-    public Destination getJMSDestination() throws JMSException
+    public Destination getJMSDestination()
     {
         return _destination;
     }
@@ -629,6 +629,18 @@ public class AMQMessageDelegate_0_8 extends AbstractAMQMessageDelegate
         getJmsHeaders().clear();
 
         _readableProperties = false;
+    }
+
+    @Override
+    Object getProperty(final String name)
+    {
+        return getContentHeaderProperties().getHeaders().get(name);
+    }
+
+    @Override
+    boolean hasProperty(final String name)
+    {
+        return getContentHeaderProperties().getHeaders().containsKey(name);
     }
 
     private static class DefaultRouterDestination extends AMQDestination implements Queue

@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.url.URLSyntaxException;
 
 public class MockAMQConnection extends AMQConnection

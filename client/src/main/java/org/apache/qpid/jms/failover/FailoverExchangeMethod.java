@@ -24,8 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.AMQAnyDestination;
-import org.apache.qpid.client.AMQBrokerDetails;
-import org.apache.qpid.jms.BrokerDetails;
+import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.jms.Connection;
 import org.apache.qpid.jms.ConnectionURL;
 
@@ -132,11 +131,10 @@ public class FailoverExchangeMethod implements FailoverMethod, MessageListener
                     String[] tokens = url.split(":");
                     if (tokens[0].equalsIgnoreCase(_originalBrokerDetail.getTransport()))
                     {
-                        BrokerDetails broker = new AMQBrokerDetails();
+                        BrokerDetails broker = new BrokerDetails(_originalBrokerDetail);
                         broker.setTransport(tokens[0]);
                         broker.setHost(tokens[1]);
                         broker.setPort(Integer.parseInt(tokens[2]));
-                        broker.setProperties(_originalBrokerDetail.getProperties());
                         brokerList.add(broker);
                         
                         if (currentBrokerIP.equals(broker.getHost()) && 

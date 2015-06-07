@@ -30,8 +30,6 @@ import javax.jms.JMSException;
 
 import junit.framework.TestCase;
 
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.ConnectionURL;
 
 public class AMQConnectionFactoryTest extends TestCase

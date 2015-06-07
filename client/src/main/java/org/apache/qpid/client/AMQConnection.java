@@ -20,12 +20,18 @@
  */
 package org.apache.qpid.client;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -35,27 +41,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.jms.ConnectionConsumer;
-import javax.jms.ConnectionMetaData;
-import javax.jms.Destination;
-import javax.jms.ExceptionListener;
+import javax.jms.*;
 import javax.jms.IllegalStateException;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.Queue;
-import javax.jms.QueueConnection;
-import javax.jms.QueueSession;
-import javax.jms.ServerSessionPool;
-import javax.jms.Topic;
-import javax.jms.TopicConnection;
-import javax.jms.TopicSession;
 import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.naming.Referenceable;
@@ -80,13 +77,12 @@ import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.jms.BrokerDetails;
-import org.apache.qpid.jms.Connection;
 import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jms.FailoverPolicy;
 import org.apache.qpid.jms.Session;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.url.URLSyntaxException;
 
 public class AMQConnection extends Closeable implements CommonConnection, Referenceable
@@ -241,6 +237,11 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
            _logger.debug("Loaded mechanisms " + registry.getMechanisms());
         }
     }
+
+    private ConnectionSettings _connectionSettings;
+    private final ConcurrentMap<String, KeyStore> _brokerTrustStores = new ConcurrentHashMap<>();
+    private Session _brokerTrustStoreSession;
+
     /**
      * @param broker      brokerdetails
      * @param username    username
@@ -257,7 +258,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         this(new AMQConnectionURL(
                 ConnectionURL.AMQ_PROTOCOL + "://" + username + ":" + password + "@"
                 + ((clientName == null) ? "" : clientName) + "/" + virtualHost + "?brokerlist='"
-                + AMQBrokerDetails.checkTransport(broker) + "'"));
+                + BrokerDetails.checkTransport(broker) + "'"));
     }
 
     public AMQConnection(String host, int port, String username, String password, String clientName, String virtualHost)
@@ -518,7 +519,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                 {
                     ConnectionRedirectException redirect = (ConnectionRedirectException) connectionException;
                     retryAllowed = true;
-                    brokerDetails = new AMQBrokerDetails(brokerDetails);
+                    brokerDetails = new BrokerDetails(brokerDetails);
                     brokerDetails.setHost(redirect.getHost());
                     brokerDetails.setPort(redirect.getPort());
                     _protocolHandler.setStateManager(new AMQStateManager(_protocolHandler.getProtocolSession()));
@@ -652,7 +653,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
 
     public boolean attemptReconnection(String host, int port, final boolean useFailoverConfigOnFailure)
     {
-        BrokerDetails bd = new AMQBrokerDetails(_failoverPolicy.getCurrentBrokerDetails());
+        BrokerDetails bd = new BrokerDetails(_failoverPolicy.getCurrentBrokerDetails());
         bd.setHost(host);
         bd.setPort(port);
 
@@ -821,6 +822,76 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                 session.close();
                 _virtualHostPropertiesPopulated = true;
             }
+        }
+    }
+
+    public KeyStore getBrokerSuppliedTrustStore(final String name) throws JMSException
+    {
+        synchronized(_brokerTrustStores)
+        {
+            if(!_brokerTrustStores.containsKey(name))
+            {
+                if(_brokerTrustStoreSession == null)
+                {
+                    _brokerTrustStoreSession = _delegate.createSession(false, AMQSession.AUTO_ACKNOWLEDGE, 1, 1);
+                    try
+                    {
+                        ((AMQSession) _brokerTrustStoreSession).start();
+                    }
+                    catch (AMQException e)
+                    {
+                        throw JMSExceptionHelper.chainJMSException(new JMSException(
+                                "Failed to retrieve virtual host properties"), e);
+                    }
+                }
+                final MessageConsumer consumer = _brokerTrustStoreSession.createConsumer(_brokerTrustStoreSession.createQueue(
+                        "ADDR: " + name + "; {assert: never, create: never, node:{ type: queue }}"));
+                final Message message  = consumer.receive(2000l);
+                if(message != null)
+                {
+                    StreamMessage streamMessage = (StreamMessage) message;
+                    List<X509Certificate> certs = new ArrayList<>();
+                    try
+                    {
+                        try
+                        {
+
+                            final CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+                            byte[] bytes;
+                            while ((bytes = (byte[]) streamMessage.readObject()) != null)
+                            {
+                                certs.add((X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(
+                                        bytes)));
+                            }
+                        }
+                        catch (MessageEOFException e)
+                        {
+                            // end of message
+                        }
+                        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+
+                        char[] encryptionTrustStorePassword =
+                                getConnectionSettings().getEncryptionTrustStorePassword() == null
+                                        ? null
+                                        : getConnectionSettings().getEncryptionTrustStorePassword().toCharArray();
+
+                        keyStore.load(null, encryptionTrustStorePassword);
+                        int i = 1;
+                        for (X509Certificate cert : certs)
+                        {
+                            keyStore.setCertificateEntry(String.valueOf(i++), cert);
+                        }
+                        _brokerTrustStores.put(name, keyStore);
+                    }
+                    catch (JMSException | GeneralSecurityException | IOException e)
+                    {
+                        _logger.error(e.getMessage(), e);
+                    }
+                }
+
+            }
+            return _brokerTrustStores.get(name);
+
         }
     }
 
@@ -1802,4 +1873,13 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         return _virtualHostProperties.get(propertyName);
     }
 
+    public void setConnectionSettings(final ConnectionSettings connectionSettings)
+    {
+        _connectionSettings = connectionSettings;
+    }
+
+    public ConnectionSettings getConnectionSettings()
+    {
+        return _connectionSettings;
+    }
 }

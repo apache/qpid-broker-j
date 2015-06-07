@@ -110,14 +110,27 @@ public class ConnectionSettings
     private String _clientCertificateIntermediateCertsPath;
     private String _trustedCertificatesFile;
 
+    private String _encryptionKeyStorePath = System.getProperty("javax.net.ssl.keyStore");
+    private String _encryptionKeyStorePassword = System.getProperty("javax.net.ssl.keyStorePassword");
+    private String _encryptionKeyStoreType = System.getProperty("javax.net.ssl.keyStoreType",KeyStore.getDefaultType());
+    private String _encryptionKeyManagerFactoryAlgorithm = QpidProperty.stringProperty(KeyManagerFactory.getDefaultAlgorithm(), QPID_SSL_KEY_MANAGER_FACTORY_ALGORITHM_PROP_NAME, QPID_SSL_KEY_STORE_CERT_TYPE_PROP_NAME).get();
+    private String _encryptionTrustManagerFactoryAlgorithm = QpidProperty.stringProperty(TrustManagerFactory.getDefaultAlgorithm(), QPID_SSL_TRUST_MANAGER_FACTORY_ALGORITHM_PROP_NAME, QPID_SSL_TRUST_STORE_CERT_TYPE_PROP_NAME).get();
+    private String _encryptionTrustStorePath = System.getProperty("javax.net.ssl.trustStore");
+    private String _encryptionTrustStorePassword = System.getProperty("javax.net.ssl.trustStorePassword");
+    private String _encryptionTrustStoreType = System.getProperty("javax.net.ssl.trustStoreType",KeyStore.getDefaultType());
+
+    private String _encryptionRemoteTrustStoreName;
+
     // SASL props
     private String saslMechs = System.getProperty("qpid.sasl_mechs", null);
     private String saslProtocol = System.getProperty("qpid.sasl_protocol", "AMQP");
     private String saslServerName = System.getProperty("qpid.sasl_server_name", "localhost");
     private boolean useSASLEncryption;
-   
+
     private Map<String, Object> _clientProperties;
-    
+    private KeyStore _encryptionTrustStore;
+    private KeyStore _encryptionKeyStore;
+
     public boolean isTcpNodelay()
     {
         return tcpNodelay;
@@ -461,6 +474,96 @@ public class ConnectionSettings
         _trustedCertificatesFile = trustedCertificatesFile;
     }
 
+    public String getEncryptionKeyStorePath()
+    {
+        return _encryptionKeyStorePath;
+    }
+
+    public void setEncryptionKeyStorePath(final String encryptionKeyStorePath)
+    {
+        _encryptionKeyStorePath = encryptionKeyStorePath;
+    }
+
+    public String getEncryptionKeyStorePassword()
+    {
+        return _encryptionKeyStorePassword;
+    }
+
+    public void setEncryptionKeyStorePassword(final String encryptionKeyStorePassword)
+    {
+        _encryptionKeyStorePassword = encryptionKeyStorePassword;
+    }
+
+    public String getEncryptionKeyStoreType()
+    {
+        return _encryptionKeyStoreType;
+    }
+
+    public void setEncryptionKeyStoreType(final String encryptionKeyStoreType)
+    {
+        _encryptionKeyStoreType = encryptionKeyStoreType;
+    }
+
+    public String getEncryptionKeyManagerFactoryAlgorithm()
+    {
+        return _encryptionKeyManagerFactoryAlgorithm;
+    }
+
+    public void setEncryptionKeyManagerFactoryAlgorithm(final String encryptionKeyManagerFactoryAlgorithm)
+    {
+        _encryptionKeyManagerFactoryAlgorithm = encryptionKeyManagerFactoryAlgorithm;
+    }
+
+    public String getEncryptionTrustManagerFactoryAlgorithm()
+    {
+        return _encryptionTrustManagerFactoryAlgorithm;
+    }
+
+    public void setEncryptionTrustManagerFactoryAlgorithm(final String encryptionTrustManagerFactoryAlgorithm)
+    {
+        _encryptionTrustManagerFactoryAlgorithm = encryptionTrustManagerFactoryAlgorithm;
+    }
+
+    public String getEncryptionTrustStorePath()
+    {
+        return _encryptionTrustStorePath;
+    }
+
+    public void setEncryptionTrustStorePath(final String encryptionTrustStorePath)
+    {
+        _encryptionTrustStorePath = encryptionTrustStorePath;
+    }
+
+    public String getEncryptionTrustStorePassword()
+    {
+        return _encryptionTrustStorePassword;
+    }
+
+    public void setEncryptionTrustStorePassword(final String encryptionTrustStorePassword)
+    {
+        _encryptionTrustStorePassword = encryptionTrustStorePassword;
+    }
+
+    public String getEncryptionTrustStoreType()
+    {
+        return _encryptionTrustStoreType;
+    }
+
+    public void setEncryptionTrustStoreType(final String encryptionTrustStoreType)
+    {
+        _encryptionTrustStoreType = encryptionTrustStoreType;
+    }
+
+    public String getEncryptionRemoteTrustStoreName()
+    {
+        return _encryptionRemoteTrustStoreName;
+    }
+
+    public void setEncryptionRemoteTrustStoreName(final String encryptionRemoteTrustStoreName)
+    {
+        _encryptionRemoteTrustStoreName = encryptionRemoteTrustStoreName;
+    }
+
     public int getConnectTimeout()
     {
         return connectTimeout;
@@ -590,5 +693,38 @@ public class ConnectionSettings
             tmf.init(inMemoryKeyStore);
             return tmf.getTrustManagers();
         }
+    }
+
+    public interface RemoteStoreFinder
+    {
+        public KeyStore getKeyStore(String name) throws GeneralSecurityException, IOException;
+    }
+
+    public synchronized KeyStore getEncryptionTrustStore(final RemoteStoreFinder storeFinder) throws GeneralSecurityException, IOException
+    {
+        if(_encryptionTrustStore == null)
+        {
+            if (_encryptionTrustStorePath != null)
+            {
+                _encryptionTrustStore = SSLUtil.getInitializedKeyStore(getEncryptionTrustStorePath(),
+                                                                       getEncryptionTrustStorePassword(),
+                                                                       getEncryptionTrustStoreType());
+            }
+            else if(_encryptionRemoteTrustStoreName != null)
+            {
+                return storeFinder.getKeyStore(_encryptionRemoteTrustStoreName);
+            }
+        }
+        return _encryptionTrustStore;
+    }
+
+
+    public synchronized KeyStore getEncryptionKeyStore() throws GeneralSecurityException, IOException
+    {
+        if(_encryptionKeyStore == null && _encryptionKeyStorePath != null)
+        {
+            _encryptionKeyStore = SSLUtil.getInitializedKeyStore(getEncryptionKeyStorePath(), getEncryptionKeyStorePassword(), getEncryptionKeyStoreType());
+        }
+        return _encryptionKeyStore;
     }
 }

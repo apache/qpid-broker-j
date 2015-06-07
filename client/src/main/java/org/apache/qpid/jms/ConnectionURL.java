@@ -22,6 +22,8 @@ package org.apache.qpid.jms;
 
 import java.util.List;
 
+import org.apache.qpid.client.BrokerDetails;
+
 /**
  Connection URL format
  {@literal amqp://[user:pass@][clientid]/virtualhost?brokerlist='tcp://host:port?option=\'value\'&option=\'value\';tcp://host:port/virtualpath?option=\'value\''&failover='method?option=\'value\'&option='value''" }

@@ -42,7 +42,7 @@ import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.util.GZIPUtils;
 
-public abstract class AbstractJMSMessageFactory implements MessageFactory
+public abstract class AbstractJMSMessageFactory
 {
     private static final Logger _logger = LoggerFactory.getLogger(AbstractJMSMessageFactory.class);
 
@@ -117,15 +117,15 @@ public abstract class AbstractJMSMessageFactory implements MessageFactory
                     .remaining());
         }
 
-        AMQMessageDelegate delegate = new AMQMessageDelegate_0_8(messageNbr,
-                                                                 contentHeader.getProperties(),
-                                                                 exchange, routingKey, queueDestinationCache,
-                                                                 topicDestinationCache, addressType);
+        AMQMessageDelegate_0_8 delegate = new AMQMessageDelegate_0_8(messageNbr,
+                                                                     contentHeader.getProperties(),
+                                                                     exchange, routingKey, queueDestinationCache,
+                                                                     topicDestinationCache, addressType);
 
         return createMessage(delegate, data);
     }
 
-    protected abstract AbstractJMSMessage createMessage(AMQMessageDelegate delegate, ByteBuffer data) throws AMQException;
+    protected abstract AbstractJMSMessage createMessage(AbstractAMQMessageDelegate delegate, ByteBuffer data) throws AMQException;
 
 
     protected AbstractJMSMessage create010MessageWithBody(long messageNbr, MessageProperties msgProps,
@@ -159,13 +159,12 @@ public abstract class AbstractJMSMessageFactory implements MessageFactory
                 data = ByteBuffer.wrap(uncompressed);
             }
         }
-        AMQMessageDelegate delegate = new AMQMessageDelegate_0_10(msgProps, deliveryProps, messageNbr);
+        AMQMessageDelegate_0_10 delegate = new AMQMessageDelegate_0_10(msgProps, deliveryProps, messageNbr);
 
         AbstractJMSMessage message = createMessage(delegate, data);
         return message;
     }
 
-    @Override
     public AbstractJMSMessage createMessage(long messageNbr, boolean redelivered, ContentHeaderBody contentHeader,
                                             String exchange, String routingKey, List bodies,
                                                          AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,

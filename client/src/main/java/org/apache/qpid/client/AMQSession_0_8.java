@@ -102,44 +102,25 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     /**
      * Creates a new session on a connection.
-     *
      * @param con                     The connection on which to create the session.
      * @param channelId               The unique identifier for the session.
      * @param transacted              Indicates whether or not the session is transactional.
      * @param acknowledgeMode         The acknowledgement mode for the session.
-     * @param messageFactoryRegistry  The message factory factory for the session.
      * @param defaultPrefetchHighMark The maximum number of messages to prefetched before suspending the session.
      * @param defaultPrefetchLowMark  The number of prefetched messages at which to resume the session.
      */
-    protected AMQSession_0_8(AMQConnection con, int channelId, boolean transacted, int acknowledgeMode,
-                             MessageFactoryRegistry messageFactoryRegistry, int defaultPrefetchHighMark, int defaultPrefetchLowMark)
+    protected AMQSession_0_8(AMQConnection con,
+                             int channelId,
+                             boolean transacted,
+                             int acknowledgeMode,
+                             int defaultPrefetchHighMark,
+                             int defaultPrefetchLowMark)
     {
 
-        super(con,channelId,transacted,acknowledgeMode,messageFactoryRegistry,defaultPrefetchHighMark,defaultPrefetchLowMark);
+        super(con,channelId,transacted,acknowledgeMode, defaultPrefetchHighMark,defaultPrefetchLowMark);
         _currentPrefetch.set(0);
     }
 
-    /**
-     * Creates a new session on a connection with the default message factory factory.
-     *
-     * @param con                     The connection on which to create the session.
-     * @param channelId               The unique identifier for the session.
-     * @param transacted              Indicates whether or not the session is transactional.
-     * @param acknowledgeMode         The acknowledgement mode for the session.
-     * @param defaultPrefetchHigh     The maximum number of messages to prefetched before suspending the session.
-     * @param defaultPrefetchLow      The number of prefetched messages at which to resume the session.
-     */
-    AMQSession_0_8(AMQConnection con, int channelId, boolean transacted, int acknowledgeMode, int defaultPrefetchHigh,
-               int defaultPrefetchLow)
-    {
-        this(con,
-             channelId,
-             transacted,
-             acknowledgeMode,
-             MessageFactoryRegistry.newDefaultRegistry(),
-             defaultPrefetchHigh,
-             defaultPrefetchLow);
-    }
 
     ProtocolVersion getProtocolVersion()
     {

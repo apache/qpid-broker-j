@@ -21,7 +21,7 @@
 package org.apache.qpid.client.url;
 
 
-import org.apache.qpid.client.AMQBrokerDetails;
+import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.url.URLHelper;
@@ -197,7 +197,9 @@ public class URLParser
             {
                 String broker = st.nextToken();
 
-                _url.addBrokerDetails(new AMQBrokerDetails(broker));
+                final BrokerDetails brokerDetails = new BrokerDetails(broker);
+                brokerDetails.setConnectionUrl(_url);
+                _url.addBrokerDetails(brokerDetails);
             }
 
             _url.getOptions().remove(AMQConnectionURL.OPTIONS_BROKERLIST);

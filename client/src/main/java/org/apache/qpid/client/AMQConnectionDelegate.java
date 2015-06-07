@@ -29,7 +29,6 @@ import org.apache.qpid.AMQException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.Session;
 
 public interface AMQConnectionDelegate

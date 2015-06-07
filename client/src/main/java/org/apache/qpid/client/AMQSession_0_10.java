@@ -140,17 +140,15 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
      * @param channelId               The unique identifier for the session.
      * @param transacted              Indicates whether or not the session is transactional.
      * @param acknowledgeMode         The acknowledgement mode for the session.
-     * @param messageFactoryRegistry  The message factory factory for the session.
      * @param defaultPrefetchHighMark The maximum number of messages to prefetched before suspending the session.
      * @param defaultPrefetchLowMark  The number of prefetched messages at which to resume the session.
      * @param qpidConnection          The qpid connection
      */
     AMQSession_0_10(org.apache.qpid.transport.Connection qpidConnection, AMQConnection con, int channelId,
-                    boolean transacted, int acknowledgeMode, MessageFactoryRegistry messageFactoryRegistry,
-                    int defaultPrefetchHighMark, int defaultPrefetchLowMark,String name)
+                    boolean transacted, int acknowledgeMode, int defaultPrefetchHighMark, int defaultPrefetchLowMark,String name)
     {
 
-        super(con, channelId, transacted, acknowledgeMode, messageFactoryRegistry, defaultPrefetchHighMark,
+        super(con, channelId, transacted, acknowledgeMode, defaultPrefetchHighMark,
               defaultPrefetchLowMark);
         _qpidConnection = qpidConnection;
         _name = name;
@@ -182,27 +180,6 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         qpidSession.setSessionListener(this);
 
         return qpidSession;
-    }
-
-
-    /**
-     * Creates a new session on a connection with the default 0-10 message factory.
-     *
-     * @param con                 The connection on which to create the session.
-     * @param channelId           The unique identifier for the session.
-     * @param transacted          Indicates whether or not the session is transactional.
-     * @param acknowledgeMode     The acknowledgement mode for the session.
-     * @param defaultPrefetchHigh The maximum number of messages to prefetched before suspending the session.
-     * @param defaultPrefetchLow  The number of prefetched messages at which to resume the session.
-     * @param qpidConnection      The connection
-     */
-    AMQSession_0_10(org.apache.qpid.transport.Connection qpidConnection, AMQConnection con, int channelId,
-                    boolean transacted, int acknowledgeMode, int defaultPrefetchHigh, int defaultPrefetchLow,
-                    String name)
-    {
-
-        this(qpidConnection, con, channelId, transacted, acknowledgeMode, MessageFactoryRegistry.newDefaultRegistry(),
-             defaultPrefetchHigh, defaultPrefetchLow,name);
     }
 
     private void addUnacked(int id)

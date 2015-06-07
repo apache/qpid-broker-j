@@ -21,7 +21,9 @@ package org.apache.qpid.transport;
  */
 
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.transport.codec.Decoder;
@@ -71,6 +73,34 @@ public final class DeliveryProperties extends Struct {
 
 
     public DeliveryProperties() {}
+
+
+    public DeliveryProperties(final DeliveryProperties deliveryProp)
+    {
+        this(deliveryProp.getPriority(), deliveryProp.getDeliveryMode(),
+             deliveryProp.getTtl(), deliveryProp.getTimestamp(),
+             deliveryProp.getExpiration(), deliveryProp.getExchange(),
+             deliveryProp.getRoutingKey(), deliveryProp.getResumeId(),
+             deliveryProp.getResumeTtl(), getOptions(deliveryProp));
+    }
+
+    private static Option[] getOptions(final DeliveryProperties deliveryProp)
+    {
+        List<Option> optionList = new ArrayList<>();
+        if(deliveryProp.getDiscardUnroutable())
+        {
+            optionList.add(Option.DISCARD_UNROUTABLE);
+        }
+        if(deliveryProp.getImmediate())
+        {
+            optionList.add(Option.DISCARD_UNROUTABLE);
+        }
+        if(deliveryProp.getRedelivered())
+        {
+            optionList.add(Option.REDELIVERED);
+        }
+        return optionList.toArray(new Option[optionList.size()]);
+    }
 
 
     public DeliveryProperties(MessageDeliveryPriority priority, MessageDeliveryMode deliveryMode, long ttl, long timestamp, long expiration, String exchange, String routingKey, String resumeId, long resumeTtl, Option ... _options) {

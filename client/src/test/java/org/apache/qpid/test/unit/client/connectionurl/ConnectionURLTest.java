@@ -28,9 +28,8 @@ import java.io.Serializable;
 
 import junit.framework.TestCase;
 
-import org.apache.qpid.client.AMQBrokerDetails;
+import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.url.URLSyntaxException;
 
@@ -428,7 +427,7 @@ public class ConnectionURLTest extends TestCase
         AMQConnectionURL connection = new AMQConnectionURL(url);
 
         BrokerDetails broker = connection.getBrokerDetails(0);
-        assertTrue(broker.getPort() == AMQBrokerDetails.DEFAULT_PORT);
+        assertTrue(broker.getPort() == BrokerDetails.DEFAULT_PORT);
 
     }
 

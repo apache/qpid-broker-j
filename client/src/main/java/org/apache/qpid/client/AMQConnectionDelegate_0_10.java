@@ -43,7 +43,6 @@ import org.apache.qpid.client.transport.ClientConnectionDelegate;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.ChannelLimitReachedException;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jms.Session;
@@ -229,6 +228,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
             _conn.setMaximumChannelCount(_qpidConnection.getChannelMax());
             _conn.getFailoverPolicy().attainedConnection();
             _conn.logConnected(_qpidConnection.getLocalAddress(), _qpidConnection.getRemoteAddress());
+            _conn.setConnectionSettings(conSettings);
         }
         catch (ProtocolVersionException pe)
         {

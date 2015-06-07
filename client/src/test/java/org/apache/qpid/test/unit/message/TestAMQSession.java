@@ -44,7 +44,7 @@ public class TestAMQSession extends AMQSession_0_8
 
     public TestAMQSession(AMQConnection connection)
     {
-        super(connection, 0, false, AUTO_ACKNOWLEDGE, null, 0, 0);
+        super(connection, 0, false, AUTO_ACKNOWLEDGE, 0, 0);
     }
 
     public void acknowledgeMessage(long deliveryTag, boolean multiple)

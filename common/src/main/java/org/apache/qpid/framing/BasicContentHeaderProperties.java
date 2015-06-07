@@ -318,6 +318,143 @@ public class BasicContentHeaderProperties
         }
     }
 
+    public int read(DataInput input) throws IOException
+    {
+
+        _propertyFlags = input.readUnsignedShort();
+        int length = 2;
+        if ((_propertyFlags & (CONTENT_TYPE_MASK)) != 0)
+        {
+            length++;
+            _contentType = EncodingUtils.readAMQShortString(input);
+            if(_contentType != null)
+            {
+                length += _contentType.length();
+            }
+        }
+
+        if ((_propertyFlags & ENCODING_MASK) != 0)
+        {
+            length++;
+            _encoding = EncodingUtils.readAMQShortString(input);
+            if(_encodedForm != null)
+            {
+                length += _encoding.length();
+            }
+        }
+
+        if ((_propertyFlags & HEADERS_MASK) != 0)
+        {
+            int fieldTableLength = input.readInt();
+
+            _headers = new FieldTable(input, fieldTableLength);
+
+            length += 4;
+            length += fieldTableLength;
+        }
+
+        if ((_propertyFlags & DELIVERY_MODE_MASK) != 0)
+        {
+            _deliveryMode = input.readByte();
+            length++;
+        }
+
+        if ((_propertyFlags & PRIORITY_MASK) != 0)
+        {
+            _priority = input.readByte();
+            length++;
+        }
+
+        if ((_propertyFlags & CORRELATION_ID_MASK) != 0)
+        {
+            length++;
+            _correlationId = EncodingUtils.readAMQShortString(input);
+            if(_correlationId != null)
+            {
+                length += _correlationId.length();
+            }
+        }
+
+        if ((_propertyFlags & REPLY_TO_MASK) != 0)
+        {
+            length++;
+            _replyTo = EncodingUtils.readAMQShortString(input);
+            if(_replyTo != null)
+            {
+                length += _replyTo.length();
+            }
+        }
+
+        if ((_propertyFlags & EXPIRATION_MASK) != 0)
+        {
+            length++;
+            AMQShortString expiration = EncodingUtils.readAMQShortString(input);
+            if(expiration != null)
+            {
+                length += expiration.length();
+                _expiration = Long.parseLong(expiration.toString());
+            }
+        }
+
+        if ((_propertyFlags & MESSAGE_ID_MASK) != 0)
+        {
+            length++;
+            _messageId = EncodingUtils.readAMQShortString(input);
+            if(_messageId != null)
+            {
+                length += _messageId.length();
+            }
+        }
+
+        if ((_propertyFlags & TIMESTAMP_MASK) != 0)
+        {
+            _timestamp = input.readLong();
+            length += 8;
+        }
+
+        if ((_propertyFlags & TYPE_MASK) != 0)
+        {
+            length++;
+            _type = EncodingUtils.readAMQShortString(input);
+            if(_type != null)
+            {
+                length += _type.length();
+            }
+        }
+
+        if ((_propertyFlags & USER_ID_MASK) != 0)
+        {
+            length++;
+            _userId = EncodingUtils.readAMQShortString(input);
+            if(_userId != null)
+            {
+                length += _userId.length();
+            }
+        }
+
+        if ((_propertyFlags & APPLICATION_ID_MASK) != 0)
+        {
+            length++;
+            _appId = EncodingUtils.readAMQShortString(input);
+            if(_appId != null)
+            {
+                length += _appId.length();
+            }
+        }
+
+        if ((_propertyFlags & CLUSTER_ID_MASK) != 0)
+        {
+            length++;
+            _clusterId = EncodingUtils.readAMQShortString(input);
+            if(_clusterId != null)
+            {
+                length += _clusterId.length();
+            }
+        }
+
+        return length;
+    }
+
 
     public long writePropertyListPayload(final ByteBufferSender sender) throws IOException
     {

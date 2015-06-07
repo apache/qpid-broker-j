@@ -23,6 +23,7 @@ package org.apache.qpid.jms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.jms.failover.FailoverExchangeMethod;
 import org.apache.qpid.jms.failover.FailoverMethod;
 import org.apache.qpid.jms.failover.FailoverRoundRobinServers;

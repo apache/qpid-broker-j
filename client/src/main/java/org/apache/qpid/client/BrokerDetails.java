@@ -27,32 +27,80 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.url.URLHelper;
 import org.apache.qpid.url.URLSyntaxException;
 
-public class AMQBrokerDetails implements BrokerDetails, Serializable
+public class BrokerDetails implements Serializable
 {
-    private static final long serialVersionUID = 8450786374975932890L;
+    /*
+     * Known URL Options
+     * @see ConnectionURL
+    */
+    public static final String OPTIONS_RETRY = "retries";
+    public static final String OPTIONS_CONNECT_TIMEOUT = "connecttimeout";
+    public static final String OPTIONS_CONNECT_DELAY = "connectdelay";
+    public static final String OPTIONS_HEARTBEAT = "heartbeat";
+    @Deprecated
+    public static final String OPTIONS_IDLE_TIMEOUT = "idle_timeout";
+    public static final String OPTIONS_SASL_MECHS = "sasl_mechs";
+    public static final String OPTIONS_SASL_ENCRYPTION = "sasl_encryption";
+    public static final String OPTIONS_SSL = "ssl";
+    public static final String OPTIONS_TCP_NO_DELAY = "tcp_nodelay";
+    public static final String OPTIONS_SASL_PROTOCOL_NAME = "sasl_protocol";
+    public static final String OPTIONS_SASL_SERVER_NAME = "sasl_server";
+    public static final String OPTIONS_TRUST_STORE = "trust_store";
+    public static final String OPTIONS_TRUST_STORE_PASSWORD = "trust_store_password";
+    public static final String OPTIONS_KEY_STORE = "key_store";
+    public static final String OPTIONS_KEY_STORE_PASSWORD = "key_store_password";
+    public static final String OPTIONS_SSL_VERIFY_HOSTNAME = "ssl_verify_hostname";
+    public static final String OPTIONS_SSL_CERT_ALIAS = "ssl_cert_alias";
+    public static final String OPTIONS_CLIENT_CERT_PRIV_KEY_PATH = "client_cert_priv_key_path";
+    public static final String OPTIONS_CLIENT_CERT_PATH = "client_cert_path";
+    public static final String OPTIONS_CLIENT_CERT_INTERMEDIARY_CERT_PATH = "client_cert_intermediary_cert_path" ;
+    public static final String OPTIONS_TRUSTED_CERTIFICATES_PATH = "trusted_certs_path";
 
+    public static final String OPTIONS_ENCRYPTION_TRUST_STORE = "encryption_trust_store";
+    public static final String OPTIONS_ENCRYPTION_TRUST_STORE_PASSWORD = "encryption_trust_store_password";
+    public static final String OPTIONS_ENCRYPTION_REMOTE_TRUST_STORE = "encryption_remote_trust_store";
+    public static final String OPTIONS_ENCRYPTION_KEY_STORE = "encryption_key_store";
+    public static final String OPTIONS_ENCRYPTION_KEY_STORE_PASSWORD = "encryption_key_store_password";
+
+
+    public static final int DEFAULT_PORT = 5672;
+    public static final String TCP = "tcp";
+    public static final String DEFAULT_TRANSPORT = BrokerDetails.TCP;
+    public static final String URL_FORMAT_EXAMPLE =
+            "<transport>://<hostname>[:<port Default=\"" + BrokerDetails.DEFAULT_PORT + "\">][?<option>='<value>'[,<option>='<value>']]";
+    public static final int DEFAULT_CONNECT_TIMEOUT = 30000;
+    public static final boolean USE_SSL_DEFAULT = false;
+    // pulled these properties from the new BrokerDetails class in the qpid package
+    public static final String PROTOCOL_TCP = "tcp";
+    public static final String PROTOCOL_TLS = "tls";
+    public static final String VIRTUAL_HOST = "virtualhost";
+    public static final String CLIENT_ID = "client_id";
+    public static final String USERNAME = "username";
+    public static final String PASSWORD = "password";
+    private static final long serialVersionUID = 8762219750300869355L;
     private String _host;
     private int _port;
     private String _transport;
 
     private Map<String, String> _options = new HashMap<String, String>();
+    private AMQConnectionURL _connectionUrl;
 
-    public AMQBrokerDetails(BrokerDetails details)
+    public BrokerDetails(BrokerDetails details)
     {
         _host = details.getHost();
         _port = details.getPort();
         _transport = details.getTransport();
-        _options = new HashMap<>(details.getProperties());
+        _options = new HashMap<>(details._options);
+        _connectionUrl = details._connectionUrl;
     }
 
-    public AMQBrokerDetails(){}
+    public BrokerDetails(){}
     
-    public AMQBrokerDetails(String url) throws URLSyntaxException
+    public BrokerDetails(String url) throws URLSyntaxException
     {        
       
         // URL should be of format tcp://host:port?option='value',option='value'
@@ -210,7 +258,7 @@ public class AMQBrokerDetails implements BrokerDetails, Serializable
         }
     }
 
-    public AMQBrokerDetails(String host, int port)
+    public BrokerDetails(String host, int port)
     {
         _host = host;
         _port = port;
@@ -249,7 +297,12 @@ public class AMQBrokerDetails implements BrokerDetails, Serializable
 
     public String getProperty(String key)
     {
-        return _options.get(key);
+        String value = _options.get(key);
+        if(value == null && _connectionUrl != null)
+        {
+            value = _connectionUrl.getOption(key);
+        }
+        return value;
     }
 
     public void setProperty(String key, String value)
@@ -402,16 +455,6 @@ public class AMQBrokerDetails implements BrokerDetails, Serializable
         }
     }
 
-    public Map<String, String> getProperties()
-    {
-        return _options;
-    }
-
-    public void setProperties(Map<String, String> props)
-    {
-        _options = props;
-    }
-
     public ConnectionSettings buildConnectionSettings()
     {
         ConnectionSettings conSettings = new ConnectionSettings();
@@ -508,6 +551,42 @@ public class AMQBrokerDetails implements BrokerDetails, Serializable
                     String.valueOf(ClientProperties.DEFAULT_CONNECTION_OPTION_SSL_VERIFY_HOST_NAME)));
         conSettings.setVerifyHostname(getBooleanProperty(BrokerDetails.OPTIONS_SSL_VERIFY_HOSTNAME, defaultSSLVerifyHostName ));
 
+        // ----------------------------
+
+        if (getProperty(BrokerDetails.OPTIONS_ENCRYPTION_KEY_STORE) != null)
+        {
+            conSettings.setEncryptionKeyStorePath(
+                    getProperty(BrokerDetails.OPTIONS_ENCRYPTION_KEY_STORE));
+        }
+
+        if (getProperty(BrokerDetails.OPTIONS_ENCRYPTION_KEY_STORE_PASSWORD) != null)
+        {
+            conSettings.setEncryptionKeyStorePassword(
+                    getProperty(BrokerDetails.OPTIONS_ENCRYPTION_KEY_STORE_PASSWORD));
+        }
+
+
+        if (getProperty(BrokerDetails.OPTIONS_ENCRYPTION_TRUST_STORE) != null)
+        {
+            conSettings.setEncryptionTrustStorePath(
+                    getProperty(BrokerDetails.OPTIONS_ENCRYPTION_TRUST_STORE));
+        }
+
+        if (getProperty(BrokerDetails.OPTIONS_ENCRYPTION_TRUST_STORE_PASSWORD) != null)
+        {
+            conSettings.setEncryptionKeyStorePassword(
+                    getProperty(BrokerDetails.OPTIONS_ENCRYPTION_TRUST_STORE_PASSWORD));
+        }
+
+
+        if (getProperty(BrokerDetails.OPTIONS_ENCRYPTION_REMOTE_TRUST_STORE) != null)
+        {
+            conSettings.setEncryptionRemoteTrustStoreName(
+                    getProperty(BrokerDetails.OPTIONS_ENCRYPTION_REMOTE_TRUST_STORE));
+        }
+
+        // ----------------------------
+
         if (getProperty(BrokerDetails.OPTIONS_TCP_NO_DELAY) != null)
         {
             conSettings.setTcpNodelay(
@@ -528,4 +607,8 @@ public class AMQBrokerDetails implements BrokerDetails, Serializable
         return conSettings;
     }
 
+    public void setConnectionUrl(final AMQConnectionURL connectionUrl)
+    {
+        _connectionUrl = connectionUrl;
+    }
 }

@@ -73,6 +73,14 @@ public final class MessageProperties extends Struct {
     public MessageProperties() {}
 
 
+    public MessageProperties(final MessageProperties messageProps)
+    {
+        this(messageProps.getContentLength(), messageProps.getMessageId(), messageProps.getCorrelationId(),
+             messageProps.getReplyTo(), messageProps.getContentType(), messageProps.getContentEncoding(),
+             messageProps.getUserId(), messageProps.getAppId(),
+             messageProps.getApplicationHeaders() == null ? null :new LinkedHashMap<>(messageProps.getApplicationHeaders()));
+    }
+
     public MessageProperties(long contentLength, java.util.UUID messageId, byte[] correlationId, ReplyTo replyTo, String contentType, String contentEncoding, byte[] userId, byte[] appId, Map<String,Object> applicationHeaders) {
         setContentLength(contentLength);
         if(messageId != null) {

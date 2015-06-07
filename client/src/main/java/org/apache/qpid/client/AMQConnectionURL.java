@@ -21,7 +21,6 @@
 package org.apache.qpid.client;
 
 import org.apache.qpid.client.url.URLParser;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.url.URLHelper;
 import org.apache.qpid.url.URLSyntaxException;

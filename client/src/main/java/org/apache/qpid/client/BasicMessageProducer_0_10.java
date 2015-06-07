@@ -21,11 +21,18 @@ import static org.apache.qpid.transport.Option.NONE;
 import static org.apache.qpid.transport.Option.SYNC;
 import static org.apache.qpid.transport.Option.UNRELIABLE;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.crypto.spec.SecretKeySpec;
 import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
 import javax.jms.Message;
@@ -37,6 +44,8 @@ import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQDestination.DestSyntax;
 import org.apache.qpid.client.message.AMQMessageDelegate_0_10;
 import org.apache.qpid.client.message.AbstractJMSMessage;
+import org.apache.qpid.client.message.Encrypted010MessageFactory;
+import org.apache.qpid.client.message.MessageEncryptionHelper;
 import org.apache.qpid.client.message.QpidMessageProperties;
 import org.apache.qpid.client.messaging.address.Link.Reliability;
 import org.apache.qpid.client.util.JMSExceptionHelper;
@@ -48,6 +57,8 @@ import org.apache.qpid.transport.MessageDeliveryMode;
 import org.apache.qpid.transport.MessageDeliveryPriority;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.Option;
+import org.apache.qpid.transport.codec.BBEncoder;
+import org.apache.qpid.util.BytesDataOutput;
 import org.apache.qpid.util.GZIPUtils;
 import org.apache.qpid.util.Strings;
 
@@ -206,21 +217,125 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
         }
 
         ByteBuffer data = message.getData();
-
-        if(data != null
-           && data.remaining() > getConnection().getMessageCompressionThresholdSize()
-           && getConnection().getDelegate().isMessageCompressionSupported()
-           && getConnection().isMessageCompressionDesired()
-           && messageProps.getContentEncoding() == null)
+        boolean encrypt = message.getBooleanProperty(MessageEncryptionHelper.ENCRYPT_HEADER) || destination.sendEncrypted();
+        if(encrypt)
         {
-            byte[] compressed = GZIPUtils.compressBufferToArray(data);
-            if(compressed != null)
+            MessageEncryptionHelper encryptionHelper = getSession().getMessageEncryptionHelper();
+            try
             {
-                messageProps.setContentEncoding(GZIPUtils.GZIP_CONTENT_ENCODING);
-                data = ByteBuffer.wrap(compressed);
+                MessageProperties origMessageProps = messageProps;
+                DeliveryProperties origDeliveryProps = deliveryProp;
+                messageProps = new MessageProperties(messageProps);
+                deliveryProp = new DeliveryProperties(deliveryProp);
+                SecretKeySpec secretKey = encryptionHelper.createSecretKey();
+
+                final Map<String, Object> origApplicationHeaders = origMessageProps.getApplicationHeaders();
+                if(origApplicationHeaders != null)
+                {
+                    origApplicationHeaders.remove(MessageEncryptionHelper.ENCRYPT_HEADER);
+                }
+
+                String recipientString = message.getStringProperty(MessageEncryptionHelper.ENCRYPT_RECIPIENTS_HEADER);
+                if(recipientString == null)
+                {
+                    recipientString = destination.getEncryptedRecipients();
+                }
+                if(origApplicationHeaders != null)
+                {
+                    origApplicationHeaders.remove(MessageEncryptionHelper.ENCRYPT_RECIPIENTS_HEADER);
+                }
+
+                String unencryptedProperties = message.getStringProperty(MessageEncryptionHelper.UNENCRYPTED_PROPERTIES_HEADER);
+                if(origApplicationHeaders != null)
+                {
+                    origApplicationHeaders.remove(MessageEncryptionHelper.UNENCRYPTED_PROPERTIES_HEADER);
+                }
+
+                BBEncoder encoder = new BBEncoder(1024);
+                encoder.writeStruct32(origDeliveryProps);
+                encoder.writeStruct32(origMessageProps);
+                ByteBuffer buf = encoder.buffer();
+
+                final int headerLength = buf.remaining();
+                byte[] unencryptedBytes = new byte[headerLength + (data == null ? 0 : data.remaining())];
+                BytesDataOutput output = new BytesDataOutput(unencryptedBytes);
+
+                output.write(buf.array(), buf.arrayOffset()+buf.position(), buf.remaining());
+
+                if (data != null)
+                {
+                    data.get(unencryptedBytes, headerLength, data.remaining());
+                }
+
+                byte[] ivbytes = encryptionHelper.getInitialisationVector();
+
+                byte[] encryptedBytes = encryptionHelper.encrypt(secretKey, unencryptedBytes, ivbytes);
+                data = ByteBuffer.wrap(encryptedBytes);
+
+                if (recipientString == null)
+                {
+                    throw new JMSException("When sending an encrypted message, recipients must be supplied");
+                }
+                String[] recipients = recipientString.split(";");
+                List<List<Object>> encryptedKeys = new ArrayList<>();
+                for(MessageEncryptionHelper.KeyTransportRecipientInfo info : encryptionHelper.getKeyTransportRecipientInfo(
+                        Arrays.asList(recipients), secretKey))
+                {
+                    encryptedKeys.add(info.asList());
+                }
+
+                Map<String,Object>  newHeaders = messageProps.getApplicationHeaders();
+                if(newHeaders != null)
+                {
+                    newHeaders.clear();
+                }
+                else
+                {
+                    newHeaders = new LinkedHashMap<>();
+                    messageProps.setApplicationHeaders(newHeaders);
+                }
+
+                if(unencryptedProperties != null)
+                {
+                    List<String> unencryptedPropertyNames = Arrays.asList(unencryptedProperties.split(" *; *"));
+                    for (String propertyName : unencryptedPropertyNames)
+                    {
+                        if (origApplicationHeaders.containsKey(propertyName))
+                        {
+                            newHeaders.put(propertyName, origApplicationHeaders.get(propertyName));
+                        }
+                    }
+                }
+
+                newHeaders.put(MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY, encryptedKeys);
+                newHeaders.put(MessageEncryptionHelper.ENCRYPTION_ALGORITHM_PROPERTY,
+                               encryptionHelper.getMessageEncryptionCipherName());
+                newHeaders.put(MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY, ivbytes);
+                messageProps.setContentType(Encrypted010MessageFactory.ENCRYPTED_0_10_CONTENT_TYPE);
+
+            }
+            catch (GeneralSecurityException | IOException e)
+            {
+                throw JMSExceptionHelper.chainJMSException(new JMSException("Unexpected Exception while encrypting message"), e);
+            }
+
+        }
+        else
+        {
+            if (data != null
+                && data.remaining() > getConnection().getMessageCompressionThresholdSize()
+                && getConnection().getDelegate().isMessageCompressionSupported()
+                && getConnection().isMessageCompressionDesired()
+                && messageProps.getContentEncoding() == null)
+            {
+                byte[] compressed = GZIPUtils.compressBufferToArray(data);
+                if (compressed != null)
+                {
+                    messageProps.setContentEncoding(GZIPUtils.GZIP_CONTENT_ENCODING);
+                    data = ByteBuffer.wrap(compressed);
+                }
             }
         }
-
 
         messageProps.setContentLength(data == null ? 0 : data.remaining());
 

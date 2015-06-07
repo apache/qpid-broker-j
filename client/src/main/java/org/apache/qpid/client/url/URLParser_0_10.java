@@ -17,8 +17,7 @@
  */
 package org.apache.qpid.client.url;
 
-import org.apache.qpid.client.AMQBrokerDetails;
-import org.apache.qpid.jms.BrokerDetails;
+import org.apache.qpid.client.BrokerDetails;
 
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -196,7 +195,7 @@ public class URLParser_0_10
 
     private URLParserState startAddress()
     {
-        _currentBroker = new AMQBrokerDetails();
+        _currentBroker = new BrokerDetails();
 
         for (int j = _index; j < _url.length; j++)
         {

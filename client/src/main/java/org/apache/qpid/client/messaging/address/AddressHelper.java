@@ -45,6 +45,10 @@ public class AddressHelper
     public static final String X_BINDINGS = "x-bindings";
     public static final String X_SUBSCRIBES = "x-subscribes";
     public static final String X_SUBSCRIBE = "x-subscribe";
+
+    public static final String X_SEND_ENCRYPTED = "x-send-encrypted";
+    public static final String X_ENCRYPTED_RECIPIENTS = "x-encrypted-recipients";
+
     public static final String CREATE = "create";
     public static final String ASSERT = "assert";
     public static final String DELETE = "delete";
@@ -75,6 +79,8 @@ public class AddressHelper
     private Map _addressPropMap;
     private Map _nodePropMap;
     private Map _linkPropMap;
+    private boolean _sendEncrypted;
+    private String _encryptedRecipients;
 
     public AddressHelper(Address address)
     {
@@ -303,5 +309,16 @@ public class AddressHelper
         }
 
         return link;
+    }
+
+    public boolean getSendEncrypted()
+    {
+        return Boolean.TRUE.equals(_addressPropAccess.getBoolean(X_SEND_ENCRYPTED));
+
+    }
+
+    public String getEncryptedRecipients()
+    {
+        return _addressPropAccess.getString(X_ENCRYPTED_RECIPIENTS);
     }
 }

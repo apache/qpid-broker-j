@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.transport;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,10 +40,10 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslException;
 
+import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.codec.AMQDecoder;
 import org.apache.qpid.codec.ClientDecoder;
 import org.apache.qpid.framing.*;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;

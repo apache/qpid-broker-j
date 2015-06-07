@@ -23,22 +23,16 @@ package org.apache.qpid.client.message;
 
 import org.apache.qpid.AMQException;
 
-import javax.jms.JMSException;
 import java.nio.ByteBuffer;
 
 public class AMQPEncodedListMessageFactory extends AbstractJMSMessageFactory
 {
     @Override
-    protected AbstractJMSMessage createMessage(AMQMessageDelegate delegate,
+    protected AbstractJMSMessage createMessage(AbstractAMQMessageDelegate delegate,
             ByteBuffer data) throws AMQException
     {
         return new AMQPEncodedListMessage(delegate,data);
     }
 
 
-    public AbstractJMSMessage createMessage(
-            AMQMessageDelegateFactory delegateFactory) throws JMSException
-    {
-        return new AMQPEncodedListMessage(delegateFactory);
-    }
 }

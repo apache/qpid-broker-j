@@ -62,6 +62,7 @@ import org.apache.qpid.client.message.JMSMapMessage;
 import org.apache.qpid.client.message.JMSObjectMessage;
 import org.apache.qpid.client.message.JMSStreamMessage;
 import org.apache.qpid.client.message.JMSTextMessage;
+import org.apache.qpid.client.message.MessageEncryptionHelper;
 import org.apache.qpid.client.message.MessageFactoryRegistry;
 import org.apache.qpid.client.message.UnprocessedMessage;
 import org.apache.qpid.client.messaging.address.Node;
@@ -93,6 +94,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 {
     /** Used for debugging. */
     private static final Logger _logger = LoggerFactory.getLogger(AMQSession.class);
+
 
     /** System property to enable strict AMQP compliance. */
     public static final String STRICT_AMQP = "STRICT_AMQP";
@@ -247,6 +249,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     /** Has failover occured on this session with outstanding actions to commit? */
     private boolean _failedOverDirty;
 
+    private MessageEncryptionHelper _messageEncryptionHelper;
+
     /** Holds the highest received delivery tag. */
     protected AtomicLong getHighestDeliveryTag()
     {
@@ -313,17 +317,19 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
     /**
      * Creates a new session on a connection.
-     *
      * @param con                     The connection on which to create the session.
      * @param channelId               The unique identifier for the session.
      * @param transacted              Indicates whether or not the session is transactional.
      * @param acknowledgeMode         The acknowledgement mode for the session.
-     * @param messageFactoryRegistry  The message factory factory for the session.
      * @param defaultPrefetchHighMark The maximum number of messages to prefetched before suspending the session.
      * @param defaultPrefetchLowMark  The number of prefetched messages at which to resume the session.
      */
-    protected AMQSession(AMQConnection con, int channelId, boolean transacted, int acknowledgeMode,
-               MessageFactoryRegistry messageFactoryRegistry, int defaultPrefetchHighMark, int defaultPrefetchLowMark)
+    protected AMQSession(AMQConnection con,
+                         int channelId,
+                         boolean transacted,
+                         int acknowledgeMode,
+                         int defaultPrefetchHighMark,
+                         int defaultPrefetchLowMark)
     {
         _useAMQPEncodedMapMessage = con == null || !con.isUseLegacyMapMessageFormat();
         _useAMQPEncodedStreamMessage = con != null && !con.isUseLegacyStreamMessageFormat();
@@ -344,9 +350,9 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         {
             _acknowledgeMode = acknowledgeMode;
         }
-
+        _messageEncryptionHelper = new MessageEncryptionHelper(this);
         _channelId = channelId;
-        _messageFactoryRegistry = messageFactoryRegistry;
+        _messageFactoryRegistry = MessageFactoryRegistry.newDefaultRegistry(this);
         _prefetchHighMark = defaultPrefetchHighMark;
         _prefetchLowMark = defaultPrefetchLowMark;
 
@@ -426,28 +432,6 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         {
             _logger.debug("Created session:" + this);
         }
-    }
-
-    /**
-     * Creates a new session on a connection with the default message factory factory.
-     *
-     * @param con                 The connection on which to create the session.
-     * @param channelId           The unique identifier for the session.
-     * @param transacted          Indicates whether or not the session is transactional.
-     * @param acknowledgeMode     The acknowledgement mode for the session.
-     * @param defaultPrefetchHigh The maximum number of messages to prefetched before suspending the session.
-     * @param defaultPrefetchLow  The number of prefetched messages at which to resume the session.
-     */
-    AMQSession(AMQConnection con, int channelId, boolean transacted, int acknowledgeMode, int defaultPrefetchHigh,
-               int defaultPrefetchLow)
-    {
-        this(con,
-             channelId,
-             transacted,
-             acknowledgeMode,
-             MessageFactoryRegistry.newDefaultRegistry(),
-             defaultPrefetchHigh,
-             defaultPrefetchLow);
     }
 
     // ===== JMS Session methods.
@@ -3679,5 +3663,10 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         }
     }
 
+
+    public MessageEncryptionHelper getMessageEncryptionHelper()
+    {
+        return _messageEncryptionHelper;
+    }
 }
 

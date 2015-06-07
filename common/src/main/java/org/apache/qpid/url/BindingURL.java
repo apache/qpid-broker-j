@@ -41,6 +41,9 @@ public interface BindingURL
     String OPTION_EXCHANGE_AUTODELETE = "exchangeautodelete";
     String OPTION_EXCHANGE_DURABLE = "exchangedurable";
     String OPTION_EXCHANGE_INTERNAL = "exchangeinternal";
+    String OPTION_SEND_ENCRYPTED = "sendencrypted";
+    String OPTION_ENCRYPTED_RECIPIENTS = "encryptedrecipients";
+
 
     /**
      * This option is only applicable for 0-8/0-9/0-9-1 protocols connection
@@ -61,7 +64,9 @@ public interface BindingURL
                                                                           OPTION_EXCHANGE_AUTODELETE,
                                                                           OPTION_EXCHANGE_DURABLE,
                                                                           OPTION_EXCHANGE_DURABLE,
-                                                                          OPTION_REJECT_BEHAVIOUR)));
+                                                                          OPTION_REJECT_BEHAVIOUR,
+                                                                          OPTION_SEND_ENCRYPTED,
+                                                                          OPTION_ENCRYPTED_RECIPIENTS)));
 
 
     String getURL();

@@ -20,9 +20,15 @@
  */
 package org.apache.qpid.client;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
+import javax.crypto.spec.SecretKeySpec;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.Queue;
@@ -35,6 +41,8 @@ import org.apache.qpid.AMQException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.message.AMQMessageDelegate_0_8;
 import org.apache.qpid.client.message.AbstractJMSMessage;
+import org.apache.qpid.client.message.Encrypted091MessageFactory;
+import org.apache.qpid.client.message.MessageEncryptionHelper;
 import org.apache.qpid.client.message.QpidMessageProperties;
 import org.apache.qpid.client.protocol.AMQProtocolHandler;
 import org.apache.qpid.client.protocol.BlockingMethodFrameListener;
@@ -52,6 +60,7 @@ import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.ExchangeDeclareBody;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.MethodRegistry;
+import org.apache.qpid.util.BytesDataOutput;
 import org.apache.qpid.util.GZIPUtils;
 
 public class BasicMessageProducer_0_8 extends BasicMessageProducer
@@ -104,7 +113,6 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
     {
 
 
-
         AMQMessageDelegate_0_8 delegate = (AMQMessageDelegate_0_8) message.getDelegate();
         BasicContentHeaderProperties contentHeaderProperties = delegate.getContentHeaderProperties();
 
@@ -125,15 +133,15 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
 
             if (destination.getAddressType() == AMQDestination.TOPIC_TYPE)
             {
-               routingKey = headers.getString(QpidMessageProperties.QPID_SUBJECT);
+                routingKey = headers.getString(QpidMessageProperties.QPID_SUBJECT);
             }
         }
 
         BasicPublishBody body = getSession().getMethodRegistry().createBasicPublishBody(getSession().getTicket(),
-                                                                                    destination.getExchangeName(),
-                                                                                    routingKey,
-                                                                                    mandatory,
-                                                                                    immediate);
+                                                                                        destination.getExchangeName(),
+                                                                                        routingKey,
+                                                                                        mandatory,
+                                                                                        immediate);
 
         AMQFrame publishFrame = body.generateFrame(getChannelId());
 
@@ -158,7 +166,9 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
         }
 
         //Set JMS_QPID_DESTTYPE
-        delegate.getContentHeaderProperties().getHeaders().setInteger(CustomJMSXProperty.JMS_QPID_DESTTYPE.getShortStringName(), type);
+        delegate.getContentHeaderProperties()
+                .getHeaders()
+                .setInteger(CustomJMSXProperty.JMS_QPID_DESTTYPE.getShortStringName(), type);
 
         if (!isDisableTimestamps())
         {
@@ -167,7 +177,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
 
             if (timeToLive > 0)
             {
-                if(!SET_EXPIRATION_AS_TTL)
+                if (!SET_EXPIRATION_AS_TTL)
                 {
                     //default behaviour used by Qpid
                     contentHeaderProperties.setExpiration(currentTime + timeToLive);
@@ -188,37 +198,121 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
         contentHeaderProperties.setPriority((byte) priority);
 
         int size = (payload != null) ? payload.remaining() : 0;
-
-        byte[] compressed;
-        if(size > getConnection().getMessageCompressionThresholdSize()
-               && getConnection().getDelegate().isMessageCompressionSupported()
-               && getConnection().isMessageCompressionDesired()
-               && contentHeaderProperties.getEncoding() == null
-               && (compressed = GZIPUtils.compressBufferToArray(payload)) != null)
+        AMQFrame contentHeaderFrame;
+        final AMQFrame[] frames;
+        boolean encrypt = message.getBooleanProperty(MessageEncryptionHelper.ENCRYPT_HEADER) || destination.sendEncrypted();
+        if(encrypt)
         {
-            contentHeaderProperties.setEncoding("gzip");
-            payload = ByteBuffer.wrap(compressed);
-            size = compressed.length;
+            MessageEncryptionHelper encryptionHelper = getSession().getMessageEncryptionHelper();
+            try
+            {
+                SecretKeySpec secretKey = encryptionHelper.createSecretKey();
+
+                contentHeaderProperties.getHeaders().remove(MessageEncryptionHelper.ENCRYPT_HEADER);
+
+                String recipientString = message.getStringProperty(MessageEncryptionHelper.ENCRYPT_RECIPIENTS_HEADER);
+                if(recipientString == null)
+                {
+                    recipientString = destination.getEncryptedRecipients();
+                }
+                contentHeaderProperties.getHeaders().remove(MessageEncryptionHelper.ENCRYPT_RECIPIENTS_HEADER);
+
+                String unencryptedProperties = message.getStringProperty(MessageEncryptionHelper.UNENCRYPTED_PROPERTIES_HEADER);
+                contentHeaderProperties.getHeaders().remove(MessageEncryptionHelper.UNENCRYPTED_PROPERTIES_HEADER);
+
+                final int headerLength = contentHeaderProperties.getPropertyListSize() + 2;
+                byte[] unencryptedBytes = new byte[headerLength + size];
+                BytesDataOutput output = new BytesDataOutput(unencryptedBytes);
+                output.writeShort((short) (contentHeaderProperties.getPropertyFlags() & 0xffff));
+                contentHeaderProperties.writePropertyListPayload(output);
+
+                if (size != 0)
+                {
+                    payload.get(unencryptedBytes, headerLength, payload.remaining());
+                }
+
+                byte[] ivbytes = encryptionHelper.getInitialisationVector();
+
+                byte[] encryptedBytes = encryptionHelper.encrypt(secretKey, unencryptedBytes, ivbytes);
+                payload = ByteBuffer.wrap(encryptedBytes);
+
+                if (recipientString == null)
+                {
+                    throw new JMSException("When sending an encrypted message, recipients must be supplied");
+                }
+                String[] recipients = recipientString.split(";");
+                List<List<Object>> encryptedKeys = new ArrayList<>();
+                for(MessageEncryptionHelper.KeyTransportRecipientInfo info : encryptionHelper.getKeyTransportRecipientInfo(Arrays.asList(recipients), secretKey))
+                {
+                    encryptedKeys.add(info.asList());
+                }
+
+                BasicContentHeaderProperties oldProps = contentHeaderProperties;
+                contentHeaderProperties = new BasicContentHeaderProperties(oldProps);
+                final FieldTable oldHeaders = oldProps.getHeaders();
+                final FieldTable newHeaders = contentHeaderProperties.getHeaders();
+                newHeaders.clear();
+
+                if(unencryptedProperties != null)
+                {
+                    List<String> unencryptedPropertyNames = Arrays.asList(unencryptedProperties.split(" *; *"));
+                    for (String propertyName : unencryptedPropertyNames)
+                    {
+                        if (oldHeaders.propertyExists(propertyName))
+                        {
+                            newHeaders.setObject(propertyName, oldHeaders.get(propertyName));
+                        }
+                    }
+                }
+
+                newHeaders.setObject(MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY, encryptedKeys);
+                newHeaders.setString(MessageEncryptionHelper.ENCRYPTION_ALGORITHM_PROPERTY,
+                                     encryptionHelper.getMessageEncryptionCipherName());
+                newHeaders.setBytes(MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY, ivbytes);
+                contentHeaderProperties.setContentType(Encrypted091MessageFactory.ENCRYPTED_0_9_1_CONTENT_TYPE);
+                size = encryptedBytes.length;
+
+            }
+            catch (GeneralSecurityException | IOException e)
+            {
+                throw JMSExceptionHelper.chainJMSException(new JMSException("Unexpected Exception while encrypting message"), e);
+            }
 
         }
+        else
+        {
+            byte[] compressed;
+            if (size > getConnection().getMessageCompressionThresholdSize()
+                && getConnection().getDelegate().isMessageCompressionSupported()
+                && getConnection().isMessageCompressionDesired()
+                && contentHeaderProperties.getEncoding() == null
+                && (compressed = GZIPUtils.compressBufferToArray(payload)) != null)
+            {
+                contentHeaderProperties.setEncoding("gzip");
+                payload = ByteBuffer.wrap(compressed);
+                size = compressed.length;
+
+            }
+        }
         final int contentBodyFrameCount = calculateContentBodyFrameCount(payload);
-        final AMQFrame[] frames = new AMQFrame[2 + contentBodyFrameCount];
+        frames = new AMQFrame[2 + contentBodyFrameCount];
 
         if (payload != null)
         {
             createContentBodies(payload, frames, 2, getChannelId());
         }
 
-        if ((contentBodyFrameCount != 0) && getLogger().isDebugEnabled())
+        contentHeaderFrame =
+                ContentHeaderBody.createAMQFrame(getChannelId(),
+                                                 contentHeaderProperties, size);
+
+
+        if (getLogger().isDebugEnabled())
         {
-            getLogger().debug("Sending content body frames to " + destination);
+            getLogger().debug("Sending " + (frames.length-2) + " content body frames to " + destination);
         }
 
-
-        AMQFrame contentHeaderFrame =
-            ContentHeaderBody.createAMQFrame(getChannelId(),
-                                             contentHeaderProperties, size);
-        if(contentHeaderFrame.getSize() > getSession().getAMQConnection().getMaximumFrameSize())
+        if (contentHeaderFrame.getSize() > getSession().getAMQConnection().getMaximumFrameSize())
         {
             throw new JMSException("Unable to send message as the headers are too large ("
                                    + contentHeaderFrame.getSize()
@@ -230,6 +324,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
         {
             getLogger().debug("Sending content header frame to " + destination);
         }
+
 
         frames[0] = publishFrame;
         frames[1] = contentHeaderFrame;

@@ -23,7 +23,7 @@ package org.apache.qpid.jms.failover;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.jms.BrokerDetails;
+import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.jms.ConnectionURL;
 
 public class FailoverSingleServer implements FailoverMethod

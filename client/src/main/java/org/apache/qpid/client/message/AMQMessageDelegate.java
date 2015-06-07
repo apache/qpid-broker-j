@@ -52,7 +52,7 @@ public interface AMQMessageDelegate
 
     void setJMSReplyTo(Destination destination) throws JMSException;
 
-    Destination getJMSDestination() throws JMSException;
+    Destination getJMSDestination();
 
     int getJMSDeliveryMode() throws JMSException;
 
@@ -134,4 +134,5 @@ public interface AMQMessageDelegate
     long getDeliveryTag();
 
     void setJMSMessageID(final UUID messageId) throws JMSException;
+
 }

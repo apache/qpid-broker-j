@@ -22,18 +22,13 @@ package org.apache.qpid.client.message;
 
 import org.apache.qpid.AMQException;
 
-import javax.jms.JMSException;
 import java.nio.ByteBuffer;
 
 public class JMSObjectMessageFactory extends AbstractJMSMessageFactory
 {
-    protected AbstractJMSMessage createMessage(AMQMessageDelegate delegate, ByteBuffer data) throws AMQException
+    protected AbstractJMSMessage createMessage(AbstractAMQMessageDelegate delegate, ByteBuffer data) throws AMQException
     {
         return new JMSObjectMessage(delegate, data);
     }
 
-    public AbstractJMSMessage createMessage(AMQMessageDelegateFactory delegateFactory) throws JMSException
-    {
-        return new JMSObjectMessage(delegateFactory);
-    }
 }

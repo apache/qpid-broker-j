@@ -45,12 +45,12 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
 
 import org.apache.qpid.AMQException;
+import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.Broker;
 import org.apache.qpid.server.BrokerOptions;

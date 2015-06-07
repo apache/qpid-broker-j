@@ -52,7 +52,6 @@ import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.framing.TxSelectBody;
 import org.apache.qpid.framing.TxSelectOkBody;
-import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.ChannelLimitReachedException;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jms.Session;
@@ -174,6 +173,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
                 _confirmedPublishSupported =
                         checkBooleanConnectionStartProperty(ConnectionStartProperties.QPID_CONFIRMED_PUBLISH_SUPPORTED);
                 _confirmedPublishNonTransactionalSupported = checkConfirmedPublishNonTransactionalSupported();
+                _conn.setConnectionSettings(settings);
                 return null;
             }
             else

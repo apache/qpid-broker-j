@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQQueue;
+import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.framing.AMQShortString;
@@ -47,19 +48,25 @@ public class MessageFactoryRegistry
      */
     private final Logger _logger = LoggerFactory.getLogger(getClass());
 
-    private final Map<String, MessageFactory> _mimeStringToFactoryMap = new HashMap<String, MessageFactory>();
-    private final Map<AMQShortString, MessageFactory> _mimeShortStringToFactoryMap =
-            new HashMap<AMQShortString, MessageFactory>();
-    private final MessageFactory _default = new JMSBytesMessageFactory();
+    private final Map<String, AbstractJMSMessageFactory> _mimeStringToFactoryMap = new HashMap<>();
+
+    private final AbstractJMSMessageFactory _default = new JMSBytesMessageFactory();
+    private final AMQSession<?, ?> _session;
+
+    public MessageFactoryRegistry(final AMQSession<?, ?> session)
+    {
+        _session = session;
+    }
 
     /**
      * Construct a new registry with the default message factories registered
      *
      * @return a message factory registry
+     * @param session
      */
-    public static MessageFactoryRegistry newDefaultRegistry()
+    public static MessageFactoryRegistry newDefaultRegistry(final AMQSession<?, ?> session)
     {
-        MessageFactoryRegistry mf = new MessageFactoryRegistry();
+        MessageFactoryRegistry mf = new MessageFactoryRegistry(session);
         mf.registerFactory(JMSMapMessage.MIME_TYPE, new JMSMapMessageFactory());
         mf.registerFactory("text/plain", new JMSTextMessageFactory());
         mf.registerFactory("text/xml", new JMSTextMessageFactory());
@@ -68,28 +75,18 @@ public class MessageFactoryRegistry
         mf.registerFactory(JMSStreamMessage.MIME_TYPE, new JMSStreamMessageFactory());
         mf.registerFactory(AMQPEncodedMapMessage.MIME_TYPE, new AMQPEncodedMapMessageFactory());
         mf.registerFactory(AMQPEncodedListMessage.MIME_TYPE, new AMQPEncodedListMessageFactory());
-        mf.registerFactory(null, mf._default);
 
+        mf.registerFactory(Encrypted091MessageFactory.ENCRYPTED_0_9_1_CONTENT_TYPE, new Encrypted091MessageFactory(mf));
+        mf.registerFactory(Encrypted010MessageFactory.ENCRYPTED_0_10_CONTENT_TYPE, new Encrypted010MessageFactory(mf));
+
+        mf.registerFactory(null, mf._default);
         return mf;
     }
 
 
-    public void registerFactory(String mimeType, MessageFactory mf)
+    public void registerFactory(String mimeType, AbstractJMSMessageFactory mf)
     {
-        if (mf == null)
-        {
-            throw new IllegalArgumentException("Message factory must not be null");
-        }
-
         _mimeStringToFactoryMap.put(mimeType, mf);
-        _mimeShortStringToFactoryMap.put(new AMQShortString(mimeType), mf);
-    }
-
-    public MessageFactory deregisterFactory(String mimeType)
-    {
-        _mimeShortStringToFactoryMap.remove(new AMQShortString(mimeType));
-
-        return _mimeStringToFactoryMap.remove(mimeType);
     }
 
     /**
@@ -123,13 +120,19 @@ public class MessageFactoryRegistry
         AMQShortString contentTypeShortString = properties.getContentType();
         contentTypeShortString = (contentTypeShortString == null) ? new AMQShortString(JMSBytesMessage.MIME_TYPE) : contentTypeShortString;
 
-        MessageFactory mf = _mimeShortStringToFactoryMap.get(contentTypeShortString);
+        AbstractJMSMessageFactory mf = getMessageFactory(AMQShortString.toString(contentTypeShortString));
+
+        return mf.createMessage(deliveryTag, redelivered, contentHeader, exchange, routingKey, bodies, queueDestinationCache, topicDestinationCache, addressType);
+    }
+
+    AbstractJMSMessageFactory getMessageFactory(final String contentTypeShortString)
+    {
+        AbstractJMSMessageFactory mf = _mimeStringToFactoryMap.get(contentTypeShortString);
         if (mf == null)
         {
             mf = _default;
         }
-
-        return mf.createMessage(deliveryTag, redelivered, contentHeader, exchange, routingKey, bodies, queueDestinationCache, topicDestinationCache, addressType);
+        return mf;
     }
 
     public AbstractJMSMessage createMessage(MessageTransfer transfer) throws AMQException, JMSException
@@ -146,11 +149,7 @@ public class MessageFactoryRegistry
         {
            messageType = mprop.getContentType();
         }
-        MessageFactory mf = _mimeStringToFactoryMap.get(messageType);
-        if (mf == null)
-        {
-            mf = _default;
-        }
+        AbstractJMSMessageFactory mf = getMessageFactory(messageType);
 
         boolean redelivered = false;
         DeliveryProperties deliverProps;
@@ -165,20 +164,13 @@ public class MessageFactoryRegistry
                                 transfer.getBody());
     }
 
-
-    public AbstractJMSMessage createMessage(AMQMessageDelegateFactory delegateFactory, String mimeType) throws AMQException, JMSException
+    public AMQSession<?, ?> getSession()
     {
-        if (mimeType == null)
-        {
-            throw new IllegalArgumentException("Mime type must not be null");
-        }
+        return _session;
+    }
 
-        MessageFactory mf = _mimeStringToFactoryMap.get(mimeType);
-        if (mf == null)
-        {
-            mf = _default;
-        }
-
-        return mf.createMessage(delegateFactory);
+    AbstractJMSMessageFactory getDefaultFactory()
+    {
+        return _default;
     }
 }

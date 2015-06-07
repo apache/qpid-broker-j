@@ -21,7 +21,7 @@
 
 package org.apache.qpid.jms.failover;
 
-import org.apache.qpid.jms.BrokerDetails;
+import org.apache.qpid.client.BrokerDetails;
 
 public interface FailoverMethod
 {
