@@ -101,6 +101,8 @@
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
     href="management/managing/Java-Broker-Management-Managing-Queues.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
+    href="management/managing/Java-Broker-Management-Managing-Consumers.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
     href="management/managing/Java-Broker-Management-Managing-Ports.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
     href="management/managing/Java-Broker-Management-Managing-Authentication-Providers.xml"/>

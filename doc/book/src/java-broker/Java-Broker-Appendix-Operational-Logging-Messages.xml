@@ -931,13 +931,16 @@
         </row>
         <row id="Java-Broker-Appendix-Operation-Logging-Message-SUB-1003">
           <entry morerows="1">SUB-1003</entry>
-          <entry>State : <replaceable>boolean</replaceable></entry>
+          <entry>SUB-1003 : Suspended for <replaceable>time</replaceable> ms</entry>
         </row>
         <row>
           <entry>
-            <para>Indicates that a subscription has changed state. This occurs when the consumer is
-              ready to receive more messages. As this happens frequently in normal operation, this
-              log messages is disabled by default.</para>
+            <para>Indicates that a subscription has been in a suspened state for an unusual length
+              of time.  This may be indicative of an consuming application that has stopped taking
+              messages from the consumer (i.e. a JMS application is not calling receive() or its
+              asynchronous message listener onMessage() is block in application code).  It may also
+              indicate a generally overloaded system.
+              </para>
           </entry>
         </row>
 
