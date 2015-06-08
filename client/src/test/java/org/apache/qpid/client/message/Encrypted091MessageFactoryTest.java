@@ -94,7 +94,7 @@ public class Encrypted091MessageFactoryTest extends QpidTestCase
         cipher.init(Cipher.ENCRYPT_MODE, _secretKeySpec, new IvParameterSpec(_initializeVector));
         _encryptedMessage = cipher.doFinal(_unencrypted);
         _keyStore = KeyStore.getInstance("JKS");
-        _keyStore.load(new FileInputStream(TestSSLConstants.KEYSTORE), TestSSLConstants.KEYSTORE_PASSWORD.toCharArray());
+        _keyStore.load(getClass().getClassLoader().getResourceAsStream(TestSSLConstants.KEYSTORE), TestSSLConstants.KEYSTORE_PASSWORD.toCharArray());
 
         final AMQConnection connection = mock(AMQConnection.class);
         final ConnectionSettings settings = mock(ConnectionSettings.class);

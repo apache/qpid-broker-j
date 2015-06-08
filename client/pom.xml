@@ -86,9 +86,15 @@
           <exclude>**/*.java/</exclude>
         </excludes>
       </resource>
-    </resources>
+  </resources>
 
     <testResources>
+        <testResource>
+            <directory>${basedir}/../</directory>
+            <includes>
+                <include>test-profiles/**/*.jks</include>
+            </includes>
+        </testResource>
         <testResource>
             <directory>${basedir}/src/test/java</directory>
             <excludes>
