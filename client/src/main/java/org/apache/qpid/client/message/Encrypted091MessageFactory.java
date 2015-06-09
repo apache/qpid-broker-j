@@ -36,6 +36,9 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
@@ -43,6 +46,8 @@ import org.apache.qpid.framing.BasicContentHeaderProperties;
 public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
 {
     public static final String ENCRYPTED_0_9_1_CONTENT_TYPE = "application/qpid-0-9-1-encrypted";
+    private static final Logger LOGGER = LoggerFactory.getLogger(Encrypted091MessageFactory.class);
+
     private final MessageFactoryRegistry _messageFactoryRegistry;
 
     public Encrypted091MessageFactory(final MessageFactoryRegistry messageFactoryRegistry)
@@ -57,96 +62,116 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
         SecretKeySpec secretKeySpec;
         String algorithm;
         byte[] initVector;
-
         try
         {
-            if(delegate.hasProperty(MessageEncryptionHelper.ENCRYPTION_ALGORITHM_PROPERTY))
-            {
-                algorithm = delegate.getProperty(MessageEncryptionHelper.ENCRYPTION_ALGORITHM_PROPERTY).toString();
 
-                if(delegate.hasProperty(MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY))
+
+            try
+            {
+                if (delegate.hasProperty(MessageEncryptionHelper.ENCRYPTION_ALGORITHM_PROPERTY))
                 {
-                    Object ivObj = delegate.getProperty(MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY);
-                    if(ivObj instanceof byte[])
+                    algorithm = delegate.getProperty(MessageEncryptionHelper.ENCRYPTION_ALGORITHM_PROPERTY).toString();
+
+                    if (delegate.hasProperty(MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY))
                     {
-                        initVector = (byte[]) ivObj;
+                        Object ivObj = delegate.getProperty(MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY);
+                        if (ivObj instanceof byte[])
+                        {
+                            initVector = (byte[]) ivObj;
+                        }
+                        else
+                        {
+                            throw new AMQException("If the property '"
+                                                   + MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY
+                                                   + "' is present, it must contain a byte array");
+                        }
                     }
                     else
                     {
-                        throw new AMQException("If the property '"+ MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY+"' is present, it must contain a byte array");
+                        initVector = null;
                     }
-                }
-                else
-                {
-                    initVector = null;
-                }
-                if(delegate.hasProperty(MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY))
-                {
-                    Object keyInfoObj = delegate.getProperty(MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY);
-                    if(keyInfoObj instanceof Collection)
+                    if (delegate.hasProperty(MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY))
                     {
-                        secretKeySpec = getContentEncryptionKey((Collection)keyInfoObj, algorithm, _messageFactoryRegistry.getSession());
+                        Object keyInfoObj = delegate.getProperty(MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY);
+                        if (keyInfoObj instanceof Collection)
+                        {
+                            secretKeySpec = getContentEncryptionKey((Collection) keyInfoObj,
+                                                                    algorithm,
+                                                                    _messageFactoryRegistry.getSession());
+                        }
+                        else
+                        {
+                            throw new AMQException("An encrypted message must contain the property '"
+                                                   + MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY
+                                                   + "'");
+                        }
                     }
                     else
                     {
-                        throw new AMQException("An encrypted message must contain the property '"+ MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY+"'");
+                        throw new AMQException("An encrypted message must contain the property '"
+                                               + MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY
+                                               + "'");
                     }
+
                 }
                 else
                 {
-                    throw new AMQException("An encrypted message must contain the property '"+ MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY+"'");
+                    throw new AMQException("Encrypted message must carry the encryption algorithm in the property '"
+                                           + MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY
+                                           + "'");
                 }
 
+                Cipher cipher = Cipher.getInstance(algorithm);
+                cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(initVector));
+                byte[] encryptedData;
+                int offset;
+                int length;
+                if (data.hasArray())
+                {
+                    encryptedData = data.array();
+                    offset = data.arrayOffset() + data.position();
+                    length = data.remaining();
+                }
+                else
+                {
+                    encryptedData = new byte[data.remaining()];
+                    data.duplicate().get(encryptedData);
+                    offset = 0;
+                    length = encryptedData.length;
+                }
+                final byte[] unencryptedBytes = decryptData(cipher, encryptedData, offset, length);
+
+                BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
+                int payloadOffset;
+                try (ByteArrayInputStream bis = new ByteArrayInputStream(unencryptedBytes);
+                     DataInputStream dis = new DataInputStream(bis))
+                {
+                    payloadOffset = properties.read(dis);
+                }
+
+                final ByteBuffer unencryptedData =
+                        ByteBuffer.wrap(unencryptedBytes, payloadOffset, unencryptedBytes.length - payloadOffset);
+
+                final AbstractAMQMessageDelegate newDelegate =
+                        new AMQMessageDelegate_0_8(properties, delegate.getDeliveryTag());
+                newDelegate.setJMSDestination(delegate.getJMSDestination());
+
+
+                final AbstractJMSMessageFactory unencryptedMessageFactory =
+                        _messageFactoryRegistry.getMessageFactory(properties.getContentTypeAsString());
+
+                return unencryptedMessageFactory.createMessage(newDelegate, unencryptedData);
             }
-            else
+            catch (GeneralSecurityException | IOException e)
             {
-                throw new AMQException("Encrypted message must carry the encryption algorithm in the property '"+ MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY+"'");
+                throw new AMQException("Could not decode encrypted message", e);
             }
-
-            Cipher cipher = Cipher.getInstance(algorithm);
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(initVector));
-            byte[] encryptedData;
-            int offset;
-            int length;
-            if(data.hasArray())
-            {
-                encryptedData = data.array();
-                offset = data.arrayOffset() + data.position();
-                length = data.remaining();
-            }
-            else
-            {
-                encryptedData = new byte[data.remaining()];
-                data.duplicate().get(encryptedData);
-                offset = 0;
-                length = encryptedData.length;
-            }
-            final byte[] unencryptedBytes = decryptData(cipher, encryptedData, offset, length);
-
-            BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
-            int payloadOffset;
-            try(ByteArrayInputStream bis = new ByteArrayInputStream(unencryptedBytes); DataInputStream dis = new DataInputStream(bis))
-            {
-                payloadOffset = properties.read(dis);
-            }
-
-            final ByteBuffer unencryptedData = ByteBuffer.wrap(unencryptedBytes, payloadOffset, unencryptedBytes.length-payloadOffset);
-
-            final AbstractAMQMessageDelegate newDelegate = new AMQMessageDelegate_0_8(properties, delegate.getDeliveryTag());
-            newDelegate.setJMSDestination(delegate.getJMSDestination());
-
-
-
-            final AbstractJMSMessageFactory unencryptedMessageFactory =
-                    _messageFactoryRegistry.getMessageFactory(properties.getContentTypeAsString());
-
-            return unencryptedMessageFactory.createMessage(newDelegate, unencryptedData);
         }
-        catch (GeneralSecurityException | IOException e)
+        catch(AMQException e)
         {
-            throw new AMQException("Could not decode encrypted message", e);
+            LOGGER.error("Error when attempting to decrypt message " + delegate.getDeliveryTag() + " to address ("+delegate.getJMSDestination()+").  Message will be delivered to the client encrypted", e);
+            return _messageFactoryRegistry.getDefaultFactory().createMessage(delegate, data);
         }
-
 
     }
 
