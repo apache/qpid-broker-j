@@ -40,7 +40,6 @@ public class LoggingManagementTest extends QpidBrokerTestCase
     private JMXTestUtils _jmxUtils;
     private LoggingManagement _loggingManagement;
     private LogMonitor _monitor;
-    private File _logConfig;
 
     @Override
     public void setUp() throws Exception
@@ -52,12 +51,6 @@ public class LoggingManagementTest extends QpidBrokerTestCase
         // System test normally run with log for4j test config from beneath test-profiles.   We need to
         // copy it as some of our tests write to this file.
 
-        File tmpLogFile = File.createTempFile("log4j" + "." + getName(), ".xml");
-        tmpLogFile.deleteOnExit();
-        FileUtils.copy(new File(System.getProperty("log4j.configuration.file")), tmpLogFile);
-        setBrokerCommandLog4JFile(tmpLogFile);
-        _logConfig = tmpLogFile;
-
         super.setUp();
         _jmxUtils.open();
 
@@ -67,7 +60,7 @@ public class LoggingManagementTest extends QpidBrokerTestCase
 
     public void startBroker() throws Exception
     {
-        super.startBroker(0, false, _logConfig.getAbsolutePath());
+        super.startBroker(0, false);
     }
 
     @Override
@@ -78,11 +71,6 @@ public class LoggingManagementTest extends QpidBrokerTestCase
             if (_jmxUtils != null)
             {
                 _jmxUtils.close();
-            }
-
-            if (_logConfig != null)
-            {
-               _logConfig.delete();
             }
         }
         finally

@@ -81,7 +81,6 @@ public class QpidBrokerTestCase extends QpidTestCase
     public static final String GUEST_PASSWORD = "guest";
 
     private final File _configFile = new File(System.getProperty("broker.config"));
-    private File _spawnedBrokerLogConfigFile;
     protected final String _brokerStoreType = System.getProperty("broker.config-store-type", "JSON");
     protected static final Logger _logger = LoggerFactory.getLogger(QpidBrokerTestCase.class);
     protected static final int LOGMONITOR_TIMEOUT = 5000;
@@ -200,8 +199,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     public QpidBrokerTestCase()
     {
         super();
-        _brokerConfigurations = new HashMap<Integer, TestBrokerConfiguration>();
-        initialiseSpawnedBrokerLogConfigFile();
+        _brokerConfigurations = new HashMap<>();
         _brokerCommandTemplate = BROKER_COMMAND_TEMPLATE;
 
 
@@ -262,15 +260,6 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
 
         return configuration;
-    }
-
-    private void initialiseSpawnedBrokerLogConfigFile()
-    {
-        _spawnedBrokerLogConfigFile = new File(SPAWNED_BROKER_LOG4J_CONFIG_FILE_PATH);
-        if(!_spawnedBrokerLogConfigFile.exists())
-        {
-            throw new RuntimeException("Log config file " + _spawnedBrokerLogConfigFile.getAbsolutePath() + " does not exist");
-        }
     }
 
     public Logger getLogger()
@@ -400,33 +389,19 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public void startBroker(int port, boolean managementMode) throws Exception
     {
-        startBroker(port, managementMode, null);
-    }
-
-    public void startBroker(int port, boolean managementMode, String log4jFile) throws Exception
-    {
         int actualPort = getPort(port);
         TestBrokerConfiguration configuration = getBrokerConfiguration(actualPort);
-        startBroker(actualPort, configuration, managementMode, log4jFile);
+        startBroker(actualPort, configuration, managementMode);
     }
 
-    protected File getBrokerCommandLog4JFile()
+    public void startBroker(int port, TestBrokerConfiguration testConfiguration) throws Exception
     {
-        return _spawnedBrokerLogConfigFile;
+        startBroker(port, testConfiguration, false);
     }
 
-    protected void setBrokerCommandLog4JFile(File file)
-    {
-        _spawnedBrokerLogConfigFile = file;
-        _logger.info("Modified log config file to: " + file);
-    }
-
-    public void startBroker(int port, TestBrokerConfiguration testConfiguration, String log4jFile) throws Exception
-    {
-        startBroker(port, testConfiguration, false, log4jFile);
-    }
-
-    protected void startBroker(int port, TestBrokerConfiguration testConfiguration, boolean managementMode, String log4jFile) throws Exception
+    protected void startBroker(int port,
+                               TestBrokerConfiguration testConfiguration,
+                               boolean managementMode) throws Exception
     {
         port = getPort(port);
 
@@ -436,8 +411,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         }
 
         String testConfig = saveTestConfiguration(port, testConfiguration);
-        String log4jConfig = log4jFile == null ? getBrokerCommandLog4JFile().getAbsolutePath() : log4jFile;
-        BrokerOptions options = getBrokerOptions(managementMode, testConfig, log4jConfig, log4jFile == null);
+        BrokerOptions options = getBrokerOptions(managementMode, testConfig);
         BrokerHolder holder = new BrokerHolderFactory().create(_brokerType, port, this);
         _brokers.put(port, holder);
         holder.start(options);
@@ -1247,7 +1221,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         session.close();
     }
 
-    protected BrokerOptions getBrokerOptions( boolean managementMode, String testConfig, String log4jConfig, boolean skipLoggingConfiguration)
+    protected BrokerOptions getBrokerOptions(boolean managementMode, String testConfig)
     {
         BrokerOptions options = new BrokerOptions();
 
@@ -1258,8 +1232,6 @@ public class QpidBrokerTestCase extends QpidTestCase
         {
             options.setManagementModePassword(MANAGEMENT_MODE_PASSWORD);
         }
-        options.setSkipLoggingConfiguration(skipLoggingConfiguration);
-        options.setLogConfigFileLocation(log4jConfig);
         options.setStartupLoggedToSystemOut(false);
         options.setConfigProperty("test.name", getClass().getSimpleName() + "-" + getName());
         return options;

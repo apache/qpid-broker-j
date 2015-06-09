@@ -44,13 +44,11 @@ public class MainTest extends QpidTestCase
         setTestSystemProperty(BrokerProperties.PROPERTY_QPID_HOME, qpidHome);
 
         String expectedStorePath = new File(qpidWork, BrokerOptions.DEFAULT_CONFIG_NAME_PREFIX + ".json").getAbsolutePath();
-        String expectedLogConfigPath = new File(qpidHome, BrokerOptions.DEFAULT_LOG_CONFIG_FILE).getAbsolutePath();
 
         BrokerOptions options = startDummyMain("");
 
         assertEquals("JSON", options.getConfigurationStoreType());
         assertEquals(expectedStorePath, options.getConfigurationStoreLocation());
-        assertEquals(expectedLogConfigPath, options.getLogConfigFileLocation());
         assertEquals(BrokerOptions.DEFAULT_INITIAL_CONFIG_LOCATION, options.getInitialConfigurationLocation());
         assertFalse(options.isOverwriteConfigurationStore());
         assertFalse(options.isManagementMode());
@@ -84,13 +82,6 @@ public class MainTest extends QpidTestCase
 
         options = startDummyMain("-overwrite-store");
         assertTrue(options.isOverwriteConfigurationStore());
-    }
-
-    public void testLogConfig()
-    {
-        BrokerOptions options = startDummyMain("-l wxyz/log4j.xml");
-
-        assertEquals("wxyz/log4j.xml", options.getLogConfigFileLocation());
     }
 
     public void testVersion()

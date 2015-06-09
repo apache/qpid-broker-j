@@ -83,9 +83,6 @@ public class MultiNodeTest extends QpidBrokerTestCase
         assertTrue(isJavaBroker());
         assertTrue(isBrokerStorePersistent());
 
-        setSystemProperty("java.util.logging.config.file", "etc" + File.separator + "log.properties");
-        setTestClientSystemProperty("log4j.configuration", getBrokerCommandLog4JFile().toURI().toString());
-
         _groupCreator.configureClusterNodes();
 
         _positiveFailoverUrl = _groupCreator.getConnectionUrlForAllClusterNodes();

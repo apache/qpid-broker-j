@@ -79,7 +79,7 @@ import org.apache.qpid.server.store.berkeleydb.BDBUtils;
 import org.apache.qpid.server.store.berkeleydb.CoalescingCommiter;
 import org.apache.qpid.server.store.berkeleydb.EnvHomeRegistry;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
-import org.apache.qpid.server.store.berkeleydb.logging.Log4jLoggingHandler;
+import org.apache.qpid.server.store.berkeleydb.logging.Slf4jLoggingHandler;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.DaemonThreadFactory;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -1144,7 +1144,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         envConfig.setConfigParam(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
         envConfig.setConfigParam(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
-        envConfig.setLoggingHandler(new Log4jLoggingHandler("[" + _configuration.getName() + "]"));
+        envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + _configuration.getName() + "]"));
 
         for (Map.Entry<String, String> configItem : environmentParameters.entrySet())
         {

@@ -102,18 +102,6 @@ public class BrokerMessagesTest extends AbstractTestMessages
         validateLogMessage(log, "BRK-1006", expected);
     }
 
-    public void testBrokerLogConfig()
-    {
-        String path = "/file/path/to/configuration.xml";
-
-        _logMessage = BrokerMessages.LOG_CONFIG(path);
-        List<Object> log = performLog();
-
-        String[] expected = {"Using logging configuration :", path};
-
-        validateLogMessage(log, "BRK-1007", expected);
-    }
-
     public void testBrokerPlatform()
     {
         String javaVendor = "jvendor";

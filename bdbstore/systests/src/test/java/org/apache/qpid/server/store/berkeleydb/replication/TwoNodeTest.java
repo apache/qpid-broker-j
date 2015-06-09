@@ -50,8 +50,6 @@ public class TwoNodeTest extends QpidBrokerTestCase
     {
         _brokerType = BrokerHolder.BrokerType.SPAWNED;
 
-        setTestClientSystemProperty("log4j.configuration", getBrokerCommandLog4JFile().toURI().toString());
-
         assertTrue(isJavaBroker());
         assertTrue(isBrokerStorePersistent());
 

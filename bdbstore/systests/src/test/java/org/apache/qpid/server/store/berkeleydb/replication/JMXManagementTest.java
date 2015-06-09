@@ -78,8 +78,6 @@ public class JMXManagementTest extends QpidBrokerTestCase
     {
         _brokerType = BrokerHolder.BrokerType.SPAWNED;
 
-        setTestClientSystemProperty("log4j.configuration", getBrokerCommandLog4JFile().toURI().toString());
-
         _clusterCreator.configureClusterNodes();
         _brokerFailoverUrl = _clusterCreator.getConnectionUrlForAllClusterNodes();
         _clusterCreator.startCluster();

@@ -33,9 +33,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class Log4jLoggingHandler extends Handler
+public class Slf4jLoggingHandler extends Handler
 {
-    public Log4jLoggingHandler(final String prefix)
+    public Slf4jLoggingHandler(final String prefix)
     {
         setFormatter(new Formatter()
         {
@@ -47,9 +47,9 @@ public class Log4jLoggingHandler extends Handler
         });
     }
 
-    private static interface MappedLevel
+    private interface MappedLevel
     {
-        public boolean isEnabled(final Logger logger);
+        boolean isEnabled(final Logger logger);
 
         void log(Logger logger, String message);
     }

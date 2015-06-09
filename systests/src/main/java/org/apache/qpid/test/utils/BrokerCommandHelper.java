@@ -17,7 +17,6 @@
  */
 package org.apache.qpid.test.utils;
 
-import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -37,7 +36,7 @@ public class BrokerCommandHelper
         _brokerCommandTemplateAsList = split(brokerCommandTemplate);
     }
 
-    public String[] getBrokerCommand( int port, String storePath, String storeType, File logConfigFile)
+    public String[] getBrokerCommand(int port, String storePath, String storeType)
     {
         String[] command = new String[_brokerCommandTemplateAsList.size()];
         int i=0;
@@ -46,34 +45,10 @@ public class BrokerCommandHelper
             command[i] = commandPart
                     .replace("@PORT", "" + port)
                     .replace("@STORE_PATH", storePath)
-                    .replace("@STORE_TYPE", storeType)
-                    .replace("@LOG_CONFIG_FILE", '"' + logConfigFile.getAbsolutePath() + '"');
+                    .replace("@STORE_TYPE", storeType);
             i++;
         }
         return command;
-    }
-
-    private int getBrokerCommandLogOptionIndex(String logOption)
-    {
-        int logOptionIndex = _brokerCommandTemplateAsList.indexOf(logOption);
-        if(logOptionIndex == -1)
-        {
-            throw new RuntimeException("Could not find option " + logOption + " in " + _brokerCommandTemplateAsList);
-        }
-        return logOptionIndex;
-    }
-
-
-    public void removeBrokerCommandLog4JFile()
-    {
-        String logOption = "-l";
-        int logOptionIndex = getBrokerCommandLogOptionIndex(logOption);
-        if (logOptionIndex + 1 >=  _brokerCommandTemplateAsList.size())
-        {
-            throw new RuntimeException("Could not find log config location");
-        }
-        _brokerCommandTemplateAsList.remove(logOptionIndex);
-        _brokerCommandTemplateAsList.remove(logOptionIndex);
     }
 
     private static List<String> split(String str)

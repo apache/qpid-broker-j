@@ -30,7 +30,6 @@
   <description>BDB message store system tests</description>
 
   <properties>
-    <test.log4j.configuration.file>${project.basedir}${file.separator}..${file.separator}..${file.separator}test-profiles${file.separator}logback-test.xml</test.log4j.configuration.file>
     <test.working.directory>${basedir}/../..</test.working.directory>
     <test.resource.directory>${basedir}/../..</test.resource.directory>
     <test.systest.resource.directory>${basedir}/../../systests</test.systest.resource.directory>

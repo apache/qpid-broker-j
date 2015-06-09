@@ -84,32 +84,6 @@ public class BrokerOptionsTest extends QpidTestCase
         assertEquals(testConfigFile, _options.getConfigurationStoreLocation());
     }
 
-    public void testDefaultLogConfigFileWithQpidHome()
-    {
-        String qpidHome = "/test/value";
-        setTestSystemProperty(BrokerProperties.PROPERTY_QPID_HOME, qpidHome);
-
-        String expectedPath = new File(qpidHome, BrokerOptions.DEFAULT_LOG_CONFIG_FILE).getAbsolutePath();
-
-        assertEquals(expectedPath, _options.getLogConfigFileLocation());
-    }
-
-    public void testDefaultLogConfigFileWithoutQpidHome()
-    {
-        setTestSystemProperty(BrokerProperties.PROPERTY_QPID_HOME, null);
-
-        String expectedPath = new File(BrokerOptions.DEFAULT_LOG_CONFIG_FILE).getAbsolutePath();
-
-        assertEquals(expectedPath, _options.getLogConfigFileLocation());
-    }
-
-    public void testOverriddenLogConfigFile()
-    {
-        final String testLogConfigFile = "etc/mytestlog4j.xml";
-        _options.setLogConfigFileLocation(testLogConfigFile);
-        assertEquals(testLogConfigFile, _options.getLogConfigFileLocation());
-    }
-
     public void testDefaultInitialConfigurationLocation()
     {
         assertEquals(BrokerOptions.DEFAULT_INITIAL_CONFIG_LOCATION, _options.getInitialConfigurationLocation());

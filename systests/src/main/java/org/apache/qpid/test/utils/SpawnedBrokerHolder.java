@@ -79,8 +79,7 @@ public class SpawnedBrokerHolder implements BrokerHolder
         // Add the port to QPID_WORK to ensure unique working dirs for multi broker tests
         final String qpidWork = getQpidWork(_type, _port);
 
-        String[] cmd = _brokerCommandHelper.getBrokerCommand(_port, brokerOptions.getConfigurationStoreLocation(), brokerOptions.getConfigurationStoreType(),
-                new File(brokerOptions.getLogConfigFileLocation()));
+        String[] cmd = _brokerCommandHelper.getBrokerCommand(_port, brokerOptions.getConfigurationStoreLocation(), brokerOptions.getConfigurationStoreType());
         if (brokerOptions.isManagementMode())
         {
             String[] newCmd = new String[cmd.length + 3];

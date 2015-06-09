@@ -52,15 +52,12 @@ public class BrokerOptions
     public static final String DEFAULT_INITIAL_CONFIG_NAME = "initial-config.json";
     public static final String DEFAULT_STORE_TYPE = "JSON";
     public static final String DEFAULT_CONFIG_NAME_PREFIX = "config";
-    public static final String DEFAULT_LOG_CONFIG_FILE = "etc/logback.xml";
     public static final String DEFAULT_INITIAL_CONFIG_LOCATION =
         BrokerOptions.class.getClassLoader().getResource(DEFAULT_INITIAL_CONFIG_NAME).toExternalForm();
 
     public static final String MANAGEMENT_MODE_USER_NAME = "mm_admin";
 
     private static final File FALLBACK_WORK_DIR = new File(System.getProperty("user.dir"), "work");
-
-    private String _logConfigFile;
 
     private String _configurationStoreLocation;
     private String _configurationStoreType;
@@ -307,32 +304,6 @@ public class BrokerOptions
         }
 
         return Collections.unmodifiableMap(properties);
-    }
-
-    /**
-     * Get the broker logging configuration file location.
-     *
-     * If not previously explicitly set, defaults to {@value #DEFAULT_LOG_CONFIG_FILE} within the broker
-     * home directory if configured (gathered via config property {@link #QPID_HOME_DIR}) or the current
-     * JVM working directory if not.
-     *
-     * @return the previously set logging configuration file location, or the default location if none was set.
-     */
-    public String getLogConfigFileLocation()
-    {
-        if(_logConfigFile == null)
-        {
-            String homeDir = getHomeDir();
-
-            return new File(homeDir, DEFAULT_LOG_CONFIG_FILE).getAbsolutePath();
-        }
-
-        return _logConfigFile;
-    }
-
-    public void setLogConfigFileLocation(final String logConfigFile)
-    {
-        _logConfigFile = logConfigFile;
     }
 
     private String getWorkDir()

@@ -75,12 +75,6 @@ public class Main
             .withDescription("set a configuration property to use when resolving variables in the broker configuration store, with format \"name=value\"")
             .withLongOpt("config-property").create("prop");
 
-    private static final Option OPTION_LOG_CONFIG_FILE =
-            OptionBuilder.withArgName("file").hasArg()
-                    .withDescription("use the specified log4j xml configuration file. By "
-                                     + "default looks for a file named " + BrokerOptions.DEFAULT_LOG_CONFIG_FILE
-                                     + " in the same directory as the configuration file").withLongOpt("logconfig").create("l");
-
     private static final Option OPTION_MANAGEMENT_MODE = OptionBuilder.withDescription("start broker in management mode, disabling the AMQP ports")
             .withLongOpt("management-mode").create("mm");
     private static final Option OPTION_MM_QUIESCE_VHOST = OptionBuilder.withDescription("make virtualhosts stay in the quiesced state during management mode.")
@@ -107,7 +101,6 @@ public class Main
         OPTIONS.addOption(OPTION_CONFIGURATION_STORE_TYPE);
         OPTIONS.addOption(OPTION_OVERWRITE_CONFIGURATION_STORE);
         OPTIONS.addOption(OPTION_CREATE_INITIAL_CONFIG);
-        OPTIONS.addOption(OPTION_LOG_CONFIG_FILE);
         OPTIONS.addOption(OPTION_INITIAL_CONFIGURATION_PATH);
         OPTIONS.addOption(OPTION_MANAGEMENT_MODE);
         OPTIONS.addOption(OPTION_MM_QUIESCE_VHOST);
@@ -254,12 +247,6 @@ public class Main
             if (configurationStoreType != null)
             {
                 options.setConfigurationStoreType(configurationStoreType);
-            }
-
-            String logConfig = _commandLine.getOptionValue(OPTION_LOG_CONFIG_FILE.getOpt());
-            if(logConfig != null)
-            {
-                options.setLogConfigFileLocation(logConfig);
             }
 
             boolean overwriteConfigurationStore = _commandLine.hasOption(OPTION_OVERWRITE_CONFIGURATION_STORE.getOpt());

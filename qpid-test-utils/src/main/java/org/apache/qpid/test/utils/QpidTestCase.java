@@ -46,7 +46,6 @@ public class QpidTestCase extends TestCase
     public static final String TEST_RESOURCES_DIR = QPID_HOME + "/../test-profiles/test_resources/";
     public static final String TEST_PROFILES_DIR = QPID_HOME + "/../test-profiles/";
     public static final String TMP_FOLDER = System.getProperty("java.io.tmpdir");
-    public static final String SPAWNED_BROKER_LOG4J_CONFIG_FILE_PATH = System.getProperty("spawnedbroker.log4j.configuration.file");
 
     private static final Logger _logger = LoggerFactory.getLogger(QpidTestCase.class);
 
