@@ -28,13 +28,11 @@ import ch.qos.logback.core.Appender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-public class BrokerMemoryLoggerImpl extends AbstractConfiguredObject<BrokerMemoryLoggerImpl> implements BrokerMemoryLogger<BrokerMemoryLoggerImpl>
+public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLoggerImpl> implements BrokerMemoryLogger<BrokerMemoryLoggerImpl>
 {
 
     @ManagedAttributeField
@@ -43,7 +41,7 @@ public class BrokerMemoryLoggerImpl extends AbstractConfiguredObject<BrokerMemor
     @ManagedObjectFactoryConstructor
     protected BrokerMemoryLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
-        super(parentsMap(broker),attributes);
+        super(attributes, broker);
     }
 
     @Override
@@ -55,19 +53,8 @@ public class BrokerMemoryLoggerImpl extends AbstractConfiguredObject<BrokerMemor
     @Override
     public Appender<ILoggingEvent> asAppender()
     {
-        ch.qos.logback.classic.Logger rootLogger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        LoggerContext loggerContext = rootLogger.getLoggerContext();
-
         final RecordEventAppender appender = new RecordEventAppender(getMaxRecords());
-        appender.setName(getName());
-        appender.setContext(loggerContext);
-
-        for(BrokerLoggerFilter<?> filter : getChildren(BrokerLoggerFilter.class))
-        {
-            appender.addFilter(filter.asFilter());
-        }
-        appender.addFilter(DenyAllFilter.getInstance());
+        initializeAppender(appender);
         appender.start();
         return appender;
     }

@@ -27,6 +27,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.Context;
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
@@ -35,13 +36,11 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-public class BrokerFileLoggerImpl extends AbstractConfiguredObject<BrokerFileLoggerImpl> implements BrokerFileLogger<BrokerFileLoggerImpl>
+public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerImpl> implements BrokerFileLogger<BrokerFileLoggerImpl>
 {
     @ManagedAttributeField
     private String _layout;
@@ -63,7 +62,7 @@ public class BrokerFileLoggerImpl extends AbstractConfiguredObject<BrokerFileLog
     @ManagedObjectFactoryConstructor
     protected BrokerFileLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
-        super(parentsMap(broker),attributes);
+        super(attributes, broker);
     }
 
     @Override
@@ -117,20 +116,12 @@ public class BrokerFileLoggerImpl extends AbstractConfiguredObject<BrokerFileLog
     @Override
     public Appender<ILoggingEvent> asAppender()
     {
-        ch.qos.logback.classic.Logger rootLogger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        LoggerContext loggerContext = rootLogger.getLoggerContext();
         RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         appender.setFile(getFileName());
         appender.setAppend(true);
-        appender.setContext(loggerContext);
 
-        for(BrokerLoggerFilter<?> filter : getChildren(BrokerLoggerFilter.class))
-        {
-            appender.addFilter(filter.asFilter());
-        }
-        appender.addFilter(DenyAllFilter.getInstance());
-        appender.setName(getName());
+        initializeAppender(appender);
+        Context loggerContext = appender.getContext();
 
         if(isRollDaily())
         {

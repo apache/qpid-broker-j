@@ -21,6 +21,7 @@
 package org.apache.qpid.server.logging;
 
 import java.util.Map;
+import java.util.Set;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -28,24 +29,45 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
 
 public class BrokerNameAndLevelFilterImpl extends AbstractConfiguredObject<BrokerNameAndLevelFilterImpl>
         implements BrokerNameAndLevelFilter<BrokerNameAndLevelFilterImpl>
 {
     @ManagedAttributeField
     private String _loggerName;
-    @ManagedAttributeField
+    @ManagedAttributeField(afterSet = "logLevelAfterSet")
     private LogLevel _level;
+
+    private volatile Level _logbackLevel;
 
     @ManagedObjectFactoryConstructor
     protected BrokerNameAndLevelFilterImpl(final Map<String, Object> attributes, BrokerLogger<?> logger)
     {
         super(parentsMap(logger), attributes);
+    }
+
+    @Override
+    protected void validateChange(ConfiguredObject<?> proxyForValidation, Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        BrokerNameAndLevelFilter proxyFilter = (BrokerNameAndLevelFilter)proxyForValidation;
+        if (changedAttributes.contains(LOGGER_NAME) &&
+                ((getLoggerName() != null && !getLoggerName().equals(proxyFilter.getLoggerName())) ||
+                        (getLoggerName() == null && proxyFilter.getLoggerName() != null)))
+        {
+            throw new IllegalConfigurationException("Attribute '" + LOGGER_NAME + " cannot be changed");
+        }
     }
 
     @Override
@@ -60,10 +82,14 @@ public class BrokerNameAndLevelFilterImpl extends AbstractConfiguredObject<Broke
         return _level;
     }
 
+    private void logLevelAfterSet()
+    {
+        _logbackLevel = Level.toLevel(getLevel().name());
+    }
+
     @Override
     public Filter<ILoggingEvent> asFilter()
     {
-        final Level level = Level.toLevel(getLevel().name());
         final String loggerName = getLoggerName();
         if("".equals(loggerName) || Logger.ROOT_LOGGER_NAME.equals(loggerName))
         {
@@ -72,7 +98,7 @@ public class BrokerNameAndLevelFilterImpl extends AbstractConfiguredObject<Broke
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
                 {
-                    return event.getLevel().isGreaterOrEqual(level) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
+                    return event.getLevel().isGreaterOrEqual(_logbackLevel) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
                 }
             };
         }
@@ -84,7 +110,7 @@ public class BrokerNameAndLevelFilterImpl extends AbstractConfiguredObject<Broke
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
                 {
-                    return event.getLevel().isGreaterOrEqual(level) && event.getLoggerName().startsWith(prefixName) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
+                    return event.getLevel().isGreaterOrEqual(_logbackLevel) && event.getLoggerName().startsWith(prefixName) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
                 }
             };
         }
@@ -95,9 +121,33 @@ public class BrokerNameAndLevelFilterImpl extends AbstractConfiguredObject<Broke
                 @Override
                 public FilterReply decide(final ILoggingEvent event)
                 {
-                    return event.getLevel().isGreaterOrEqual(level) && event.getLoggerName().equals(loggerName) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
+                    return event.getLevel().isGreaterOrEqual(_logbackLevel) && event.getLoggerName().equals(loggerName) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
                 }
             };
         }
+    }
+
+    @StateTransition( currentState = { State.ACTIVE, State.ERRORED, State.UNINITIALIZED }, desiredState = State.DELETED )
+    private ListenableFuture<Void> doDelete()
+    {
+        final SettableFuture<Void> returnVal = SettableFuture.create();
+        closeAsync().addListener(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                setState(State.DELETED);
+                returnVal.set(null);
+
+            }
+        }, getTaskExecutor().getExecutor());
+        return returnVal;
+    }
+
+    @StateTransition( currentState = { State.ERRORED, State.UNINITIALIZED }, desiredState = State.ACTIVE )
+    private ListenableFuture<Void> doActivate()
+    {
+        setState(State.ACTIVE);
+        return Futures.immediateFuture(null);
     }
 }

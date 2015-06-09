@@ -29,6 +29,8 @@ public interface BrokerNameAndLevelFilter<X extends BrokerNameAndLevelFilter<X>>
 {
 
     String TYPE = "NameAndLevel";
+    String LOGGER_NAME = "loggerName";
+    String LEVEL = "level";
 
     @ManagedAttribute( defaultValue = "" )
     String getLoggerName();

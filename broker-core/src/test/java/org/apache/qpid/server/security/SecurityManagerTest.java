@@ -36,6 +36,8 @@ import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerLogger;
+import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
@@ -273,7 +275,7 @@ public class SecurityManagerTest extends QpidTestCase
         when(exchange.getCategoryClass()).thenReturn(Exchange.class);
         when(exchange.getParent(VirtualHost.class)).thenReturn(vh);
 
-        assertCreateAuthorization( exchange, Operation.CREATE, ObjectType.EXCHANGE, expectedProperties, vh);
+        assertCreateAuthorization(exchange, Operation.CREATE, ObjectType.EXCHANGE, expectedProperties, vh);
     }
 
     public void testAuthoriseCreateQueue()
@@ -813,6 +815,32 @@ public class SecurityManagerTest extends QpidTestCase
         properties.put(Property.DURABLE, true);
 
         assertDeleteAuthorization(binding, Operation.UNBIND, ObjectType.EXCHANGE, properties, exchange, queue);
+    }
+
+    public void testAuthoriseBrokerLoggerOperations()
+    {
+        BrokerLogger mock = mock(BrokerLogger.class);
+        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(mock.getCategoryClass()).thenReturn(BrokerLogger.class);
+        when(mock.getParent(Broker.class)).thenReturn(_broker);
+        assertBrokerChildCreateAuthorization(mock);
+
+        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        assertBrokerChildUpdateAuthorization(mock);
+        assertBrokerChildDeleteAuthorization(mock);
+    }
+
+    public void testAuthoriseBrokerLoggerFilterOperations()
+    {
+        BrokerLoggerFilter mock = mock(BrokerLoggerFilter.class);
+        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        when(mock.getCategoryClass()).thenReturn(BrokerLogger.class);
+        when(mock.getParent(Broker.class)).thenReturn(_broker);
+        assertBrokerChildCreateAuthorization(mock);
+
+        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+        assertBrokerChildUpdateAuthorization(mock);
+        assertBrokerChildDeleteAuthorization(mock);
     }
 
     private VirtualHost getMockVirtualHost()

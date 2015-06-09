@@ -32,7 +32,6 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -42,6 +41,7 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
@@ -365,7 +365,7 @@ public class SecurityManager
                 // CREATE GROUP MEMBER is transformed into UPDATE GROUP rule
                 return Operation.UPDATE;
             }
-            else if (isBrokerOrBrokerChildOrPreferencesProvider(category))
+            else if (isBrokerType(category))
             {
                 // CREATE/UPDATE broker child is transformed into CONFIGURE BROKER rule
                 return Operation.CONFIGURE;
@@ -378,7 +378,7 @@ public class SecurityManager
                 // DELETE BINDING is transformed into UNBIND EXCHANGE rule
                 return Operation.UNBIND;
             }
-            else if (isBrokerOrBrokerChildOrPreferencesProvider(category))
+            else if (isBrokerType(category))
             {
                 // DELETE broker child is transformed into CONFIGURE BROKER rule
                 return Operation.CONFIGURE;
@@ -393,10 +393,11 @@ public class SecurityManager
         return operation;
     }
 
-    private boolean isBrokerOrBrokerChildOrPreferencesProvider(Class<? extends ConfiguredObject> category)
+    private boolean isBrokerType(Class<? extends ConfiguredObject> category)
     {
         return Broker.class.isAssignableFrom(category) ||
                PreferencesProvider.class.isAssignableFrom(category) ||
+               BrokerLoggerFilter.class.isAssignableFrom(category) ||
                ( !VirtualHostNode.class.isAssignableFrom(category) && getModel().getChildTypes(Broker.class).contains(category));
     }
 
@@ -438,7 +439,7 @@ public class SecurityManager
             Queue<?> queue = (Queue<?>)configuredObject.getParent(Queue.class);
             setQueueProperties(queue, properties);
         }
-        else if (isBrokerOrBrokerChildOrPreferencesProvider(configuredObjectType))
+        else if (isBrokerType(configuredObjectType))
         {
             String description = String.format("%s %s '%s'",
                     configuredObjectOperation == null? null : configuredObjectOperation.name().toLowerCase(),
@@ -484,7 +485,7 @@ public class SecurityManager
         {
             return ObjectType.VIRTUALHOSTNODE;
         }
-        else if (isBrokerOrBrokerChildOrPreferencesProvider(category))
+        else if (isBrokerType(category))
         {
             return ObjectType.BROKER;
         }

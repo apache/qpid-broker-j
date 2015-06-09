@@ -29,13 +29,11 @@ import ch.qos.logback.core.ConsoleAppender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-public class BrokerConsoleLoggerImpl extends AbstractConfiguredObject<BrokerConsoleLoggerImpl> implements BrokerConsoleLogger<BrokerConsoleLoggerImpl>
+public class BrokerConsoleLoggerImpl extends AbstractBrokerLogger<BrokerConsoleLoggerImpl> implements BrokerConsoleLogger<BrokerConsoleLoggerImpl>
 {
     @ManagedAttributeField
     private String _layout;
@@ -43,7 +41,7 @@ public class BrokerConsoleLoggerImpl extends AbstractConfiguredObject<BrokerCons
     @ManagedObjectFactoryConstructor
     protected BrokerConsoleLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
-        super(parentsMap(broker),attributes);
+        super(attributes, broker);
     }
 
     @Override
@@ -55,23 +53,13 @@ public class BrokerConsoleLoggerImpl extends AbstractConfiguredObject<BrokerCons
     @Override
     public Appender<ILoggingEvent> asAppender()
     {
-        ch.qos.logback.classic.Logger rootLogger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
+        initializeAppender(consoleAppender);
 
         final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(getLayout());
-        encoder.setContext(rootLogger.getLoggerContext());
+        encoder.setContext(consoleAppender.getContext());
         encoder.start();
-
-        ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
-        consoleAppender.setContext(rootLogger.getLoggerContext());
-
-        for(BrokerLoggerFilter<?> filter : getChildren(BrokerLoggerFilter.class))
-        {
-            consoleAppender.addFilter(filter.asFilter());
-        }
-        consoleAppender.addFilter(DenyAllFilter.getInstance());
-        consoleAppender.setName(getName());
 
         consoleAppender.setEncoder(encoder);
         consoleAppender.start();

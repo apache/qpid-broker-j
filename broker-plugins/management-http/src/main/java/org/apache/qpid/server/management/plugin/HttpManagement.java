@@ -323,6 +323,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         addRestServlet(root, "binding", VirtualHostNode.class, VirtualHost.class, Exchange.class, Queue.class, Binding.class);
         addRestServlet(root, "session", VirtualHostNode.class, VirtualHost.class, Connection.class, Session.class);
 
+        addRestServlet(root, "brokerlogger", BrokerLogger.class);
+        addRestServlet(root, "brokerloggerfilter", BrokerLogger.class, BrokerLoggerFilter.class);
+
         ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel(), Collections.<String>emptyList()));
         root.addServlet(apiDocsServlet, "/apidocs");
         root.addServlet(apiDocsServlet, "/apidocs/");
