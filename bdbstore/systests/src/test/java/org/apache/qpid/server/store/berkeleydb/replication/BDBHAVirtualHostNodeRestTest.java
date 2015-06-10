@@ -113,8 +113,8 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         assertActualAndDesiredStates(node3Url, "ACTIVE", "ACTIVE");
 
         // verify that remote nodes for node1 are created and their state is set to ACTIVE
-        waitForAttributeChanged("replicationnode/" + NODE2 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "ACTIVE");
-        waitForAttributeChanged("replicationnode/" + NODE3 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "ACTIVE");
+        waitForAttributeChanged("remotereplicationnode/" + NODE2 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "ACTIVE");
+        waitForAttributeChanged("remotereplicationnode/" + NODE3 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "ACTIVE");
 
         mutateDesiredState(node1Url, "STOPPED");
 
@@ -123,10 +123,10 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         assertActualAndDesiredStates(node3Url, "ACTIVE", "ACTIVE");
 
         // verify that remote node state fro node1 is changed to UNAVAILABLE
-        waitForAttributeChanged("replicationnode/" + NODE2 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "UNAVAILABLE");
-        waitForAttributeChanged("replicationnode/" + NODE3 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "UNAVAILABLE");
+        waitForAttributeChanged("remotereplicationnode/" + NODE2 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "UNAVAILABLE");
+        waitForAttributeChanged("remotereplicationnode/" + NODE3 + "/" + NODE1, BDBHARemoteReplicationNode.STATE, "UNAVAILABLE");
 
-        List<Map<String, Object>> remoteNodes = getRestTestHelper().getJsonAsList("replicationnode/" + NODE2);
+        List<Map<String, Object>> remoteNodes = getRestTestHelper().getJsonAsList("remotereplicationnode/" + NODE2);
         assertEquals("Unexpected number of remote nodes on " + NODE2, 2, remoteNodes.size());
 
         Map<String, Object> remoteNode1 = findRemoteNodeByName(remoteNodes, NODE1);
@@ -177,7 +177,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
 
         assertRemoteNodes(NODE1, NODE2, NODE3);
 
-        List<Map<String,Object>> data = getRestTestHelper().getJsonAsList("replicationnode/" + NODE1);
+        List<Map<String,Object>> data = getRestTestHelper().getJsonAsList("remotereplicationnode/" + NODE1);
         assertEquals("Unexpected number of remote nodes on " + NODE1, 2, data.size());
 
         getRestTestHelper().submitRequest(_baseNodeRestUrl + NODE2, "DELETE", HttpServletResponse.SC_OK);
@@ -185,7 +185,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         int counter = 0;
         while (data.size() != 1 && counter<50)
         {
-            data = getRestTestHelper().getJsonAsList("replicationnode/" + NODE1);
+            data = getRestTestHelper().getJsonAsList("remotereplicationnode/" + NODE1);
             if (data.size() != 1)
             {
                 Thread.sleep(100l);
@@ -210,7 +210,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
                                           Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PRIORITY, 100),
                                           HttpServletResponse.SC_OK);
 
-        List<Map<String,Object>> data = getRestTestHelper().getJsonAsList("replicationnode/" + NODE2);
+        List<Map<String,Object>> data = getRestTestHelper().getJsonAsList("remotereplicationnode/" + NODE2);
         assertEquals("Unexpected number of remote nodes on " + NODE2, 2, data.size());
 
         // delete master
@@ -220,12 +220,12 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
         waitForAttributeChanged(_baseNodeRestUrl + NODE2 + "?depth=0", BDBHAVirtualHostNode.ROLE, "MASTER");
 
         // delete remote node
-        getRestTestHelper().submitRequest("replicationnode/" + NODE2 + "/" + NODE1, "DELETE", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("remotereplicationnode/" + NODE2 + "/" + NODE1, "DELETE", HttpServletResponse.SC_OK);
 
         int counter = 0;
         while (data.size() != 1 && counter<50)
         {
-            data = getRestTestHelper().getJsonAsList("replicationnode/" + NODE2);
+            data = getRestTestHelper().getJsonAsList("remotereplicationnode/" + NODE2);
             if (data.size() != 1)
             {
                 Thread.sleep(100l);
@@ -391,7 +391,7 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
             remotes.remove(clusterNodeName);
             for (String remote : remotes)
             {
-                String remoteUrl = "replicationnode/" + clusterNodeName + "/" + remote;
+                String remoteUrl = "remotereplicationnode/" + clusterNodeName + "/" + remote;
                 Map<String, Object> nodeData = waitForAttributeChanged(remoteUrl, BDBHARemoteReplicationNode.ROLE, remote.equals(masterNode) ? "MASTER" : "REPLICA");
                 assertRemoteNodeData(remote, nodeData);
             }

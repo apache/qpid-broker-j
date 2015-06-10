@@ -334,16 +334,16 @@
           <row>
             <entry>
               <itemizedlist>
-                <listitem><para>/api/latest/replicationnode</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/replicationnode</para></listitem>
-                <listitem><para>/api/latest/replicationnode/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/replicationnode/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/latest/replicationnode/&lt;virtual host node name&gt;/&lt;replication node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/replicationnode/&lt;virtual host node name&gt;/&lt;replication node name&gt;</para></listitem>
+                <listitem><para>/api/latest/remotereplicationnode</para></listitem>
+                <listitem><para>/api/&lt;version&gt;/remotereplicationnode</para></listitem>
+                <listitem><para>/api/latest/remotereplicationnode/&lt;virtual host node name&gt;</para></listitem>
+                <listitem><para>/api/&lt;version&gt;/remotereplicationnode/&lt;virtual host node name&gt;</para></listitem>
+                <listitem><para>/api/latest/remotereplicationnode/&lt;virtual host node name&gt;/&lt;replication node name&gt;</para></listitem>
+                <listitem><para>/api/&lt;version&gt;/remotereplicationnode/&lt;virtual host node name&gt;/&lt;replication node name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
-              <para>Manages(creates/deletes/updates) ReplicationNode(s) on VirtualHostNode and provides the information about current values of ReplicationNode attributes</para>
+              <para>Manages(creates/deletes/updates) RemoteReplicationNode(s) on VirtualHostNode and provides the information about current values of RemoteReplicationNode attributes</para>
             </entry>
           </row>
           <row>

@@ -145,6 +145,33 @@ public abstract class Model
         return allDescendants.contains(descendantClass);
     }
 
+    public final Collection<Class<? extends ConfiguredObject>> getDescendantCategories(Class<? extends ConfiguredObject> parent)
+    {
+        Set<Class<? extends ConfiguredObject>> allDescendants = new HashSet<>();
+        for(Class<? extends ConfiguredObject> clazz : getChildTypes(parent))
+        {
+            if(allDescendants.add(clazz))
+            {
+                allDescendants.addAll(getDescendantCategories(clazz));
+            }
+        }
+
+        return allDescendants;
+    }
+
+    public final Collection<Class<? extends ConfiguredObject>> getAncestorCategories(Class<? extends ConfiguredObject> category)
+    {
+        Set<Class<? extends ConfiguredObject>> allAncestors = new HashSet<>();
+        for(Class<? extends ConfiguredObject> clazz : getParentTypes(category))
+        {
+            if(allAncestors.add(clazz))
+            {
+                allAncestors.addAll(getAncestorCategories(clazz));
+            }
+        }
+
+        return allAncestors;
+    }
 
     public abstract Collection<Class<? extends ConfiguredObject>> getSupportedCategories();
     public abstract Collection<Class<? extends ConfiguredObject>> getChildTypes(Class<? extends ConfiguredObject> parent);

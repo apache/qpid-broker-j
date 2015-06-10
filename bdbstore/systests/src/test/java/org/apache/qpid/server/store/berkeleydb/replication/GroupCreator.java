@@ -438,7 +438,7 @@ public class GroupCreator
         }
         else
         {
-            url = "/api/latest/replicationnode/" + localNodeName + "/" + remoteNodeName;
+            url = "/api/latest/remotereplicationnode/" + localNodeName + "/" + remoteNodeName;
         }
         return url;
     }

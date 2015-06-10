@@ -43,7 +43,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.qpid.server.management.plugin.servlet.rest.TimeZoneServlet;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
@@ -68,9 +67,7 @@ import org.apache.qpid.server.management.plugin.filter.ForbiddingTraceFilter;
 import org.apache.qpid.server.management.plugin.filter.RedirectingAuthorisationFilter;
 import org.apache.qpid.server.management.plugin.servlet.DefinedFileServlet;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
-import org.apache.qpid.server.management.plugin.servlet.LogFileServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
-import org.apache.qpid.server.management.plugin.servlet.rest.LogFileListingServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogRecordsServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LoggedOnUserPreferencesServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogoutServlet;
@@ -81,6 +78,7 @@ import org.apache.qpid.server.management.plugin.servlet.rest.QueueReportServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.SaslServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.StructureServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.TimeZoneServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.UserPreferencesServlet;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
@@ -95,7 +93,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 {
     private static final String PORT_SERVLET_ATTRIBUTE = "org.apache.qpid.server.model.Port";
     private final Logger _logger = LoggerFactory.getLogger(HttpManagement.class);
-
+    
     // 10 minutes by default
     public static final int DEFAULT_TIMEOUT_IN_SECONDS = 60 * 10;
     public static final String TIME_OUT = "sessionTimeout";
@@ -109,6 +107,9 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private static final String OPERATIONAL_LOGGING_NAME = "Web";
 
     private static final String JSESSIONID_COOKIE_PREFIX = "JSESSIONID_";
+
+    private static final String[] STATIC_FILE_TYPES = { "*.js", "*.css", "*.html", "*.png", "*.gif", "*.jpg",
+                                                        "*.jpeg", "*.json", "*.txt", "*.xsl" };
 
     private Server _server;
 
@@ -300,32 +301,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
 
-        addRestServlet(root, "broker");
-        addRestServlet(root, "virtualhostnode", VirtualHostNode.class);
-        addRestServlet(root, "authenticationprovider", AuthenticationProvider.class);
-        addRestServlet(root, "accesscontrolprovider", AccessControlProvider.class);
-        addRestServlet(root, "user", AuthenticationProvider.class, User.class);
-        addRestServlet(root, "groupprovider", GroupProvider.class);
-        addRestServlet(root, "group", GroupProvider.class, Group.class);
-        addRestServlet(root, "groupmember", GroupProvider.class, Group.class, GroupMember.class);
-        addRestServlet(root, "port", Port.class);
-        addRestServlet(root, "keystore", KeyStore.class);
-        addRestServlet(root, "truststore", TrustStore.class);
-        addRestServlet(root, "plugin", Plugin.class);
-        addRestServlet(root, "preferencesprovider", AuthenticationProvider.class, PreferencesProvider.class);
-
-        addRestServlet(root, "replicationnode", VirtualHostNode.class, RemoteReplicationNode.class);
-
-        addRestServlet(root, "virtualhost", VirtualHostNode.class, VirtualHost.class);
-        addRestServlet(root, "exchange", VirtualHostNode.class, VirtualHost.class, Exchange.class);
-        addRestServlet(root, "queue", VirtualHostNode.class, VirtualHost.class, Queue.class);
-        addRestServlet(root, "connection", VirtualHostNode.class, VirtualHost.class, Connection.class);
-        addRestServlet(root, "binding", VirtualHostNode.class, VirtualHost.class, Exchange.class, Queue.class, Binding.class);
-        addRestServlet(root, "session", VirtualHostNode.class, VirtualHost.class, Connection.class, Session.class);
-
-        addRestServlet(root, "brokerlogger", BrokerLogger.class);
-        addRestServlet(root, "brokerloggerfilter", BrokerLogger.class, BrokerLoggerFilter.class);
-
+        addRestServlet(root, Broker.class);
+        
         ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel(), Collections.<String>emptyList()));
         root.addServlet(apiDocsServlet, "/apidocs");
         root.addServlet(apiDocsServlet, "/apidocs/");
@@ -353,16 +330,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new FileServlet(DojoHelper.getDijitPath(), true)), "/dojo/dijit/*");
         root.addServlet(new ServletHolder(new FileServlet(DojoHelper.getDojoxPath(), true)), "/dojo/dojox/*");
 
-        root.addServlet(new ServletHolder(new FileServlet()), "*.js");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.css");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.html");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.png");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.gif");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.jpg");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.jpeg");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.json");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.txt");
-        root.addServlet(new ServletHolder(new FileServlet()), "*.xsl");
+        for(String pattern : STATIC_FILE_TYPES)
+        {
+            root.addServlet(new ServletHolder(new FileServlet()), pattern);
+        }
+
         root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
         // QPID-6516
 //        root.addServlet(new ServletHolder(new LogFileListingServlet()), "/service/logfilenames");
@@ -486,31 +458,58 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return connector;
     }
 
-    private void addRestServlet(ServletContextHandler root, String name, Class<? extends ConfiguredObject>... hierarchy)
+    private void addRestServlet(ServletContextHandler root, final Class<? extends ConfiguredObject> rootClass)
     {
-        ServletHolder servletHolder = new ServletHolder(name, new RestServlet(hierarchy));
-        servletHolder.getRegistration().setMultipartConfig(
-                new MultipartConfigElement("",
-                                           getContextValue(Long.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME),
-                                           -1l,
-                                           getContextValue(Integer.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
-
-        List<String> paths = Arrays.asList("/api/latest/" + name ,
-                                           "/api/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name  );
-
-        for(String path : paths)
+        Set<Class<? extends ConfiguredObject>> categories = new HashSet<>(getModel().getDescendantCategories(rootClass));
+        categories.add(rootClass);
+        for(Class<? extends ConfiguredObject> category : categories)
         {
-            root.addServlet(servletHolder, path + "/*");
+                String name = category.getSimpleName().toLowerCase();
+                List<Class<? extends ConfiguredObject>> hierarchyList = new ArrayList<>();
+
+                if(category != rootClass)
+                {
+                    Collection<Class<? extends ConfiguredObject>> parentCategories;
+
+                    hierarchyList.add(category);
+
+                    while (!(parentCategories = getModel().getParentTypes(category)).contains(rootClass))
+                    {
+                        hierarchyList.addAll(parentCategories);
+                        category = parentCategories.iterator().next();
+                    }
+
+                    Collections.reverse(hierarchyList);
+
+                }
+                Class<? extends ConfiguredObject>[] hierarchyArray =
+                        hierarchyList.toArray(new Class[hierarchyList.size()]);
+
+                ServletHolder servletHolder = new ServletHolder(name, new RestServlet(hierarchyArray));
+                servletHolder.getRegistration().setMultipartConfig(
+                        new MultipartConfigElement("",
+                                                   getContextValue(Long.class, MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME),
+                                                   -1l,
+                                                   getContextValue(Integer.class,
+                                                                   MAX_HTTP_FILE_UPLOAD_SIZE_CONTEXT_NAME)));
+
+                List<String> paths = Arrays.asList("/api/latest/" + name,
+                                                   "/api/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name);
+
+                for (String path : paths)
+                {
+                    root.addServlet(servletHolder, path + "/*");
+                }
+                ServletHolder docServletHolder = new ServletHolder(name + "docs", new ApiDocsServlet(getModel(),
+                                                                                                     paths,
+                                                                                                     hierarchyArray));
+                root.addServlet(docServletHolder, "/apidocs/latest/" + name + "/");
+                root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name + "/");
+                root.addServlet(docServletHolder, "/apidocs/latest/" + name);
+                root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name);
+
+
         }
-        ServletHolder docServletHolder = new ServletHolder(name+"docs", new ApiDocsServlet(getModel(),
-                                                                                           paths,
-                                                                                           hierarchy));
-        root.addServlet(docServletHolder, "/apidocs/latest/" + name + "/");
-        root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name +"/");
-        root.addServlet(docServletHolder, "/apidocs/latest/" + name );
-        root.addServlet(docServletHolder, "/apidocs/v" + BrokerModel.MODEL_MAJOR_VERSION + "/" + name);
-
-
     }
 
     private void logOperationalListenMessages(Collection<Port<?>> ports)

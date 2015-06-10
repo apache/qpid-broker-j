@@ -45,7 +45,7 @@ define(["dojo/_base/connect",
         }
         else
         {
-          return {name: remoteNodeName, type: "replicationnode", parent : modelObj};
+          return {name: remoteNodeName, type: "remotereplicationnode", parent : modelObj};
         }
     }
 
