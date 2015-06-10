@@ -165,7 +165,7 @@ public class MessageConverter_from_1_0
 
     public static Object convertValue(final Object value)
     {
-        if(value != null && !STANDARD_TYPES.contains(value))
+        if(value != null && !STANDARD_TYPES.contains(value.getClass()))
         {
             if(value instanceof Map)
             {

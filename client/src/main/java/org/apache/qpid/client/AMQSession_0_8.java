@@ -210,7 +210,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                     continue;
                 }
                 String queue = binding.getQueue() == null?
-                        queueName.toString() : binding.getQueue();
+                        queueName : binding.getQueue();
 
                 String exchange = binding.getExchange() == null ?
                         defaultExchange :
@@ -616,8 +616,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         ExchangeDeclareBody body = methodRegistry.createExchangeDeclareBody(getTicket(),
                                                                             name,
                                                                             type,
-                                                                            passive || name.toString()
-                                                                                    .startsWith("amq."),
+                                                                            passive || name.startsWith("amq."),
                                                                             durable,
                                                                             autoDelete,
                                                                             false,

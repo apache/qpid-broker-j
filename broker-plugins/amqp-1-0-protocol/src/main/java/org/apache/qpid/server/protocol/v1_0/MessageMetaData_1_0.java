@@ -527,7 +527,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
             else
             {
-                return _properties.getReplyTo().toString();
+                return _properties.getReplyTo();
             }
         }
 

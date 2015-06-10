@@ -46,13 +46,13 @@ public class DestinationURLTest extends TestCase
 
         assertTrue(url.equals(dest.toString()));
 
-        assertTrue(dest.getExchangeClass().toString().equals("exchange.Class"));
+        assertTrue(dest.getExchangeClass().equals("exchange.Class"));
 
-        assertTrue(dest.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(dest.getExchangeName().equals("exchangeName"));
 
-        assertTrue(dest.getDestinationName().toString().equals("Destination"));
+        assertTrue(dest.getDestinationName().equals("Destination"));
 
-        assertTrue(dest.getQueueName().toString().equals("Queue"));
+        assertTrue(dest.getQueueName().equals("Queue"));
     }
 
     public void testQueue() throws URISyntaxException
@@ -64,13 +64,13 @@ public class DestinationURLTest extends TestCase
 
         assertTrue(url.equals(dest.toString()));
 
-        assertTrue(dest.getExchangeClass().toString().equals("exchangeClass"));
+        assertTrue(dest.getExchangeClass().equals("exchangeClass"));
 
-        assertTrue(dest.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(dest.getExchangeName().equals("exchangeName"));
 
-        assertTrue(dest.getDestinationName().toString().equals(""));
+        assertTrue(dest.getDestinationName().equals(""));
 
-        assertTrue(dest.getQueueName().toString().equals("Queue"));
+        assertTrue(dest.getQueueName().equals("Queue"));
     }
 
     public void testQueueWithOption() throws URISyntaxException
@@ -82,13 +82,13 @@ public class DestinationURLTest extends TestCase
 
         assertTrue(url.equals(dest.toString()));
 
-        assertTrue(dest.getExchangeClass().toString().equals("exchangeClass"));
+        assertTrue(dest.getExchangeClass().equals("exchangeClass"));
 
-        assertTrue(dest.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(dest.getExchangeName().equals("exchangeName"));
 
-        assertTrue(dest.getDestinationName().toString().equals(""));
+        assertTrue(dest.getDestinationName().equals(""));
 
-        assertTrue(dest.getQueueName().toString().equals("Queue"));
+        assertTrue(dest.getQueueName().equals("Queue"));
         assertTrue(dest.getOption("option").equals("value"));
     }
 
@@ -102,13 +102,13 @@ public class DestinationURLTest extends TestCase
 
         assertTrue(url.equals(dest.toString()));
 
-        assertTrue(dest.getExchangeClass().toString().equals("exchangeClass"));
+        assertTrue(dest.getExchangeClass().equals("exchangeClass"));
 
-        assertTrue(dest.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(dest.getExchangeName().equals("exchangeName"));
 
-        assertTrue(dest.getDestinationName().toString().equals("Destination"));
+        assertTrue(dest.getDestinationName().equals("Destination"));
 
-        assertTrue(dest.getQueueName().toString().equals(""));
+        assertTrue(dest.getQueueName().equals(""));
     }
 
     public void testDestinationWithOption() throws URISyntaxException
@@ -120,13 +120,13 @@ public class DestinationURLTest extends TestCase
 
         assertTrue(url.equals(dest.toString()));
 
-        assertTrue(dest.getExchangeClass().toString().equals("exchangeClass"));
+        assertTrue(dest.getExchangeClass().equals("exchangeClass"));
 
-        assertTrue(dest.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(dest.getExchangeName().equals("exchangeName"));
 
-        assertTrue(dest.getDestinationName().toString().equals("Destination"));
+        assertTrue(dest.getDestinationName().equals("Destination"));
 
-        assertTrue(dest.getQueueName().toString().equals(""));
+        assertTrue(dest.getQueueName().equals(""));
 
         assertTrue(dest.getOption("option").equals("value"));
     }
@@ -138,13 +138,13 @@ public class DestinationURLTest extends TestCase
 
         AMQBindingURL dest = new AMQBindingURL(url);
 
-        assertTrue(dest.getExchangeClass().toString().equals("exchangeClass"));
+        assertTrue(dest.getExchangeClass().equals("exchangeClass"));
 
-        assertTrue(dest.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(dest.getExchangeName().equals("exchangeName"));
 
-        assertTrue(dest.getDestinationName().toString().equals("Destination"));
+        assertTrue(dest.getDestinationName().equals("Destination"));
 
-        assertTrue(dest.getQueueName().toString().equals(""));
+        assertTrue(dest.getQueueName().equals(""));
 
         assertTrue(dest.getOption("option").equals("value"));
         assertTrue(dest.getOption("option2").equals("value2"));
@@ -159,11 +159,11 @@ public class DestinationURLTest extends TestCase
 
         assertTrue(dest.getExchangeClass().equals(ExchangeDefaults.DIRECT_EXCHANGE_CLASS));
 
-        assertTrue(dest.getExchangeName().toString().equals(""));
+        assertTrue(dest.getExchangeName().equals(""));
 
-        assertTrue(dest.getDestinationName().toString().equals(""));
+        assertTrue(dest.getDestinationName().equals(""));
 
-        assertTrue(dest.getQueueName().toString().equals("IBMPerfQueue1"));
+        assertTrue(dest.getQueueName().equals("IBMPerfQueue1"));
 
         assertTrue(dest.getOption("durable").equals("true"));
     }
@@ -175,13 +175,13 @@ public class DestinationURLTest extends TestCase
 
         AMQBindingURL dest = new AMQBindingURL(url);
 
-        assertTrue(dest.getExchangeClass().toString().equals("exchangeClass"));
+        assertTrue(dest.getExchangeClass().equals("exchangeClass"));
 
-        assertTrue(dest.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(dest.getExchangeName().equals("exchangeName"));
 
-        assertTrue(dest.getDestinationName().toString().equals("Destination"));
+        assertTrue(dest.getDestinationName().equals("Destination"));
 
-        assertTrue(dest.getQueueName().toString().equals(""));
+        assertTrue(dest.getQueueName().equals(""));
 
         assertTrue(dest.getBindingKeys().length == 2);
     }
@@ -334,13 +334,13 @@ public class DestinationURLTest extends TestCase
 
         assertTrue(url.equals(burl.toString()));
 
-        assertTrue(burl.getExchangeClass().toString().equals("exchangeClass"));
+        assertTrue(burl.getExchangeClass().equals("exchangeClass"));
 
-        assertTrue(burl.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(burl.getExchangeName().equals("exchangeName"));
 
-        assertTrue(burl.getDestinationName().toString().equals("Destination"));
+        assertTrue(burl.getDestinationName().equals("Destination"));
 
-        assertTrue(burl.getQueueName().toString().equals("Queue"));
+        assertTrue(burl.getQueueName().equals("Queue"));
 
         //check that the MaxDeliveryCount property has the right value
         assertEquals("server",burl.getOption(BindingURL.OPTION_REJECT_BEHAVIOUR));
@@ -370,13 +370,13 @@ public class DestinationURLTest extends TestCase
 
         assertTrue(url.equals(burl.toString()));
 
-        assertTrue(burl.getExchangeClass().toString().equals("exchangeClass"));
+        assertTrue(burl.getExchangeClass().equals("exchangeClass"));
 
-        assertTrue(burl.getExchangeName().toString().equals("exchangeName"));
+        assertTrue(burl.getExchangeName().equals("exchangeName"));
 
-        assertTrue(burl.getDestinationName().toString().equals("Destination"));
+        assertTrue(burl.getDestinationName().equals("Destination"));
 
-        assertTrue(burl.getQueueName().toString().equals("Queue"));
+        assertTrue(burl.getQueueName().equals("Queue"));
 
         class MyTestAMQDestination extends AMQDestination
         {

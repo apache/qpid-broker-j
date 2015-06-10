@@ -143,7 +143,7 @@ public abstract class DefaultManagedObject extends StandardMBean implements Mana
     {
         if (obj.getParentObject() != null)
         {
-            String parentType = getHierarchicalType(obj.getParentObject()).toString();
+            String parentType = getHierarchicalType(obj.getParentObject());
             return parentType + "." + obj.getType();
         }
         else

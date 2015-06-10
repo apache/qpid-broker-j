@@ -99,7 +99,7 @@ public class AMQProtocolSessionTest extends QpidBrokerTestCase
     private void checkTempQueueName(SocketAddress address, String queueName)
     {
         _testSession.getNetworkConnection().setLocalAddress(address);
-        assertEquals("Wrong queue name", queueName, _testSession.genQueueName().toString());
+        assertEquals("Wrong queue name", queueName, _testSession.genQueueName());
     }
 
     private static class TestNetworkConnection implements NetworkConnection

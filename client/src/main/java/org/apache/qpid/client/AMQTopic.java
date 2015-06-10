@@ -154,7 +154,7 @@ public class AMQTopic extends AMQDestination implements Topic
     {
         if (getRoutingKey() != null)
         {
-            return getRoutingKey().toString();
+            return getRoutingKey();
         }
         else if (getSubject() != null)
         {

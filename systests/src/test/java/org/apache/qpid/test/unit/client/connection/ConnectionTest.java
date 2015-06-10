@@ -97,11 +97,11 @@ public class ConnectionTest extends QpidBrokerTestCase
 
             AMQQueue queue = (AMQQueue) queueSession.createQueue("MyQueue");
 
-            assertEquals(queue.getExchangeName().toString(), "test.direct");
+            assertEquals(queue.getExchangeName(), "test.direct");
 
             AMQQueue tempQueue = (AMQQueue) queueSession.createTemporaryQueue();
 
-            assertEquals(tempQueue.getExchangeName().toString(), "tmp.direct");
+            assertEquals(tempQueue.getExchangeName(), "tmp.direct");
 
             queueSession.close();
 
@@ -109,11 +109,11 @@ public class ConnectionTest extends QpidBrokerTestCase
 
             AMQTopic topic = (AMQTopic) topicSession.createTopic("silly.topic");
 
-            assertEquals(topic.getExchangeName().toString(), "test.topic");
+            assertEquals(topic.getExchangeName(), "test.topic");
 
             AMQTopic tempTopic = (AMQTopic) topicSession.createTemporaryTopic();
 
-            assertEquals(tempTopic.getExchangeName().toString(), "tmp.topic");
+            assertEquals(tempTopic.getExchangeName(), "tmp.topic");
 
             topicSession.close();
 

@@ -561,7 +561,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
             rk = routingKey;
         }
 
-        return isQueueBound(exchangeName == null ? null : exchangeName,queueName == null ? null : queueName,rk,(Map<String,Object>)null);
+        return isQueueBound(exchangeName, queueName, rk, (Map<String,Object>)null);
     }
 
     public boolean isQueueBound(final String exchangeName, final String queueName, final String bindingKey,Map<String,Object> args)
@@ -763,12 +763,12 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
             // This code is here to ensure address based destination work with the declareQueue public method in AMQSession.java
             Node node = amqd.getNode();
             Map<String,Object> arguments = new HashMap<String,Object>();
-            arguments.putAll((Map<? extends String, ? extends Object>) node.getDeclareArgs());
+            arguments.putAll(node.getDeclareArgs());
             if (arguments.get(AddressHelper.NO_LOCAL) == null)
             {
                 arguments.put(AddressHelper.NO_LOCAL, noLocal);
             }
-            getQpidSession().queueDeclare(queueName.toString(), node.getAlternateExchange() ,
+            getQpidSession().queueDeclare(queueName, node.getAlternateExchange() ,
                     arguments,
                     node.isAutoDelete() ? Option.AUTO_DELETE : Option.NONE,
                     node.isDurable() ? Option.DURABLE : Option.NONE,
@@ -1246,7 +1246,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
                 queueProps.isExclusive() ? Option.EXCLUSIVE : Option.NONE);
 
         Map<String,Object> bindingArguments = new HashMap<String, Object>();
-        bindingArguments.put(AMQPFilterTypes.JMS_SELECTOR.getValue().toString(), messageSelector == null ? "" : messageSelector);
+        bindingArguments.put(AMQPFilterTypes.JMS_SELECTOR.getValue(), messageSelector == null ? "" : messageSelector);
         getQpidSession().exchangeBind(queueName,
                               dest.getAddressName(),
                               dest.getSubject(),

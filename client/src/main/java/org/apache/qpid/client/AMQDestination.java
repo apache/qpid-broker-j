@@ -470,7 +470,7 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
 
     public String getQueueName()
     {
-        return _queueName == null ? null : _queueName.toString();
+        return _queueName;
     }
 
     public String getAMQQueueName()
@@ -754,15 +754,15 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     {
         String type = binding.getExchangeClass();
 
-        if (type.equals(ExchangeDefaults.DIRECT_EXCHANGE_CLASS))
+        if (ExchangeDefaults.DIRECT_EXCHANGE_CLASS.equals(type))
         {
             return new AMQQueue(binding);
         }
-        else if (type.equals(ExchangeDefaults.TOPIC_EXCHANGE_CLASS))
+        else if (ExchangeDefaults.TOPIC_EXCHANGE_CLASS.equals(type))
         {
             return new AMQTopic(binding);
         }
-        else if (type.equals(ExchangeDefaults.HEADERS_EXCHANGE_CLASS))
+        else if (ExchangeDefaults.HEADERS_EXCHANGE_CLASS.equals(type))
         {
             return new AMQHeadersExchange(binding);
         }

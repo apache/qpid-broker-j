@@ -605,7 +605,7 @@ public class RestServlet extends AbstractServlet
                     byte[] data = new byte[(int) part.getSize()];
                     part.getInputStream().read(data);
                     String inlineURL = DataUrlUtils.getDataUrlForBytes(data);
-                    fileUploads.put(part.getName(),inlineURL.toString());
+                    fileUploads.put(part.getName(), inlineURL);
                 }
             }
             providedObject.putAll(fileUploads);

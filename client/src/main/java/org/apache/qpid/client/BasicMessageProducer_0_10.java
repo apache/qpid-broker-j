@@ -85,10 +85,10 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
         {
         	if (getSession().isDeclareExchanges())
         	{
-	            String name = destination.getExchangeName().toString();
+	            String name = destination.getExchangeName();
 	            ((AMQSession_0_10) getSession()).getQpidSession().exchangeDeclare
 	                (name,
-	                 destination.getExchangeClass().toString(),
+	                 destination.getExchangeClass(),
 	                 null, null,
 	                 name.startsWith("amq.") ? Option.PASSIVE : Option.NONE,
 	                 destination.isExchangeDurable() ? Option.DURABLE : Option.NONE,
@@ -180,12 +180,12 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
             deliveryProp.setPriority(MessageDeliveryPriority.get((short) priority));
             message.setJMSPriority(priority);
         }
-        String exchangeName = destination.getExchangeName() == null ? "" : destination.getExchangeName().toString();
+        String exchangeName = destination.getExchangeName() == null ? "" : destination.getExchangeName();
         if ( deliveryProp.getExchange() == null || ! deliveryProp.getExchange().equals(exchangeName))
         {
             deliveryProp.setExchange(exchangeName);
         }
-        String routingKey = destination.getRoutingKey().toString();
+        String routingKey = destination.getRoutingKey();
         if (deliveryProp.getRoutingKey() == null || ! deliveryProp.getRoutingKey().equals(routingKey))
         {
             deliveryProp.setRoutingKey(routingKey);
@@ -359,7 +359,7 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
 
             ByteBuffer buffer = data == null ? ByteBuffer.allocate(0) : data.slice();
             
-            ssn.messageTransfer(destination.getExchangeName() == null ? "" : destination.getExchangeName().toString(), 
+            ssn.messageTransfer(destination.getExchangeName() == null ? "" : destination.getExchangeName(),
                                 MessageAcceptMode.NONE,
                                 MessageAcquireMode.PRE_ACQUIRED,
                                 new Header(deliveryProp, messageProps),

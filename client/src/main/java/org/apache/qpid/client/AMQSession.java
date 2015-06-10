@@ -1092,19 +1092,19 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                     // durable topic subscription that the broker arguments don't match any more. This is because it is not otherwise
                     // possible to determine  when querying the broker whether there are no arguments or just a non-matching selector
                     // argument, as specifying null for the arguments when querying means they should not be checked at all
-                    args.put(AMQPFilterTypes.JMS_SELECTOR.getValue().toString(), messageSelector == null ? "" : messageSelector);
+                    args.put(AMQPFilterTypes.JMS_SELECTOR.getValue(), messageSelector == null ? "" : messageSelector);
                     if(noLocal)
                     {
-                        args.put(AMQPFilterTypes.NO_LOCAL.getValue().toString(), true);
+                        args.put(AMQPFilterTypes.NO_LOCAL.getValue(), true);
                     }
 
                     // if the queue is bound to the exchange but NOT for this topic and selector, then the JMS spec
                     // says we must trash the subscription.
                     boolean isQueueBound = isQueueBound(dest.getExchangeName(), dest.getAMQQueueName());
                     boolean isQueueBoundForTopicAndSelector =
-                                isQueueBound(dest.getExchangeName().toString(),
-                                             dest.getAMQQueueName().toString(),
-                                             topicName.toString(), args);
+                                isQueueBound(dest.getExchangeName(),
+                                             dest.getAMQQueueName(),
+                                             topicName, args);
 
                     if (isQueueBound && !isQueueBoundForTopicAndSelector)
                     {
@@ -2070,7 +2070,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                         {
                             throw JMSExceptionHelper.chainJMSException(new InvalidDestinationException(
                                     "Invalid routing key:"
-                                    + amqd.getRoutingKey().toString()
+                                    + amqd.getRoutingKey()
                             ), e);
                         }
                         catch (AMQException e)

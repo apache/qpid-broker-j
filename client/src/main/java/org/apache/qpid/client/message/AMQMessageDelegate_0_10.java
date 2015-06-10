@@ -174,7 +174,7 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
         if (exchange != null && !exchangeMapContains(exchange))
         {
             Future<ExchangeQueryResult> future =
-                    session.exchangeQuery(exchange.toString());
+                    session.exchangeQuery(exchange);
             ExchangeQueryResult res = future.get();
 
             updateExchangeType(exchange, res.getType());
@@ -332,7 +332,7 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
            }
         }
 
-        final ReplyTo replyTo = new ReplyTo(amqd.getExchangeName().toString(), amqd.getRoutingKey().toString());
+        final ReplyTo replyTo = new ReplyTo(amqd.getExchangeName(), amqd.getRoutingKey());
         _destinationCache.put(replyTo, destination);
         _messageProps.setReplyTo(replyTo);
     }

@@ -240,7 +240,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
                         String question = MessageFormat.format("Found persistent messages for non-durable queue ''{1}''. "
                                 + " Do you with to create this queue and move all the messages into it?" + lineSeparator
                                 + "NOTE: Answering No will result in these messages being discarded!", queueName);
-                        UpgradeInteractionResponse response = handler.requireResponse(question.toString(),
+                        UpgradeInteractionResponse response = handler.requireResponse(question,
                                 UpgradeInteractionResponse.YES, UpgradeInteractionResponse.YES,
                                 UpgradeInteractionResponse.NO, UpgradeInteractionResponse.ABORT);
 

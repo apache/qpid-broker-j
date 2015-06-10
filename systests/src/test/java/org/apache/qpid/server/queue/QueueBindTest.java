@@ -75,7 +75,7 @@ public class QueueBindTest extends QpidBrokerTestCase
 
         // try to re-bind queue with a selector
         Map<String, Object> bindArguments = new HashMap<String, Object>();
-        bindArguments.put(AMQPFilterTypes.JMS_SELECTOR.getValue().toString(), INDEX + "=0");
+        bindArguments.put(AMQPFilterTypes.JMS_SELECTOR.getValue(), INDEX + "=0");
         _session.bindQueue(destination.getAMQQueueName(), destination.getRoutingKey(),
                            bindArguments, destination.getExchangeName(), destination);
 
@@ -108,7 +108,7 @@ public class QueueBindTest extends QpidBrokerTestCase
 
         // try to re-bind queue with a selector
         Map<String, Object> bindArguments = new HashMap<String, Object>();
-        bindArguments.put(AMQPFilterTypes.JMS_SELECTOR.getValue().toString(), INDEX + "=0");
+        bindArguments.put(AMQPFilterTypes.JMS_SELECTOR.getValue(), INDEX + "=0");
         _session.bindQueue(destination.getAMQQueueName(), destination.getRoutingKey(),
                            bindArguments, destination.getExchangeName(), destination);
 

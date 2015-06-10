@@ -634,7 +634,7 @@ public class JsonFileConfigStore implements DurableConfigurationStore
                                                                                       final Class<? extends ConfiguredObject> clazz)
     {
         Map<String,Class<? extends ConfiguredObject>>map = new HashMap<String, Class<? extends ConfiguredObject>>();
-        map.put(clazz.getSimpleName().toString(), clazz);
+        map.put(clazz.getSimpleName(), clazz);
         Collection<Class<? extends ConfiguredObject>> childClasses = model.getChildTypes(clazz);
         if(childClasses != null)
         {

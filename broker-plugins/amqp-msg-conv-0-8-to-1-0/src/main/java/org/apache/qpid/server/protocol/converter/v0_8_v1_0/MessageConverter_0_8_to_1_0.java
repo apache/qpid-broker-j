@@ -56,7 +56,7 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
     protected MessageMetaData_1_0 convertMetaData(final AMQMessage serverMessage, SectionEncoder sectionEncoder)
     {
 
-        List<Section> sections = new ArrayList<Section>(3);
+        List<Section> sections = new ArrayList<>(3);
 
         Header header = new Header();
 
@@ -115,23 +115,23 @@ public class MessageConverter_0_8_to_1_0 extends MessageConverter_to_1_0<AMQMess
             AMQBindingURL burl = new AMQBindingURL(originalReplyTo);
             String replyTo;
 
-            if(burl.getExchangeName() != null && !burl.getExchangeName().equals(AMQShortString.EMPTY_STRING))
+            if(burl.getExchangeName() != null && !burl.getExchangeName().equals(""))
             {
-                replyTo = burl.getExchangeName().toString();
+                replyTo = burl.getExchangeName();
 
                 if(burl.getRoutingKey() != null)
                 {
-                    replyTo += "/" + burl.getRoutingKey().toString();
+                    replyTo += "/" + burl.getRoutingKey();
                 }
 
             }
-            else if(burl.getQueueName() != null && !burl.getQueueName().equals(AMQShortString.EMPTY_STRING))
+            else if(burl.getQueueName() != null && !burl.getQueueName().equals(""))
             {
-                replyTo = burl.getQueueName().toString();
+                replyTo = burl.getQueueName();
             }
             else if(burl.getRoutingKey() != null)
             {
-                replyTo = burl.getRoutingKey().toString();
+                replyTo = burl.getRoutingKey();
             }
             else
             {
