@@ -71,43 +71,45 @@ public class Encrypted091MessageFactoryTest extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        final AMQSession session = mock(AMQSession.class);
-        _messageFactoryRegistry = MessageFactoryRegistry.newDefaultRegistry(session);
-        _messageFactory = new Encrypted091MessageFactory(_messageFactoryRegistry);
+        if(isStrongEncryptionEnabled())
+        {
+            final AMQSession session = mock(AMQSession.class);
+            _messageFactoryRegistry = MessageFactoryRegistry.newDefaultRegistry(session);
+            _messageFactory = new Encrypted091MessageFactory(_messageFactoryRegistry);
 
 
-        _props = new BasicContentHeaderProperties();
-        _props.setContentType("text/plain");
+            _props = new BasicContentHeaderProperties();
+            _props.setContentType("text/plain");
 
-        final int headerLength = _props.getPropertyListSize() + 2;
-        _unencrypted = new byte[headerLength + _data.length];
-        BytesDataOutput output = new BytesDataOutput(_unencrypted);
-        output.writeShort((short) (_props.getPropertyFlags() & 0xffff));
-        _props.writePropertyListPayload(output);
+            final int headerLength = _props.getPropertyListSize() + 2;
+            _unencrypted = new byte[headerLength + _data.length];
+            BytesDataOutput output = new BytesDataOutput(_unencrypted);
+            output.writeShort((short) (_props.getPropertyFlags() & 0xffff));
+            _props.writePropertyListPayload(output);
 
 
+            System.arraycopy(_data, 0, _unencrypted, headerLength, _data.length);
 
-        System.arraycopy(_data,0,_unencrypted,headerLength,_data.length);
+            _secretKeySpec = new SecretKeySpec(_secretKeyEncoded, "AES");
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, _secretKeySpec, new IvParameterSpec(_initializeVector));
+            _encryptedMessage = cipher.doFinal(_unencrypted);
+            _keyStore = KeyStore.getInstance("JKS");
+            _keyStore.load(getClass().getClassLoader().getResourceAsStream(TestSSLConstants.KEYSTORE),
+                           TestSSLConstants.KEYSTORE_PASSWORD.toCharArray());
 
-        _secretKeySpec = new SecretKeySpec(_secretKeyEncoded, "AES");
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, _secretKeySpec, new IvParameterSpec(_initializeVector));
-        _encryptedMessage = cipher.doFinal(_unencrypted);
-        _keyStore = KeyStore.getInstance("JKS");
-        _keyStore.load(getClass().getClassLoader().getResourceAsStream(TestSSLConstants.KEYSTORE), TestSSLConstants.KEYSTORE_PASSWORD.toCharArray());
+            final AMQConnection connection = mock(AMQConnection.class);
+            final ConnectionSettings settings = mock(ConnectionSettings.class);
 
-        final AMQConnection connection = mock(AMQConnection.class);
-        final ConnectionSettings settings = mock(ConnectionSettings.class);
+            when(session.getAMQConnection()).thenReturn(connection);
+            when(connection.getConnectionSettings()).thenReturn(settings);
+            when(settings.getEncryptionTrustStore(any(ConnectionSettings.RemoteStoreFinder.class))).thenReturn(_keyStore);
+            when(settings.getEncryptionKeyStore()).thenReturn(_keyStore);
+            when(settings.getEncryptionKeyStorePassword()).thenReturn(TestSSLConstants.KEYSTORE_PASSWORD);
 
-        when(session.getAMQConnection()).thenReturn(connection);
-        when(connection.getConnectionSettings()).thenReturn(settings);
-        when(settings.getEncryptionTrustStore(any(ConnectionSettings.RemoteStoreFinder.class))).thenReturn(_keyStore);
-        when(settings.getEncryptionKeyStore()).thenReturn(_keyStore);
-        when(settings.getEncryptionKeyStorePassword()).thenReturn(TestSSLConstants.KEYSTORE_PASSWORD);
-
-        _encryptionHelper = new MessageEncryptionHelper(session);
-        when(session.getMessageEncryptionHelper()).thenReturn(_encryptionHelper);
-
+            _encryptionHelper = new MessageEncryptionHelper(session);
+            when(session.getMessageEncryptionHelper()).thenReturn(_encryptionHelper);
+        }
     }
 
     public void testDecryptsMessage() throws Exception

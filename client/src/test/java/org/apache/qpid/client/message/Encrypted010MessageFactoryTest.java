@@ -71,44 +71,48 @@ public class Encrypted010MessageFactoryTest extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        final AMQSession session = mock(AMQSession.class);
-        _messageFactoryRegistry = MessageFactoryRegistry.newDefaultRegistry(session);
-        _messageFactory = new Encrypted010MessageFactory(_messageFactoryRegistry);
+        if(isStrongEncryptionEnabled())
+        {
+            final AMQSession session = mock(AMQSession.class);
+            _messageFactoryRegistry = MessageFactoryRegistry.newDefaultRegistry(session);
+            _messageFactory = new Encrypted010MessageFactory(_messageFactoryRegistry);
 
 
-        _messageProps = new MessageProperties();
-        final HashMap<String, Object> headers = new HashMap<>();
-        _messageProps.setApplicationHeaders(headers);
-        _deliveryProps = new DeliveryProperties();
-        _messageProps.setContentType("text/plain");
-        BBEncoder encoder = new BBEncoder(1024);
-        encoder.writeStruct32(_deliveryProps);
-        encoder.writeStruct32(_messageProps);
-        ByteBuffer buffer = encoder.buffer();
+            _messageProps = new MessageProperties();
+            final HashMap<String, Object> headers = new HashMap<>();
+            _messageProps.setApplicationHeaders(headers);
+            _deliveryProps = new DeliveryProperties();
+            _messageProps.setContentType("text/plain");
+            BBEncoder encoder = new BBEncoder(1024);
+            encoder.writeStruct32(_deliveryProps);
+            encoder.writeStruct32(_messageProps);
+            ByteBuffer buffer = encoder.buffer();
 
-        final int payloadOffset = buffer.remaining();
-        _unencrypted = new byte[payloadOffset + _data.length];
-        buffer.get(_unencrypted,0, payloadOffset);
-        System.arraycopy(_data,0,_unencrypted,payloadOffset,_data.length);
+            final int payloadOffset = buffer.remaining();
+            _unencrypted = new byte[payloadOffset + _data.length];
+            buffer.get(_unencrypted, 0, payloadOffset);
+            System.arraycopy(_data, 0, _unencrypted, payloadOffset, _data.length);
 
-        _secretKeySpec = new SecretKeySpec(_secretKeyEncoded, "AES");
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, _secretKeySpec, new IvParameterSpec(_initializeVector));
-        _encryptedMessage = cipher.doFinal(_unencrypted);
-        _keyStore = KeyStore.getInstance("JKS");
-        _keyStore.load(getClass().getClassLoader().getResourceAsStream(TestSSLConstants.KEYSTORE), TestSSLConstants.KEYSTORE_PASSWORD.toCharArray());
+            _secretKeySpec = new SecretKeySpec(_secretKeyEncoded, "AES");
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, _secretKeySpec, new IvParameterSpec(_initializeVector));
+            _encryptedMessage = cipher.doFinal(_unencrypted);
+            _keyStore = KeyStore.getInstance("JKS");
+            _keyStore.load(getClass().getClassLoader().getResourceAsStream(TestSSLConstants.KEYSTORE),
+                           TestSSLConstants.KEYSTORE_PASSWORD.toCharArray());
 
-        final AMQConnection connection = mock(AMQConnection.class);
-        final ConnectionSettings settings = mock(ConnectionSettings.class);
+            final AMQConnection connection = mock(AMQConnection.class);
+            final ConnectionSettings settings = mock(ConnectionSettings.class);
 
-        when(session.getAMQConnection()).thenReturn(connection);
-        when(connection.getConnectionSettings()).thenReturn(settings);
-        when(settings.getEncryptionTrustStore(any(ConnectionSettings.RemoteStoreFinder.class))).thenReturn(_keyStore);
-        when(settings.getEncryptionKeyStore()).thenReturn(_keyStore);
-        when(settings.getEncryptionKeyStorePassword()).thenReturn(TestSSLConstants.KEYSTORE_PASSWORD);
+            when(session.getAMQConnection()).thenReturn(connection);
+            when(connection.getConnectionSettings()).thenReturn(settings);
+            when(settings.getEncryptionTrustStore(any(ConnectionSettings.RemoteStoreFinder.class))).thenReturn(_keyStore);
+            when(settings.getEncryptionKeyStore()).thenReturn(_keyStore);
+            when(settings.getEncryptionKeyStorePassword()).thenReturn(TestSSLConstants.KEYSTORE_PASSWORD);
 
-        _encryptionHelper = new MessageEncryptionHelper(session);
-        when(session.getMessageEncryptionHelper()).thenReturn(_encryptionHelper);
+            _encryptionHelper = new MessageEncryptionHelper(session);
+            when(session.getMessageEncryptionHelper()).thenReturn(_encryptionHelper);
+        }
 
     }
 
