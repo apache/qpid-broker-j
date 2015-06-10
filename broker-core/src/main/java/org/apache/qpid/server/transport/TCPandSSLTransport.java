@@ -160,6 +160,12 @@ class TCPandSSLTransport implements AcceptingTransport
         }
 
         @Override
+        public int getThreadPoolSize()
+        {
+            return Runtime.getRuntime().availableProcessors();
+        }
+
+        @Override
         public int getReceiveBufferSize()
         {
             return _port.getReceiveBufferSize();

@@ -39,6 +39,8 @@ public interface NetworkTransportConfiguration
     // The amount of memory in bytes to allocate to the outgoing buffer
     int getSendBufferSize();
 
+    int getThreadPoolSize();
+
     InetSocketAddress getAddress();
 
     boolean needClientAuth();

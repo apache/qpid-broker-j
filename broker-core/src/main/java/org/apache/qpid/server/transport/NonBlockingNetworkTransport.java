@@ -200,6 +200,10 @@ public class NonBlockingNetworkTransport
 
                 success = true;
             }
+            else
+            {
+                LOGGER.error("No Engine available.");
+            }
         }
         catch (IOException e)
         {
@@ -221,5 +225,8 @@ public class NonBlockingNetworkTransport
         }
     }
 
-
+    public int getThreadPoolSize()
+    {
+        return _config.getThreadPoolSize();
+    }
 }

@@ -87,6 +87,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private boolean _workDone;
     private Certificate _peerCertificate;
 
+    private boolean _partialRead;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ServerProtocolEngine delegate,
@@ -147,6 +148,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
     }
 
+    public boolean isPartialRead()
+    {
+        return _partialRead;
+    }
 
     Ticker getTicker()
     {
@@ -364,10 +369,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private boolean doRead() throws IOException
     {
         boolean readData = false;
+        _partialRead = false;
         if(_transportEncryption == TransportEncryption.NONE)
         {
-            int remaining = 0;
-            while (remaining == 0 && !_closed.get())
+            if (!_closed.get())
             {
                 if (_currentBuffer == null || _currentBuffer.remaining() == 0)
                 {
@@ -382,7 +387,9 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 {
                     _closed.set(true);
                 }
-                remaining = _currentBuffer.remaining();
+
+                _partialRead = !_currentBuffer.hasRemaining();
+
                 if (LOGGER.isDebugEnabled())
                 {
                     LOGGER.debug("Read " + read + " byte(s)");
@@ -395,10 +402,9 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
         else if(_transportEncryption == TransportEncryption.TLS)
         {
-            int read = 1;
-            while(!_closed.get() && read > 0  && _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_WRAP && (_status == null || _status.getStatus() != SSLEngineResult.Status.CLOSED))
+            if (!_closed.get() && _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_WRAP && (_status == null || _status.getStatus() != SSLEngineResult.Status.CLOSED))
             {
-                read = _socketChannel.read(_netInputBuffer);
+                int read = _socketChannel.read(_netInputBuffer);
                 if (read == -1)
                 {
                     _closed.set(true);
@@ -407,6 +413,9 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 {
                     readData = true;
                 }
+
+                _partialRead = !_netInputBuffer.hasRemaining();
+
                 if (LOGGER.isDebugEnabled())
                 {
                     LOGGER.debug("Read " + read + " encrypted bytes ");

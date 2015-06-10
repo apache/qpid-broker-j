@@ -56,7 +56,7 @@ public class SelectorThread extends Thread
 
     private final Selector _selector;
     private final AtomicBoolean _closed = new AtomicBoolean();
-    private final NetworkConnectionScheduler _scheduler = new NetworkConnectionScheduler(this);
+    private final NetworkConnectionScheduler _scheduler;
     private final NonBlockingNetworkTransport _transport;
     private long _nextTimeout;
 
@@ -66,6 +66,7 @@ public class SelectorThread extends Thread
 
         _transport = nonBlockingNetworkTransport;
         _selector = Selector.open();
+        _scheduler = new NetworkConnectionScheduler(this, _transport);
     }
 
     public void addAcceptingSocket(final ServerSocketChannel socketChannel)

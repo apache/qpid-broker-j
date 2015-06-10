@@ -40,10 +40,10 @@ class NetworkConnectionScheduler
     private final AtomicInteger _running = new AtomicInteger();
     private final int _poolSize;
 
-    NetworkConnectionScheduler(final SelectorThread selectorThread)
+    NetworkConnectionScheduler(final SelectorThread selectorThread, final NonBlockingNetworkTransport transport)
     {
         _selectorThread = selectorThread;
-        _poolSize = Runtime.getRuntime().availableProcessors();
+        _poolSize = transport.getThreadPoolSize();
         _executor = new ThreadPoolExecutor(_poolSize, _poolSize, 0L, TimeUnit.MILLISECONDS,
                                            new LinkedBlockingQueue<Runnable>(), new ThreadFactory()
         {
@@ -96,7 +96,7 @@ class NetworkConnectionScheduler
                 if (!closed)
                 {
 
-                    if (connection.isStateChanged())
+                    if (connection.isStateChanged() || connection.isPartialRead())
                     {
                         if (_running.get() == _poolSize)
                         {
