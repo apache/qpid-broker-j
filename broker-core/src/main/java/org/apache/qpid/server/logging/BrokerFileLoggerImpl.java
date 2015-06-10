@@ -156,7 +156,6 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
         encoder.setContext(loggerContext);
         encoder.start();
         appender.setEncoder(encoder);
-        appender.start();
         return appender;
     }
 

@@ -110,7 +110,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private String _confidentialConfigurationEncryptionProvider;
 
     private final boolean _virtualHostPropertiesNodeEnabled;
-    private FileAppender<ILoggingEvent> _logFileAppender;
+    private Collection<BrokerLogger> _brokerLoggersToClose;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -168,23 +168,19 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-        StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
+
         Collection<BrokerLogger> loggers = getChildren(BrokerLogger.class);
         for(BrokerLogger<?> logger : loggers)
         {
-            final Appender<ILoggingEvent> appender = logger.asAppender();
-            rootLogger.addAppender(appender);
             if(_logRecorder == null && logger instanceof BrokerMemoryLogger)
             {
+                Appender appender = rootLogger.getAppender(logger.getName());
                 _logRecorder = new LogRecorder((RecordEventAppender) appender);
-            }
-
-            if (startupAppender != null)
-            {
-                startupAppender.replayAccumulatedEvents(appender);
+                break;
             }
         }
 
+        StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
         if (startupAppender != null)
         {
             rootLogger.detachAppender(startupAppender);
@@ -596,6 +592,13 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     }
 
     @Override
+    protected ListenableFuture<Void> beforeClose()
+    {
+        _brokerLoggersToClose = getChildren(BrokerLogger.class);
+        return super.beforeClose();
+    }
+
+    @Override
     protected void onClose()
     {
         if (_reportingTimer != null)
@@ -609,17 +612,13 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         {
             _logRecorder.closeLogRecorder();
         }
-        if(_logFileAppender != null)
+
+        for (BrokerLogger<?> logger: _brokerLoggersToClose)
         {
-
-            ch.qos.logback.classic.Logger rootLogger =
-                    (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-            rootLogger.detachAppender(_logFileAppender);
-            _logFileAppender.stop();
-
+            logger.stopLogging();
         }
-
     }
+
     @Override
     public SecurityManager getSecurityManager()
     {

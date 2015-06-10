@@ -28,6 +28,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerLogger;
@@ -35,6 +36,7 @@ import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,65 @@ public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> ex
     protected CompositeFilter getCompositeFilter()
     {
         return _compositeFilter;
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        super.postResolveChildren();
+
+        ch.qos.logback.classic.Logger rootLogger = getRootLogger();
+        final Appender<ILoggingEvent> appender = asAppender();
+        rootLogger.addAppender(appender);
+        appender.start();
+
+        StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
+        if (startupAppender != null)
+        {
+            startupAppender.replayAccumulatedEvents(appender);
+        }
+    }
+
+    @Override
+    public void stopLogging()
+    {
+        Appender appender = getLoggerAppender();
+        appender.stop();
+        getRootLogger().detachAppender(getName());
+    }
+
+    @StateTransition(currentState = {State.ACTIVE, State.UNINITIALIZED, State.ERRORED, State.STOPPED}, desiredState = State.DELETED)
+    private ListenableFuture<Void> doDelete()
+    {
+        final SettableFuture<Void> returnVal = SettableFuture.create();
+        closeAsync().addListener(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                setState(State.DELETED);
+                stopLogging();
+                returnVal.set(null);
+            }
+        }, getTaskExecutor().getExecutor());
+        return returnVal;
+    }
+
+    @StateTransition( currentState = { State.ERRORED, State.UNINITIALIZED, State.STOPPED }, desiredState = State.ACTIVE )
+    private ListenableFuture<Void> doActivate()
+    {
+        setState(State.ACTIVE);
+        return Futures.immediateFuture(null);
+    }
+
+    private Appender<ILoggingEvent> getLoggerAppender()
+    {
+        return getRootLogger().getAppender(getName());
+    }
+
+    private ch.qos.logback.classic.Logger getRootLogger()
+    {
+        return (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
     }
 
     @Override
@@ -112,8 +173,7 @@ public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> ex
 
     protected void initializeAppender(Appender<ILoggingEvent> appender)
     {
-        ch.qos.logback.classic.Logger rootLogger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        ch.qos.logback.classic.Logger rootLogger = getRootLogger();
         LoggerContext loggerContext = rootLogger.getLoggerContext();
 
         appender.setContext(loggerContext);

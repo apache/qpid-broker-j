@@ -40,6 +40,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 public class BrokerLoggerTest extends QpidTestCase
 {
+    public static final String APPENDER_NAME = "test";
 
     private AbstractBrokerLogger<?> _brokerLogger;
     private ListAppender _loggerAppender;
@@ -57,10 +59,7 @@ public class BrokerLoggerTest extends QpidTestCase
     {
         super.setUp();
         _loggerAppender = new ListAppender();
-
-        ch.qos.logback.classic.Logger rootLogger =
-                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        rootLogger.addAppender(_loggerAppender);
+        _loggerAppender.setName(APPENDER_NAME);
 
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
@@ -75,7 +74,7 @@ public class BrokerLoggerTest extends QpidTestCase
         doReturn(Broker.class).when(broker).getCategoryClass();
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put("name", "test");
+        attributes.put("name", APPENDER_NAME);
         _brokerLogger = new AbstractBrokerLogger(attributes, broker)
         {
             @Override
@@ -100,7 +99,6 @@ public class BrokerLoggerTest extends QpidTestCase
 
             _loggerAppender.clearAllFilters();
 
-            _loggerAppender.stop();
             rootLogger.detachAppender(_loggerAppender);
         }
         finally
@@ -131,11 +129,8 @@ public class BrokerLoggerTest extends QpidTestCase
 
         Logger logger = LoggerFactory.getLogger("org.apache.qpid");
 
-        _loggerAppender.start();
         logger.debug("Test2");
         logger.info("Test3");
-        _loggerAppender.stop();
-
         assertLoggedEvent(false, "Test2", logger.getName(), Level.DEBUG);
         assertLoggedEvent(true, "Test3", logger.getName(), Level.INFO);
     }
@@ -150,19 +145,22 @@ public class BrokerLoggerTest extends QpidTestCase
         BrokerLoggerFilter<?> createdFilter = _brokerLogger.createChild(BrokerLoggerFilter.class, attributes);
         Logger logger = LoggerFactory.getLogger("org.apache.qpid");
 
-        _loggerAppender.start();
         logger.info("Test1");
-        _loggerAppender.stop();
-
         assertLoggedEvent(true, "Test1", logger.getName(), Level.INFO);
 
         createdFilter.delete();
 
-        _loggerAppender.start();
         logger.info("Test2");
-        _loggerAppender.stop();
-
         assertLoggedEvent(false, "Test2", logger.getName(), Level.INFO);
+    }
+
+    public void testDeleteLogger()
+    {
+        ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        assertNotNull("Appender not found when it should have been created", rootLogger.getAppender(_brokerLogger.getName()));
+        _brokerLogger.delete();
+        assertEquals("Unexpected state after deletion", State.DELETED, _brokerLogger.getState());
+        assertNull("Appender found when it should have been deleted", rootLogger.getAppender(_brokerLogger.getName()));
     }
 
     private void assertLoggedEvent(boolean exists, String message, String loggerName, Level level)

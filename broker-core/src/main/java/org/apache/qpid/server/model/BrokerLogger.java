@@ -28,4 +28,6 @@ public interface BrokerLogger<X extends BrokerLogger<X>> extends ConfiguredObjec
 {
 
     Appender<ILoggingEvent> asAppender();
+
+    void stopLogging();
 }

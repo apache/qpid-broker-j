@@ -55,7 +55,6 @@ public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLog
     {
         final RecordEventAppender appender = new RecordEventAppender(getMaxRecords());
         initializeAppender(appender);
-        appender.start();
         return appender;
     }
 }

@@ -62,7 +62,6 @@ public class BrokerConsoleLoggerImpl extends AbstractBrokerLogger<BrokerConsoleL
         encoder.start();
 
         consoleAppender.setEncoder(encoder);
-        consoleAppender.start();
 
         return consoleAppender;
     }
