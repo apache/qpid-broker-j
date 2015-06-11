@@ -182,19 +182,7 @@ public class EncodingUtils
         }
         else
         {
-            return 4 + s.length();
-        }
-    }
-
-    public static int encodedLongStringLength(char[] s)
-    {
-        if (s == null)
-        {
-            return 4;
-        }
-        else
-        {
-            return 4 + s.length;
+            return 4 + getUTF8Length(s);
         }
     }
 

@@ -76,12 +76,14 @@ public class UTF8Test extends QpidBrokerTestCase
         // Send data
         MessageProducer msgProd = sess.createProducer(dest);
         TextMessage message = sess.createTextMessage(data);
+        message.setStringProperty("stringProperty", data);
         msgProd.send(message);
 
         // consume data
         TextMessage m = (TextMessage) msgCons.receive(RECEIVE_TIMEOUT);
         assertNotNull(m);
-        assertEquals(m.getText(), data);
+        assertEquals(data, m.getText());
+        assertEquals(data, message.getStringProperty("stringProperty"));
     }
 
     private Destination getDestination(String exch, String routkey, String qname) throws Exception
