@@ -520,12 +520,16 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
                             newDelegate = _creators[i].newProtocolEngine(_broker,
                                                                          _network, _port, _transport, _id,
                                                                          _aggregateTicker);
+                            if(newDelegate == null && _creators[i].getSuggestedAlternativeHeader() != null)
+                            {
+                                defaultSupportedReplyBytes = _creators[i].getSuggestedAlternativeHeader();
+                            }
                         }
                     }
 
                     //If there is a configured default reply to an unsupported version initiation,
                     //then save the associated reply header bytes when we encounter them
-                    if(_defaultSupportedReply != null && _creators[i].getVersion() == _defaultSupportedReply)
+                    if(defaultSupportedReplyBytes == null && _defaultSupportedReply != null && _creators[i].getVersion() == _defaultSupportedReply)
                     {
                         defaultSupportedReplyBytes = _creators[i].getHeaderIdentifier();
                     }

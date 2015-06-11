@@ -65,7 +65,14 @@ public class ProtocolEngineCreator_1_0_0_SASL implements ProtocolEngineCreator
                                                   Transport transport,
                                                   long id, final AggregateTicker aggregateTicker)
     {
-        return new ProtocolEngine_1_0_0_SASL(network, broker, id, port, transport, aggregateTicker);
+        return new ProtocolEngine_1_0_0(network, broker, id, port, transport, aggregateTicker, true);
+    }
+
+
+    @Override
+    public byte[] getSuggestedAlternativeHeader()
+    {
+        return null;
     }
 
     private static ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_1_0_0_SASL();

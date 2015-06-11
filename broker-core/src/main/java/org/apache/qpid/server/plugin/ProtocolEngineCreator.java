@@ -36,5 +36,7 @@ public interface ProtocolEngineCreator extends Pluggable
                                            AmqpPort<?> port,
                                            Transport transport,
                                            long id, final AggregateTicker aggregateTicker);
+
+    byte[] getSuggestedAlternativeHeader();
 }
 

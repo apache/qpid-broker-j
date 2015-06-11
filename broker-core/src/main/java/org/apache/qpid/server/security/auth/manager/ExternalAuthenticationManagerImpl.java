@@ -28,9 +28,7 @@ import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.PreferencesSupportingAuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.external.ExternalSaslServer;
@@ -38,7 +36,7 @@ import org.apache.qpid.server.security.auth.sasl.external.ExternalSaslServer;
 public class ExternalAuthenticationManagerImpl extends AbstractAuthenticationManager<ExternalAuthenticationManagerImpl>
         implements ExternalAuthenticationManager<ExternalAuthenticationManagerImpl>
 {
-    private static final String EXTERNAL = "EXTERNAL";
+    public static final String MECHANISM_NAME = "EXTERNAL";
 
     @ManagedAttributeField
     private boolean _useFullDN;
@@ -58,13 +56,13 @@ public class ExternalAuthenticationManagerImpl extends AbstractAuthenticationMan
     @Override
     public List<String> getMechanisms()
     {
-        return Collections.singletonList(EXTERNAL);
+        return Collections.singletonList(MECHANISM_NAME);
     }
 
     @Override
     public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
     {
-        if(EXTERNAL.equals(mechanism))
+        if(MECHANISM_NAME.equals(mechanism))
         {
             return new ExternalSaslServer(externalPrincipal, _useFullDN);
         }

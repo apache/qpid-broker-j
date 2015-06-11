@@ -68,6 +68,12 @@ public class ProtocolEngineCreator_0_8 implements ProtocolEngineCreator
         return new AMQProtocolEngine(broker, network, id, port, transport, aggregateTicker);
     }
 
+    @Override
+    public byte[] getSuggestedAlternativeHeader()
+    {
+        return null;
+    }
+
     private static ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_0_8();
 
     public static ProtocolEngineCreator getInstance()

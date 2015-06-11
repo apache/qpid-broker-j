@@ -18,52 +18,56 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.protocol.v0_10;
+package org.apache.qpid.server.protocol.v1_0;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
-import org.apache.qpid.server.security.SubjectCreator;
-import org.apache.qpid.transport.ConnectionDelegate;
+import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 @PluggableService
-public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
+public class ProtocolEngineCreator_1_0_0 implements ProtocolEngineCreator
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolEngineCreator_1_0_0.class);
 
-    private static final byte[] AMQP_0_10_HEADER =
+    private static final byte[] AMQP_1_0_0_HEADER =
             new byte[] { (byte) 'A',
                          (byte) 'M',
                          (byte) 'Q',
                          (byte) 'P',
-                         (byte) 1,
+                         (byte) 0,
                          (byte) 1,
                          (byte) 0,
-                         (byte) 10
+                         (byte) 0
             };
 
-
-    public ProtocolEngineCreator_0_10()
+    public ProtocolEngineCreator_1_0_0()
     {
     }
 
     public Protocol getVersion()
     {
-        return Protocol.AMQP_0_10;
+        return Protocol.AMQP_1_0;
     }
 
 
     public byte[] getHeaderIdentifier()
     {
-        return AMQP_0_10_HEADER;
+        return AMQP_1_0_0_HEADER;
     }
 
     public ServerProtocolEngine newProtocolEngine(Broker<?> broker,
@@ -72,34 +76,37 @@ public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
                                                   Transport transport,
                                                   long id, final AggregateTicker aggregateTicker)
     {
-        String fqdn = null;
-        SocketAddress address = network.getLocalAddress();
-        if (address instanceof InetSocketAddress)
+        final AuthenticationProvider<?> authenticationProvider = port.getAuthenticationProvider();
+
+        Set<String> supportedMechanisms = new HashSet<>(authenticationProvider.getMechanisms());
+        supportedMechanisms.removeAll(authenticationProvider.getDisabledMechanisms());
+        if(!transport.isSecure())
         {
-            fqdn = ((InetSocketAddress) address).getHostName();
+            supportedMechanisms.removeAll(authenticationProvider.getSecureOnlyMechanisms());
         }
-        SubjectCreator subjectCreator = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure());
-        ConnectionDelegate connDelegate = new ServerConnectionDelegate(broker, fqdn, subjectCreator);
 
-        ServerConnection conn = new ServerConnection(id, broker, port, transport);
 
-        conn.setConnectionDelegate(connDelegate);
-        conn.setRemoteAddress(network.getRemoteAddress());
-        conn.setLocalAddress(network.getLocalAddress());
-
-        ProtocolEngine_0_10 protocolEngine = new ProtocolEngine_0_10(conn, network, aggregateTicker);
-        conn.setProtocolEngine(protocolEngine);
-
-        return protocolEngine;
+        if(supportedMechanisms.contains(AnonymousAuthenticationManager.MECHANISM_NAME)
+                || (supportedMechanisms.contains(ExternalAuthenticationManagerImpl.MECHANISM_NAME) && network.getPeerPrincipal() != null))
+        {
+            return new ProtocolEngine_1_0_0(network, broker, id, port, transport, aggregateTicker, false);
+        }
+        else
+        {
+            LOGGER.info(
+                    "Attempt to connect using AMQP 1.0 without using SASL authentication on a port which does not support ANONYMOUS or EXTERNAL by "
+                    + network.getRemoteAddress());
+            return null;
+        }
     }
 
     @Override
     public byte[] getSuggestedAlternativeHeader()
     {
-        return null;
+        return ProtocolEngineCreator_1_0_0_SASL.getInstance().getHeaderIdentifier();
     }
 
-    private static ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_0_10();
+    private static ProtocolEngineCreator INSTANCE = new ProtocolEngineCreator_1_0_0();
 
     public static ProtocolEngineCreator getInstance()
     {

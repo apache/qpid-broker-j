@@ -68,7 +68,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
     private final AmqpPort<?> _port;
     private final Broker<?> _broker;
     private final SubjectCreator _subjectCreator;
-    private final ProtocolEngine_1_0_0_SASL _protocolEngine;
+    private final ProtocolEngine_1_0_0 _protocolEngine;
     private VirtualHostImpl _vhost;
     private final Transport _transport;
     private final ConnectionEndpoint _conn;
@@ -118,7 +118,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
                           AmqpPort<?> port,
                           Transport transport,
                           final SubjectCreator subjectCreator,
-                          final ProtocolEngine_1_0_0_SASL protocolEngine)
+                          final ProtocolEngine_1_0_0 protocolEngine)
     {
         _protocolEngine = protocolEngine;
         _broker = broker;
@@ -154,13 +154,34 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         }
         else
         {
-            _vhost.getConnectionRegistry().registerConnection(this);
-            Subject authSubject = _subjectCreator.createSubjectWithGroups(_conn.getUser());
-            _subject.getPrincipals().addAll(authSubject.getPrincipals());
-            _subject.getPublicCredentials().addAll(authSubject.getPublicCredentials());
-            _subject.getPrivateCredentials().addAll(authSubject.getPrivateCredentials());
+            final Principal user = _conn.getUser();
+            if(user != null)
+            {
+                setUserPrincipal(user);
+            }
+            if(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_subject) == null)
+            {
+                final Error err = new Error();
+                err.setCondition(AmqpError.NOT_ALLOWED);
+                err.setDescription("Connection has not been authenticated");
+                _conn.close(err);
+                _closedOnOpen = true;
+            }
+            else
+            {
+                _vhost.getConnectionRegistry().registerConnection(this);
+            }
         }
     }
+
+    void setUserPrincipal(final Principal user)
+    {
+        Subject authSubject = _subjectCreator.createSubjectWithGroups(user);
+        _subject.getPrincipals().addAll(authSubject.getPrincipals());
+        _subject.getPublicCredentials().addAll(authSubject.getPublicCredentials());
+        _subject.getPrivateCredentials().addAll(authSubject.getPrivateCredentials());
+    }
+
     public void remoteSessionCreation(SessionEndpoint endpoint)
     {
         if(!_closedOnOpen)

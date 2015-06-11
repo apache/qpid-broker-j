@@ -40,7 +40,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.amqp_1_0.codec.FrameWriter;
 import org.apache.qpid.amqp_1_0.codec.ProtocolHandler;
+import org.apache.qpid.amqp_1_0.codec.ProtocolHeaderHandler;
 import org.apache.qpid.amqp_1_0.framing.AMQFrame;
+import org.apache.qpid.amqp_1_0.framing.FrameHandler;
 import org.apache.qpid.amqp_1_0.framing.OversizeFrameException;
 import org.apache.qpid.amqp_1_0.framing.SASLFrameHandler;
 import org.apache.qpid.amqp_1_0.transport.ConnectionEndpoint;
@@ -61,19 +63,23 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
+import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
-public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOutputHandler
+public class ProtocolEngine_1_0_0 implements ServerProtocolEngine, FrameOutputHandler
 {
 
     public static final long CLOSE_REPONSE_TIMEOUT = 10000l;
     private final AmqpPort<?> _port;
     private final Transport _transport;
     private final AggregateTicker _aggregateTicker;
+    private final boolean _useSASL;
     private long _readBytes;
     private long _writtenBytes;
 
@@ -87,7 +93,7 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
     private final AtomicReference<Action<ServerProtocolEngine>> _workListener = new AtomicReference<>();
 
 
-    private static final ByteBuffer HEADER =
+    private static final ByteBuffer SASL_LAYER_HEADER =
            ByteBuffer.wrap(new byte[]
                    {
                        (byte)'A',
@@ -100,7 +106,7 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
                        (byte) 0
                    });
 
-    private static final ByteBuffer PROTOCOL_HEADER =
+    private static final ByteBuffer AMQP_LAYER_HEADER =
         ByteBuffer.wrap(new byte[]
                 {
                     (byte)'A',
@@ -121,7 +127,6 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
     private byte _major;
     private byte _minor;
     private byte _revision;
-    private PrintWriter _out;
     private NetworkConnection _network;
     private ByteBufferSender _sender;
     private Connection_1_0 _connection;
@@ -147,18 +152,20 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
 
 
 
-    public ProtocolEngine_1_0_0_SASL(final NetworkConnection networkDriver,
-                                     final Broker<?> broker,
-                                     long id,
-                                     AmqpPort<?> port,
-                                     Transport transport,
-                                     final AggregateTicker aggregateTicker)
+    public ProtocolEngine_1_0_0(final NetworkConnection networkDriver,
+                                final Broker<?> broker,
+                                long id,
+                                AmqpPort<?> port,
+                                Transport transport,
+                                final AggregateTicker aggregateTicker,
+                                final boolean useSASL)
     {
         _connectionId = id;
         _broker = broker;
         _port = port;
         _transport = transport;
         _aggregateTicker = aggregateTicker;
+        _useSASL = useSASL;
         if(networkDriver != null)
         {
             setNetworkConnection(networkDriver, networkDriver.getSender());
@@ -247,7 +254,7 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
         Container container = new Container(_broker.getId().toString());
 
         SubjectCreator subjectCreator = _port.getAuthenticationProvider().getSubjectCreator(_transport.isSecure());
-        _endpoint = new ConnectionEndpoint(container, asSaslServerProvider(subjectCreator));
+        _endpoint = new ConnectionEndpoint(container, _useSASL ? asSaslServerProvider(subjectCreator) : null);
         _endpoint.setLogger(new ConnectionEndpoint.FrameReceiptLogger()
         {
             @Override
@@ -275,32 +282,58 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
 
         _endpoint.setConnectionEventListener(_connection);
         _endpoint.setFrameOutputHandler(this);
-        _endpoint.setSaslFrameOutput(this);
-
-        _endpoint.setOnSaslComplete(new Runnable()
+        ByteBuffer headerResponse;
+        final List<String> mechanisms = subjectCreator.getMechanisms();
+        if(_useSASL)
         {
-            public void run()
-            {
-                if (_endpoint.isAuthenticated())
-                {
-                    _sender.send(PROTOCOL_HEADER.duplicate());
-                    _sender.flush();
-                }
-                else
-                {
-                    _network.close();
-                }
-            }
-        });
-        _frameWriter =  new FrameWriter(_endpoint.getDescribedTypeRegistry());
-        _frameHandler = new SASLFrameHandler(_endpoint);
+            _endpoint.setSaslFrameOutput(this);
 
-        _sender.send(HEADER.duplicate());
+            _endpoint.setOnSaslComplete(new Runnable()
+            {
+                public void run()
+                {
+                    if (_endpoint.isAuthenticated())
+                    {
+                        _sender.send(AMQP_LAYER_HEADER.duplicate());
+                        _sender.flush();
+                    }
+                    else
+                    {
+                        _network.close();
+                    }
+                }
+            });
+            _frameHandler = new SASLFrameHandler(_endpoint);
+            headerResponse = SASL_LAYER_HEADER;
+        }
+        else
+        {
+            if(mechanisms.contains(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
+               && _network.getPeerPrincipal() != null)
+            {
+                _connection.setUserPrincipal(new AuthenticatedPrincipal(_network.getPeerPrincipal()));
+            }
+            else if(mechanisms.contains(AnonymousAuthenticationManager.MECHANISM_NAME))
+            {
+                _connection.setUserPrincipal(new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
+            }
+            else
+            {
+                _network.close();
+            }
+
+            _frameHandler = new FrameHandler(_endpoint);
+            headerResponse = AMQP_LAYER_HEADER;
+        }
+        _frameWriter =  new FrameWriter(_endpoint.getDescribedTypeRegistry());
+
+        _sender.send(headerResponse.duplicate());
         _sender.flush();
 
-        List<String> mechanisms = subjectCreator.getMechanisms();
-        _endpoint.initiateSASL(mechanisms.toArray(new String[mechanisms.size()]));
-
+        if(_useSASL)
+        {
+            _endpoint.initiateSASL(mechanisms.toArray(new String[mechanisms.size()]));
+        }
 
     }
 
@@ -317,7 +350,7 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
             @Override
             public Principal getAuthenticatedPrincipal(SaslServer server)
             {
-                return new UsernamePrincipal(server.getAuthorizationID());
+                return new AuthenticatedPrincipal(new UsernamePrincipal(server.getAuthorizationID()));
             }
         };
     }
@@ -560,11 +593,6 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
     {
         getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis()+ CLOSE_REPONSE_TIMEOUT, _network));
 
-    }
-
-    public void setLogOutput(final PrintWriter out)
-    {
-        _out = out;
     }
 
     public long getConnectionId()

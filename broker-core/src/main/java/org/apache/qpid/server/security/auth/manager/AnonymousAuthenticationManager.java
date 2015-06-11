@@ -40,7 +40,7 @@ import org.apache.qpid.server.security.auth.sasl.anonymous.AnonymousSaslServer;
 public class AnonymousAuthenticationManager extends AbstractAuthenticationManager<AnonymousAuthenticationManager>
 {
     public static final String PROVIDER_TYPE = "Anonymous";
-    private static final String ANONYMOUS = "ANONYMOUS";
+    public static final String MECHANISM_NAME = "ANONYMOUS";
 
     public static final String ANONYMOUS_USERNAME = "ANONYMOUS";
 
@@ -63,13 +63,13 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
     @Override
     public List<String> getMechanisms()
     {
-        return Collections.singletonList(ANONYMOUS);
+        return Collections.singletonList(MECHANISM_NAME);
     }
 
     @Override
     public SaslServer createSaslServer(String mechanism, String localFQDN, Principal externalPrincipal) throws SaslException
     {
-        if(ANONYMOUS.equals(mechanism))
+        if(MECHANISM_NAME.equals(mechanism))
         {
             return new AnonymousSaslServer();
         }
