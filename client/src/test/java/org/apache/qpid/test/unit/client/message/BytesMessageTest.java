@@ -24,6 +24,7 @@ import junit.framework.TestCase;
 
 import org.apache.qpid.client.message.JMSBytesMessage;
 import org.apache.qpid.client.message.TestMessageHelper;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.jms.MessageEOFException;
 import javax.jms.MessageFormatException;
@@ -31,7 +32,7 @@ import javax.jms.MessageNotReadableException;
 import javax.jms.MessageNotWriteableException;
 import java.util.HashMap;
 
-public class BytesMessageTest extends TestCase
+public class BytesMessageTest extends QpidTestCase
 {
     /**
      * Tests that on creation a call to getBodyLength() throws an exception

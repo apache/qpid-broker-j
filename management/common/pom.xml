@@ -30,6 +30,13 @@
   <description>Common management code</description>
 
   <dependencies>
+    <!-- test dependencies -->
+    <dependency>
+      <groupId>org.apache.qpid</groupId>
+      <artifactId>qpid-test-utils</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
    
   <build>

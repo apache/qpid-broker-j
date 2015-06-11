@@ -36,8 +36,9 @@ import javax.security.auth.Subject;
 import junit.framework.TestCase;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class TaskExecutorTest extends TestCase
+public class TaskExecutorTest extends QpidTestCase
 {
     private TaskExecutorImpl _executor;
 

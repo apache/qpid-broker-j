@@ -25,6 +25,7 @@ import javax.security.auth.Subject;
 import java.security.PrivilegedAction;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <code>ThreadFactory</code> to create threads with empty inherited  <code>java.security.AccessControlContext</code>
@@ -34,6 +35,13 @@ import java.util.concurrent.ThreadFactory;
 public class SuppressingInheritedAccessControlContextThreadFactory implements ThreadFactory
 {
     private final ThreadFactory _defaultThreadFactory = Executors.defaultThreadFactory();
+    private final String _threadNamePrefix;
+    private final AtomicInteger _threadId = new AtomicInteger();
+
+    public SuppressingInheritedAccessControlContextThreadFactory(String threadNamePrefix)
+    {
+        _threadNamePrefix = threadNamePrefix;
+    }
 
     @Override
     public Thread newThread(final Runnable runnable)
@@ -43,7 +51,12 @@ public class SuppressingInheritedAccessControlContextThreadFactory implements Th
                                                 @Override
                                                 public Thread run()
                                                 {
-                                                    return _defaultThreadFactory.newThread(runnable);
+                                                    Thread thread = _defaultThreadFactory.newThread(runnable);
+                                                    if (_threadNamePrefix != null)
+                                                    {
+                                                        thread.setName(_threadNamePrefix + "-" + _threadId.getAndIncrement());
+                                                    }
+                                                    return thread;
                                                 }
                                             }, null);
     }

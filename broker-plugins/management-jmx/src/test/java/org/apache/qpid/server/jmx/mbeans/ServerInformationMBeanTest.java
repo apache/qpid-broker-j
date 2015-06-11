@@ -27,8 +27,9 @@ import org.apache.qpid.server.jmx.ManagedObjectRegistry;
 import org.apache.qpid.server.model.Broker;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ServerInformationMBeanTest extends TestCase
+public class ServerInformationMBeanTest extends QpidTestCase
 {
     private ManagedObjectRegistry _mockManagedObjectRegistry;
     private Broker _mockBroker;

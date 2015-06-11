@@ -45,8 +45,9 @@ import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHost;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.NodeRole;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class BDBHAMessageStoreManagerMBeanTest extends TestCase
+public class BDBHAMessageStoreManagerMBeanTest extends QpidTestCase
 {
     private static final String TEST_VHOST_NAME = "test";
     private static final String TEST_GROUP_NAME = TEST_VHOST_NAME;

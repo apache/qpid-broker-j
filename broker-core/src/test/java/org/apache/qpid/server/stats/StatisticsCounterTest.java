@@ -20,12 +20,12 @@
  */
 package org.apache.qpid.server.stats;
 
-import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * Unit tests for the {@link StatisticsCounter} class.
  */
-public class StatisticsCounterTest extends TestCase
+public class StatisticsCounterTest extends QpidTestCase
 {
     /**
      * Check that statistics counters are created correctly.
@@ -125,7 +125,7 @@ public class StatisticsCounterTest extends TestCase
         assertEquals(4000.0, counter.getPeak());
         assertEquals(6000, counter.getTotal());
     }
- 
+
     /**
      * Test the current rate is generated correctly.
      */

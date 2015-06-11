@@ -24,8 +24,9 @@ import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.Permission;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class RuleTest extends TestCase
+public class RuleTest extends QpidTestCase
 {
     public void testEqualsAndHashCode()
     {

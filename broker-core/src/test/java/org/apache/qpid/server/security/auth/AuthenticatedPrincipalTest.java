@@ -25,8 +25,9 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class AuthenticatedPrincipalTest extends TestCase
+public class AuthenticatedPrincipalTest extends QpidTestCase
 {
 
     private AuthenticatedPrincipal _authenticatedPrincipal = new AuthenticatedPrincipal(new UsernamePrincipal("name"));

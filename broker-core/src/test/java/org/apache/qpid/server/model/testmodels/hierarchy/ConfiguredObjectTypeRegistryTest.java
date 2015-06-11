@@ -32,8 +32,9 @@ import junit.framework.TestCase;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ManagedInterface;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ConfiguredObjectTypeRegistryTest extends TestCase
+public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
 {
     private ConfiguredObjectTypeRegistry _typeRegistry = TestModel.getInstance().getTypeRegistry();
 

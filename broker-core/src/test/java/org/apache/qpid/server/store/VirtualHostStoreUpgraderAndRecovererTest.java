@@ -101,8 +101,9 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
     @Override
     public void tearDown()throws Exception
     {
-        super.tearDown();
         _taskExecutor.stopImmediately();
+        _virtualHostNode.close();
+        super.tearDown();
     }
 
     public void testRecoverQueueWithDLQEnabled() throws Exception
@@ -142,6 +143,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         assertNotNull("DLE exchange is not recovered", recoveredDLE);
 
         assertEquals("Unexpected alternative exchange", recoveredDLE, recoveredQueue.getAlternateExchange());
+        host.close();
     }
 
     public void testRecordUpdatedInOneUpgraderAndRemovedInAnotherUpgraderIsNotRecovered()
@@ -185,6 +187,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
 
         Binding<?> recoveredBinding2 = recoveredQueue.findConfiguredObject(Binding.class, "test-non-existing");
         assertNull("Incorrect binding is recovered", recoveredBinding2);
+        host.close();
     }
 
     private ConfiguredObjectRecord mockBinding(String bindingName, ConfiguredObjectRecord queue, ConfiguredObjectRecord exchange)

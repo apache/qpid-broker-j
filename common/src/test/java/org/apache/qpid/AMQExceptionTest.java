@@ -25,6 +25,7 @@ import junit.framework.TestCase;
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * This test is to ensure that when an AMQException is rethrown that the specified exception is correctly wrapped up.
@@ -35,7 +36,7 @@ import org.apache.qpid.protocol.AMQConstant;
  * Re-throwing a Subclass of AMQException that does not have the default AMQException constructor which will force the
  * creation of an AMQException.
  */
-public class AMQExceptionTest extends TestCase
+public class AMQExceptionTest extends QpidTestCase
 {
     /**
      * Test that an AMQException will be correctly created and rethrown.

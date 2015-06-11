@@ -35,12 +35,13 @@ import junit.framework.TestCase;
 import org.apache.qpid.server.security.auth.database.Base64MD5PasswordFilePrincipalDatabase;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexInitialiser;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 
 /**
  * These tests ensure that the Hex wrapping that the initialiser performs does actually operate when the handle method is called.
  */
-public class CRAMMD5HexInitialiserTest extends TestCase
+public class CRAMMD5HexInitialiserTest extends QpidTestCase
 {
     private static final String TEST_PASSWORD = "testPassword";
     private static final String TEST_USER = "testUser";

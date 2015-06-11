@@ -40,9 +40,10 @@ import org.apache.qpid.framing.ContentBody;
 import org.apache.qpid.framing.FrameCreatingMethodProcessor;
 import org.apache.qpid.framing.HeartbeatBody;
 import org.apache.qpid.framing.ProtocolVersion;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.util.BytesDataOutput;
 
-public class AMQDecoderTest extends TestCase
+public class AMQDecoderTest extends QpidTestCase
 {
 
     private AMQDecoder _decoder;

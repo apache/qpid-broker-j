@@ -48,7 +48,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.pool.ReferenceCountingExecutorService;
 import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
@@ -208,10 +207,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private int _maxAsyncDeliveries;
 
-
     private final AtomicLong _stateChangeCount = new AtomicLong(Long.MIN_VALUE);
 
-    private final Executor _asyncDelivery;
     private AtomicInteger _deliveredMessages = new AtomicInteger();
     private AtomicBoolean _stopped = new AtomicBoolean(false);
 
@@ -276,8 +273,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         super(parentsMap(virtualHost), attributes);
 
         _virtualHost = virtualHost;
-        _asyncDelivery = ReferenceCountingExecutorService.getInstance().acquireExecutorService();
-
     }
 
     @Override
@@ -555,7 +550,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
             if (_virtualHost.getState() != State.UNAVAILABLE)
             {
-                _asyncDelivery.execute(runnable);
+                _virtualHost.executeTask(runnable);
             }
         }
         catch (RejectedExecutionException ree)
@@ -1953,10 +1948,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     protected void onClose()
     {
         super.onClose();
-        if (!_stopped.getAndSet(true))
-        {
-            ReferenceCountingExecutorService.getInstance().releaseExecutorService();
-        }
+        _stopped.set(true);
         _closing = false;
     }
 

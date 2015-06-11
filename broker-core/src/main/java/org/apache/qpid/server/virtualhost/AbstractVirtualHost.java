@@ -405,7 +405,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
             private void standardExchangeCreated()
             {
-                if(_createdExchangeCount.incrementAndGet() == TOTAL_STANDARD_EXCHANGES)
+                if (_createdExchangeCount.incrementAndGet() == TOTAL_STANDARD_EXCHANGES)
                 {
                     _future.set(null);
                 }
@@ -586,6 +586,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public ScheduledFuture<?> scheduleTask(long delay, Runnable task)
     {
         return _houseKeepingTasks.schedule(task, delay, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void executeTask(Runnable task)
+    {
+        _houseKeepingTasks.execute(task);
     }
 
     public long getHouseKeepingTaskCount()
@@ -1622,7 +1628,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @StateTransition( currentState = { State.UNINITIALIZED,State.ERRORED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> onActivate()
     {
-        _houseKeepingTasks = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(), new SuppressingInheritedAccessControlContextThreadFactory());
+        _houseKeepingTasks = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(), new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-pool"));
 
         MessageStore messageStore = getMessageStore();
         messageStore.openMessageStore(this);

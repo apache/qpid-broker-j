@@ -26,8 +26,9 @@ import java.net.InetAddress;
 import org.apache.qpid.server.security.access.firewall.HostnameFirewallRule;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class HostnameFirewallRuleTest extends TestCase
+public class HostnameFirewallRuleTest extends QpidTestCase
 {
     private InetAddress _addressNotInRule;
 

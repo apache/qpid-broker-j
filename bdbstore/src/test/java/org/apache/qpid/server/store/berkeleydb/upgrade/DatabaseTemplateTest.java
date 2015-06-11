@@ -32,8 +32,9 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.Transaction;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class DatabaseTemplateTest extends TestCase
+public class DatabaseTemplateTest extends QpidTestCase
 {
     private static final String SOURCE_DATABASE = "sourceDatabase";
     private Environment _environment;

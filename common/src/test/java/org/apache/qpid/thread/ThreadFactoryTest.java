@@ -22,11 +22,12 @@
 package org.apache.qpid.thread;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * Tests the ThreadFactory.
  */
-public class ThreadFactoryTest extends TestCase
+public class ThreadFactoryTest extends QpidTestCase
 {
     public void testThreadFactory()
     {

@@ -21,6 +21,7 @@
 package org.apache.qpid.util;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -31,7 +32,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 
-public class FileUtilsTest extends TestCase
+public class FileUtilsTest extends QpidTestCase
 {
     private static final String COPY = "-Copy";
     private static final String SUB = "-Sub";

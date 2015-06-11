@@ -38,6 +38,7 @@ import junit.framework.TestCase;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -58,7 +59,7 @@ import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
-public class HeadersExchangeTest extends TestCase
+public class HeadersExchangeTest extends QpidTestCase
 {
     private HeadersExchange _exchange;
     private VirtualHostImpl _virtualHost;

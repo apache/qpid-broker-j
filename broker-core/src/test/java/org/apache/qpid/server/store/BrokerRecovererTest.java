@@ -44,8 +44,9 @@ import org.apache.qpid.server.model.JsonSystemConfigImpl;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class BrokerRecovererTest extends TestCase
+public class BrokerRecovererTest extends QpidTestCase
 {
     private ConfiguredObjectRecord _brokerEntry = mock(ConfiguredObjectRecord.class);
 

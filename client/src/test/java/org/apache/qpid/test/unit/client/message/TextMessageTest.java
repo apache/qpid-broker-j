@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.test.unit.client.message;
 
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.junit.Assert;
 import junit.framework.TestCase;
 
@@ -29,7 +30,7 @@ import org.apache.qpid.client.message.TestMessageHelper;
 
 import javax.jms.JMSException;
 
-public class TextMessageTest extends TestCase
+public class TextMessageTest extends QpidTestCase
 {
     public void testTextOnConstruction() throws Exception
     {

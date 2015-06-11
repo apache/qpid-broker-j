@@ -40,11 +40,12 @@ import org.apache.qpid.server.logging.MessageLogger;
 
 import junit.framework.TestCase;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
 
 import java.util.Collections;
 
-public class ManagementLogonLogoffReporterTest extends TestCase
+public class ManagementLogonLogoffReporterTest extends QpidTestCase
 {
     private static final String TEST_JMX_UNIQUE_CONNECTION_ID = "jmxconnectionid1 jmxuser,group";
     private static final Subject TEST_USER = new Subject(false, Collections.singleton(new AuthenticatedPrincipal("jmxuser")), Collections.emptySet(), Collections.emptySet());

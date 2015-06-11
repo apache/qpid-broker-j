@@ -121,22 +121,26 @@ public class TCPandSSLTransportTest extends QpidTestCase
                                                               Protocol.AMQP_0_9_1);
 
         transport.start();
+        try
+        {
+            SSLContext clientContext = SSLContext.getInstance("TLS");
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            tmf.init(keyStore);
 
-        SSLContext clientContext = SSLContext.getInstance("TLS");
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        tmf.init(keyStore);
+            clientContext.init(null, tmf.getTrustManagers(), null);
 
-        clientContext.init(null, tmf.getTrustManagers(), null);
+            SSLSocket sslSocket =
+                    (SSLSocket) clientContext.getSocketFactory().createSocket(InetAddress.getLoopbackAddress(),
+                            transport.getAcceptingPort());
 
+            sslSocket.setEnabledProtocols(new String[]{clientProtocol});
 
-        SSLSocket sslSocket =
-                (SSLSocket) clientContext.getSocketFactory().createSocket(InetAddress.getLoopbackAddress(),
-                                                                          transport.getAcceptingPort());
-
-        sslSocket.setEnabledProtocols(new String[] {clientProtocol});
-
-        sslSocket.startHandshake();
-        transport.close();
+            sslSocket.startHandshake();
+        }
+        finally
+        {
+            transport.close();
+        }
     }
 
 

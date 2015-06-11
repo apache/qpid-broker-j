@@ -29,8 +29,9 @@ import java.util.Set;
 import org.apache.qpid.server.security.group.FileGroupDatabase;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class FileGroupDatabaseTest extends TestCase
+public class FileGroupDatabaseTest extends QpidTestCase
 {
     private static final String USER1 = "user1";
     private static final String USER2 = "user2";

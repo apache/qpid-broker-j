@@ -24,11 +24,12 @@ package org.apache.qpid.server.security.auth.sasl;
 import junit.framework.TestCase;
 
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
-public abstract class SaslServerTestCase extends TestCase
+public abstract class SaslServerTestCase extends QpidTestCase
 {
     protected SaslServer server;
     protected String username = "u";

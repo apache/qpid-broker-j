@@ -25,7 +25,7 @@ import junit.framework.TestCase;
 
 import org.apache.qpid.test.utils.QpidTestCase;
 
-public class EnvHomeRegistryTest extends TestCase
+public class EnvHomeRegistryTest extends QpidTestCase
 {
 
     private final EnvHomeRegistry _ehr = new EnvHomeRegistry();

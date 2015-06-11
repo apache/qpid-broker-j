@@ -38,8 +38,9 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class SubjectCreatorTest extends TestCase
+public class SubjectCreatorTest extends QpidTestCase
 {
     private static final String USERNAME = "username";
     private static final String PASSWORD = "password";

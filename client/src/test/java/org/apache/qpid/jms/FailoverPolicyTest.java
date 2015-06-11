@@ -29,6 +29,7 @@ import org.apache.qpid.jms.failover.FailoverMethod;
 import org.apache.qpid.jms.failover.FailoverRoundRobinServers;
 import org.apache.qpid.jms.failover.FailoverSingleServer;
 import org.apache.qpid.jms.failover.NoFailover;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.jms.ConnectionConsumer;
 import javax.jms.ConnectionMetaData;
@@ -46,7 +47,7 @@ import javax.jms.Topic;
  * is no longer in use.
  *
  */
-public class FailoverPolicyTest extends TestCase
+public class FailoverPolicyTest extends QpidTestCase
 {
     private FailoverPolicy _failoverPolicy = null; // class under test
     private String _url;

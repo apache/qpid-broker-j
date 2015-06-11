@@ -21,6 +21,7 @@
 package org.apache.qpid.server.logging;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.util.List;
 
@@ -33,7 +34,7 @@ import java.util.List;
  * retrieved and cleared.
  *
  */
-public class UnitTestMessageLoggerTest extends TestCase
+public class UnitTestMessageLoggerTest extends QpidTestCase
 {
     private static final String TEST_MESSAGE = "Test";
     private static final String TEST_THROWABLE = "Test Throwable";

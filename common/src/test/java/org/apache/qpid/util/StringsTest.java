@@ -24,8 +24,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class StringsTest extends TestCase
+public class StringsTest extends QpidTestCase
 {
     public void testSubstitutionResolver()
     {

@@ -27,8 +27,9 @@ import org.apache.qpid.client.filter.JMSSelectorFilter;
 import org.apache.qpid.client.filter.MessageFilter;
 import org.apache.qpid.client.message.JMSTextMessage;
 import org.apache.qpid.client.message.TestMessageHelper;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class JMSSelectorFilterTest extends TestCase
+public class JMSSelectorFilterTest extends QpidTestCase
 {
 
     public void testEmptySelectorFilter() throws Exception

@@ -39,8 +39,9 @@ import junit.framework.TestCase;
 
 import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class AttributeValueConverterTest extends TestCase
+public class AttributeValueConverterTest extends QpidTestCase
 {
     private final ConfiguredObjectFactory _objectFactory = TestModel.getInstance().getObjectFactory();
     private final Map<String, Object> _attributes = new HashMap<>();

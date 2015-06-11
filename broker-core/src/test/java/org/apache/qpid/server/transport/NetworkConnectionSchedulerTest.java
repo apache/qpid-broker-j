@@ -163,6 +163,7 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         Thread.sleep(1000l);
         verify(timidEngine, atLeast(6)).received(any(ByteBuffer.class));
         _keepRunningThreads = false;
+        transport.close();
     }
 
 

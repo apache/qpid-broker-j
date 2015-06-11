@@ -45,8 +45,9 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class VirtualHostCreationTest extends TestCase
+public class VirtualHostCreationTest extends QpidTestCase
 {
     private VirtualHostNode _virtualHostNode;
 
@@ -97,6 +98,7 @@ public class VirtualHostCreationTest extends TestCase
 
         assertNotNull("Null is returned", host);
         assertEquals("Unexpected name", getName(), host.getName());
+        host.close();
     }
 
     public void testCreateWithoutMandatoryAttributesResultsInException()

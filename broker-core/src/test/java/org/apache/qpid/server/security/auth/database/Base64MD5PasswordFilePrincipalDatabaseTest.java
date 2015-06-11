@@ -23,6 +23,7 @@ package org.apache.qpid.server.security.auth.database;
 import junit.framework.TestCase;
 
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.AccountNotFoundException;
@@ -42,7 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public class Base64MD5PasswordFilePrincipalDatabaseTest extends TestCase
+public class Base64MD5PasswordFilePrincipalDatabaseTest extends QpidTestCase
 {
 
     private static final String TEST_COMMENT = "# Test Comment";

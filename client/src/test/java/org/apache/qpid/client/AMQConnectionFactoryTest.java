@@ -31,8 +31,9 @@ import javax.jms.JMSException;
 import junit.framework.TestCase;
 
 import org.apache.qpid.jms.ConnectionURL;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class AMQConnectionFactoryTest extends TestCase
+public class AMQConnectionFactoryTest extends QpidTestCase
 {
 
     //URL will be returned with the password field swapped for '********'

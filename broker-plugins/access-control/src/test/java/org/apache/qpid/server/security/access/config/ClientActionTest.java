@@ -25,8 +25,9 @@ import java.net.InetAddress;
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ClientActionTest extends TestCase
+public class ClientActionTest extends QpidTestCase
 {
     private Action _action = mock(Action.class);
     private AclAction _ruleAction = mock(AclAction.class);

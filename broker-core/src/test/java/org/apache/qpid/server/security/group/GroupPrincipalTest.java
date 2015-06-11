@@ -23,8 +23,9 @@ package org.apache.qpid.server.security.group;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class GroupPrincipalTest extends TestCase
+public class GroupPrincipalTest extends QpidTestCase
 {
     public void testGetName()
     {

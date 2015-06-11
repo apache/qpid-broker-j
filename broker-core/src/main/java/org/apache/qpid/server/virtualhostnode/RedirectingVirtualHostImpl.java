@@ -126,6 +126,12 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
+    public void executeTask(Runnable task)
+    {
+        throwUnsupportedForRedirector();
+    }
+
+    @Override
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
                                                                              final Map<String, Object> attributes,
                                                                              final ConfiguredObject... otherParents)

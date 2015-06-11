@@ -28,8 +28,9 @@ import javax.resource.spi.ResourceAdapterInternalException;
 import org.apache.qpid.ra.inflow.QpidActivationSpec;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class QpidActivationSpecTest extends TestCase
+public class QpidActivationSpecTest extends QpidTestCase
 {
 
     public void testActivationSpecBasicSerialization() throws Exception

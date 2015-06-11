@@ -25,8 +25,9 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.apache.qpid.server.store.Event.PERSISTENT_MESSAGE_SIZE_UNDERFULL;
 import static org.apache.qpid.server.store.Event.PERSISTENT_MESSAGE_SIZE_OVERFULL;
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class EventManagerTest extends TestCase
+public class EventManagerTest extends QpidTestCase
 {
     private EventManager _eventManager = new EventManager();
     private EventListener _mockListener = mock(EventListener.class);

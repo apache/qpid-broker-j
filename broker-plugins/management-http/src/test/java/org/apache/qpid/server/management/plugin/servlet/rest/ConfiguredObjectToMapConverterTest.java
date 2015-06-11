@@ -42,8 +42,9 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ConfiguredObjectToMapConverterTest extends TestCase
+public class ConfiguredObjectToMapConverterTest extends QpidTestCase
 {
     private ConfiguredObjectToMapConverter _converter = new ConfiguredObjectToMapConverter();
     private ConfiguredObject _configuredObject = mock(ConfiguredObject.class);

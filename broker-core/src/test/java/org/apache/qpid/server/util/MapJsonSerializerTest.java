@@ -24,8 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class MapJsonSerializerTest extends TestCase
+public class MapJsonSerializerTest extends QpidTestCase
 {
     private MapJsonSerializer _serializer;
 

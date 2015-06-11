@@ -42,8 +42,9 @@ import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ExchangeMBeanTest extends TestCase
+public class ExchangeMBeanTest extends QpidTestCase
 {
     private static final String EXCHANGE_NAME = "EXCHANGE_NAME";
     private static final String EXCHANGE_TYPE = "EXCHANGE_TYPE";

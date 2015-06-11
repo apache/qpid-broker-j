@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +56,7 @@ import org.apache.qpid.protocol.AMQConstant;
  * be no exception set to throw and so the wait will occur. That said when the session is closed the framelisteners
  * should be notified. Not sure this is tested.
  */
-public class AMQProtocolHandlerTest extends TestCase
+public class AMQProtocolHandlerTest extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQProtocolHandlerTest.class);
 

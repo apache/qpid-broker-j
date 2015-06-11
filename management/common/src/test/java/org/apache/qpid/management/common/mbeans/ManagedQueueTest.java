@@ -21,6 +21,7 @@
 package org.apache.qpid.management.common.mbeans;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.management.MBeanAttributeInfo;
 import javax.management.NotCompliantMBeanException;
@@ -30,7 +31,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.List;
 
-public class ManagedQueueTest extends TestCase
+public class ManagedQueueTest extends QpidTestCase
 {
     public void testAttributesContants()
     {

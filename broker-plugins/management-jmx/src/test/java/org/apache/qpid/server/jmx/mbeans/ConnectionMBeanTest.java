@@ -36,8 +36,9 @@ import org.apache.qpid.server.jmx.ManagedObject;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Session;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ConnectionMBeanTest extends TestCase
+public class ConnectionMBeanTest extends QpidTestCase
 {
     private ConnectionMBean _connectionMBean;
     private Connection _mockConnection;

@@ -31,11 +31,12 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.junit.Assert;
 
 import org.apache.qpid.AMQPInvalidClassException;
 
-public class FieldTableTest extends TestCase
+public class FieldTableTest extends QpidTestCase
 {
     /**
      * Test that setting a similar named value replaces any previous value set on that name

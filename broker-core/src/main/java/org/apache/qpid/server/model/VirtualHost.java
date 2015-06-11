@@ -91,7 +91,7 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     long getStoreTransactionOpenTimeoutWarn();
 
     @ManagedContextDefault( name = "virtualhost.housekeepingThreadCount")
-    public static final int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 1;
+    public static final int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 4;
 
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingThreadCount}")
     int getHousekeepingThreadCount();
@@ -101,6 +101,8 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     @ManagedContextDefault( name = "virtualhost.enabledConnectionValidators")
     String DEFAULT_ENABLED_VALIDATORS = "[]";
+
+    void executeTask(Runnable task);
 
     @ManagedAttribute( defaultValue = "${virtualhost.enabledConnectionValidators}")
     List<String> getEnabledConnectionValidators();

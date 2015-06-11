@@ -34,8 +34,9 @@ import javax.jms.Queue;
 import javax.jms.Topic;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class AMQDestinationTest extends TestCase
+public class AMQDestinationTest extends QpidTestCase
 {
     public void testEqualsAndHashCodeForAddressBasedDestinations() throws Exception
     {

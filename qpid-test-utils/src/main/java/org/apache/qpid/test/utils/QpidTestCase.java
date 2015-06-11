@@ -24,11 +24,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import junit.framework.TestCase;
 import junit.framework.TestResult;
@@ -48,10 +44,13 @@ public class QpidTestCase extends TestCase
     public static final String TMP_FOLDER = System.getProperty("java.io.tmpdir");
 
     private static final Logger _logger = LoggerFactory.getLogger(QpidTestCase.class);
+    private static QpidTestCase _currentInstance;
 
     private final Map<String, String> _propertiesSetForTest = new HashMap<String, String>();
 
     private String _testName;
+
+    private Set<Runnable> _tearDownRegistry = new HashSet<>();
 
     /**
      * Some tests are excluded when the property test.excludes is set to true.
@@ -134,6 +133,7 @@ public class QpidTestCase extends TestCase
 
     public void run(TestResult testResult)
     {
+        _currentInstance = this;
         if (_exclusionList != null && (_exclusionList.contains(getClass().getPackage().getName() + ".*") ||
                                        _exclusionList.contains(getClass().getName() + "#*") ||
                                        _exclusionList.contains(getClass().getName() + "#" + getName())))
@@ -164,6 +164,15 @@ public class QpidTestCase extends TestCase
         return System.getProperty(VIRTUAL_HOST_NODE_CONTEXT_BLUEPRINT);
     }
 
+    public void registerTearDown(Runnable runnable)
+    {
+        _tearDownRegistry.add(runnable);
+    }
+
+    public static QpidTestCase getCurrentInstance()
+    {
+        return _currentInstance;
+    }
 
     /**
      * Gets the next available port starting at a port.
@@ -238,10 +247,17 @@ public class QpidTestCase extends TestCase
     {
         _logger.info("========== tearDown " + _testName + " ==========");
         revertTestSystemProperties();
+        for (Runnable runnable : _tearDownRegistry)
+        {
+            runnable.run();
+        }
+        _tearDownRegistry.clear();
+        _currentInstance = null;
     }
 
     protected void setUp() throws Exception
     {
+        _currentInstance = this;
         _testName = getClass().getSimpleName() + "." + getName();
         _logger.info("========== start " + _testName + " ==========");
     }

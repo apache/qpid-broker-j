@@ -34,6 +34,7 @@ import java.util.Map;
 import javax.management.OperationsException;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 
@@ -45,7 +46,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 
-public class VirtualHostManagerMBeanTest extends TestCase
+public class VirtualHostManagerMBeanTest extends QpidTestCase
 {
     private static final String TEST_QUEUE_NAME = "QUEUE_NAME";
     private static final String TEST_EXCHANGE_NAME = "EXCHANGE_NAME";

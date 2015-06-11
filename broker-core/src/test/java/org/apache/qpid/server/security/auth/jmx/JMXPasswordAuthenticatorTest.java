@@ -37,12 +37,13 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * Tests the JMXPasswordAuthenticator and its collaboration with the AuthenticationManager.
  *
  */
-public class JMXPasswordAuthenticatorTest extends TestCase
+public class JMXPasswordAuthenticatorTest extends QpidTestCase
 {
     static final String USER_NOT_AUTHORISED_FOR_MANAGEMENT = "User not authorised for management";
     private static final String USERNAME = "guest";

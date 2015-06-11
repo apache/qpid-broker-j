@@ -21,6 +21,7 @@
 package org.apache.qpid.transport.codec;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.nio.ByteBuffer;
 
@@ -29,7 +30,7 @@ import java.nio.ByteBuffer;
  *
  */
 
-public class BBEncoderTest extends TestCase
+public class BBEncoderTest extends QpidTestCase
 {
 
     public void testGrow()

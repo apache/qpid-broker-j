@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.test.unit.client.message;
 
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.junit.Assert;
 import junit.framework.TestCase;
 
@@ -30,7 +31,7 @@ import javax.jms.JMSException;
 import javax.jms.MessageFormatException;
 
 
-public class MapMessageTest extends TestCase
+public class MapMessageTest extends QpidTestCase
 {
 
     //Test Lookups

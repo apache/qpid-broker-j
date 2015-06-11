@@ -26,8 +26,9 @@ import junit.framework.TestCase;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class SelectorParserTest extends TestCase
+public class SelectorParserTest extends QpidTestCase
 {
     public void testSelectorWithHyphen()
     {

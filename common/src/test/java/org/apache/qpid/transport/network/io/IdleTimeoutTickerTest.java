@@ -27,11 +27,12 @@ import java.security.cert.Certificate;
 
 import junit.framework.TestCase;
 
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.TransportActivity;
 
-public class IdleTimeoutTickerTest extends TestCase implements TransportActivity, NetworkConnection
+public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActivity, NetworkConnection
 {
     private IdleTimeoutTicker _ticker;
     private static final int DEFAULT_TIMEOUT = 567890;

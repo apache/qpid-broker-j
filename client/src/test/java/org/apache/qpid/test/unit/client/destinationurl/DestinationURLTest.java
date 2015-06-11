@@ -21,6 +21,7 @@
 package org.apache.qpid.test.unit.client.destinationurl;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ import org.apache.qpid.url.BindingURL;
 
 import java.net.URISyntaxException;
 
-public class DestinationURLTest extends TestCase
+public class DestinationURLTest extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(DestinationURLTest.class);
 

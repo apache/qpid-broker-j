@@ -29,11 +29,12 @@ import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * Abstract test class for QueueEntryList implementations.
  */
-public abstract class QueueEntryListTestBase extends TestCase
+public abstract class QueueEntryListTestBase extends QpidTestCase
 {
     public abstract QueueEntryList getTestList();
     public abstract QueueEntryList getTestList(boolean newList);

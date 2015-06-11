@@ -23,6 +23,7 @@ package org.apache.qpid.client.security;
 import junit.framework.TestCase;
 
 import org.apache.qpid.client.AMQConnectionURL;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
@@ -35,7 +36,7 @@ import java.util.Arrays;
  * used by the CRAM-MD5-HASHED SASL mechanism.
  *
  */
-public class UsernameHashedPasswordCallbackHandlerTest extends TestCase
+public class UsernameHashedPasswordCallbackHandlerTest extends QpidTestCase
 {
     private AMQCallbackHandler _callbackHandler = new UsernameHashedPasswordCallbackHandler(); // Class under test
     private static final String PROMPT_UNUSED = "unused";

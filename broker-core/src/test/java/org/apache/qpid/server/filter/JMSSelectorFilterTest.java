@@ -19,8 +19,9 @@
 package org.apache.qpid.server.filter;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class JMSSelectorFilterTest extends TestCase
+public class JMSSelectorFilterTest extends QpidTestCase
 {
     public void testEqualsAndHashCodeUsingSelectorString() throws Exception
     {

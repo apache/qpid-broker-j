@@ -23,12 +23,13 @@ import com.sleepycat.bind.tuple.TupleOutput;
 import junit.framework.TestCase;
 
 import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * Tests for {@code AMQShortStringEncoding} including corner cases when string
  * is null or over 127 characters in length
  */
-public class AMQShortStringEncodingTest extends TestCase
+public class AMQShortStringEncodingTest extends QpidTestCase
 {
 
     public void testWriteReadNullValues()

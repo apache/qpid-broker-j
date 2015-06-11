@@ -21,12 +21,13 @@
 package org.apache.qpid.server.security.auth;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * Tests the UsernamePrincipal.
  *
  */
-public class UsernamePrincipalTest extends TestCase
+public class UsernamePrincipalTest extends QpidTestCase
 {
     public void testEqualitySameObject()
     {

@@ -21,12 +21,13 @@
 package org.apache.qpid.util;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class ByteBufferInputStreamTest extends TestCase
+public class ByteBufferInputStreamTest extends QpidTestCase
 {
     private byte[] _data = {2, 1, 5, 3, 4};
     private ByteBufferInputStream _inputStream;

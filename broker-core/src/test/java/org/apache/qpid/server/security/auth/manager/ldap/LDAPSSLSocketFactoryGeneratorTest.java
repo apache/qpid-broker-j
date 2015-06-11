@@ -28,8 +28,9 @@ import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class LDAPSSLSocketFactoryGeneratorTest extends TestCase
+public class LDAPSSLSocketFactoryGeneratorTest extends QpidTestCase
 {
     private SSLSocketFactory _sslSocketFactory = mock(SSLSocketFactory.class);
 

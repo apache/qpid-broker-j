@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 import java.util.UUID;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
 
 import org.apache.qpid.server.logging.EventLogger;
@@ -60,7 +61,7 @@ import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.Xid;
 
-public class SynchronousMessageStoreRecovererTest extends TestCase
+public class SynchronousMessageStoreRecovererTest extends QpidTestCase
 {
     private VirtualHostImpl _virtualHost;
 

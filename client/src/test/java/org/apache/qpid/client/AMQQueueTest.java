@@ -21,8 +21,9 @@
 package org.apache.qpid.client;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class AMQQueueTest extends TestCase
+public class AMQQueueTest extends QpidTestCase
 {
 
     public void testToURLNoBindings()

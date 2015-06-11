@@ -120,6 +120,10 @@ public class AbstractVirtualHostTest extends QpidTestCase
         {
             assertTrue("Unexpected exception " + e.getMessage(), e.getMessage().startsWith("Cannot open virtual host message store"));
         }
+        finally
+        {
+            host.close();
+        }
     }
 
     public void testValidateOnCreateSucceeds()
@@ -138,6 +142,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
         host.validateOnCreate();
         verify(store).openMessageStore(host);
         verify(store).closeMessageStore();
+        host.close();
     }
 
     public void testOpenFails()
@@ -155,6 +160,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
 
         host.open();
         assertEquals("Unexpected host state", State.ERRORED, host.getState());
+        host.close();
     }
 
     public void testOpenSucceeds()
@@ -178,6 +184,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
 
         // make sure that method AbstractVirtualHost.onExceptionInOpen was not called
         verify(store, times(0)).closeMessageStore();
+        host.close();
     }
 
     public void testDeleteInErrorStateAfterOpen() throws Exception
@@ -223,6 +230,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
 
         host.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, State.ACTIVE));
         assertEquals("Unexpected state", State.ACTIVE, host.getState());
+        host.close();
     }
 
     public void testStartInErrorStateAfterOpen() throws Exception
@@ -247,5 +255,6 @@ public class AbstractVirtualHostTest extends QpidTestCase
 
         host.start();
         assertEquals("Unexpected state", State.ACTIVE, host.getState());
+        host.close();
     }
 }

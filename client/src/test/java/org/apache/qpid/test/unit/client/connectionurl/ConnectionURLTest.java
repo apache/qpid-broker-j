@@ -31,9 +31,10 @@ import junit.framework.TestCase;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.ConnectionURL;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.url.URLSyntaxException;
 
-public class ConnectionURLTest extends TestCase
+public class ConnectionURLTest extends QpidTestCase
 {
     public void testFailoverURL() throws URLSyntaxException
     {

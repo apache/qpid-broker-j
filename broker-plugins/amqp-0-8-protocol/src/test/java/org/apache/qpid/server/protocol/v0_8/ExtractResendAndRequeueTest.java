@@ -28,6 +28,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -56,7 +57,7 @@ import static org.mockito.Mockito.when;
  * delivery thread will be in progress while the rollback method is called. Hopefully this will cause the
  * deliveryTag to be lost
  */
-public class ExtractResendAndRequeueTest extends TestCase
+public class ExtractResendAndRequeueTest extends QpidTestCase
 {
 
     private UnacknowledgedMessageMapImpl _unacknowledgedMessageMap;

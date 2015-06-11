@@ -23,8 +23,9 @@ import java.net.InetAddress;
 import org.apache.qpid.server.security.access.firewall.NetworkFirewallRule;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class NetworkFirewallRuleTest extends TestCase
+public class NetworkFirewallRuleTest extends QpidTestCase
 {
     private static final String LOCALHOST_IP = "127.0.0.1";
     private static final String OTHER_IP_1 = "192.168.23.1";

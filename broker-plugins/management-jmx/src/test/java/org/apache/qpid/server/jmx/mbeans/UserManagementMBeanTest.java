@@ -39,8 +39,9 @@ import junit.framework.TestCase;
 import org.apache.qpid.management.common.mbeans.UserManagement;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class UserManagementMBeanTest extends TestCase
+public class UserManagementMBeanTest extends QpidTestCase
 {
     private UserManagementMBean _userManagement;
     private ManagedObjectRegistry _mockRegistry;

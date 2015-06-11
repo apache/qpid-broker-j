@@ -25,8 +25,9 @@ import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class ActionTest extends TestCase
+public class ActionTest extends QpidTestCase
 {
     private ObjectProperties _properties1 = mock(ObjectProperties.class);
     private ObjectProperties _properties2 = mock(ObjectProperties.class);

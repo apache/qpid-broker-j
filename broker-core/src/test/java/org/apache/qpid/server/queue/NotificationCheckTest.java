@@ -37,8 +37,9 @@ import junit.framework.TestCase;
 
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.QueueNotificationListener;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class NotificationCheckTest extends TestCase
+public class NotificationCheckTest extends QpidTestCase
 {
 
     private ServerMessage<?> _message = mock(ServerMessage.class);

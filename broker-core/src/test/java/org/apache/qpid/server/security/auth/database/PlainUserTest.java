@@ -21,11 +21,12 @@
 package org.apache.qpid.server.security.auth.database;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /*
     Note PlainUser is mainly tested by PlainPFPDTest, this is just to catch the extra methods
  */
-public class PlainUserTest extends TestCase
+public class PlainUserTest extends QpidTestCase
 {
 
     private String USERNAME = "username";

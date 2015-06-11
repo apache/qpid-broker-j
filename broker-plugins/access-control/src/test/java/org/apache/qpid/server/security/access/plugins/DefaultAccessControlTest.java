@@ -46,13 +46,14 @@ import org.apache.qpid.server.security.access.Permission;
 import org.apache.qpid.server.security.access.config.Rule;
 import org.apache.qpid.server.security.access.config.RuleSet;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * In these tests, the ruleset is configured programmatically rather than from an external file.
  *
  * @see RuleSetTest
  */
-public class DefaultAccessControlTest extends TestCase
+public class DefaultAccessControlTest extends QpidTestCase
 {
     private static final String ALLOWED_GROUP = "allowed_group";
     private static final String DENIED_GROUP = "denied_group";

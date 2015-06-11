@@ -24,6 +24,7 @@ import junit.framework.TestCase;
 
 import org.apache.qpid.client.message.JMSStreamMessage;
 import org.apache.qpid.client.message.TestMessageHelper;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.jms.JMSException;
 import javax.jms.MessageEOFException;
@@ -36,7 +37,7 @@ import java.util.HashMap;
 /**
  * @author Apache Software Foundation
  */
-public class StreamMessageTest extends TestCase
+public class StreamMessageTest extends QpidTestCase
 {
     /**
      * Tests that on creation a call to getBodyLength() throws an exception

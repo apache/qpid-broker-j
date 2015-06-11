@@ -37,8 +37,9 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class SimpleLDAPAuthenticationManagerFactoryTest extends TestCase
+public class SimpleLDAPAuthenticationManagerFactoryTest extends QpidTestCase
 {
     private ConfiguredObjectFactory _factory = BrokerModel.getInstance().getObjectFactory();
     private Map<String, Object> _configuration = new HashMap<String, Object>();

@@ -26,8 +26,9 @@ import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 import static org.mockito.Mockito.*;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class AclRulePredicatesTest extends TestCase
+public class AclRulePredicatesTest extends QpidTestCase
 {
     private AclRulePredicates _aclRulePredicates = new AclRulePredicates();
     private FirewallRuleFactory _firewallRuleFactory = mock(FirewallRuleFactory.class);

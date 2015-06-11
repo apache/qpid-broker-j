@@ -21,11 +21,12 @@
 package org.apache.qpid.framing;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
-public class AMQShortStringTest extends TestCase
+public class AMQShortStringTest extends QpidTestCase
 {
 
     public static final AMQShortString HELLO = new AMQShortString("Hello");

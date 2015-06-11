@@ -126,6 +126,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
+    public void executeTask(Runnable task)
+    {
+        throwUnsupportedForReplica();
+    }
+
+    @Override
     public Broker<?> getBroker()
     {
         return _broker;

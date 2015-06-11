@@ -42,11 +42,12 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  * Tests for {@link QueueEntryImpl}
  */
-public abstract class QueueEntryImplTestBase extends TestCase
+public abstract class QueueEntryImplTestBase extends QpidTestCase
 {
     // tested entry
     protected QueueEntryImpl _queueEntry;

@@ -27,6 +27,7 @@ import org.apache.qpid.server.security.auth.database.Base64MD5PasswordFilePrinci
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexInitialiser;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexSaslServer;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexServerFactory;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -46,7 +47,7 @@ import java.security.Principal;
  * This test case focuses on testing {@link CRAMMD5HexSaslServer} but also exercises
  * collaborators {@link CRAMMD5HexInitialiser} and {@link Base64MD5PasswordFilePrincipalDatabase}
  */
-public class CRAMMD5HexServerTest extends TestCase
+public class CRAMMD5HexServerTest extends QpidTestCase
 {
 
     private SaslServer _saslServer;  // Class under test

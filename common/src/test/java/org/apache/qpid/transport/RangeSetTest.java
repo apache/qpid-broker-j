@@ -21,6 +21,7 @@
 package org.apache.qpid.transport;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import static org.apache.qpid.util.Serial.COMPARATOR;
 import static org.apache.qpid.util.Serial.eq;
@@ -35,7 +36,7 @@ import java.util.List;
  *
  */
 
-public class RangeSetTest extends TestCase
+public class RangeSetTest extends QpidTestCase
 {
 
     private void check(RangeSet ranges)

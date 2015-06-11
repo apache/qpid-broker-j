@@ -25,12 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import javax.security.auth.Subject;
 
@@ -58,11 +53,27 @@ import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BrokerTestHelper
 {
 
+    private static List<VirtualHost> _createdVirtualHosts = new ArrayList<>();
+
     private static final TaskExecutor TASK_EXECUTOR = new CurrentThreadTaskExecutor();
+    private static Runnable _closeVirtualHosts = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            for (VirtualHost virtualHost : _createdVirtualHosts)
+            {
+                virtualHost.close();
+            }
+            _createdVirtualHosts.clear();
+        }
+    };
+
     static
     {
         TASK_EXECUTOR.start();
@@ -150,6 +161,9 @@ public class BrokerTestHelper
                 host = (AbstractVirtualHost) objectFactory.create(VirtualHost.class, attributes, virtualHostNode );
         host.start();
         when(virtualHostNode.getVirtualHost()).thenReturn(host);
+        _createdVirtualHosts.add(host);
+        QpidTestCase testCase = QpidTestCase.getCurrentInstance();
+        testCase.registerTearDown(_closeVirtualHosts);
         return host;
     }
 

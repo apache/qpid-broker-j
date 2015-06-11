@@ -61,7 +61,6 @@
     "name" : "AMQP",
     "port" : "${qpid.amqp_port}",
     "authenticationProvider" : "passwordFile",
-    "secureOnlyMechanisms" : [ ],
     "virtualhostaliases" : [ {
        "name" : "nameAlias",
        "type" : "nameAlias"

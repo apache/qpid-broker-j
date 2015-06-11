@@ -27,6 +27,7 @@ import javax.jms.Message;
 import javax.jms.TextMessage;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ import org.apache.qpid.client.message.MessageConverter;
 import org.apache.qpid.exchange.ExchangeDefaults;
 
 
-public class MessageConverterTest extends TestCase
+public class MessageConverterTest extends QpidTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(MessageConverterTest.class);
     public static final String JMS_CORR_ID = "QPIDID_01";

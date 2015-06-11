@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.qpid.server.model.SystemConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

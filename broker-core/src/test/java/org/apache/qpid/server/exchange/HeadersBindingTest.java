@@ -41,10 +41,11 @@ import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
  */
-public class HeadersBindingTest extends TestCase
+public class HeadersBindingTest extends QpidTestCase
 {
 
 

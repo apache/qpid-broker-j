@@ -124,6 +124,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         assertEquals("Unexpected virtual host name", TEST_VIRTUAL_HOST_NAME, virtualHost.getName());
         assertEquals("Unexpected virtual host state", State.ACTIVE, virtualHost.getState());
         assertEquals("Unexpected virtual host id", virtualHostId, virtualHost.getId());
+        node.close();
     }
 
     /**
@@ -144,6 +145,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
         VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
         assertNull("Virtual host should not be automatically created", virtualHost);
+        node.close();
     }
 
     /**
@@ -176,6 +178,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         assertNotNull("Unexpected virtual host id", virtualHost.getId());
 
         assertEquals("Initial configuration should be empty", "{}", node.getVirtualHostInitialConfiguration());
+        node.close();
     }
 
     /**
@@ -206,6 +209,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
 
         assertNull("Virtual host should not be created by blueprint", virtualHost);
+        node.close();
     }
 
     /**
@@ -240,6 +244,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         assertEquals("Unexpected virtual host name", TEST_VIRTUAL_HOST_NAME, virtualHost.getName());
         assertEquals("Unexpected virtual host state", State.ACTIVE, virtualHost.getState());
         assertEquals("Unexpected virtual host id", virtualHostId, virtualHost.getId());
+        node.close();
     }
 
     public void testStopStartVHN() throws Exception
@@ -261,6 +266,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
         node.start();
         assertEquals("Unexpected virtual host node state after start", State.ACTIVE, node.getState());
+        node.close();
     }
 
 
@@ -293,6 +299,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
             // PASS
         }
         assertNull("Description unexpected updated", node.getDescription());
+        node.close();
     }
 
     public void testDeleteVHNDeniedByACL() throws Exception
@@ -323,6 +330,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         }
 
         assertEquals("Virtual host node state changed unexpectedly", State.ACTIVE, node.getState());
+        node.close();
     }
 
     public void testStopVHNDeniedByACL() throws Exception
@@ -353,6 +361,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         }
 
         assertEquals("Virtual host node state changed unexpectedly", State.ACTIVE, node.getState());
+        node.close();
     }
 
     public void testValidateOnCreateFails_StoreFails() throws Exception
@@ -412,6 +421,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.create();
         verify(store, times(2)).openConfigurationStore(node, false); // once of validation, once for real
         verify(store, times(1)).closeConfigurationStore();
+        node.close();
     }
 
     public void testOpenFails() throws Exception
@@ -423,6 +433,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         AbstractVirtualHostNode node = new TestAbstractVirtualHostNode( _broker, attributes, store);
         node.open();
         assertEquals("Unexpected node state", State.ERRORED, node.getState());
+        node.close();
     }
 
     public void testOpenSucceeds() throws Exception
@@ -457,6 +468,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.open();
         assertEquals("Unexpected node state", State.ACTIVE, node.getState());
         assertFalse("onExceptionInOpen was called", onFailureFlag.get());
+        node.close();
     }
 
 
@@ -489,6 +501,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
         node.setAttributes(Collections.<String, Object>singletonMap(VirtualHostNode.DESIRED_STATE, State.ACTIVE));
         assertEquals("Unexpected state", State.ACTIVE, node.getState());
+        node.close();
     }
 
     public void testStartInErrorStateAfterOpen() throws Exception
@@ -505,6 +518,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
 
         node.start();
         assertEquals("Unexpected state", State.ACTIVE, node.getState());
+        node.close();
     }
 
     private ConfiguredObjectRecord createVirtualHostConfiguredObjectRecord(UUID virtualHostId)

@@ -33,11 +33,12 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
 
 import junit.framework.TestCase;
 
-public class LoginLogoutReporterTest extends TestCase
+public class LoginLogoutReporterTest extends QpidTestCase
 {
     private LoginLogoutReporter _loginLogoutReport;
     private Subject _subject = new Subject();

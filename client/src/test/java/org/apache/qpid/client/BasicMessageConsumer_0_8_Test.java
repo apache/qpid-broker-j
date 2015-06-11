@@ -23,11 +23,12 @@ package org.apache.qpid.client;
 import junit.framework.TestCase;
 
 import org.apache.qpid.test.unit.message.TestAMQSession;
+import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.url.AMQBindingURL;
 
 import javax.jms.Session;
 
-public class BasicMessageConsumer_0_8_Test extends TestCase
+public class BasicMessageConsumer_0_8_Test extends QpidTestCase
 {
     /**
      * Test that if there is a value for Reject Behaviour specified for the Destination

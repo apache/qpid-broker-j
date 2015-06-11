@@ -102,6 +102,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         try
         {
             _taskExecutor.stopImmediately();
+            _virtualHost.close();
         }
         finally
         {

@@ -84,6 +84,13 @@ public class VirtualHostAliasTest extends QpidTestCase
 
     }
 
+    @Override
+    protected void tearDown() throws Exception
+    {
+        _port.close();
+        super.tearDown();
+    }
+
     public void testDefaultAliases_VirtualHostNameAlias()
     {
         VirtualHostImpl vhost = _port.getVirtualHost("red");

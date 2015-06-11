@@ -21,13 +21,14 @@
 package org.apache.qpid.server.security.auth.database;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.io.UnsupportedEncodingException;
 
 /*
     Note User is mainly tested by Base64MD5PFPDTest this is just to catch the extra methods
  */
-public class HashedUserTest extends TestCase
+public class HashedUserTest extends QpidTestCase
 {
 
     private String USERNAME = "username";

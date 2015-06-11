@@ -23,6 +23,7 @@ package org.apache.qpid.client.security;
 import junit.framework.TestCase;
 
 import org.apache.qpid.client.AMQConnectionURL;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
@@ -32,7 +33,7 @@ import javax.security.auth.callback.PasswordCallback;
  * Unit tests for the UsernamePasswordCallbackHandler.
  *
  */
-public class UsernamePasswordCallbackHandlerTest extends TestCase
+public class UsernamePasswordCallbackHandlerTest extends QpidTestCase
 {
     private AMQCallbackHandler _callbackHandler = new UsernamePasswordCallbackHandler(); // Class under test
     private static final String PROMPT_UNUSED = "unused";

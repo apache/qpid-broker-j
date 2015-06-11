@@ -22,10 +22,11 @@ package org.apache.qpid.client.message;
 
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.jms.JMSException;
 
-public class AbstractJMSMessageTest extends TestCase
+public class AbstractJMSMessageTest extends QpidTestCase
 {
 
     public void testSetNullJMSReplyTo08() throws JMSException

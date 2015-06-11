@@ -26,9 +26,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 
 import junit.framework.TestCase;
+import org.apache.qpid.test.utils.QpidTestCase;
 
 
-public class QpidResourceAdapterTest extends TestCase
+public class QpidResourceAdapterTest extends QpidTestCase
 {
     public void testGetXAResources() throws Exception
     {

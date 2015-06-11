@@ -42,8 +42,9 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.test.utils.QpidTestCase;
 
-public class LastValueQueueListTest extends TestCase
+public class LastValueQueueListTest extends QpidTestCase
 {
     private static final String CONFLATION_KEY = "CONFLATION_KEY";
 
