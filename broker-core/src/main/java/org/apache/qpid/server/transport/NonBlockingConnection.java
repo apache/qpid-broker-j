@@ -590,7 +590,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 }
             }
 
-            return bufArray.length == byteBuffersWritten;
+            return (bufArray.length == byteBuffersWritten) && _encryptedOutput.isEmpty();
 
         }
         else
