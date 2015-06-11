@@ -25,15 +25,15 @@ import static org.apache.qpid.transport.Option.UNRELIABLE;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.Destination;
 import javax.jms.JMSException;
@@ -48,7 +48,6 @@ import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverNoopSupport;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
 import org.apache.qpid.client.message.AMQMessageDelegateFactory;
-import org.apache.qpid.client.message.MessageFactoryRegistry;
 import org.apache.qpid.client.message.UnprocessedMessage_0_10;
 import org.apache.qpid.client.messaging.address.AddressHelper;
 import org.apache.qpid.client.messaging.address.Link;
@@ -72,23 +71,33 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
      */
     private static final Logger _logger = LoggerFactory.getLogger(AMQSession_0_10.class);
 
-    private static Timer timer = new Timer("ack-flusher", true);
     private final String _name;
 
-    private static class Flusher extends TimerTask
+    private static class Flusher implements Runnable
     {
 
         private WeakReference<AMQSession_0_10> session;
+        private ScheduledFuture<?> _future;
+
         public Flusher(AMQSession_0_10 session)
         {
             this.session = new WeakReference<AMQSession_0_10>(session);
         }
 
-        public void run() {
+        public void setFuture(final ScheduledFuture<?> future)
+        {
+            _future = future;
+        }
+
+        public void run()
+        {
             AMQSession_0_10 ssn = session.get();
             if (ssn == null)
             {
-                cancel();
+                if(_future != null)
+                {
+                    _future.cancel(false);
+                }
             }
             else
             {
@@ -120,7 +129,7 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
     private org.apache.qpid.transport.Connection _qpidConnection;
 
     private long maxAckDelay = Long.getLong("qpid.session.max_ack_delay", 1000);
-    private TimerTask flushTask = null;
+    private ScheduledFuture<?> _flushTaskFuture = null;
     private RangeSet unacked = RangeSetFactory.createRangeSet();
     private int unackedCount = 0;
 
@@ -156,8 +165,9 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
 
         if (maxAckDelay > 0)
         {
-            flushTask = new Flusher(this);
-            timer.schedule(flushTask, new Date(), maxAckDelay);
+            Flusher flusher = new Flusher(this);
+            _flushTaskFuture = con.scheduleTask(flusher, 0, maxAckDelay, TimeUnit.MILLISECONDS);
+            flusher.setFuture(_flushTaskFuture);
         }
     }
 
@@ -911,10 +921,10 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
         try
         {
             super.closed(null);
-            if (flushTask != null)
+            if (_flushTaskFuture != null)
             {
-                flushTask.cancel();
-                flushTask = null;
+                _flushTaskFuture.cancel(false);
+                _flushTaskFuture = null;
             }
         } catch (Exception e)
         {
@@ -1334,10 +1344,10 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
 
     private void cancelTimerTask()
     {
-        if (flushTask != null)
+        if (_flushTaskFuture != null)
         {
-            flushTask.cancel();
-            flushTask = null;
+            _flushTaskFuture.cancel(false);
+            _flushTaskFuture = null;
         }
     }
 

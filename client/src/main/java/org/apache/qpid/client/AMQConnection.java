@@ -47,6 +47,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -170,7 +172,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
      * Thread Pool for executing connection level processes such as reporting asynchronous exceptions
      * and for 0-8..0-91 returning bounced messages.
      */
-    private final ExecutorService _taskPool = Executors.newSingleThreadExecutor(new ThreadFactory()
+    private final ScheduledExecutorService _taskPool = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
     {
         @Override
         public Thread newThread(final Runnable r)
@@ -1656,6 +1658,11 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                 throw e;
             }
         }
+    }
+
+    ScheduledFuture<?> scheduleTask(Runnable task, long initialDelay, long period, TimeUnit timeUnit)
+    {
+        return _taskPool.scheduleAtFixedRate(task, initialDelay, period, timeUnit);
     }
 
     public AMQSession getSession(int channelId)
