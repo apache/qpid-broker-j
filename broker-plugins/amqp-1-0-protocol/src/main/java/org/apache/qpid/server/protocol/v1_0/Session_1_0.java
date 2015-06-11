@@ -72,6 +72,7 @@ import org.apache.qpid.amqp_1_0.type.transport.Transfer;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
+import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.MessageDestination;
@@ -115,6 +116,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
     private Session<?> _modelObject;
+    private final List<ConsumerTarget_1_0> _consumersWithPendingWork = new ArrayList<>();
 
 
     public Session_1_0(final Connection_1_0 connection, final SessionEndpoint endpoint)
@@ -905,13 +907,37 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     }
 
     @Override
-    public void processPending()
+    public boolean processPending()
     {
-        for(Consumer<?> consumer : getConsumers())
+        boolean consumerListNeedsRefreshing;
+        if(_consumersWithPendingWork.isEmpty())
         {
-
-            ((ConsumerImpl)consumer).getTarget().processPending();
+            for(SendingLink_1_0 link : _sendingLinks)
+            {
+                _consumersWithPendingWork.add(link.getConsumerTarget());
+            }
+            consumerListNeedsRefreshing = false;
         }
+        else
+        {
+            consumerListNeedsRefreshing = true;
+        }
+
+        Iterator<ConsumerTarget_1_0> iter = _consumersWithPendingWork.iterator();
+        boolean consumerHasMoreWork = false;
+        while(iter.hasNext())
+        {
+            final ConsumerTarget target = iter.next();
+            iter.remove();
+            if(target.hasPendingWork())
+            {
+                consumerHasMoreWork = true;
+                target.processPending();
+                break;
+            }
+        }
+
+        return consumerHasMoreWork || consumerListNeedsRefreshing;
     }
 
     @Override

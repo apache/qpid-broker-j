@@ -566,4 +566,19 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
             }
         }
     }
+
+    @Override
+    protected boolean hasStateChanged()
+    {
+        synchronized (_link.getLock())
+        {
+            return _queueEmpty;
+        }
+    }
+
+    @Override
+    protected boolean hasClosed()
+    {
+        return false;
+    }
 }

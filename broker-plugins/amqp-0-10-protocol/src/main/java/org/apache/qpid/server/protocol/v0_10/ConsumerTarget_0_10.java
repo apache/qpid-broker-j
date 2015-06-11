@@ -672,4 +672,16 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     {
 
     }
+
+    @Override
+    protected boolean hasStateChanged()
+    {
+        return false;
+    }
+
+    @Override
+    protected boolean hasClosed()
+    {
+        return false;
+    }
 }

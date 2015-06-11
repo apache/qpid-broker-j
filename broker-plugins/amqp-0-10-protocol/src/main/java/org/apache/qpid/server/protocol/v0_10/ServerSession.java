@@ -139,6 +139,7 @@ public class ServerSession extends Session
     private long _blockTime;
     private long _blockingTimeout;
     private boolean _wireBlockingState;
+    private final List<ConsumerTarget> _consumersWithPendingWork = new ArrayList<>();
 
     public static interface MessageDispositionChangeListener
     {
@@ -1137,7 +1138,7 @@ public class ServerSession extends Session
     }
 
     @Override
-    public void processPending()
+    public boolean processPending()
     {
         boolean desiredBlockingState = _blocking.get();
         if (desiredBlockingState != _wireBlockingState)
@@ -1155,11 +1156,33 @@ public class ServerSession extends Session
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 
-
-        for(ConsumerTarget target : getSubscriptions())
+        boolean consumerListNeedsRefreshing;
+        if(_consumersWithPendingWork.isEmpty())
         {
-            target.processPending();
+            _consumersWithPendingWork.addAll(getSubscriptions());
+            consumerListNeedsRefreshing = false;
         }
+        else
+        {
+            consumerListNeedsRefreshing = true;
+        }
+
+        Iterator<ConsumerTarget> iter = _consumersWithPendingWork.iterator();
+
+        boolean consumerHasMoreWork = false;
+        while(iter.hasNext())
+        {
+            final ConsumerTarget target = iter.next();
+            iter.remove();
+            if(target.hasPendingWork())
+            {
+                consumerHasMoreWork = true;
+                target.processPending();
+                break;
+            }
+        }
+
+        return consumerHasMoreWork || consumerListNeedsRefreshing;
     }
 
     @Override

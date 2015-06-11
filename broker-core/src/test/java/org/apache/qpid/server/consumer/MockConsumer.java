@@ -264,9 +264,15 @@ public class MockConsumer implements ConsumerTarget
     }
 
     @Override
-    public void processPending()
+    public boolean processPending()
     {
+        return false;
+    }
 
+    @Override
+    public boolean hasPendingWork()
+    {
+        return false;
     }
 
     public ArrayList<MessageInstance> getMessages()
@@ -505,9 +511,9 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public void processPending()
+        public boolean processPending()
         {
-
+            return false;
         }
 
         @Override

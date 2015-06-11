@@ -517,7 +517,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     @Override
     protected void processClosed()
     {
-        if (_needToClose.get() && getState() != State.CLOSED)
+        if (hasClosed())
         {
             close();
             confirmAutoClose();
@@ -528,6 +528,18 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     protected void processStateChanged()
     {
 
+    }
+
+    @Override
+    protected boolean hasStateChanged()
+    {
+        return false;
+    }
+
+    @Override
+    protected boolean hasClosed()
+    {
+        return (_needToClose.get() && getState() != State.CLOSED);
     }
 
     public void flushBatched()

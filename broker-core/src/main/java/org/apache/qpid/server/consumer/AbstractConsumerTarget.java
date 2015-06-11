@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.util.StateChangeListener;
-import org.apache.qpid.thread.ThreadFactory;
 
 public abstract class AbstractConsumerTarget implements ConsumerTarget
 {
@@ -57,17 +56,30 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     }
 
     @Override
-    public void processPending()
+    public boolean processPending()
     {
-        while(hasMessagesToSend())
+        if(hasMessagesToSend())
         {
             sendNextMessage();
+            return true;
         }
-
-        processStateChanged();
-
-        processClosed();
+        else
+        {
+            processStateChanged();
+            processClosed();
+            return false;
+        }
     }
+
+    @Override
+    public boolean hasPendingWork()
+    {
+        return hasMessagesToSend() || hasStateChanged() || hasClosed();
+    }
+
+    protected abstract boolean hasStateChanged();
+
+    protected abstract boolean hasClosed();
 
     protected abstract void processStateChanged();
 

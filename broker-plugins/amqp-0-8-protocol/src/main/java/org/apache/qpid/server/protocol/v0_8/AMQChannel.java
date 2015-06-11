@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -157,6 +158,8 @@ public class AMQChannel
 
     /** Maps from consumer tag to subscription instance. Allows us to unsubscribe from a queue. */
     private final Map<AMQShortString, ConsumerTarget_0_8> _tag2SubscriptionTargetMap = new HashMap<AMQShortString, ConsumerTarget_0_8>();
+
+    private final List<ConsumerTarget_0_8> _consumersWithPendingWork = new ArrayList<>();
 
     private final MessageStore _messageStore;
 
@@ -3663,7 +3666,7 @@ public class AMQChannel
     }
 
     @Override
-    public void processPending()
+    public boolean processPending()
     {
 
         boolean desiredBlockingState = _blocking.get();
@@ -3674,10 +3677,33 @@ public class AMQChannel
             _blockTime = desiredBlockingState ? System.currentTimeMillis() : 0;
         }
 
-        for(ConsumerTarget target : _tag2SubscriptionTargetMap.values())
+        boolean consumerListNeedsRefreshing;
+        if(_consumersWithPendingWork.isEmpty())
         {
-            target.processPending();
+            _consumersWithPendingWork.addAll(_tag2SubscriptionTargetMap.values());
+            consumerListNeedsRefreshing = false;
         }
+        else
+        {
+            consumerListNeedsRefreshing = true;
+        }
+
+        Iterator<ConsumerTarget_0_8> iter = _consumersWithPendingWork.iterator();
+
+        boolean consumerHasMoreWork = false;
+        while(iter.hasNext())
+        {
+            final ConsumerTarget_0_8 target = iter.next();
+            iter.remove();
+            if(target.hasPendingWork())
+            {
+                consumerHasMoreWork = true;
+                target.processPending();
+                break;
+            }
+        }
+
+        return consumerHasMoreWork || consumerListNeedsRefreshing;
     }
 
     @Override

@@ -33,7 +33,9 @@ public interface ConsumerTarget
 
     void removeStateChangeListener(StateChangeListener<ConsumerTarget, State> listener);
 
-    void processPending();
+    boolean processPending();
+
+    boolean hasPendingWork();
 
     enum State
     {

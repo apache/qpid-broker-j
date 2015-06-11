@@ -34,6 +34,7 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -2003,9 +2004,19 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
     @Override
     public void processPending()
     {
-        for (AMQSessionModel session : getSessionModels())
+        List<? extends AMQSessionModel<?,?>> sessionsWithPending = new ArrayList<>(getSessionModels());
+        while(!sessionsWithPending.isEmpty())
         {
-            session.processPending();
+            final Iterator<? extends AMQSessionModel<?, ?>> iter = sessionsWithPending.iterator();
+            AMQSessionModel<?, ?> session;
+            while(iter.hasNext())
+            {
+                session = iter.next();
+                if(!session.processPending())
+                {
+                    iter.remove();
+                }
+            }
         }
 
         while(_asyncTaskList.peek() != null)

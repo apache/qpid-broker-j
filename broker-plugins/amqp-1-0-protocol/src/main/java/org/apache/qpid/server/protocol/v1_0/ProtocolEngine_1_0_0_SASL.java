@@ -601,11 +601,6 @@ public class ProtocolEngine_1_0_0_SASL implements ServerProtocolEngine, FrameOut
 
     }
 
-    public void flushBatched()
-    {
-        _sender.flush();
-    }
-
     @Override
     public void processPending()
     {

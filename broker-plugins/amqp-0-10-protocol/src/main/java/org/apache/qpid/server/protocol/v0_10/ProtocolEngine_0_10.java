@@ -312,7 +312,6 @@ public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocol
     public void processPending()
     {
         _connection.processPending();
-
     }
 
     @Override

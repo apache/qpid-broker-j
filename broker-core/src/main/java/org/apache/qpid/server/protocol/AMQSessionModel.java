@@ -117,7 +117,7 @@ public interface AMQSessionModel<T extends AMQSessionModel<T,C>, C extends AMQCo
 
     void transportStateChanged();
 
-    void processPending();
+    boolean processPending();
 
     void addTicker(Ticker ticker);
     void removeTicker(Ticker ticker);

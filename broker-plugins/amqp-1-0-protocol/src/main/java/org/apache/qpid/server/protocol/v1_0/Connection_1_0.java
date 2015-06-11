@@ -29,6 +29,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
@@ -539,9 +540,19 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
 
     public void processPending()
     {
-        for (AMQSessionModel session : getSessionModels())
+        List<? extends AMQSessionModel<?,?>> sessionsWithPending = new ArrayList<>(getSessionModels());
+        while(!sessionsWithPending.isEmpty())
         {
-            session.processPending();
+            final Iterator<? extends AMQSessionModel<?, ?>> iter = sessionsWithPending.iterator();
+            AMQSessionModel<?, ?> session;
+            while(iter.hasNext())
+            {
+                session = iter.next();
+                if(!session.processPending())
+                {
+                    iter.remove();
+                }
+            }
         }
 
         while(_asyncTaskList.peek() != null)
