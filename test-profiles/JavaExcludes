@@ -40,3 +40,6 @@ org.apache.qpid.systest.management.jmx.LoggingManagementTest#*
 org.apache.qpid.systest.rest.acl.LogViewerACLTest#*
 org.apache.qpid.systest.rest.LogRecordsRestTest#*
 org.apache.qpid.util.LogMonitorTest#*
+
+// Test runs for 2 minutes testing that subtraction works
+org.apache.qpid.util.SerialTest#testCorollary1
