@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.nio.ByteBuffer;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.Principal;
@@ -77,15 +78,19 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -3207,6 +3212,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public List<Long> moveMessages(Queue<?> destination, List<Long> messageIds)
     {
+        // FIXME: added temporary authorization check until we introduce management layer
+        // and review current ACL rules to have common rules for all management interfaces
+        authorizeMethod("moveMessages");
+
         List<Long> copy = new ArrayList<>(messageIds);
         _virtualHost.executeTransaction(new MoveMessagesTransaction(this, copy, destination));
         List<Long> returnVal = new ArrayList<>(messageIds);
@@ -3218,6 +3227,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public List<Long> copyMessages(Queue<?> destination, List<Long> messageIds)
     {
+        // FIXME: added temporary authorization check until we introduce management layer
+        // and review current ACL rules to have common rules for all management interfaces
+        authorizeMethod("copyMessages");
+
         List<Long> copy = new ArrayList<>(messageIds);
         _virtualHost.executeTransaction(new CopyMessagesTransaction(this, copy, destination));
         List<Long> returnVal = new ArrayList<>(messageIds);
@@ -3226,4 +3239,124 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
+    @Override
+    public List<Long> deleteMessages(final List<Long> messageIds)
+    {
+
+        // FIXME: added temporary authorization check until we introduce management layer
+        // and review current ACL rules to have common rules for all management interfaces
+        authorizeMethod("deleteMessages");
+
+        List<Long> copy = new ArrayList<>(messageIds);
+        _virtualHost.executeTransaction(new DeleteMessagesTransaction(this, copy));
+        List<Long> returnVal = new ArrayList<>(messageIds);
+        returnVal.removeAll(copy);
+        return returnVal;
+    }
+
+    @Override
+    public TypedContent getMessageContent(final long messageId)
+    {
+        final MessageFinder messageFinder = new MessageFinder(messageId);
+        visit(messageFinder);
+        if(messageFinder.isFound())
+        {
+            return new TypedContent()
+                    {
+                        @Override
+                        public String getContentType()
+                        {
+                            return messageFinder.getMimeType();
+                        }
+
+                        @Override
+                        public byte[] getData()
+                        {
+                            return messageFinder.getContent();
+                        }
+                    };
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private void authorizeMethod(String methodName)
+    {
+        getSecurityManager().authoriseMethod(Operation.UPDATE,
+                                             "VirtualHost.Queue",
+                                             methodName,
+                                             getVirtualHost().getName());
+    }
+
+
+    private class MessageFinder implements QueueEntryVisitor
+    {
+        private final long _messageNumber;
+        private String _mimeType;
+        private long _size;
+        private byte[] _content;
+        private boolean _found;
+
+        private MessageFinder(long messageNumber)
+        {
+            _messageNumber = messageNumber;
+        }
+
+
+        public boolean visit(QueueEntry entry)
+        {
+            ServerMessage message = entry.getMessage();
+            if(message != null)
+            {
+                if(_messageNumber == message.getMessageNumber())
+                {
+                    try
+                    {
+                        MessageReference reference = message.newReference();
+                        try
+                        {
+                            _mimeType = message.getMessageHeader().getMimeType();
+                            _size = message.getSize();
+                            _content = new byte[(int) _size];
+                            _found = true;
+                            message.getContent(ByteBuffer.wrap(_content), 0);
+                        }
+                        finally
+                        {
+                            reference.release();
+                        }
+                        return true;
+                    }
+                    catch (MessageDeletedException e)
+                    {
+                        // ignore - the message was deleted as we tried too look at it, treat as if no message found
+                    }
+                }
+
+            }
+            return false;
+        }
+
+        public String getMimeType()
+        {
+            return _mimeType;
+        }
+
+        public long getSize()
+        {
+            return _size;
+        }
+
+        public byte[] getContent()
+        {
+            return _content;
+        }
+
+        public boolean isFound()
+        {
+            return _found;
+        }
+    }
 }

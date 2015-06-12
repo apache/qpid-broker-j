@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,16 +16,13 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
-package org.apache.qpid.server.model.testmodels.hierarchy;
+package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.ManagedOperation;
-import org.apache.qpid.server.model.Param;
-
-@ManagedObject(category = false)
-public interface TestKitCar<X extends TestKitCar<X>> extends TestCar<X>
+@ManagedAttributeValueType
+public interface TypedContent
 {
-    @ManagedOperation
-    Door openDoor(@Param(name = "door", defaultValue = "PASSENGER") Door door);
+    String getContentType();
+    byte[] getData();
 }

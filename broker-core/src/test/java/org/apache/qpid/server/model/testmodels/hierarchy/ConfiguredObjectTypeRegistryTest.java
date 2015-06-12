@@ -23,13 +23,18 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import junit.framework.TestCase;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ManagedInterface;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -71,5 +76,52 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         // The pertrol engine implements no additional interfaces
         Set<Class<? extends ManagedInterface>> stdCarIntfcs = _typeRegistry.getManagedInterfaces(TestPetrolEngine.class);
         assertThat(stdCarIntfcs.size(), is(0));
+    }
+
+    public void testOperations()
+    {
+        final String objectName = "testKitCar";
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, objectName);
+        attributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+
+        TestCar object = TestModel.getInstance().getObjectFactory().create(TestCar.class, attributes);
+
+        assertEquals(TestKitCarImpl.class, object.getTypeClass());
+
+        final Map<String, ConfiguredObjectOperation<?>> kitCarOperations =
+                _typeRegistry.getOperations(object.getClass());
+        assertEquals(1, kitCarOperations.size());
+        assertTrue(kitCarOperations.containsKey("openDoor"));
+        final ConfiguredObjectOperation<TestCar> operation =
+                (ConfiguredObjectOperation<TestCar>) kitCarOperations.get("openDoor");
+
+        // test explicitly setting parameter
+        Object returnVal = operation.perform(object, Collections.<String, Object>singletonMap("door", "DRIVER"));
+        assertEquals(TestCar.Door.DRIVER, returnVal);
+
+        // test default parameter
+        returnVal = operation.perform(object, Collections.<String, Object>emptyMap());
+        assertEquals(TestCar.Door.PASSENGER, returnVal);
+
+        try
+        {
+            operation.perform(object, Collections.<String, Object>singletonMap("seat", "DRIVER"));
+            fail("Should not be able to pass in an unused parameter");
+        }
+        catch(IllegalArgumentException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            operation.perform(object, Collections.<String, Object>singletonMap("door", "[\"eggs\", \"flour\", \"milk\"]"));
+            fail("Should not be able to pass in a parameter of the wrong type");
+        }
+        catch(IllegalArgumentException e)
+        {
+            // pass
+        }
     }
 }

@@ -28,6 +28,7 @@ import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.TypedContent;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
@@ -54,16 +55,13 @@ public class MessageContentServlet extends AbstractServlet
     {
         Queue queue = getQueueFromRequest(request);
         String path[] = getPathInfoElements(request);
-        MessageFinder finder = new MessageFinder(Long.parseLong(path[2]));
-        queue.visit(finder);
-        if(finder.isFound())
+        TypedContent content = queue.getMessageContent(Long.parseLong(path[2]));
+        if(content != null)
         {
-            response.setContentType(finder.getMimeType());
-            response.setContentLength((int) finder.getSize());
-            getOutputStream(request, response).write(finder.getContent());
-
+            response.setContentType(content.getContentType());
+            response.setContentLength(content.getData().length);
+            getOutputStream(request, response).write(content.getData());
         }
-
     }
 
     private Queue getQueueFromRequest(HttpServletRequest request)
@@ -101,74 +99,7 @@ public class MessageContentServlet extends AbstractServlet
         return queue;
     }
 
-    private class MessageFinder implements QueueEntryVisitor
-    {
-        private final long _messageNumber;
-        private String _mimeType;
-        private long _size;
-        private byte[] _content;
-        private boolean _found;
 
-        private MessageFinder(long messageNumber)
-        {
-            _messageNumber = messageNumber;
-        }
-
-
-        public boolean visit(QueueEntry entry)
-        {
-            ServerMessage message = entry.getMessage();
-            if(message != null)
-            {
-                if(_messageNumber == message.getMessageNumber())
-                {
-                    try
-                    {
-                        MessageReference reference = message.newReference();
-                        try
-                        {
-                            _mimeType = message.getMessageHeader().getMimeType();
-                            _size = message.getSize();
-                            _content = new byte[(int) _size];
-                            _found = true;
-                            message.getContent(ByteBuffer.wrap(_content), 0);
-                        }
-                        finally
-                        {
-                            reference.release();
-                        }
-                        return true;
-                    }
-                    catch (MessageDeletedException e)
-                    {
-                        // ignore - the message was deleted as we tried too look at it, treat as if no message found
-                    }
-                }
-
-            }
-            return false;
-        }
-
-        public String getMimeType()
-        {
-            return _mimeType;
-        }
-
-        public long getSize()
-        {
-            return _size;
-        }
-
-        public byte[] getContent()
-        {
-            return _content;
-        }
-
-        public boolean isFound()
-        {
-            return _found;
-        }
-    }
 
 
 }

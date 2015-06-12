@@ -201,7 +201,7 @@ abstract class AttributeValueConverter<T>
                 }
                 catch(NumberFormatException e)
                 {
-                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "'",e);
+                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a long integer",e);
                 }
             }
             else if(value == null)
@@ -237,7 +237,7 @@ abstract class AttributeValueConverter<T>
                 }
                 catch(NumberFormatException e)
                 {
-                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "'",e);
+                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to an integer",e);
                 }
             }
             else if(value == null)
@@ -273,7 +273,7 @@ abstract class AttributeValueConverter<T>
                 }
                 catch(NumberFormatException e)
                 {
-                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "'",e);
+                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a short integer",e);
                 }
             }
             else if(value == null)
@@ -552,7 +552,11 @@ abstract class AttributeValueConverter<T>
 
     static Class<?> getTypeFromMethod(final Method m)
     {
-        Class<?> type = m.getReturnType();
+        return convertPrimitiveToBoxed(m.getReturnType());
+    }
+
+    static Class<?> convertPrimitiveToBoxed(Class<?> type)
+    {
         if(type.isPrimitive())
         {
             if(type == Boolean.TYPE)

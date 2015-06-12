@@ -239,7 +239,15 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedOperation
     List<Long> copyMessages(@Param(name = "destination") Queue<?> destination, @Param(name = "messageIds") List<Long> messageIds);
 
+
+    @ManagedOperation
+    List<Long> deleteMessages(@Param(name = "messageIds") List<Long> messageIds);
+
+
     @ManagedOperation
     long clearQueue();
+
+    @ManagedOperation
+    TypedContent getMessageContent(@Param(name = "messageId") long messageId);
 
 }

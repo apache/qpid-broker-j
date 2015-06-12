@@ -359,19 +359,18 @@ public class MessageServlet extends AbstractServlet
 
             boolean isMoveTransaction = move != null && Boolean.valueOf(move);
 
-            // FIXME: added temporary authorization check until we introduce management layer
-            // and review current ACL rules to have common rules for all management interfaces
-            String methodName = isMoveTransaction? "moveMessages":"copyMessages";
-            authorizeMethod(methodName, vhost);
-
-
             final Queue destinationQueue = getQueueFromVirtualHost(destQueueName, vhost);
             final List<Long> messageIds = new ArrayList<Long>((List<Long>) providedObject.get("messages"));
-            VirtualHost.TransactionalOperation txn =
-                    isMoveTransaction
-                            ? new MoveMessagesTransaction(sourceQueue, messageIds, destinationQueue)
-                            : new CopyMessagesTransaction(sourceQueue, messageIds, destinationQueue);
-            vhost.executeTransaction(txn);
+
+            if(isMoveTransaction)
+            {
+                sourceQueue.moveMessages(destinationQueue, messageIds);
+            }
+            else
+            {
+                sourceQueue.copyMessages(destinationQueue, messageIds);
+            }
+
             response.setStatus(HttpServletResponse.SC_OK);
 
         }

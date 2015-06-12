@@ -29,6 +29,7 @@ import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.testmodels.TestSecurityManager;
 import org.apache.qpid.server.security.SecurityManager;
 
@@ -66,5 +67,11 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
     protected SecurityManager getSecurityManager()
     {
         return _securityManager;
+    }
+
+    @Override
+    public Door openDoor(final Door door)
+    {
+        return door;
     }
 }

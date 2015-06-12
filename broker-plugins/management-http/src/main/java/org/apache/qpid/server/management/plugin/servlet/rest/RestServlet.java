@@ -42,6 +42,7 @@ import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
+import org.apache.qpid.server.model.TypedContent;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -552,11 +553,21 @@ public class RestServlet extends AbstractServlet
         }
         Object returnVal = operation.perform(subject, providedObject);
         response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("application/json");
-        Writer writer = getOutputWriter(request, response);
-        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(writer, returnVal);
+        if(returnVal instanceof TypedContent)
+        {
+            TypedContent typedContent = (TypedContent)returnVal;
+            response.setContentType(typedContent.getContentType());
+            response.setContentLength(typedContent.getData().length);
+            getOutputStream(request, response).write(typedContent.getData());
+        }
+        else
+        {
+            response.setContentType("application/json");
+            Writer writer = getOutputWriter(request, response);
+            ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
+            mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
+            mapper.writeValue(writer, returnVal);
+        }
 
     }
 

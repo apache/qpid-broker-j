@@ -38,11 +38,16 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
     private final Method _operation;
     private final OperationParameter[] _params;
     private final Set<String> _validNames;
+    private final String _objectType;
+    private final ConfiguredObjectTypeRegistry _typeRegistry;
 
     public ConfiguredObjectOperation(Class<C> clazz,
-                                     final Method operation)
+                                     final Method operation,
+                                     final ConfiguredObjectTypeRegistry typeRegistry)
     {
+        _objectType = clazz.getSimpleName();
         _operation = operation;
+        _typeRegistry = typeRegistry;
         final Annotation[][] allParameterAnnotations = _operation.getParameterAnnotations();
         _params = new OperationParameter[allParameterAnnotations.length];
         Set<String> validNames = new LinkedHashSet<>();
@@ -78,56 +83,94 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
 
     public Object perform(C subject, Map<String, Object> parameters)
     {
-        Set<String> providedNames = new HashSet<>(parameters.keySet());
-        providedNames.removeAll(_validNames);
-        if(!providedNames.isEmpty())
+        final Map<String, ConfiguredObjectOperation<?>> operationsOnSubject =
+                _typeRegistry.getOperations(subject.getClass());
+
+        if(operationsOnSubject == null || operationsOnSubject.get(_operation.getName()) == null)
         {
-            throw new IllegalArgumentException("Parameters " + providedNames + " are not accepted by " + getName());
+            throw new IllegalArgumentException("No operation " + _operation.getName() + " on " + subject.getClass().getSimpleName());
         }
-        Object[] paramValues = new Object[_params.length];
-        for(int i = 0; i <_params.length; i++)
+        else if(!hasSameParameters(operationsOnSubject.get(_operation.getName())))
         {
-            OperationParameter param = _params[i];
-            Object providedVal;
-            if(parameters.containsKey(param.getName()))
-            {
-                providedVal = parameters.get(param.getName());
-            }
-            else if(!"".equals(param.getDefaultValue()))
-            {
-                providedVal = param.getDefaultValue();
-            }
-            else
-            {
-                providedVal = null;
-            }
-            final AttributeValueConverter<?> converter =
-                    AttributeValueConverter.getConverter(param.getType(),
-                                                         param.getGenericType());
-            final Object convertedVal = converter.convert(providedVal, subject);
-            paramValues[i] = convertedVal;
+            throw new IllegalArgumentException("Operation "
+                                               + _operation.getName()
+                                               + " on "
+                                               + _objectType
+                                               + " cannot be used on an object of type "
+                                               + subject.getClass().getSimpleName());
         }
-        try
+        else if(operationsOnSubject.get(_operation.getName()) != this)
         {
-            return _operation.invoke(subject, paramValues);
+            return ((ConfiguredObjectOperation<C>)operationsOnSubject.get(_operation.getName())).perform(subject, parameters);
         }
-        catch (IllegalAccessException e)
+        else
         {
-            throw new ServerScopedRuntimeException(e);
-        }
-        catch (InvocationTargetException e)
-        {
-            if(e.getCause() instanceof RuntimeException)
+
+            Set<String> providedNames = new HashSet<>(parameters.keySet());
+            providedNames.removeAll(_validNames);
+            if (!providedNames.isEmpty())
             {
-                throw (RuntimeException) e.getCause();
+                throw new IllegalArgumentException("Parameters " + providedNames + " are not accepted by " + getName());
             }
-            else if(e.getCause() instanceof Error)
+            Object[] paramValues = new Object[_params.length];
+            for (int i = 0; i < _params.length; i++)
             {
-                throw (Error) e.getCause();
+                OperationParameter param = _params[i];
+                Object providedVal;
+                if (parameters.containsKey(param.getName()))
+                {
+                    providedVal = parameters.get(param.getName());
+                }
+                else if (!"".equals(param.getDefaultValue()))
+                {
+                    providedVal = param.getDefaultValue();
+                }
+                else
+                {
+                    providedVal = null;
+                }
+                final AttributeValueConverter<?> converter =
+                        AttributeValueConverter.getConverter(AttributeValueConverter.convertPrimitiveToBoxed(param.getType()),
+                                                             param.getGenericType());
+                try
+                {
+                    final Object convertedVal = converter.convert(providedVal, subject);
+                    paramValues[i] = convertedVal;
+                }
+                catch (IllegalArgumentException e)
+                {
+                    throw new IllegalArgumentException(e.getMessage()
+                                                       + " for parameter '"
+                                                       + param.getName()
+                                                       + "' in "
+                                                       + _objectType
+                                                       + "."
+                                                       + _operation.getName()
+                                                       + "(...) operation", e.getCause());
+                }
             }
-            else
+            try
+            {
+                return _operation.invoke(subject, paramValues);
+            }
+            catch (IllegalAccessException e)
             {
                 throw new ServerScopedRuntimeException(e);
+            }
+            catch (InvocationTargetException e)
+            {
+                if (e.getCause() instanceof RuntimeException)
+                {
+                    throw (RuntimeException) e.getCause();
+                }
+                else if (e.getCause() instanceof Error)
+                {
+                    throw (Error) e.getCause();
+                }
+                else
+                {
+                    throw new ServerScopedRuntimeException(e);
+                }
             }
         }
     }

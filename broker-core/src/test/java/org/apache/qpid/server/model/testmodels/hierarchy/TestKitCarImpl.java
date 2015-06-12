@@ -25,6 +25,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.testmodels.TestSecurityManager;
 import org.apache.qpid.server.security.SecurityManager;
 
@@ -62,5 +63,11 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     protected SecurityManager getSecurityManager()
     {
         return _securityManager;
+    }
+
+    @Override
+    public Door openDoor(final Door door)
+    {
+        return door;
     }
 }

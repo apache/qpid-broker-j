@@ -721,7 +721,7 @@ public class ConfiguredObjectTypeRegistry
             throw new ServerScopedRuntimeException("Can only define ManagedOperations on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
         }
 
-        ConfiguredObjectOperation<?> operation = new ConfiguredObjectOperation<>(clazz, m);
+        ConfiguredObjectOperation<?> operation = new ConfiguredObjectOperation<>(clazz, m, this);
         Iterator<ConfiguredObjectOperation<?>> iter = operationSet.iterator();
         while(iter.hasNext())
         {

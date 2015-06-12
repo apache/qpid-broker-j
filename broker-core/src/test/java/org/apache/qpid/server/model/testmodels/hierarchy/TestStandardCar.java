@@ -20,8 +20,13 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
+import org.apache.qpid.server.model.Param;
 
 @ManagedObject(category = false)
 public interface TestStandardCar<X extends TestStandardCar<X>> extends TestCar<X>
 {
+
+    @ManagedOperation
+    Door openDoor(@Param(name = "door", defaultValue = "DRIVER") Door door);
 }

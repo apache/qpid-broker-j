@@ -22,8 +22,14 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
+import org.apache.qpid.server.model.Param;
 
 @ManagedObject( defaultType = TestStandardCarImpl.TEST_STANDARD_CAR_TYPE)
 public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
 {
+    enum Door { DRIVER, PASSENGER }
+
+    @ManagedOperation
+    Door openDoor(@Param(name = "door") Door door);
 }
