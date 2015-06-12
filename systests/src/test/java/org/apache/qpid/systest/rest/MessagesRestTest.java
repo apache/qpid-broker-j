@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.DeliveryMode;
 import javax.jms.Destination;
@@ -46,6 +45,9 @@ public class MessagesRestTest extends QpidRestTestCase
      * Message number to publish into queue
      */
     private static final int MESSAGE_NUMBER = 12;
+    public static final String STRING_PROP = "shortstring";
+    // Dollar Pound Euro: 1 byte, 2 byte, and 3 byte UTF-8 encodings respectively
+    public static final String STRING_VALUE = "\u0024 \u00A3 \u20AC";
 
     private Connection _connection;
     private Session _session;
@@ -100,11 +102,9 @@ public class MessagesRestTest extends QpidRestTestCase
         String queueName = getTestQueueName();
 
         // add bytes message
-        BytesMessage byteMessage = _session.createBytesMessage();
-        byte[] messageBytes = "Test".getBytes();
-        byteMessage.writeBytes(messageBytes);
-        byteMessage.setStringProperty("test", "value");
-        _producer.send(byteMessage);
+        Message textMessage = _session.createTextMessage(STRING_VALUE);
+        textMessage.setStringProperty(STRING_PROP, STRING_VALUE);
+        _producer.send(textMessage);
         _session.commit();
 
         // get message IDs
@@ -122,17 +122,17 @@ public class MessagesRestTest extends QpidRestTestCase
         Long lastMessageId = ids.get(ids.size() - 1);
         message = getRestTestHelper().getJsonAsMap("/service/message/test/" + queueName + "/" + lastMessageId);
         assertMessageAttributes(message);
-        assertEquals("Unexpected message attribute mimeType", "application/octet-stream", message.get("mimeType"));
-        assertEquals("Unexpected message attribute size", 4, message.get("size"));
+        assertEquals("Unexpected message attribute mimeType", "text/plain", message.get("mimeType"));
+        assertEquals("Unexpected message attribute size", STRING_VALUE.getBytes().length, message.get("size"));
 
         @SuppressWarnings("unchecked")
         Map<String, Object> bytesMessageHeader = (Map<String, Object>) message.get("headers");
         assertNotNull("Message headers are not found", bytesMessageHeader);
-        assertEquals("Unexpected message header", "value", bytesMessageHeader.get("test"));
+        assertEquals("Unexpected message header value", STRING_VALUE, bytesMessageHeader.get(STRING_PROP));
 
         // get content
         byte[] data = getRestTestHelper().getBytes("/service/message-content/test/" + queueName + "/" + lastMessageId);
-        assertTrue("Unexpected message", Arrays.equals(messageBytes, data));
+        assertTrue("Unexpected message", Arrays.equals(STRING_VALUE.getBytes(), data));
 
     }
 
