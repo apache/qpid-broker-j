@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -42,9 +43,11 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredAutomatedAttribute;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.OperationParameter;
 
 public class MetaDataServlet extends AbstractServlet
 {
@@ -103,6 +106,7 @@ public class MetaDataServlet extends AbstractServlet
     {
         Map<String,Object> typeDetails = new LinkedHashMap<>();
         typeDetails.put("attributes", processAttributes(type));
+        typeDetails.put("opertaions", processOperations(type));
         typeDetails.put("managedInterfaces", getManagedInterfaces(type));
         typeDetails.put("validChildTypes", getValidChildTypes(type));
         ManagedObject annotation = type.getAnnotation(ManagedObject.class);
@@ -194,6 +198,46 @@ public class MetaDataServlet extends AbstractServlet
                 attrDetails.put("oversize", attribute.isOversized());
             }
             attributeDetails.put(attribute.getName(), attrDetails);
+        }
+        return attributeDetails;
+    }
+
+    private Map<String,Map> processOperations(final Class<? extends ConfiguredObject> type)
+    {
+        Collection<ConfiguredObjectOperation<?>> operations =
+                _instance.getTypeRegistry().getOperations(type).values();
+
+        Map<String,Map> attributeDetails = new LinkedHashMap<>();
+        for(ConfiguredObjectOperation<?> operation : operations)
+        {
+            Map<String,Object> attrDetails = new LinkedHashMap<>();
+            attrDetails.put("name",operation.getName());
+            attrDetails.put("returnType",operation.getReturnType().getSimpleName());
+            if(!"".equals(operation.getDescription()))
+            {
+                attrDetails.put("description",operation.getDescription());
+            }
+
+            List<OperationParameter> parameters = operation.getParameters();
+            if(!parameters.isEmpty())
+            {
+                Map<String,Map> paramDetails = new LinkedHashMap<>();
+                for(OperationParameter param : parameters)
+                {
+                    Map<String,Object> paramAttrs = new LinkedHashMap<>();
+
+                    paramAttrs.put("type", param.getType().getSimpleName());
+                    if(!"".equals(param.getDefaultValue()))
+                    {
+                        paramAttrs.put("defaultValue", param.getDefaultValue());
+                    }
+
+                    paramDetails.put(param.getName(), paramAttrs);
+                }
+                attrDetails.put("parameters", paramDetails);
+            }
+
+            attributeDetails.put(operation.getName(), attrDetails);
         }
         return attributeDetails;
     }

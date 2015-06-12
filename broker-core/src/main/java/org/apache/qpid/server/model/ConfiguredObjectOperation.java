@@ -23,9 +23,11 @@ package org.apache.qpid.server.model;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,7 +36,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 public class ConfiguredObjectOperation<C extends ConfiguredObject>
 {
     private final Method _operation;
-    private final Param[] _params;
+    private final OperationParameter[] _params;
     private final Set<String> _validNames;
 
     public ConfiguredObjectOperation(Class<C> clazz,
@@ -42,7 +44,7 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
     {
         _operation = operation;
         final Annotation[][] allParameterAnnotations = _operation.getParameterAnnotations();
-        _params = new Param[allParameterAnnotations.length];
+        _params = new OperationParameter[allParameterAnnotations.length];
         Set<String> validNames = new LinkedHashSet<>();
         for(int i = 0; i < allParameterAnnotations.length; i++)
         {
@@ -51,8 +53,9 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
             {
                 if(annotation instanceof Param)
                 {
-                    _params[i] = (Param) annotation;
-                    validNames.add(_params[i].name());
+
+                    _params[i] = new OperationParameter((Param) annotation, _operation.getParameterTypes()[i], _operation.getGenericParameterTypes()[i]);
+                    validNames.add(_params[i].getName());
                 }
             }
             if(_params[i] == null)
@@ -68,6 +71,11 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
         return _operation.getName();
     }
 
+    public List<OperationParameter> getParameters()
+    {
+        return Collections.unmodifiableList(Arrays.asList(_params));
+    }
+
     public Object perform(C subject, Map<String, Object> parameters)
     {
         Set<String> providedNames = new HashSet<>(parameters.keySet());
@@ -79,23 +87,23 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
         Object[] paramValues = new Object[_params.length];
         for(int i = 0; i <_params.length; i++)
         {
-            Param param = _params[i];
+            OperationParameter param = _params[i];
             Object providedVal;
-            if(parameters.containsKey(param.name()))
+            if(parameters.containsKey(param.getName()))
             {
-                providedVal = parameters.get(param.name());
+                providedVal = parameters.get(param.getName());
             }
-            else if(!"".equals(param.defaultValue()))
+            else if(!"".equals(param.getDefaultValue()))
             {
-                providedVal = param.defaultValue();
+                providedVal = param.getDefaultValue();
             }
             else
             {
                 providedVal = null;
             }
             final AttributeValueConverter<?> converter =
-                    AttributeValueConverter.getConverter(_operation.getParameterTypes()[i],
-                                                         _operation.getGenericParameterTypes()[i]);
+                    AttributeValueConverter.getConverter(param.getType(),
+                                                         param.getGenericType());
             final Object convertedVal = converter.convert(providedVal, subject);
             paramValues[i] = convertedVal;
         }
@@ -130,15 +138,7 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
         {
             for(int i = 0; i < _params.length; i++)
             {
-                if(!_params[i].name().equals(other._params[i].name()))
-                {
-                    return false;
-                }
-                if(!_operation.getParameterTypes()[i].equals(other._operation.getParameterTypes()[i]))
-                {
-                    return false;
-                }
-                if(!_operation.getGenericParameterTypes()[i].equals(other._operation.getGenericParameterTypes()[i]))
+                if(!_params[i].isCompatible(other._params[i]))
                 {
                     return false;
                 }
@@ -149,5 +149,15 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
         {
             return false;
         }
+    }
+
+    public Class<?> getReturnType()
+    {
+        return _operation.getReturnType();
+    }
+
+    public String getDescription()
+    {
+        return _operation.getAnnotation(ManagedOperation.class).description();
     }
 }

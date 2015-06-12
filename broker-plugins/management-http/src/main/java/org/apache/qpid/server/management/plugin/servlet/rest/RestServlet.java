@@ -38,12 +38,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
-import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -446,7 +444,7 @@ public class RestServlet extends AbstractServlet
         boolean isFullObjectURL = names.size() == _hierarchy.length;
         boolean isPostToFullURL = isFullObjectURL && "POST".equalsIgnoreCase(request.getMethod());
         final String[] pathInfoElements = getPathInfoElements(request);
-        boolean isOperation = pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1;
+        boolean isOperation = pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1 && isPostToFullURL;
         try
         {
             if(!isOperation)
@@ -502,55 +500,63 @@ public class RestServlet extends AbstractServlet
             }
             else
             {
-                if(isPostToFullURL)
-                {
-                    ConfiguredObject<?> subject;
-                    if (names.isEmpty() && _hierarchy.length == 0)
-                    {
-                        subject = getBroker();
-                    }
-                    else
-                    {
-                        ConfiguredObject theParent = getBroker();
-                        ConfiguredObject[] otherParents = null;
-                        Class<? extends ConfiguredObject> objClass = getConfiguredClass();
-                        if (_hierarchy.length > 1)
-                        {
-                            List<ConfiguredObject> parents = findAllObjectParents(names);
-                            theParent = parents.remove(0);
-                            otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
-                        }
-
-                        Map<String,Object> objectName = Collections.<String,Object>singletonMap("name", names.get(names.size() - 1));
-                        subject = findObjectToUpdateInParent(objClass, objectName, theParent, otherParents);
-                        String operationName = pathInfoElements[pathInfoElements.length-1];
-                        final Map<String, ConfiguredObjectOperation<?>> availableOperations =
-                                getBroker().getModel().getTypeRegistry().getOperations(subject.getClass());
-                        ConfiguredObjectOperation operation = availableOperations.get(operationName);
-                        if(operation == null)
-                        {
-                            throw new IllegalArgumentException("No such operation: " + operationName);
-                        }
-                        Object returnVal = operation.perform(subject, providedObject);
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        response.setContentType("application/json");
-                        Writer writer = getOutputWriter(request, response);
-                        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
-                        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-                        mapper.writeValue(writer, returnVal);
-
-                    }
-                }
-                else
-                {
-                    throw new IllegalArgumentException("Request path is not valid for this operation");
-                }
+                doOperation(request, response, names, providedObject, pathInfoElements);
             }
         }
         catch (RuntimeException e)
         {
             setResponseStatus(request, response, e);
         }
+
+    }
+
+    private void doOperation(final HttpServletRequest request,
+                             final HttpServletResponse response,
+                             final List<String> names,
+                             final Map<String, Object> providedObject,
+                             final String[] pathInfoElements) throws IOException
+    {
+        ConfiguredObject<?> subject;
+        if (names.isEmpty() && _hierarchy.length == 0)
+        {
+            subject = getBroker();
+        }
+        else
+        {
+            ConfiguredObject theParent = getBroker();
+            ConfiguredObject[] otherParents = null;
+            Class<? extends ConfiguredObject> objClass = getConfiguredClass();
+            if (_hierarchy.length > 1)
+            {
+                List<ConfiguredObject> parents = findAllObjectParents(names);
+                theParent = parents.remove(0);
+                otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
+            }
+            Map<String, Object> objectName =
+                    Collections.<String, Object>singletonMap("name", names.get(names.size() - 1));
+            subject = findObjectToUpdateInParent(objClass, objectName, theParent, otherParents);
+            if(subject == null)
+            {
+                sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, getConfiguredClass().getSimpleName() + " '" + pathInfoElements[pathInfoElements.length-2] + "' not found.");
+                return;
+            }
+        }
+        String operationName = pathInfoElements[pathInfoElements.length - 1];
+        final Map<String, ConfiguredObjectOperation<?>> availableOperations =
+                getBroker().getModel().getTypeRegistry().getOperations(subject.getClass());
+        ConfiguredObjectOperation operation = availableOperations.get(operationName);
+        if (operation == null)
+        {
+            sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "No such operation: " + operationName);
+            return;
+        }
+        Object returnVal = operation.perform(subject, providedObject);
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/json");
+        Writer writer = getOutputWriter(request, response);
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
+        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
+        mapper.writeValue(writer, returnVal);
 
     }
 

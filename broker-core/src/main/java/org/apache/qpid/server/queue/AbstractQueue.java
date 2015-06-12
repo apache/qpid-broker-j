@@ -1790,6 +1790,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     // ------ Management functions
 
+    @Override
     public long clearQueue()
     {
         return clear(0l);
@@ -3213,4 +3214,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return returnVal;
 
     }
+
+    @Override
+    public List<Long> copyMessages(Queue<?> destination, List<Long> messageIds)
+    {
+        List<Long> copy = new ArrayList<>(messageIds);
+        _virtualHost.executeTransaction(new CopyMessagesTransaction(this, copy, destination));
+        List<Long> returnVal = new ArrayList<>(messageIds);
+        returnVal.removeAll(copy);
+        return returnVal;
+
+    }
+
 }
