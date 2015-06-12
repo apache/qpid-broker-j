@@ -42,11 +42,14 @@ import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.queue.ClearQueueTransaction;
+import org.apache.qpid.server.queue.CopyMessagesTransaction;
+import org.apache.qpid.server.queue.DeleteMessagesTransaction;
+import org.apache.qpid.server.queue.MoveMessagesTransaction;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.store.TransactionLogResource;
 
 public class MessageServlet extends AbstractServlet
 {
@@ -168,130 +171,6 @@ public class MessageServlet extends AbstractServlet
         return queue;
     }
 
-    private abstract static class QueueEntryTransaction implements VirtualHost.TransactionalOperation
-    {
-        private final Queue _sourceQueue;
-        private final List _messageIds;
-
-        protected QueueEntryTransaction(Queue sourceQueue, List messageIds)
-        {
-            _sourceQueue = sourceQueue;
-            _messageIds = messageIds;
-        }
-
-        @Override
-        public void withinTransaction(final VirtualHost.Transaction txn)
-        {
-
-            _sourceQueue.visit(new QueueEntryVisitor()
-            {
-
-                public boolean visit(final QueueEntry entry)
-                {
-                    final ServerMessage message = entry.getMessage();
-                    if(message != null)
-                    {
-                        final long messageId = message.getMessageNumber();
-                        if (_messageIds.remove(messageId) || (messageId <= (long) Integer.MAX_VALUE
-                                                              && _messageIds.remove(Integer.valueOf((int)messageId))))
-                        {
-                            updateEntry(entry, txn);
-                        }
-                    }
-                    return _messageIds.isEmpty();
-                }
-            });
-        }
-
-
-        protected abstract void updateEntry(QueueEntry entry, VirtualHost.Transaction txn);
-    }
-
-    private static class MoveTransaction extends QueueEntryTransaction
-    {
-        private final Queue _destinationQueue;
-
-        public MoveTransaction(Queue sourceQueue, List<Long> messageIds, Queue destinationQueue)
-        {
-            super(sourceQueue, messageIds);
-            _destinationQueue = destinationQueue;
-        }
-
-        @Override
-        protected void updateEntry(QueueEntry entry, VirtualHost.Transaction txn)
-        {
-            ServerMessage msg = entry.getMessage();
-            if(msg != null && !msg.isReferenced((TransactionLogResource)_destinationQueue))
-            {
-                txn.move(entry, _destinationQueue);
-            }
-        }
-    }
-
-    private static class CopyTransaction extends QueueEntryTransaction
-    {
-        private final Queue _destinationQueue;
-
-        public CopyTransaction(Queue sourceQueue, List<Long> messageIds, Queue destinationQueue)
-        {
-            super(sourceQueue, messageIds);
-            _destinationQueue = destinationQueue;
-        }
-
-        @Override
-        protected void updateEntry(QueueEntry entry, VirtualHost.Transaction txn)
-        {
-            ServerMessage msg = entry.getMessage();
-            if(msg != null && !msg.isReferenced((TransactionLogResource)_destinationQueue))
-            {
-                txn.copy(entry, _destinationQueue);
-            }
-        }
-    }
-
-    private static class DeleteTransaction extends QueueEntryTransaction
-    {
-        public DeleteTransaction(Queue sourceQueue, List<Long> messageIds)
-        {
-            super(sourceQueue, messageIds);
-        }
-
-        @Override
-        protected void updateEntry(QueueEntry entry, VirtualHost.Transaction txn)
-        {
-            txn.dequeue(entry);
-        }
-    }
-
-
-    private static class ClearQueueTransaction implements VirtualHost.TransactionalOperation
-    {
-        private final Queue _queue;
-
-        protected ClearQueueTransaction(Queue queue)
-        {
-            _queue = queue;
-        }
-
-        @Override
-        public void withinTransaction(final VirtualHost.Transaction txn)
-        {
-            _queue.visit(new QueueEntryVisitor()
-            {
-
-                public boolean visit(final QueueEntry entry)
-                {
-                    final ServerMessage message = entry.getMessage();
-                    if(message != null)
-                    {
-                        txn.dequeue(entry);
-                    }
-                    return false;
-                }
-            });
-
-        }
-    }
 
     private class MessageCollector implements QueueEntryVisitor
     {
@@ -488,10 +367,10 @@ public class MessageServlet extends AbstractServlet
 
             final Queue destinationQueue = getQueueFromVirtualHost(destQueueName, vhost);
             final List<Long> messageIds = new ArrayList<Long>((List<Long>) providedObject.get("messages"));
-            QueueEntryTransaction txn =
+            VirtualHost.TransactionalOperation txn =
                     isMoveTransaction
-                            ? new MoveTransaction(sourceQueue, messageIds, destinationQueue)
-                            : new CopyTransaction(sourceQueue, messageIds, destinationQueue);
+                            ? new MoveMessagesTransaction(sourceQueue, messageIds, destinationQueue)
+                            : new CopyMessagesTransaction(sourceQueue, messageIds, destinationQueue);
             vhost.executeTransaction(txn);
             response.setStatus(HttpServletResponse.SC_OK);
 
@@ -548,7 +427,7 @@ public class MessageServlet extends AbstractServlet
         // FIXME: added temporary authorization check until we introduce management layer
         // and review current ACL rules to have common rules for all management interfaces
         authorizeMethod("deleteMessages", vhost);
-        vhost.executeTransaction(new DeleteTransaction(queue, messageIds));
+        vhost.executeTransaction(new DeleteMessagesTransaction(queue, messageIds));
     }
 
     private void clearQueue(final Queue<?> queue, final VirtualHost<?, ?, ?> vhost)

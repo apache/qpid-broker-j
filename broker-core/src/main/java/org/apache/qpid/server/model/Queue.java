@@ -232,5 +232,8 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedStatistic
     long getOldestMessageAge();
 
+    @ManagedOperation
+    List<Long> moveMessages(@Param(name = "destination") Queue<?> destination, @Param(name = "messageIds") List<Long> messageIds);
+
 
 }

@@ -38,9 +38,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
+import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -441,54 +444,108 @@ public class RestServlet extends AbstractServlet
         List<String> names = getParentNamesFromServletPath(request);
         Map<String, Object> providedObject = getRequestProvidedObject(request);
         boolean isFullObjectURL = names.size() == _hierarchy.length;
-        boolean updateOnlyAllowed = isFullObjectURL && "POST".equalsIgnoreCase(request.getMethod());
+        boolean isPostToFullURL = isFullObjectURL && "POST".equalsIgnoreCase(request.getMethod());
+        final String[] pathInfoElements = getPathInfoElements(request);
+        boolean isOperation = pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1;
         try
         {
-            if (names.isEmpty() && _hierarchy.length == 0)
+            if(!isOperation)
             {
-                getBroker().setAttributes(providedObject);
-                response.setStatus(HttpServletResponse.SC_OK);
-                return;
-            }
-
-            ConfiguredObject theParent = getBroker();
-            ConfiguredObject[] otherParents = null;
-            Class<? extends ConfiguredObject> objClass = getConfiguredClass();
-            if (_hierarchy.length > 1)
-            {
-                List<ConfiguredObject> parents = findAllObjectParents(names);
-                theParent = parents.remove(0);
-                otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
-            }
-
-            if (isFullObjectURL)
-            {
-                providedObject.put("name", names.get(names.size() - 1));
-                ConfiguredObject<?> configuredObject = findObjectToUpdateInParent(objClass, providedObject, theParent, otherParents);
-
-                if (configuredObject != null)
+                if (names.isEmpty() && _hierarchy.length == 0)
                 {
-                    configuredObject.setAttributes(providedObject);
+                    getBroker().setAttributes(providedObject);
                     response.setStatus(HttpServletResponse.SC_OK);
                     return;
                 }
-                else if (updateOnlyAllowed)
+
+
+                ConfiguredObject theParent = getBroker();
+                ConfiguredObject[] otherParents = null;
+                Class<? extends ConfiguredObject> objClass = getConfiguredClass();
+                if (_hierarchy.length > 1)
                 {
-                    sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Object with "
-                            +  (providedObject.containsKey("id") ? " id '" + providedObject.get("id") : " name '" + providedObject.get("name"))
-                            + "' does not exist!");
-                    return;
+                    List<ConfiguredObject> parents = findAllObjectParents(names);
+                    theParent = parents.remove(0);
+                    otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
+                }
+
+                if (isFullObjectURL)
+                {
+                    providedObject.put("name", names.get(names.size() - 1));
+                    ConfiguredObject<?> configuredObject =
+                            findObjectToUpdateInParent(objClass, providedObject, theParent, otherParents);
+
+                    if (configuredObject != null)
+                    {
+                        configuredObject.setAttributes(providedObject);
+                        response.setStatus(HttpServletResponse.SC_OK);
+                        return;
+                    }
+                    else if (isPostToFullURL)
+                    {
+                        sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Object with "
+                                                                                               + (providedObject.containsKey(
+                                "id") ? " id '" + providedObject.get("id") : " name '" + providedObject.get("name"))
+                                                                                               + "' does not exist!");
+                        return;
+                    }
+                }
+
+                ConfiguredObject<?> configuredObject = theParent.createChild(objClass, providedObject, otherParents);
+                StringBuffer requestURL = request.getRequestURL();
+                if (!isFullObjectURL)
+                {
+                    requestURL.append("/").append(configuredObject.getName());
+                }
+                response.setHeader("Location", requestURL.toString());
+                response.setStatus(HttpServletResponse.SC_CREATED);
+            }
+            else
+            {
+                if(isPostToFullURL)
+                {
+                    ConfiguredObject<?> subject;
+                    if (names.isEmpty() && _hierarchy.length == 0)
+                    {
+                        subject = getBroker();
+                    }
+                    else
+                    {
+                        ConfiguredObject theParent = getBroker();
+                        ConfiguredObject[] otherParents = null;
+                        Class<? extends ConfiguredObject> objClass = getConfiguredClass();
+                        if (_hierarchy.length > 1)
+                        {
+                            List<ConfiguredObject> parents = findAllObjectParents(names);
+                            theParent = parents.remove(0);
+                            otherParents = parents.toArray(new ConfiguredObject[parents.size()]);
+                        }
+
+                        Map<String,Object> objectName = Collections.<String,Object>singletonMap("name", names.get(names.size() - 1));
+                        subject = findObjectToUpdateInParent(objClass, objectName, theParent, otherParents);
+                        String operationName = pathInfoElements[pathInfoElements.length-1];
+                        final Map<String, ConfiguredObjectOperation<?>> availableOperations =
+                                getBroker().getModel().getTypeRegistry().getOperations(subject.getClass());
+                        ConfiguredObjectOperation operation = availableOperations.get(operationName);
+                        if(operation == null)
+                        {
+                            throw new IllegalArgumentException("No such operation: " + operationName);
+                        }
+                        Object returnVal = operation.perform(subject, providedObject);
+                        response.setStatus(HttpServletResponse.SC_OK);
+                        response.setContentType("application/json");
+                        Writer writer = getOutputWriter(request, response);
+                        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
+                        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
+                        mapper.writeValue(writer, returnVal);
+
+                    }
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Request path is not valid for this operation");
                 }
             }
-
-            ConfiguredObject<?> configuredObject = theParent.createChild(objClass, providedObject, otherParents);
-            StringBuffer requestURL = request.getRequestURL();
-            if (!isFullObjectURL)
-            {
-                requestURL.append("/").append(configuredObject.getName());
-            }
-            response.setHeader("Location", requestURL.toString());
-            response.setStatus(HttpServletResponse.SC_CREATED);
         }
         catch (RuntimeException e)
         {
@@ -568,16 +625,27 @@ public class RestServlet extends AbstractServlet
             if (!(pathInfoElements.length == _hierarchy.length ||
                     (_hierarchy.length > 0 && pathInfoElements.length == _hierarchy.length - 1)))
             {
-                throw new IllegalArgumentException("Either parent path or full object path must be specified on object creation."
-                                                   + " Full object path must be specified on object update. "
-                                                   + "Found "
-                                                   + names
-                                                   + " of size "
-                                                   + names.size()
-                                                   + " expecting "
-                                                   + _hierarchy.length);
+                if(pathInfoElements.length == _hierarchy.length + 1)
+                {
+                    names.addAll(Arrays.asList(pathInfoElements).subList(0,pathInfoElements.length-1));
+                }
+                else
+                {
+                    throw new IllegalArgumentException(
+                            "Either parent path or full object path must be specified on object creation."
+                            + " Full object path must be specified on object update. "
+                            + "Found "
+                            + names
+                            + " of size "
+                            + names.size()
+                            + " expecting "
+                            + _hierarchy.length);
+                }
             }
-            names.addAll(Arrays.asList(pathInfoElements));
+            else
+            {
+                names.addAll(Arrays.asList(pathInfoElements));
+            }
         }
         return names;
     }

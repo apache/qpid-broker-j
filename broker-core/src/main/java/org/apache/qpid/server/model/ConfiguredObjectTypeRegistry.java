@@ -181,6 +181,10 @@ public class ConfiguredObjectTypeRegistry
     private final Map<Class<? extends ConfiguredObject>,Set<Class<? extends ManagedInterface>>> _allManagedInterfaces =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<Class<? extends ManagedInterface>>>());
 
+    private final Map<Class<? extends ConfiguredObject>,Set<ConfiguredObjectOperation<?>>> _allOperations =
+            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<ConfiguredObjectOperation<?>>>());
+
+
     private final Map<Class<? extends ConfiguredObject>, Map<String, Collection<String>>> _validChildTypes =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<String, Collection<String>>>());
 
@@ -566,10 +570,12 @@ public class ConfiguredObjectTypeRegistry
             final SortedSet<ConfiguredObjectAttribute<?, ?>> attributeSet = new TreeSet<>(OBJECT_NAME_COMPARATOR);
             final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet = new TreeSet<>(OBJECT_NAME_COMPARATOR);
             final Set<Class<? extends ManagedInterface>> managedInterfaces = new HashSet<>();
+            final Set<ConfiguredObjectOperation<?>> operationsSet = new HashSet<>();
 
             _allAttributes.put(clazz, attributeSet);
             _allStatistics.put(clazz, statisticSet);
             _allManagedInterfaces.put(clazz, managedInterfaces);
+            _allOperations.put(clazz, operationsSet);
 
             doWithAllParents(clazz, new Action<Class<? extends ConfiguredObject>>()
             {
@@ -579,12 +585,13 @@ public class ConfiguredObjectTypeRegistry
                     initialiseWithParentAttributes(attributeSet,
                                                    statisticSet,
                                                    managedInterfaces,
+                                                   operationsSet,
                                                    parent);
 
                 }
             });
 
-            processMethods(clazz, attributeSet, statisticSet);
+            processMethods(clazz, attributeSet, statisticSet, operationsSet);
 
             processAttributesTypesAndFields(clazz);
 
@@ -614,17 +621,19 @@ public class ConfiguredObjectTypeRegistry
 
     private <X extends ConfiguredObject> void processMethods(final Class<X> clazz,
                                                              final SortedSet<ConfiguredObjectAttribute<?, ?>> attributeSet,
-                                                             final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet)
+                                                             final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet,
+                                                             final Set<ConfiguredObjectOperation<?>> operationsSet)
     {
         for(Method method : clazz.getDeclaredMethods())
         {
-            processMethod(clazz, attributeSet, statisticSet, method);
+            processMethod(clazz, attributeSet, statisticSet, operationsSet, method);
         }
     }
 
     private <X extends ConfiguredObject> void processMethod(final Class<X> clazz,
                                                             final SortedSet<ConfiguredObjectAttribute<?, ?>> attributeSet,
                                                             final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet,
+                                                            final Set<ConfiguredObjectOperation<?>> operationsSet,
                                                             final Method m)
     {
         if(m.isAnnotationPresent(ManagedAttribute.class))
@@ -639,6 +648,10 @@ public class ConfiguredObjectTypeRegistry
         else if(m.isAnnotationPresent(ManagedStatistic.class))
         {
             processManagedStatistic(clazz, statisticSet, m);
+        }
+        else if(m.isAnnotationPresent(ManagedOperation.class))
+        {
+            processManagedOperation(clazz, operationsSet, m);
         }
     }
 
@@ -697,14 +710,47 @@ public class ConfiguredObjectTypeRegistry
         attributeSet.add(attribute);
     }
 
+    private <X extends ConfiguredObject> void processManagedOperation(final Class<X> clazz,
+                                                                      final Set<ConfiguredObjectOperation<?>> operationSet,
+                                                                      final Method m)
+    {
+        ManagedOperation annotation = m.getAnnotation(ManagedOperation.class);
+
+        if(!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
+        {
+            throw new ServerScopedRuntimeException("Can only define ManagedOperations on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
+        }
+
+        ConfiguredObjectOperation<?> operation = new ConfiguredObjectOperation<>(clazz, m);
+        Iterator<ConfiguredObjectOperation<?>> iter = operationSet.iterator();
+        while(iter.hasNext())
+        {
+            final ConfiguredObjectOperation<?> existingOperation = iter.next();
+            if(operation.getName().equals(existingOperation.getName()))
+            {
+                if(!operation.hasSameParameters(existingOperation))
+                {
+                    throw new IllegalArgumentException("Cannot redefine the operation " + operation.getName() + " with different parameters in " + clazz.getSimpleName());
+                }
+                iter.remove();
+                break;
+            }
+        }
+        operationSet.add(operation);
+    }
+
+
+
     private void initialiseWithParentAttributes(final SortedSet<ConfiguredObjectAttribute<?, ?>> attributeSet,
                                                 final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet,
                                                 final Set<Class<? extends ManagedInterface>> managedInterfaces,
+                                                final Set<ConfiguredObjectOperation<?>> operationsSet,
                                                 final Class<? extends ConfiguredObject> parent)
     {
         attributeSet.addAll(_allAttributes.get(parent));
         statisticSet.addAll(_allStatistics.get(parent));
         managedInterfaces.addAll(_allManagedInterfaces.get(parent));
+        operationsSet.addAll(_allOperations.get(parent));
     }
 
     private <X extends ConfiguredObject> void processAttributesTypesAndFields(final Class<X> clazz)
@@ -975,6 +1021,24 @@ public class ConfiguredObjectTypeRegistry
         return statistics;
     }
 
+    public Map<String, ConfiguredObjectOperation<?>> getOperations(final Class<? extends ConfiguredObject> clazz)
+    {
+        processClassIfNecessary(clazz);
+        final Set<ConfiguredObjectOperation<?>> operations = _allOperations.get(clazz);
+        if(operations == null)
+        {
+            return Collections.emptyMap();
+        }
+        else
+        {
+            Map<String, ConfiguredObjectOperation<?>> returnVal = new HashMap<>();
+            for(ConfiguredObjectOperation<?> operation : operations)
+            {
+                returnVal.put(operation.getName(), operation);
+            }
+            return returnVal;
+        }
+    }
 
     public Map<String, ConfiguredObjectAttribute<?, ?>> getAttributeTypes(final Class<? extends ConfiguredObject> clazz)
     {

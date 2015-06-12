@@ -3202,4 +3202,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return _enqueueRecord;
         }
     }
+
+    @Override
+    public List<Long> moveMessages(Queue<?> destination, List<Long> messageIds)
+    {
+        List<Long> copy = new ArrayList<>(messageIds);
+        _virtualHost.executeTransaction(new MoveMessagesTransaction(this, copy, destination));
+        List<Long> returnVal = new ArrayList<>(messageIds);
+        returnVal.removeAll(copy);
+        return returnVal;
+
+    }
 }
