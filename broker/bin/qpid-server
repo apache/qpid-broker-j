@@ -44,8 +44,6 @@ export JAVA=java \
        QPID_CLASSPATH=$QPID_LIBS \
        QPID_RUN_LOG=2 
 
-QPID_OPTS="$QPID_OPTS -Damqj.read_write_pool_size=32 -DQPID_LOG_APPEND=$QPID_LOG_APPEND"
-
 # Echo the PID to file. Since qpid-run is sourced and uses exec to
 # launch the broker, this will give the brokers PID.
 if [ -z "$QPID_PID_FILENAME" ]; then
