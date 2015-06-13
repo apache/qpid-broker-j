@@ -54,9 +54,6 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.DatatypeConverter;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import org.junit.Assert;
@@ -214,8 +211,7 @@ public class RestTestHelper
         return httpCon;
     }
 
-    public List<Map<String, Object>> readJsonResponseAsList(HttpURLConnection connection) throws IOException,
-            JsonParseException, JsonMappingException
+    public List<Map<String, Object>> readJsonResponseAsList(HttpURLConnection connection) throws IOException
     {
         byte[] data = readConnectionInputStream(connection);
         ObjectMapper mapper = new ObjectMapper();
@@ -223,8 +219,7 @@ public class RestTestHelper
         return providedObject;
     }
 
-    public Map<String, Object> readJsonResponseAsMap(HttpURLConnection connection) throws IOException,
-            JsonParseException, JsonMappingException
+    public Map<String, Object> readJsonResponseAsMap(HttpURLConnection connection) throws IOException
     {
         byte[] data = readConnectionInputStream(connection);
 
@@ -254,8 +249,7 @@ public class RestTestHelper
         return baos.toByteArray();
     }
 
-    private void writeJsonRequest(HttpURLConnection connection, Map<String, Object> data) throws JsonGenerationException,
-            JsonMappingException, IOException
+    private void writeJsonRequest(HttpURLConnection connection, Map<String, Object> data) throws IOException
     {
         ObjectMapper mapper = new ObjectMapper();
         mapper.writeValue(connection.getOutputStream(), data);
@@ -310,8 +304,7 @@ public class RestTestHelper
         return response.get(0);
     }
 
-    public List<Map<String, Object>> getJsonAsList(String path) throws IOException, JsonParseException,
-            JsonMappingException
+    public List<Map<String, Object>> getJsonAsList(String path) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(path, "GET");
         connection.connect();
@@ -596,7 +589,7 @@ public class RestTestHelper
         _useSsl = true;
     }
 
-    public void createTestQueues() throws IOException, JsonGenerationException, JsonMappingException
+    public void createTestQueues() throws IOException
     {
         for (int i = 0; i < EXPECTED_QUEUES.length; i++)
         {

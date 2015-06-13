@@ -17,7 +17,7 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -391,10 +391,7 @@ public class RestServlet extends AbstractServlet
         }
 
 
-        Writer writer = getOutputWriter(request, response);
-        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(writer, extractInitialConfig && output.size() == 1 ? output.get(0) : output);
+        writeObjectToResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output, request, response);
     }
 
     private boolean isSingleObjectRequest(HttpServletRequest request)
@@ -563,10 +560,10 @@ public class RestServlet extends AbstractServlet
         else
         {
             response.setContentType("application/json");
-            Writer writer = getOutputWriter(request, response);
+            OutputStream stream = getOutputStream(request, response);
             ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
             mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-            mapper.writeValue(writer, returnVal);
+            mapper.writeValue(stream, returnVal);
         }
 
     }
@@ -804,7 +801,7 @@ public class RestServlet extends AbstractServlet
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        Writer out = getOutputWriter(request, response);
+        OutputStream out = getOutputStream(request, response);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
         mapper.writeValue(out, Collections.singletonMap("errorMessage", message));

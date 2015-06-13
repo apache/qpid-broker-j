@@ -21,7 +21,7 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
 import java.security.Principal;
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
@@ -100,11 +100,10 @@ public class SaslServlet extends AbstractServlet
 
         outputObject.put("mechanisms", (Object) mechanisms);
 
-        final Writer writer = getOutputWriter(request, response);
-
+        final OutputStream stream = getOutputStream(request, response);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(writer, outputObject);
+        mapper.writeValue(stream, outputObject);
 
     }
 
@@ -270,11 +269,7 @@ public class SaslServlet extends AbstractServlet
                 Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
                 outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
 
-                final Writer writer = getOutputWriter(request, response);
-
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-                mapper.writeValue(writer, outputObject);
+                writeObjectToResponse(outputObject, request, response);
             }
             response.setStatus(HttpServletResponse.SC_OK);
         }
@@ -292,11 +287,7 @@ public class SaslServlet extends AbstractServlet
             outputObject.put("id", id);
             outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
 
-            final Writer writer = getOutputWriter(request, response);
-
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-            mapper.writeValue(writer, outputObject);
+            writeObjectToResponse(outputObject, request, response);
         }
     }
 

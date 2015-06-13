@@ -2,7 +2,6 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 
 
 import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,8 +35,7 @@ public class TimeZoneServlet extends AbstractServlet
             IOException
     {
         response.setContentType("application/json");
-        final Writer writer = getOutputWriter(request, response);
-        _mapper.writeValue(writer, getTimeZones());
+        writeObjectToResponse(getTimeZones(), request, response);
 
         response.setStatus(HttpServletResponse.SC_OK);
     }

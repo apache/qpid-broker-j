@@ -36,8 +36,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.slf4j.Logger;
@@ -46,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public abstract class AbstractServlet extends HttpServlet
@@ -141,12 +140,6 @@ public abstract class AbstractServlet extends HttpServlet
             request,
             resp
         );
-    }
-
-    public Writer getOutputWriter(final HttpServletRequest request, final HttpServletResponse response)
-            throws IOException
-    {
-        return HttpManagementUtil.getOutputWriter(request, response, _managementConfiguration);
     }
 
     public OutputStream getOutputStream(final HttpServletRequest request, final HttpServletResponse response)
@@ -265,20 +258,23 @@ public abstract class AbstractServlet extends HttpServlet
         }
     }
 
-    protected void sendJsonResponse(Object object, HttpServletRequest request, HttpServletResponse response) throws IOException,
-            JsonGenerationException, JsonMappingException
+    protected void sendJsonResponse(Object object, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         response.setStatus(HttpServletResponse.SC_OK);
-
         response.setHeader("Cache-Control","no-cache");
         response.setHeader("Pragma","no-cache");
         response.setDateHeader ("Expires", 0);
         response.setContentType("application/json");
 
-        final Writer writer = getOutputWriter(request, response);
-        ObjectMapper mapper = new ObjectMapper();
+        writeObjectToResponse(object, request, response);
+    }
+
+    protected void writeObjectToResponse(Object object, HttpServletRequest request,  HttpServletResponse response) throws IOException
+    {
+        OutputStream stream = getOutputStream(request, response);
+        ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
         mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(writer, object);
+        mapper.writeValue(stream, object);
     }
 
     protected String[] getPathInfoElements(HttpServletRequest request)

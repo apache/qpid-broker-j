@@ -21,6 +21,7 @@
 package org.apache.qpid.systest.rest;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -123,16 +124,16 @@ public class MessagesRestTest extends QpidRestTestCase
         message = getRestTestHelper().getJsonAsMap("/service/message/test/" + queueName + "/" + lastMessageId);
         assertMessageAttributes(message);
         assertEquals("Unexpected message attribute mimeType", "text/plain", message.get("mimeType"));
-        assertEquals("Unexpected message attribute size", STRING_VALUE.getBytes().length, message.get("size"));
+        assertEquals("Unexpected message attribute size", STRING_VALUE.getBytes(StandardCharsets.UTF_8).length, message.get("size"));
 
         @SuppressWarnings("unchecked")
-        Map<String, Object> bytesMessageHeader = (Map<String, Object>) message.get("headers");
-        assertNotNull("Message headers are not found", bytesMessageHeader);
-        assertEquals("Unexpected message header value", STRING_VALUE, bytesMessageHeader.get(STRING_PROP));
+        Map<String, Object> messageHeader = (Map<String, Object>) message.get("headers");
+        assertNotNull("Message headers are not found", messageHeader);
+        assertEquals("Unexpected message header value", STRING_VALUE, messageHeader.get(STRING_PROP));
 
         // get content
         byte[] data = getRestTestHelper().getBytes("/service/message-content/test/" + queueName + "/" + lastMessageId);
-        assertTrue("Unexpected message", Arrays.equals(STRING_VALUE.getBytes(), data));
+        assertTrue("Unexpected message for id " + lastMessageId + ":" + data.length, Arrays.equals(STRING_VALUE.getBytes(StandardCharsets.UTF_8), data));
 
     }
 

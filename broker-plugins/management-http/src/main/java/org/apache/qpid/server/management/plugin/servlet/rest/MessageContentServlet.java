@@ -18,6 +18,7 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 import javax.servlet.ServletException;

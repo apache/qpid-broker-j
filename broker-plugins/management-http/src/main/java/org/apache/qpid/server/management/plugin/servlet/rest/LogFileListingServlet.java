@@ -18,6 +18,7 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.util.Collections;
 import java.util.List;
@@ -57,10 +58,10 @@ public class LogFileListingServlet extends AbstractServlet
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
 
-        final Writer writer = getOutputWriter(request, response);
+        final OutputStream stream = getOutputStream(request, response);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(writer, logFiles);
+        mapper.writeValue(stream, logFiles);
 
         response.setStatus(HttpServletResponse.SC_OK);
     }

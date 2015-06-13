@@ -21,7 +21,7 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -39,7 +39,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
-import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredAutomatedAttribute;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
@@ -65,8 +64,6 @@ public class MetaDataServlet extends AbstractServlet
         super.init();
     }
 
-
-
     @Override
     protected void doGetWithSubjectAndActor(final HttpServletRequest request, final HttpServletResponse response)
             throws ServletException, IOException
@@ -81,10 +78,10 @@ public class MetaDataServlet extends AbstractServlet
             classToDataMap.put(clazz.getSimpleName(), processCategory(clazz));
         }
 
-        final Writer writer = getOutputWriter(request, response);
+        final OutputStream stream = getOutputStream(request, response);
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(writer, classToDataMap);
+        mapper.writeValue(stream, classToDataMap);
 
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);

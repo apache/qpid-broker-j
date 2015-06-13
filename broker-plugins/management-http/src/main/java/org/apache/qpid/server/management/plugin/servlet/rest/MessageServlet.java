@@ -18,7 +18,7 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,9 +43,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.ClearQueueTransaction;
-import org.apache.qpid.server.queue.CopyMessagesTransaction;
 import org.apache.qpid.server.queue.DeleteMessagesTransaction;
-import org.apache.qpid.server.queue.MoveMessagesTransaction;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.security.SecurityManager;
@@ -89,10 +87,7 @@ public class MessageServlet extends AbstractServlet
         response.setDateHeader ("Expires", 0);
         response.setContentType("application/json");
 
-        final Writer writer = getOutputWriter(request,response);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(writer, messageFinder.getMessageObject());
+        writeObjectToResponse(messageFinder.getMessageObject(), request, response);
     }
 
     private void getMessageList(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -123,10 +118,7 @@ public class MessageServlet extends AbstractServlet
         response.setHeader("Pragma","no-cache");
         response.setDateHeader ("Expires", 0);
 
-        final Writer writer = getOutputWriter(request,response);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(writer, messages);
+        writeObjectToResponse(messages, request, response);
     }
 
     private Queue<?> getQueueFromRequest(HttpServletRequest request)

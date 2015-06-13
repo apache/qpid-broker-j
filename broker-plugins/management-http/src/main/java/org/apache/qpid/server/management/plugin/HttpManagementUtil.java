@@ -20,14 +20,8 @@
  */
 package org.apache.qpid.server.management.plugin;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -91,11 +85,6 @@ public class HttpManagementUtil
     public static HttpManagementConfiguration getManagementConfiguration(ServletContext servletContext)
     {
         return (HttpManagementConfiguration) servletContext.getAttribute(ATTR_MANAGEMENT_CONFIGURATION);
-    }
-
-    public static SocketAddress getSocketAddress(HttpServletRequest request)
-    {
-        return InetSocketAddress.createUnresolved(request.getServerName(), request.getServerPort());
     }
 
     public static Subject getAuthorisedSubject(HttpSession session)
@@ -229,21 +218,6 @@ public class HttpManagementUtil
             return authResult.getSubject();
         }
         return null;
-    }
-
-    public static Writer getOutputWriter(final HttpServletRequest request, final HttpServletResponse response)
-            throws IOException
-    {
-        return getOutputWriter(request, response, getManagementConfiguration(request.getServletContext()));
-    }
-
-    public static Writer getOutputWriter(final HttpServletRequest request, final HttpServletResponse response, HttpManagementConfiguration managementConfiguration)
-            throws IOException
-    {
-        Writer writer;
-        writer = new BufferedWriter(new OutputStreamWriter(getOutputStream(request,response, managementConfiguration)));
-
-        return writer;
     }
 
     public static OutputStream getOutputStream(final HttpServletRequest request, final HttpServletResponse response)
