@@ -27,6 +27,7 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.management.common.mbeans.ManagedExchange;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.JMXTestUtils;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.url.BindingURL;
@@ -225,8 +226,16 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         // binding to be deleted.  This will trigger the auto deleted exchange to be removed too
         consumer.close();
 
-        assertFalse("Exchange " + exchangeName + " should not longer exist",
-                    _jmxUtils.doesManagedObjectExist(exchangeObjectName));
+        // Temporarily workaround the fact that exchange deletion is not completely atomic
+        // in the Java Broker.
+        long timeout = System.currentTimeMillis() + 10000;
+        boolean exchangeExists = true;
+        while (timeout > System.currentTimeMillis() && exchangeExists)
+        {
+            exchangeExists = _jmxUtils.doesManagedObjectExist(exchangeObjectName);
+        }
+        assertFalse("Exchange " + exchangeName + " should no longer exist",
+                    exchangeExists);
     }
 
     private void checkExceptionErrorCode(JMSException original, AMQConstant code)
