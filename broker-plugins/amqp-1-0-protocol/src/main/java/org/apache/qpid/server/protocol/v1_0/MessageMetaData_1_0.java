@@ -592,7 +592,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         public Map<String, Object> getHeadersAsMap()
         {
-            return new HashMap<String, Object>(_appProperties);
+            return _appProperties == null ? new HashMap<String,Object>() : new HashMap<>(_appProperties);
         }
     }
 
