@@ -128,6 +128,7 @@ public class NetworkConnectionScheduler
                 }
                 else if(connection.getScheduler() != this)
                 {
+                    removeConnection(connection);
                     connection.getScheduler().addConnection(connection);
                 }
 
