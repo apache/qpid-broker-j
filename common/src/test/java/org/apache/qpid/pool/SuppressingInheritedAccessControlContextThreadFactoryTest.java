@@ -67,7 +67,8 @@ public class SuppressingInheritedAccessControlContextThreadFactoryTest extends Q
             public Void run()
             {
                 callerAccessControlContextCapturer.set(AccessController.getContext());
-                SuppressingInheritedAccessControlContextThreadFactory factory = new SuppressingInheritedAccessControlContextThreadFactory(null);
+                SuppressingInheritedAccessControlContextThreadFactory factory = new SuppressingInheritedAccessControlContextThreadFactory(null,
+                                                                                                                                          null);
                 factory.newThread(new Runnable()
                 {
 

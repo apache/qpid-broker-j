@@ -45,7 +45,22 @@ public class NetworkConnectionScheduler
     private final int _poolSize;
     private final String _name;
 
-    public NetworkConnectionScheduler(String name, int threadPoolSize)
+    public NetworkConnectionScheduler(final String name, int threadPoolSize)
+    {
+        this(name, threadPoolSize, new ThreadFactory()
+        {
+            final AtomicInteger _count = new AtomicInteger();
+
+            @Override
+            public Thread newThread(final Runnable r)
+            {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
+                t.setName("IO-pool-" + name + "-" + _count.incrementAndGet());
+                return t;
+            }
+        });
+    }
+    public NetworkConnectionScheduler(String name, int threadPoolSize, ThreadFactory factory)
     {
         try
         {
@@ -54,18 +69,7 @@ public class NetworkConnectionScheduler
             _poolSize = threadPoolSize;
             _name = name;
             _executor = new ThreadPoolExecutor(_poolSize, _poolSize, 0L, TimeUnit.MILLISECONDS,
-                                               new LinkedBlockingQueue<Runnable>(), new ThreadFactory()
-            {
-                final AtomicInteger _count = new AtomicInteger();
-
-                @Override
-                public Thread newThread(final Runnable r)
-                {
-                    Thread t = Executors.defaultThreadFactory().newThread(r);
-                    t.setName("IO-pool-" + getName() + "-" + _count.incrementAndGet());
-                    return t;
-                }
-            });
+                                               new LinkedBlockingQueue<Runnable>(), factory);
             _executor.prestartAllCoreThreads();
         }
         catch (IOException e)

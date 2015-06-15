@@ -177,6 +177,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private int _housekeepingThreadCount;
 
     @ManagedAttributeField
+    private int _connectionThreadCount;
+
+    @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
 
     @ManagedAttributeField
@@ -1381,6 +1384,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _housekeepingThreadCount;
     }
 
+    @Override
+    public int getConnectionThreadCount()
+    {
+        return _connectionThreadCount;
+    }
+
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )
     protected ListenableFuture<Void> doStop()
     {
@@ -1669,8 +1678,19 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @StateTransition( currentState = { State.UNINITIALIZED,State.ERRORED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> onActivate()
     {
-        _houseKeepingTasks = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(), new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-pool"));
-        _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool", Runtime.getRuntime().availableProcessors());
+        final SuppressingInheritedAccessControlContextThreadFactory housekeepingThreadFactory =
+                new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-pool",
+                                                                          SecurityManager.getSystemTaskSubject("Housekeeping", getPrincipal()));
+        _houseKeepingTasks = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(),
+                                                             housekeepingThreadFactory);
+
+        final SuppressingInheritedAccessControlContextThreadFactory connectionThreadFactory =
+                new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-iopool",
+                                                                          SecurityManager.getSystemTaskSubject("IO Pool", getPrincipal()));
+
+        _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool",
+                                                                     getConnectionThreadCount(),
+                                                                     connectionThreadFactory);
         MessageStore messageStore = getMessageStore();
         messageStore.openMessageStore(this);
 

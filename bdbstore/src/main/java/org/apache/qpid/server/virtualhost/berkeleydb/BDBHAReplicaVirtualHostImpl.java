@@ -91,6 +91,9 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     private long _storeTransactionOpenTimeoutWarn;
     @ManagedAttributeField
     private int _housekeepingThreadCount;
+    @ManagedAttributeField
+    private int _connectionThreadCount;
+
 
     @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
@@ -239,6 +242,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
 
     @Override
     public int getHousekeepingThreadCount()
+    {
+        return 0;
+    }
+
+    @Override
+    public int getConnectionThreadCount()
     {
         return 0;
     }

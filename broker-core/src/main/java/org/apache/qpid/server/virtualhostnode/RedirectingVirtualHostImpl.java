@@ -91,6 +91,10 @@ class RedirectingVirtualHostImpl
     private long _storeTransactionOpenTimeoutWarn;
     @ManagedAttributeField
     private int _housekeepingThreadCount;
+    @ManagedAttributeField
+    private int _connectionThreadCount;
+
+
 
     @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
@@ -239,6 +243,12 @@ class RedirectingVirtualHostImpl
 
     @Override
     public int getHousekeepingThreadCount()
+    {
+        return 0;
+    }
+
+    @Override
+    public int getConnectionThreadCount()
     {
         return 0;
     }

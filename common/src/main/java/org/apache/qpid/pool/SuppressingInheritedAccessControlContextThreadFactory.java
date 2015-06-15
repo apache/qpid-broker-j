@@ -22,6 +22,8 @@ package org.apache.qpid.pool;
 
 
 import javax.security.auth.Subject;
+
+import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -37,16 +39,18 @@ public class SuppressingInheritedAccessControlContextThreadFactory implements Th
     private final ThreadFactory _defaultThreadFactory = Executors.defaultThreadFactory();
     private final String _threadNamePrefix;
     private final AtomicInteger _threadId = new AtomicInteger();
+    private final Subject _subject;
 
-    public SuppressingInheritedAccessControlContextThreadFactory(String threadNamePrefix)
+    public SuppressingInheritedAccessControlContextThreadFactory(String threadNamePrefix, final Subject subject)
     {
         _threadNamePrefix = threadNamePrefix;
+        _subject = subject;
     }
 
     @Override
     public Thread newThread(final Runnable runnable)
     {
-        return Subject.doAsPrivileged(null, new PrivilegedAction<Thread>()
+        return Subject.doAsPrivileged(_subject, new PrivilegedAction<Thread>()
                                             {
                                                 @Override
                                                 public Thread run()

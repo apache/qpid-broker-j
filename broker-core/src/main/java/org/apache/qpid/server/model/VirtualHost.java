@@ -98,6 +98,13 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingThreadCount}")
     int getHousekeepingThreadCount();
 
+    @ManagedContextDefault( name = "virtualhost.connectionThreadCount")
+    public static final int DEFAULT_CONNECTION_THREAD_COUNT = Runtime.getRuntime().availableProcessors();
+
+    @ManagedAttribute( defaultValue = "${virtualhost.connectionThreadCount}")
+    int getConnectionThreadCount();
+
+
     @DerivedAttribute( persist = true )
     String getModelVersion();
 
