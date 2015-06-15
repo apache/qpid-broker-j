@@ -20,38 +20,25 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.util.Collection;
 import java.util.Map;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
-import ch.qos.logback.core.Context;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostLogger;
+import org.apache.qpid.server.model.VirtualHostLoggerFilter;
 
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-
-public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLoggerImpl> implements BrokerMemoryLogger<BrokerMemoryLoggerImpl>
+public abstract class AbstractVirtualHostLogger <X extends AbstractVirtualHostLogger<X>> extends AbstractLogger<X> implements VirtualHostLogger<X>
 {
 
-    @ManagedAttributeField
-    private int _maxRecords;
-
-    @ManagedObjectFactoryConstructor
-    protected BrokerMemoryLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
+    protected AbstractVirtualHostLogger(Map<String, Object> attributes, VirtualHost<?,?,?> virtualHost)
     {
-        super(attributes, broker);
+        super(attributes, virtualHost);
     }
 
     @Override
-    public int getMaxRecords()
+    protected Collection<? extends LoggerFilter> getLoggerFilters()
     {
-        return _maxRecords;
-    }
-
-    @Override
-    public Appender<ILoggingEvent> asAppender(Context context)
-    {
-        return new RecordEventAppender(getMaxRecords());
+        return getChildren(VirtualHostLoggerFilter.class);
     }
 
 }

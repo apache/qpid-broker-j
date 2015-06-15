@@ -20,16 +20,19 @@
  */
 package org.apache.qpid.server.logging;
 
-import org.apache.qpid.server.model.BrokerLogger;
+
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.VirtualHostLogger;
 
-@ManagedObject( category = false, type = BrokerFileLogger.TYPE)
-public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerLogger<X>
+@ManagedObject( category = false, type = VirtualHostFileLogger.TYPE)
+public interface VirtualHostFileLogger<X extends VirtualHostFileLogger<X>> extends VirtualHostLogger<X>
 {
     String TYPE = "File";
+    String FILE_NAME = "fileName";
 
-    @ManagedAttribute( defaultValue = "${qpid.work_dir}${file.separator}log${file.separator}qpid.log")
+    //TODO: change to better default
+    @ManagedAttribute( defaultValue = "${qpid.work_dir}${file.separator}log${file.separator}${this:name}${file.separator}qpid.log")
     String getFileName();
 
     @ManagedAttribute( defaultValue = "false")

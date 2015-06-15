@@ -1150,7 +1150,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             if (action != null || (exclusiveSub == null  && _queueRunner.isIdle()))
             {
-                Subject.doAs(SecurityManager.getSystemTaskSubject("Immediate Delivery"),
+                Subject.doAs(SecurityManager.getSystemTaskSubject("Immediate Delivery", _virtualHost.getPrincipal()),
                              new PrivilegedAction<Void>()
                              {
                                  @Override

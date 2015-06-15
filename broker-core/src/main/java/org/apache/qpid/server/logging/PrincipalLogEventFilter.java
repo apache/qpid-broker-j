@@ -20,38 +20,33 @@
  */
 package org.apache.qpid.server.logging;
 
-import java.util.Map;
+import java.security.AccessController;
+import java.security.Principal;
+
+import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
-import ch.qos.logback.core.Context;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.spi.FilterReply;
 
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
-public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLoggerImpl> implements BrokerMemoryLogger<BrokerMemoryLoggerImpl>
+public class PrincipalLogEventFilter extends Filter<ILoggingEvent>
 {
+    private final Principal _principal;
 
-    @ManagedAttributeField
-    private int _maxRecords;
-
-    @ManagedObjectFactoryConstructor
-    protected BrokerMemoryLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
+    public PrincipalLogEventFilter(final Principal principal)
     {
-        super(attributes, broker);
+        _principal = principal;
     }
 
     @Override
-    public int getMaxRecords()
+    public FilterReply decide(ILoggingEvent event)
     {
-        return _maxRecords;
+        Subject subject = Subject.getSubject(AccessController.getContext());
+        if (subject != null && subject.getPrincipals().contains(_principal))
+        {
+            return FilterReply.NEUTRAL;
+        }
+        return FilterReply.DENY;
     }
-
-    @Override
-    public Appender<ILoggingEvent> asAppender(Context context)
-    {
-        return new RecordEventAppender(getMaxRecords());
-    }
-
 }

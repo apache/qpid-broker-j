@@ -59,6 +59,8 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostAlias;
+import org.apache.qpid.server.model.VirtualHostLogger;
+import org.apache.qpid.server.model.VirtualHostLoggerFilter;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.queue.QueueConsumer;
@@ -108,8 +110,24 @@ public class SecurityManager
 
     public static Subject getSystemTaskSubject(String taskName)
     {
+        return getSystemSubject(new TaskPrincipal(taskName));
+    }
+
+    public static Subject getSystemTaskSubject(String taskName, Principal principal)
+    {
+        return getSystemSubject(new TaskPrincipal(taskName), principal);
+    }
+
+    private static Subject getSystemSubject(Principal... principals)
+    {
         Subject subject = new Subject(false, SYSTEM.getPrincipals(), SYSTEM.getPublicCredentials(), SYSTEM.getPrivateCredentials());
-        subject.getPrincipals().add(new TaskPrincipal(taskName));
+        if (principals !=null)
+        {
+            for (Principal principal:principals)
+            {
+                subject.getPrincipals().add(principal);
+            }
+        }
         subject.setReadOnly();
         return subject;
     }
@@ -398,6 +416,7 @@ public class SecurityManager
         return Broker.class.isAssignableFrom(category) ||
                PreferencesProvider.class.isAssignableFrom(category) ||
                BrokerLoggerFilter.class.isAssignableFrom(category) ||
+               VirtualHostAlias.class.isAssignableFrom(category) ||
                ( !VirtualHostNode.class.isAssignableFrom(category) && getModel().getChildTypes(Broker.class).contains(category));
     }
 
@@ -447,6 +466,11 @@ public class SecurityManager
                     objectName);
             properties = new OperationLoggingDetails(description);
         }
+        else if (isVirtualHostType(configuredObjectType))
+        {
+            ConfiguredObject<?> virtualHost = getModel().getAncestor(VirtualHost.class, configuredObject);
+            properties = new ObjectProperties((String)virtualHost.getAttribute(ConfiguredObject.NAME));
+        }
         return properties;
     }
 
@@ -489,6 +513,10 @@ public class SecurityManager
         {
             return ObjectType.BROKER;
         }
+        else if (isVirtualHostType(category))
+        {
+            return ObjectType.VIRTUALHOST;
+        }
         else if (Group.class.isAssignableFrom(category))
         {
             return ObjectType.GROUP;
@@ -502,14 +530,6 @@ public class SecurityManager
         {
             return ObjectType.USER;
         }
-        else if (VirtualHost.class.isAssignableFrom(category))
-        {
-            return ObjectType.VIRTUALHOST;
-        }
-        else if (VirtualHostAlias.class.isAssignableFrom(category))
-        {
-            return ObjectType.VIRTUALHOST;
-        }
         else if (Queue.class.isAssignableFrom(category))
         {
             return ObjectType.QUEUE;
@@ -517,11 +537,6 @@ public class SecurityManager
         else if (Exchange.class.isAssignableFrom(category))
         {
             return ObjectType.EXCHANGE;
-        }
-        else if (Connection.class.isAssignableFrom(category))
-        {
-            // ACCESS VIRTUALHOST
-            return ObjectType.VIRTUALHOST;
         }
         else if (Session.class.isAssignableFrom(category))
         {
@@ -539,6 +554,14 @@ public class SecurityManager
             return ObjectType.VIRTUALHOSTNODE;
         }
         return null;
+    }
+
+    private boolean isVirtualHostType(Class<? extends ConfiguredObject> category)
+    {
+        return VirtualHost.class.isAssignableFrom(category) ||
+                VirtualHostLogger.class.isAssignableFrom(category) ||
+                VirtualHostLoggerFilter.class.isAssignableFrom(category) ||
+                Connection.class.isAssignableFrom(category);
     }
 
     public void authoriseUserUpdate(final String userName)

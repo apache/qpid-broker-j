@@ -245,6 +245,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         {
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
+        _authorizedSubject.getPrincipals().add(_virtualHost.getPrincipal());
     }
 
     @Override

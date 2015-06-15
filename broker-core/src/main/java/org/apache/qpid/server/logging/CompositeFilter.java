@@ -34,22 +34,22 @@ public class CompositeFilter extends Filter<ILoggingEvent>
 {
     private List<Filter<ILoggingEvent>> _filterList = new CopyOnWriteArrayList<>();
 
-    public void addFilter(BrokerLoggerFilter filter)
+    public void addFilter(LoggerFilter filter)
     {
         Filter f = filter.asFilter();
         f.setName(filter.getName());
         _filterList.add(f);
     }
 
-    public void addFilters(Collection<BrokerLoggerFilter> filters)
+    public void addFilters(Collection<LoggerFilter> filters)
     {
-        for(BrokerLoggerFilter<?> filter : filters)
+        for(LoggerFilter filter : filters)
         {
             addFilter(filter);
         }
     }
 
-    public void removeFilter(BrokerLoggerFilter filter)
+    public void removeFilter(LoggerFilter filter)
     {
         Iterator<Filter<ILoggingEvent>> it = _filterList.iterator();
         while(it.hasNext())

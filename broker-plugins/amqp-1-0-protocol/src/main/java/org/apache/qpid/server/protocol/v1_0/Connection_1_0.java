@@ -161,6 +161,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
             {
                 setUserPrincipal(user);
             }
+            _subject.getPrincipals().add(_vhost.getPrincipal());
             if(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_subject) == null)
             {
                 final Error err = new Error();

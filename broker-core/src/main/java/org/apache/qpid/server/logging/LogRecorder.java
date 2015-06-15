@@ -29,11 +29,9 @@ public class LogRecorder implements Iterable<LogRecord>
 
     private final RecordEventAppender _eventAppender;
 
-    public void closeLogRecorder()
+    public LogRecorder(RecordEventAppender eventAppender)
     {
-        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        rootLogger.detachAppender(_eventAppender);
-        _eventAppender.stop();
+        _eventAppender = eventAppender;
     }
 
     @Override
@@ -41,11 +39,6 @@ public class LogRecorder implements Iterable<LogRecord>
     {
         final CyclicBuffer<LogRecord> buffer = _eventAppender.getBuffer();
         return buffer != null ?  buffer.asList().iterator() : Collections.<LogRecord>emptyIterator();
-    }
-
-    public LogRecorder(RecordEventAppender eventAppender)
-    {
-        _eventAppender = eventAppender;
     }
 
 }

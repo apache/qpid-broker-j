@@ -21,6 +21,7 @@
 package org.apache.qpid.server.virtualhost;
 
 import java.io.File;
+import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -153,6 +153,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private NetworkConnectionScheduler _networkConnectionScheduler;
 
+    private final VirtualHostPrincipal _principal;
 
     @ManagedAttributeField
     private boolean _queue_deadLetterQueueEnabled;
@@ -190,8 +191,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private MessageStore _messageStore;
     private MessageStoreRecoverer _messageStoreRecoverer;
-    private final FileSystemSpaceChecker _fileSystemSpaceChecker = new FileSystemSpaceChecker();
+    private final FileSystemSpaceChecker _fileSystemSpaceChecker;
     private int _fileSystemMaxUsagePercent;
+    private Collection<VirtualHostLogger> _virtualHostLoggersToClose;
 
     public AbstractVirtualHost(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -214,6 +216,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dataDelivered = new StatisticsCounter("bytes-delivered-" + getName());
         _messagesReceived = new StatisticsCounter("messages-received-" + getName());
         _dataReceived = new StatisticsCounter("bytes-received-" + getName());
+        _principal = new VirtualHostPrincipal(this);
+        _fileSystemSpaceChecker = new FileSystemSpaceChecker();
     }
 
     public void onValidate()
@@ -501,6 +505,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         else if(childClass == Connection.class)
         {
             throw new UnsupportedOperationException();
+        }
+        else if(childClass == VirtualHostLogger.class)
+        {
+            return getObjectFactory().createAsync(childClass, attributes, this);
         }
         throw new IllegalArgumentException("Cannot create a child of class " + childClass.getSimpleName());
     }
@@ -852,7 +860,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected ListenableFuture<Void> beforeClose()
     {
         setState(State.UNAVAILABLE);
-
+        _virtualHostLoggersToClose = new ArrayList(getChildren(VirtualHostLogger.class));
         return super.beforeClose();
     }
 
@@ -870,6 +878,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             _networkConnectionScheduler = null;
         }
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
+
+        stopLogging(_virtualHostLoggersToClose);
     }
 
     private void closeMessageStore()
@@ -1375,6 +1385,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected ListenableFuture<Void> doStop()
     {
         final SettableFuture<Void> returnVal = SettableFuture.create();
+        final List<VirtualHostLogger> loggers = new ArrayList<>(getChildren(VirtualHostLogger.class));
         closeChildren().addListener(
                 new Runnable()
                 {
@@ -1392,6 +1403,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                             closeMessageStore();
                             setState(State.STOPPED);
 
+                            stopLogging(loggers);
                         }
                         finally
                         {
@@ -1401,6 +1413,14 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }, getTaskExecutor().getExecutor()
                                    );
         return returnVal;
+    }
+
+    private void stopLogging(Collection<VirtualHostLogger> loggers)
+    {
+        for (VirtualHostLogger logger : loggers)
+        {
+            logger.stopLogging();
+        }
     }
 
     @StateTransition( currentState = { State.ACTIVE, State.ERRORED }, desiredState = State.DELETED )
@@ -1627,6 +1647,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public long getTotalQueueDepthBytes()
     {
         return calculateTotalEnqueuedSize(getQueues());
+    }
+
+
+    @Override
+    public Principal getPrincipal()
+    {
+        return _principal;
     }
 
     private long calculateTotalEnqueuedSize(final Collection<AMQQueue<?>> queues)

@@ -31,21 +31,27 @@ import java.util.Map;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.SystemConfig;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostLogger;
+import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.test.utils.QpidTestCase;
 
-public class BrokerNameAndLevelFilterTest extends QpidTestCase
+public class VirtualHostNameAndLevelFilterImplTest extends QpidTestCase
 {
-    private BrokerLogger<?> _brokerLogger;
+    private VirtualHostLogger _virtualHostLogger;
     private TaskExecutor _taskExecutor;
-    private final Broker<?> _broker = mock(Broker.class);
+    private final VirtualHost<?,?,?> _virtualhost = mock(VirtualHost.class);
 
     @Override
     public void setUp() throws Exception
@@ -56,18 +62,30 @@ public class BrokerNameAndLevelFilterTest extends QpidTestCase
         _taskExecutor.start();
 
         Model model = BrokerModel.getInstance();
+        org.apache.qpid.server.security.SecurityManager securityManager = mock(SecurityManager.class);
 
-        SecurityManager securityManager = mock(SecurityManager.class);
-        when(_broker.getSecurityManager()).thenReturn(securityManager);
-        when(_broker.getModel()).thenReturn(model);
-        doReturn(Broker.class).when(_broker).getCategoryClass();
+        Broker broker = mock(Broker.class);
+        when(broker.getSecurityManager()).thenReturn(securityManager);
+        when(broker.getModel()).thenReturn(model);
+        when(broker.getChildExecutor()).thenReturn(_taskExecutor);
+        doReturn(Broker.class).when(broker).getCategoryClass();
 
-        _brokerLogger = mock(BrokerLogger.class);
-        when(_brokerLogger.getModel()).thenReturn(model);
-        when(_brokerLogger.getChildExecutor()).thenReturn(_taskExecutor);
-        when(_brokerLogger.getParent(Broker.class)).thenReturn(_broker);
-        doReturn(BrokerLogger.class).when(_brokerLogger).getCategoryClass();
-   }
+        VirtualHostNode<?> node =  mock(VirtualHostNode.class);
+        when(node.getModel()).thenReturn(model);
+        when(node.getChildExecutor()).thenReturn(_taskExecutor);
+        when(node.getParent(Broker.class)).thenReturn(broker);
+        doReturn(VirtualHostNode.class).when(node).getCategoryClass();
+
+        when(_virtualhost.getModel()).thenReturn(model);
+        when(_virtualhost.getParent(VirtualHostNode.class)).thenReturn(node);
+        doReturn(VirtualHost.class).when(_virtualhost).getCategoryClass();
+
+        _virtualHostLogger = mock(VirtualHostLogger.class);
+        when(_virtualHostLogger.getModel()).thenReturn(model);
+        when(_virtualHostLogger.getChildExecutor()).thenReturn(_taskExecutor);
+        when(_virtualHostLogger.getParent(VirtualHost.class)).thenReturn(_virtualhost);
+        doReturn(VirtualHostLogger.class).when(_virtualHostLogger).getCategoryClass();
+    }
 
     @Override
     public void tearDown() throws Exception
@@ -85,7 +103,7 @@ public class BrokerNameAndLevelFilterTest extends QpidTestCase
 
     public void testAsFilter()
     {
-        BrokerNameAndLevelFilter<?> filterObject = createFilter("org.apache.qpid", LogLevel.INFO);
+        VirtualHostNameAndLevelFilter<?> filterObject = createFilter("org.apache.qpid", LogLevel.INFO);
 
         Filter<ILoggingEvent> filter = filterObject.asFilter();
 
@@ -98,7 +116,7 @@ public class BrokerNameAndLevelFilterTest extends QpidTestCase
 
     public void testLevelChangeAffectsFilter()
     {
-        BrokerNameAndLevelFilter<?> filterObject = createFilter("org.apache.qpid", LogLevel.INFO);
+        VirtualHostNameAndLevelFilter<?> filterObject = createFilter("org.apache.qpid", LogLevel.INFO);
 
         LoggerNameAndLevelFilter filter = (LoggerNameAndLevelFilter)filterObject.asFilter();
 
@@ -110,7 +128,7 @@ public class BrokerNameAndLevelFilterTest extends QpidTestCase
 
     public void testLoggerNameChangeNotAllowed()
     {
-        BrokerNameAndLevelFilter<?> filterObject = createFilter("org.apache.qpid", LogLevel.INFO);
+        VirtualHostNameAndLevelFilter<?> filterObject = createFilter("org.apache.qpid", LogLevel.INFO);
 
         LoggerNameAndLevelFilter filter = (LoggerNameAndLevelFilter)filterObject.asFilter();
 
@@ -130,16 +148,19 @@ public class BrokerNameAndLevelFilterTest extends QpidTestCase
     }
 
 
-    private BrokerNameAndLevelFilter createFilter(String loggerName, LogLevel logLevel)
+    private VirtualHostNameAndLevelFilter createFilter(String loggerName, LogLevel logLevel)
     {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("loggerName", loggerName);
         attributes.put("level", logLevel);
         attributes.put("name", "test");
 
-        BrokerNameAndLevelFilter brokerNameAndLevelFilter = new BrokerNameAndLevelFilterImpl(attributes, _brokerLogger);
-        brokerNameAndLevelFilter.open();
-        return brokerNameAndLevelFilter;
+        VirtualHostNameAndLevelFilterImpl nameAndLevelFilter = new VirtualHostNameAndLevelFilterImpl(attributes,
+                                                                                             _virtualHostLogger);
+        nameAndLevelFilter.open();
+        return nameAndLevelFilter;
     }
+
+
 
 }

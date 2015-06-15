@@ -37,8 +37,9 @@ public class HouseKeepingTaskTest extends QpidTestCase
 
         String expectedThreadNameDuringExecution = vhostName + ":" + "ThreadNameRememberingTask";
 
-        VirtualHost virtualHost = mock(VirtualHost.class);
+        VirtualHostImpl virtualHost = mock(VirtualHostImpl.class);
         when(virtualHost.getName()).thenReturn(vhostName);
+        when(virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         ThreadNameRememberingTask testTask = new ThreadNameRememberingTask(virtualHost);
 
         testTask.run();

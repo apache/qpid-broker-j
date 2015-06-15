@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.virtualhostnode;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -59,6 +60,7 @@ import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
+import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 
 @ManagedObject( category = false, type = RedirectingVirtualHostImpl.TYPE, register = false )
 class RedirectingVirtualHostImpl
@@ -68,6 +70,7 @@ class RedirectingVirtualHostImpl
     public static final String TYPE = "REDIRECTOR";
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
     private final Broker<?> _broker;
+    private final VirtualHostPrincipal _principal;
 
     @ManagedAttributeField
     private boolean _queue_deadLetterQueueEnabled;
@@ -108,6 +111,7 @@ class RedirectingVirtualHostImpl
         _dataDelivered = new StatisticsCounter("bytes-delivered-" + getName());
         _messagesReceived = new StatisticsCounter("messages-received-" + getName());
         _dataReceived = new StatisticsCounter("bytes-received-" + getName());
+        _principal = new VirtualHostPrincipal(this);
         setState(State.UNAVAILABLE);
     }
 
@@ -532,6 +536,11 @@ class RedirectingVirtualHostImpl
         return localAddress;
     }
 
+    @Override
+    public Principal getPrincipal()
+    {
+        return _principal;
+    }
 
     private void throwUnsupportedForRedirector()
     {

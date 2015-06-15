@@ -22,24 +22,10 @@ package org.apache.qpid.server.logging;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
-import ch.qos.logback.core.spi.FilterReply;
 
-public class DenyAllFilter extends Filter<ILoggingEvent>
+public interface LoggerFilter
 {
-    private static final Filter<ILoggingEvent> INSTANCE = new DenyAllFilter();
+    Filter<ILoggingEvent> asFilter();
 
-    private DenyAllFilter()
-    {
-    }
-
-    public static Filter<ILoggingEvent> getInstance()
-    {
-        return INSTANCE;
-    }
-
-    public FilterReply decide(final ILoggingEvent event)
-    {
-        return FilterReply.DENY;
-    }
-
+    String getName();
 }

@@ -72,19 +72,31 @@ public class BrokerTest extends QpidTestCase
 
     public void testCreateBrokerLogger()
     {
-        Broker broker = _systemConfig.getBroker();
-        Map<String,Object> attributes = new HashMap<>();
         final String brokerLoggerName = "TestBrokerLogger";
-        attributes.put(ConfiguredObject.NAME, brokerLoggerName);
-        attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
-
-        BrokerLogger child = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
-        assertEquals("Created BrokerLoger has unexcpected name", brokerLoggerName, child.getName());
-        assertTrue("BrokerLogger has unexpected type", child instanceof BrokerMemoryLogger);
-
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        Appender appender = rootLogger.getAppender(brokerLoggerName);
-        assertNotNull("Appender not attached to root logger after BrokerLogger creation", appender);
+        try
+        {
+            Broker broker = _systemConfig.getBroker();
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put(ConfiguredObject.NAME, brokerLoggerName);
+            attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+
+            BrokerLogger child = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
+            assertEquals("Created BrokerLoger has unexcpected name", brokerLoggerName, child.getName());
+            assertTrue("BrokerLogger has unexpected type", child instanceof BrokerMemoryLogger);
+
+            Appender appender = rootLogger.getAppender(brokerLoggerName);
+            assertNotNull("Appender not attached to root logger after BrokerLogger creation", appender);
+        }
+        finally
+        {
+            Appender appender = rootLogger.getAppender(brokerLoggerName);
+            if (appender!= null)
+            {
+                appender.stop();
+                rootLogger.detachAppender(appender);
+            }
+        }
     }
 }

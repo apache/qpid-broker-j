@@ -24,6 +24,7 @@ import static org.apache.qpid.server.security.access.ObjectType.BROKER;
 import static org.apache.qpid.server.security.access.Operation.ACCESS_LOGS;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,9 +56,10 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostLogger;
+import org.apache.qpid.server.model.VirtualHostLoggerFilter;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectProperties.Property;
@@ -92,6 +94,8 @@ public class SecurityManagerTest extends QpidTestCase
 
         when(_virtualHost.getName()).thenReturn(TEST_VIRTUAL_HOST);
         when(_virtualHost.getAttribute(VirtualHost.NAME)).thenReturn(TEST_VIRTUAL_HOST);
+        when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
+        doReturn(VirtualHost.class).when(_virtualHost).getCategoryClass();
 
         _broker = mock(Broker.class);
         when(_broker.getAccessControlProviders()).thenReturn(Collections.singleton(aclProvider));
@@ -832,15 +836,64 @@ public class SecurityManagerTest extends QpidTestCase
 
     public void testAuthoriseBrokerLoggerFilterOperations()
     {
+        BrokerLogger bl = mock(BrokerLogger.class);
+        when(bl.getAttribute(ConfiguredObject.NAME)).thenReturn("LOGGER");
+        when(bl.getCategoryClass()).thenReturn(BrokerLogger.class);
+        when(bl.getParent(Broker.class)).thenReturn(_broker);
+
         BrokerLoggerFilter mock = mock(BrokerLoggerFilter.class);
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
-        when(mock.getCategoryClass()).thenReturn(BrokerLogger.class);
-        when(mock.getParent(Broker.class)).thenReturn(_broker);
-        assertBrokerChildCreateAuthorization(mock);
+        when(mock.getCategoryClass()).thenReturn(BrokerLoggerFilter.class);
+        when(mock.getParent(BrokerLogger.class)).thenReturn(bl);
+        when(mock.getModel()).thenReturn(BrokerModel.getInstance());
+        assertBrokerChildCreateAuthorization(mock, bl);
 
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
-        assertBrokerChildUpdateAuthorization(mock);
-        assertBrokerChildDeleteAuthorization(mock);
+        assertBrokerChildUpdateAuthorization(mock, bl);
+        assertBrokerChildDeleteAuthorization(mock, bl);
+    }
+
+
+    public void testAuthoriseVirtualHostLoggerOperations()
+    {
+        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
+
+        VirtualHostLogger<?> mock = mock(VirtualHostLogger.class);
+        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        doReturn(VirtualHostLogger.class).when(mock).getCategoryClass();
+        when(mock.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(mock.getModel()).thenReturn(BrokerModel.getInstance());
+
+        assertCreateAuthorization(mock, Operation.CREATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
+
+        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+
+        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, _virtualHost);
+        assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, _virtualHost);
+    }
+
+    public void testAuthoriseVirtualHostLoggerFilterOperations()
+    {
+        ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
+
+        VirtualHostLogger<?> vhl = mock(VirtualHostLogger.class);
+        when(vhl.getAttribute(ConfiguredObject.NAME)).thenReturn("LOGGER");
+        doReturn(VirtualHostLogger.class).when(vhl).getCategoryClass();
+        when(vhl.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+        when(vhl.getModel()).thenReturn(BrokerModel.getInstance());
+
+        VirtualHostLoggerFilter<?> mock = mock(VirtualHostLoggerFilter.class);
+        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
+        doReturn(VirtualHostLoggerFilter.class).when(mock).getCategoryClass();
+        when(mock.getParent(VirtualHostLogger.class)).thenReturn(vhl);
+        when(mock.getModel()).thenReturn(BrokerModel.getInstance());
+
+        assertCreateAuthorization(mock, Operation.CREATE, ObjectType.VIRTUALHOST, properties, vhl);
+
+        when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("test");
+
+        assertUpdateAuthorization(mock, Operation.UPDATE, ObjectType.VIRTUALHOST, properties, vhl);
+        assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, vhl);
     }
 
     private VirtualHost getMockVirtualHost()
@@ -867,15 +920,25 @@ public class SecurityManagerTest extends QpidTestCase
 
     private void assertBrokerChildCreateAuthorization(ConfiguredObject object)
     {
+        assertBrokerChildCreateAuthorization(object, _broker);
+    }
+
+    private void assertBrokerChildCreateAuthorization(ConfiguredObject object, ConfiguredObject parent)
+    {
         String description = String.format("%s %s '%s'",
                 Operation.CREATE.name().toLowerCase(),
                 object.getCategoryClass().getSimpleName().toLowerCase(),
                 "TEST");
         ObjectProperties properties = new OperationLoggingDetails(description);
-        assertCreateAuthorization(object, Operation.CONFIGURE, ObjectType.BROKER, properties, _broker );
+        assertCreateAuthorization(object, Operation.CONFIGURE, ObjectType.BROKER, properties, parent);
     }
 
     private void assertBrokerChildUpdateAuthorization(ConfiguredObject configuredObject)
+    {
+        assertBrokerChildUpdateAuthorization(configuredObject, _broker);
+    }
+
+    private void assertBrokerChildUpdateAuthorization(ConfiguredObject configuredObject, ConfiguredObject parent)
     {
         String description = String.format("%s %s '%s'",
                 Operation.UPDATE.name().toLowerCase(),
@@ -884,10 +947,15 @@ public class SecurityManagerTest extends QpidTestCase
         ObjectProperties properties = new OperationLoggingDetails(description);
 
         assertUpdateAuthorization(configuredObject, Operation.CONFIGURE, ObjectType.BROKER,
-                properties, _broker );
+                properties, parent);
     }
 
     private void assertBrokerChildDeleteAuthorization(ConfiguredObject configuredObject)
+    {
+        assertBrokerChildDeleteAuthorization(configuredObject, _broker);
+    }
+
+    private void assertBrokerChildDeleteAuthorization(ConfiguredObject configuredObject, ConfiguredObject parent)
     {
         String description = String.format("%s %s '%s'",
                 Operation.DELETE.name().toLowerCase(),
@@ -896,7 +964,7 @@ public class SecurityManagerTest extends QpidTestCase
         ObjectProperties properties = new OperationLoggingDetails(description);
 
         assertDeleteAuthorization(configuredObject, Operation.CONFIGURE, ObjectType.BROKER,
-                properties, _broker );
+                properties, parent );
     }
 
     private void assertAuthorization(Operation operation, ConfiguredObject<?> configuredObject, Operation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject... objects)

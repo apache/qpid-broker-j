@@ -66,7 +66,7 @@ public class QueueRunner implements Runnable
     {
         if(_scheduled.compareAndSet(SCHEDULED,RUNNING))
         {
-            Subject.doAs(SecurityManager.getSystemTaskSubject("Queue Delivery"), new PrivilegedAction<Object>()
+            Subject.doAs(SecurityManager.getSystemTaskSubject("Queue Delivery", _queue.getVirtualHost().getPrincipal()), new PrivilegedAction<Object>()
             {
                 @Override
                 public Object run()

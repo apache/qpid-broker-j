@@ -20,18 +20,23 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.security.Principal;
 import java.util.Map;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.rolling.RollingFileAppender;
 
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.VirtualHost;
 
-public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerImpl> implements BrokerFileLogger<BrokerFileLoggerImpl>, FileLoggerSettings
+public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<VirtualHostFileLoggerImpl> implements VirtualHostFileLogger<VirtualHostFileLoggerImpl>, FileLoggerSettings
 {
+    private final Principal _principal;
+
     @ManagedAttributeField
     private String _layout;
     @ManagedAttributeField
@@ -46,11 +51,14 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     private int _maxHistory;
     @ManagedAttributeField
     private String _maxFileSize;
+    @ManagedAttributeField
+    private boolean _safeMode;
 
     @ManagedObjectFactoryConstructor
-    protected BrokerFileLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
+    protected VirtualHostFileLoggerImpl(final Map<String, Object> attributes, VirtualHost<?,?,?> virtualHost)
     {
-        super(attributes, broker);
+        super(attributes, virtualHost);
+        _principal = virtualHost.getPrincipal();
     }
 
     @Override
@@ -98,7 +106,12 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Appender<ILoggingEvent> asAppender(Context loggerContext)
     {
-        return new RollingFileAppenderFactory().createRollingFileAppender(this, loggerContext);
+        RollingFileAppender<ILoggingEvent> rollingFileAppender =
+                new RollingFileAppenderFactory().createRollingFileAppender(this, loggerContext);
+
+        Filter<ILoggingEvent> principalFilter = new PrincipalLogEventFilter(_principal);
+        rollingFileAppender.addFilter(principalFilter);
+        return rollingFileAppender;
     }
 
 }

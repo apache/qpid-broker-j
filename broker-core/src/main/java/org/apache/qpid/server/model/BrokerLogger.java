@@ -20,14 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
-
 @ManagedObject
 public interface BrokerLogger<X extends BrokerLogger<X>> extends ConfiguredObject<X>
 {
-
-    Appender<ILoggingEvent> asAppender();
-
     void stopLogging();
 }

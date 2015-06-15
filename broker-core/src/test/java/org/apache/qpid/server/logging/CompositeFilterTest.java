@@ -32,7 +32,6 @@ import java.util.Arrays;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class CompositeFilterTest extends QpidTestCase
@@ -48,7 +47,7 @@ public class CompositeFilterTest extends QpidTestCase
     {
         CompositeFilter compositeFilter = new CompositeFilter();
 
-        compositeFilter.addFilter(createBrokerFilter(FilterReply.ACCEPT));
+        compositeFilter.addFilter(createFilter(FilterReply.ACCEPT));
 
         FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
         assertEquals("Unexpected reply with ACCEPT filter added", FilterReply.ACCEPT, reply);
@@ -58,7 +57,7 @@ public class CompositeFilterTest extends QpidTestCase
     {
         CompositeFilter compositeFilter = new CompositeFilter();
 
-        compositeFilter.addFilter(createBrokerFilter(FilterReply.NEUTRAL));
+        compositeFilter.addFilter(createFilter(FilterReply.NEUTRAL));
 
         FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
         assertEquals("Unexpected reply with NEUTRAL filter added", FilterReply.DENY, reply);
@@ -68,34 +67,34 @@ public class CompositeFilterTest extends QpidTestCase
     {
         CompositeFilter compositeFilter = new CompositeFilter();
 
-        BrokerLoggerFilter brokerFilterNeutral = createBrokerFilter(FilterReply.NEUTRAL);
+        LoggerFilter brokerFilterNeutral = createFilter(FilterReply.NEUTRAL);
         compositeFilter.addFilter(brokerFilterNeutral);
 
-        BrokerLoggerFilter brokerFilterDeny = createBrokerFilter(FilterReply.DENY);
+        LoggerFilter brokerFilterDeny = createFilter(FilterReply.DENY);
         compositeFilter.addFilter(brokerFilterDeny);
 
-        BrokerLoggerFilter brokerFilterAccept = createBrokerFilter(FilterReply.ACCEPT);
+        LoggerFilter brokerFilterAccept = createFilter(FilterReply.ACCEPT);
         compositeFilter.addFilter(brokerFilterAccept);
 
         FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
         assertEquals("Unexpected reply", FilterReply.DENY, reply);
 
-        verify(brokerFilterNeutral.asFilter()).decide(any());
-        verify(brokerFilterDeny.asFilter()).decide(any());
-        verify(brokerFilterAccept.asFilter(), never()).decide(any());
+        verify(brokerFilterNeutral.asFilter()).decide(any(ILoggingEvent.class));
+        verify(brokerFilterDeny.asFilter()).decide(any(ILoggingEvent.class));
+        verify(brokerFilterAccept.asFilter(), never()).decide(any(ILoggingEvent.class));
     }
 
     public void testRemoveFilterFromChain()
     {
         CompositeFilter compositeFilter = new CompositeFilter();
 
-        BrokerLoggerFilter brokerFilterNeutral = createBrokerFilter(FilterReply.NEUTRAL, "neutral");
+        LoggerFilter brokerFilterNeutral = createFilter(FilterReply.NEUTRAL, "neutral");
         compositeFilter.addFilter(brokerFilterNeutral);
 
-        BrokerLoggerFilter brokerFilterDeny = createBrokerFilter(FilterReply.DENY, "deny");
+        LoggerFilter brokerFilterDeny = createFilter(FilterReply.DENY, "deny");
         compositeFilter.addFilter(brokerFilterDeny);
 
-        BrokerLoggerFilter brokerFilterAccept = createBrokerFilter(FilterReply.ACCEPT, "accept");
+        LoggerFilter brokerFilterAccept = createFilter(FilterReply.ACCEPT, "accept");
         compositeFilter.addFilter(brokerFilterAccept);
 
         FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
@@ -106,16 +105,16 @@ public class CompositeFilterTest extends QpidTestCase
         FilterReply reply2 = compositeFilter.decide(mock(ILoggingEvent.class));
         assertEquals("Unexpected reply", FilterReply.ACCEPT, reply2);
 
-        verify(brokerFilterNeutral.asFilter(), times(2)).decide(any());
-        verify(brokerFilterDeny.asFilter()).decide(any());
-        verify(brokerFilterAccept.asFilter()).decide(any());
+        verify(brokerFilterNeutral.asFilter(), times(2)).decide(any(ILoggingEvent.class));
+        verify(brokerFilterDeny.asFilter()).decide(any(ILoggingEvent.class));
+        verify(brokerFilterAccept.asFilter()).decide(any(ILoggingEvent.class));
     }
 
     public void testAddFilter()
     {
         CompositeFilter compositeFilter = new CompositeFilter();
 
-        BrokerLoggerFilter brokerFilter = createBrokerFilter(FilterReply.ACCEPT, "accept");
+        LoggerFilter brokerFilter = createFilter(FilterReply.ACCEPT, "accept");
         compositeFilter.addFilter(brokerFilter);
 
         verify(brokerFilter.asFilter()).setName("accept");
@@ -125,32 +124,32 @@ public class CompositeFilterTest extends QpidTestCase
     {
         CompositeFilter compositeFilter = new CompositeFilter();
 
-        BrokerLoggerFilter brokerFilterNeutral = createBrokerFilter(FilterReply.NEUTRAL, "neutral");
-        BrokerLoggerFilter brokerFilterAccept = createBrokerFilter(FilterReply.ACCEPT, "accept");
-        BrokerLoggerFilter brokerFilterDeny = createBrokerFilter(FilterReply.DENY, "deny");
+        LoggerFilter brokerFilterNeutral = createFilter(FilterReply.NEUTRAL, "neutral");
+        LoggerFilter brokerFilterAccept = createFilter(FilterReply.ACCEPT, "accept");
+        LoggerFilter brokerFilterDeny = createFilter(FilterReply.DENY, "deny");
 
         compositeFilter.addFilters(Arrays.asList(brokerFilterNeutral, brokerFilterAccept, brokerFilterDeny));
 
         FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
         assertEquals("Unexpected reply", FilterReply.ACCEPT, reply);
 
-        verify(brokerFilterNeutral.asFilter()).decide(any());
-        verify(brokerFilterAccept.asFilter()).decide(any());
-        verify(brokerFilterDeny.asFilter(), never()).decide(any());
+        verify(brokerFilterNeutral.asFilter()).decide(any(ILoggingEvent.class));
+        verify(brokerFilterAccept.asFilter()).decide(any(ILoggingEvent.class));
+        verify(brokerFilterDeny.asFilter(), never()).decide(any(ILoggingEvent.class));
     }
 
-    private BrokerLoggerFilter createBrokerFilter(FilterReply decision)
+    private LoggerFilter createFilter(FilterReply decision)
     {
-        return createBrokerFilter(decision, "UNNAMED");
+        return createFilter(decision, "UNNAMED");
     }
 
-    private BrokerLoggerFilter createBrokerFilter(final FilterReply decision, String name)
+    private LoggerFilter createFilter(final FilterReply decision, String name)
     {
-        BrokerLoggerFilter brokerFilter = mock(BrokerLoggerFilter.class);
+        LoggerFilter brokerFilter = mock(LoggerFilter.class);
         when(brokerFilter.getName()).thenReturn(name);
         Filter filter = mock(Filter.class);
         when(filter.getName()).thenReturn(name);
-        when(filter.decide(any())).thenReturn(decision);
+        when(filter.decide(any(ILoggingEvent.class))).thenReturn(decision);
         when(brokerFilter.asFilter()).thenReturn(filter);
         return brokerFilter;
     }

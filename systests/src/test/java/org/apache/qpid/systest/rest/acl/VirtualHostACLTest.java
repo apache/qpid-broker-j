@@ -27,9 +27,12 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.logging.VirtualHostFileLogger;
 import org.apache.qpid.server.management.plugin.HttpManagement;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.server.virtualhost.ProvidedStoreVirtualHostImpl;

@@ -1066,6 +1066,7 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
         {
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
+        _authorizedSubject.getPrincipals().add(virtualHost.getPrincipal());
     }
 
     public void addDeleteTask(Action<? super AMQProtocolEngine> task)

@@ -20,9 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.logging.LoggerFilter;
-
 @ManagedObject
-public interface BrokerLoggerFilter<X extends BrokerLoggerFilter<X>> extends ConfiguredObject<X>, LoggerFilter
+public interface VirtualHostLogger <X extends VirtualHostLogger<X>> extends ConfiguredObject<X>
 {
+    void stopLogging();
 }

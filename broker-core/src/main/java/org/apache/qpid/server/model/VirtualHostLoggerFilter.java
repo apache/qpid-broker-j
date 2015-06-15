@@ -21,8 +21,9 @@
 package org.apache.qpid.server.model;
 
 import org.apache.qpid.server.logging.LoggerFilter;
+import org.apache.qpid.server.logging.VirtualHostNameAndLevelFilter;
 
-@ManagedObject
-public interface BrokerLoggerFilter<X extends BrokerLoggerFilter<X>> extends ConfiguredObject<X>, LoggerFilter
+@ManagedObject(defaultType = VirtualHostNameAndLevelFilter.TYPE)
+public interface VirtualHostLoggerFilter<X extends VirtualHostLoggerFilter<X>> extends ConfiguredObject<X>, LoggerFilter
 {
 }

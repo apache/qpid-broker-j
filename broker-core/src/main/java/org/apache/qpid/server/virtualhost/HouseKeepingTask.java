@@ -41,7 +41,7 @@ public abstract class HouseKeepingTask implements Runnable
     public HouseKeepingTask(VirtualHost vhost)
     {
         _name = vhost.getName() + ":" + this.getClass().getSimpleName();
-        _subject = SecurityManager.getSystemTaskSubject(_name);
+        _subject = SecurityManager.getSystemTaskSubject(_name, vhost.getPrincipal());
     }
 
     final public void run()

@@ -33,6 +33,7 @@ import java.util.Map;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.Context;
 import ch.qos.logback.core.read.ListAppender;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -78,13 +79,12 @@ public class BrokerLoggerTest extends QpidTestCase
         _brokerLogger = new AbstractBrokerLogger(attributes, broker)
         {
             @Override
-            public Appender<ILoggingEvent> asAppender()
+            public Appender<ILoggingEvent> asAppender(Context context)
             {
                 return _loggerAppender;
             }
         };
         _brokerLogger.open();
-        _loggerAppender.addFilter(_brokerLogger.getCompositeFilter());
     }
 
     @Override
@@ -92,14 +92,8 @@ public class BrokerLoggerTest extends QpidTestCase
     {
         try
         {
+            _brokerLogger.delete();
             _taskExecutor.stopImmediately();
-
-            ch.qos.logback.classic.Logger rootLogger =
-                    (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-
-            _loggerAppender.clearAllFilters();
-
-            rootLogger.detachAppender(_loggerAppender);
         }
         finally
         {
@@ -156,7 +150,8 @@ public class BrokerLoggerTest extends QpidTestCase
 
     public void testDeleteLogger()
     {
-        ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        ch.qos.logback.classic.Logger rootLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         assertNotNull("Appender not found when it should have been created", rootLogger.getAppender(_brokerLogger.getName()));
         _brokerLogger.delete();
         assertEquals("Unexpected state after deletion", State.DELETED, _brokerLogger.getState());

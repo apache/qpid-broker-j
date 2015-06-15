@@ -42,6 +42,7 @@ import java.util.UUID;
 import javax.security.auth.Subject;
 import javax.security.sasl.Sasl;
 
+import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -122,6 +123,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
             }
         }).when(_connectionRegistry).registerConnection(connectionCaptor.capture());
         when(virtualHost.getConnectionRegistry()).thenReturn(_connectionRegistry);
+        when(virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
         when(_port.getVirtualHost(anyString())).thenReturn(virtualHost);
         when(_authenticationProvider.getSubjectCreator(anyBoolean())).thenReturn(_subjectCreator);
 

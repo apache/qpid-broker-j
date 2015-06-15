@@ -26,8 +26,7 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.ConsoleAppender;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import ch.qos.logback.core.Context;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -51,18 +50,18 @@ public class BrokerConsoleLoggerImpl extends AbstractBrokerLogger<BrokerConsoleL
     }
 
     @Override
-    public Appender<ILoggingEvent> asAppender()
+    public Appender<ILoggingEvent> asAppender(Context context)
     {
         ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
-        initializeAppender(consoleAppender);
 
         final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(getLayout());
-        encoder.setContext(consoleAppender.getContext());
+        encoder.setContext(context);
         encoder.start();
 
         consoleAppender.setEncoder(encoder);
 
         return consoleAppender;
     }
+
 }

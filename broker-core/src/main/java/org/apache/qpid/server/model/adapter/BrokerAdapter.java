@@ -168,15 +168,17 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-
-        Collection<BrokerLogger> loggers = getChildren(BrokerLogger.class);
-        for(BrokerLogger<?> logger : loggers)
+        if(_logRecorder == null)
         {
-            if(_logRecorder == null && logger instanceof BrokerMemoryLogger)
+            Collection<BrokerLogger> loggers = getChildren(BrokerLogger.class);
+            for (BrokerLogger<?> logger : loggers)
             {
-                Appender appender = rootLogger.getAppender(logger.getName());
-                _logRecorder = new LogRecorder((RecordEventAppender) appender);
-                break;
+                if (logger instanceof BrokerMemoryLogger)
+                {
+                    Appender appender = rootLogger.getAppender(logger.getName());
+                    _logRecorder = new LogRecorder((RecordEventAppender) appender);
+                    break;
+                }
             }
         }
 
@@ -594,7 +596,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     protected ListenableFuture<Void> beforeClose()
     {
-        _brokerLoggersToClose = getChildren(BrokerLogger.class);
+        _brokerLoggersToClose = new ArrayList(getChildren(BrokerLogger.class));
         return super.beforeClose();
     }
 
@@ -607,11 +609,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
 
         _eventLogger.message(BrokerMessages.STOPPED());
-
-        if(_logRecorder != null)
-        {
-            _logRecorder.closeLogRecorder();
-        }
 
         for (BrokerLogger<?> logger: _brokerLoggersToClose)
         {

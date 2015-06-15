@@ -302,7 +302,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
 
         addRestServlet(root, Broker.class);
-        
+
         ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel(), Collections.<String>emptyList()));
         root.addServlet(apiDocsServlet, "/apidocs");
         root.addServlet(apiDocsServlet, "/apidocs/");

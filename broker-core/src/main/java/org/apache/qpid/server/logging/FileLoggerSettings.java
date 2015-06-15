@@ -18,11 +18,21 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.logging;
 
-import org.apache.qpid.server.logging.LoggerFilter;
-
-@ManagedObject
-public interface BrokerLoggerFilter<X extends BrokerLoggerFilter<X>> extends ConfiguredObject<X>, LoggerFilter
+public interface FileLoggerSettings
 {
+    String getFileName();
+
+    boolean isRollDaily();
+
+    boolean isRollOnRestart();
+
+    boolean isCompressOldFiles();
+
+    int getMaxHistory();
+
+    String getMaxFileSize();
+
+    String getLayout();
 }

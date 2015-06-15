@@ -18,11 +18,22 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.logging;
 
-import org.apache.qpid.server.logging.LoggerFilter;
+import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.VirtualHostLoggerFilter;
 
-@ManagedObject
-public interface BrokerLoggerFilter<X extends BrokerLoggerFilter<X>> extends ConfiguredObject<X>, LoggerFilter
+@ManagedObject( category = false, type = VirtualHostNameAndLevelFilter.TYPE)
+public interface VirtualHostNameAndLevelFilter<X extends VirtualHostNameAndLevelFilter<X>> extends VirtualHostLoggerFilter<X>
 {
+    String TYPE = "NameAndLevel";
+    String LOGGER_NAME = "loggerName";
+    String LEVEL = "level";
+
+    @ManagedAttribute( defaultValue = "" )
+    String getLoggerName();
+
+    @ManagedAttribute(defaultValue = "INFO" )
+    LogLevel getLevel();
 }
