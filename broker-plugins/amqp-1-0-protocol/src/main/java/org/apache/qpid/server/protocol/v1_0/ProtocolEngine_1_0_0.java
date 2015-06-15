@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.io.PrintWriter;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
@@ -40,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.amqp_1_0.codec.FrameWriter;
 import org.apache.qpid.amqp_1_0.codec.ProtocolHandler;
-import org.apache.qpid.amqp_1_0.codec.ProtocolHeaderHandler;
 import org.apache.qpid.amqp_1_0.framing.AMQFrame;
 import org.apache.qpid.amqp_1_0.framing.FrameHandler;
 import org.apache.qpid.amqp_1_0.framing.OversizeFrameException;
@@ -67,6 +65,8 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
+import org.apache.qpid.server.transport.NetworkConnectionScheduler;
+import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -515,6 +515,12 @@ public class ProtocolEngine_1_0_0 implements ServerProtocolEngine, FrameOutputHa
             exception(e);
         }
     }
+
+    void changeScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
+    {
+        ((NonBlockingConnection)_network).changeScheduler(networkConnectionScheduler);
+    }
+
 
     public long getCreateTime()
     {

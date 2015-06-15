@@ -60,7 +60,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     private final SocketChannel _socketChannel;
     private final Object _peerPrincipalLock = new Object();
-    private final SelectorThread _selector;
+    private NetworkConnectionScheduler _scheduler;
     private final ConcurrentLinkedQueue<ByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
     private final List<ByteBuffer> _encryptedOutput = new ArrayList<>();
 
@@ -92,7 +92,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ServerProtocolEngine delegate,
                                  int receiveBufferSize,
-                                 Ticker ticker,
                                  final Set<TransportEncryption> encryptionSet,
                                  final SSLContext sslContext,
                                  final boolean wantClientAuth,
@@ -100,10 +99,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                                  final Collection<String> enabledCipherSuites,
                                  final Collection<String> disabledCipherSuites,
                                  final Runnable onTransportEncryptionAction,
-                                 final SelectorThread selectorThread)
+                                 final NetworkConnectionScheduler scheduler)
     {
         _socketChannel = socketChannel;
-        _selector = selectorThread;
+        _scheduler = scheduler;
 
         _protocolEngine = delegate;
         _receiveBufSize = receiveBufferSize;
@@ -114,7 +113,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                                     @Override
                                     public void performAction(final ServerProtocolEngine object)
                                     {
-                                        _selector.wakeup();
+                                        _scheduler.wakeup();
                                     }
                                 });
 
@@ -178,7 +177,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         if(_closed.compareAndSet(false,true))
         {
             _protocolEngine.notifyWork();
-            _selector.wakeup();
+            _scheduler.wakeup();
         }
     }
 
@@ -616,8 +615,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     @Override
     public void send(final ByteBuffer msg)
     {
-        assert _selector.isIOThread() : "Send called by unexpected thread " + Thread.currentThread().getName();
-
 
         if (_closed.get())
         {
@@ -632,6 +629,14 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     @Override
     public void flush()
     {
+    }
+
+    public void changeScheduler(NetworkConnectionScheduler scheduler)
+    {
+        NetworkConnectionScheduler currentScheduler = _scheduler;
+        currentScheduler.removeConnection(this);
+        _scheduler = scheduler;
+        _scheduler.addConnection(this);
     }
 
     @Override
@@ -664,5 +669,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 headerBytes[4] == 1 || // TLS 1.0
                 headerBytes[4] == 2 || // TLS 1.1
                 headerBytes[4] == 3);
+    }
+
+    public NetworkConnectionScheduler getScheduler()
+    {
+        return _scheduler;
     }
 }

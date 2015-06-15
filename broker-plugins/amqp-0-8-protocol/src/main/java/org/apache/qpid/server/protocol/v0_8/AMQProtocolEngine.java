@@ -85,6 +85,8 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.transport.NetworkConnectionScheduler;
+import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -276,6 +278,12 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
     public ServerProtocolEngine getProtocolEngine()
     {
         return this;
+    }
+
+    @Override
+    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
+    {
+        ((NonBlockingConnection)_network).changeScheduler(networkConnectionScheduler);
     }
 
     @Override
@@ -847,22 +855,13 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
             }
             finally
             {
-                try
+                synchronized (this)
                 {
-                    for (Action<? super AMQProtocolEngine> task : _connectionCloseTaskList)
-                    {
-                        task.performAction(this);
-                    }
+                    _closed = true;
+                    notifyAll();
                 }
-                finally
-                {
-                    synchronized (this)
-                    {
-                        _closed = true;
-                        notifyAll();
-                    }
-                    getEventLogger().message(_logSubject, connectionDropped ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
-                }
+                getEventLogger().message(_logSubject, connectionDropped ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
+
             }
         }
     }
@@ -1145,13 +1144,44 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
             }
             finally
             {
-                closeNetworkConnection();
+                try
+                {
+                    closeNetworkConnection();
+                }
+                finally
+                {
+                    performDeleteTasks();
+                }
             }
         }
         catch (ConnectionScopedRuntimeException | TransportException e)
         {
             _logger.error("Could not close protocol engine", e);
         }
+    }
+
+    private void performDeleteTasks()
+    {
+        if(runningAsSubject())
+        {
+            for (Action<? super AMQProtocolEngine> task : _connectionCloseTaskList)
+            {
+                task.performAction(this);
+            }
+        }
+        else
+        {
+            runAsSubject(new PrivilegedAction<Object>()
+            {
+                @Override
+                public Object run()
+                {
+                    performDeleteTasks();
+                    return null;
+                }
+            });
+        }
+
     }
 
     @Override
@@ -1542,7 +1572,6 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
 
                         writeFrame(responseBody.generateFrame(0));
                         _state = ConnectionState.OPEN;
-
                     }
                     else
                     {

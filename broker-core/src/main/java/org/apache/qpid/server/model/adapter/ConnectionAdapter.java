@@ -210,7 +210,6 @@ public final class ConnectionAdapter extends AbstractConfiguredObject<Connection
     private ListenableFuture<Void> asyncCloseUnderlying()
     {
         final SettableFuture<Void> closeFuture = SettableFuture.create();
-
         _underlyingConnection.addDeleteTask(new Action()
         {
             @Override

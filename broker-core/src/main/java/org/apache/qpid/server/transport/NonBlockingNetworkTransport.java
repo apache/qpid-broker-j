@@ -23,6 +23,7 @@ package org.apache.qpid.server.transport;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.EnumSet;
@@ -58,13 +59,13 @@ public class NonBlockingNetworkTransport
     private final SSLContext _sslContext;
     private final ServerSocketChannel _serverSocket;
     private final int _timeout;
-
-    private SelectorThread _selector;
+    private final NetworkConnectionScheduler _scheduler;
 
     public NonBlockingNetworkTransport(final NetworkTransportConfiguration config,
                                        final MultiVersionProtocolEngineFactory factory,
                                        final SSLContext sslContext,
-                                       final EnumSet<TransportEncryption> encryptionSet)
+                                       final EnumSet<TransportEncryption> encryptionSet,
+                                       final NetworkConnectionScheduler scheduler)
     {
         try
         {
@@ -82,6 +83,7 @@ public class NonBlockingNetworkTransport
             _serverSocket.bind(address);
             _serverSocket.configureBlocking(false);
             _encryptionSet = encryptionSet;
+            _scheduler = scheduler;
 
         }
         catch (IOException e)
@@ -93,37 +95,20 @@ public class NonBlockingNetworkTransport
 
     public void start()
     {
-        try
-        {
-            _selector = new SelectorThread(this);
-            _selector.start();
-            _selector.addAcceptingSocket(_serverSocket);
-        }
-        catch (IOException e)
-        {
-            throw new TransportException("Failed to start", e);
-        }
+        _scheduler.addAcceptingSocket(_serverSocket, this);
     }
 
 
     public void close()
     {
-        if(_selector != null)
+        _scheduler.cancelAcceptingSocket(_serverSocket);
+        try
         {
-            _selector.cancelAcceptingSocket(_serverSocket);
-            try
-            {
-                _serverSocket.close();
-            }
-            catch (IOException e)
-            {
-                LOGGER.warn("Error closing the server socket for : " +  _config.getAddress().toString(), e);
-            }
-            finally
-            {
-                _selector.close();
-                _selector = null;
-            }
+            _serverSocket.close();
+        }
+        catch (IOException e)
+        {
+            LOGGER.warn("Error closing the server socket for : " +  _config.getAddress().toString(), e);
         }
     }
 
@@ -171,7 +156,6 @@ public class NonBlockingNetworkTransport
                         new NonBlockingConnection(socketChannel,
                                                   engine,
                                                   receiveBufferSize,
-                                                  idleTimeoutTicker,
                                                   _encryptionSet,
                                                   _sslContext,
                                                   _config.wantClientAuth(),
@@ -187,7 +171,7 @@ public class NonBlockingNetworkTransport
                                                           engine.encryptedTransport();
                                                       }
                                                   },
-                                                  _selector);
+                                                  _scheduler);
 
                 engine.setNetworkConnection(connection, connection.getSender());
                 connection.setMaxReadIdle(HANDSHAKE_TIMEOUT);
@@ -196,7 +180,7 @@ public class NonBlockingNetworkTransport
 
                 connection.start();
 
-                _selector.addConnection(connection);
+                _scheduler.addConnection(connection);
 
                 success = true;
             }

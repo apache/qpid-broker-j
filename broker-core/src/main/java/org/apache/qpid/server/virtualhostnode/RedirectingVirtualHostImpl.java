@@ -532,6 +532,7 @@ class RedirectingVirtualHostImpl
         return localAddress;
     }
 
+
     private void throwUnsupportedForRedirector()
     {
         throw new IllegalStateException("The virtual host state of " + getState()

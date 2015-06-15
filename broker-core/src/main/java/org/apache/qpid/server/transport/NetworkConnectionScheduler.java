@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.transport;
 
+import java.io.IOException;
+import java.nio.channels.ServerSocketChannel;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -31,7 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class NetworkConnectionScheduler
+import org.apache.qpid.transport.TransportException;
+
+public class NetworkConnectionScheduler
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConnectionScheduler.class);
 
@@ -39,25 +43,35 @@ class NetworkConnectionScheduler
     private final ThreadPoolExecutor _executor;
     private final AtomicInteger _running = new AtomicInteger();
     private final int _poolSize;
+    private final String _name;
 
-    NetworkConnectionScheduler(final SelectorThread selectorThread, final NonBlockingNetworkTransport transport)
+    public NetworkConnectionScheduler(String name, int threadPoolSize)
     {
-        _selectorThread = selectorThread;
-        _poolSize = transport.getThreadPoolSize();
-        _executor = new ThreadPoolExecutor(_poolSize, _poolSize, 0L, TimeUnit.MILLISECONDS,
-                                           new LinkedBlockingQueue<Runnable>(), new ThreadFactory()
+        try
         {
-            final AtomicInteger _count = new AtomicInteger();
-
-            @Override
-            public Thread newThread(final Runnable r)
+            _selectorThread = new SelectorThread(this);
+            _selectorThread.start();
+            _poolSize = threadPoolSize;
+            _name = name;
+            _executor = new ThreadPoolExecutor(_poolSize, _poolSize, 0L, TimeUnit.MILLISECONDS,
+                                               new LinkedBlockingQueue<Runnable>(), new ThreadFactory()
             {
-                Thread t = Executors.defaultThreadFactory().newThread(r);
-                t.setName("IO-pool-"+selectorThread.getName()+"-"+_count.incrementAndGet());
-                return t;
-            }
-        });
-        _executor.prestartAllCoreThreads();
+                final AtomicInteger _count = new AtomicInteger();
+
+                @Override
+                public Thread newThread(final Runnable r)
+                {
+                    Thread t = Executors.defaultThreadFactory().newThread(r);
+                    t.setName("IO-pool-" + getName() + "-" + _count.incrementAndGet());
+                    return t;
+                }
+            });
+            _executor.prestartAllCoreThreads();
+        }
+        catch (IOException e)
+        {
+            throw new TransportException(e);
+        }
     }
 
     public void schedule(final NonBlockingConnection connection)
@@ -93,7 +107,7 @@ class NetworkConnectionScheduler
                 rerun = false;
                 boolean closed = connection.doWork();
 
-                if (!closed)
+                if (!closed && connection.getScheduler() == this)
                 {
 
                     if (connection.isStateChanged() || connection.isPartialRead())
@@ -123,9 +137,39 @@ class NetworkConnectionScheduler
 
     public void close()
     {
+        _selectorThread.close();
         _executor.shutdown();
     }
 
 
+    public String getName()
+    {
+        return _name;
+    }
 
+    public void addAcceptingSocket(final ServerSocketChannel serverSocket,
+                                   final NonBlockingNetworkTransport nonBlockingNetworkTransport)
+    {
+        _selectorThread.addAcceptingSocket(serverSocket, nonBlockingNetworkTransport);
+    }
+
+    public void cancelAcceptingSocket(final ServerSocketChannel serverSocket)
+    {
+        _selectorThread.cancelAcceptingSocket(serverSocket);
+    }
+
+    public void addConnection(final NonBlockingConnection connection)
+    {
+        _selectorThread.addConnection(connection);
+    }
+
+    public void wakeup()
+    {
+        _selectorThread.wakeup();
+    }
+
+    public void removeConnection(final NonBlockingConnection connection)
+    {
+        _selectorThread.removeConnection(connection);
+    }
 }

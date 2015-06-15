@@ -46,6 +46,7 @@ class TCPandSSLTransport implements AcceptingTransport
     private AmqpPort<?> _port;
     private Set<Protocol> _supported;
     private Protocol _defaultSupportedProtocolReply;
+    private NetworkConnectionScheduler _scheduler;
 
     TCPandSSLTransport(final Set<Transport> transports,
                        final SSLContext sslContext,
@@ -99,7 +100,9 @@ class TCPandSSLTransport implements AcceptingTransport
             encryptionSet.add(TransportEncryption.TLS);
         }
 
-        _networkTransport = new NonBlockingNetworkTransport(settings, protocolEngineFactory, _sslContext, encryptionSet);
+        _scheduler = new NetworkConnectionScheduler("Port-"+_port.getName(),settings.getThreadPoolSize());
+        _networkTransport = new NonBlockingNetworkTransport(settings, protocolEngineFactory,
+                                                            _sslContext, encryptionSet, _scheduler);
         _networkTransport.start();
     }
 
@@ -114,6 +117,10 @@ class TCPandSSLTransport implements AcceptingTransport
         if (_networkTransport != null)
         {
             _networkTransport.close();
+        }
+        if(_scheduler != null)
+        {
+            _scheduler.close();
         }
     }
 

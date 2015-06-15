@@ -57,6 +57,7 @@ import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.stats.StatisticsCounter;
+import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.transport.network.Ticker;
@@ -668,6 +669,12 @@ public class MockConsumer implements ConsumerTarget
         public ServerProtocolEngine getProtocolEngine()
         {
             return null;
+        }
+
+        @Override
+        public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
+        {
+
         }
 
         @Override

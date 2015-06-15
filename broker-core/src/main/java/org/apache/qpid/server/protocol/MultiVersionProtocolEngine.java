@@ -397,6 +397,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
         {
             return _aggregateTicker;
         }
+
     }
 
     private class SelfDelegateProtocolEngine implements ServerProtocolEngine
@@ -592,6 +593,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
 
 
         }
+
 
         public long getConnectionId()
         {

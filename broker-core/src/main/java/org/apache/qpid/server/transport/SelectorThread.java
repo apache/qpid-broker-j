@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class SelectorThread extends Thread
+class SelectorThread extends Thread
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectorThread.class);
 
@@ -58,19 +58,18 @@ public class SelectorThread extends Thread
     private final Selector _selector;
     private final AtomicBoolean _closed = new AtomicBoolean();
     private final NetworkConnectionScheduler _scheduler;
-    private final NonBlockingNetworkTransport _transport;
     private long _nextTimeout;
 
-    SelectorThread(final NonBlockingNetworkTransport nonBlockingNetworkTransport) throws IOException
+    SelectorThread(final NetworkConnectionScheduler scheduler) throws IOException
     {
-        super("SelectorThread-" + nonBlockingNetworkTransport.getConfig().getAddress().toString());
+        super("SelectorThread-" + scheduler.getName());
 
-        _transport = nonBlockingNetworkTransport;
         _selector = Selector.open();
-        _scheduler = new NetworkConnectionScheduler(this, _transport);
+        _scheduler = scheduler;
     }
 
-    public void addAcceptingSocket(final ServerSocketChannel socketChannel)
+    public void addAcceptingSocket(final ServerSocketChannel socketChannel,
+                                   final NonBlockingNetworkTransport nonBlockingNetworkTransport)
     {
         _tasks.add(new Runnable()
                     {
@@ -80,7 +79,7 @@ public class SelectorThread extends Thread
 
                             try
                             {
-                                socketChannel.register(_selector, SelectionKey.OP_ACCEPT);
+                                socketChannel.register(_selector, SelectionKey.OP_ACCEPT, nonBlockingNetworkTransport);
                             }
                             catch (IllegalStateException | ClosedChannelException e)
                             {
@@ -127,7 +126,7 @@ public class SelectorThread extends Thread
                 catch (IOException e)
                 {
                     // TODO Inform the model object
-                    LOGGER.error("Failed to select for " + _transport.getConfig().getAddress().toString(),e );
+                    LOGGER.error("Failed to trying to select()",e );
                     break;
                 }
 
@@ -177,8 +176,7 @@ public class SelectorThread extends Thread
                 toBeScheduled.add(connection);
                 try
                 {
-                    SelectionKey register = connection.getSocketChannel().register(_selector, 0);
-                    register.cancel();
+                    unregisterConnection(connection);
                 }
                 catch (ClosedChannelException e)
                 {
@@ -194,6 +192,12 @@ public class SelectorThread extends Thread
         }
 
         return toBeScheduled;
+    }
+
+    private void unregisterConnection(final NonBlockingConnection connection) throws ClosedChannelException
+    {
+        SelectionKey register = connection.getSocketChannel().register(_selector, 0);
+        register.cancel();
     }
 
     private List<NonBlockingConnection> reregisterUnregisteredConnections()
@@ -230,8 +234,9 @@ public class SelectorThread extends Thread
         {
             if(key.isAcceptable())
             {
+                NonBlockingNetworkTransport transport = (NonBlockingNetworkTransport) key.attachment();
                 // todo - should we schedule this rather than running in this thread?
-                _transport.acceptSocketChannel((ServerSocketChannel)key.channel());
+                transport.acceptSocketChannel((ServerSocketChannel)key.channel());
             }
             else
             {
@@ -272,6 +277,20 @@ public class SelectorThread extends Thread
 
     }
 
+    void removeConnection(NonBlockingConnection connection)
+    {
+        try
+        {
+            unregisterConnection(connection);
+        }
+        catch (ClosedChannelException e)
+        {
+            LOGGER.debug("Failed to unregister with selector for connection " + connection +
+                         ". Connection is probably being closed by peer.", e);
+
+        }
+    }
+
     public void wakeup()
     {
         _selector.wakeup();
@@ -281,11 +300,6 @@ public class SelectorThread extends Thread
     {
         _closed.set(true);
         _selector.wakeup();
-        _scheduler.close();
     }
 
-    boolean isIOThread()
-    {
-        return Thread.currentThread().getName().startsWith(SelectorThread.IO_THREAD_NAME_PREFIX);
-    }
 }

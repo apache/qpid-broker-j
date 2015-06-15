@@ -38,11 +38,12 @@ import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.transport.NetworkConnectionScheduler;
+import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.Constant;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.Assembler;
 import org.apache.qpid.transport.network.InputHandler;
 import org.apache.qpid.transport.network.NetworkConnection;
 
@@ -88,6 +89,7 @@ public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocol
     {
         return _aggregateTicker;
     }
+
 
     @Override
     public boolean isMessageAssignmentSuspended()
@@ -342,5 +344,10 @@ public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocol
     public void setWorkListener(final Action<ServerProtocolEngine> listener)
     {
         _workListener.set(listener);
+    }
+
+    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
+    {
+        ((NonBlockingConnection)_network).changeScheduler(networkConnectionScheduler);
     }
 }

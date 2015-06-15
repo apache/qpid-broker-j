@@ -21,7 +21,6 @@ package org.apache.qpid.server.transport;
 
 import org.apache.qpid.server.protocol.MultiVersionProtocolEngine;
 import org.apache.qpid.server.protocol.MultiVersionProtocolEngineFactory;
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.NetworkTransportConfiguration;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -111,7 +110,10 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         when(verboseEngine.getAggregateTicker()).thenReturn(new AggregateTicker());
         when(timidEngine.getAggregateTicker()).thenReturn(new AggregateTicker());
 
-        NonBlockingNetworkTransport transport = new NonBlockingNetworkTransport(config, engineFactory, null, EnumSet.of(TransportEncryption.NONE));
+        final NetworkConnectionScheduler scheduler = new NetworkConnectionScheduler(getName(), 1);
+
+        NonBlockingNetworkTransport transport = new NonBlockingNetworkTransport(config, engineFactory, null, EnumSet.of(TransportEncryption.NONE),
+                                                                                scheduler);
 
         transport.start();
         final int port = transport.getAcceptingPort();
@@ -164,6 +166,7 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         verify(timidEngine, atLeast(6)).received(any(ByteBuffer.class));
         _keepRunningThreads = false;
         transport.close();
+        scheduler.close();
     }
 
 

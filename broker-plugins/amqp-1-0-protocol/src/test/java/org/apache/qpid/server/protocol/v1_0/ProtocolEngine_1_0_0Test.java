@@ -71,6 +71,8 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManagerFactory;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
+import org.apache.qpid.server.transport.NetworkConnectionScheduler;
+import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -94,7 +96,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        _networkConnection = mock(NetworkConnection.class);
+        _networkConnection = mock(NonBlockingConnection.class);
         _broker = mock(Broker.class);
         when(_broker.getModel()).thenReturn(BrokerModel.getInstance());
         final TaskExecutor taskExecutor = new TaskExecutorImpl();
@@ -107,6 +109,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _authenticationProvider = mock(AuthenticationProvider.class);
         when(_port.getAuthenticationProvider()).thenReturn(_authenticationProvider);
         VirtualHostImpl virtualHost = mock(VirtualHostImpl.class);
+
         _connectionRegistry = mock(IConnectionRegistry.class);
         final ArgumentCaptor<AMQConnectionModel> connectionCaptor = ArgumentCaptor.forClass(AMQConnectionModel.class);
         doAnswer(new Answer()

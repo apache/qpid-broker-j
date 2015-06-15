@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -91,6 +92,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -148,6 +150,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private MessageStoreLogSubject _messageStoreLogSubject;
 
     private final Set<BlockingType> _blockingReasons = Collections.synchronizedSet(EnumSet.noneOf(BlockingType.class));
+
+    private NetworkConnectionScheduler _networkConnectionScheduler;
 
 
     @ManagedAttributeField
@@ -860,7 +864,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dtxRegistry.close();
         closeMessageStore();
         shutdownHouseKeeping();
-
+        if(_networkConnectionScheduler != null)
+        {
+            _networkConnectionScheduler.close();
+            _networkConnectionScheduler = null;
+        }
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
     }
 
@@ -995,6 +1003,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         ConnectionAdapter c = new ConnectionAdapter(connection);
         c.create();
         childAdded(c);
+        connection.setScheduler(_networkConnectionScheduler);
 
     }
 
@@ -1375,6 +1384,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         try
                         {
                             shutdownHouseKeeping();
+                            if(_networkConnectionScheduler != null)
+                            {
+                                _networkConnectionScheduler.close();
+                                _networkConnectionScheduler = null;
+                            }
                             closeMessageStore();
                             setState(State.STOPPED);
 
@@ -1629,7 +1643,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private ListenableFuture<Void> onActivate()
     {
         _houseKeepingTasks = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(), new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-pool"));
-
+        _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool", Runtime.getRuntime().availableProcessors());
         MessageStore messageStore = getMessageStore();
         messageStore.openMessageStore(this);
 
@@ -1846,6 +1860,5 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             _fileSystem = fileSystem;
         }
     }
-
 
 }

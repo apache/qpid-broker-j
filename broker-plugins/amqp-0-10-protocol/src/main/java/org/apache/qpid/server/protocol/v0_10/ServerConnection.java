@@ -40,6 +40,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.protocol.ServerProtocolEngine;
@@ -56,6 +59,7 @@ import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.security.AuthorizationHolder;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
+import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
@@ -73,7 +77,7 @@ import org.apache.qpid.transport.Session;
 public class ServerConnection extends Connection implements AMQConnectionModel<ServerConnection, ServerSession>,
                                                             LogSubject, AuthorizationHolder
 {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
     public static final long CLOSE_OK_TIMEOUT = 10000l;
     private final Broker<?> _broker;
     private AtomicBoolean _logClosed = new AtomicBoolean(false);
@@ -102,7 +106,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     private int _messageCompressionThreshold;
     private final int _maxMessageSize;
 
-    private ServerProtocolEngine _serverProtocolEngine;
+    private ProtocolEngine_0_10 _serverProtocolEngine;
     private boolean _ignoreFutureInput;
     private boolean _ignoreAllButConnectionCloseOk;
 
@@ -214,7 +218,13 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         return _serverProtocolEngine;
     }
 
-    public void setProtocolEngine(final ServerProtocolEngine serverProtocolEngine)
+    @Override
+    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
+    {
+        _serverProtocolEngine.setScheduler(networkConnectionScheduler);
+    }
+
+    public void setProtocolEngine(final ProtocolEngine_0_10 serverProtocolEngine)
     {
         _serverProtocolEngine = serverProtocolEngine;
     }
@@ -396,7 +406,6 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
 
     public void closeAsync(final AMQConstant cause, final String message)
     {
-
         addAsyncTask(new Action<ServerConnection>()
         {
             @Override
@@ -405,8 +414,6 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
                 if(!isClosing())
                 {
                     markAllSessionsClosed();
-
-                    performDeleteTasks();
 
                     setState(CLOSING);
                     ConnectionCloseCode replyCode = ConnectionCloseCode.NORMAL;

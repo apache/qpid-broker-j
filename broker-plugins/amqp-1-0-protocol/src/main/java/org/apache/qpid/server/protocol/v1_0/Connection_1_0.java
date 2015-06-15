@@ -59,6 +59,8 @@ import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
+import org.apache.qpid.server.transport.NetworkConnectionScheduler;
+import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
@@ -258,6 +260,16 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
             session.remoteEnd(new End());
         }
 
+        if(_vhost != null)
+        {
+            _vhost.getConnectionRegistry().deregisterConnection(this);
+        }
+
+
+    }
+
+    void performCloseTasks()
+    {
         List<Action<? super Connection_1_0>> taskCopy;
 
         synchronized (_closeTasks)
@@ -272,12 +284,6 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         {
             _closeTasks.clear();
         }
-        if(_vhost != null)
-        {
-            _vhost.getConnectionRegistry().deregisterConnection(this);
-        }
-
-
     }
 
     public void closed()
@@ -420,6 +426,12 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
     public ServerProtocolEngine getProtocolEngine()
     {
         return _protocolEngine;
+    }
+
+    @Override
+    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
+    {
+        _protocolEngine.changeScheduler(networkConnectionScheduler);
     }
 
     @Override

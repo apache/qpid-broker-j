@@ -28,6 +28,8 @@ import java.util.List;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -76,12 +78,15 @@ public class ServerSessionTest extends QpidTestCase
         when(amqpPort.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
 
         ServerConnection connection = new ServerConnection(1, broker, amqpPort, Transport.TCP);
+        final ProtocolEngine_0_10 protocolEngine = mock(ProtocolEngine_0_10.class);
+        connection.setProtocolEngine(protocolEngine);
         connection.setVirtualHost(_virtualHost);
         ServerSession session1 = new ServerSession(connection, new ServerSessionDelegate(),
                 new Binary(getName().getBytes()), 0);
 
         // create a session with the same name but on a different connection
         ServerConnection connection2 = new ServerConnection(2, broker, amqpPort, Transport.TCP);
+        connection2.setProtocolEngine(protocolEngine);
         connection2.setVirtualHost(_virtualHost);
         ServerSession session2 = new ServerSession(connection2, new ServerSessionDelegate(),
                 new Binary(getName().getBytes()), 0);
@@ -98,6 +103,8 @@ public class ServerSessionTest extends QpidTestCase
         AmqpPort port = mock(AmqpPort.class);
         when(port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(1024);
         ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP);
+        final ProtocolEngine_0_10 protocolEngine = mock(ProtocolEngine_0_10.class);
+        connection.setProtocolEngine(protocolEngine);
         connection.setVirtualHost(_virtualHost);
         final List<Method> invokedMethods = new ArrayList<>();
         ServerSession session = new ServerSession(connection, new ServerSessionDelegate(),
