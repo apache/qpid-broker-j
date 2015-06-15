@@ -633,10 +633,8 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     public void changeScheduler(NetworkConnectionScheduler scheduler)
     {
-        NetworkConnectionScheduler currentScheduler = _scheduler;
-        currentScheduler.removeConnection(this);
+        _scheduler.removeConnection(this);
         _scheduler = scheduler;
-        _scheduler.addConnection(this);
     }
 
     @Override

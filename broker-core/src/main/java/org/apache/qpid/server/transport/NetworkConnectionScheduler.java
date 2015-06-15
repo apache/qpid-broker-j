@@ -126,6 +126,10 @@ public class NetworkConnectionScheduler
                         _selectorThread.addConnection(connection);
                     }
                 }
+                else if(connection.getScheduler() != this)
+                {
+                    connection.getScheduler().addConnection(connection);
+                }
 
             } while (rerun);
         }
