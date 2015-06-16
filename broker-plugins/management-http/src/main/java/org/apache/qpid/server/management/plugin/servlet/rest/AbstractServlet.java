@@ -23,10 +23,11 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.util.Collections;
 
 import javax.security.auth.Subject;
 import javax.servlet.ServletConfig;
@@ -50,6 +51,7 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 public abstract class AbstractServlet extends HttpServlet
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractServlet.class);
+    public static final String CONTENT_DISPOSITION = "Content-disposition";
 
     private Broker<?> _broker;
     private HttpManagementConfiguration _managementConfiguration;
@@ -246,35 +248,62 @@ public abstract class AbstractServlet extends HttpServlet
         return _managementConfiguration;
     }
 
-    protected void sendError(final HttpServletResponse resp, int errorCode)
-    {
-        try
-        {
-            resp.sendError(errorCode);
-        }
-        catch (IOException e)
-        {
-            throw new ConnectionScopedRuntimeException("Failed to send error response code " + errorCode, e);
-        }
-    }
-
     protected void sendJsonResponse(Object object, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setHeader("Cache-Control","no-cache");
-        response.setHeader("Pragma","no-cache");
-        response.setDateHeader ("Expires", 0);
+        sendJsonResponse(object, request, response, HttpServletResponse.SC_OK, true);
+    }
+
+    protected void sendJsonResponse(Object object, HttpServletRequest request, HttpServletResponse response, int responseCode, boolean sendCachingHeaders) throws IOException
+    {
+        response.setStatus(responseCode);
         response.setContentType("application/json");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        if (sendCachingHeaders)
+        {
+            sendCachingHeadersOnResponse(response);
+        }
 
         writeObjectToResponse(object, request, response);
     }
 
-    protected void writeObjectToResponse(Object object, HttpServletRequest request,  HttpServletResponse response) throws IOException
+    protected void sendJsonErrorResponse(HttpServletRequest request,
+                                         HttpServletResponse response,
+                                         int responseCode,
+                                         String message) throws IOException
+    {
+        response.setStatus(responseCode);
+        response.setContentType("application/json");
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        writeObjectToResponse(Collections.singletonMap("errorMessage", message), request, response);
+    }
+
+    protected void sendError(final HttpServletResponse resp, int responseCode)
+    {
+        try
+        {
+            resp.sendError(responseCode);
+        }
+        catch (IOException e)
+        {
+            throw new ConnectionScopedRuntimeException("Failed to send error response code " + responseCode, e);
+        }
+    }
+
+    private void writeObjectToResponse(Object object, HttpServletRequest request,  HttpServletResponse response) throws IOException
     {
         OutputStream stream = getOutputStream(request, response);
         ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
         mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
         mapper.writeValue(stream, object);
+    }
+
+    protected void sendCachingHeadersOnResponse(HttpServletResponse response)
+    {
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
     }
 
     protected String[] getPathInfoElements(HttpServletRequest request)

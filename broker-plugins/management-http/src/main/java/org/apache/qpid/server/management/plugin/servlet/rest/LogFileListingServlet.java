@@ -18,17 +18,11 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.util.Collections;
 import java.util.List;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 
 import org.apache.qpid.server.management.plugin.log.LogFileDetails;
 import org.apache.qpid.server.management.plugin.log.LogFileHelper;
@@ -41,10 +35,6 @@ public class LogFileListingServlet extends AbstractServlet
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws IOException,
             ServletException
     {
-        response.setHeader("Cache-Control", "no-cache");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
-
         if (!getBroker().getSecurityManager().authoriseLogsAccess())
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Log files access is denied");
@@ -55,15 +45,8 @@ public class LogFileListingServlet extends AbstractServlet
         // QPID-6516 : TODO
         LogFileHelper helper = null; // new LogFileHelper(Collections.list(LogManager.getRootLogger().getAllAppenders()));
         List<LogFileDetails> logFiles = helper.getLogFileDetails(false);
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
 
-        final OutputStream stream = getOutputStream(request, response);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(stream, logFiles);
-
-        response.setStatus(HttpServletResponse.SC_OK);
+        sendJsonResponse(logFiles, request, response);
     }
 
 }

@@ -21,7 +21,6 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.security.Principal;
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
@@ -38,8 +37,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.xml.bind.DatatypeConverter;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,13 +69,6 @@ public class SaslServlet extends AbstractServlet
                                                                                    ServletException,
                                                                                    IOException
     {
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        response.setHeader("Cache-Control","no-cache");
-        response.setHeader("Pragma","no-cache");
-        response.setDateHeader ("Expires", 0);
-
         HttpSession session = request.getSession();
         getRandom(session);
 
@@ -100,10 +90,7 @@ public class SaslServlet extends AbstractServlet
 
         outputObject.put("mechanisms", (Object) mechanisms);
 
-        final OutputStream stream = getOutputStream(request, response);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(stream, outputObject);
+        sendJsonResponse(outputObject, request, response);
 
     }
 
@@ -129,11 +116,6 @@ public class SaslServlet extends AbstractServlet
 
         try
         {
-            response.setContentType("application/json");
-            response.setHeader("Cache-Control","no-cache");
-            response.setHeader("Pragma","no-cache");
-            response.setDateHeader("Expires", 0);
-
             HttpSession session = request.getSession();
 
             String mechanism = request.getParameter("mechanism");
@@ -269,8 +251,9 @@ public class SaslServlet extends AbstractServlet
                 Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
                 outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
 
-                writeObjectToResponse(outputObject, request, response);
+                sendJsonResponse(outputObject, request, response);
             }
+
             response.setStatus(HttpServletResponse.SC_OK);
         }
         else
@@ -287,7 +270,7 @@ public class SaslServlet extends AbstractServlet
             outputObject.put("id", id);
             outputObject.put("challenge", DatatypeConverter.printBase64Binary(challenge));
 
-            writeObjectToResponse(outputObject, request, response);
+            sendJsonResponse(outputObject, request, response);
         }
     }
 

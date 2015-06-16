@@ -44,9 +44,7 @@ public class LogFileServlet extends AbstractServlet
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws IOException,
             ServletException
     {
-        response.setHeader("Cache-Control", "no-cache");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
+        sendCachingHeadersOnResponse(response);
 
         if (!getBroker().getSecurityManager().authoriseLogsAccess())
         {
@@ -86,7 +84,7 @@ public class LogFileServlet extends AbstractServlet
 
         String fileName = String.format(LOGS_FILE_NAME, new SimpleDateFormat(DATE_FORMAT).format(new Date()));
         response.setStatus(HttpServletResponse.SC_OK);
-        response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+        response.setHeader(CONTENT_DISPOSITION, "attachment;filename=" + fileName);
         response.setContentType(LogFileHelper.ZIP_MIME_TYPE);
 
         OutputStream os = response.getOutputStream();

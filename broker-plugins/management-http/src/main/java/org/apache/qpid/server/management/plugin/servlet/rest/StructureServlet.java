@@ -40,20 +40,12 @@ public class StructureServlet extends AbstractServlet
     @Override
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        response.setHeader("Cache-Control","no-cache");
-        response.setHeader("Pragma","no-cache");
-        response.setDateHeader ("Expires", 0);
 
         // TODO filtering??? request.getParameter("filter"); // filter=1,2,3   /groups/*/*
 
         Map<String,Object> structure = generateStructure(getBroker(), Broker.class);
 
-        writeObjectToResponse(structure, request, response);
-
-        response.setStatus(HttpServletResponse.SC_OK);
+        sendJsonResponse(structure, request, response);
 
     }
 

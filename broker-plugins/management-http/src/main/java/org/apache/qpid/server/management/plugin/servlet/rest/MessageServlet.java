@@ -80,14 +80,7 @@ public class MessageServlet extends AbstractServlet
         MessageFinder messageFinder = new MessageFinder(Long.parseLong(path[2]));
         queue.visit(messageFinder);
 
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        response.setHeader("Cache-Control","no-cache");
-        response.setHeader("Pragma","no-cache");
-        response.setDateHeader ("Expires", 0);
-        response.setContentType("application/json");
-
-        writeObjectToResponse(messageFinder.getMessageObject(), request, response);
+        sendJsonResponse(messageFinder.getMessageObject(), request, response);
     }
 
     private void getMessageList(HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -106,19 +99,13 @@ public class MessageServlet extends AbstractServlet
         final MessageCollector messageCollector = new MessageCollector(first, last);
         queue.visit(messageCollector);
 
-        response.setContentType("application/json");
         final List<Map<String, Object>> messages = messageCollector.getMessages();
         int queueSize = (int) queue.getQueueDepthMessages();
         String min = messages.isEmpty() ? "0" : messages.get(0).get("position").toString();
         String max = messages.isEmpty() ? "0" : messages.get(messages.size()-1).get("position").toString();
         response.setHeader("Content-Range", (min + "-" + max + "/" + queueSize));
-        response.setStatus(HttpServletResponse.SC_OK);
 
-        response.setHeader("Cache-Control","no-cache");
-        response.setHeader("Pragma","no-cache");
-        response.setDateHeader ("Expires", 0);
-
-        writeObjectToResponse(messages, request, response);
+        sendJsonResponse(messages, request, response);
     }
 
     private Queue<?> getQueueFromRequest(HttpServletRequest request)

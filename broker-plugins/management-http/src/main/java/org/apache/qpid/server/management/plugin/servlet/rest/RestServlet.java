@@ -38,7 +38,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
@@ -46,7 +45,6 @@ import org.apache.qpid.server.model.TypedContent;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -339,14 +337,7 @@ public class RestServlet extends AbstractServlet
         String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
         boolean extractInitialConfig = getBooleanParameterFromRequest(request, EXTRACT_INITIAL_CONFIG_PARAM);
 
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        if (attachmentFilename == null)
-        {
-            setCachingHeadersOnResponse(response);
-        }
-        else
+        if (attachmentFilename != null)
         {
             setContentDispositionHeaderIfNecessary(response, attachmentFilename);
         }
@@ -355,7 +346,7 @@ public class RestServlet extends AbstractServlet
 
         if (allObjects.isEmpty() && isSingleObjectRequest(request) )
         {
-            sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
+            sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
             return;
         }
 
@@ -391,7 +382,12 @@ public class RestServlet extends AbstractServlet
         }
 
 
-        writeObjectToResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output, request, response);
+        boolean sendCachingHeaders = attachmentFilename == null;
+        sendJsonResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output,
+                         request,
+                         response,
+                         HttpServletResponse.SC_OK,
+                         sendCachingHeaders);
     }
 
     private boolean isSingleObjectRequest(HttpServletRequest request)
@@ -413,11 +409,11 @@ public class RestServlet extends AbstractServlet
             String filenameRfc2183 = ensureFilenameIsRfc2183(attachmentFilename);
             if (filenameRfc2183.length() > 0)
             {
-                response.setHeader("Content-disposition", String.format("attachment; filename=\"%s\"", filenameRfc2183));
+                response.setHeader(CONTENT_DISPOSITION, String.format("attachment; filename=\"%s\"", filenameRfc2183));
             }
             else
             {
-                response.setHeader("Content-disposition", String.format("attachment"));  // Agent will allow user to choose a name
+                response.setHeader(CONTENT_DISPOSITION, String.format("attachment"));  // Agent will allow user to choose a name
             }
         }
     }
@@ -479,10 +475,10 @@ public class RestServlet extends AbstractServlet
                     }
                     else if (isPostToFullURL)
                     {
-                        sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Object with "
-                                                                                               + (providedObject.containsKey(
+                        sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Object with "
+                                                                                                   + (providedObject.containsKey(
                                 "id") ? " id '" + providedObject.get("id") : " name '" + providedObject.get("name"))
-                                                                                               + "' does not exist!");
+                                                                                                   + "' does not exist!");
                         return;
                     }
                 }
@@ -535,7 +531,13 @@ public class RestServlet extends AbstractServlet
             subject = findObjectToUpdateInParent(objClass, objectName, theParent, otherParents);
             if(subject == null)
             {
-                sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, getConfiguredClass().getSimpleName() + " '" + pathInfoElements[pathInfoElements.length-2] + "' not found.");
+                sendJsonErrorResponse(request,
+                                      response,
+                                      HttpServletResponse.SC_NOT_FOUND,
+                                      getConfiguredClass().getSimpleName()
+                                      + " '"
+                                      + pathInfoElements[pathInfoElements.length - 2]
+                                      + "' not found.");
                 return;
             }
         }
@@ -545,25 +547,24 @@ public class RestServlet extends AbstractServlet
         ConfiguredObjectOperation operation = availableOperations.get(operationName);
         if (operation == null)
         {
-            sendErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "No such operation: " + operationName);
+            sendJsonErrorResponse(request,
+                                  response,
+                                  HttpServletResponse.SC_NOT_FOUND,
+                                  "No such operation: " + operationName);
             return;
         }
         Object returnVal = operation.perform(subject, providedObject);
-        response.setStatus(HttpServletResponse.SC_OK);
         if(returnVal instanceof TypedContent)
         {
             TypedContent typedContent = (TypedContent)returnVal;
+            response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType(typedContent.getContentType());
             response.setContentLength(typedContent.getData().length);
             getOutputStream(request, response).write(typedContent.getData());
         }
         else
         {
-            response.setContentType("application/json");
-            OutputStream stream = getOutputStream(request, response);
-            ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
-            mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-            mapper.writeValue(stream, returnVal);
+            sendJsonResponse(returnVal, request, response);
         }
 
     }
@@ -789,31 +790,14 @@ public class RestServlet extends AbstractServlet
             }
 
 
-            sendErrorResponse(request, response, responseCode, message);
+            sendJsonErrorResponse(request, response, responseCode, message);
 
         }
-    }
-
-    private void sendErrorResponse(HttpServletRequest request, HttpServletResponse response, int responseCode, String message) throws IOException
-    {
-        response.setStatus(responseCode);
-
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-
-        OutputStream out = getOutputStream(request, response);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(out, Collections.singletonMap("errorMessage", message));
     }
 
     @Override
     protected void doDeleteWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        setCachingHeadersOnResponse(response);
         try
         {
             Collection<ConfiguredObject<?>> allObjects = getObjects(request);
@@ -822,6 +806,7 @@ public class RestServlet extends AbstractServlet
                 o.delete();
             }
 
+            sendCachingHeadersOnResponse(response);
             response.setStatus(HttpServletResponse.SC_OK);
         }
         catch(RuntimeException e)
@@ -836,12 +821,6 @@ public class RestServlet extends AbstractServlet
         performCreateOrUpdate(request, response);
     }
 
-    private void setCachingHeadersOnResponse(HttpServletResponse response)
-    {
-        response.setHeader("Cache-Control","no-cache");
-        response.setHeader("Pragma","no-cache");
-        response.setDateHeader ("Expires", 0);
-    }
 
     private int getIntParameterFromRequest(final HttpServletRequest request,
                                            final String paramName,

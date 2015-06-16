@@ -48,13 +48,6 @@ public class LogRecordsServlet extends AbstractServlet
     @Override
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        response.setContentType("application/json");
-        response.setStatus(HttpServletResponse.SC_OK);
-
-        response.setHeader("Cache-Control","no-cache");
-        response.setHeader("Pragma","no-cache");
-        response.setDateHeader ("Expires", 0);
-
         if (!getBroker().getSecurityManager().authoriseLogsAccess())
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Broker logs access is denied");
@@ -82,13 +75,7 @@ public class LogRecordsServlet extends AbstractServlet
             }
         }
 
-        final OutputStream stream = getOutputStream(request, response);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
-        mapper.writeValue(stream, logRecords);
-
-        response.setStatus(HttpServletResponse.SC_OK);
-
+        sendJsonResponse(logRecords, request, response);
     }
 
     private Map<String, Object> logRecordToObject(LogRecord record)
