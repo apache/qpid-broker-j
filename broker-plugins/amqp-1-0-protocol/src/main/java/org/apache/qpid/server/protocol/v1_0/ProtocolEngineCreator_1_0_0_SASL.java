@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -59,11 +59,11 @@ public class ProtocolEngineCreator_1_0_0_SASL implements ProtocolEngineCreator
         return AMQP_SASL_1_0_0_HEADER;
     }
 
-    public ServerProtocolEngine newProtocolEngine(Broker<?> broker,
-                                                  NetworkConnection network,
-                                                  AmqpPort<?> port,
-                                                  Transport transport,
-                                                  long id, final AggregateTicker aggregateTicker)
+    public ProtocolEngine newProtocolEngine(Broker<?> broker,
+                                            NetworkConnection network,
+                                            AmqpPort<?> port,
+                                            Transport transport,
+                                            long id, final AggregateTicker aggregateTicker)
     {
         return new ProtocolEngine_1_0_0(network, broker, id, port, transport, aggregateTicker, true);
     }

@@ -24,13 +24,13 @@ package org.apache.qpid.server.protocol.v0_10;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 
 public class WindowCreditManager extends AbstractFlowCreditManager implements FlowCreditManager_0_10
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WindowCreditManager.class);
-    private final ServerProtocolEngine _serverProtocolEngine;
+    private final ProtocolEngine _protocolEngine;
 
     private volatile long _bytesCreditLimit;
     private volatile long _messageCreditLimit;
@@ -40,9 +40,9 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
 
     public WindowCreditManager(long bytesCreditLimit,
                                long messageCreditLimit,
-                               ServerProtocolEngine serverProtocolEngine)
+                               ProtocolEngine protocolEngine)
     {
-        _serverProtocolEngine = serverProtocolEngine;
+        _protocolEngine = protocolEngine;
         _bytesCreditLimit = bytesCreditLimit;
         _messageCreditLimit = messageCreditLimit;
         setSuspended(!hasCredit());
@@ -110,12 +110,12 @@ public class WindowCreditManager extends AbstractFlowCreditManager implements Fl
     {
         return (_bytesCreditLimit < 0L || _bytesCreditLimit > _bytesUsed)
                 && (_messageCreditLimit < 0L || _messageCreditLimit > _messageUsed)
-                && !_serverProtocolEngine.isTransportBlockedForWriting();
+                && !_protocolEngine.isTransportBlockedForWriting();
     }
 
     public synchronized boolean useCreditForMessage(final long msgSize)
     {
-        if (_serverProtocolEngine.isTransportBlockedForWriting())
+        if (_protocolEngine.isTransportBlockedForWriting())
         {
             setSuspended(true);
             return false;

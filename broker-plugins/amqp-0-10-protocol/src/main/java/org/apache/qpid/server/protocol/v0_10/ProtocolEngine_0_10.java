@@ -32,7 +32,7 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Consumer;
@@ -48,7 +48,7 @@ import org.apache.qpid.transport.network.InputHandler;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 
-public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocolEngine
+public class ProtocolEngine_0_10  extends InputHandler implements ProtocolEngine
 {
     public static final int MAX_FRAME_SIZE = 64 * 1024 - 1;
     private static final Logger _logger = LoggerFactory.getLogger(ProtocolEngine_0_10.class);
@@ -68,7 +68,7 @@ public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocol
     private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
-    private final AtomicReference<Action<ServerProtocolEngine>> _workListener = new AtomicReference<>();
+    private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
 
 
     public ProtocolEngine_0_10(ServerConnection conn,
@@ -327,7 +327,7 @@ public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocol
     {
         _stateChanged.set(true);
 
-        final Action<ServerProtocolEngine> listener = _workListener.get();
+        final Action<ProtocolEngine> listener = _workListener.get();
         if(listener != null)
         {
             listener.performAction(this);
@@ -341,7 +341,7 @@ public class ProtocolEngine_0_10  extends InputHandler implements ServerProtocol
     }
 
     @Override
-    public void setWorkListener(final Action<ServerProtocolEngine> listener)
+    public void setWorkListener(final Action<ProtocolEngine> listener)
     {
         _workListener.set(listener);
     }

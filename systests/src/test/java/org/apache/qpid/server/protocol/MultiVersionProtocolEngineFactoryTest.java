@@ -40,6 +40,8 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -182,7 +184,7 @@ public class MultiVersionProtocolEngineFactoryTest extends QpidTestCase
             byte[] header = getAmqpHeader(protocol);
             assertNotNull("protocol header should not be null", header);
 
-            ServerProtocolEngine engine = factory.newProtocolEngine(null);
+            ProtocolEngine engine = factory.newProtocolEngine(null);
             TestNetworkConnection conn = new TestNetworkConnection();
             engine.setNetworkConnection(conn, conn.getSender());
             assertEquals("ID did not increment as expected", expectedID, engine.getConnectionId());

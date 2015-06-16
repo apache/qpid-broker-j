@@ -21,14 +21,14 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 import org.apache.qpid.server.flow.FlowCreditManager;
 
 public class Pre0_10CreditManager extends AbstractFlowCreditManager implements FlowCreditManager
 {
 
-    private final ServerProtocolEngine _protocolEngine;
+    private final ProtocolEngine _protocolEngine;
     private volatile long _bytesCreditLimit;
     private volatile long _messageCreditLimit;
 
@@ -37,7 +37,7 @@ public class Pre0_10CreditManager extends AbstractFlowCreditManager implements F
 
     public Pre0_10CreditManager(long bytesCreditLimit,
                                 long messageCreditLimit,
-                                ServerProtocolEngine protocolEngine)
+                                ProtocolEngine protocolEngine)
     {
         _protocolEngine = protocolEngine;
         _bytesCreditLimit = bytesCreditLimit;

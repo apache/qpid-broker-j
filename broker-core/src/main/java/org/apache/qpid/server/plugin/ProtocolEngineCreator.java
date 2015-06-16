@@ -19,7 +19,7 @@ package org.apache.qpid.server.plugin;/*
  *
  */
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -31,11 +31,12 @@ public interface ProtocolEngineCreator extends Pluggable
 {
     Protocol getVersion();
     byte[] getHeaderIdentifier();
-    ServerProtocolEngine newProtocolEngine(Broker<?> broker,
-                                           NetworkConnection network,
-                                           AmqpPort<?> port,
-                                           Transport transport,
-                                           long id, final AggregateTicker aggregateTicker);
+    ProtocolEngine newProtocolEngine(Broker<?> broker,
+                                     NetworkConnection network,
+                                     AmqpPort<?> port,
+                                     Transport transport,
+                                     long id,
+                                     final AggregateTicker aggregateTicker);
 
     byte[] getSuggestedAlternativeHeader();
 }

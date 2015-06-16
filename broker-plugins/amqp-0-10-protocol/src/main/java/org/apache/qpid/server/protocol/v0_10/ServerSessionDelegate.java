@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.store.MessageHandle;
@@ -255,8 +255,8 @@ public class ServerSessionDelegate extends SessionDelegate
                 }
                 else
                 {
-                    ServerProtocolEngine serverProtocolEngine = getServerConnection(session).getProtocolEngine();
-                    FlowCreditManager_0_10 creditManager = new WindowCreditManager(0L,0L, serverProtocolEngine);
+                    ProtocolEngine protocolEngine = getServerConnection(session).getProtocolEngine();
+                    FlowCreditManager_0_10 creditManager = new WindowCreditManager(0L,0L, protocolEngine);
 
                     FilterManager filterManager = null;
                     try

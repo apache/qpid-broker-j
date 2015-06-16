@@ -64,12 +64,13 @@ import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQMethodEvent;
 import org.apache.qpid.protocol.AMQMethodListener;
-import org.apache.qpid.protocol.ProtocolEngine;
 import org.apache.qpid.thread.Threading;
+import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.NetworkConnection;
+import org.apache.qpid.transport.network.TransportActivity;
 import org.apache.qpid.util.BytesDataOutput;
 
 /**
@@ -117,7 +118,7 @@ import org.apache.qpid.util.BytesDataOutput;
  * held per protocol handler, per protocol session, per network connection, per channel, in separate classes, so
  * that lifecycles of the fields match lifecycles of their containing objects.
  */
-public class AMQProtocolHandler implements ProtocolEngine
+public class AMQProtocolHandler implements ByteBufferReceiver, TransportActivity
 {
     /** Used for debugging. */
     private static final Logger _logger = LoggerFactory.getLogger(AMQProtocolHandler.class);
@@ -314,11 +315,6 @@ public class AMQProtocolHandler implements ProtocolEngine
             failoverThread.setDaemon(false);
             failoverThread.start();
         }
-    }
-
-    @Override
-    public void encryptedTransport()
-    {
     }
 
     public void readerIdle()

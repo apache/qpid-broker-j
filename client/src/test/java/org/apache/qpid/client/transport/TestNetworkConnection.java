@@ -20,18 +20,13 @@
  */
 package org.apache.qpid.client.transport;
 
-import java.net.BindException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
 
-import org.apache.qpid.protocol.ProtocolEngineFactory;
-import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.NetworkTransportConfiguration;
 import org.apache.qpid.transport.network.NetworkConnection;
 
 /**
@@ -52,13 +47,6 @@ public class TestNetworkConnection implements NetworkConnection
         _sender = new MockSender();
     }
 
-
-
-    public void bind(int port, InetAddress[] addresses, ProtocolEngineFactory protocolFactory,
-            NetworkTransportConfiguration config, SSLContextFactory sslFactory) throws BindException
-    {
-
-    }
 
     public SocketAddress getLocalAddress()
     {

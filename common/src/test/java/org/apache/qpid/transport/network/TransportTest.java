@@ -21,16 +21,10 @@
 package org.apache.qpid.transport.network;
 
 
-import java.util.Set;
-
-import javax.net.ssl.SSLContext;
-
 import org.apache.qpid.framing.ProtocolVersion;
-import org.apache.qpid.protocol.ProtocolEngineFactory;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ConnectionSettings;
-import org.apache.qpid.transport.NetworkTransportConfiguration;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.io.IoNetworkTransport;
 
@@ -69,22 +63,6 @@ public class TransportTest extends QpidTestCase
         final OutgoingNetworkTransport networkTransport = Transport.getOutgoingTransportInstance(ProtocolVersion.v0_10);
         assertNotNull(networkTransport);
         assertTrue(networkTransport instanceof IoNetworkTransport);
-    }
-
-    public void testDefaultGetIncomingTransport() throws Exception
-    {
-        final IncomingNetworkTransport networkTransport = Transport.getIncomingTransportInstance();
-        assertNotNull(networkTransport);
-        assertTrue(networkTransport instanceof IoNetworkTransport);
-    }
-
-    public void testOverriddenGetIncomingTransport() throws Exception
-    {
-        setTestSystemProperty(Transport.QPID_BROKER_TRANSPORT_PROPNAME, TestIncomingNetworkTransport.class.getName());
-
-        final IncomingNetworkTransport networkTransport = Transport.getIncomingTransportInstance();
-        assertNotNull(networkTransport);
-        assertTrue(networkTransport instanceof TestIncomingNetworkTransport);
     }
 
     public void testInvalidOutgoingTransportClassName() throws Exception
@@ -136,31 +114,4 @@ public class TransportTest extends QpidTestCase
         }
     }
 
-    public static class TestIncomingNetworkTransport implements IncomingNetworkTransport
-    {
-
-        public void close()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        public NetworkConnection getConnection()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        public void accept(NetworkTransportConfiguration config,
-                           ProtocolEngineFactory factory,
-                           SSLContext sslContext,
-                           final Set<TransportEncryption> encryptionSet)
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int getAcceptingPort()
-        {
-            return -1;
-        }
-    }
 }

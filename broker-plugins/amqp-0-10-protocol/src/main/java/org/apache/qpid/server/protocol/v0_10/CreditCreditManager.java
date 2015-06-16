@@ -21,18 +21,18 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 
 public class CreditCreditManager extends AbstractFlowCreditManager implements FlowCreditManager_0_10
 {
-    private final ServerProtocolEngine _serverProtocolEngine;
+    private final ProtocolEngine _protocolEngine;
     private volatile long _bytesCredit;
     private volatile long _messageCredit;
 
-    public CreditCreditManager(long bytesCredit, long messageCredit, final ServerProtocolEngine serverProtocolEngine)
+    public CreditCreditManager(long bytesCredit, long messageCredit, final ProtocolEngine protocolEngine)
     {
-        _serverProtocolEngine = serverProtocolEngine;
+        _protocolEngine = protocolEngine;
         _bytesCredit = bytesCredit;
         _messageCredit = messageCredit;
         setSuspended(!hasCredit());
@@ -86,12 +86,12 @@ public class CreditCreditManager extends AbstractFlowCreditManager implements Fl
     public synchronized boolean hasCredit()
     {
         // Note !=, if credit is < 0 that indicates infinite credit
-        return (_bytesCredit != 0L  && _messageCredit != 0L && !_serverProtocolEngine.isTransportBlockedForWriting());
+        return (_bytesCredit != 0L  && _messageCredit != 0L && !_protocolEngine.isTransportBlockedForWriting());
     }
 
     public synchronized boolean useCreditForMessage(long msgSize)
     {
-        if (_serverProtocolEngine.isTransportBlockedForWriting())
+        if (_protocolEngine.isTransportBlockedForWriting())
         {
             setSuspended(true);
             return false;

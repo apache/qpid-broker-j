@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
@@ -106,7 +106,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     private int _messageCompressionThreshold;
     private final int _maxMessageSize;
 
-    private ProtocolEngine_0_10 _serverProtocolEngine;
+    private ProtocolEngine_0_10 _protocolEngine;
     private boolean _ignoreFutureInput;
     private boolean _ignoreAllButConnectionCloseOk;
 
@@ -213,20 +213,20 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     }
 
     @Override
-    public ServerProtocolEngine getProtocolEngine()
+    public ProtocolEngine getProtocolEngine()
     {
-        return _serverProtocolEngine;
+        return _protocolEngine;
     }
 
     @Override
     public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
-        _serverProtocolEngine.setScheduler(networkConnectionScheduler);
+        _protocolEngine.setScheduler(networkConnectionScheduler);
     }
 
     public void setProtocolEngine(final ProtocolEngine_0_10 serverProtocolEngine)
     {
-        _serverProtocolEngine = serverProtocolEngine;
+        _protocolEngine = serverProtocolEngine;
     }
 
     public VirtualHostImpl<?,?,?> getVirtualHost()
@@ -756,14 +756,14 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     @Override
     public void notifyWork()
     {
-        _serverProtocolEngine.notifyWork();
+        _protocolEngine.notifyWork();
     }
 
 
     @Override
     public boolean isMessageAssignmentSuspended()
     {
-        return _serverProtocolEngine.isMessageAssignmentSuspended();
+        return _protocolEngine.isMessageAssignmentSuspended();
     }
 
     public void processPending()

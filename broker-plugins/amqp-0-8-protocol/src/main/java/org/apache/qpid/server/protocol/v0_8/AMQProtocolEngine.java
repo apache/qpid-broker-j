@@ -61,7 +61,7 @@ import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
@@ -98,7 +98,7 @@ import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
-public class AMQProtocolEngine implements ServerProtocolEngine,
+public class AMQProtocolEngine implements ProtocolEngine,
                                           AMQConnectionModel<AMQProtocolEngine, AMQChannel>,
                                           ServerMethodProcessor<ServerChannelMethodProcessor>
 {
@@ -130,7 +130,7 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
     private final AmqpPort<?> _port;
     private final long _creationTime;
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
-    private final AtomicReference<Action<ServerProtocolEngine>> _workListener = new AtomicReference<>();
+    private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
 
     private AMQShortString _contextKey;
 
@@ -275,7 +275,7 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
     }
 
     @Override
-    public ServerProtocolEngine getProtocolEngine()
+    public ProtocolEngine getProtocolEngine()
     {
         return this;
     }
@@ -2068,7 +2068,7 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
     {
         _stateChanged.set(true);
 
-        final Action<ServerProtocolEngine> listener = _workListener.get();
+        final Action<ProtocolEngine> listener = _workListener.get();
         if(listener != null)
         {
 
@@ -2083,7 +2083,7 @@ public class AMQProtocolEngine implements ServerProtocolEngine,
     }
 
     @Override
-    public void setWorkListener(final Action<ServerProtocolEngine> listener)
+    public void setWorkListener(final Action<ProtocolEngine> listener)
     {
         _workListener.set(listener);
     }

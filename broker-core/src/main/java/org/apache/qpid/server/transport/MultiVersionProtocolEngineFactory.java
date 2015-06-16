@@ -18,7 +18,7 @@
 * under the License.
 *
 */
-package org.apache.qpid.server.protocol;
+package org.apache.qpid.server.transport;
 
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.qpid.protocol.ProtocolEngineFactory;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.logging.subjects.PortLogSubject;
 import org.apache.qpid.server.model.Broker;

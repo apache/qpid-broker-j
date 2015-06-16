@@ -33,7 +33,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -70,11 +70,11 @@ public class ProtocolEngineCreator_1_0_0 implements ProtocolEngineCreator
         return AMQP_1_0_0_HEADER;
     }
 
-    public ServerProtocolEngine newProtocolEngine(Broker<?> broker,
-                                                  NetworkConnection network,
-                                                  AmqpPort<?> port,
-                                                  Transport transport,
-                                                  long id, final AggregateTicker aggregateTicker)
+    public ProtocolEngine newProtocolEngine(Broker<?> broker,
+                                            NetworkConnection network,
+                                            AmqpPort<?> port,
+                                            Transport transport,
+                                            long id, final AggregateTicker aggregateTicker)
     {
         final AuthenticationProvider<?> authenticationProvider = port.getAuthenticationProvider();
 

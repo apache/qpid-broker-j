@@ -20,10 +20,7 @@
 package org.apache.qpid.server.transport;
 
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.MultiVersionProtocolEngine;
-import org.apache.qpid.server.protocol.MultiVersionProtocolEngineFactory;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.transport.NetworkTransportConfiguration;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.TransportEncryption;
 
@@ -33,7 +30,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 

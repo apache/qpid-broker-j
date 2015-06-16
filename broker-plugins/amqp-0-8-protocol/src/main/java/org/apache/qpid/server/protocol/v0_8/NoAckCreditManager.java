@@ -19,16 +19,16 @@
 
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.flow.AbstractFlowCreditManager;
 
 public class NoAckCreditManager extends AbstractFlowCreditManager
 {
-    private final ServerProtocolEngine _serverProtocolEngine;
+    private final ProtocolEngine _protocolEngine;
 
-    public NoAckCreditManager(ServerProtocolEngine serverProtocolEngine)
+    public NoAckCreditManager(ProtocolEngine protocolEngine)
     {
-        _serverProtocolEngine = serverProtocolEngine;
+        _protocolEngine = protocolEngine;
     }
 
     @Override
@@ -40,7 +40,7 @@ public class NoAckCreditManager extends AbstractFlowCreditManager
     @Override
     public boolean hasCredit()
     {
-        return !_serverProtocolEngine.isTransportBlockedForWriting();
+        return !_protocolEngine.isTransportBlockedForWriting();
     }
 
     @Override

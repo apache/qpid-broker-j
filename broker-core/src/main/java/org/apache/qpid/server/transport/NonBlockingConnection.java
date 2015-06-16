@@ -34,7 +34,6 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -54,7 +53,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     private final String _remoteSocketAddress;
     private final AtomicBoolean _closed = new AtomicBoolean(false);
-    private final ServerProtocolEngine _protocolEngine;
+    private final ProtocolEngine _protocolEngine;
     private final Runnable _onTransportEncryptionAction;
     private final int _receiveBufferSize;
 
@@ -69,7 +68,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private final AmqpPort _port;
 
     public NonBlockingConnection(SocketChannel socketChannel,
-                                 ServerProtocolEngine protocolEngine,
+                                 ProtocolEngine protocolEngine,
                                  int receiveBufferSize,
                                  final Set<TransportEncryption> encryptionSet,
                                  final Runnable onTransportEncryptionAction,
@@ -88,10 +87,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
         _port = port;
 
-        protocolEngine.setWorkListener(new Action<ServerProtocolEngine>()
+        protocolEngine.setWorkListener(new Action<ProtocolEngine>()
         {
             @Override
-            public void performAction(final ServerProtocolEngine object)
+            public void performAction(final ProtocolEngine object)
             {
                 _scheduler.wakeup();
             }

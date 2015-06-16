@@ -18,7 +18,7 @@
 * under the License.
 *
 */
-package org.apache.qpid.server.protocol;
+package org.apache.qpid.server.transport;
 
 
 import java.net.InetSocketAddress;
@@ -46,7 +46,7 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
-public class MultiVersionProtocolEngine implements ServerProtocolEngine
+public class MultiVersionProtocolEngine implements ProtocolEngine
 {
     private static final Logger _logger = LoggerFactory.getLogger(MultiVersionProtocolEngine.class);
 
@@ -63,8 +63,8 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
     private ByteBufferSender _sender;
     private final Protocol _defaultSupportedReply;
 
-    private volatile ServerProtocolEngine _delegate = new SelfDelegateProtocolEngine();
-    private final AtomicReference<Action<ServerProtocolEngine>> _workListener = new AtomicReference<>();
+    private volatile ProtocolEngine _delegate = new SelfDelegateProtocolEngine();
+    private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
     private final AggregateTicker _aggregateTicker = new AggregateTicker();
 
     public MultiVersionProtocolEngine(final Broker<?> broker,
@@ -239,7 +239,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
     }
 
     @Override
-    public void setWorkListener(final Action<ServerProtocolEngine> listener)
+    public void setWorkListener(final Action<ProtocolEngine> listener)
     {
         _workListener.set(listener);
         _delegate.setWorkListener(listener);
@@ -257,7 +257,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
         return _aggregateTicker;
     }
 
-    private class ClosedDelegateProtocolEngine implements ServerProtocolEngine
+    private class ClosedDelegateProtocolEngine implements ProtocolEngine
     {
 
         @Override
@@ -291,7 +291,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
         }
 
         @Override
-        public void setWorkListener(final Action<ServerProtocolEngine> listener)
+        public void setWorkListener(final Action<ProtocolEngine> listener)
         {
 
         }
@@ -400,7 +400,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
 
     }
 
-    private class SelfDelegateProtocolEngine implements ServerProtocolEngine
+    private class SelfDelegateProtocolEngine implements ProtocolEngine
     {
         private final ByteBuffer _header = ByteBuffer.allocate(MINIMUM_REQUIRED_HEADER_BYTES);
         private long _lastReadTime = System.currentTimeMillis();
@@ -456,7 +456,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
         }
 
         @Override
-        public void setWorkListener(final Action<ServerProtocolEngine> listener)
+        public void setWorkListener(final Action<ProtocolEngine> listener)
         {
 
         }
@@ -497,7 +497,7 @@ public class MultiVersionProtocolEngine implements ServerProtocolEngine
                 _header.get(headerBytes);
 
 
-                ServerProtocolEngine newDelegate = null;
+                ProtocolEngine newDelegate = null;
                 byte[] supportedReplyBytes = null;
                 byte[] defaultSupportedReplyBytes = null;
                 Protocol supportedReplyVersion = null;

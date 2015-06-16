@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.protocol;
+package org.apache.qpid.server.transport;
 
 import java.net.SocketAddress;
 

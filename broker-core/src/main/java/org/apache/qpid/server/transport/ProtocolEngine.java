@@ -18,12 +18,16 @@
  * under the License.
  *
  */
-package org.apache.qpid.protocol;
+package org.apache.qpid.server.transport;
 
 import java.net.SocketAddress;
 
+import javax.security.auth.Subject;
+
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.TransportActivity;
 
@@ -55,8 +59,34 @@ public interface ProtocolEngine extends ByteBufferReceiver, TransportActivity
    // Called when the NetworkEngine has not read data for the specified period of time (will close the connection)
    void readerIdle();
 
+   void setNetworkConnection(NetworkConnection network, ByteBufferSender sender);
+
+   /**
+    * Gets the connection ID associated with this ProtocolEngine
+    */
+   long getConnectionId();
+
+   Subject getSubject();
+
+   boolean isTransportBlockedForWriting();
+
+   void setTransportBlockedForWriting(boolean blocked);
+
+   void setMessageAssignmentSuspended(boolean value);
+
+   boolean isMessageAssignmentSuspended();
+
+   void processPending();
+
+   boolean hasWork();
+
+   void clearWork();
+
+   void notifyWork();
+
+   void setWorkListener(Action<ProtocolEngine> listener);
+
+   AggregateTicker getAggregateTicker();
+
    void encryptedTransport();
-
-   public void setNetworkConnection(NetworkConnection network, ByteBufferSender sender);
-
 }

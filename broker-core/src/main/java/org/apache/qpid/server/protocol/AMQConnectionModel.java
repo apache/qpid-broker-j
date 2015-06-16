@@ -31,6 +31,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.util.Deletable;
 
 public interface AMQConnectionModel<T extends AMQConnectionModel<T,S>, S extends AMQSessionModel<S,T>> extends StatisticsGatherer, Deletable<T>
@@ -110,7 +111,7 @@ public interface AMQConnectionModel<T extends AMQConnectionModel<T,S>, S extends
 
     boolean isMessageAssignmentSuspended();
 
-    ServerProtocolEngine getProtocolEngine();
+    ProtocolEngine getProtocolEngine();
 
     void setScheduler(NetworkConnectionScheduler networkConnectionScheduler);
 }

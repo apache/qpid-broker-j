@@ -53,7 +53,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.stats.StatisticsCounter;
@@ -666,7 +666,7 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public ServerProtocolEngine getProtocolEngine()
+        public ProtocolEngine getProtocolEngine()
         {
             return null;
         }

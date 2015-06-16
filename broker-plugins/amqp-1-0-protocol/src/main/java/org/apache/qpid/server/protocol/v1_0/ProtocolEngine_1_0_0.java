@@ -53,7 +53,7 @@ import org.apache.qpid.amqp_1_0.type.Symbol;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Consumer;
@@ -72,7 +72,7 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
-public class ProtocolEngine_1_0_0 implements ServerProtocolEngine, FrameOutputHandler
+public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
 {
 
     public static final long CLOSE_REPONSE_TIMEOUT = 10000l;
@@ -90,7 +90,7 @@ public class ProtocolEngine_1_0_0 implements ServerProtocolEngine, FrameOutputHa
     private ConnectionEndpoint _endpoint;
     private long _connectionId;
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
-    private final AtomicReference<Action<ServerProtocolEngine>> _workListener = new AtomicReference<>();
+    private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
 
 
     private static final ByteBuffer SASL_LAYER_HEADER =
@@ -653,7 +653,7 @@ public class ProtocolEngine_1_0_0 implements ServerProtocolEngine, FrameOutputHa
     {
         _stateChanged.set(true);
 
-        final Action<ServerProtocolEngine> listener = _workListener.get();
+        final Action<ProtocolEngine> listener = _workListener.get();
         if(listener != null)
         {
             listener.performAction(this);
@@ -667,7 +667,7 @@ public class ProtocolEngine_1_0_0 implements ServerProtocolEngine, FrameOutputHa
     }
 
     @Override
-    public void setWorkListener(final Action<ServerProtocolEngine> listener)
+    public void setWorkListener(final Action<ProtocolEngine> listener)
     {
         _workListener.set(listener);
     }

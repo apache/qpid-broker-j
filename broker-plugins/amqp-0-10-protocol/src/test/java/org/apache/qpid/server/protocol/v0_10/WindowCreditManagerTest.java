@@ -23,19 +23,19 @@ package org.apache.qpid.server.protocol.v0_10;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class WindowCreditManagerTest extends QpidTestCase
 {
     private WindowCreditManager _creditManager;
-    private ServerProtocolEngine _protocolEngine;
+    private ProtocolEngine _protocolEngine;
 
     protected void setUp() throws Exception
     {
         super.setUp();
 
-        _protocolEngine = mock(ServerProtocolEngine.class);
+        _protocolEngine = mock(ProtocolEngine.class);
         when(_protocolEngine.isTransportBlockedForWriting()).thenReturn(false);
 
         _creditManager = new WindowCreditManager(0l, 0l, _protocolEngine);

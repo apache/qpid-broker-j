@@ -58,12 +58,6 @@ public class Transport
     {
     }
 
-    public static IncomingNetworkTransport getIncomingTransportInstance()
-    {
-        return (IncomingNetworkTransport) loadTransportClass(
-                System.getProperty(QPID_BROKER_TRANSPORT_PROPNAME, IO_TRANSPORT_CLASSNAME));
-    }
-
     public static OutgoingNetworkTransport getOutgoingTransportInstance(
             final ProtocolVersion protocolVersion)
     {

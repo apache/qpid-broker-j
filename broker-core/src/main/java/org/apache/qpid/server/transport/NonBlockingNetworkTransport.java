@@ -28,17 +28,11 @@ import java.nio.channels.SocketChannel;
 import java.util.EnumSet;
 import java.util.Set;
 
-import javax.net.ssl.SSLContext;
-
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.protocol.ProtocolEngineFactory;
-import org.apache.qpid.server.protocol.MultiVersionProtocolEngineFactory;
-import org.apache.qpid.server.protocol.ServerProtocolEngine;
-import org.apache.qpid.transport.NetworkTransportConfiguration;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.TransportEncryption;
@@ -139,9 +133,8 @@ public class NonBlockingNetworkTransport
         {
             socketChannel = serverSocketChannel.accept();
 
-            final ServerProtocolEngine engine =
-                    (ServerProtocolEngine) _factory.newProtocolEngine(socketChannel.socket()
-                                                                              .getRemoteSocketAddress());
+            final ProtocolEngine engine =
+                    _factory.newProtocolEngine(socketChannel.socket().getRemoteSocketAddress());
 
             if(engine != null)
             {
