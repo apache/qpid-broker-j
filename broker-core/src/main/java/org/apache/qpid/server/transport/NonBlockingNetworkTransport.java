@@ -23,7 +23,6 @@ package org.apache.qpid.server.transport;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.EnumSet;
@@ -31,6 +30,7 @@ import java.util.Set;
 
 import javax.net.ssl.SSLContext;
 
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +45,8 @@ import org.apache.qpid.transport.network.TransportEncryption;
 import org.apache.qpid.transport.network.io.AbstractNetworkTransport;
 import org.apache.qpid.transport.network.io.IdleTimeoutTicker;
 
+import static org.apache.qpid.transport.ConnectionSettings.WILDCARD_ADDRESS;
+
 public class NonBlockingNetworkTransport
 {
 
@@ -54,41 +56,53 @@ public class NonBlockingNetworkTransport
     private static final int HANDSHAKE_TIMEOUT = Integer.getInteger(CommonProperties.HANDSHAKE_TIMEOUT_PROP_NAME ,
                                                                     CommonProperties.HANDSHAKE_TIMEOUT_DEFAULT);
     private final Set<TransportEncryption> _encryptionSet;
-    private final NetworkTransportConfiguration _config;
     private final ProtocolEngineFactory _factory;
-    private final SSLContext _sslContext;
     private final ServerSocketChannel _serverSocket;
     private final int _timeout;
     private final NetworkConnectionScheduler _scheduler;
+    private final AmqpPort _port;
+    private final InetSocketAddress _address;
 
-    public NonBlockingNetworkTransport(final NetworkTransportConfiguration config,
-                                       final MultiVersionProtocolEngineFactory factory,
-                                       final SSLContext sslContext,
+    public NonBlockingNetworkTransport(final MultiVersionProtocolEngineFactory factory,
                                        final EnumSet<TransportEncryption> encryptionSet,
-                                       final NetworkConnectionScheduler scheduler)
+                                       final NetworkConnectionScheduler scheduler,
+                                       final AmqpPort port)
     {
         try
         {
 
-            _config = config;
             _factory = factory;
-            _sslContext = sslContext;
             _timeout = TIMEOUT;
 
-            InetSocketAddress address = config.getAddress();
+            String bindingAddress = port.getBindingAddress();
+            if (WILDCARD_ADDRESS.equals(bindingAddress))
+            {
+                bindingAddress = null;
+            }
+            int portNumber = port.getPort();
+
+            if ( bindingAddress == null )
+            {
+                _address = new InetSocketAddress(portNumber);
+            }
+            else
+            {
+                _address = new InetSocketAddress(bindingAddress, portNumber);
+            }
 
             _serverSocket =  ServerSocketChannel.open();
 
             _serverSocket.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            _serverSocket.bind(address);
+            _serverSocket.bind(_address);
             _serverSocket.configureBlocking(false);
             _encryptionSet = encryptionSet;
             _scheduler = scheduler;
+            _port = port;
 
         }
         catch (IOException e)
         {
-            throw new TransportException("Failed to start AMQP on port : " + config, e);
+            throw new TransportException("Failed to start AMQP on port : " + port, e);
         }
 
     }
@@ -108,18 +122,13 @@ public class NonBlockingNetworkTransport
         }
         catch (IOException e)
         {
-            LOGGER.warn("Error closing the server socket for : " +  _config.getAddress().toString(), e);
+            LOGGER.warn("Error closing the server socket for : " +  _address.toString(), e);
         }
     }
 
     public int getAcceptingPort()
     {
         return _serverSocket.socket().getLocalPort();
-    }
-
-    public NetworkTransportConfiguration getConfig()
-    {
-        return _config;
     }
 
     void acceptSocketChannel(final ServerSocketChannel serverSocketChannel)
@@ -136,11 +145,11 @@ public class NonBlockingNetworkTransport
 
             if(engine != null)
             {
-                socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, _config.getTcpNoDelay());
+                socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, _port.isTcpNoDelay());
                 socketChannel.socket().setSoTimeout(1000 * HANDSHAKE_TIMEOUT);
 
-                final int sendBufferSize = _config.getSendBufferSize();
-                final int receiveBufferSize = _config.getReceiveBufferSize();
+                final int sendBufferSize = _port.getSendBufferSize();
+                final int receiveBufferSize = _port.getReceiveBufferSize();
 
                 socketChannel.setOption(StandardSocketOptions.SO_SNDBUF, sendBufferSize);
                 socketChannel.setOption(StandardSocketOptions.SO_RCVBUF, receiveBufferSize);
@@ -157,12 +166,7 @@ public class NonBlockingNetworkTransport
                                                   engine,
                                                   receiveBufferSize,
                                                   _encryptionSet,
-                                                  _sslContext,
-                                                  _config.wantClientAuth(),
-                                                  _config.needClientAuth(),
-                                                  _config.getEnabledCipherSuites(),
-                                                  _config.getDisabledCipherSuites(),
-                                                  new Runnable()
+                                new Runnable()
                                                   {
 
                                                       @Override
@@ -171,7 +175,8 @@ public class NonBlockingNetworkTransport
                                                           engine.encryptedTransport();
                                                       }
                                                   },
-                                                  _scheduler);
+                                                  _scheduler,
+                                                  _port);
 
                 engine.setNetworkConnection(connection, connection.getSender());
                 connection.setMaxReadIdle(HANDSHAKE_TIMEOUT);
@@ -207,10 +212,5 @@ public class NonBlockingNetworkTransport
                 }
             }
         }
-    }
-
-    public int getThreadPoolSize()
-    {
-        return _config.getThreadPoolSize();
     }
 }

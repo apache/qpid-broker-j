@@ -109,9 +109,10 @@ public class TCPandSSLTransportTest extends QpidTestCase
         when(port.getSendBufferSize()).thenReturn(64*1024);
         when(port.getReceiveBufferSize()).thenReturn(64*1024);
         when(port.canAcceptNewConnection(any(SocketAddress.class))).thenReturn(true);
+        when(port.getThreadPoolSize()).thenReturn(1);
+        when(port.getSSLContext()).thenReturn(sslContext);
 
         TCPandSSLTransport transport = new TCPandSSLTransport(new HashSet<>(Arrays.asList(transports)),
-                                                              sslContext,
                                                               port,
                                                               new HashSet<>(Arrays.asList(Protocol.AMQP_0_8,
                                                                                           Protocol.AMQP_0_9,

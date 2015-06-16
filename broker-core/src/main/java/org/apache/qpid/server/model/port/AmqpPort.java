@@ -35,6 +35,8 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
+import javax.net.ssl.SSLContext;
+
 @ManagedObject( category = false, type = "AMQP")
 public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X>
 {
@@ -60,6 +62,10 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedContextDefault(name = PORT_MAX_OPEN_CONNECTIONS)
     int DEFAULT_MAX_OPEN_CONNECTIONS = -1;
 
+    String THREAD_POOL_SIZE = "qpid.port.thread_pool_size";
+
+    @ManagedContextDefault(name = THREAD_POOL_SIZE)
+    int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     String PORT_MAX_MESSAGE_SIZE = "qpid.port.max_message_size";
 
@@ -71,6 +77,8 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedContextDefault(name = OPEN_CONNECTIONS_WARN_PERCENT)
     int DEFAULT_OPEN_CONNECTIONS_WARN_PERCENT = 80;
 
+
+    SSLContext getSSLContext();
 
     @ManagedAttribute(defaultValue = "*")
     String getBindingAddress();
@@ -84,6 +92,8 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_RECEIVE_BUFFER_SIZE )
     int getReceiveBufferSize();
 
+    @ManagedAttribute( defaultValue = "${" + THREAD_POOL_SIZE + "}")
+    int getThreadPoolSize();
 
     @ManagedAttribute( defaultValue = DEFAULT_AMQP_NEED_CLIENT_AUTH )
     boolean getNeedClientAuth();

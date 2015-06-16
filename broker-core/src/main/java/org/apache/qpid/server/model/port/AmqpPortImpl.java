@@ -119,6 +119,9 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     @ManagedAttributeField
     private int _maxOpenConnections;
 
+    @ManagedAttributeField
+    private int _threadPoolSize;
+
     private final AtomicInteger _connectionCount = new AtomicInteger();
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
 
@@ -126,6 +129,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private AcceptingTransport _transport;
     private final AtomicBoolean _closing = new AtomicBoolean();
     private final SettableFuture _noConnectionsRemain = SettableFuture.create();
+    private SSLContext _sslContext;
 
     @ManagedObjectFactoryConstructor
     public AmqpPortImpl(Map<String, Object> attributes, Broker<?> broker)
@@ -134,6 +138,11 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         _broker = broker;
     }
 
+    @Override
+    public SSLContext getSSLContext()
+    {
+        return _sslContext;
+    }
 
     @Override
     public String getBindingAddress()
@@ -163,6 +172,12 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public int getMaxOpenConnections()
     {
         return _maxOpenConnections;
+    }
+
+    @Override
+    public int getThreadPoolSize()
+    {
+        return _threadPoolSize;
     }
 
     @Override
@@ -238,15 +253,14 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
                 );
             }
 
-            SSLContext sslContext = null;
             if (transports.contains(Transport.SSL) || transports.contains(Transport.WSS))
             {
-                sslContext = createSslContext();
+                _sslContext = createSslContext();
             }
             Protocol defaultSupportedProtocolReply = getDefaultAmqpSupportedReply();
 
             _transport = transportProvider.createTransport(transportSet,
-                                                           sslContext,
+                                                           _sslContext,
                                                            this,
                                                            getProtocols(),
                                                            defaultSupportedProtocolReply);

@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,27 +15,24 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
+
 package org.apache.qpid.server.transport;
 
-import java.util.Set;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.security.Principal;
+import java.security.cert.Certificate;
 
-import javax.net.ssl.SSLContext;
-
-import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.port.AmqpPort;
-
-class TCPandSSLTransportProvider implements TransportProvider
+public interface NonBlockingConnectionDelegate
 {
-    @Override
-    public AcceptingTransport createTransport(final Set<Transport> transports,
-                                              final SSLContext sslContext,
-                                              final AmqpPort<?> port,
-                                              final Set<Protocol> supported,
-                                              final Protocol defaultSupportedProtocolReply)
-    {
-        return new TCPandSSLTransport(transports, port, supported, defaultSupportedProtocolReply);
-    }
+    boolean doRead() throws IOException;
+    boolean doWrite(ByteBuffer[] bufferArray) throws IOException;
+    boolean processData(ByteBuffer data) throws IOException;
+
+    Principal getPeerPrincipal();
+
+    Certificate getPeerCertificate();
+
+    boolean needsWork();
 }

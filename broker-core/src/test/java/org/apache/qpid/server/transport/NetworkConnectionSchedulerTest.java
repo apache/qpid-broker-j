@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.transport;
 
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.MultiVersionProtocolEngine;
 import org.apache.qpid.server.protocol.MultiVersionProtocolEngineFactory;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -45,63 +46,16 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
 
     public void testFairRead() throws IOException, InterruptedException
     {
-        NetworkTransportConfiguration config = new NetworkTransportConfiguration()
-        {
+        AmqpPort port = mock(AmqpPort.class);
+        when(port.isTcpNoDelay()).thenReturn(true);
+        when(port.getSendBufferSize()).thenReturn(1);
+        when(port.getReceiveBufferSize()).thenReturn(1);
+        when(port.getPort()).thenReturn(0);
+        when(port.getBindingAddress()).thenReturn("*");
+        when(port.getEnabledCipherSuites()).thenReturn(Collections.emptyList());
+        when(port.getDisabledCipherSuites()).thenReturn(Collections.emptyList());
+        when(port.getThreadPoolSize()).thenReturn(1);
 
-            @Override
-            public boolean getTcpNoDelay()
-            {
-                return true;
-            }
-
-            @Override
-            public int getReceiveBufferSize()
-            {
-                return 1;
-            }
-
-            @Override
-            public int getSendBufferSize()
-            {
-                return 1;
-            }
-
-            @Override
-            public int getThreadPoolSize()
-            {
-                return 1;
-            }
-
-            @Override
-            public InetSocketAddress getAddress()
-            {
-                return new InetSocketAddress(0);
-            }
-
-            @Override
-            public boolean needClientAuth()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean wantClientAuth()
-            {
-                return false;
-            }
-
-            @Override
-            public Collection<String> getEnabledCipherSuites()
-            {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public Collection<String> getDisabledCipherSuites()
-            {
-                return Collections.emptyList();
-            }
-        };
         MultiVersionProtocolEngineFactory engineFactory = mock(MultiVersionProtocolEngineFactory.class);
         MultiVersionProtocolEngine verboseEngine = mock(MultiVersionProtocolEngine.class);
         MultiVersionProtocolEngine timidEngine = mock(MultiVersionProtocolEngine.class);
@@ -112,14 +66,14 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
 
         final NetworkConnectionScheduler scheduler = new NetworkConnectionScheduler(getName(), 1);
 
-        NonBlockingNetworkTransport transport = new NonBlockingNetworkTransport(config, engineFactory, null, EnumSet.of(TransportEncryption.NONE),
-                                                                                scheduler);
+        NonBlockingNetworkTransport transport = new NonBlockingNetworkTransport(engineFactory, EnumSet.of(TransportEncryption.NONE),
+                                                                                scheduler, port);
 
         transport.start();
-        final int port = transport.getAcceptingPort();
+        final int portNumber = transport.getAcceptingPort();
 
         Socket verboseSocket = new Socket();
-        verboseSocket.connect(new InetSocketAddress(port));
+        verboseSocket.connect(new InetSocketAddress(portNumber));
         final OutputStream verboseOutputStream = verboseSocket.getOutputStream();
         Thread verboseSender = new Thread(new Runnable()
         {
@@ -141,7 +95,7 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         });
 
         Socket timidSocket = new Socket();
-        timidSocket.connect(new InetSocketAddress(port));
+        timidSocket.connect(new InetSocketAddress(portNumber));
         final OutputStream timidOutputStream = timidSocket.getOutputStream();
         Thread timidSender = new Thread(new Runnable()
         {
