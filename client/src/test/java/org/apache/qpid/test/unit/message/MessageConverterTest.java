@@ -26,7 +26,6 @@ import javax.jms.MapMessage;
 import javax.jms.Message;
 import javax.jms.TextMessage;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

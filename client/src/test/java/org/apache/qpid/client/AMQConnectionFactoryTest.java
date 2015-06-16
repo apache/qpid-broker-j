@@ -28,8 +28,6 @@ import java.io.Serializable;
 
 import javax.jms.JMSException;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.test.utils.QpidTestCase;
 

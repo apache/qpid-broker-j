@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.transport;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 import static org.apache.qpid.util.Serial.COMPARATOR;

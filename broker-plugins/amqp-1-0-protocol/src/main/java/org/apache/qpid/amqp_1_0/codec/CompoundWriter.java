@@ -22,8 +22,6 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 public abstract class CompoundWriter<V> implements ValueWriter<V>
 {

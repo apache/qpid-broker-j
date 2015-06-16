@@ -33,7 +33,6 @@ import java.util.Map;
 
 import javax.management.OperationsException;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;

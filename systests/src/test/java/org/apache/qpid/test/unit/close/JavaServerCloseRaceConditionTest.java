@@ -23,7 +23,6 @@ package org.apache.qpid.test.unit.close;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.framing.AMQFrame;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ExchangeDeclareBody;
 import org.apache.qpid.framing.ExchangeDeclareOkBody;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;

@@ -23,7 +23,6 @@ package org.apache.qpid.server.util;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class MapJsonSerializerTest extends QpidTestCase

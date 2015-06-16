@@ -22,7 +22,6 @@
 package org.apache.qpid.util;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;

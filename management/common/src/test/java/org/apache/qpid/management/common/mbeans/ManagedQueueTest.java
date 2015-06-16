@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.management.common.mbeans;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.management.MBeanAttributeInfo;

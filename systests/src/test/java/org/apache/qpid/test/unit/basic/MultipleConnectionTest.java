@@ -19,7 +19,6 @@
  */
 package org.apache.qpid.test.unit.basic;
 
-import org.apache.qpid.framing.AMQShortString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -20,9 +20,6 @@
 */
 package org.apache.qpid.server.logging;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
-import ch.qos.logback.core.FileAppender;
 import junit.framework.AssertionFailedError;
 
 import org.apache.qpid.server.model.Port;
@@ -30,10 +27,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.transport.ConnectionException;
 import org.apache.qpid.util.LogMonitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.*;

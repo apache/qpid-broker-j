@@ -20,16 +20,11 @@
  */
 package org.apache.qpid.server.model.port;
 
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
-import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.Transport;
 
 public class RmiPortImpl extends AbstractPort<RmiPortImpl> implements RmiPort<RmiPortImpl>
 {

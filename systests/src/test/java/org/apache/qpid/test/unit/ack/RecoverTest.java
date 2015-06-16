@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.jms.Session;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 

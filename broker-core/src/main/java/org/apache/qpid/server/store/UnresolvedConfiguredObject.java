@@ -23,7 +23,6 @@ package org.apache.qpid.server.store;
 import org.apache.qpid.server.model.ConfiguredObject;
 
 import java.util.Collection;
-import java.util.Collections;
 
 public interface UnresolvedConfiguredObject<X extends ConfiguredObject<X>>
 {

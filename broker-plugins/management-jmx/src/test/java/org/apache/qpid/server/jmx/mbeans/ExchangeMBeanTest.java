@@ -35,8 +35,6 @@ import java.util.Map;
 import javax.management.JMException;
 import javax.management.OperationsException;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;

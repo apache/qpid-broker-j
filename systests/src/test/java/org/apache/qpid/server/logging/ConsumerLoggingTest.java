@@ -31,8 +31,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
-import junit.framework.AssertionFailedError;
-
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.server.model.Consumer;
 

@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.client.security;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.test.utils.QpidTestCase;
 

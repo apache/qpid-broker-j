@@ -18,8 +18,6 @@
 package org.apache.qpid.client;
 
 import org.apache.qpid.AMQException;
-import org.apache.qpid.client.message.MessageFactoryRegistry;
-import org.apache.qpid.transport.RangeSet;
 
 import javax.jms.JMSException;
 import javax.jms.QueueSession;

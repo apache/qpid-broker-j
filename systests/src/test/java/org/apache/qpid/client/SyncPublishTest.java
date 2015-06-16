@@ -20,19 +20,13 @@
  */
 package org.apache.qpid.client;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.jms.Connection;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TemporaryQueue;
-import javax.naming.NamingException;
 
-import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.url.URLSyntaxException;
 
 public class SyncPublishTest extends QpidBrokerTestCase
 {

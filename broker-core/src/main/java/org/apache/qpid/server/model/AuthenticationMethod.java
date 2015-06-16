@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.Collection;
-
 public interface AuthenticationMethod extends ConfiguredObject
 {
     // name is the SASL mechanism where this is a SASL authentication

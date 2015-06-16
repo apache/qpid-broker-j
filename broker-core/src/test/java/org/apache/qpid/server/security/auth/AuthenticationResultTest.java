@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AuthenticationResultTest extends QpidTestCase

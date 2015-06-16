@@ -26,8 +26,6 @@ import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.security.access.ObjectProperties;

@@ -21,8 +21,6 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import java.io.File;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class EnvHomeRegistryTest extends QpidTestCase

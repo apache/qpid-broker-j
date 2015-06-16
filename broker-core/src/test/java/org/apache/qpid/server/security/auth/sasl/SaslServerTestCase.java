@@ -21,8 +21,6 @@
 
 package org.apache.qpid.server.security.auth.sasl;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
 import org.apache.qpid.test.utils.QpidTestCase;
 

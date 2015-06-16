@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +48,6 @@ import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.PriorityQueueImpl;
 import org.apache.qpid.server.queue.StandardQueueImpl;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.test.utils.QpidTestCase;
 

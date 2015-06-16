@@ -30,8 +30,6 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.xml.bind.DatatypeConverter;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.security.auth.database.Base64MD5PasswordFilePrincipalDatabase;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexInitialiser;

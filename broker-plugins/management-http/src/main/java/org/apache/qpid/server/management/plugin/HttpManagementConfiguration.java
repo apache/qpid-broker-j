@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.management.plugin;
 
-import java.net.SocketAddress;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.qpid.server.model.AuthenticationProvider;

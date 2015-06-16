@@ -33,8 +33,6 @@ import static org.apache.qpid.server.queue.NotificationCheck.MESSAGE_SIZE_ALERT;
 import static org.apache.qpid.server.queue.NotificationCheck.QUEUE_DEPTH_ALERT;
 
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.QueueNotificationListener;
 import org.apache.qpid.test.utils.QpidTestCase;

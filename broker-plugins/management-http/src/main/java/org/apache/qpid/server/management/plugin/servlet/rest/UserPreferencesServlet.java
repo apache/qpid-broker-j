@@ -42,7 +42,6 @@ import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.PreferencesProvider;
 import org.apache.qpid.server.model.User;
-import org.apache.qpid.server.security.access.Operation;
 
 public class UserPreferencesServlet extends AbstractServlet
 {

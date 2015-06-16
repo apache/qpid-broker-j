@@ -19,7 +19,6 @@
 
 package org.apache.qpid.server.model.port;
 
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.TrustStore;
 
 

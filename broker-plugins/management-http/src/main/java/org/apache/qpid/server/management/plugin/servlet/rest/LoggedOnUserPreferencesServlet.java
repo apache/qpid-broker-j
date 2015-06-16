@@ -22,7 +22,6 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -35,7 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.codehaus.jackson.map.ObjectMapper;
 
-import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.PreferencesProvider;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;

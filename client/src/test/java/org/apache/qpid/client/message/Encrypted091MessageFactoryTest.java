@@ -24,7 +24,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
@@ -32,7 +31,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.crypto.Cipher;
@@ -46,9 +44,6 @@ import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
 import org.apache.qpid.transport.ConnectionSettings;
-import org.apache.qpid.transport.DeliveryProperties;
-import org.apache.qpid.transport.MessageProperties;
-import org.apache.qpid.transport.codec.BBEncoder;
 import org.apache.qpid.util.BytesDataOutput;
 
 public class Encrypted091MessageFactoryTest extends QpidTestCase

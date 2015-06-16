@@ -20,7 +20,6 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
-import junit.framework.TestCase;
 
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.test.utils.QpidTestCase;

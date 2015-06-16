@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLSocketFactory;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class LDAPSSLSocketFactoryGeneratorTest extends QpidTestCase

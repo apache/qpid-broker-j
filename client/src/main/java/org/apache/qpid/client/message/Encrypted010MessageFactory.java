@@ -21,7 +21,6 @@
 package org.apache.qpid.client.message;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.codec.BBDecoder;

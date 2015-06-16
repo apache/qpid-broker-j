@@ -29,9 +29,7 @@ import java.io.Serializable;
 import java.lang.reflect.Method;
 
 import javax.naming.Context;
-import javax.naming.RefAddr;
 import javax.naming.Reference;
-import javax.naming.Referenceable;
 import javax.naming.spi.NamingManager;
 import javax.transaction.TransactionManager;
 

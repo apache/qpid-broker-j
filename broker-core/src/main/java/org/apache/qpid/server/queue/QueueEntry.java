@@ -21,7 +21,6 @@
 package org.apache.qpid.server.queue;
 
 import org.apache.qpid.server.message.MessageInstance;
-import org.apache.qpid.server.store.MessageStore;
 
 public interface QueueEntry extends MessageInstance, Comparable<QueueEntry>
 {

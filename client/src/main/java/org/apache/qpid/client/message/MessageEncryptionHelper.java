@@ -50,7 +50,6 @@ import javax.jms.JMSException;
 import javax.security.auth.x500.X500Principal;
 
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.BasicMessageConsumer;
 import org.apache.qpid.transport.ConnectionSettings;
 
 public class MessageEncryptionHelper

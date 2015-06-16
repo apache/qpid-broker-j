@@ -35,8 +35,6 @@ import java.util.TreeMap;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.management.common.mbeans.LoggingManagement;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
 import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;

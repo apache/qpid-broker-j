@@ -35,7 +35,6 @@ import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 

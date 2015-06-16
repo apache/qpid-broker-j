@@ -21,7 +21,6 @@
 package org.apache.qpid.server.management.plugin.servlet;
 
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
-import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
 
 import javax.servlet.ServletRequest;
 import java.net.InetSocketAddress;

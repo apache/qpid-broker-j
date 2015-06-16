@@ -34,8 +34,6 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 import javax.security.auth.login.AccountNotFoundException;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.management.common.mbeans.UserManagement;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;

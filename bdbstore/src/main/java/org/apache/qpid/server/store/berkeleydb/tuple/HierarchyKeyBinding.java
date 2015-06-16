@@ -24,7 +24,6 @@ import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 import org.apache.qpid.server.store.berkeleydb.entry.HierarchyKey;
-import org.apache.qpid.server.store.berkeleydb.entry.QueueEntryKey;
 
 import java.util.UUID;
 

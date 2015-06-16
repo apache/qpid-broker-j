@@ -21,7 +21,6 @@
 package org.apache.qpid.test.client.message;
 
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 import javax.jms.Connection;

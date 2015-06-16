@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.model.SystemConfig;
 
 public interface SystemConfigFactory<X extends SystemConfig<X>> extends Pluggable

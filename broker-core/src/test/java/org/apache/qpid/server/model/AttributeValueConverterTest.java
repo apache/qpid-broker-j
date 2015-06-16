@@ -35,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
 import org.apache.qpid.test.utils.QpidTestCase;

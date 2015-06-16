@@ -23,11 +23,8 @@ package org.apache.qpid.ra;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 
-import javax.resource.spi.ResourceAdapterInternalException;
-
 import org.apache.qpid.ra.inflow.QpidActivationSpec;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class QpidActivationSpecTest extends QpidTestCase

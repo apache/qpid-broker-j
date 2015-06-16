@@ -21,7 +21,6 @@
 package org.apache.qpid.server.logging;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;

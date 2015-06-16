@@ -22,7 +22,6 @@ package org.apache.qpid.server.store;
 
 
 import java.io.File;
-import java.util.UUID;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;

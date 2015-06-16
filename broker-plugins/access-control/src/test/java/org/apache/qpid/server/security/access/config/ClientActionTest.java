@@ -24,7 +24,6 @@ import java.net.InetAddress;
 
 import org.apache.qpid.server.security.access.firewall.FirewallRule;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ClientActionTest extends QpidTestCase

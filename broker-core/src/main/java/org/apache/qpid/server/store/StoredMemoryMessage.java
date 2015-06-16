@@ -23,8 +23,6 @@ package org.apache.qpid.server.store;
 
 import java.nio.ByteBuffer;
 
-import org.apache.qpid.transport.util.Functions;
-
 public class StoredMemoryMessage<T extends StorableMessageMetaData> implements StoredMessage<T>, MessageHandle<T>
 {
     private final long _messageNumber;

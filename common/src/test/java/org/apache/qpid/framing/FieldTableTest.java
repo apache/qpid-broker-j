@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.junit.Assert;
 

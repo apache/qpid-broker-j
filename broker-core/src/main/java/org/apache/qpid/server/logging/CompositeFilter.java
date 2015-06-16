@@ -28,7 +28,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
 
 public class CompositeFilter extends Filter<ILoggingEvent>
 {

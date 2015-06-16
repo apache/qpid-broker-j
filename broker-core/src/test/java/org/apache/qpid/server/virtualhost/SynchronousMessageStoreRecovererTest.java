@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
 

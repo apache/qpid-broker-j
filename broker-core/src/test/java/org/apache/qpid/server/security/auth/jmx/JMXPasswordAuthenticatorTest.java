@@ -30,8 +30,6 @@ import java.security.Principal;
 
 import javax.security.auth.Subject;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;

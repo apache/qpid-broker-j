@@ -34,9 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import junit.framework.TestCase;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.invocation.InvocationOnMock;

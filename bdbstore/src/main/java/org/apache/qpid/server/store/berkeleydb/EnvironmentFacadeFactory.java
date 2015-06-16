@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.qpid.server.model.ConfiguredObject;

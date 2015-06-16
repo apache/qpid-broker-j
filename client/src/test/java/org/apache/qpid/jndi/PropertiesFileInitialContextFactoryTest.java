@@ -38,8 +38,6 @@ import javax.naming.NamingException;
 
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class PropertiesFileInitialContextFactoryTest extends QpidTestCase

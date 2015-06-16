@@ -35,7 +35,6 @@ import javax.jms.TextMessage;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class DefaultFiltersTest extends QpidBrokerTestCase

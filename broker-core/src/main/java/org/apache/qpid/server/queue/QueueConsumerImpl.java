@@ -52,7 +52,6 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.util.StateChangeListener;
-import org.apache.qpid.transport.network.AggregateTicker;
 
 class QueueConsumerImpl
     extends AbstractConfiguredObject<QueueConsumerImpl>

@@ -22,17 +22,13 @@ package org.apache.qpid.jms.xa;
 
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.jms.ConnectionURL;
-import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.util.FileUtils;
 import org.apache.qpid.test.unit.xa.AbstractXATestCase;
 import org.apache.qpid.client.AMQXAResource;
 
-import org.apache.qpid.dtx.XidImpl;
-
 import javax.jms.XAConnection;
 import javax.jms.XAConnectionFactory;
 import javax.jms.XASession;
-import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 

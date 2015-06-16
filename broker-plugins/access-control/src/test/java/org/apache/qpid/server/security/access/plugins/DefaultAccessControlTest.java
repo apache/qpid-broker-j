@@ -31,8 +31,6 @@ import java.security.PrivilegedExceptionAction;
 
 import javax.security.auth.Subject;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;

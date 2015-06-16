@@ -21,7 +21,6 @@
 package org.apache.qpid.test.utils;
 
 import java.security.PrivilegedAction;
-import java.util.Map;
 import java.util.Set;
 
 import javax.security.auth.Subject;

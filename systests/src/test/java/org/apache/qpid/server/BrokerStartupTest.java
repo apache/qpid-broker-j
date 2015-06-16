@@ -21,14 +21,9 @@
 package org.apache.qpid.server;
 
 import java.io.File;
-import java.util.List;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
-import javax.jms.Queue;
-import javax.jms.Session;
-
-import junit.framework.AssertionFailedError;
 
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.logging.AbstractTestLogging;

@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.systest.management.jmx;
 
-import java.io.File;
 import java.util.List;
 
 import javax.management.openmbean.CompositeData;
@@ -27,7 +26,6 @@ import javax.management.openmbean.TabularData;
 import org.apache.qpid.management.common.mbeans.LoggingManagement;
 import org.apache.qpid.test.utils.JMXTestUtils;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.util.FileUtils;
 import org.apache.qpid.util.LogMonitor;
 
 /**

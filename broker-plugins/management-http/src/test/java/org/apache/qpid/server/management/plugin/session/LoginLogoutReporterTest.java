@@ -20,7 +20,6 @@
 package org.apache.qpid.server.management.plugin.session;
 
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Matchers.argThat;
@@ -35,8 +34,6 @@ import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
-
-import junit.framework.TestCase;
 
 public class LoginLogoutReporterTest extends QpidTestCase
 {

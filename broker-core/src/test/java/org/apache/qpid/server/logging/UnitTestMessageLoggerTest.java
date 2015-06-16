@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.logging;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.util.List;

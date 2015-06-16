@@ -28,7 +28,6 @@ import java.util.Set;
 
 import org.apache.qpid.server.security.group.FileGroupDatabase;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class FileGroupDatabaseTest extends QpidTestCase

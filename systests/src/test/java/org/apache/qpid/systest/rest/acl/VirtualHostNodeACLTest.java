@@ -20,42 +20,18 @@ package org.apache.qpid.systest.rest.acl;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
-
 import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.AccessControlProvider;
-import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ExternalFileBasedAuthenticationManager;
-import org.apache.qpid.server.model.GroupProvider;
-import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.Plugin;
-import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
-import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
-import org.apache.qpid.server.security.FileKeyStore;
-import org.apache.qpid.server.security.FileTrustStore;
-import org.apache.qpid.server.security.access.FileAccessControlProviderConstants;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
-import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
-import org.apache.qpid.server.security.auth.manager.PlainPasswordDatabaseAuthenticationManager;
-import org.apache.qpid.server.virtualhost.memory.MemoryVirtualHost;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class VirtualHostNodeACLTest extends QpidRestTestCase
 {

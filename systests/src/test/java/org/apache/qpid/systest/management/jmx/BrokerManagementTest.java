@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.systest.management.jmx;
 
-import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.management.common.mbeans.ManagedBroker;
 import org.apache.qpid.management.common.mbeans.ManagedExchange;
 import org.apache.qpid.test.utils.JMXTestUtils;

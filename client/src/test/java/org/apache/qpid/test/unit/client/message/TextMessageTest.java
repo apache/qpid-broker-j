@@ -22,7 +22,6 @@ package org.apache.qpid.test.unit.client.message;
 
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.junit.Assert;
-import junit.framework.TestCase;
 
 import org.apache.qpid.client.message.JMSMapMessage;
 import org.apache.qpid.client.message.JMSTextMessage;

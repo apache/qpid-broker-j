@@ -30,8 +30,6 @@ import java.util.Set;
 import javax.security.auth.Subject;
 import javax.security.sasl.SaslServer;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;

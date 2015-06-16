@@ -28,7 +28,6 @@ import javax.jms.MessageProducer;
 import javax.jms.StreamMessage;
 
 import org.apache.qpid.client.message.AMQPEncodedListMessage;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.*;
 import org.apache.qpid.transport.Connection.SessionFactory;

@@ -27,7 +27,6 @@ import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 
 import javax.management.remote.JMXConnectionNotification;
@@ -38,7 +37,6 @@ import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.MessageLogger;
 
-import junit.framework.TestCase;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;

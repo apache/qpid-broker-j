@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.client;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.test.unit.message.TestAMQSession;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.url.AMQBindingURL;

@@ -22,7 +22,6 @@ package org.apache.qpid.server.store.berkeleydb.tuple;
 
 import java.util.Collections;
 import java.util.Map;
-import junit.framework.TestCase;
 
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;

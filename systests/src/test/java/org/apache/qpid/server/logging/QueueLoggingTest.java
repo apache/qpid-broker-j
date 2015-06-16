@@ -23,7 +23,6 @@ package org.apache.qpid.server.logging;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.failover.FailoverException;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.server.logging.subjects.AbstractTestLogSubject;
 
 import javax.jms.Connection;

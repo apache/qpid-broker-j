@@ -19,7 +19,6 @@
 
 package org.apache.qpid.client;
 
-import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 import javax.jms.Connection;

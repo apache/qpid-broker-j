@@ -20,8 +20,6 @@
  */
 package org.apache.qpid;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.protocol.AMQConstant;

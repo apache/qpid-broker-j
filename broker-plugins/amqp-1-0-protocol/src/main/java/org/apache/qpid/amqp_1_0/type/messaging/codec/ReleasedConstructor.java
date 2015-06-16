@@ -27,7 +27,6 @@ import org.apache.qpid.amqp_1_0.codec.DescribedTypeConstructor;
 import org.apache.qpid.amqp_1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.amqp_1_0.type.*;
 import org.apache.qpid.amqp_1_0.type.messaging.*;
-import org.apache.qpid.amqp_1_0.type.messaging.Released;
 
 
 import java.util.List;

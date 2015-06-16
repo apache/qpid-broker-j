@@ -22,10 +22,8 @@ package org.apache.qpid.server.jmx.mbeans;
 
 import javax.management.NotCompliantMBeanException;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.jmx.AMQManagedObject;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
-import org.apache.qpid.server.model.VirtualHost;
 
 abstract class AbstractStatisticsGatheringMBean<T extends ConfiguredObject> extends AMQManagedObject
 {

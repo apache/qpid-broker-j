@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.jms;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.failover.FailoverExchangeMethod;

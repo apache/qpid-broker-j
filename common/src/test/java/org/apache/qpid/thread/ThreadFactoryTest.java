@@ -21,7 +21,6 @@
 
 package org.apache.qpid.thread;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**

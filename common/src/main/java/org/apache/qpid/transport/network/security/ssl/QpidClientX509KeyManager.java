@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.transport.network.security.ssl;
 
-import org.apache.qpid.transport.util.Functions;
 import org.apache.qpid.transport.util.Logger;
 
 import javax.net.ssl.KeyManagerFactory;

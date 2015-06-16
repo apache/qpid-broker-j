@@ -43,7 +43,6 @@ import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProv
 import org.apache.qpid.server.model.PreferencesSupportingAuthenticationProvider;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 

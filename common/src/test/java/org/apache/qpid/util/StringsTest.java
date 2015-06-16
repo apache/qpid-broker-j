@@ -23,7 +23,6 @@ package org.apache.qpid.util;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class StringsTest extends QpidTestCase

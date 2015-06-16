@@ -30,7 +30,6 @@ import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 
 import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.ra.inflow.QpidActivation;
 
 public class QpidTopicImpl extends AMQTopic implements QpidTopic, Externalizable
 {

@@ -21,12 +21,10 @@
 package org.apache.qpid.test.unit.client;
 
 import org.apache.qpid.AMQChannelClosedException;
-import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.protocol.AMQConstant;

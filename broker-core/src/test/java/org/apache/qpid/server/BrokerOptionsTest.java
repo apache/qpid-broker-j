@@ -23,7 +23,6 @@ package org.apache.qpid.server;
 import java.io.File;
 import java.util.Map;
 
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BrokerOptionsTest extends QpidTestCase

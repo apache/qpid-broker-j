@@ -21,7 +21,6 @@ package org.apache.qpid.systest.rest.acl;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 

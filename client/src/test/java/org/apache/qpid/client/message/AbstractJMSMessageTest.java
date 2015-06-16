@@ -21,7 +21,6 @@
 package org.apache.qpid.client.message;
 
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 import javax.jms.JMSException;

@@ -22,7 +22,6 @@ package org.apache.qpid.server.logging;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.framing.AMQShortString;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;

@@ -25,8 +25,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.test.utils.QpidTestCase;
 

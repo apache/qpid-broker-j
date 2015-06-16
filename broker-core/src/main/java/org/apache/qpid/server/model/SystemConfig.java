@@ -22,7 +22,6 @@ package org.apache.qpid.server.model;
 
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 
 @ManagedObject (creatable = false)

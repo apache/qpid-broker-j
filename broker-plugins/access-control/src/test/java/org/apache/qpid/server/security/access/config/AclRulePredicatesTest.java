@@ -25,7 +25,6 @@ import org.apache.qpid.server.security.access.firewall.FirewallRuleFactory;
 
 import static org.mockito.Mockito.*;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AclRulePredicatesTest extends QpidTestCase

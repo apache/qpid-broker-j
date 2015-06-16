@@ -38,13 +38,10 @@ import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostNameAndLevelFilterImplTest extends QpidTestCase

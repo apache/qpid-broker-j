@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.server.txn;
 
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.*;
 
 import java.util.Collections;

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.*;
 
 import java.util.Collections;

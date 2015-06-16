@@ -21,8 +21,6 @@
 package org.apache.qpid.server.logging.log4j;
 
 
-import org.slf4j.Logger;
-
 import java.util.List;
 import java.util.Map;
 

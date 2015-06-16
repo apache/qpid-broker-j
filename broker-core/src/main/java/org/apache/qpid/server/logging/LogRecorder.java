@@ -20,9 +20,7 @@ package org.apache.qpid.server.logging;
 import java.util.Collections;
 import java.util.Iterator;
 
-import ch.qos.logback.classic.Logger;
 import ch.qos.logback.core.helpers.CyclicBuffer;
-import org.slf4j.LoggerFactory;
 
 public class LogRecorder implements Iterable<LogRecord>
 {

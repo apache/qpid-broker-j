@@ -33,7 +33,6 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.EnumSet;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 public class NetworkConnectionSchedulerTest extends QpidTestCase

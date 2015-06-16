@@ -21,7 +21,6 @@
 
 package org.apache.qpid.amqp_1_0.framing;
 
-import org.apache.qpid.amqp_1_0.type.Binary;
 import org.apache.qpid.amqp_1_0.type.FrameBody;
 
 import java.nio.ByteBuffer;

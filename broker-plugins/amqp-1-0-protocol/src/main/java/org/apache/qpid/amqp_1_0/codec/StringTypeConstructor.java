@@ -25,8 +25,6 @@ import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 public class StringTypeConstructor extends VariableWidthTypeConstructor
 {

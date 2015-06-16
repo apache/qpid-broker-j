@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.test.unit.client.message;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.client.message.JMSBytesMessage;
 import org.apache.qpid.client.message.TestMessageHelper;
 import org.apache.qpid.test.utils.QpidTestCase;

@@ -24,10 +24,6 @@
 package org.apache.qpid.amqp_1_0.type.messaging;
 
 
-import org.apache.qpid.amqp_1_0.messaging.SectionEncoder;
-import org.apache.qpid.amqp_1_0.type.Binary;
-import org.apache.qpid.amqp_1_0.type.Section;
-
 public class MatchingSubjectFilter implements Filter
 {
 

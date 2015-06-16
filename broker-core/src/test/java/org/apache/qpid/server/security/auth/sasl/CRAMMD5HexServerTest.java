@@ -21,8 +21,6 @@
 
 package org.apache.qpid.server.security.auth.sasl;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.server.security.auth.database.Base64MD5PasswordFilePrincipalDatabase;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexInitialiser;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5HexSaslServer;

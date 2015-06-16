@@ -25,7 +25,6 @@ import javax.resource.spi.ResourceAdapterInternalException;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 

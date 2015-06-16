@@ -33,12 +33,9 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.message.JMSBytesMessage;
 import org.apache.qpid.client.message.JMSTextMessage;
 import org.apache.qpid.server.model.TrustStore;
-import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 import org.apache.qpid.test.utils.TestSSLConstants;

@@ -27,7 +27,6 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.management.common.mbeans.ManagedExchange;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.test.utils.JMXTestUtils;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.url.BindingURL;

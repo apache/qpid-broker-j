@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.filter;
 
-import junit.framework.TestCase;
-
 import org.apache.qpid.AMQInternalException;
 import org.apache.qpid.client.filter.JMSSelectorFilter;
 import org.apache.qpid.client.filter.MessageFilter;

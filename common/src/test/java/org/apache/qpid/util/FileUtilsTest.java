@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.util;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.io.BufferedWriter;

@@ -34,13 +34,11 @@ import java.util.UUID;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
-import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.ManagementModeStoreHandler;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.CompositeStartupMessageLogger;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.logging.MessageLogger;
 import org.apache.qpid.server.logging.SystemOutMessageLogger;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
@@ -48,7 +46,6 @@ import org.apache.qpid.server.store.BrokerStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordConverter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
-import org.apache.qpid.util.SystemUtils;
 
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         extends AbstractConfiguredObject<X> implements SystemConfig<X>

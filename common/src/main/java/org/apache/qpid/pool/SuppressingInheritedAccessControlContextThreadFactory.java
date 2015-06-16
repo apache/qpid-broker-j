@@ -23,7 +23,6 @@ package org.apache.qpid.pool;
 
 import javax.security.auth.Subject;
 
-import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
