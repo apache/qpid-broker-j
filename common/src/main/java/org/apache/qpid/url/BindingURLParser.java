@@ -18,13 +18,12 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.url;
 
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.exchange.ExchangeDefaults;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -60,8 +59,7 @@ public class BindingURLParser
     }
 
     //<exch_class>://<exch_name>/[<destination>]/[<queue>]?<option>='<value>'[,<option>='<value>']*
-    public synchronized void
-    parse(String url,AMQBindingURL bindingURL)  throws URISyntaxException
+    public void parse(String url, AMQBindingURL bindingURL)  throws URISyntaxException
     {
         _url = (url + END_OF_URL_MARKER_CHAR).toCharArray();
         _bindingURL = bindingURL;
@@ -70,7 +68,7 @@ public class BindingURLParser
         _index = 0;
         _currentPropName = null;
         _error = null;
-        _options = new HashMap<String,Object>();
+        _options = new HashMap<>();
 
         try
         {
@@ -83,10 +81,10 @@ public class BindingURLParser
             if (_currentParserState == BindingURLParserState.ERROR)
             {
                 _error =
-                        "Invalid URL format [current_state = " + prevState + ", details parsed so far " + _bindingURL + " ] error at (" + _index + ") due to " + _error;
+                        "Invalid URL format [current_state = " + prevState + ", details extracted so far " + _bindingURL + " ] error at (" + _index + ") due to " + _error;
                 _logger.debug(_error);
                 URISyntaxException ex;
-                ex = new URISyntaxException(markErrorLocation(),"Error occured while parsing URL",_index);
+                ex = new URISyntaxException(markErrorLocation(),"Error occurred while parsing URL",_index);
                 throw ex;
             }
 
@@ -95,7 +93,7 @@ public class BindingURLParser
         catch (ArrayIndexOutOfBoundsException e)
         {
                 _error = "Invalid URL format [current_state = " + prevState + ", details parsed so far " + _bindingURL + " ] error at (" + _index + ")";
-                URISyntaxException ex = new URISyntaxException(markErrorLocation(),"Error occured while parsing URL",_index);
+                URISyntaxException ex = new URISyntaxException(markErrorLocation(),"Error occurred while parsing URL",_index);
                 ex.initCause(e);
                 throw ex;
         }
@@ -106,7 +104,7 @@ public class BindingURLParser
         BINDING_URL_START,
         EXCHANGE_CLASS,
         COLON_CHAR,
-        DOUBLE_SEP,
+        HIERARCHY_PREFIX,
         EXCHANGE_NAME,
         EXCHANGE_SEPERATOR_CHAR,
         DESTINATION,
@@ -139,10 +137,9 @@ public class BindingURLParser
                 return extractExchangeClass();
             case COLON_CHAR:
                 _index++; //skip ":"
-                return BindingURLParserState.DOUBLE_SEP;
-            case DOUBLE_SEP:
-                _index = _index + 2; //skip "//"
-                return BindingURLParserState.EXCHANGE_NAME;
+                return BindingURLParserState.HIERARCHY_PREFIX;
+            case HIERARCHY_PREFIX:
+                return consumeHierarchyPrefix();
             case EXCHANGE_NAME:
                 return extractExchangeName();
             case EXCHANGE_SEPERATOR_CHAR:
@@ -183,11 +180,8 @@ public class BindingURLParser
     {
         char nextChar = _url[_index];
 
-        // check for the following special cases.
-        // "myQueue?durable='true'" or just "myQueue"
-
         StringBuilder builder = new StringBuilder();
-        while (nextChar != COLON_CHAR && nextChar != QUESTION_MARK_CHAR && nextChar != END_OF_URL_MARKER_CHAR)
+        while (nextChar != COLON_CHAR && nextChar != END_OF_URL_MARKER_CHAR)
         {
             builder.append(nextChar);
             _index++;
@@ -197,23 +191,39 @@ public class BindingURLParser
         // normal use case
         if (nextChar == COLON_CHAR)
         {
+            if (builder.length() == 0)
+            {
+                _error = "Exchange class is absent";
+                return BindingURLParserState.ERROR;
+            }
             _bindingURL.setExchangeClass(builder.toString());
             return BindingURLParserState.COLON_CHAR;
         }
-        // "myQueue?durable='true'" use case
-        else if (nextChar == QUESTION_MARK_CHAR)
+        else
         {
-            _bindingURL.setExchangeClass(ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
-            _bindingURL.setExchangeName("");
-            _bindingURL.setQueueName(builder.toString());
-            return BindingURLParserState.QUESTION_MARK_CHAR;
+            return BindingURLParserState.ERROR;
+        }
+    }
+
+    private BindingURLParserState consumeHierarchyPrefix()
+    {
+        char nextChar;
+        int loop = 0;
+        do
+        {
+            nextChar = _url[_index++];
+            loop++;
+        }
+        while (nextChar == FORWARD_SLASH_CHAR && loop < 2 );
+
+        if (nextChar == FORWARD_SLASH_CHAR)
+        {
+            return BindingURLParserState.EXCHANGE_NAME;
         }
         else
         {
-            _bindingURL.setExchangeClass(ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
-            _bindingURL.setExchangeName("");
-            _bindingURL.setQueueName(builder.toString());
-            return BindingURLParserState.BINDING_URL_END;
+            _error = "Unexpected character '" + nextChar + "' encountered when expecting hierarchy prefix '/'";
+            return BindingURLParserState.ERROR;
         }
     }
 
@@ -251,7 +261,7 @@ public class BindingURLParser
             nextChar = _url[_index];
         }
 
-        // This is the case where the destination is explictily stated.
+        // This is the case where the destination is explicitly stated.
         // ex direct://amq.direct/myDest/myQueue?option1='1' ... OR
         // direct://amq.direct//myQueue?option1='1' ...
         if (nextChar == FORWARD_SLASH_CHAR)
@@ -259,7 +269,7 @@ public class BindingURLParser
             _bindingURL.setDestinationName(builder.toString());
             return BindingURLParserState.DESTINATION_SEPERATOR_CHAR;
         }
-        // This is the case where destination is not explictly stated.
+        // This is the case where destination is not explicitly stated.
         // ex direct://amq.direct/myQueue?option1='1' ...
         else
         {
@@ -419,41 +429,4 @@ public class BindingURLParser
             throw new URISyntaxException(String.valueOf(_url),"It is illegal to specify both a routingKey and a bindingKey in the same URL",-1);
         }
     }
-
-    public static void main(String[] args)
-    {
-
-        String[] urls = new String[]
-           {
-             "topic://amq.topic//myTopic?routingkey='stocks.#'",
-             "topic://amq.topic/message_queue?bindingkey='usa.*'&bindingkey='control',exclusive='true'",
-             "topic://amq.topic//?bindingKey='usa.*',bindingkey='control',exclusive='true'",
-             "direct://amq.direct/dummyDest/myQueue?routingkey='abc.*'",
-             "exchange.Class://exchangeName/Destination/Queue",
-             "exchangeClass://exchangeName/Destination/?option='value',option2='value2'",
-             "IBMPerfQueue1?durable='true'",
-             "exchangeClass://exchangeName/Destination/?bindingkey='key1',bindingkey='key2'",
-             "exchangeClass://exchangeName/Destination/?bindingkey='key1'&routingkey='key2'"
-           };
-
-        try
-        {
-            BindingURLParser parser = new BindingURLParser();
-
-            for (String url: urls)
-            {
-                _logger.info("URL " + url);
-                AMQBindingURL bindingURL = new AMQBindingURL(url);
-                parser.parse(url,bindingURL);
-                _logger.info("\nX " + bindingURL.toString() + " \n");
-
-            }
-
-        }
-        catch(Exception e)
-        {
-            _logger.error("Error with binding urls", e);
-        }
-    }
-
 }

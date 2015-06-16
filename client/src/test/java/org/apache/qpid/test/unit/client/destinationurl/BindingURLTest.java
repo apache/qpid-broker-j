@@ -241,34 +241,31 @@ public class BindingURLTest extends QpidTestCase
         }
     }
 
-    public void testBareNameTreatedAsQueue() throws Exception
+    public void testMissingExchangeClass() throws Exception
     {
-        String url = "IBMPerfQueue1?durable='true'";
-        BindingURL burl = new AMQBindingURL(url);
-
-        assertEquals("direct:////IBMPerfQueue1?durable='true'", burl.toString());
-
-        assertEquals("direct", burl.getExchangeClass());
-        assertEquals("", burl.getExchangeName());
-        assertEquals("", burl.getDestinationName());
-        assertEquals("IBMPerfQueue1", burl.getQueueName());
-        assertEquals("IBMPerfQueue1", burl.getRoutingKey());
-        assertEquals("IBMPerfQueue1", burl.getBindingKeys()[0]);
+        String url = "://exchangeName/Destination/Queue";
+        try
+        {
+            new AMQBindingURL(url);
+            fail("Exception not thrown");
+        }
+        catch(URISyntaxException e)
+        {
+            // PASS
+        }
     }
 
-    public void testBareNameContainingSlashesTreatedAsQueueWithOddName() throws Exception
+    public void testMissingSlashWithinHierarchyPrefix() throws Exception
     {
-        String url = "/a/b/c/d";
-        BindingURL burl = new AMQBindingURL(url);
-
-        assertEquals("direct://///a/b/c/d", burl.toString());
-
-        assertEquals("direct", burl.getExchangeClass());
-        assertEquals("", burl.getExchangeName());
-        assertEquals("", burl.getDestinationName());
-        assertEquals("/a/b/c/d", burl.getQueueName());
-        assertEquals("/a/b/c/d", burl.getRoutingKey());
-        assertEquals("/a/b/c/d", burl.getBindingKeys()[0]);
+        String url = "direct:/exchangeName/Destination/Queue";
+        try
+        {
+            new AMQBindingURL(url);
+            fail("Exception not thrown");
+        }
+        catch(URISyntaxException e)
+        {
+            // PASS
+        }
     }
-
 }
