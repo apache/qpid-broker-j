@@ -22,6 +22,8 @@ package org.apache.qpid.server.model;
 
 import java.util.Collection;
 
+import org.apache.qpid.server.protocol.AMQConnectionModel;
+
 @ManagedObject( creatable = false )
 public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
 {
@@ -104,5 +106,5 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     Collection<Session> getSessions();
 
 
-
+    AMQConnectionModel<?,?> getUnderlyingConnection();
 }

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import static java.util.Collections.newSetFromMap;
+
 import java.io.File;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -28,12 +30,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -52,10 +56,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.pool.SuppressingInheritedAccessControlContextThreadFactory;
+import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.connection.ConnectionRegistry;
-import org.apache.qpid.server.connection.IConnectionRegistry;
 import org.apache.qpid.server.exchange.DefaultDestination;
 import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
@@ -69,7 +72,6 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.adapter.ConnectionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
@@ -101,9 +103,12 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.MapValueConverter;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
-        implements VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, IConnectionRegistry.RegistryChangeListener, EventListener
+        implements VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, EventListener
 {
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
+
+
+    private final Set<Connection<?>> _connections = newSetFromMap(new ConcurrentHashMap<Connection<?>, Boolean>());
 
     private static enum BlockingType { STORE, FILESYSTEM };
 
@@ -121,8 +126,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private ScheduledThreadPoolExecutor _houseKeepingTasks;
 
     private final Broker<?> _broker;
-
-    private final ConnectionRegistry _connectionRegistry;
 
     private final DtxRegistry _dtxRegistry;
 
@@ -209,9 +212,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _eventLogger = _broker.getParent(SystemConfig.class).getEventLogger();
 
         _eventLogger.message(VirtualHostMessages.CREATED(getName()));
-
-        _connectionRegistry = new ConnectionRegistry();
-        _connectionRegistry.addRegistryChangeListener(this);
 
         _defaultDestination = new DefaultDestination(this);
 
@@ -462,11 +462,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected MessageStoreLogSubject getMessageStoreLogSubject()
     {
         return _messageStoreLogSubject;
-    }
-
-    public IConnectionRegistry getConnectionRegistry()
-    {
-        return _connectionRegistry;
     }
 
     public Collection<Connection> getConnections()
@@ -871,7 +866,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected void onClose()
     {
         //Stop Connections
-        _connectionRegistry.close();
+        closeConnections("VirtualHost is closing");
         _dtxRegistry.close();
         closeMessageStore();
         shutdownHouseKeeping();
@@ -883,6 +878,40 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
 
         stopLogging(_virtualHostLoggersToClose);
+    }
+
+
+    public void closeConnections(final String replyText)
+    {
+        if (_logger.isDebugEnabled())
+        {
+            _logger.debug("Closing connection registry :" + _connections.size() + " connections.");
+        }
+        for(Connection conn : _connections)
+        {
+            conn.getUnderlyingConnection().stop();
+        }
+
+        while (!_connections.isEmpty())
+        {
+            Iterator<Connection<?>> itr = _connections.iterator();
+            while(itr.hasNext())
+            {
+                Connection<?> connection = itr.next();
+                try
+                {
+                    connection.getUnderlyingConnection().closeAsync(AMQConstant.CONNECTION_FORCED, replyText);
+                }
+                catch (Exception e)
+                {
+                    _logger.warn("Exception closing connection " + connection.getName() + " from " + connection.getRemoteAddress(), e);
+                }
+                finally
+                {
+                    itr.remove();
+                }
+            }
+        }
     }
 
     private void closeMessageStore()
@@ -952,9 +981,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _messagesReceived.reset();
         _dataReceived.reset();
 
-        for (AMQConnectionModel connection : _connectionRegistry.getConnections())
+        for (Connection<?> connection : _connections)
         {
-            connection.resetStatistics();
+            connection.getUnderlyingConnection().resetStatistics();
         }
     }
 
@@ -976,14 +1005,14 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private void block(BlockingType blockingType)
     {
-        synchronized (_connectionRegistry)
+        synchronized (_connections)
         {
             _blockingReasons.add(blockingType);
             if(!_blocked.compareAndSet(false,true))
             {
-                for(AMQConnectionModel conn : _connectionRegistry.getConnections())
+                for(Connection<?> conn : _connections)
                 {
-                    conn.block();
+                    conn.getUnderlyingConnection().block();
                 }
             }
         }
@@ -993,36 +1022,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private void unblock(BlockingType blockingType)
     {
 
-        synchronized (_connectionRegistry)
+        synchronized (_connections)
         {
             _blockingReasons.remove(blockingType);
             if(_blockingReasons.isEmpty() && _blocked.compareAndSet(true,false))
             {
-                for(AMQConnectionModel conn : _connectionRegistry.getConnections())
+                for(Connection<?> conn : _connections)
                 {
-                    conn.unblock();
+                    conn.getUnderlyingConnection().unblock();
                 }
             }
         }
-    }
-
-    public void connectionRegistered(final AMQConnectionModel connection)
-    {
-        if(_blocked.get())
-        {
-            connection.block();
-        }
-
-        ConnectionAdapter c = new ConnectionAdapter(connection);
-        c.create();
-        childAdded(c);
-        connection.setScheduler(_networkConnectionScheduler);
-
-    }
-
-    public void connectionUnregistered(final AMQConnectionModel connection)
-    {
-        // ConnectionAdapter installs delete task to cause connection model object to delete
     }
 
     public void event(final Event event)
@@ -1117,13 +1127,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     }
                 }
             }
-            for (AMQConnectionModel<?,?> connection : getConnectionRegistry().getConnections())
+            for (Connection<?> connection : _connections)
             {
                 if (_logger.isDebugEnabled())
                 {
                     _logger.debug("Checking for long running open transactions on connection " + connection);
                 }
-                for (AMQSessionModel<?,?> session : connection.getSessionModels())
+                for (AMQSessionModel<?,?> session : connection.getUnderlyingConnection().getSessionModels())
                 {
                     if (_logger.isDebugEnabled())
                     {
@@ -1351,7 +1361,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public long getConnectionCount()
     {
-        return getConnectionRegistry().getConnections().size();
+        return _connections.size();
     }
 
     @Override
@@ -1664,6 +1674,30 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         return _principal;
     }
+
+    @Override
+    public void registerConnection(final Connection<?> connection)
+    {
+        childAdded(connection);
+
+        _connections.add(connection);
+
+        AMQConnectionModel<?,?> underlyingConnection = connection.getUnderlyingConnection();
+        if(_blocked.get())
+        {
+            underlyingConnection.block();
+        }
+
+        underlyingConnection.setScheduler(_networkConnectionScheduler);
+
+    }
+
+    @Override
+    public void deregisterConnection(final Connection<?> connection)
+    {
+        _connections.remove(connection);
+    }
+
 
     private long calculateTotalEnqueuedSize(final Collection<AMQQueue<?>> queues)
     {

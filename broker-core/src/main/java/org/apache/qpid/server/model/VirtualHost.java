@@ -27,11 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
 public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>, E extends Exchange<?> > extends ConfiguredObject<X>
@@ -150,7 +148,6 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     //children
     Collection<VirtualHostAlias> getAliases();
-    Collection<Connection> getConnections();
     Collection<Q> getQueues();
     Collection<E> getExchanges();
 
@@ -162,6 +159,9 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     Collection<String> getExchangeTypeNames();
 
+    Collection<Connection> getConnections();
+
+
     void start();
 
     void stop();
@@ -169,6 +169,9 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     String getRedirectHost(AmqpPort<?> port);
 
     Principal getPrincipal();
+
+    void registerConnection(Connection<?> connection);
+    void deregisterConnection(Connection<?> connection);
 
     public static interface Transaction
     {

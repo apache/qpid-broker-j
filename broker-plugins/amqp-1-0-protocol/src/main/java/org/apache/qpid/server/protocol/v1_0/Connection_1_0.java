@@ -51,6 +51,7 @@ import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.adapter.ConnectionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -110,7 +111,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
 
 
     private boolean _closedOnOpen;
-
+    private ConnectionAdapter _adapter;
 
 
     public Connection_1_0(Broker<?> broker,
@@ -171,7 +172,10 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
             }
             else
             {
-                _vhost.getConnectionRegistry().registerConnection(this);
+                _adapter = new ConnectionAdapter(this);
+                _adapter.create();
+                _adapter.virtualHostAssociated();
+
             }
         }
     }
@@ -262,7 +266,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
 
         if(_vhost != null)
         {
-            _vhost.getConnectionRegistry().deregisterConnection(this);
+            _vhost.deregisterConnection(_adapter);
         }
 
 

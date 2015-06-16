@@ -367,11 +367,12 @@ public class ServerConnectionDelegate extends ServerDelegate
         final Principal authorizedPrincipal = sconn.getAuthorizedPrincipal();
         final String userId = authorizedPrincipal == null ? "" : authorizedPrincipal.getName();
 
-        final Iterator<AMQConnectionModel> connections =
-                        ((ServerConnection)conn).getVirtualHost().getConnectionRegistry().getConnections().iterator();
+        final Iterator<org.apache.qpid.server.model.Connection> connections =
+                        ((ServerConnection)conn).getVirtualHost().getConnections().iterator();
         while(connections.hasNext())
         {
-            final AMQConnectionModel amqConnectionModel = connections.next();
+            final org.apache.qpid.server.model.Connection<?> modelConnnection = connections.next();
+            final AMQConnectionModel amqConnectionModel = modelConnnection.getUnderlyingConnection();
             if (amqConnectionModel instanceof ServerConnection)
             {
                 ServerConnection otherConnection = (ServerConnection)amqConnectionModel;

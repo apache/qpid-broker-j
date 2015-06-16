@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
-import org.apache.qpid.server.connection.IConnectionRegistry;
 import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -40,8 +39,6 @@ import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.transport.NetworkConnectionScheduler;
-import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 
 public interface VirtualHostImpl< X extends VirtualHostImpl<X,Q,E>, Q extends AMQQueue<?>, E extends ExchangeImpl<?> >
@@ -50,8 +47,6 @@ public interface VirtualHostImpl< X extends VirtualHostImpl<X,Q,E>, Q extends AM
                 VirtualHost<X,Q,E>
 {
     String DEFAULT_DLE_NAME_SUFFIX = "_DLE";
-
-    IConnectionRegistry getConnectionRegistry();
 
     String getName();
 

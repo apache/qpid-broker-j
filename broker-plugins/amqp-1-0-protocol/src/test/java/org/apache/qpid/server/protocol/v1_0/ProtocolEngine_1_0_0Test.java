@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v1_0;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -40,8 +39,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import javax.security.auth.Subject;
-import javax.security.sasl.Sasl;
 
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -54,25 +53,19 @@ import org.apache.qpid.amqp_1_0.type.Symbol;
 import org.apache.qpid.amqp_1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.amqp_1_0.type.security.SaslInit;
 import org.apache.qpid.amqp_1_0.type.transport.Open;
-import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
-import org.apache.qpid.server.connection.ConnectionRegistry;
-import org.apache.qpid.server.connection.IConnectionRegistry;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManagerFactory;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
-import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -90,8 +83,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     private AuthenticationProvider _authenticationProvider;
     private List<ByteBuffer> _sentBuffers;
     private FrameWriter _frameWriter;
-    private IConnectionRegistry _connectionRegistry;
-    private Connection_1_0 _connection;
+    private Connection _connection;
+    private VirtualHostImpl _virtualHost;
 
     @Override
     public void setUp() throws Exception
@@ -109,22 +102,21 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _subjectCreator = mock(SubjectCreator.class);
         _authenticationProvider = mock(AuthenticationProvider.class);
         when(_port.getAuthenticationProvider()).thenReturn(_authenticationProvider);
-        VirtualHostImpl virtualHost = mock(VirtualHostImpl.class);
-
-        _connectionRegistry = mock(IConnectionRegistry.class);
-        final ArgumentCaptor<AMQConnectionModel> connectionCaptor = ArgumentCaptor.forClass(AMQConnectionModel.class);
+        _virtualHost = mock(VirtualHostImpl.class);
+        when(_virtualHost.getChildExecutor()).thenReturn(taskExecutor);
+        when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
+        final ArgumentCaptor<Connection> connectionCaptor = ArgumentCaptor.forClass(Connection.class);
         doAnswer(new Answer()
         {
             @Override
             public Object answer(final InvocationOnMock invocation) throws Throwable
             {
-                _connection = (Connection_1_0) connectionCaptor.getValue();
+                _connection = connectionCaptor.getValue();
                 return null;
             }
-        }).when(_connectionRegistry).registerConnection(connectionCaptor.capture());
-        when(virtualHost.getConnectionRegistry()).thenReturn(_connectionRegistry);
-        when(virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
-        when(_port.getVirtualHost(anyString())).thenReturn(virtualHost);
+        }).when(_virtualHost).registerConnection(connectionCaptor.capture());
+        when(_virtualHost.getPrincipal()).thenReturn(mock(VirtualHostPrincipal.class));
+        when(_port.getVirtualHost(anyString())).thenReturn(_virtualHost);
         when(_authenticationProvider.getSubjectCreator(anyBoolean())).thenReturn(_subjectCreator);
 
         final ArgumentCaptor<Principal> userCaptor = ArgumentCaptor.forClass(Principal.class);
@@ -179,8 +171,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        verify(_connectionRegistry).registerConnection(any(AMQConnectionModel.class));
-        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
+        verify(_virtualHost).registerConnection(any(Connection.class));
+        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
     }
@@ -202,7 +194,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        verify(_connectionRegistry, never()).registerConnection(any(AMQConnectionModel.class));
+        verify(_virtualHost, never()).registerConnection(any(Connection.class));
         verify(_networkConnection).close();
     }
 
@@ -232,8 +224,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        verify(_connectionRegistry).registerConnection(any(AMQConnectionModel.class));
-        AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
+        verify(_virtualHost).registerConnection(any(Connection.class));
+        AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
         assertNotNull(authPrincipal);
         assertEquals(authPrincipal, new AuthenticatedPrincipal(principal));
     }
@@ -274,8 +266,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        verify(_connectionRegistry).registerConnection(any(AMQConnectionModel.class));
-        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
+        verify(_virtualHost).registerConnection(any(Connection.class));
+        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
     }

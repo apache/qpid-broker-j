@@ -52,7 +52,7 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.connection.IConnectionRegistry.RegistryChangeListener;
+import org.apache.qpid.server.model.adapter.ConnectionAdapter;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
@@ -230,10 +230,11 @@ public class VirtualHostTest extends QpidTestCase
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         AMQConnectionModel connection = createMockProtocolConnection(virtualHost);
-
         assertEquals("Unexpected number of connections before connection registered", 0, virtualHost.getChildren(Connection.class).size());
 
-        ((RegistryChangeListener)virtualHost).connectionRegistered(connection);
+        ConnectionAdapter modelConnection = new ConnectionAdapter(connection);
+        modelConnection.create();
+        virtualHost.registerConnection(modelConnection);
 
         assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getChildren(
                 Connection.class).size());
@@ -256,10 +257,13 @@ public class VirtualHostTest extends QpidTestCase
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         AMQConnectionModel connection = createMockProtocolConnection(virtualHost);
+        assertEquals("Unexpected number of connections before connection registered",
+                     0,
+                     virtualHost.getChildren(Connection.class).size());
 
-        assertEquals("Unexpected number of connections before connection registered", 0, virtualHost.getChildren(Connection.class).size());
-
-        ((RegistryChangeListener)virtualHost).connectionRegistered(connection);
+        ConnectionAdapter modelConnection = new ConnectionAdapter(connection);
+        modelConnection.create();
+        virtualHost.registerConnection(modelConnection);
 
         assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getChildren(Connection.class).size());
 

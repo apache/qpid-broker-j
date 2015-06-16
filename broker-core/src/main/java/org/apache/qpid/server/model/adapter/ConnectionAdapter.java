@@ -42,6 +42,7 @@ import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.SessionModelListener;
@@ -76,6 +77,11 @@ public final class ConnectionAdapter extends AbstractConfiguredObject<Connection
 
         conn.addSessionListener(this);
         setState(State.ACTIVE);
+    }
+
+    public void virtualHostAssociated()
+    {
+        _underlyingConnection.getVirtualHost().registerConnection(this);
     }
 
     private static Map<String, Object> createAttributes(final AMQConnectionModel _connection)
@@ -153,6 +159,12 @@ public final class ConnectionAdapter extends AbstractConfiguredObject<Connection
     {
         return _underlyingConnection.getPort();
     }
+
+    public VirtualHost<?,?,?> getVirtualHost()
+    {
+        return _underlyingConnection.getVirtualHost();
+    }
+
 
     public Collection<Session> getSessions()
     {
@@ -291,5 +303,11 @@ public final class ConnectionAdapter extends AbstractConfiguredObject<Connection
     public void sessionRemoved(final AMQSessionModel<?, ?> session)
     {
         // SessionAdapter installs delete task to cause session model object to delete
+    }
+
+    @Override
+    public AMQConnectionModel<?,?> getUnderlyingConnection()
+    {
+        return _underlyingConnection;
     }
 }

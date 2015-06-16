@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.adapter.ConnectionAdapter;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
@@ -109,6 +110,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     private ProtocolEngine_0_10 _protocolEngine;
     private boolean _ignoreFutureInput;
     private boolean _ignoreAllButConnectionCloseOk;
+    private ConnectionAdapter _adapter;
 
     public ServerConnection(final long connectionId,
                             Broker<?> broker,
@@ -173,14 +175,17 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
                                                              true,
                                                              true));
 
-            getVirtualHost().getConnectionRegistry().registerConnection(this);
+            _adapter = new ConnectionAdapter(this);
+            _adapter.create();
+            _adapter.virtualHostAssociated();
+
         }
 
         if (state == State.CLOSE_RCVD || state == State.CLOSED || state == State.CLOSING)
         {
-            if(_virtualHost != null)
+            if(_adapter != null)
             {
-                _virtualHost.getConnectionRegistry().deregisterConnection(this);
+                _virtualHost.deregisterConnection(_adapter);
             }
         }
         if(state == State.CLOSING)

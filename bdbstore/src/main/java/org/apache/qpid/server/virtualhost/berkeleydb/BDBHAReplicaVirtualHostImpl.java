@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledFuture;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.connection.IConnectionRegistry;
 import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
@@ -307,12 +306,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public IConnectionRegistry getConnectionRegistry()
-    {
-        return null;
-    }
-
-    @Override
     public AMQQueue<?> getQueue(final String name)
     {
         return null;
@@ -548,6 +541,18 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public Principal getPrincipal()
     {
         return _principal;
+    }
+
+    @Override
+    public void registerConnection(final Connection<?> connection)
+    {
+        throwUnsupportedForReplica();
+    }
+
+    @Override
+    public void deregisterConnection(final Connection<?> connection)
+    {
+        throwUnsupportedForReplica();
     }
 
     private void throwUnsupportedForReplica()

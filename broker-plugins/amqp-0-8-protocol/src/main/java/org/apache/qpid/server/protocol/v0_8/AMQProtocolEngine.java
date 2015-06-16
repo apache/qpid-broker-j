@@ -60,6 +60,7 @@ import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.adapter.ConnectionAdapter;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
@@ -105,6 +106,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
 
     private final AggregateTicker _aggregateTicker;
+    private ConnectionAdapter _adapter;
 
     enum ConnectionState
     {
@@ -849,7 +851,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
             {
                 if (_virtualHost != null)
                 {
-                    _virtualHost.getConnectionRegistry().deregisterConnection(this);
+                    _virtualHost.deregisterConnection(_adapter);
                 }
                 closeAllChannels();
             }
@@ -1056,9 +1058,9 @@ public class AMQProtocolEngine implements ProtocolEngine,
     public void setVirtualHost(VirtualHostImpl<?,?,?> virtualHost)
     {
         _virtualHost = virtualHost;
-
-        _virtualHost.getConnectionRegistry().registerConnection(this);
-
+        _adapter = new ConnectionAdapter(this);
+        _adapter.create();
+        _adapter.virtualHostAssociated();
 
         _messageCompressionThreshold = virtualHost.getContextValue(Integer.class,
                                                                    Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
