@@ -105,7 +105,7 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
     {
         Properties properties = new Properties();
         properties.put("connectionfactory.qpidConnectionfactory", CONNECTION_URL);
-        properties.put("destination.topicExchange", "destName");
+        properties.put("destination.topicExchange", "ADDR:destName");
 
         File f = File.createTempFile(getTestName(), ".properties");
         try
@@ -114,7 +114,6 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
             properties.store(fos, null);
             fos.close();
 
-            setTestSystemProperty(ClientProperties.DEST_SYNTAX, "ADDR");
             setTestSystemProperty(InitialContext.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
             setTestSystemProperty(InitialContext.PROVIDER_URL,  f.toURI().toURL().toString());
 

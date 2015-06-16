@@ -33,7 +33,6 @@ import javax.jms.Destination;
 import javax.jms.Queue;
 import javax.jms.Topic;
 
-import junit.framework.TestCase;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AMQDestinationTest extends QpidTestCase
@@ -161,6 +160,39 @@ public class AMQDestinationTest extends QpidTestCase
         // has node properties but no x-bindings
         assertEmptyNodeBindings(new AMQAnyDestination("ADDR:testDest2; {node: {type: queue}}"));
         assertEmptyNodeBindings(new AMQAnyDestination("ADDR:testDest3; {node: {type: topic}}"));
+    }
+
+    public void testSimple_BURL() throws Exception
+    {
+        AMQQueue queue = new AMQQueue("BURL:direct://amq.direct/test-route/Foo");
+
+        assertEquals("direct", queue.getExchangeClass());
+        assertEquals("amq.direct", queue.getExchangeName());
+        assertEquals("Foo", queue.getQueueName());
+        assertEquals(queue.getQueueName(), queue.getRoutingKey());
+        assertFalse(queue.isDurable());
+    }
+
+    public void testAnonymousExchange_BURL() throws Exception
+    {
+        AMQQueue queue = new AMQQueue("BURL:direct:///Foo?durable='true'");
+
+        assertEquals("direct", queue.getExchangeClass());
+        assertEquals("", queue.getExchangeName());
+        assertEquals("Foo", queue.getQueueName());
+        assertEquals(queue.getQueueName(), queue.getRoutingKey());
+        assertTrue(queue.isDurable());
+    }
+
+    public void testNonDurableExchange_BURL() throws Exception
+    {
+        AMQQueue queue = new AMQQueue("BURL:direct://mynondurableexch//Foo?exchangeautodelete='true'");
+
+        assertEquals("direct", queue.getExchangeClass());
+        assertEquals("mynondurableexch", queue.getExchangeName());
+        assertEquals("Foo", queue.getQueueName());
+        assertEquals("Foo", queue.getRoutingKey());
+        assertTrue(queue.isExchangeAutoDelete());
     }
 
     public void testSerializeAMQQueue_BURL() throws Exception

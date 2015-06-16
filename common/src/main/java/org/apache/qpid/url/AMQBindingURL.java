@@ -33,7 +33,7 @@ public class AMQBindingURL implements BindingURL
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQBindingURL.class);
 
-    private String _url;
+    private final String _url;
     private String _exchangeClass = ExchangeDefaults.DIRECT_EXCHANGE_CLASS;
     private String _exchangeName = "";
     private String _destinationName = "";
@@ -184,6 +184,7 @@ public class AMQBindingURL implements BindingURL
         setOption(OPTION_ROUTING_KEY, key);
     }
 
+    @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
