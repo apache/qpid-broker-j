@@ -1037,6 +1037,17 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected void setEncrypter(final ConfigurationSecretEncrypter encrypter)
     {
         _encrypter = encrypter;
+        applyToChildren(new Action<ConfiguredObject<?>>()
+        {
+            @Override
+            public void performAction(final ConfiguredObject<?> object)
+            {
+                if(object instanceof AbstractConfiguredObject)
+                {
+                    ((AbstractConfiguredObject)object).setEncrypter(encrypter);
+                }
+            }
+        });
     }
 
     protected void onResolve()
@@ -2106,6 +2117,59 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             return Futures.immediateFuture(null);
         }
     }
+
+    protected void forceUpdateAllSecureAttributes()
+    {
+        applyToChildren(new Action<ConfiguredObject<?>>()
+        {
+            @Override
+            public void performAction(final ConfiguredObject<?> object)
+            {
+                if (object instanceof AbstractConfiguredObject)
+                {
+                    ((AbstractConfiguredObject) object).forceUpdateAllSecureAttributes();
+                }
+            }
+        });
+        doUpdateSecureAttributes();
+    }
+
+    private void doUpdateSecureAttributes()
+    {
+        Map<String,Object> secureAttributeValues = getSecureAttributeValues();
+        if(!secureAttributeValues.isEmpty())
+        {
+            bulkChangeStart();
+            for (Map.Entry<String, Object> attribute : secureAttributeValues.entrySet())
+            {
+                synchronized (_changeListeners)
+                {
+                    List<ConfigurationChangeListener> copy =
+                            new ArrayList<>(_changeListeners);
+                    for (ConfigurationChangeListener listener : copy)
+                    {
+                        listener.attributeSet(this, attribute.getKey(), attribute.getValue(), attribute.getValue());
+                    }
+                }
+
+            }
+            bulkChangeEnd();
+        }
+    }
+
+    private Map<String,Object> getSecureAttributeValues()
+    {
+        Map<String,Object> secureAttributeValues = new HashMap<>();
+        for (Map.Entry<String, ConfiguredObjectAttribute<?, ?>> attribute : _attributeTypes.entrySet())
+        {
+            if (attribute.getValue().isSecure() && _attributes.containsKey(attribute.getKey()))
+            {
+                secureAttributeValues.put(attribute.getKey(), _attributes.get(attribute.getKey()));
+            }
+        }
+        return secureAttributeValues;
+    }
+
 
     private void bulkChangeStart()
     {

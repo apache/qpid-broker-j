@@ -104,7 +104,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private boolean _statisticsReportingResetEnabled;
     @ManagedAttributeField
     private boolean _messageCompressionEnabled;
-    @ManagedAttributeField
+
+    @ManagedAttributeField(afterSet = "postEncrypterProviderSet")
     private String _confidentialConfigurationEncryptionProvider;
 
     private final boolean _virtualHostPropertiesNodeEnabled;
@@ -131,30 +132,36 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
         final Set<String> systemNodeCreatorTypes = qpidServiceLoader.getInstancesByType(SystemNodeCreator.class).keySet();
         _virtualHostPropertiesNodeEnabled = systemNodeCreatorTypes.contains(VirtualHostPropertiesNodeCreator.TYPE);
+        if(attributes.containsKey(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER))
+        {
 
+            final String encryptionProviderType = String.valueOf(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER));
+            updateEncrypter(encryptionProviderType);
+        }
         _messagesDelivered = new StatisticsCounter("messages-delivered");
         _dataDelivered = new StatisticsCounter("bytes-delivered");
         _messagesReceived = new StatisticsCounter("messages-received");
         _dataReceived = new StatisticsCounter("bytes-received");
     }
 
-    @Override
-    protected void postResolve()
+    private void updateEncrypter(final String encryptionProviderType)
     {
-        super.postResolve();
-        if(_confidentialConfigurationEncryptionProvider != null)
+        if(encryptionProviderType != null && !"".equals(encryptionProviderType.trim()))
         {
-
             PluggableFactoryLoader<ConfigurationSecretEncrypterFactory> factoryLoader =
                     new PluggableFactoryLoader<>(ConfigurationSecretEncrypterFactory.class);
-            ConfigurationSecretEncrypterFactory factory = factoryLoader.get(_confidentialConfigurationEncryptionProvider);
-            if(factory == null)
+            ConfigurationSecretEncrypterFactory factory = factoryLoader.get(encryptionProviderType);
+            if (factory == null)
             {
-                throw new IllegalConfigurationException("Unknown Configuration Secret Encryption method " + _confidentialConfigurationEncryptionProvider);
+                throw new IllegalConfigurationException("Unknown Configuration Secret Encryption method "
+                                                        + encryptionProviderType);
             }
             setEncrypter(factory.createEncrypter(this));
         }
-
+        else
+        {
+            setEncrypter(null);
+        }
     }
 
     @Override
@@ -843,5 +850,12 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public AuthenticationProvider<?> getManagementModeAuthenticationProvider()
     {
         return _managementModeAuthenticationProvider;
+    }
+
+    @SuppressWarnings("unused")
+    private void postEncrypterProviderSet()
+    {
+        updateEncrypter(_confidentialConfigurationEncryptionProvider);
+        forceUpdateAllSecureAttributes();
     }
 }
