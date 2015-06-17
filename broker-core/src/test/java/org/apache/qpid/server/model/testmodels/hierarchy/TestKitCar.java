@@ -18,6 +18,9 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
+import java.util.Map;
+
+import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.Param;
@@ -27,4 +30,10 @@ public interface TestKitCar<X extends TestKitCar<X>> extends TestCar<X>
 {
     @ManagedOperation
     Door openDoor(@Param(name = "door", defaultValue = "PASSENGER") Door door);
+
+    @ManagedAttribute
+    Map<String,Object> getParameters();
+
+    @ManagedAttribute
+    TestEngine getAlternateEngine();
 }

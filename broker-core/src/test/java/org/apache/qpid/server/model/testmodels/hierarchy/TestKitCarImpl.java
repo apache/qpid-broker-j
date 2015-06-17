@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.testmodels.TestSecurityManager;
@@ -35,6 +36,12 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
 {
     public static final String TEST_KITCAR_TYPE = "testkitcar";
     private final SecurityManager _securityManager;
+
+    @ManagedAttributeField
+    private Map<String,Object> _parameters;
+
+    @ManagedAttributeField
+    private TestEngine _alternateEngine;
 
     @ManagedObjectFactoryConstructor
     public TestKitCarImpl(final Map<String, Object> attributes)
@@ -68,5 +75,17 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     public Door openDoor(final Door door)
     {
         return door;
+    }
+
+    @Override
+    public Map<String, Object> getParameters()
+    {
+        return _parameters;
+    }
+
+    @Override
+    public TestEngine getAlternateEngine()
+    {
+        return _alternateEngine;
     }
 }

@@ -94,4 +94,39 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
     }
 
+    public void testDefaultContextVariableWhichRefersToAncestor()
+    {
+        final String carName = "myCar";
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+
+        assertEquals(carName, car.getName());
+
+        assertEquals(0, car.getChildren(TestEngine.class).size());
+
+        String engineName = "myEngine";
+
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, engineName);
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+
+
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+
+        assertTrue("context var not in contextKeys",
+                   car.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR));
+
+        String expected = "a value " + carName;
+        assertEquals(expected, car.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR));
+
+        assertTrue("context var not in contextKeys",
+                   engine.getContextKeys(true).contains(TestCar.TEST_CONTEXT_VAR));
+        assertEquals(expected, engine.getContextValue(String.class, TestCar.TEST_CONTEXT_VAR));
+
+    }
+
+
 }

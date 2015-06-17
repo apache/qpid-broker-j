@@ -43,9 +43,12 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
     String ENUMSET_VALUES = "enumSetValues";
 
     String TEST_CONTEXT_DEFAULT = "TEST_CONTEXT_DEFAULT";
-
     @ManagedContextDefault(name = TEST_CONTEXT_DEFAULT)
     String testGlobalDefault = "default";
+
+    String TEST_CONTEXT_DEFAULT_WITH_THISREF = "TEST_CONTEXT_DEFAULT_WITH_THISREF";
+    @ManagedContextDefault(name = TEST_CONTEXT_DEFAULT_WITH_THISREF)
+    String testGlobalDefaultWithThisRef = "a context var that refers to an attribute ${this:name}";
 
     @ManagedAttribute
     String getAutomatedPersistedValue();

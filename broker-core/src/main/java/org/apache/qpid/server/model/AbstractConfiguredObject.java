@@ -165,7 +165,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @ManagedAttributeField
     private String _type;
 
-    private final OwnAttributeResolver _attributeResolver = new OwnAttributeResolver(this);
+    private final OwnAttributeResolver _ownAttributeResolver = new OwnAttributeResolver(this);
+    private final AncestorAttributeResolver _ancestorAttributeResolver = new AncestorAttributeResolver(this);
+
 
     @ManagedAttributeField
     private State _desiredState;
@@ -2049,7 +2051,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     }, executor);
 
                 }
-                catch(Throwable e)
+                catch (Throwable e)
                 {
                     returnVal.setException(e);
                 }
@@ -2337,17 +2339,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private OwnAttributeResolver getOwnAttributeResolver()
     {
-        return _attributeResolver;
+        return _ownAttributeResolver;
     }
 
-    protected boolean isAttributePersisted(String name)
+    private AncestorAttributeResolver getAncestorAttributeResolver()
     {
-        ConfiguredObjectAttribute<X,?> attr = (ConfiguredObjectAttribute<X, ?>) _attributeTypes.get(name);
-        if(attr != null)
-        {
-            return attr.isPersisted();
-        }
-        return false;
+        return _ancestorAttributeResolver;
     }
 
     @Override
@@ -2386,6 +2383,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             return Strings.expand(value, false,
                                   JSON_SUBSTITUTION_RESOLVER,
                                   getOwnAttributeResolver(object),
+                                  getAncestorAttributeResolver(object),
                                   new Strings.MapResolver(inheritedContext),
                                   Strings.JAVA_SYS_PROPS_RESOLVER,
                                   Strings.ENV_VARS_RESOLVER,
@@ -2399,6 +2397,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 ? ((AbstractConfiguredObject)object).getOwnAttributeResolver()
                 : new OwnAttributeResolver(object);
     }
+
+    private static AncestorAttributeResolver getAncestorAttributeResolver(final ConfiguredObject<?> object)
+    {
+        return object instanceof AbstractConfiguredObject
+                ? ((AbstractConfiguredObject)object).getAncestorAttributeResolver()
+                : new AncestorAttributeResolver(object);
+    }
+
+
 
     static void generateInheritedContext(final Model model, final ConfiguredObject<?> object,
                                          final Map<String, String> inheritedContext)
@@ -2429,93 +2436,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                        put("\"","\\\"");
                                                    }
                                                });
-
-    private static class OwnAttributeResolver implements Strings.Resolver
-    {
-
-        public static final String PREFIX = "this:";
-        private final ThreadLocal<Set<String>> _stack = new ThreadLocal<>();
-        private final ConfiguredObject<?> _object;
-        private final ObjectMapper _objectMapper;
-
-        public OwnAttributeResolver(final ConfiguredObject<?> object)
-        {
-            _object = object;
-            _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
-        }
-
-        @Override
-        public String resolve(final String variable, final Strings.Resolver resolver)
-        {
-            boolean clearStack = false;
-            Set<String> currentStack = _stack.get();
-            if(currentStack == null)
-            {
-                currentStack = new HashSet<>();
-                _stack.set(currentStack);
-                clearStack = true;
-            }
-
-            try
-            {
-                if(variable.startsWith(PREFIX))
-                {
-                    String attrName = variable.substring(PREFIX.length());
-                    if(currentStack.contains(attrName))
-                    {
-                        throw new IllegalArgumentException("The value of attribute " + attrName + " is defined recursively");
-                    }
-                    else
-                    {
-                        currentStack.add(attrName);
-                        Object returnVal = _object.getAttribute(attrName);
-                        String returnString;
-                        if(returnVal == null)
-                        {
-                            returnString =  null;
-                        }
-                        else if(returnVal instanceof Map || returnVal instanceof Collection)
-                        {
-                            try
-                            {
-                                StringWriter writer = new StringWriter();
-
-                                _objectMapper.writeValue(writer, returnVal);
-
-                                returnString = writer.toString();
-                            }
-                            catch (IOException e)
-                            {
-                                throw new IllegalArgumentException(e);
-                            }
-                        }
-                        else if(returnVal instanceof ConfiguredObject)
-                        {
-                            returnString = ((ConfiguredObject)returnVal).getId().toString();
-                        }
-                        else
-                        {
-                            returnString = returnVal.toString();
-                        }
-
-                        return returnString;
-                    }
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            finally
-            {
-                if(clearStack)
-                {
-                    _stack.remove();
-                }
-
-            }
-        }
-    }
 
 
     private static class AttributeGettingHandler implements InvocationHandler

@@ -371,7 +371,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals(TestSingleton.VALID_VALUE2, object.getValidValue());
 
-        object.setAttributes(Collections.singletonMap(TestSingleton.VALID_VALUE,null));
+        object.setAttributes(Collections.singletonMap(TestSingleton.VALID_VALUE, null));
         assertNull(object.getValidValue());
 
     }
@@ -427,12 +427,30 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertTrue("context default not in contextKeys",
                    object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT));
-        assertEquals(object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT), "default");
+        assertEquals("default",
+                     object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT));
 
         setTestSystemProperty(TestSingleton.TEST_CONTEXT_DEFAULT, "notdefault");
         assertTrue("context default not in contextKeys",
                    object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT));
-        assertEquals(object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT), "notdefault");
+        assertEquals("notdefault", object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT));
+    }
+
+    public void testDefaultContextVariableWhichRefersToThis()
+    {
+        final String objectName = "myName";
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, objectName);
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class,
+                                                                attributes);
+
+        assertTrue("context default not in contextKeys",
+                   object.getContextKeys(true).contains(TestSingleton.TEST_CONTEXT_DEFAULT_WITH_THISREF));
+
+        String expected = "a context var that refers to an attribute " + objectName;
+        assertEquals(expected, object.getContextValue(String.class, TestSingleton.TEST_CONTEXT_DEFAULT_WITH_THISREF));
     }
 
     public void testDerivedAttributeValue()

@@ -21,6 +21,7 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.Param;
@@ -28,6 +29,10 @@ import org.apache.qpid.server.model.Param;
 @ManagedObject( defaultType = TestStandardCarImpl.TEST_STANDARD_CAR_TYPE)
 public interface TestCar<X extends TestCar<X>> extends ConfiguredObject<X>
 {
+    String TEST_CONTEXT_VAR = "TEST_CONTEXT_VAR";
+    @ManagedContextDefault(name = TEST_CONTEXT_VAR)
+    String testGlobalDefault = "a value ${ancestor:testcar:name}";
+
     enum Door { DRIVER, PASSENGER }
 
     @ManagedOperation
