@@ -229,20 +229,7 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     @Override
     public Collection<Connection> getConnections()
     {
-        return null;
-    }
-
-    @Override
-    public <C extends ConfiguredObject> Collection<C> getChildren(Class<C> clazz)
-    {
-        if(clazz == Connection.class)
-        {
-            return (Collection<C>) getConnections();
-        }
-        else
-        {
-            return super.getChildren(clazz);
-        }
+        return getChildren(Connection.class);
     }
 
     @StateTransition(currentState = { State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED )

@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -202,5 +203,15 @@ public class ConfiguredObjectOperation<C extends ConfiguredObject>
     public String getDescription()
     {
         return _operation.getAnnotation(ManagedOperation.class).description();
+    }
+
+    public boolean isNonModifying()
+    {
+        return _operation.getAnnotation(ManagedOperation.class).nonModifying();
+    }
+
+    public Type getGenericReturnType()
+    {
+        return _operation.getGenericReturnType();
     }
 }

@@ -210,8 +210,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     public boolean doWork()
     {
         _protocolEngine.clearWork();
-        final boolean closed = _closed.get();
-        if (!closed)
+        if (!_closed.get())
         {
             try
             {
@@ -249,7 +248,9 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 }
             }
         }
-        else
+
+        final boolean closed = _closed.get();
+        if (closed)
         {
             shutdown();
         }

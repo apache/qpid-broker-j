@@ -304,6 +304,24 @@ public class RestTestHelper
         return response.get(0);
     }
 
+    public List<Map<String, Object>> postDataToPathAndGetList(String path, Map<String, Object> data) throws IOException
+    {
+        HttpURLConnection connection = openManagementConnection(path, "POST");
+        connection.connect();
+        writeJsonRequest(connection, data);
+        List<Map<String, Object>> response = readJsonResponseAsList(connection);
+        return response;
+    }
+
+    public Map<String, Object> postDataToPathAndGetObject(String path, Map<String, Object> data) throws IOException
+    {
+        HttpURLConnection connection = openManagementConnection(path, "POST");
+        connection.connect();
+        writeJsonRequest(connection, data);
+        Map<String, Object> response = readJsonResponseAsMap(connection);
+        return response;
+    }
+
     public List<Map<String, Object>> getJsonAsList(String path) throws IOException
     {
         HttpURLConnection connection = openManagementConnection(path, "GET");

@@ -132,6 +132,8 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         _dataDelivered = new StatisticsCounter("data-delivered-" + getConnectionId());
         _messagesReceived = new StatisticsCounter("messages-received-" + getConnectionId());
         _dataReceived = new StatisticsCounter("data-received-" + getConnectionId());
+        _adapter = new ConnectionAdapter(this);
+        _adapter.create();
     }
 
     public Object getReference()
@@ -167,23 +169,20 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         if (state == State.OPEN)
         {
             getEventLogger().message(ConnectionMessages.OPEN(getClientId(),
-                                                             "0-10",
-                                                             getClientVersion(),
-                                                             getClientProduct(),
-                                                             true,
-                                                             true,
-                                                             true,
-                                                             true));
+                    "0-10",
+                    getClientVersion(),
+                    getClientProduct(),
+                    true,
+                    true,
+                    true,
+                    true));
 
-            _adapter = new ConnectionAdapter(this);
-            _adapter.create();
             _adapter.virtualHostAssociated();
-
         }
 
         if (state == State.CLOSE_RCVD || state == State.CLOSED || state == State.CLOSING)
         {
-            if(_adapter != null)
+            if(_virtualHost != null)
             {
                 _virtualHost.deregisterConnection(_adapter);
             }

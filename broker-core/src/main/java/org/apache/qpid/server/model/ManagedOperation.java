@@ -30,4 +30,5 @@ import java.lang.annotation.Target;
 public @interface ManagedOperation
 {
     String description() default "";
+    boolean nonModifying() default false;
 }

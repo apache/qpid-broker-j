@@ -21,6 +21,7 @@
 package org.apache.qpid.systest.rest;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +39,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class ConnectionRestTest extends QpidRestTestCase
 {
@@ -105,7 +107,7 @@ public class ConnectionRestTest extends QpidRestTestCase
 
     public void testGetVirtualHostConnections() throws Exception
     {
-        List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("connection/test/test");
+        List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
         assertEquals("Unexpected number of connections", 1, connections.size());
         Asserts.assertConnection(connections.get(0), (AMQConnection) _connection);
     }
@@ -115,23 +117,27 @@ public class ConnectionRestTest extends QpidRestTestCase
         // get connection name
         String connectionName = getConnectionName();
 
-        Map<String, Object> connectionDetails = getRestTestHelper().getJsonAsSingletonList("connection/test/test/"
-                + getRestTestHelper().encodeAsUTF(connectionName));
-        assertConnection(connectionDetails);
+        Map<String, Object> connectionDetailsFromPost = getRestTestHelper().postDataToPathAndGetObject("virtualhost/test/test/getConnection",
+                Collections.singletonMap("name", (Object) connectionName));
+        assertConnection(connectionDetailsFromPost);
+
+        Map<String, Object> connectionDetailsFromGet = getRestTestHelper().getJsonAsMap("virtualhost/test/test/getConnection?name="
+                        + getRestTestHelper().encodeAsUTF(connectionName));
+        assertConnection(connectionDetailsFromGet);
     }
 
     public void testDeleteConnection() throws Exception
     {
-        // get connection name
         String connectionName = getConnectionName();
+        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
 
-        List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("connection/test/test");
+        List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("connection/" + portName);
         assertEquals("Unexpected number of connections before deletion", 1, connections.size());
 
-        String connectionUrl = "connection/test/test/" + getRestTestHelper().encodeAsUTF(connectionName);
+        String connectionUrl = "connection/" + portName + "/" + getRestTestHelper().encodeAsUTF(connectionName);
         getRestTestHelper().submitRequest(connectionUrl, "DELETE", HttpServletResponse.SC_OK);
 
-        connections = getRestTestHelper().getJsonAsList("connection/test/test");
+        connections = getRestTestHelper().getJsonAsList("connection/" + portName);
         assertEquals("Unexpected number of connections before deletion", 0, connections.size());
 
         try
@@ -152,19 +158,21 @@ public class ConnectionRestTest extends QpidRestTestCase
         assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
     }
 
-    public void testGetVirtualHostSessions() throws Exception
+    public void testGetPortSessions() throws Exception
     {
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/test/test");
+        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
+
+        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName);
         assertEquals("Unexpected number of sessions", 1, sessions.size());
         assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
     }
 
     public void testGetConnectionSessions() throws Exception
     {
-        // get connection name
         String connectionName = getConnectionName();
+        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
 
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/test/test/"
+        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName + "/"
                 + getRestTestHelper().encodeAsUTF(connectionName));
         assertEquals("Unexpected number of sessions", 1, sessions.size());
         assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
@@ -172,10 +180,10 @@ public class ConnectionRestTest extends QpidRestTestCase
 
     public void testGetSessionByName() throws Exception
     {
-        // get connection name
         String connectionName = getConnectionName();
+        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
 
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/test/test/"
+        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName + "/"
                 + getRestTestHelper().encodeAsUTF(connectionName) + "/" + ((AMQSession<?, ?>) _session).getChannelId());
         assertEquals("Unexpected number of sessions", 1, sessions.size());
         assertSession(sessions.get(0), (AMQSession<?, ?>) _session);
@@ -189,8 +197,9 @@ public class ConnectionRestTest extends QpidRestTestCase
         // session left open
         ((AMQSession)_session).sync();
         String connectionName = getConnectionName();
+        String portName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
 
-        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/test/test/"
+        List<Map<String, Object>> sessions = getRestTestHelper().getJsonAsList("session/" + portName + "/"
                                                                                + getRestTestHelper().encodeAsUTF(connectionName)
                                                                                + "/" + ((AMQSession<?, ?>) _session).getChannelId());
         assertEquals("Unexpected number of sessions", 1, sessions.size());
@@ -274,10 +283,7 @@ public class ConnectionRestTest extends QpidRestTestCase
 
     private String getConnectionName() throws IOException
     {
-        Map<String, Object> hostDetails = getRestTestHelper().getJsonAsSingletonList("virtualhost/test/test");
-        @SuppressWarnings("unchecked")
-        List<Map<String, Object>> connections = (List<Map<String, Object>>) hostDetails
-                .get(VirtualHostRestTest.VIRTUALHOST_CONNECTIONS_ATTRIBUTE);
+        List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
         assertEquals("Unexpected number of connections", 1, connections.size());
         Map<String, Object> connection = connections.get(0);
         String connectionName = (String) connection.get(Connection.NAME);

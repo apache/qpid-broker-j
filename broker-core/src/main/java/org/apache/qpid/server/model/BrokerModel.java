@@ -48,6 +48,7 @@ public final class BrokerModel extends Model
      *     Renamed FileTrustStore/FileKeyStore.path => FileTrustStore/FileKeyStore.storeUrl
      * 3.1 Add BrokerLogger as a child of Broker
      *     Replace the defaultVirtualHost (at Broker) with defaultVirtualHostNode flag (at VHN)
+     *     Make Connections children of Ports instead of VHosts
      */
     public static final int MODEL_MAJOR_VERSION = 3;
     public static final int MODEL_MINOR_VERSION = 1;
@@ -88,13 +89,13 @@ public final class BrokerModel extends Model
         addRelationship(VirtualHostNode.class, RemoteReplicationNode.class);
 
         addRelationship(VirtualHost.class, VirtualHostLogger.class);
-        addRelationship(VirtualHost.class, Connection.class);
         addRelationship(VirtualHost.class, Exchange.class);
         addRelationship(VirtualHost.class, Queue.class);
 
         addRelationship(VirtualHostLogger.class, VirtualHostLoggerFilter.class);
 
         addRelationship(Port.class, VirtualHostAlias.class);
+        addRelationship(Port.class, Connection.class);
 
         addRelationship(AuthenticationProvider.class, User.class);
         addRelationship(AuthenticationProvider.class, PreferencesProvider.class);

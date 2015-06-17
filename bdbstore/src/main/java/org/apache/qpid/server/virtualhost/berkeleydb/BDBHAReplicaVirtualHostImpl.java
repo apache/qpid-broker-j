@@ -55,10 +55,7 @@ import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.txn.DtxRegistry;
-import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
-import org.apache.qpid.server.virtualhost.HouseKeepingTask;
-import org.apache.qpid.server.virtualhost.RequiredExchangeException;
-import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
+import org.apache.qpid.server.virtualhost.*;
 
 /**
   Object that represents the VirtualHost whilst the VirtualHostNode is in the replica role.  The
@@ -300,9 +297,15 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public Collection<Connection> getConnections()
+    public Collection<Connection<?>> getConnections()
     {
         return Collections.emptyList();
+    }
+
+    @Override
+    public Connection<?> getConnection(String name)
+    {
+        return null;
     }
 
     @Override
@@ -561,4 +564,15 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
                                         + " does not permit this operation.");
     }
 
+    @Override
+    public void addConnectionAssociationListener(VirtualHostConnectionListener listener)
+    {
+        throwUnsupportedForReplica();
+    }
+
+    @Override
+    public void removeConnectionAssociationListener(VirtualHostConnectionListener listener)
+    {
+        throwUnsupportedForReplica();
+    }
 }

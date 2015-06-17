@@ -52,7 +52,6 @@ public class VirtualHostRestTest extends QpidRestTestCase
 {
     private static final String VIRTUALHOST_EXCHANGES_ATTRIBUTE = "exchanges";
     public static final String VIRTUALHOST_QUEUES_ATTRIBUTE = "queues";
-    public static final String VIRTUALHOST_CONNECTIONS_ATTRIBUTE = "connections";
 
     public static final String EMPTY_VIRTUALHOSTNODE_NAME = "emptyVHN";
 
@@ -113,8 +112,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         assertEquals("Unexpected value of queue attribute " + Queue.DURABLE, Boolean.TRUE, queue.get(Queue.DURABLE));
 
         @SuppressWarnings("unchecked")
-        List<Map<String, Object>> connections = (List<Map<String, Object>>) hostDetails
-                .get(VIRTUALHOST_CONNECTIONS_ATTRIBUTE);
+        List<Map<String, Object>> connections = getRestTestHelper().getJsonAsList("virtualhost/test/test/getConnections");
         assertEquals("Unexpected number of connections", 1, connections.size());
         Asserts.assertConnection(connections.get(0), _connection);
     }
@@ -680,7 +678,6 @@ public class VirtualHostRestTest extends QpidRestTestCase
         Asserts.assertDurableExchange("amq.match", "headers", restTestHelper.find(Exchange.NAME, "amq.match", exchanges));
 
         assertNull("Unexpected queues", hostDetails.get(VIRTUALHOST_QUEUES_ATTRIBUTE));
-        assertNull("Unexpected connections", hostDetails.get(VIRTUALHOST_CONNECTIONS_ATTRIBUTE));
     }
 
     private void assertActualAndDesireStates(final String restUrl,

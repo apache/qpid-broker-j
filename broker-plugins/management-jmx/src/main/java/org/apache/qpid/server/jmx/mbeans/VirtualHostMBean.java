@@ -29,6 +29,7 @@ import java.util.Map;
 import javax.management.JMException;
 import javax.management.ObjectName;
 
+import org.apache.qpid.server.virtualhost.VirtualHostConnectionListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.virtualhost.ManagedVirtualHost;
 
-public class VirtualHostMBean extends AMQManagedObject implements ManagedVirtualHost, ConfigurationChangeListener
+public class VirtualHostMBean extends AMQManagedObject implements ManagedVirtualHost, ConfigurationChangeListener, VirtualHostConnectionListener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(VirtualHostMBean.class);
 
@@ -59,6 +60,7 @@ public class VirtualHostMBean extends AMQManagedObject implements ManagedVirtual
         super(ManagedVirtualHost.class, ManagedVirtualHost.TYPE, registry);
         _virtualHost = virtualHost;
         virtualHost.addChangeListener(this);
+        virtualHost.addConnectionAssociationListener(this);
 
         initQueues();
         initExchanges();
@@ -162,12 +164,6 @@ public class VirtualHostMBean extends AMQManagedObject implements ManagedVirtual
                 {
                     ExchangeMBean exchangeMBean = new ExchangeMBean((Exchange)child, this);
                     _children.put(child, exchangeMBean);
-
-                }
-                else if(child instanceof Connection)
-                {
-                    ConnectionMBean connectionMBean = new ConnectionMBean((Connection)child, this);
-                    _children.put(child, connectionMBean);
 
                 }
                 else
@@ -275,5 +271,28 @@ public class VirtualHostMBean extends AMQManagedObject implements ManagedVirtual
     public void bulkChangeEnd(final ConfiguredObject<?> object)
     {
 
+    }
+
+    @Override
+    public void connectionAssociated(Connection<?> connection)
+    {
+        synchronized (_children)
+        {
+            try
+            {
+                ConnectionMBean connectionMBean = new ConnectionMBean(connection, this);
+                _children.put(connection, connectionMBean);
+            }
+            catch(Exception e)
+            {
+                LOGGER.error("Exception while creating mbean for " + connection.getClass().getSimpleName() + " " + connection.getName(), e);
+            }
+        }
+    }
+
+    @Override
+    public void connectionRemoved(Connection<?> connection)
+    {
+        childRemoved(_virtualHost, connection);
     }
 }

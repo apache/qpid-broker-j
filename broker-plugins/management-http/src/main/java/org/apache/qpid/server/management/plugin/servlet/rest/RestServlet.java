@@ -17,6 +17,9 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +44,7 @@ import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -85,6 +89,8 @@ public class RestServlet extends AbstractServlet
                                         EXTRACT_INITIAL_CONFIG_PARAM,
                                         INHERITED_ACTUALS_PARAM,
                                         CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM));
+    public static final int DEFAULT_DEPTH = 1;
+    public static final int DEFAULT_OVERSIZE = 120;
 
     private Class<? extends ConfiguredObject>[] _hierarchy;
 
@@ -332,61 +338,69 @@ public class RestServlet extends AbstractServlet
     @Override
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        // TODO - sort special params, everything else should act as a filter
-        String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
-        boolean extractInitialConfig = getBooleanParameterFromRequest(request, EXTRACT_INITIAL_CONFIG_PARAM);
-
-        if (attachmentFilename != null)
+        String[] pathInfoElements = getPathInfoElements(request);
+        if (pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1)
         {
-            setContentDispositionHeaderIfNecessary(response, attachmentFilename);
-        }
-
-        Collection<ConfiguredObject<?>> allObjects = getObjects(request);
-
-        if (allObjects.isEmpty() && isSingleObjectRequest(request) )
-        {
-            sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
-            return;
-        }
-
-        int depth;
-        boolean actuals;
-        boolean includeSystemContext;
-        boolean inheritedActuals;
-        int oversizeThreshold;
-
-        if(extractInitialConfig)
-        {
-            depth = Integer.MAX_VALUE;
-            oversizeThreshold = Integer.MAX_VALUE;
-            actuals = true;
-            includeSystemContext = false;
-            inheritedActuals = false;
+            doOperation(request, response);
         }
         else
         {
-            depth = getIntParameterFromRequest(request, DEPTH_PARAM, 1);
-            oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, 120);
-            actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
-            includeSystemContext = getBooleanParameterFromRequest(request, INCLUDE_SYS_CONTEXT_PARAM);
-            inheritedActuals = getBooleanParameterFromRequest(request, INHERITED_ACTUALS_PARAM);
+            // TODO - sort special params, everything else should act as a filter
+            String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
+            boolean extractInitialConfig = getBooleanParameterFromRequest(request, EXTRACT_INITIAL_CONFIG_PARAM);
+
+            if (attachmentFilename != null)
+            {
+                setContentDispositionHeaderIfNecessary(response, attachmentFilename);
+            }
+
+            Collection<ConfiguredObject<?>> allObjects = getObjects(request);
+
+            if (allObjects.isEmpty() && isSingleObjectRequest(request))
+            {
+                sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
+                return;
+            }
+
+            int depth;
+            boolean actuals;
+            boolean includeSystemContext;
+            boolean inheritedActuals;
+            int oversizeThreshold;
+
+            if (extractInitialConfig)
+            {
+                depth = Integer.MAX_VALUE;
+                oversizeThreshold = Integer.MAX_VALUE;
+                actuals = true;
+                includeSystemContext = false;
+                inheritedActuals = false;
+            }
+            else
+            {
+                depth = getIntParameterFromRequest(request, DEPTH_PARAM, DEFAULT_DEPTH);
+                oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, DEFAULT_OVERSIZE);
+                actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
+                includeSystemContext = getBooleanParameterFromRequest(request, INCLUDE_SYS_CONTEXT_PARAM);
+                inheritedActuals = getBooleanParameterFromRequest(request, INHERITED_ACTUALS_PARAM);
+            }
+
+            List<Map<String, Object>> output = new ArrayList<>();
+            for (ConfiguredObject configuredObject : allObjects)
+            {
+
+                output.add(_objectConverter.convertObjectToMap(configuredObject, getConfiguredClass(),
+                        depth, actuals, inheritedActuals, includeSystemContext, extractInitialConfig, oversizeThreshold, request.isSecure()));
+            }
+
+
+            boolean sendCachingHeaders = attachmentFilename == null;
+            sendJsonResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output,
+                    request,
+                    response,
+                    HttpServletResponse.SC_OK,
+                    sendCachingHeaders);
         }
-
-        List<Map<String, Object>> output = new ArrayList<>();
-        for(ConfiguredObject configuredObject : allObjects)
-        {
-
-            output.add(_objectConverter.convertObjectToMap(configuredObject, getConfiguredClass(),
-                    depth, actuals, inheritedActuals, includeSystemContext, extractInitialConfig, oversizeThreshold, request.isSecure()));
-        }
-
-
-        boolean sendCachingHeaders = attachmentFilename == null;
-        sendJsonResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output,
-                         request,
-                         response,
-                         HttpServletResponse.SC_OK,
-                         sendCachingHeaders);
     }
 
     private boolean isSingleObjectRequest(HttpServletRequest request)
@@ -433,7 +447,6 @@ public class RestServlet extends AbstractServlet
         response.setContentType("application/json");
 
         List<String> names = getParentNamesFromServletPath(request);
-        Map<String, Object> providedObject = getRequestProvidedObject(request);
         boolean isFullObjectURL = names.size() == _hierarchy.length;
         boolean isPostToFullURL = isFullObjectURL && "POST".equalsIgnoreCase(request.getMethod());
         final String[] pathInfoElements = getPathInfoElements(request);
@@ -442,6 +455,7 @@ public class RestServlet extends AbstractServlet
         {
             if(!isOperation)
             {
+                Map<String, Object> providedObject = getRequestProvidedObject(request);
                 if (names.isEmpty() && _hierarchy.length == 0)
                 {
                     getBroker().setAttributes(providedObject);
@@ -493,7 +507,7 @@ public class RestServlet extends AbstractServlet
             }
             else
             {
-                doOperation(request, response, names, providedObject, pathInfoElements);
+                doOperation(request, response);
             }
         }
         catch (RuntimeException e)
@@ -504,12 +518,12 @@ public class RestServlet extends AbstractServlet
     }
 
     private void doOperation(final HttpServletRequest request,
-                             final HttpServletResponse response,
-                             final List<String> names,
-                             final Map<String, Object> providedObject,
-                             final String[] pathInfoElements) throws IOException
+                             final HttpServletResponse response) throws IOException, ServletException
     {
         ConfiguredObject<?> subject;
+        final List<String> names = getParentNamesFromServletPath(request);
+        final String[] pathInfoElements = getPathInfoElements(request);
+
         if (names.isEmpty() && _hierarchy.length == 0)
         {
             subject = getBroker();
@@ -544,6 +558,10 @@ public class RestServlet extends AbstractServlet
         final Map<String, ConfiguredObjectOperation<?>> availableOperations =
                 getBroker().getModel().getTypeRegistry().getOperations(subject.getClass());
         ConfiguredObjectOperation operation = availableOperations.get(operationName);
+        Map<String, Object> operationArguments;
+
+
+        String requestMethod = request.getMethod();
         if (operation == null)
         {
             sendJsonErrorResponse(request,
@@ -552,7 +570,40 @@ public class RestServlet extends AbstractServlet
                                   "No such operation: " + operationName);
             return;
         }
-        Object returnVal = operation.perform(subject, providedObject);
+        else
+        {
+            if (requestMethod.equals("GET"))
+            {
+                if (operation.isNonModifying())
+                {
+                    operationArguments = getOperationArgumentsAsMap(request);
+                }
+                else
+                {
+                    response.addHeader("Allow", "POST");
+                    sendJsonErrorResponse(request,
+                                          response,
+                                          HttpServletResponse.SC_METHOD_NOT_ALLOWED,
+                                          "Operation " + operationName + " modifies the object so you must use POST.");
+                    return;
+                }
+
+            }
+            else if (requestMethod.equals("POST"))
+            {
+                operationArguments = getRequestProvidedObject(request);
+            }
+            else
+            {
+                response.addHeader("Allow", (operation.isNonModifying() ? "POST, GET" : "POST"));
+                sendJsonErrorResponse(request,
+                                      response,
+                                      HttpServletResponse.SC_METHOD_NOT_ALLOWED,
+                                      "Operation " + operationName + " does not support the " + requestMethod + " requestMethod.");
+                return;
+            }
+        }
+        Object returnVal = operation.perform(subject, operationArguments);
         if(returnVal instanceof TypedContent)
         {
             TypedContent typedContent = (TypedContent)returnVal;
@@ -563,9 +614,80 @@ public class RestServlet extends AbstractServlet
         }
         else
         {
+            if (ConfiguredObject.class.isAssignableFrom(operation.getReturnType()))
+            {
+                returnVal = _objectConverter.convertObjectToMap((ConfiguredObject<?>) returnVal, operation.getReturnType(), DEFAULT_DEPTH,
+                                                                false, false, false, false, DEFAULT_OVERSIZE, request.isSecure());
+            }
+            else if (returnsCollectionOfConfiguredObjects(operation))
+            {
+                List<Map<String, Object>> output = new ArrayList<>();
+                for (Object configuredObject : (Collection)returnVal)
+                {
+                    output.add(_objectConverter.convertObjectToMap((ConfiguredObject<?>) configuredObject,
+                               getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()),
+                               DEFAULT_DEPTH, false, false, false, false, DEFAULT_OVERSIZE, request.isSecure()));
+                }
+                returnVal = output;
+            }
             sendJsonResponse(returnVal, request, response);
         }
 
+    }
+
+    private boolean returnsCollectionOfConfiguredObjects(ConfiguredObjectOperation operation)
+    {
+        return Collection.class.isAssignableFrom(operation.getReturnType())
+                 && operation.getGenericReturnType() instanceof ParameterizedType
+                 && ConfiguredObject.class.isAssignableFrom(getCollectionMemberType((ParameterizedType) operation.getGenericReturnType()));
+    }
+
+    private Class getCollectionMemberType(ParameterizedType collectionType)
+    {
+        return getRawType((collectionType).getActualTypeArguments()[0]);
+    }
+
+    private static Class getRawType(Type t)
+    {
+        if(t instanceof Class)
+        {
+            return (Class)t;
+        }
+        else if(t instanceof ParameterizedType)
+        {
+            return (Class)((ParameterizedType)t).getRawType();
+        }
+        else if(t instanceof TypeVariable)
+        {
+            Type[] bounds = ((TypeVariable)t).getBounds();
+            if(bounds.length == 1)
+            {
+                return getRawType(bounds[0]);
+            }
+        }
+        throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);
+    }
+
+    private Map<String, Object> getOperationArgumentsAsMap(HttpServletRequest request)
+    {
+        Map<String, Object> providedObject;
+        providedObject = new HashMap<>();
+        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet())
+        {
+            String[] value = entry.getValue();
+            if (value != null)
+            {
+                if(value.length > 1)
+                {
+                    providedObject.put(entry.getKey(), Arrays.asList(value));
+                }
+                else
+                {
+                    providedObject.put(entry.getKey(), value[0]);
+                }
+            }
+        }
+        return providedObject;
     }
 
     private List<ConfiguredObject> findAllObjectParents(List<String> names)

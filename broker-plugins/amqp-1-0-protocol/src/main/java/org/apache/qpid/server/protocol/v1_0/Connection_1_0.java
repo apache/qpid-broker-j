@@ -134,6 +134,8 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         _dataDeliveryStatistics = new StatisticsCounter("data-delivered-" + getConnectionId());
         _messageReceiptStatistics = new StatisticsCounter("messages-received-" + getConnectionId());
         _dataReceiptStatistics = new StatisticsCounter("data-received-" + getConnectionId());
+        _adapter = new ConnectionAdapter(this);
+        _adapter.create();
     }
 
     public Object getReference()
@@ -172,10 +174,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
             }
             else
             {
-                _adapter = new ConnectionAdapter(this);
-                _adapter.create();
                 _adapter.virtualHostAssociated();
-
             }
         }
     }

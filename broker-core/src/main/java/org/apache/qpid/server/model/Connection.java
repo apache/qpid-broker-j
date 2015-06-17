@@ -82,6 +82,9 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     Transport getTransport();
 
     @DerivedAttribute
+    VirtualHost getVirtualHost();
+
+    @DerivedAttribute
     Port getPort();
 
     @ManagedStatistic

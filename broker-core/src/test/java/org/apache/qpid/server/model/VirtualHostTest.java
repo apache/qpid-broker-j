@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.util.concurrent.Futures;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
@@ -137,7 +138,7 @@ public class VirtualHostTest extends QpidTestCase
         assertEquals("Unexpected name", virtualHostName, virtualHost.getName());
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
-        verify(_configStore).update(eq(true),matchesRecord(virtualHost.getId(), virtualHost.getType()));
+        verify(_configStore).update(eq(true), matchesRecord(virtualHost.getId(), virtualHost.getType()));
     }
 
     public void testDeleteVirtualHost()
@@ -230,23 +231,23 @@ public class VirtualHostTest extends QpidTestCase
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         AMQConnectionModel connection = createMockProtocolConnection(virtualHost);
-        assertEquals("Unexpected number of connections before connection registered", 0, virtualHost.getChildren(Connection.class).size());
+        assertEquals("Unexpected number of connections before connection registered", 0, virtualHost.getConnectionCount());
 
-        ConnectionAdapter modelConnection = new ConnectionAdapter(connection);
-        modelConnection.create();
+        Connection modelConnection = mock(Connection.class);
+        when(modelConnection.getUnderlyingConnection()).thenReturn(connection);
+        when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         virtualHost.registerConnection(modelConnection);
 
-        assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getChildren(
-                Connection.class).size());
+        assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getConnectionCount());
 
         virtualHost.stop();
         assertEquals("Unexpected state", State.STOPPED, virtualHost.getState());
 
         assertEquals("Unexpected number of connections after virtualhost stopped",
                      0,
-                     virtualHost.getChildren(Connection.class).size());
+                     virtualHost.getConnectionCount());
 
-        verify(connection).closeAsync(AMQConstant.CONNECTION_FORCED, "Connection closed by external action");
+        verify(modelConnection).closeAsync();
     }
 
     public void testDeleteVirtualHost_ClosesConnections()
@@ -258,23 +259,23 @@ public class VirtualHostTest extends QpidTestCase
 
         AMQConnectionModel connection = createMockProtocolConnection(virtualHost);
         assertEquals("Unexpected number of connections before connection registered",
-                     0,
-                     virtualHost.getChildren(Connection.class).size());
+                0,
+                virtualHost.getConnectionCount());
 
-        ConnectionAdapter modelConnection = new ConnectionAdapter(connection);
-        modelConnection.create();
+        Connection modelConnection = mock(Connection.class);
+        when(modelConnection.getUnderlyingConnection()).thenReturn(connection);
         virtualHost.registerConnection(modelConnection);
 
-        assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getChildren(Connection.class).size());
+        assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getConnectionCount());
 
         virtualHost.delete();
         assertEquals("Unexpected state", State.DELETED, virtualHost.getState());
 
         assertEquals("Unexpected number of connections after virtualhost deleted",
-                     0,
-                     virtualHost.getChildren(Connection.class).size());
+                0,
+                virtualHost.getConnectionCount());
 
-        verify(connection).closeAsync(AMQConstant.CONNECTION_FORCED, "Connection closed by external action");
+        verify(modelConnection).closeAsync();
     }
 
     public void testCreateDurableQueue()

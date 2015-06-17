@@ -40,7 +40,7 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
-import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -55,11 +55,6 @@ import org.apache.qpid.amqp_1_0.type.security.SaslInit;
 import org.apache.qpid.amqp_1_0.type.transport.Open;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
-import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -78,7 +73,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     private ProtocolEngine_1_0_0 _protocolEngine_1_0_0;
     private NetworkConnection _networkConnection;
     private Broker<?> _broker;
-    private AmqpPort<?> _port;
+    private AmqpPort _port;
     private SubjectCreator _subjectCreator;
     private AuthenticationProvider _authenticationProvider;
     private List<ByteBuffer> _sentBuffers;
@@ -99,6 +94,9 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
         when(_broker.getId()).thenReturn(UUID.randomUUID());
         _port = mock(AmqpPort.class);
+        when(_port.getChildExecutor()).thenReturn(taskExecutor);
+        when(_port.getCategoryClass()).thenReturn(Port.class);
+        when(_port.getModel()).thenReturn(BrokerModel.getInstance());
         _subjectCreator = mock(SubjectCreator.class);
         _authenticationProvider = mock(AuthenticationProvider.class);
         when(_port.getAuthenticationProvider()).thenReturn(_authenticationProvider);

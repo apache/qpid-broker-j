@@ -59,7 +59,7 @@ public final class ConnectionAdapter extends AbstractConfiguredObject<Connection
 
     public ConnectionAdapter(final AMQConnectionModel conn)
     {
-        super(parentsMap(conn.getVirtualHost()),createAttributes(conn));
+        super(parentsMap(conn.getPort()),createAttributes(conn));
         _underlyingConnection = conn;
 
         // Used to allow the protocol layers to tell the model they have been deleted
@@ -160,6 +160,7 @@ public final class ConnectionAdapter extends AbstractConfiguredObject<Connection
         return _underlyingConnection.getPort();
     }
 
+    @Override
     public VirtualHost<?,?,?> getVirtualHost()
     {
         return _underlyingConnection.getVirtualHost();

@@ -29,7 +29,10 @@ import java.util.Map;
 
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.properties.ConnectionStartProperties;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.BrokerTestHelper;
@@ -40,7 +43,7 @@ import org.apache.qpid.transport.network.NetworkConnection;
 public class AMQProtocolEngineTest extends QpidTestCase
 {
     private Broker<?> _broker;
-    private AmqpPort<?> _port;
+    private AmqpPort _port;
     private NetworkConnection _network;
     private Transport _transport;
 
@@ -53,6 +56,11 @@ public class AMQProtocolEngineTest extends QpidTestCase
 
         _port = mock(AmqpPort.class);
         when(_port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
+
+        TaskExecutor childExecutor = _broker.getChildExecutor();
+        when(_port.getChildExecutor()).thenReturn(childExecutor);
+        when(_port.getCategoryClass()).thenReturn(Port.class);
+        when(_port.getModel()).thenReturn(BrokerModel.getInstance());
 
         _network = mock(NetworkConnection.class);
         _transport = Transport.TCP;

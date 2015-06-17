@@ -292,7 +292,12 @@ define(["dojo/parser",
                                                                                   var idx = evt.rowIndex,
                                                                                       theItem = this.getItem(idx);
                                                                                   var connectionName = obj.dataStore.getValue(theItem,"name");
-                                                                                  controller.show("connection", connectionName, vhost, theItem.id);
+                                                                                  // mock the connection's parent port because we don't have access to it from here
+                                                                                  var port = { name: obj.dataStore.getValue(theItem,"port"),
+                                                                                               type: "port",
+                                                                                               parent: vhost.parent.parent };
+
+                                                                                  controller.show("connection", connectionName, port, theItem.id);
                                                                               });
                                                              } );
 
@@ -323,23 +328,36 @@ define(["dojo/parser",
                this.management.load(this.modelObj)
                    .then(function(data) {
                        thisObj.vhostData = data[0] || {name: thisObj.modelObj.name,statistics:{messagesIn:0,bytesIn:0,messagesOut:0,bytesOut:0}};
+                       thisObj.management.get({url: thisObj.management.objectToURL(thisObj.modelObj) + "/getConnections" })
+                           .then(function(data){
+                               thisObj.vhostData["connections"] = data;
 
-                       if (callback)
-                       {
-                        callback();
-                       }
+                               if (callback)
+                               {
+                                   callback();
+                               }
 
-                       try
-                       {
-                            thisObj._update();
-                       }
-                       catch(e)
-                       {
-                            if (console && console.error)
-                            {
-                                console.error(e);
-                            }
-                       }
+                               try
+                               {
+                                   thisObj._update();
+                               }
+                               catch(e)
+                               {
+                                   if (console && console.error)
+                                   {
+                                       console.error(e);
+                                   }
+                               }
+
+                           },
+                           function(error)
+                           {
+                               util.tabErrorHandler(error, { updater:thisObj,
+                                   contentPane: thisObj.tabObject.contentPane,
+                                   tabContainer: thisObj.tabObject.controller.tabContainer,
+                                   name: thisObj.modelObj.name,
+                                   category: "Virtual Host" });
+                           });
                    },
                    function(error)
                    {

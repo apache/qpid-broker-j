@@ -25,7 +25,12 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.BrokerTestHelper;
@@ -72,8 +77,7 @@ public class ServerSessionTest extends QpidTestCase
         final Broker<?> broker = mock(Broker.class);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
-        AmqpPort amqpPort = mock(AmqpPort.class);
-        when(amqpPort.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
+        AmqpPort amqpPort = createMockPort(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
 
         ServerConnection connection = new ServerConnection(1, broker, amqpPort, Transport.TCP);
         final ProtocolEngine_0_10 protocolEngine = mock(ProtocolEngine_0_10.class);
@@ -98,8 +102,8 @@ public class ServerSessionTest extends QpidTestCase
         final Broker<?> broker = mock(Broker.class);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
-        AmqpPort port = mock(AmqpPort.class);
-        when(port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(1024);
+        AmqpPort port = createMockPort(1024);
+
         ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP);
         final ProtocolEngine_0_10 protocolEngine = mock(ProtocolEngine_0_10.class);
         connection.setProtocolEngine(protocolEngine);
@@ -134,6 +138,18 @@ public class ServerSessionTest extends QpidTestCase
         delegate.messageTransfer(session, xfr);
 
         assertTrue("Methods invoked when not expecting any", invokedMethods.isEmpty());
+    }
+
+    public AmqpPort createMockPort(int maxMessageSize)
+    {
+        AmqpPort port = mock(AmqpPort.class);
+        when(port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(maxMessageSize);
+        TaskExecutor childExecutor = new TaskExecutorImpl();
+        childExecutor.start();
+        when(port.getChildExecutor()).thenReturn(childExecutor);
+        when(port.getCategoryClass()).thenReturn(Port.class);
+        when(port.getModel()).thenReturn(BrokerModel.getInstance());
+        return port;
     }
 
 

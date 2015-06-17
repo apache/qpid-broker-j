@@ -56,10 +56,7 @@ import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.txn.DtxRegistry;
-import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
-import org.apache.qpid.server.virtualhost.HouseKeepingTask;
-import org.apache.qpid.server.virtualhost.RequiredExchangeException;
-import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
+import org.apache.qpid.server.virtualhost.*;
 
 @ManagedObject( category = false, type = RedirectingVirtualHostImpl.TYPE, register = false )
 class RedirectingVirtualHostImpl
@@ -301,9 +298,15 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public Collection<Connection> getConnections()
+    public Collection<Connection<?>> getConnections()
     {
         return Collections.emptyList();
+    }
+
+    @Override
+    public Connection<?> getConnection(String name)
+    {
+        return null;
     }
 
     @Override
@@ -563,5 +566,15 @@ class RedirectingVirtualHostImpl
                                         + " does not permit this operation.");
     }
 
+    @Override
+    public void addConnectionAssociationListener(VirtualHostConnectionListener listener)
+    {
+        throwUnsupportedForRedirector();
+    }
 
+    @Override
+    public void removeConnectionAssociationListener(VirtualHostConnectionListener listener)
+    {
+        throwUnsupportedForRedirector();
+    }
 }

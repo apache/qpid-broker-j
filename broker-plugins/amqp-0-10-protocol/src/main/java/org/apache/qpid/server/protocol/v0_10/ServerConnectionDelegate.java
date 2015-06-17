@@ -367,7 +367,7 @@ public class ServerConnectionDelegate extends ServerDelegate
         final Principal authorizedPrincipal = sconn.getAuthorizedPrincipal();
         final String userId = authorizedPrincipal == null ? "" : authorizedPrincipal.getName();
 
-        final Iterator<org.apache.qpid.server.model.Connection> connections =
+        final Iterator<org.apache.qpid.server.model.Connection<?>> connections =
                         ((ServerConnection)conn).getVirtualHost().getConnections().iterator();
         while(connections.hasNext())
         {

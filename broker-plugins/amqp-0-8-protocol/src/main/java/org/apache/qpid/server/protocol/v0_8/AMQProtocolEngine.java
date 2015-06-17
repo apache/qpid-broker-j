@@ -260,6 +260,9 @@ public class AMQProtocolEngine implements ProtocolEngine,
         _messagesReceived = new StatisticsCounter("messages-received-" + _connectionId);
         _dataReceived = new StatisticsCounter("data-received-" + _connectionId);
         _creationTime = System.currentTimeMillis();
+
+        _adapter = new ConnectionAdapter(this);
+        _adapter.create();
     }
 
 
@@ -1058,8 +1061,6 @@ public class AMQProtocolEngine implements ProtocolEngine,
     public void setVirtualHost(VirtualHostImpl<?,?,?> virtualHost)
     {
         _virtualHost = virtualHost;
-        _adapter = new ConnectionAdapter(this);
-        _adapter.create();
         _adapter.virtualHostAssociated();
 
         _messageCompressionThreshold = virtualHost.getContextValue(Integer.class,

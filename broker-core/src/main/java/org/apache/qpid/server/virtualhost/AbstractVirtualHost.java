@@ -36,17 +36,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
+import com.google.common.base.Function;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -56,7 +53,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.pool.SuppressingInheritedAccessControlContextThreadFactory;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.exchange.DefaultDestination;
@@ -108,6 +104,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
 
     private final Set<Connection<?>> _connections = newSetFromMap(new ConcurrentHashMap<Connection<?>, Boolean>());
+    private final Set<VirtualHostConnectionListener> _connectionAssociationListeners = new CopyOnWriteArraySet<>();
 
     private static enum BlockingType { STORE, FILESYSTEM };
 
@@ -463,9 +460,23 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _messageStoreLogSubject;
     }
 
-    public Collection<Connection> getConnections()
+    @Override
+    public Collection<Connection<?>> getConnections()
     {
-        return getChildren(Connection.class);
+        return _connections;
+    }
+
+    @Override
+    public Connection<?> getConnection(String name)
+    {
+        for (Connection<?> connection : _connections)
+        {
+            if (connection.getName().equals(name))
+            {
+                return connection;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -496,10 +507,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         }
         else if(childClass == VirtualHostAlias.class)
-        {
-            throw new UnsupportedOperationException();
-        }
-        else if(childClass == Connection.class)
         {
             throw new UnsupportedOperationException();
         }
@@ -858,14 +865,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         setState(State.UNAVAILABLE);
         _virtualHostLoggersToClose = new ArrayList(getChildren(VirtualHostLogger.class));
-        return super.beforeClose();
+        //Stop Connections
+        return closeConnections();
     }
 
     @Override
     protected void onClose()
     {
-        //Stop Connections
-        closeConnections("VirtualHost is closing");
         _dtxRegistry.close();
         closeMessageStore();
         shutdownHouseKeeping();
@@ -880,7 +886,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
 
-    public void closeConnections(final String replyText)
+    public ListenableFuture<Void> closeConnections()
     {
         if (_logger.isDebugEnabled())
         {
@@ -891,6 +897,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             conn.getUnderlyingConnection().stop();
         }
 
+        List<ListenableFuture<Void>> connectionCloseFutures = new ArrayList<>();
         while (!_connections.isEmpty())
         {
             Iterator<Connection<?>> itr = _connections.iterator();
@@ -899,7 +906,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 Connection<?> connection = itr.next();
                 try
                 {
-                    connection.getUnderlyingConnection().closeAsync(AMQConstant.CONNECTION_FORCED, replyText);
+                    connectionCloseFutures.add(connection.closeAsync());
                 }
                 catch (Exception e)
                 {
@@ -911,6 +918,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
             }
         }
+        ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(connectionCloseFutures);
+        return Futures.transform(combinedFuture, new Function<List<Void>, Void>()
+               {
+                   @Override
+                   public Void apply(List<Void> voids)
+                   {
+                       return null;
+                   }
+               });
     }
 
     private void closeMessageStore()
@@ -1402,35 +1418,31 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )
     protected ListenableFuture<Void> doStop()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
         final List<VirtualHostLogger> loggers = new ArrayList<>(getChildren(VirtualHostLogger.class));
-        closeChildren().addListener(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-                            shutdownHouseKeeping();
-                            if(_networkConnectionScheduler != null)
-                            {
-                                _networkConnectionScheduler.close();
-                                _networkConnectionScheduler = null;
-                            }
-                            closeMessageStore();
-                            setState(State.STOPPED);
+        return doAfter(closeConnections(), new Callable<ListenableFuture<Void>>()
+                                            {
+                                                @Override
+                                                public ListenableFuture<Void> call() throws Exception
+                                                {
+                                                    return closeChildren();
+                                                }
+                                            }).then(new Runnable()
+                                            {
+                                                @Override
+                                                public void run()
+                                                {
+                                                    shutdownHouseKeeping();
+                                                    if (_networkConnectionScheduler != null)
+                                                    {
+                                                        _networkConnectionScheduler.close();
+                                                        _networkConnectionScheduler = null;
+                                                    }
+                                                    closeMessageStore();
+                                                    setState(State.STOPPED);
 
-                            stopLogging(loggers);
-                        }
-                        finally
-                        {
-                            returnVal.set(null);
-                        }
-                    }
-                }, getTaskExecutor().getExecutor()
-                                   );
-        return returnVal;
+                                                    stopLogging(loggers);
+                                                }
+                                            });
     }
 
     private void stopLogging(Collection<VirtualHostLogger> loggers)
@@ -1677,8 +1689,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public void registerConnection(final Connection<?> connection)
     {
-        childAdded(connection);
-
         _connections.add(connection);
 
         AMQConnectionModel<?,?> underlyingConnection = connection.getUnderlyingConnection();
@@ -1689,12 +1699,22 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         underlyingConnection.setScheduler(_networkConnectionScheduler);
 
+        for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
+        {
+            listener.connectionAssociated(connection);
+        }
     }
 
     @Override
     public void deregisterConnection(final Connection<?> connection)
     {
-        _connections.remove(connection);
+        if (_connections.remove(connection))
+        {
+            for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
+            {
+                listener.connectionRemoved(connection);
+            }
+        }
     }
 
 
@@ -1796,6 +1816,19 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             scheduleHouseKeepingTask(getHousekeepingCheckPeriod(), _fileSystemSpaceChecker);
         }
     }
+
+    @Override
+    public void addConnectionAssociationListener(VirtualHostConnectionListener listener)
+    {
+        _connectionAssociationListeners.add(listener);
+    }
+
+    @Override
+    public void removeConnectionAssociationListener(VirtualHostConnectionListener listener)
+    {
+        _connectionAssociationListeners.remove(listener);
+    }
+
     private static class ChildCounter
     {
         private final AtomicInteger _count = new AtomicInteger();

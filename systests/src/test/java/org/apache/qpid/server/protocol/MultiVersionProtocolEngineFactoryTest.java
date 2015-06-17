@@ -34,10 +34,8 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
@@ -161,12 +159,15 @@ public class MultiVersionProtocolEngineFactoryTest extends QpidTestCase
         AuthenticationProvider<?> authProvider = mock(AuthenticationProvider.class);
         when(authProvider.getSubjectCreator(false)).thenReturn(subjectCreator);
 
-        AmqpPort<?> port = mock(AmqpPort.class);
+        AmqpPort port = mock(AmqpPort.class);
         when(port.canAcceptNewConnection(any(SocketAddress.class))).thenReturn(true);
         when(port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
         when(port.getAuthenticationProvider()).thenReturn(authProvider);
 
-
+        TaskExecutor childExecutor = _broker.getChildExecutor();
+        when(port.getChildExecutor()).thenReturn(childExecutor);
+        when(port.getCategoryClass()).thenReturn(Port.class);
+        when(port.getModel()).thenReturn(BrokerModel.getInstance());
 
         when(port.getContextValue(eq(Long.class), eq(Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY))).thenReturn(10000l);
         MultiVersionProtocolEngineFactory factory =
