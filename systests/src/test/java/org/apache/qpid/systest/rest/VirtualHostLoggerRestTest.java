@@ -21,14 +21,19 @@
 package org.apache.qpid.systest.rest;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.logging.VirtualHostFileLogger;
+import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHostLogger;
+import org.apache.qpid.util.LogMonitor;
 
 public class VirtualHostLoggerRestTest extends QpidRestTestCase
 {
@@ -38,7 +43,6 @@ public class VirtualHostLoggerRestTest extends QpidRestTestCase
         String loggerName = "testLogger1";
         String loggerRestUrlBase = "virtualhostlogger/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST;
         String loggerRestUrl = loggerRestUrlBase + "/" + loggerName;
-
 
         Map<String, Object> virtualHostLoggerAttributes = new HashMap<>();
         virtualHostLoggerAttributes.put(VirtualHostLogger.NAME, loggerName);
@@ -61,6 +65,22 @@ public class VirtualHostLoggerRestTest extends QpidRestTestCase
         String logFileLocation = String.valueOf(loggerData.get(VirtualHostFileLogger.FILE_NAME));
         assertNotNull("Log file attribute is not set ", logFileLocation);
         assertTrue(String.format("Log file '%s' does not exists", logFileLocation), new File(logFileLocation).exists());
+
+
+        LogMonitor logMonitor = new LogMonitor(new File(logFileLocation));
+        try
+        {
+            List<String> logs = logMonitor.findMatches("QUE-1001");
+            assertEquals("Unexpected number of Queue creation operational logs before Queue creation", 0, logs.size());
+            Map<String, Object> queueAttributes = Collections.<String, Object>singletonMap(Queue.NAME, getTestQueueName());
+            getRestTestHelper().submitRequest("queue/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST, "PUT", queueAttributes, HttpServletResponse.SC_CREATED);
+            logs = logMonitor.waitAndFindMatches("QUE-1001", 1000);
+            assertEquals("Unexpected number of Queue creation operational logs after Queue creation", 1, logs.size());
+        }
+        finally
+        {
+            logMonitor.close();
+        }
     }
 
     public void testDeleteVirtualHostLoggerAndFilter() throws Exception

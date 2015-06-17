@@ -171,7 +171,7 @@ public class CurrentThreadTaskExecutor implements TaskExecutor
             }
 
             @Override
-            public TaskExecutor newInstance(final String name)
+            public TaskExecutor newInstance(final String name, PrincipalAccessor principalAccessor)
             {
                 return CurrentThreadTaskExecutor.this;
             }

@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.configuration.updater;
 
+import java.security.Principal;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -29,7 +30,12 @@ public interface TaskExecutor
     interface Factory
     {
         TaskExecutor newInstance();
-        TaskExecutor newInstance(String name);
+        TaskExecutor newInstance(String name, PrincipalAccessor principalAccessor);
+    }
+
+    interface PrincipalAccessor
+    {
+        Principal getPrincipal();
     }
 
     boolean isRunning();

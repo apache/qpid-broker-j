@@ -26,6 +26,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -105,7 +106,19 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     {
         super(Collections.<Class<? extends ConfiguredObject>,ConfiguredObject<?>>singletonMap(Broker.class, parent),
               attributes);
-        _virtualHostExecutor = getTaskExecutor().getFactory().newInstance("VirtualHostNode-"+getName()+"-Configuration-Thread");
+        _virtualHostExecutor = getTaskExecutor().getFactory().newInstance("VirtualHostNode-" + getName() + "-Configuration-Thread", new TaskExecutor.PrincipalAccessor()
+        {
+            @Override
+            public Principal getPrincipal()
+            {
+                VirtualHost<?,?,?> virtualHost = getVirtualHost();
+                if (virtualHost != null)
+                {
+                    return virtualHost.getPrincipal();
+                }
+                return null;
+            }
+        });
         _virtualHostExecutor.start();
         _broker = parent;
         SystemConfig<?> systemConfig = _broker.getParent(SystemConfig.class);

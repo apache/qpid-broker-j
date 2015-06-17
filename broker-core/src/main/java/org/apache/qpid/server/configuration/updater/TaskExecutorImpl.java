@@ -21,8 +21,11 @@
 package org.apache.qpid.server.configuration.updater;
 
 import java.security.AccessController;
+import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -46,6 +49,7 @@ public class TaskExecutorImpl implements TaskExecutor
 {
     private static final String TASK_EXECUTION_THREAD_NAME = "Broker-Configuration-Thread";
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutorImpl.class);
+    private final PrincipalAccessor _principalAccessor;
 
     private volatile Thread _taskThread;
     private final AtomicBoolean _running = new AtomicBoolean();
@@ -55,12 +59,13 @@ public class TaskExecutorImpl implements TaskExecutor
 
     public TaskExecutorImpl()
     {
-        this(TASK_EXECUTION_THREAD_NAME);
+        this(TASK_EXECUTION_THREAD_NAME, null);
     }
 
-    public TaskExecutorImpl(final String name)
+    public TaskExecutorImpl(final String name, PrincipalAccessor principalAccessor)
     {
         _name = name;
+        _principalAccessor = principalAccessor;
     }
 
     @Override
@@ -323,22 +328,41 @@ public class TaskExecutorImpl implements TaskExecutor
         return result;
     }
 
+    private Subject getContextSubject()
+    {
+        Subject contextSubject = Subject.getSubject(AccessController.getContext());
+        if (contextSubject != null && _principalAccessor != null)
+        {
+            Principal additionalPrincipal = _principalAccessor.getPrincipal();
+            Set<Principal> principals = contextSubject.getPrincipals();
+            if (additionalPrincipal != null && !principals.contains(additionalPrincipal))
+            {
+                Set<Principal> extendedPrincipals = new HashSet<>(principals);
+                extendedPrincipals.add(_principalAccessor.getPrincipal());
+                contextSubject = new Subject(contextSubject.isReadOnly(),
+                        extendedPrincipals,
+                        contextSubject.getPublicCredentials(),
+                        contextSubject.getPrivateCredentials());
+            }
+        }
+        return contextSubject;
+    }
+
     private class CallableWrapper<T> implements Callable<T>
     {
-        private Task<T> _userTask;
-        private Subject _contextSubject;
+        private final Task<T> _userTask;
+        private final Subject _contextSubject;
 
         public CallableWrapper(Task<T> userWork)
         {
             _userTask = userWork;
-            _contextSubject = Subject.getSubject(AccessController.getContext());
+            _contextSubject = getContextSubject();
         }
 
         @Override
         public T call()
         {
-            T result = null;
-            result = Subject.doAs(_contextSubject, new PrivilegedAction<T>()
+            T result = Subject.doAs(_contextSubject, new PrivilegedAction<T>()
                 {
                     @Override
                     public T run()
@@ -346,7 +370,6 @@ public class TaskExecutorImpl implements TaskExecutor
                         return executeTask(_userTask);
                     }
                 });
-
 
             return result;
         }
@@ -407,7 +430,23 @@ public class TaskExecutorImpl implements TaskExecutor
             }
             else
             {
-                _executor.execute(command);
+                final Subject subject = getContextSubject();
+                _executor.execute(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        Subject.doAs(subject, new PrivilegedAction<Void>()
+                        {
+                            @Override
+                            public Void run()
+                            {
+                                command.run();
+                                return null;
+                            }
+                        });
+                    }
+                });
             }
 
         }
@@ -442,9 +481,9 @@ public class TaskExecutorImpl implements TaskExecutor
             }
 
             @Override
-            public TaskExecutor newInstance(final String name)
+            public TaskExecutor newInstance(final String name, PrincipalAccessor principalAccessor)
             {
-                return new TaskExecutorImpl(name);
+                return new TaskExecutorImpl(name, principalAccessor);
             }
         };
     }
