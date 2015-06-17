@@ -53,6 +53,11 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     String ENABLED_CONNECTION_VALIDATORS        = "enabledConnectionValidators";
     String DISABLED_CONNECTION_VALIDATORS       = "disabledConnectionValidators";
     String GLOBAL_ADDRESS_DOMAINS               = "globalAddressDomains";
+    String VIRTUALHOST_WORK_DIR_VAR             = "virtualhost.work_dir";
+    String VIRTUALHOST_WORK_DIR_VAR_EXPRESSION  = "${qpid.work_dir}${file.separator}${ancestor:virtualhost:name}";
+
+    @ManagedContextDefault( name = VIRTUALHOST_WORK_DIR_VAR)
+    public static final String VIRTUALHOST_WORK_DIR = VIRTUALHOST_WORK_DIR_VAR_EXPRESSION;
 
     @ManagedContextDefault( name = "queue.deadLetterQueueEnabled")
     public static final boolean DEFAULT_DEAD_LETTER_QUEUE_ENABLED = false;

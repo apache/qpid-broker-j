@@ -79,7 +79,7 @@ public class BrokerLoggerTest extends QpidTestCase
         _brokerLogger = new AbstractBrokerLogger(attributes, broker)
         {
             @Override
-            public Appender<ILoggingEvent> asAppender(Context context)
+            public Appender<ILoggingEvent> createAppenderInstance(Context context)
             {
                 return _loggerAppender;
             }

@@ -21,20 +21,18 @@
 package org.apache.qpid.server.virtualhost;
 
 import java.security.Principal;
-import java.util.Objects;
 
 import org.apache.qpid.server.model.VirtualHost;
 
 public class VirtualHostPrincipal implements Principal
 {
-    private static String VIRTUALHOST_SUBJECT_TEMPLATE = "virtualhost:%s-%s";
     private final VirtualHost<?,?,?> _virtualHost;
     private final String _name;
 
     public VirtualHostPrincipal(VirtualHost<?, ?, ?> virtualHost)
     {
         _virtualHost = virtualHost;
-        _name = String.format(VIRTUALHOST_SUBJECT_TEMPLATE, virtualHost.getName(), virtualHost.getId());
+        _name = "virtualhost:" + virtualHost.getName() + "-" + virtualHost.getId();
     }
 
     @Override
@@ -56,12 +54,12 @@ public class VirtualHostPrincipal implements Principal
         }
 
         VirtualHostPrincipal that = (VirtualHostPrincipal) o;
-        return Objects.equals(_virtualHost, that._virtualHost);
+        return _virtualHost.equals(that._virtualHost);
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(_virtualHost);
+        return _virtualHost.hashCode();
     }
 }

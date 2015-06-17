@@ -49,7 +49,7 @@ public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLog
     }
 
     @Override
-    public Appender<ILoggingEvent> asAppender(Context context)
+    protected Appender<ILoggingEvent> createAppenderInstance(Context context)
     {
         return new RecordEventAppender(getMaxRecords());
     }

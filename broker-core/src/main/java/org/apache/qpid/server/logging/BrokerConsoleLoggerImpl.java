@@ -50,7 +50,7 @@ public class BrokerConsoleLoggerImpl extends AbstractBrokerLogger<BrokerConsoleL
     }
 
     @Override
-    public Appender<ILoggingEvent> asAppender(Context context)
+    protected Appender<ILoggingEvent> createAppenderInstance(Context context)
     {
         ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
 

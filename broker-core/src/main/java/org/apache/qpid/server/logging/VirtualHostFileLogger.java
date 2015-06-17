@@ -31,8 +31,7 @@ public interface VirtualHostFileLogger<X extends VirtualHostFileLogger<X>> exten
     String TYPE = "File";
     String FILE_NAME = "fileName";
 
-    //TODO: change to better default
-    @ManagedAttribute( defaultValue = "${qpid.work_dir}${file.separator}log${file.separator}${this:name}${file.separator}qpid.log")
+    @ManagedAttribute( defaultValue = "${virtualhost.work_dir}${file.separator}log${file.separator}${this:name}.log")
     String getFileName();
 
     @ManagedAttribute( defaultValue = "false")

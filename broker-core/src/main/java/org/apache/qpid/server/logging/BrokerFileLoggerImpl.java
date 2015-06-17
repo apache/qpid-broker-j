@@ -96,7 +96,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     }
 
     @Override
-    public Appender<ILoggingEvent> asAppender(Context loggerContext)
+    protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
         return new RollingFileAppenderFactory().createRollingFileAppender(this, loggerContext);
     }

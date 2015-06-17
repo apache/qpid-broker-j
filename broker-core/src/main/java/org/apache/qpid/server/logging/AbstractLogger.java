@@ -58,7 +58,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
 
         LoggerContext loggerContext = ROOT_LOGGER.getLoggerContext();
 
-        Appender<ILoggingEvent> appender = asAppender(loggerContext);
+        Appender<ILoggingEvent> appender = createAppenderInstance(loggerContext);
         appender.setName(getName());
         appender.setContext(loggerContext);
 
@@ -79,7 +79,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         }
     }
 
-    protected abstract Appender<ILoggingEvent> asAppender(Context context);
+    protected abstract Appender<ILoggingEvent> createAppenderInstance(Context context);
 
     protected abstract Collection<? extends LoggerFilter> getLoggerFilters();
 
