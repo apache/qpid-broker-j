@@ -41,15 +41,15 @@ import org.apache.qpid.server.model.StateTransition;
 
 public abstract class AbstractLogger<X extends AbstractLogger<X>> extends AbstractConfiguredObject<X>
 {
-    private final CompositeFilter _compositeFilter = new CompositeFilter();
     private final static ch.qos.logback.classic.Logger ROOT_LOGGER = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME));
 
     protected AbstractLogger(Map<String, Object> attributes, ConfiguredObject<?> parent)
     {
         super(parentsMap(parent), attributes);
-
         addChangeListener(new FilterListener());
     }
+
+    protected abstract CompositeFilter getCompositeFilter();
 
     @Override
     protected void postResolveChildren()
@@ -64,9 +64,9 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
 
         for(LoggerFilter filter : getLoggerFilters())
         {
-            _compositeFilter.addFilter(filter);
+            getCompositeFilter().addFilter(filter);
         }
-        appender.addFilter(_compositeFilter);
+        appender.addFilter(getCompositeFilter());
 
         ROOT_LOGGER.addAppender(appender);
         appender.start();
@@ -132,7 +132,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         {
             if (child instanceof LoggerFilter)
             {
-                _compositeFilter.addFilter((LoggerFilter) child);
+                getCompositeFilter().addFilter((LoggerFilter) child);
             }
         }
 
@@ -141,7 +141,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         {
             if (child instanceof LoggerFilter)
             {
-                _compositeFilter.removeFilter((LoggerFilter) child);
+                getCompositeFilter().removeFilter((LoggerFilter) child);
             }
         }
 

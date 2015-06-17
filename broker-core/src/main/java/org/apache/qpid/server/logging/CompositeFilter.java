@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.logging;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -38,14 +37,6 @@ public class CompositeFilter extends Filter<ILoggingEvent>
         Filter f = filter.asFilter();
         f.setName(filter.getName());
         _filterList.add(f);
-    }
-
-    public void addFilters(Collection<LoggerFilter> filters)
-    {
-        for(LoggerFilter filter : filters)
-        {
-            addFilter(filter);
-        }
     }
 
     public void removeFilter(LoggerFilter filter)

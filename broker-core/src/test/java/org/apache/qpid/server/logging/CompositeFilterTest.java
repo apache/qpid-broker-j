@@ -120,24 +120,6 @@ public class CompositeFilterTest extends QpidTestCase
         verify(brokerFilter.asFilter()).setName("accept");
     }
 
-    public void testAddFilters()
-    {
-        CompositeFilter compositeFilter = new CompositeFilter();
-
-        LoggerFilter brokerFilterNeutral = createFilter(FilterReply.NEUTRAL, "neutral");
-        LoggerFilter brokerFilterAccept = createFilter(FilterReply.ACCEPT, "accept");
-        LoggerFilter brokerFilterDeny = createFilter(FilterReply.DENY, "deny");
-
-        compositeFilter.addFilters(Arrays.asList(brokerFilterNeutral, brokerFilterAccept, brokerFilterDeny));
-
-        FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
-        assertEquals("Unexpected reply", FilterReply.ACCEPT, reply);
-
-        verify(brokerFilterNeutral.asFilter()).decide(any(ILoggingEvent.class));
-        verify(brokerFilterAccept.asFilter()).decide(any(ILoggingEvent.class));
-        verify(brokerFilterDeny.asFilter(), never()).decide(any(ILoggingEvent.class));
-    }
-
     private LoggerFilter createFilter(FilterReply decision)
     {
         return createFilter(decision, "UNNAMED");

@@ -26,8 +26,6 @@ import java.util.Map;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
-import ch.qos.logback.core.filter.Filter;
-import ch.qos.logback.core.rolling.RollingFileAppender;
 
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
@@ -106,12 +104,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
-        RollingFileAppender<ILoggingEvent> rollingFileAppender =
-                new RollingFileAppenderFactory().createRollingFileAppender(this, loggerContext);
-
-        Filter<ILoggingEvent> principalFilter = new PrincipalLogEventFilter(_principal);
-        rollingFileAppender.addFilter(principalFilter);
-        return rollingFileAppender;
+        return new RollingFileAppenderFactory().createRollingFileAppender(this, loggerContext);
     }
 
 }

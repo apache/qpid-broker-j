@@ -26,12 +26,19 @@ import java.util.Map;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.BrokerLoggerFilter;
+import org.apache.qpid.server.model.ManagedAttributeField;
 
 public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> extends AbstractLogger<X> implements BrokerLogger<X>
 {
+    @ManagedAttributeField
+    private boolean _virtualHostLogEventExcluded;
+    private final CompositeFilter _compositeFilter;
+
     protected AbstractBrokerLogger(Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);
+        _compositeFilter = new CompositeFilter();
+        _compositeFilter.addFilter(new VirtualHostLogEventExcludingFilter(this));
     }
 
     @Override
@@ -40,4 +47,15 @@ public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> ex
         return getChildren(BrokerLoggerFilter.class);
     }
 
+    @Override
+    public boolean isVirtualHostLogEventExcluded()
+    {
+        return _virtualHostLogEventExcluded;
+    }
+
+    @Override
+    protected CompositeFilter getCompositeFilter()
+    {
+        return _compositeFilter;
+    }
 }

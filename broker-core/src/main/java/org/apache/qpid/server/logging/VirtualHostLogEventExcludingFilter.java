@@ -22,33 +22,26 @@ package org.apache.qpid.server.logging;
 
 import java.security.AccessController;
 import java.security.Principal;
+import java.util.Set;
 
 import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
+import org.apache.qpid.server.model.BrokerLogger;
+import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 
-
-public class PrincipalLogEventFilter extends Filter<ILoggingEvent> implements LoggerFilter
+public class VirtualHostLogEventExcludingFilter extends Filter<ILoggingEvent> implements LoggerFilter
 {
-    private final Principal _principal;
+    private final BrokerLogger<?> _brokerLogger ;
 
-    public PrincipalLogEventFilter(final Principal principal)
+    public VirtualHostLogEventExcludingFilter(BrokerLogger<?> brokerLogger)
     {
-        _principal = principal;
+        super();
+        _brokerLogger = brokerLogger;
     }
 
-    @Override
-    public FilterReply decide(ILoggingEvent event)
-    {
-        Subject subject = Subject.getSubject(AccessController.getContext());
-        if (subject != null && subject.getPrincipals().contains(_principal))
-        {
-            return FilterReply.NEUTRAL;
-        }
-        return FilterReply.DENY;
-    }
 
     @Override
     public Filter<ILoggingEvent> asFilter()
@@ -61,4 +54,32 @@ public class PrincipalLogEventFilter extends Filter<ILoggingEvent> implements Lo
     {
         return "$" + getClass().getName();
     }
+
+    @Override
+    public FilterReply decide(ILoggingEvent event)
+    {
+        if (!_brokerLogger.isVirtualHostLogEventExcluded()  || !subjectContainsVirtualHostPrincipal())
+        {
+            return FilterReply.NEUTRAL;
+        }
+        return FilterReply.DENY;
+    }
+
+    private boolean subjectContainsVirtualHostPrincipal()
+    {
+        Subject subject = Subject.getSubject(AccessController.getContext());
+        if (subject != null)
+        {
+            Set<Principal> principals= subject.getPrincipals();
+            for (Principal principal: principals)
+            {
+                if (principal instanceof VirtualHostPrincipal)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 }

@@ -23,5 +23,8 @@ package org.apache.qpid.server.model;
 @ManagedObject
 public interface BrokerLogger<X extends BrokerLogger<X>> extends ConfiguredObject<X>
 {
+    @ManagedAttribute(defaultValue = "false")
+    boolean isVirtualHostLogEventExcluded();
+
     void stopLogging();
 }

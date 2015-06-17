@@ -29,10 +29,13 @@ import org.apache.qpid.server.model.VirtualHostLoggerFilter;
 
 public abstract class AbstractVirtualHostLogger <X extends AbstractVirtualHostLogger<X>> extends AbstractLogger<X> implements VirtualHostLogger<X>
 {
+    private final CompositeFilter _compositeFilter;
 
     protected AbstractVirtualHostLogger(Map<String, Object> attributes, VirtualHost<?,?,?> virtualHost)
     {
         super(attributes, virtualHost);
+        _compositeFilter = new CompositeFilter();
+        _compositeFilter.addFilter(new PrincipalLogEventFilter(virtualHost.getPrincipal()));
     }
 
     @Override
@@ -41,4 +44,9 @@ public abstract class AbstractVirtualHostLogger <X extends AbstractVirtualHostLo
         return getChildren(VirtualHostLoggerFilter.class);
     }
 
+    @Override
+    protected CompositeFilter getCompositeFilter()
+    {
+        return _compositeFilter;
+    }
 }
