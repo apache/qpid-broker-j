@@ -67,6 +67,7 @@ import org.apache.qpid.server.management.plugin.filter.ForbiddingTraceFilter;
 import org.apache.qpid.server.management.plugin.filter.RedirectingAuthorisationFilter;
 import org.apache.qpid.server.management.plugin.servlet.DefinedFileServlet;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
+import org.apache.qpid.server.management.plugin.servlet.RootServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogRecordsServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LoggedOnUserPreferencesServlet;
@@ -323,7 +324,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new SaslServlet()), "/service/sasl");
 
         root.addServlet(new ServletHolder(new DefinedFileServlet("index.html")), HttpManagementUtil.ENTRY_POINT_PATH);
-        root.addServlet(new ServletHolder(new DefinedFileServlet("index.html")), "/");
+        root.addServlet(new ServletHolder(new RootServlet("/","/apidocs/","index.html")), "/");
         root.addServlet(new ServletHolder(new LogoutServlet()), "/logout");
 
         root.addServlet(new ServletHolder(new FileServlet(DojoHelper.getDojoPath(), true)), "/dojo/dojo/*");
@@ -338,7 +339,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
         // QPID-6516
 //        root.addServlet(new ServletHolder(new LogFileListingServlet()), "/service/logfilenames");
-//        root.addServlet(new ServletHolder(new LogFileServlet()), "/service/logfile");
+//        root.addServlet(new ServletHolder(new Log FileServlet()), "/service/logfile");
 
         final SessionManager sessionManager = root.getSessionHandler().getSessionManager();
         sessionManager.getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);

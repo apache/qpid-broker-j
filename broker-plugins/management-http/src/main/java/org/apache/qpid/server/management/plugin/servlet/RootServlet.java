@@ -21,7 +21,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,42 +28,25 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 
-public class DefinedFileServlet extends HttpServlet
+public class RootServlet extends HttpServlet
 {
 
-    private static final String FILENAME_INIT_PARAMETER = "filename";
     private final String _expectedPath;
     private final String _apiDocsPath;
+    private final String _filename;
 
-    private String _filename;
 
-    public DefinedFileServlet()
+    public RootServlet(String expectedPath, String apiDocsPath, String filename)
     {
-        this(null);
-    }
-
-    public DefinedFileServlet(String filename)
-    {
-        this(filename, null, null);
-    }
-
-
-    public DefinedFileServlet(String filename, String expectedPath, String apiDocsPath)
-    {
-        _filename = filename;
         _expectedPath = expectedPath;
         _apiDocsPath = apiDocsPath;
+        _filename = filename;
     }
 
     @Override
     public void init() throws ServletException
     {
-        ServletConfig config = getServletConfig();
-        String fileName = config.getInitParameter(FILENAME_INIT_PARAMETER);
-        if (fileName != null && !"".equals(fileName))
-        {
-            _filename = fileName;
-        }
+
     }
 
     @Override
@@ -97,6 +79,7 @@ public class DefinedFileServlet extends HttpServlet
         }
         else
         {
+
             try (OutputStream output = HttpManagementUtil.getOutputStream(request, response))
             {
                 final String notFoundMessage = "Unknown path '"
