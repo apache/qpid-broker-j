@@ -89,4 +89,5 @@ public interface ProtocolEngine extends ByteBufferReceiver, TransportActivity
    AggregateTicker getAggregateTicker();
 
    void encryptedTransport();
+
 }

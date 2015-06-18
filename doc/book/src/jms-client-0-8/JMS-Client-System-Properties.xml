@@ -383,14 +383,6 @@
 				</row>
 			</thead>
 			<tbody>
-				<row>
-					<entry>qpid.transport</entry>
-					<entry>string</entry>
-					<entry>org.apache.qpid.transport.network.io.IoNetworkTransport</entry>
-					<entry><para>The transport implementation to be used.</para><para>A user could
-							specify an alternative transport mechanism that implements the interface
-								<varname>org.apache.qpid.transport.network.OutgoingNetworkTransport</varname>.</para></entry>
-				</row>
 				<row id="JMS-Client-0-8-System-Properties-SyncOpTimeout">
 					<entry>qpid.sync_op_timeout</entry>
 					<entry>long</entry>

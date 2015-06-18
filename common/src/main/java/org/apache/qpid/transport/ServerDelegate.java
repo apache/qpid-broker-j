@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ServerDelegate extends ConnectionDelegate
 {
+    public static final int MAX_FRAME_SIZE = 64 * 1024 - 1;
     protected static final Logger _logger = LoggerFactory.getLogger(ServerDelegate.class);
 
     private List<Object> _locales;
@@ -145,7 +146,7 @@ public class ServerDelegate extends ConnectionDelegate
 
     protected int getFrameMax()
     {
-        return org.apache.qpid.transport.network.ConnectionBinding.MAX_FRAME_SIZE;
+        return MAX_FRAME_SIZE;
     }
 
     protected void secure(final Connection conn, final byte[] response)

@@ -20,17 +20,31 @@
  */
 package org.apache.qpid.transport.network.io;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
-import org.apache.qpid.transport.ByteBufferReceiver;
+import org.slf4j.LoggerFactory;
 
-public class IoNetworkTransport extends AbstractNetworkTransport
+import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.transport.ConnectionSettings;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
+import org.apache.qpid.transport.TransportException;
+import org.apache.qpid.transport.network.NetworkConnection;
+import org.apache.qpid.transport.network.TransportActivity;
+
+public class IoNetworkTransport
 {
 
 
-    @Override
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(IoNetworkTransport.class);
+    private static final int TIMEOUT = Integer.getInteger(CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME,
+                                                              CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT);
+    private NetworkConnection _connection;
+
     protected IoNetworkConnection createNetworkConnection(final Socket socket,
-                                                       final ByteBufferReceiver engine,
+                                                       final ExceptionHandlingByteBufferReceiver engine,
                                                        final Integer sendBufferSize,
                                                        final Integer receiveBufferSize,
                                                        final int timeout,
@@ -40,4 +54,72 @@ public class IoNetworkTransport extends AbstractNetworkTransport
                                 ticker);
     }
 
+    public NetworkConnection connect(ConnectionSettings settings,
+                                     ExceptionHandlingByteBufferReceiver delegate,
+                                     TransportActivity transportActivity)
+    {
+        int sendBufferSize = settings.getWriteBufferSize();
+        int receiveBufferSize = settings.getReadBufferSize();
+
+        final Socket socket;
+        try
+        {
+            socket = new Socket();
+            socket.setReuseAddress(true);
+            socket.setTcpNoDelay(settings.isTcpNodelay());
+            socket.setSendBufferSize(sendBufferSize);
+            socket.setReceiveBufferSize(receiveBufferSize);
+
+            if(LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("SO_RCVBUF : " + socket.getReceiveBufferSize());
+                LOGGER.debug("SO_SNDBUF : " + socket.getSendBufferSize());
+                LOGGER.debug("TCP_NODELAY : " + socket.getTcpNoDelay());
+            }
+
+            InetAddress address = InetAddress.getByName(settings.getHost());
+
+            socket.connect(new InetSocketAddress(address, settings.getPort()), settings.getConnectTimeout());
+        }
+        catch (IOException e)
+        {
+            throw new TransportException("Error connecting to broker", e);
+        }
+
+        try
+        {
+            IdleTimeoutTicker ticker = new IdleTimeoutTicker(transportActivity, TIMEOUT);
+            _connection = createNetworkConnection(socket, delegate, sendBufferSize, receiveBufferSize, TIMEOUT, ticker);
+            ticker.setConnection(_connection);
+            _connection.start();
+        }
+        catch(Exception e)
+        {
+            try
+            {
+                socket.close();
+            }
+            catch(IOException ioe)
+            {
+                //ignored, throw based on original exception
+            }
+
+            throw new TransportException("Error creating network connection", e);
+        }
+
+        return _connection;
+    }
+
+    public void close()
+    {
+        if(_connection != null)
+        {
+            _connection.close();
+        }
+    }
+
+    public NetworkConnection getConnection()
+    {
+        return _connection;
+    }
 }

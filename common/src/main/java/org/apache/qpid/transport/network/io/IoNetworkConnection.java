@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.Ticker;
 
@@ -50,7 +51,7 @@ public class IoNetworkConnection implements NetworkConnection
     private final Object _lock = new Object();
     private Certificate _certificate;
 
-    public IoNetworkConnection(Socket socket, ByteBufferReceiver delegate,
+    public IoNetworkConnection(Socket socket, ExceptionHandlingByteBufferReceiver delegate,
             int sendBufferSize, int receiveBufferSize, long timeout, Ticker ticker)
     {
         _socket = socket;

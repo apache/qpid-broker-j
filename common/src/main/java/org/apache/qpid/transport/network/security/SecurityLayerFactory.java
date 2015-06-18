@@ -29,6 +29,7 @@ import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionSettings;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.security.sasl.SASLReceiver;
 import org.apache.qpid.transport.network.security.sasl.SASLSender;
@@ -117,7 +118,7 @@ public class SecurityLayerFactory
             return sender;
         }
 
-        public ByteBufferReceiver receiver(ByteBufferReceiver delegate)
+        public ExceptionHandlingByteBufferReceiver receiver(ExceptionHandlingByteBufferReceiver delegate)
         {
             SSLReceiver receiver = new SSLReceiver(_engine, _layer.receiver(delegate), _sslStatus);
             receiver.setHostname(_hostname);
@@ -147,7 +148,7 @@ public class SecurityLayerFactory
             return sender;
         }
 
-        public SASLReceiver receiver(ByteBufferReceiver delegate)
+        public SASLReceiver receiver(ExceptionHandlingByteBufferReceiver delegate)
         {
             SASLReceiver receiver = new SASLReceiver(_layer.receiver(delegate));
             return receiver;
@@ -174,7 +175,7 @@ public class SecurityLayerFactory
             return delegate;
         }
 
-        public ByteBufferReceiver receiver(ByteBufferReceiver delegate)
+        public ExceptionHandlingByteBufferReceiver receiver(ExceptionHandlingByteBufferReceiver delegate)
         {
             return delegate;
         }

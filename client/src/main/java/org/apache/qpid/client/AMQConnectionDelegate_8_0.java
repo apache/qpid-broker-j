@@ -56,11 +56,10 @@ import org.apache.qpid.jms.ChannelLimitReachedException;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jms.Session;
 import org.apache.qpid.properties.ConnectionStartProperties;
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ConnectionSettings;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.network.NetworkConnection;
-import org.apache.qpid.transport.network.OutgoingNetworkTransport;
-import org.apache.qpid.transport.network.Transport;
+import org.apache.qpid.transport.network.io.IoNetworkTransport;
 import org.apache.qpid.transport.network.security.SecurityLayer;
 import org.apache.qpid.transport.network.security.SecurityLayerFactory;
 
@@ -139,7 +138,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
 
         SecurityLayer securityLayer = SecurityLayerFactory.newInstance(settings);
 
-        OutgoingNetworkTransport transport = Transport.getOutgoingTransportInstance(getProtocolVersion());
+        IoNetworkTransport transport = new IoNetworkTransport();
 
         ReceiverClosedWaiter monitoringReceiver = new ReceiverClosedWaiter(securityLayer.receiver(_conn.getProtocolHandler()));
 
@@ -524,12 +523,12 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
     }
 
 
-    private static class ReceiverClosedWaiter implements ByteBufferReceiver
+    private static class ReceiverClosedWaiter implements ExceptionHandlingByteBufferReceiver
     {
         private final CountDownLatch _closedWatcher;
-        private final ByteBufferReceiver _receiver;
+        private final ExceptionHandlingByteBufferReceiver _receiver;
 
-        public ReceiverClosedWaiter(ByteBufferReceiver receiver)
+        public ReceiverClosedWaiter(ExceptionHandlingByteBufferReceiver receiver)
         {
             _receiver = receiver;
             _closedWatcher = new CountDownLatch(1);

@@ -29,15 +29,16 @@ import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 
 import org.apache.qpid.transport.ByteBufferReceiver;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.security.SSLStatus;
 import org.apache.qpid.transport.util.Logger;
 
-public class SSLReceiver implements ByteBufferReceiver
+public class SSLReceiver implements ExceptionHandlingByteBufferReceiver
 {
     private static final Logger log = Logger.get(SSLReceiver.class);
 
-    private final ByteBufferReceiver delegate;
+    private final ExceptionHandlingByteBufferReceiver delegate;
     private final SSLEngine engine;
     private final int sslBufSize;
     private final ByteBuffer localBuffer;
@@ -47,7 +48,7 @@ public class SSLReceiver implements ByteBufferReceiver
 
     private String _hostname;
 
-    public SSLReceiver(final SSLEngine engine, final ByteBufferReceiver delegate, final SSLStatus sslStatus)
+    public SSLReceiver(final SSLEngine engine, final ExceptionHandlingByteBufferReceiver delegate, final SSLStatus sslStatus)
     {
         this.engine = engine;
         this.delegate = delegate;

@@ -26,16 +26,18 @@ import java.nio.ByteBuffer;
 import javax.security.sasl.SaslException;
 
 import org.apache.qpid.transport.ByteBufferReceiver;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.SenderException;
 import org.apache.qpid.transport.util.Logger;
 
-public class SASLReceiver extends SASLEncryptor implements ByteBufferReceiver {
+public class SASLReceiver extends SASLEncryptor implements ExceptionHandlingByteBufferReceiver
+{
 
-    private ByteBufferReceiver delegate;
+    private ExceptionHandlingByteBufferReceiver delegate;
     private byte[] netData;
     private static final Logger log = Logger.get(SASLReceiver.class);
     
-    public SASLReceiver(ByteBufferReceiver delegate)
+    public SASLReceiver(ExceptionHandlingByteBufferReceiver delegate)
     {
         this.delegate = delegate;
     }

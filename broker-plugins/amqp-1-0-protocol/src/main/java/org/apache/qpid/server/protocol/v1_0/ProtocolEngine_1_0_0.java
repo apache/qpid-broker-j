@@ -75,6 +75,8 @@ import org.apache.qpid.transport.network.NetworkConnection;
 public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
 {
 
+    public static Logger LOGGER = LoggerFactory.getLogger(ProtocolEngine_1_0_0.class);
+
     public static final long CLOSE_REPONSE_TIMEOUT = 10000l;
     private final AmqpPort<?> _port;
     private final Transport _transport;
@@ -484,20 +486,16 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
         }
         catch(RuntimeException e)
         {
-            exception(e);
+            LOGGER.error("Exception while processing incoming data", e);
+            _network.close();
         }
      }
 
-    public void exception(Throwable throwable)
-    {
-        // noop - exception method is not used by new i/o layer
-    }
 
     public void closed()
     {
         try
         {
-            // todo
             try
             {
                 _endpoint.inputClosed();
@@ -512,7 +510,9 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
         }
         catch(RuntimeException e)
         {
-            exception(e);
+
+            LOGGER.error("Exception while closing", e);
+            _network.close();
         }
     }
 

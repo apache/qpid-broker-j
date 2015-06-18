@@ -29,7 +29,7 @@ import java.net.SocketAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.transport.Binding;
+import org.apache.qpid.transport.network.ConnectionBinding;
 
 
 /**
@@ -37,16 +37,16 @@ import org.apache.qpid.transport.Binding;
  *
  */
 
-public class IoAcceptor<E> extends Thread
+public class IoAcceptor extends Thread
 {
     private static final Logger _logger = LoggerFactory.getLogger(IoAcceptor.class);
 
     private volatile boolean _closed = false;
 
     private ServerSocket socket;
-    private Binding<E> binding;
+    private ConnectionBinding binding;
 
-    public IoAcceptor(SocketAddress address, Binding<E> binding)
+    public IoAcceptor(SocketAddress address, ConnectionBinding binding)
         throws IOException
     {
         socket = new ServerSocket();
@@ -70,7 +70,7 @@ public class IoAcceptor<E> extends Thread
         }
     }
 
-    public IoAcceptor(String host, int port, Binding<E> binding)
+    public IoAcceptor(String host, int port, ConnectionBinding binding)
         throws IOException
     {
         this(new InetSocketAddress(host, port), binding);
@@ -83,7 +83,7 @@ public class IoAcceptor<E> extends Thread
             try
             {
                 Socket sock = socket.accept();
-                IoTransport<E> transport = new IoTransport<E>(sock, binding);
+                IoTransport transport = new IoTransport(sock, binding);
             }
             catch (IOException e)
             {

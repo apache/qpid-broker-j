@@ -20,13 +20,12 @@
  */
 package org.apache.qpid.transport.network;
 
-import org.apache.qpid.transport.Binding;
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.Connection;
 import org.apache.qpid.transport.ConnectionDelegate;
 import org.apache.qpid.transport.ConnectionListener;
 import org.apache.qpid.transport.Constant;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.network.security.sasl.SASLReceiver;
 import org.apache.qpid.transport.network.security.sasl.SASLSender;
 
@@ -36,10 +35,9 @@ import org.apache.qpid.transport.network.security.sasl.SASLSender;
  */
 
 public abstract class ConnectionBinding
-    implements Binding<Connection>
 {
 
-    public static Binding<Connection> get(final Connection connection)
+    public static ConnectionBinding get(final Connection connection)
     {
         return new ConnectionBinding()
         {
@@ -50,7 +48,7 @@ public abstract class ConnectionBinding
         };
     }
 
-    public static Binding<Connection> get(final ConnectionDelegate delegate)
+    public static ConnectionBinding get(final ConnectionDelegate delegate)
     {
         return new ConnectionBinding()
         {
@@ -62,8 +60,6 @@ public abstract class ConnectionBinding
             }
         };
     }
-
-    public static final int MAX_FRAME_SIZE = 64 * 1024 - 1;
 
     public abstract Connection connection();
 
@@ -85,7 +81,7 @@ public abstract class ConnectionBinding
         return conn;
     }
 
-    public ByteBufferReceiver receiver(Connection conn)
+    public ExceptionHandlingByteBufferReceiver receiver(Connection conn)
     {
         final InputHandler inputHandler = new InputHandler(new Assembler(conn));
         conn.addFrameSizeObserver(inputHandler);

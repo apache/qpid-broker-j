@@ -163,11 +163,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         _delegate.received(msg);
     }
 
-    public void exception(Throwable t)
-    {
-        _delegate.exception(t);
-    }
-
     public long getConnectionId()
     {
         return _delegate.getConnectionId();
@@ -325,11 +320,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         public void received(ByteBuffer msg)
         {
             _logger.error("Error processing incoming data, could not negotiate a common protocol");
-        }
-
-        public void exception(Throwable t)
-        {
-            _logger.error("Error establishing session", t);
         }
 
         public void closed()
@@ -615,11 +605,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         @Override
         public void setTransportBlockedForWriting(final boolean blocked)
         {
-        }
-
-        public void exception(Throwable t)
-        {
-            _logger.error("Error establishing session", t);
         }
 
         public void closed()

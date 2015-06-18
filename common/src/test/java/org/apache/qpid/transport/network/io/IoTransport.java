@@ -21,8 +21,9 @@ package org.apache.qpid.transport.network.io;
 
 import java.net.Socket;
 
-import org.apache.qpid.transport.Binding;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.Connection;
+import org.apache.qpid.transport.network.ConnectionBinding;
 import org.apache.qpid.transport.util.Logger;
 
 /**
@@ -34,7 +35,7 @@ import org.apache.qpid.transport.util.Logger;
  * SO_RCVBUF    - amqj.receiveBufferSize
  * SO_SNDBUF    - amqj.sendBufferSize
  */
-public final class IoTransport<E>
+public final class IoTransport
 {
 
 
@@ -48,17 +49,17 @@ public final class IoTransport<E>
 
     private Socket socket;
     private ByteBufferSender sender;
-    private E endpoint;
+    private Connection endpoint;
     private IoReceiver receiver;
     private long timeout = 60000;
 
-    IoTransport(Socket socket, Binding<E> binding)
+    IoTransport(Socket socket, ConnectionBinding binding)
     {
         this.socket = socket;
         setupTransport(socket, binding);
     }
 
-    private void setupTransport(Socket socket, Binding<E> binding)
+    private void setupTransport(Socket socket, ConnectionBinding binding)
     {
         IoSender ios = new IoSender(socket, 2*writeBufferSize, timeout);
         ios.initiate();

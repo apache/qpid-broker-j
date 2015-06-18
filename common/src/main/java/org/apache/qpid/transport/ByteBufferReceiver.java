@@ -26,7 +26,5 @@ public interface ByteBufferReceiver
 {
     void received(ByteBuffer msg);
 
-    void exception(Throwable t);
-
     void closed();
 }

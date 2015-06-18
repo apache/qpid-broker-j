@@ -31,6 +31,7 @@ import java.nio.ByteOrder;
 
 import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.Constant;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.FrameSizeObserver;
 import org.apache.qpid.transport.NetworkEventReceiver;
 import org.apache.qpid.transport.ProtocolError;
@@ -44,7 +45,7 @@ import org.apache.qpid.transport.SegmentType;
  * @author Rafael H. Schloming
  */
 
-public class InputHandler implements ByteBufferReceiver, FrameSizeObserver
+public class InputHandler implements ExceptionHandlingByteBufferReceiver, FrameSizeObserver
 {
 
     private int _maxFrameSize = Constant.MIN_MAX_FRAME_SIZE;

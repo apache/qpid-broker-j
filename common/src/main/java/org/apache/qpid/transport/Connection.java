@@ -40,15 +40,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslServer;
 
-import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.transport.network.Assembler;
 import org.apache.qpid.transport.network.Disassembler;
 import org.apache.qpid.transport.network.InputHandler;
 import org.apache.qpid.transport.network.NetworkConnection;
-import org.apache.qpid.transport.network.OutgoingNetworkTransport;
-import org.apache.qpid.transport.network.Transport;
 import org.apache.qpid.transport.network.TransportActivity;
+import org.apache.qpid.transport.network.io.IoNetworkTransport;
 import org.apache.qpid.transport.network.security.SecurityLayer;
 import org.apache.qpid.transport.network.security.SecurityLayerFactory;
 import org.apache.qpid.transport.util.Logger;
@@ -244,10 +242,10 @@ public class Connection extends ConnectionInvoker
 
             securityLayer = SecurityLayerFactory.newInstance(getConnectionSettings());
 
-            OutgoingNetworkTransport transport = Transport.getOutgoingTransportInstance(ProtocolVersion.v0_10);
+            IoNetworkTransport transport = new IoNetworkTransport();
             final InputHandler inputHandler = new InputHandler(new Assembler(this));
             addFrameSizeObserver(inputHandler);
-            ByteBufferReceiver secureReceiver = securityLayer.receiver(inputHandler);
+            ExceptionHandlingByteBufferReceiver secureReceiver = securityLayer.receiver(inputHandler);
             if(secureReceiver instanceof ConnectionListener)
             {
                 addConnectionListener((ConnectionListener)secureReceiver);

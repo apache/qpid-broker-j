@@ -22,12 +22,13 @@ package org.apache.qpid.transport.network.security;
 
 import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 
 public interface SecurityLayer
 {
 
     public ByteBufferSender sender(ByteBufferSender delegate);
-    public ByteBufferReceiver receiver(ByteBufferReceiver delegate);
+    public ExceptionHandlingByteBufferReceiver receiver(ExceptionHandlingByteBufferReceiver delegate);
     public String getUserID();
 
 }

@@ -1212,11 +1212,6 @@ public class AMQProtocolEngine implements ProtocolEngine,
         writeFrame(HeartbeatBody.FRAME);
     }
 
-    public void exception(Throwable throwable)
-    {
-        // noop - exception method is not used by new i/o layer
-    }
-
     public long getReadBytes()
     {
         return _readBytes;
