@@ -866,7 +866,6 @@ public class ServerSessionDelegate extends SessionDelegate
                 {
                     Map<String,Object> attributes = new HashMap<String, Object>();
 
-                    attributes.put(org.apache.qpid.server.model.Exchange.ID, null);
                     attributes.put(org.apache.qpid.server.model.Exchange.NAME, method.getExchange());
                     attributes.put(org.apache.qpid.server.model.Exchange.TYPE, method.getType());
                     attributes.put(org.apache.qpid.server.model.Exchange.DURABLE, method.getDurable());
@@ -877,11 +876,19 @@ public class ServerSessionDelegate extends SessionDelegate
                 }
                 catch(ReservedExchangeNameException e)
                 {
-                    exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Attempt to declare exchange: "
-                                                + exchangeName + " which begins with reserved name or prefix.");
+                    ExchangeImpl existingExchange = getExchange(session, exchangeName);
+                    if(existingExchange == null
+                       || !existingExchange.getType().equals(method.getType())
+                       || (method.hasAlternateExchange() && (existingExchange.getAlternateExchange() == null ||
+                                                             !method.getAlternateExchange().equals(existingExchange.getAlternateExchange().getName()))) )
+                    {
+                        exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Attempt to declare exchange: "
+                                                                                   + exchangeName + " which begins with reserved name or prefix.");
+                    }
                 }
                 catch(UnknownConfiguredObjectException e)
                 {
+
                     exception(session, method, ExecutionErrorCode.NOT_FOUND,
                                                                 "Unknown alternate exchange " + e.getName());
                 }

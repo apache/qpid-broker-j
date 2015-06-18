@@ -1,4 +1,4 @@
-package org.apache.qpid.server.virtualhost;/*
+/*
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -18,6 +18,8 @@ package org.apache.qpid.server.virtualhost;/*
  * under the License.
  *
  */
+
+package org.apache.qpid.server.virtualhost;
 
 import org.apache.qpid.server.exchange.ExchangeImpl;
 

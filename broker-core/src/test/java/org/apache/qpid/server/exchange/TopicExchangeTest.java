@@ -33,6 +33,7 @@ import java.util.UUID;
 
 import org.junit.Assert;
 
+import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.InstanceProperties;
@@ -41,7 +42,6 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -63,12 +63,12 @@ public class TopicExchangeTest extends QpidTestCase
         super.setUp();
         BrokerTestHelper.setUp();
         _vhost = BrokerTestHelper.createVirtualHost(getName());
-        Map<String,Object> attributes = new HashMap<String, Object>();
-        attributes.put(Exchange.ID, UUID.randomUUID());
+        Map<String,Object> attributes = new HashMap<>();
         attributes.put(Exchange.NAME, "test");
         attributes.put(Exchange.DURABLE, false);
+        attributes.put(Exchange.TYPE, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
 
-        _exchange = new TopicExchange(attributes, _vhost);
+        _exchange = (TopicExchange) _vhost.createChild(Exchange.class, attributes, _vhost);
         _exchange.open();
     }
 
@@ -91,8 +91,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     private AMQQueue<?> createQueue(String name) throws QueueExistsException
     {
-        Map<String,Object> attributes = new HashMap<String, Object>();
-        attributes.put(Queue.ID, UUIDGenerator.generateRandomUUID());
+        Map<String,Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, name);
         return _vhost.createQueue(attributes);
     }
@@ -253,7 +252,9 @@ public class TopicExchangeTest extends QpidTestCase
 
         Assert.assertEquals(1, queue.getQueueDepthMessages());
 
-        Assert.assertEquals("Wrong message received", 1l, queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
+        Assert.assertEquals("Wrong message received",
+                            1l,
+                            queue.getMessagesOnTheQueue().get(0).getMessage().getMessageNumber());
 
         queue.clearQueue();
         Assert.assertEquals(0, queue.getQueueDepthMessages());

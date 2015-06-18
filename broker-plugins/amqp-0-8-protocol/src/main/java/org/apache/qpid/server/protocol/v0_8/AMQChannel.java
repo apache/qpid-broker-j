@@ -2835,8 +2835,12 @@ public class AMQChannel
                           " internal: " + internal + " nowait: " + nowait + " arguments: " + arguments + " ]");
         }
 
+        final MethodRegistry methodRegistry = _connection.getMethodRegistry();
+        final AMQMethodBody declareOkBody = methodRegistry.createExchangeDeclareOkBody();
+
         ExchangeImpl exchange;
         VirtualHostImpl<?, ?, ?> virtualHost = _connection.getVirtualHost();
+
         if (isDefaultExchange(exchangeName))
         {
             if (!new AMQShortString(ExchangeDefaults.DIRECT_EXCHANGE_CLASS).equals(type))
@@ -2848,10 +2852,8 @@ public class AMQChannel
             }
             else if (!nowait)
             {
-                MethodRegistry methodRegistry = _connection.getMethodRegistry();
-                AMQMethodBody responseBody = methodRegistry.createExchangeDeclareOkBody();
                 sync();
-                _connection.writeFrame(responseBody.generateFrame(getChannelId()));
+                _connection.writeFrame(declareOkBody.generateFrame(getChannelId()));
             }
 
         }
@@ -2877,10 +2879,8 @@ public class AMQChannel
                 }
                 else if (!nowait)
                 {
-                    MethodRegistry methodRegistry = _connection.getMethodRegistry();
-                    AMQMethodBody responseBody = methodRegistry.createExchangeDeclareOkBody();
                     sync();
-                    _connection.writeFrame(responseBody.generateFrame(getChannelId()));
+                    _connection.writeFrame(declareOkBody.generateFrame(getChannelId()));
                 }
 
             }
@@ -2910,20 +2910,24 @@ public class AMQChannel
                     if (!nowait)
                     {
                         sync();
-                        MethodRegistry methodRegistry = _connection.getMethodRegistry();
-                        AMQMethodBody responseBody = methodRegistry.createExchangeDeclareOkBody();
-                        _connection.writeFrame(responseBody.generateFrame(
-                                getChannelId()));
+                        _connection.writeFrame(declareOkBody.generateFrame(getChannelId()));
                     }
 
                 }
                 catch (ReservedExchangeNameException e)
                 {
-                    _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                                "Attempt to declare exchange: '" + exchangeName +
-                                                                         "' which begins with reserved prefix.", getChannelId());
-
-
+                    Exchange existing = virtualHost.getExchange(exchangeName.toString());
+                    if (existing != null && new AMQShortString(existing.getType()).equals(type))
+                    {
+                        sync();
+                        _connection.writeFrame(declareOkBody.generateFrame(getChannelId()));
+                    }
+                    else
+                    {
+                        _connection.closeConnection(AMQConstant.NOT_ALLOWED,
+                                                    "Attempt to declare exchange: '" + exchangeName +
+                                                    "' which begins with reserved prefix.", getChannelId());
+                    }
                 }
                 catch (ExchangeExistsException e)
                 {
@@ -2934,17 +2938,13 @@ public class AMQChannel
                                                                                  + exchangeName + "' of type "
                                                                                  + exchange.getType()
                                                                                  + " to " + type + ".", getChannelId());
-
                     }
                     else
                     {
                         if (!nowait)
                         {
                             sync();
-                            MethodRegistry methodRegistry = _connection.getMethodRegistry();
-                            AMQMethodBody responseBody = methodRegistry.createExchangeDeclareOkBody();
-                            _connection.writeFrame(responseBody.generateFrame(
-                                    getChannelId()));
+                            _connection.writeFrame(declareOkBody.generateFrame(getChannelId()));
                         }
                     }
                 }

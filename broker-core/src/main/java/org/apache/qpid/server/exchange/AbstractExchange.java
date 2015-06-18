@@ -150,7 +150,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         {
             if (isReservedExchangeName(getName()))
             {
-                deleted();
                 throw new ReservedExchangeNameException(getName());
             }
         }
