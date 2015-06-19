@@ -47,19 +47,26 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.plugin.ConditionallyAvailable;
 import org.apache.qpid.server.plugin.ConfigurationSecretEncrypterFactory;
 import org.apache.qpid.server.plugin.PluggableService;
 
 @PluggableService
-public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterFactory
+public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterFactory, ConditionallyAvailable
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AESKeyFileEncrypterFactory.class);
+
     static final String ENCRYPTER_KEY_FILE = "encrypter.key.file";
 
     private static final int AES_KEY_SIZE_BITS = 256;
@@ -69,6 +76,33 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
     public static final String TYPE = "AESKeyFile";
 
     static final String DEFAULT_KEYS_SUBDIR_NAME = ".keys";
+
+    private static final boolean IS_AVAILABLE;
+
+    static
+    {
+        boolean isAvailable;
+        try
+        {
+            final int allowedKeyLength = Cipher.getMaxAllowedKeyLength(AES_ALGORITHM);
+            isAvailable = allowedKeyLength >=AES_KEY_SIZE_BITS;
+            if(!isAvailable)
+            {
+                LOGGER.warn("The " + TYPE + " configuration encryption encryption mechanism is not available. "
+                            + "Maximum available AES key length is " + allowedKeyLength + " but " + AES_KEY_SIZE_BITS + " is required."
+                            +"Ensure the full strength JCE policy has been installed into your JVM.");
+            }
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            isAvailable = false;
+
+            LOGGER.error("The " + TYPE + " configuration encryption encryption mechanism is not available. "
+                        + "The " + AES_ALGORITHM + " algorithm is not available within the JVM (despite it being a requirement).");
+        }
+
+        IS_AVAILABLE = isAvailable;
+    }
 
     @Override
     public ConfigurationSecretEncrypter createEncrypter(final ConfiguredObject<?> object)
@@ -337,5 +371,11 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
     public String getType()
     {
         return TYPE;
+    }
+
+    @Override
+    public boolean isAvailable()
+    {
+        return IS_AVAILABLE;
     }
 }

@@ -1034,7 +1034,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    protected void setEncrypter(final ConfigurationSecretEncrypter encrypter)
+    protected final void setEncrypter(final ConfigurationSecretEncrypter encrypter)
     {
         _encrypter = encrypter;
         applyToChildren(new Action<ConfiguredObject<?>>()

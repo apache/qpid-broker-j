@@ -71,7 +71,7 @@ public class QpidServiceLoader
         while(serviceLoaderIterator.hasNext())
         {
             C next = serviceLoaderIterator.next();
-            if(!isDisabled(clazz, next))
+            if(!isDisabled(clazz, next) && isAvailable(next))
             {
                 serviceImplementations.add(next);
             }
@@ -88,6 +88,11 @@ public class QpidServiceLoader
         }
 
         return serviceImplementations;
+    }
+
+    private <C extends Pluggable> boolean isAvailable(final C next)
+    {
+        return !(next instanceof ConditionallyAvailable) || ((ConditionallyAvailable) next).isAvailable();
     }
 
     private <C extends Pluggable> boolean isDisabled(Class<C> clazz, final C next)
