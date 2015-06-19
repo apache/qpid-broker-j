@@ -567,12 +567,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     @Override
     public void addConnectionAssociationListener(VirtualHostConnectionListener listener)
     {
-        throwUnsupportedForReplica();
+
     }
 
     @Override
     public void removeConnectionAssociationListener(VirtualHostConnectionListener listener)
     {
-        throwUnsupportedForReplica();
+
     }
 }

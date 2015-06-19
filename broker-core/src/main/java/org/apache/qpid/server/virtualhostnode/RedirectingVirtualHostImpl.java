@@ -569,12 +569,12 @@ class RedirectingVirtualHostImpl
     @Override
     public void addConnectionAssociationListener(VirtualHostConnectionListener listener)
     {
-        throwUnsupportedForRedirector();
+
     }
 
     @Override
     public void removeConnectionAssociationListener(VirtualHostConnectionListener listener)
     {
-        throwUnsupportedForRedirector();
+
     }
 }
