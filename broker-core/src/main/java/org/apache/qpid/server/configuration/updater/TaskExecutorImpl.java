@@ -338,7 +338,7 @@ public class TaskExecutorImpl implements TaskExecutor
             if (additionalPrincipal != null && !principals.contains(additionalPrincipal))
             {
                 Set<Principal> extendedPrincipals = new HashSet<>(principals);
-                extendedPrincipals.add(_principalAccessor.getPrincipal());
+                extendedPrincipals.add(additionalPrincipal);
                 contextSubject = new Subject(contextSubject.isReadOnly(),
                         extendedPrincipals,
                         contextSubject.getPublicCredentials(),
