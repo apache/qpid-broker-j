@@ -55,7 +55,7 @@ define(["dojo/parser",
         addAuthenticationProvider, addVirtualHostNodeAndVirtualHost, addPort, addStore, addGroupProvider, addAccessControlProvider, editBroker, template) {
 
            var brokerAttributeNames = ["name", "operatingSystem", "platform", "productVersion", "modelVersion",
-                                        "statisticsReportingPeriod", "statisticsReportingResetEnabled",
+                                        "statisticsReportingPeriod", "statisticsReportingResetEnabled", "confidentialConfigurationEncryptionProvider",
                                         "connection.sessionCountLimit", "connection.heartBeatDelay"];
 
            function Broker(name, parent, controller) {

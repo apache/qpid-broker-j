@@ -45,7 +45,7 @@ define(["dojox/html/entities",
         "dojo/domReady!"],
   function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
   {
-    var fields = [ "name", "statisticsReportingPeriod", "statisticsReportingResetEnabled", "connection.sessionCountLimit", "connection.heartBeatDelay"];
+    var fields = [ "name", "statisticsReportingPeriod", "statisticsReportingResetEnabled", "confidentialConfigurationEncryptionProvider", "connection.sessionCountLimit", "connection.heartBeatDelay"];
     var numericFieldNames = ["statisticsReportingPeriod", "connection.sessionCountLimit", "connection.heartBeatDelay"];
 
     var brokerEditor =
@@ -83,7 +83,23 @@ define(["dojox/html/entities",
         this.management = management;
         var that=this;
         this.dialog.set("title", "Edit Broker - " + entities.encode(String(brokerData.name)));
-        management.load( {type:"broker"}, { actuals: true }).then(
+          var typeMetaData = management.metadata.getMetaData("Broker", "broker");
+          var encrypters = typeMetaData.attributes.confidentialConfigurationEncryptionProvider.validValues;
+          var encrypterTypesData = [];
+          encrypterTypesData.push({id: "", name: "None"});
+          array.forEach(encrypters,
+              function(item)
+              {
+                  encrypterTypesData.push({id: item, name: item});
+              }
+          );
+
+          var encrytperTypesStore = new Memory({ data: encrypterTypesData });
+          var encrypterControl = registry.byId("editBroker.confidentialConfigurationEncryptionProvider");
+          encrypterControl.set("store", encrytperTypesStore);
+          encrypterControl.set("value", "NONE");
+
+          management.load( {type:"broker"}, { actuals: true }).then(
               function(data)
               {
                 that._show(data[0], brokerData);

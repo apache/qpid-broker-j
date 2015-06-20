@@ -25,6 +25,7 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
@@ -132,7 +133,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
         final Set<String> systemNodeCreatorTypes = qpidServiceLoader.getInstancesByType(SystemNodeCreator.class).keySet();
         _virtualHostPropertiesNodeEnabled = systemNodeCreatorTypes.contains(VirtualHostPropertiesNodeCreator.TYPE);
-        if(attributes.containsKey(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER))
+        if(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER) != null )
         {
 
             final String encryptionProviderType = String.valueOf(attributes.get(CONFIDENTIAL_CONFIGURATION_ENCRYPTION_PROVIDER));
@@ -857,5 +858,11 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     {
         updateEncrypter(_confidentialConfigurationEncryptionProvider);
         forceUpdateAllSecureAttributes();
+    }
+
+    @SuppressWarnings("unused")
+    public static Collection<String> getAvailableConfigurationEncrypters()
+    {
+        return (new QpidServiceLoader()).getInstancesByType(ConfigurationSecretEncrypterFactory.class).keySet();
     }
 }

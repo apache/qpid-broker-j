@@ -128,7 +128,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = MESSAGE_COMPRESSION_THRESHOLD_SIZE)
     int DEFAULT_MESSAGE_COMPRESSION_THRESHOLD_SIZE = 102400;
 
-    @ManagedAttribute
+    @ManagedAttribute(validValues = {"org.apache.qpid.server.model.adapter.BrokerAdapter#getAvailableConfigurationEncrypters()"})
     String getConfidentialConfigurationEncryptionProvider();
 
     @DerivedAttribute( persist = true )

@@ -25,5 +25,5 @@ import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 
 public interface ConfigurationSecretEncrypterFactory extends Pluggable
 {
-    public ConfigurationSecretEncrypter createEncrypter(ConfiguredObject<?> object);
+    ConfigurationSecretEncrypter createEncrypter(ConfiguredObject<?> object);
 }
