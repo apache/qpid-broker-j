@@ -277,71 +277,74 @@ public class SpawnedBrokerHolder implements BrokerHolder
 
     private List<String> retrieveWindowsPidsIfPossible()
     {
-        try
+        if(SystemUtils.isWindows())
         {
-            Process p = Runtime.getRuntime().exec(new String[] {"wmic", "process", "list"});
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream())))
+            try
             {
-                String line;
-                String headers = reader.readLine();
-                int processIdOffset = headers.indexOf(" ProcessId") + 1;
-                int parentProcessIdOffset = headers.indexOf(" ParentProcessId") + 1;
-                String parentProcess = null;
-                Map<String, List<String>> parentProcessMap = new HashMap<String, List<String>>();
-
-                while ((line = reader.readLine()) != null)
+                Process p = Runtime.getRuntime().exec(new String[]{"wmic", "process", "list"});
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream())))
                 {
-                    if (line.length() > processIdOffset)
-                    {
-                        String processIdStr = line.substring(processIdOffset);
-                        processIdStr = processIdStr.substring(0, processIdStr.indexOf(' '));
-                        processIdStr = processIdStr.trim();
+                    String line;
+                    String headers = reader.readLine();
+                    int processIdOffset = headers.indexOf(" ProcessId") + 1;
+                    int parentProcessIdOffset = headers.indexOf(" ParentProcessId") + 1;
+                    String parentProcess = null;
+                    Map<String, List<String>> parentProcessMap = new HashMap<String, List<String>>();
 
-                        String parentProcessIdStr = line.substring(parentProcessIdOffset);
-                        parentProcessIdStr = parentProcessIdStr.substring(0, parentProcessIdStr.indexOf(' '));
-                        parentProcessIdStr = parentProcessIdStr.trim();
-                        if (parentProcessIdStr.length() > 0 && (parentProcess == null || parentProcess.equals(
-                                parentProcessIdStr)))
+                    while ((line = reader.readLine()) != null)
+                    {
+                        if (line.length() > processIdOffset)
                         {
-                            List<String> children = parentProcessMap.get(parentProcessIdStr);
-                            if (children == null)
+                            String processIdStr = line.substring(processIdOffset);
+                            processIdStr = processIdStr.substring(0, processIdStr.indexOf(' '));
+                            processIdStr = processIdStr.trim();
+
+                            String parentProcessIdStr = line.substring(parentProcessIdOffset);
+                            parentProcessIdStr = parentProcessIdStr.substring(0, parentProcessIdStr.indexOf(' '));
+                            parentProcessIdStr = parentProcessIdStr.trim();
+                            if (parentProcessIdStr.length() > 0 && (parentProcess == null || parentProcess.equals(
+                                    parentProcessIdStr)))
                             {
-                                children = new ArrayList<String>();
-                                parentProcessMap.put(parentProcessIdStr, children);
+                                List<String> children = parentProcessMap.get(parentProcessIdStr);
+                                if (children == null)
+                                {
+                                    children = new ArrayList<String>();
+                                    parentProcessMap.put(parentProcessIdStr, children);
+                                }
+                                children.add(processIdStr);
                             }
-                            children.add(processIdStr);
-                        }
-                        if (line.toLowerCase()
-                                .contains(_brokerCommand.toLowerCase()))
-                        {
-                            parentProcess = processIdStr;
+                            if (line.toLowerCase()
+                                    .contains(_brokerCommand.toLowerCase()))
+                            {
+                                parentProcess = processIdStr;
+                            }
+
                         }
 
                     }
-
-                }
-                LOGGER.debug("Parent process: " + parentProcess);
-                if (parentProcess != null)
-                {
-                    List<String> returnVal = new ArrayList<>();
-                    returnVal.add(parentProcess);
-                    List<String> children = parentProcessMap.get(parentProcess);
-                    if (children != null)
+                    LOGGER.debug("Parent process: " + parentProcess);
+                    if (parentProcess != null)
                     {
-                        for (String child : children)
+                        List<String> returnVal = new ArrayList<>();
+                        returnVal.add(parentProcess);
+                        List<String> children = parentProcessMap.get(parentProcess);
+                        if (children != null)
                         {
-                            returnVal.add(child);
+                            for (String child : children)
+                            {
+                                returnVal.add(child);
+                            }
                         }
+                        return returnVal;
                     }
-                    return returnVal;
+
+
                 }
-
-
             }
-        }
-        catch (IOException e)
-        {
-            LOGGER.error("Error whilst killing process " + _brokerCommand, e);
+            catch (IOException e)
+            {
+                LOGGER.error("Error whilst killing process " + _brokerCommand, e);
+            }
         }
         return null;
     }
