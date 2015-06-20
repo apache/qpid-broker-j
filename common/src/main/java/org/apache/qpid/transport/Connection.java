@@ -83,22 +83,6 @@ public class Connection extends ConnectionInvoker
 
     public enum State { NEW, CLOSED, OPENING, OPEN, CLOSING, CLOSE_RCVD, RESUMING }
 
-    static class DefaultConnectionListener implements ConnectionListener
-    {
-        public void opened(Connection conn) {}
-        public void exception(Connection conn, ConnectionException exception)
-        {
-            log.error(exception, "connection exception");
-        }
-        public void closed(Connection conn) {}
-
-        @Override
-        public boolean redirect(final String host, final List<Object> knownHosts)
-        {
-            return false;
-        }
-    }
-
     public static interface SessionFactory
     {
         Session newSession(Connection conn, Binary name, long expiry, boolean isNoReplay);
