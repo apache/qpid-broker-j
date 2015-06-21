@@ -103,7 +103,7 @@ public class MetaDataServlet extends AbstractServlet
     {
         Map<String,Object> typeDetails = new LinkedHashMap<>();
         typeDetails.put("attributes", processAttributes(type));
-        typeDetails.put("opertaions", processOperations(type));
+        typeDetails.put("operations", processOperations(type));
         typeDetails.put("managedInterfaces", getManagedInterfaces(type));
         typeDetails.put("validChildTypes", getValidChildTypes(type));
         ManagedObject annotation = type.getAnnotation(ManagedObject.class);
