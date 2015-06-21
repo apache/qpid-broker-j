@@ -38,4 +38,7 @@ public @interface ManagedAttribute
     boolean oversize() default false;
     String oversizedAltText() default "";
     String secureValueFilter() default "";
+    /** If true, the model attribute value cannot be mutated after construction. */
+    boolean immutable() default false;
+
 }

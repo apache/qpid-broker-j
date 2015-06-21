@@ -499,6 +499,71 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
     }
 
+    public void testImmutableAttribute()
+    {
+        final String value = "myvalue";
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, "myName");
+        attributes.put(TestSingleton.IMMUTABLE_VALUE, value);
+
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+
+        assertEquals(value, object.getImmutableValue());
+
+        // Update to the same value is allowed
+        object.setAttributes(Collections.singletonMap(TestSingleton.IMMUTABLE_VALUE, value));
+
+        try
+        {
+            object.setAttributes(Collections.singletonMap(TestSingleton.IMMUTABLE_VALUE, "newvalue"));
+            fail("Exception not thrown");
+        }
+        catch(IllegalConfigurationException e)
+        {
+            // PASS
+        }
+        assertEquals(value, object.getImmutableValue());
+
+        try
+        {
+            object.setAttributes(Collections.singletonMap(TestSingleton.IMMUTABLE_VALUE, null));
+            fail("Exception not thrown");
+        }
+        catch(IllegalConfigurationException e)
+        {
+            // PASS
+        }
+
+        assertEquals(value, object.getImmutableValue());
+    }
+
+    public void testImmutableAttributeNullValue()
+    {
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, "myName");
+        attributes.put(TestSingleton.IMMUTABLE_VALUE, null);
+
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+
+        assertNull(object.getImmutableValue());
+
+        // Update to the same value is allowed
+        object.setAttributes(Collections.singletonMap(TestSingleton.IMMUTABLE_VALUE, null));
+
+        try
+        {
+            object.setAttributes(Collections.singletonMap(TestSingleton.IMMUTABLE_VALUE, "newvalue"));
+            fail("Exception not thrown");
+        }
+        catch(IllegalConfigurationException e)
+        {
+            // PASS
+        }
+        assertNull(object.getImmutableValue());
+    }
+
     public void testAttributeSetListenerFiring()
     {
         final String objectName = "listenerFiring";

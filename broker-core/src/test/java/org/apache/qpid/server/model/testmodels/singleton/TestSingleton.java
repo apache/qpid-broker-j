@@ -41,6 +41,7 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
     String VALID_VALUE = "validValue";
     String SECURE_VALUE = "secureValue";
     String ENUMSET_VALUES = "enumSetValues";
+    String IMMUTABLE_VALUE = "immutableValue";
 
     String TEST_CONTEXT_DEFAULT = "TEST_CONTEXT_DEFAULT";
     @ManagedContextDefault(name = TEST_CONTEXT_DEFAULT)
@@ -86,5 +87,8 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
 
     @ManagedAttribute(secure = true)
     String getSecureValue();
+
+    @ManagedAttribute(immutable = true)
+    String getImmutableValue();
 
 }

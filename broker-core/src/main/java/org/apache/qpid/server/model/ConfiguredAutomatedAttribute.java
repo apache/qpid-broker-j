@@ -131,6 +131,11 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         return _annotation.mandatory();
     }
 
+    public boolean isImmutable()
+    {
+        return _annotation.immutable();
+    }
+
     public boolean isPersisted()
     {
         return _annotation.persist();

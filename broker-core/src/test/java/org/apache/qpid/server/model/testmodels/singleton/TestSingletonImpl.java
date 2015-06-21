@@ -69,6 +69,8 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     @ManagedAttributeField
     private String _secureValue;
 
+    @ManagedAttributeField
+    private String _immutableValue;
 
     @ManagedObjectFactoryConstructor
     public TestSingletonImpl(final Map<String, Object> attributes)
@@ -156,6 +158,12 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public String getSecureValue()
     {
         return _secureValue;
+    }
+
+    @Override
+    public String getImmutableValue()
+    {
+        return _immutableValue;
     }
 
     @Override

@@ -165,15 +165,20 @@ public class MetaDataServlet extends AbstractServlet
             }
             if(attribute.isAutomated())
             {
-                if(!"".equals(((ConfiguredAutomatedAttribute)attribute).defaultValue()))
+                ConfiguredAutomatedAttribute automatedAttribute = (ConfiguredAutomatedAttribute) attribute;
+                if(!"".equals(automatedAttribute.defaultValue()))
                 {
-                    attrDetails.put("defaultValue",((ConfiguredAutomatedAttribute)attribute).defaultValue());
+                    attrDetails.put("defaultValue", automatedAttribute.defaultValue());
                 }
-                if(((ConfiguredAutomatedAttribute)attribute).isMandatory())
+                if(automatedAttribute.isMandatory())
                 {
-                    attrDetails.put("mandatory",((ConfiguredAutomatedAttribute)attribute).isMandatory());
+                    attrDetails.put("mandatory", automatedAttribute.isMandatory());
                 }
-                if(!(((ConfiguredAutomatedAttribute)attribute).validValues()).isEmpty())
+                if(automatedAttribute.isImmutable())
+                {
+                    attrDetails.put("immutable", automatedAttribute.isImmutable());
+                }
+                if(!(automatedAttribute.validValues()).isEmpty())
                 {
                     Collection<String> validValues = ((ConfiguredAutomatedAttribute<?,?>) attribute).validValues();
 

@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -2236,10 +2237,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             if (attr.isAutomated() && changedAttributes.contains(attr.getName()))
             {
                 ConfiguredAutomatedAttribute autoAttr = (ConfiguredAutomatedAttribute) attr;
+
+                if (autoAttr.isImmutable() && !Objects.equals(autoAttr.getValue(this), autoAttr.getValue(proxyForValidation)))
+                {
+                    throw new IllegalConfigurationException("Attribute '" + autoAttr.getName() + "' cannot be changed.");
+                }
+
                 if (autoAttr.hasValidValues())
                 {
                     Object desiredValue = autoAttr.getValue(proxyForValidation);
-
                     if ((autoAttr.isMandatory() || desiredValue != null)
                         && !checkValidValues(autoAttr, desiredValue))
                     {
@@ -2252,7 +2258,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     }
                 }
 
+
             }
+
         }
 
     }
