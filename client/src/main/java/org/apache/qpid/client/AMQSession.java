@@ -2993,7 +2993,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      *
      * @throws AMQException
      */
-    private void registerConsumer(C consumer, boolean nowait) throws AMQException // , FailoverException
+    private void registerConsumer(C consumer, boolean nowait) throws AMQException
     {
         AMQDestination amqd = consumer.getDestination();
 
@@ -3012,7 +3012,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             {
                 declareQueue(amqd, consumer.isNoLocal(), nowait);
             }
-            if (_bindQueues && !amqd.neverDeclare())
+            if (_bindQueues && !amqd.neverDeclare() && !amqd.isDefaultExchange())
             {
                 if(!isBound(amqd.getExchangeName(), amqd.getAMQQueueName(), amqd.getRoutingKey()))
                 {

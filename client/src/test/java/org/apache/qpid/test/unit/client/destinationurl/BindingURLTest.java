@@ -183,6 +183,34 @@ public class BindingURLTest extends QpidTestCase
 
     }
 
+    public void testRoutingKeyDefaulting_DirectExchangeClass_WithRoutinKey() throws Exception
+    {
+        String url = "direct://exchangeName/Destination/Queue?routingkey='myroutingkeyoverridesqueue'";
+
+        BindingURL dest = new AMQBindingURL(url);
+
+        assertEquals("direct", dest.getExchangeClass());
+        assertEquals("exchangeName", dest.getExchangeName());
+        assertEquals("Destination", dest.getDestinationName());
+        assertEquals("Queue", dest.getQueueName());
+        assertEquals("myroutingkeyoverridesqueue", dest.getRoutingKey());
+
+    }
+
+    public void testBindingKeyFromRoutingKey() throws Exception
+    {
+        String url = "exchangeClass://exchangeName/Destination/?routingkey='routingkey'";
+
+        BindingURL dest = new AMQBindingURL(url);
+
+        assertEquals("exchangeClass", dest.getExchangeClass());
+        assertEquals("exchangeName", dest.getExchangeName());
+        assertEquals("Destination", dest.getDestinationName());
+        assertEquals("", dest.getQueueName());
+        assertEquals(1, dest.getBindingKeys().length);
+        assertEquals("routingkey", dest.getBindingKeys()[0]);
+    }
+
     public void testSingleBindingKeys() throws Exception
     {
         String url = "exchangeClass://exchangeName/Destination/?bindingkey='key'";
@@ -214,13 +242,13 @@ public class BindingURLTest extends QpidTestCase
 
     public void testAnonymousExchange() throws Exception
     {
-        String url = "exchangeClass:////Queue";
+        String url = "direct:////Queue";
 
         BindingURL burl = new AMQBindingURL(url);
 
         assertEquals(url, burl.toString());
 
-        assertEquals("exchangeClass", burl.getExchangeClass());
+        assertEquals("direct", burl.getExchangeClass());
         assertEquals("", burl.getExchangeName());
         assertEquals("", burl.getDestinationName());
         assertEquals("Queue", burl.getQueueName());
@@ -267,5 +295,26 @@ public class BindingURLTest extends QpidTestCase
         {
             // PASS
         }
+    }
+
+    public void testUnacceptableExchangeClassForDefaultExchange() throws Exception
+    {
+        String url = "topic:////Destination/Queue";
+        try
+        {
+            new AMQBindingURL(url);
+            fail("Exception not thrown");
+        }
+        catch(URISyntaxException e)
+        {
+            // PASS
+        }
+    }
+
+    public void testTopicClassImpliesExclusive() throws Exception
+    {
+        String url = "topic://amq.topic//Destination/Queue";
+        AMQBindingURL burl = new AMQBindingURL(url);
+        assertTrue(Boolean.parseBoolean(burl.getOption(BindingURL.OPTION_EXCLUSIVE)));
     }
 }

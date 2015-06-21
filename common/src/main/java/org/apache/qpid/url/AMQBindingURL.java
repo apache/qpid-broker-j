@@ -39,15 +39,18 @@ public class AMQBindingURL implements BindingURL
     private String _destinationName = "";
     private String _queueName = "";
     private String[] _bindingKeys = new String[0];
-    private HashMap<String, String> _options;
+    private Map<String, String> _options;
 
     public AMQBindingURL(String url) throws URISyntaxException
     {
         // format:
         // <exch_class>://<exch_name>/[<destination>]/[<queue>]?<option>='<value>'[,<option>='<value>']*
-        _logger.debug("Parsing URL: " + url);
+        if (_logger.isDebugEnabled())
+        {
+            _logger.debug("Parsing URL: " + url);
+        }
         _url = url;
-        _options = new HashMap<String, String>();
+        _options = new HashMap<>();
 
         parseBindingURL();
     }
@@ -55,62 +58,79 @@ public class AMQBindingURL implements BindingURL
     private void parseBindingURL() throws URISyntaxException
     {
         BindingURLParser parser = new BindingURLParser();
-        parser.parse(_url,this);
-        _logger.debug("URL Parsed: " + this);
+        parser.parse(_url, this);
+
+        if (ExchangeDefaults.DEFAULT_EXCHANGE_NAME.equals(getExchangeName()) &&
+            !ExchangeDefaults.DIRECT_EXCHANGE_CLASS.equals(getExchangeClass()))
+        {
+            throw new URISyntaxException(_url, "Cannot create an address that redefines the default exchange"
+             + " to be a '" + getExchangeClass() + "' exchange.  It must be an instance of the '"
+             + ExchangeDefaults.DIRECT_EXCHANGE_CLASS + "' exchange.");
+        }
+        if (_logger.isDebugEnabled())
+        {
+            _logger.debug("URL Parsed: " + this);
+        }
     }
 
 
+    @Override
     public String getURL()
     {
         return _url;
     }
 
+    @Override
     public String getExchangeClass()
     {
         return _exchangeClass;
     }
 
-    public void setExchangeClass(String exchangeClass)
+    void setExchangeClass(String exchangeClass)
     {
 
         _exchangeClass = exchangeClass;
-        if (exchangeClass.equals(ExchangeDefaults.TOPIC_EXCHANGE_CLASS))
+        if (ExchangeDefaults.TOPIC_EXCHANGE_CLASS.equals(exchangeClass))
         {
             setOption(BindingURL.OPTION_EXCLUSIVE, "true");
         }
 
     }
 
+    @Override
     public String getExchangeName()
     {
         return _exchangeName;
     }
 
-    public void setExchangeName(String name)
+    void setExchangeName(String name)
     {
         _exchangeName = name;
     }
 
+    @Override
     public String getDestinationName()
     {
         return _destinationName;
     }
 
-    public void setDestinationName(String name)
+    void setDestinationName(String name)
     {
         _destinationName = name;
     }
 
+    @Override
     public String getQueueName()
     {
         return _queueName;
     }
 
-    public void setQueueName(String name)
+    void setQueueName(String name)
     {
         _queueName = name;
     }
 
+    @Override
     public String getOption(String key)
     {
         return _options.get(key);
@@ -135,14 +155,16 @@ public class AMQBindingURL implements BindingURL
         _options.put(key, value);
     }
 
+    @Override
     public boolean containsOption(String key)
     {
         return _options.containsKey(key);
     }
 
+    @Override
     public String getRoutingKey()
     {
-        if (_exchangeClass.equals(ExchangeDefaults.DIRECT_EXCHANGE_CLASS))
+        if (ExchangeDefaults.DIRECT_EXCHANGE_CLASS.equals(_exchangeClass))
         {
             if (containsOption(BindingURL.OPTION_ROUTING_KEY))
             {
@@ -162,6 +184,7 @@ public class AMQBindingURL implements BindingURL
         return getDestinationName();
     }
 
+    @Override
     public String[] getBindingKeys()
     {
         if (_bindingKeys != null && _bindingKeys.length>0)
@@ -174,12 +197,12 @@ public class AMQBindingURL implements BindingURL
         }
     }
 
-    public void setBindingKeys(String[] keys)
+    void setBindingKeys(String[] keys)
     {
         _bindingKeys = keys;
     }
 
-    public void setRoutingKey(String key)
+    void setRoutingKey(String key)
     {
         setOption(OPTION_ROUTING_KEY, key);
     }

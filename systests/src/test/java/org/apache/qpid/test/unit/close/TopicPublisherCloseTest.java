@@ -17,7 +17,8 @@
  * specific language governing permissions and limitations
  * under the License.
  *
- */package org.apache.qpid.test.unit.close;
+ */
+package org.apache.qpid.test.unit.close;
 
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQTopic;
@@ -47,9 +48,6 @@ public class TopicPublisherCloseTest extends QpidBrokerTestCase
 
     public void testAllMethodsThrowAfterConnectionClose() throws Exception
     {
-        // give external brokers a chance to start up
-        Thread.sleep(3000);
-
         AMQConnection connection =   (AMQConnection) getConnection("guest", "guest");
 
         Topic destination1 = new AMQTopic(connection, "t1");

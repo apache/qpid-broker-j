@@ -103,16 +103,6 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _isExclusive = exclusive;
     }
 
-    protected AddressHelper getAddrHelper()
-    {
-        return _addrHelper;
-    }
-
-    protected void setAddrHelper(AddressHelper addrHelper)
-    {
-        _addrHelper = addrHelper;
-    }
-
     protected String getName()
     {
         return _name;
@@ -436,6 +426,11 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     public String getExchangeName()
     {
         return _exchangeName;
+    }
+
+    public boolean isDefaultExchange()
+    {
+        return _exchangeName == null || "".equals(_exchangeName);
     }
 
     public String getExchangeClass()
@@ -871,7 +866,8 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
         _name = name;
     }
 
-    public String getSubject() {
+    public String getSubject()
+    {
         return _subject;
     }
 
