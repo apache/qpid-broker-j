@@ -107,13 +107,21 @@ public final class Functions
 
     public static String hex(byte[] bytes, int limit)
     {
+        return hex(bytes, limit, "");
+    }
+
+    public static String hex(byte[] bytes, int limit, CharSequence separator)
+    {
         limit = Math.min(limit, bytes == null ? 0 : bytes.length);
         StringBuilder sb = new StringBuilder(3 + limit*2);
         for(int i = 0; i < limit; i++)
         {
             sb.append(HEX_CHARACTERS[(((int)bytes[i]) & 0xf0)>>4]);
             sb.append(HEX_CHARACTERS[(((int)bytes[i]) & 0x0f)]);
-
+            if(i != bytes.length - 1)
+            {
+                sb.append(separator);
+            }
         }
         if(bytes != null && bytes.length>limit)
         {
