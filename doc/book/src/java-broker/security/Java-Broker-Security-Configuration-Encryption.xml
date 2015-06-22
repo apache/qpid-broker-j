@@ -31,34 +31,20 @@
     uses a securely generated random key of 256bit<footnote><para>Java Cryptography Extension (JCE)
         Unlimited Strength required</para></footnote> to encrypt the secrets stored within a key
     file. Of course, the key itself must be guarded carefully, otherwise the passwords encrypted
-    with it may be compromised. For this reason, the Broker that the file's permissions allow the
-    file to be read exclusively by the user account used for running the Broker.</para>
+    with it may be compromised. For this reason, the Broker ensures that the file's permissions
+    allow the file to be read exclusively by the user account used for running the Broker.</para>
   <important>
     <para>If the keyfile is lost or corrupted, the secrets will be irrecoverable.</para>
   </important>
   <section id="Java-Broker-Security-Configuration-Encryption-Configuration">
     <title>Configuration</title>
-    <para>To use <literal>AESKeyFile</literal>, first stop the Broker, then edit the Broker's
-      configuration file ${QPID_WORK}/config.json. Insert a Broker attribute called
-        <literal>confidentialConfigurationEncryptionProvider</literal> with value
-        <literal>AESKeyFile</literal>. On restarting the Broker, it will generate a keyfile in
-      location <literal>${QPID_WORK}/.keys/</literal>. Any existing passwords contained with the
-      configuration will be automatically encrypted, as will any new or changed ones in
-      future.</para>
-    <example>
-      <title>Enanbling password encryption</title>
-      <screen>
- {
-  "id" : "3f183a59-abc3-40ad-8e14-0cac9de2cac4",
-  "name" : "${broker.name}",
-  "confidentialConfigurationEncryptionProvider" : "AESKeyFile",
-  ....
- }
-      </screen>
-    </example>
+    <para>The <literal>AESKeyFile</literal> encyptor provider is enabled/disabled via the <link
+        linkend="Java-Broker-Management-Managing-Broker">Broker attributes</link> within the
+      Web Management Console.  On enabling the provider, any existing passwords within the
+      configuration will be automatically rewritten in the encrypted form.</para>
     <para>Note that passwords stored by the Authentication Providers <link
-        linkEnd="Java-Broker-Security-PlainPasswordFile-Provider">PlainPasswordFile</link> and.
-        <link linkEnd="Java-Broker-Security-Base64MD5PasswordFile-Provider">PlainPasswordFile</link>
+        linkend="Java-Broker-Security-PlainPasswordFile-Provider">PlainPasswordFile</link> and.
+        <link linkend="Java-Broker-Security-Base64MD5PasswordFile-Provider">PlainPasswordFile</link>
       with the external password files are <emphasis>not</emphasis> encrypted by the key. Use the
       Scram Authentication Managers instead; these make use of the Configuration Encryption when
       storing the users' passwords. </para>
@@ -69,6 +55,7 @@
       the user, perhaps owing to the security standards of their institution, the
         <literal>ConfigurationSecretEncrypter</literal> interface is designed as an extension point.
       Users may implement their own implementation of ConfigurationSecretEncrypter perhaps to employ
-      stronger encryption or delegating the storage of the key to an Enterprise Password Safe.</para>
+      stronger encryption or delegating the storage of the key to an Enterprise Password
+      Safe.</para>
   </section>
 </section>

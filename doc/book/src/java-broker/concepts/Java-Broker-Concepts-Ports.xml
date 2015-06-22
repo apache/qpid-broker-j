@@ -44,7 +44,7 @@
     <para> Additionally, HTTP and JMX ports can be configured for use by the associated management
         plugins. </para>
     <para>This diagram explains how Ports, <link
-            linkEnd="Java-Broker-Concepts-Authentication-Providers">Authentication Providers</link>
+            linkend="Java-Broker-Concepts-Authentication-Providers">Authentication Providers</link>
         and an Access Control Provider work together to allow an application to form a connection to
         a Virtualhost.<figure>
             <title>Control flow during Authentication</title>

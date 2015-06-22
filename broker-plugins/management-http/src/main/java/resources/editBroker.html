@@ -59,7 +59,7 @@
               </div>
 
               <div class="clear">
-                    <div class="formLabel-labelCell tableContainer-labelCell">Config Encyrption:</div>
+                    <div class="formLabel-labelCell tableContainer-labelCell">Config Encryption:</div>
                     <div class="formLabel-controlCell tableContainer-valueCell">
                         <input type="text" id="editBroker.confidentialConfigurationEncryptionProvider"
                                data-dojo-type="dijit/form/FilteringSelect"
@@ -67,7 +67,8 @@
                               name: 'confidentialConfigurationEncryptionProvider',
                               required: true,
                               title: 'Select Configuration Encryption Type',
-                              placeHolder: 'Select encryption type'" />
+                              placeHolder: 'Select encryption type',
+                              promptMessage: 'If encryption is enabled, configurations items such as passwords<br/>will be encrypted before being written to the configuration store.'" />
                     </div>
               </div>
 
