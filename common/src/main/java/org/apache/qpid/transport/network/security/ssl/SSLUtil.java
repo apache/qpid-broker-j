@@ -38,6 +38,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
@@ -367,18 +368,24 @@ public class SSLUtil
                 content = DatatypeConverter.parseBase64Binary(keyBuilder.toString());
             }
         }
+        return readPrivateKey(content, "RSA");
+    }
+
+    public static PrivateKey readPrivateKey(final byte[] content, final String algorithm)
+            throws NoSuchAlgorithmException, InvalidKeySpecException
+    {
         PrivateKey key;
         try
         {
             PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(content);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
+            KeyFactory kf = KeyFactory.getInstance(algorithm);
             key = kf.generatePrivate(keySpec);
         }
         catch(InvalidKeySpecException e)
         {
             // not in PCKS#8 format - try parsing as PKCS#1
             RSAPrivateCrtKeySpec keySpec = getRSAKeySpec(content);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
+            KeyFactory kf = KeyFactory.getInstance(algorithm);
             try
             {
                 key = kf.generatePrivate(keySpec);

@@ -529,6 +529,16 @@ define(["dojo/_base/xhr",
                });
            }
 
+           util.disableWidgetsForImmutableFields = function(domRoot, category, type, meta)
+           {
+               var widgets = util.findAllWidgets(domRoot);
+               array.forEach(widgets,
+                   function (widget)
+                   {
+                       widgetconfigurer.disableIfImmutable(widget, category, type, meta);
+                   });
+           }
+
            util.getFormWidgetValues = function (form, initialData)
            {
                var values = {};

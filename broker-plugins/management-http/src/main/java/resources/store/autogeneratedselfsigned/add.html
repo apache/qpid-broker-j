@@ -1,0 +1,73 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<div>
+    <div id="addStore.oldBrowserWarning" class="infoMessage hidden clear"></div>
+    <div class="clear">
+
+        <div class="clear">
+            <div class="formLabel-labelCell tableContainer-labelCell">Key Algorithm:</div>
+            <div class="formLabel-controlCell tableContainer-valueCell">
+                <input type="text" id="addStore.keyAlgorithm"
+                       data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="
+                              name: 'keyAlgorithm',
+                              placeHolder: 'key algorithm',
+                              promptMessage: 'Algortihm for the private key, e.g. RSA',
+                              title: 'Enter an algortihm for the private key'" />
+            </div>
+        </div>
+        <div class="clear">
+            <div class="formLabel-labelCell tableContainer-labelCell clear">Signature algorithm:</div>
+            <div class="formLabel-controlCell tableContainer-valueCell">
+                <input type="text" id="addStore.signatureAlgorithm"
+                       data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="
+                              name: 'signatureAlgorithm',
+                              placeHolder: 'signature algorithm',
+                              promptMessage: 'Name of the signature algorithm known to Java',
+                              title: 'Enter the signature algorithm known to Java'" />
+            </div>
+        </div>
+        <div class="clear">
+            <div class="formLabel-labelCell tableContainer-labelCell clear">Signature algorithm:</div>
+            <div class="formLabel-controlCell tableContainer-valueCell">
+                <input type="text" id="addStore.keyLength"
+                       data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="
+                              name: 'keyLength',
+                              placeHolder: 'Key Length',
+                              promptMessage: 'Length of the key in bits',
+                              title: 'Enter the desired key bit length'" />
+            </div>
+        </div>
+        <div class="clear">
+            <div class="formLabel-labelCell tableContainer-labelCell clear">Signature algorithm:</div>
+            <div class="formLabel-controlCell tableContainer-valueCell">
+                <input type="text" id="addStore.durationInMonths"
+                       data-dojo-type="dijit/form/ValidationTextBox"
+                       data-dojo-props="
+                              name: 'durationInMonths',
+                              placeHolder: 'duration (in months)',
+                              promptMessage: 'The duration of the validity of certificate',
+                              title: 'Enter the duration of the validity o fthe certificate (in months)'" />
+            </div>
+        </div>
+    </div>
+</div>

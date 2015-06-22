@@ -41,7 +41,16 @@ define(["dojo/_base/array", "dojox/lang/functional/object" ],
          return attributesForName ? attributesForName["defaultValue"] : undefined;
        };
 
-       Metadata.prototype.getTypesForCategory = function (category)
+      Metadata.prototype.isImmutable = function (category, type, attributeName)
+      {
+          var metaDataForInstance = this.getMetaData(category, type);
+          var attributesForType =  metaDataForInstance["attributes"];
+          var attributesForName = attributesForType[attributeName];
+          return attributesForName ? attributesForName["immutable"] : undefined;
+      };
+
+
+      Metadata.prototype.getTypesForCategory = function (category)
        {
           return fobject.keys(this.metadata[category]);
        };

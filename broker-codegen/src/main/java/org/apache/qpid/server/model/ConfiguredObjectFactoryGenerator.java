@@ -96,7 +96,8 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
         String factorySimpleName = classElement.getSimpleName().toString() + "Factory";
         String objectSimpleName = classElement.getSimpleName().toString();
         processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Generating factory file for " + classElement.getQualifiedName().toString());
-
+        final ManagedObjectFactoryConstructor annotation =
+                constructorElement.getAnnotation(ManagedObjectFactoryConstructor.class);
         PackageElement packageElement = (PackageElement) classElement.getEnclosingElement();
 
         try
@@ -120,9 +121,17 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             pw.println("import org.apache.qpid.server.model.AbstractConfiguredObjectTypeFactory;");
             pw.println("import org.apache.qpid.server.model.ConfiguredObject;");
             pw.println("import org.apache.qpid.server.plugin.PluggableService;");
+            if(annotation.conditionallyAvailable())
+            {
+                pw.println("import org.apache.qpid.server.plugin.ConditionallyAvailable;");
+            }
             pw.println();
             pw.println("@PluggableService");
             pw.println("public final class " + factorySimpleName + " extends AbstractConfiguredObjectTypeFactory<"+ objectSimpleName +">");
+            if(annotation.conditionallyAvailable())
+            {
+                pw.println("    implements ConditionallyAvailable");
+            }
             pw.println("{");
             pw.println("    public " + factorySimpleName + "()");
             pw.println("    {");
@@ -148,6 +157,16 @@ public class ConfiguredObjectFactoryGenerator extends AbstractProcessor
             }
             pw.println(");");
             pw.println("    }");
+            if(annotation.conditionallyAvailable())
+            {
+                pw.println();
+                pw.println("    @Override");
+                pw.println("    public boolean isAvailable()");
+                pw.println("    {");
+                pw.println("        return " + objectSimpleName + ".isAvailable();");
+                pw.println("    }");
+
+            }
 
             pw.println("}");
 

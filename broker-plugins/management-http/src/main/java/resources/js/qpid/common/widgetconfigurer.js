@@ -144,6 +144,17 @@ define(["dojo/_base/xhr",
          {
             this._processWidgetValue(widget, category, type, data, meta);
          }
+     },
+     disableIfImmutable: function (widget, category, type, meta)
+     {
+         var widgetName = widget.name;
+         if (widgetName) {
+             var immutable = meta.isImmutable(category, type, widgetName);
+             if(immutable) {
+                widget.attr( "disabled", "disabled" );
+             }
+
+         }
      }
    };
 
