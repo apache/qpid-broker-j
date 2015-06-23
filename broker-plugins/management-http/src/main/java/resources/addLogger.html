@@ -1,0 +1,79 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<div class="dijitHidden">
+    <div data-dojo-type="dijit/Dialog" data-dojo-props="title:'Add Logger'" id="addLogger">
+        <form id="addLogger.form" method="post" data-dojo-type="dijit/form/Form">
+            <div id="addLogger.contentPane">
+                <div class="formBox">
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Name*:</div>
+                        <div class="formLabel-controlCell tableContainer-valueCell">
+                            <input type="text" id="addLogger.name"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="
+                              name: 'name',
+                              placeHolder: 'logger name',
+                              required: true,
+                              promptMessage: 'Name of logger, must be unique',
+                              title: 'Enter a unique logger name'" />
+                        </div>
+                    </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Type*:</div>
+                        <div class="tableContainer-valueCell formLabel-controlCell">
+                            <select id="addLogger.type" data-dojo-type="dijit/form/FilteringSelect"
+                                    data-dojo-props="
+                                    name: 'type',
+                                    required: true,
+                                    placeHolder: 'select logger type',
+                                    promptMessage: 'Type of logger',
+                                    title: 'Select type',
+                                    searchAttr: 'name'">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="clear">
+                        <div id="addLogger.categoryFields"></div>
+                    </div>
+                    <div class="clear">
+                        <div id="addLogger.typeFields"></div>
+                    </div>
+                    <div class="clear">
+                        <div class="formLabel-labelCell tableContainer-labelCell">Durable:</div>
+                        <div class="formLabel-controlCell tableContainer-valueCell">
+                            <input type="checkbox" id="addLogger.durable"
+                               data-dojo-type="dijit/form/CheckBox"
+                               data-dojo-props="
+                              name: 'durable',
+                              required: false,
+                              title: 'If selected, persists logger in the configuration store',
+                              checked: true"/>
+                        </div>
+                    </div>
+                </div>
+                <div class="clear"></div>
+            </div>
+            <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
+                <button data-dojo-type="dijit/form/Button" id="addLogger.addButton" data-dojo-props="label: 'Save'" type="submit"></button>
+                <button data-dojo-type="dijit/form/Button" id="addLogger.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
+            </div>
+        </form>
+    </div>
+</div>

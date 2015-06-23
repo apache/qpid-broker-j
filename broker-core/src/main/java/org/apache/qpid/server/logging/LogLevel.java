@@ -20,7 +20,23 @@
  */
 package org.apache.qpid.server.logging;
 
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+
 public enum LogLevel
 {
-    ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF
+    ALL, TRACE, DEBUG, INFO, WARN, ERROR, OFF;
+
+    public static Collection<String> validValues()
+    {
+        List<String> validValues = new ArrayList<>();
+        for (LogLevel level : EnumSet.allOf(LogLevel.class))
+        {
+            validValues.add(level.name());
+        }
+        return validValues;
+    }
 }

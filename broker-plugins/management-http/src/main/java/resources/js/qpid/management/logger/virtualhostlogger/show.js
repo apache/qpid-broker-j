@@ -18,23 +18,18 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging;
+define(["qpid/common/util",
+    "dojo/query",
+    "dojo/text!logger/virtualhostlogger/show.html",
+    "qpid/common/CategoryTabExtension",
+    "dojo/domReady!"],
+  function (util, query, template, CategoryTabExtension)
+  {
+    function VirtualHostLogger(params)
+    {
+      CategoryTabExtension.call(this, params.containerNode, template, "typeSpecificAttributes", params.metadata, params.data, "qpid/management/logger/virtualhostlogger/");
+    }
 
-import org.apache.qpid.server.model.BrokerLoggerFilter;
-import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.model.ManagedObject;
-
-@ManagedObject( category = false, type = BrokerNameAndLevelFilter.TYPE)
-public interface BrokerNameAndLevelFilter<X extends BrokerNameAndLevelFilter<X>> extends BrokerLoggerFilter<X>
-{
-
-    String TYPE = "NameAndLevel";
-    String LOGGER_NAME = "loggerName";
-    String LEVEL = "level";
-
-    @ManagedAttribute( defaultValue = "" )
-    String getLoggerName();
-
-    @ManagedAttribute(defaultValue = "INFO", validValues = {"org.apache.qpid.server.logging.LogLevel#validValues()"})
-    LogLevel getLevel();
-}
+    return util.extend(VirtualHostLogger, CategoryTabExtension);
+  }
+);

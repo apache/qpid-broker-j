@@ -18,23 +18,19 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging;
+define(["qpid/common/util",
+    "dojo/query",
+    "dojox/html/entities",
+    "dojo/text!logger/console/show.html",
+    "qpid/common/TypeTabExtension",
+    "dojo/domReady!"],
+  function (util, query, entities, template, TypeTabExtension)
+  {
+    function BrokerConsoleLogger(params)
+    {
+      TypeTabExtension.call(this, params.containerNode, template, "BrokerLogger", "Console", params.metadata, params.data);
+    }
 
-import org.apache.qpid.server.model.BrokerLoggerFilter;
-import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.model.ManagedObject;
-
-@ManagedObject( category = false, type = BrokerNameAndLevelFilter.TYPE)
-public interface BrokerNameAndLevelFilter<X extends BrokerNameAndLevelFilter<X>> extends BrokerLoggerFilter<X>
-{
-
-    String TYPE = "NameAndLevel";
-    String LOGGER_NAME = "loggerName";
-    String LEVEL = "level";
-
-    @ManagedAttribute( defaultValue = "" )
-    String getLoggerName();
-
-    @ManagedAttribute(defaultValue = "INFO", validValues = {"org.apache.qpid.server.logging.LogLevel#validValues()"})
-    LogLevel getLevel();
-}
+    return util.extend(BrokerConsoleLogger, TypeTabExtension);
+  }
+);

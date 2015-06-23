@@ -754,5 +754,25 @@ define(["dojo/_base/xhr",
              }
            }
 
+           util.buildCheckboxMarkup = function (val)
+           {
+              return "<input type='checkbox' disabled='disabled' "+(val ? "checked='checked'": "")+" />" ;
+           }
+
+           util.makeTypeStoreFromMetadataByCategory = function(metadata, category)
+           {
+              var supportedTypes = metadata.getTypesForCategory(category);
+              supportedTypes.sort();
+              return this.makeTypeStore(supportedTypes);
+           }
+
+            util.extend = function(childConstructor, parentConstructor)
+            {
+                var childPrototype = Object.create(parentConstructor.prototype);
+                childPrototype.constructor = childConstructor;
+                childConstructor.prototype = childPrototype;
+                return childConstructor;
+            }
+
          return util;
        });

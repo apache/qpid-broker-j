@@ -18,23 +18,20 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging;
+define(["dojo/Deferred",
+    "dojo/domReady!"],
+  function (Deferred)
+  {
+    var addVirtualHostLogger =
+    {
+      show: function(data)
+      {
+        var deferred = new Deferred();
+        deferred.resolve("noop");
+        return deferred;
+      }
+    };
 
-import org.apache.qpid.server.model.BrokerLoggerFilter;
-import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.model.ManagedObject;
-
-@ManagedObject( category = false, type = BrokerNameAndLevelFilter.TYPE)
-public interface BrokerNameAndLevelFilter<X extends BrokerNameAndLevelFilter<X>> extends BrokerLoggerFilter<X>
-{
-
-    String TYPE = "NameAndLevel";
-    String LOGGER_NAME = "loggerName";
-    String LEVEL = "level";
-
-    @ManagedAttribute( defaultValue = "" )
-    String getLoggerName();
-
-    @ManagedAttribute(defaultValue = "INFO", validValues = {"org.apache.qpid.server.logging.LogLevel#validValues()"})
-    LogLevel getLevel();
-}
+    return addVirtualHostLogger;
+  }
+);

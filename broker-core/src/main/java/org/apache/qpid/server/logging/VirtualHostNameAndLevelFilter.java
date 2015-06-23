@@ -34,6 +34,6 @@ public interface VirtualHostNameAndLevelFilter<X extends VirtualHostNameAndLevel
     @ManagedAttribute( defaultValue = "" )
     String getLoggerName();
 
-    @ManagedAttribute(defaultValue = "INFO" )
+    @ManagedAttribute(defaultValue = "INFO", validValues = {"org.apache.qpid.server.logging.LogLevel#validValues()"})
     LogLevel getLevel();
 }

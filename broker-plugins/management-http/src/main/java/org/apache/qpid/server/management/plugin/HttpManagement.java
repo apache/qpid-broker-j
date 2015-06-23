@@ -110,7 +110,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private static final String JSESSIONID_COOKIE_PREFIX = "JSESSIONID_";
 
     private static final String[] STATIC_FILE_TYPES = { "*.js", "*.css", "*.html", "*.png", "*.gif", "*.jpg",
-                                                        "*.jpeg", "*.json", "*.txt", "*.xsl" };
+                                                        "*.jpeg", "*.json", "*.txt", "*.xsl", "*.svg" };
 
     private Server _server;
 

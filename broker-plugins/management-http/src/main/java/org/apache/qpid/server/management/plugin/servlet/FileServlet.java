@@ -51,6 +51,7 @@ public class FileServlet extends HttpServlet
         contentTypes.put("jpg",  "image/jpg");
         contentTypes.put("png",  "image/png");
         contentTypes.put("gif",  "image/gif");
+        contentTypes.put("svg",  "image/svg+xml");
         CONTENT_TYPES = Collections.unmodifiableMap(contentTypes);
     }
 

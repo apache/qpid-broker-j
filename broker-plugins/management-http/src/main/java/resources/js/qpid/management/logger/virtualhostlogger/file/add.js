@@ -18,23 +18,25 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging;
+define(["dojo/dom",
+    "dojo/query",
+    "dojo/_base/array",
+    "dijit/registry",
+    "qpid/common/util",
+    "dojo/parser",
+    "dojo/text!logger/file/add.html",
+    "dojo/domReady!"],
+  function (dom, query, array, registry, util, parser, template)
+  {
+    var addFileLogger =
+    {
+      show: function(data)
+      {
+        data.containerNode.innerHTML = template;
+        return parser.parse(data.containerNode);
+      }
+    };
 
-import org.apache.qpid.server.model.BrokerLoggerFilter;
-import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.model.ManagedObject;
-
-@ManagedObject( category = false, type = BrokerNameAndLevelFilter.TYPE)
-public interface BrokerNameAndLevelFilter<X extends BrokerNameAndLevelFilter<X>> extends BrokerLoggerFilter<X>
-{
-
-    String TYPE = "NameAndLevel";
-    String LOGGER_NAME = "loggerName";
-    String LEVEL = "level";
-
-    @ManagedAttribute( defaultValue = "" )
-    String getLoggerName();
-
-    @ManagedAttribute(defaultValue = "INFO", validValues = {"org.apache.qpid.server.logging.LogLevel#validValues()"})
-    LogLevel getLevel();
-}
+    return addFileLogger;
+  }
+);

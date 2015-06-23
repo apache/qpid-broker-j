@@ -30,11 +30,12 @@ define(["dojo/parser",
         "qpid/common/UpdatableStore",
         "qpid/management/addQueue",
         "qpid/management/addExchange",
+        "qpid/management/addLogger",
         "dojox/grid/EnhancedGrid",
         "qpid/management/editVirtualHost",
         "dojo/text!showVirtualHost.html",
         "dojo/domReady!"],
-       function (parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, addQueue, addExchange, EnhancedGrid, editVirtualHost, template) {
+       function (parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, addQueue, addExchange, addLogger, EnhancedGrid, editVirtualHost, template) {
 
            function VirtualHost(name, parent, controller) {
                this.name = name;
@@ -93,7 +94,28 @@ define(["dojo/parser",
                                     }
                             );
 
-                            that.stopButton = registry.byNode(query(".stopButton", containerNode)[0]);
+                            var addLoggerButtonNode = query(".addVirtualHostLogger", contentPane.containerNode)[0];
+                            var addLoggerButton = registry.byNode(addLoggerButtonNode);
+                            addLoggerButton.on("click",
+                              function(evt)
+                              {
+                                addLogger.show(that.management, that.modelObj, "VirtualHostLogger");
+                              });
+
+                            var deleteLoggerButtonNode = query(".deleteVirtualHostLogger", contentPane.containerNode)[0];
+                            var deleteLoggerButton = registry.byNode(deleteLoggerButtonNode);
+                            deleteLoggerButton.on("click",
+                              function(evt)
+                              {
+                                util.deleteSelectedObjects(
+                                  that.vhostUpdater.virtualHostLoggersGrid.grid,
+                                  "Are you sure you want to delete virtual host logger",
+                                  that.management,
+                                  {type: "virtualhostlogger", parent:that.modelObj},
+                                  that.vhostUpdater);
+                              });
+
+                      that.stopButton = registry.byNode(query(".stopButton", containerNode)[0]);
                             that.startButton = registry.byNode(query(".startButton", containerNode)[0]);
                             that.editButton = registry.byNode(query(".editButton", containerNode)[0]);
                             that.downloadButton = registry.byNode(query(".downloadButton", containerNode)[0]);
@@ -301,6 +323,28 @@ define(["dojo/parser",
                                                                               });
                                                              } );
 
+                   that.virtualHostLoggersGrid = new UpdatableStore([],
+                                                                    findNode("loggers"),
+                                                                    [ { name: "Name",  field: "name",  width: "40%"},
+                                                                      { name: "State", field: "state", width: "20%"},
+                                                                      { name: "Type",  field: "type", width: "20%"},
+                                                                      { name: "Durable",  field: "durable", width: "20%",
+                                                                        formatter: function(val){
+                                                                          return util.buildCheckboxMarkup(val);
+                                                                        }
+                                                                      }
+                                                                    ],
+                                                                    function(obj)
+                                                                    {
+                                                                      connect.connect(obj.grid, "onRowDblClick", obj.grid,
+                                                                        function(evt){
+                                                                          var idx = evt.rowIndex,
+                                                                            theItem = this.getItem(idx);
+                                                                          var name = obj.dataStore.getValue(theItem, "name");
+                                                                          controller.show("virtualhostlogger", name, vhost, theItem.id);
+                                                                        });
+                                                                    }, gridProperties, EnhancedGrid);
+
            }
 
            Updater.prototype.updateHeader = function()
@@ -482,6 +526,7 @@ define(["dojo/parser",
                 {
                     util.updateUpdatableStore(this.queuesGrid, data.queues);
                     util.updateUpdatableStore(this.exchangesGrid, data.exchanges);
+                    util.updateUpdatableStore(this.virtualHostLoggersGrid, data.virtualhostloggers);
 
                     var exchangesGrid = this.exchangesGrid.grid;
                     for(var i=0; i< data.exchanges.length; i++)

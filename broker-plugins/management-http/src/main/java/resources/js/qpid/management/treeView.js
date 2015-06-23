@@ -296,6 +296,10 @@ define([
                  controller.show("preferencesprovider", details.preferencesprovider, details.parent, theItem.id);
                } else if (details.type == "virtualhostnode") {
                  controller.show("virtualhostnode", details.virtualhostnode, details.parent, theItem.id);
+               } else if (details.type == "brokerlogger") {
+                 controller.show("brokerlogger", details.brokerlogger, details.parent, theItem.id);
+               } else if (details.type == "virtualhostlogger") {
+                 controller.show("virtualhostlogger", details.virtualhostlogger, details.parent, theItem.id);
                }
            };
 

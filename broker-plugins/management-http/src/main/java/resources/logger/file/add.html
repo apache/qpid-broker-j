@@ -1,0 +1,118 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">File Name:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addLogger.fileName"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'fileName',
+                              required: false,
+                              placeHolder: 'path to the logfile',
+                              promptMessage: 'Enter the log file path',
+                              title: 'Path to the log file on the file system'"/>
+        </div>
+
+        <div class="formBox">
+            <fieldset>
+                <legend>Rolling Options</legend>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Roll Daily:</div>
+                    <div class="formLabel-controlCell tableContainer-valueCell">
+                        <input type="checkbox" id="addLogger.rollDaily"
+                               data-dojo-type="dijit/form/CheckBox"
+                               data-dojo-props="
+                                  name: 'rollDaily',
+                                  required: false"/>
+                        <div data-dojo-type="dijit/Tooltip"
+                             data-dojo-props="connectId: ['addLogger.rollDaily'],
+                                      label: 'If selected, files will be rolled over daily'">
+                        </div>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Roll on Restart:</div>
+                    <div class="formLabel-controlCell tableContainer-valueCell">
+                        <input type="checkbox" id="addLogger.rollOnRestart"
+                               data-dojo-type="dijit/form/CheckBox"
+                               data-dojo-props="
+                                  name: 'rollOnRestart',
+                                  required: false"/>
+                        <div data-dojo-type="dijit/Tooltip"
+                             data-dojo-props="connectId: ['addLogger.rollOnRestart'],
+                                      label: 'If selected, files will be rolled over on every restart'">
+                        </div>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Compress Rolled Files:</div>
+                    <div class="formLabel-controlCell tableContainer-valueCell">
+                        <input type="checkbox" id="addLogger.compressOldFiles"
+                               data-dojo-type="dijit/form/CheckBox"
+                               data-dojo-props="
+                                  name: 'compressOldFiles',
+                                  required: false"/>
+                        <div data-dojo-type="dijit/Tooltip"
+                             data-dojo-props="connectId: ['addLogger.compressOldFiles'],
+                                      label: 'If selected, rolled over files will be compressed'">
+                        </div>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Maximum Number of Rolled Files:</div>
+                    <div class="formLabel-controlCell tableContainer-valueCell">
+                        <input type="text" id="addLogger.maxHistory"
+                               data-dojo-type="dijit/form/NumberTextBox"
+                               data-dojo-props="
+                              name: 'maxHistory',
+                              placeHolder: 'maximum number of files to keep in history',
+                              promptMessage: 'Enter the maximum number of files to keep in history',
+                              title: 'Enter the maximum number of files to keep in history'"/>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Maximum File Size:</div>
+                    <div class="formLabel-controlCell tableContainer-valueCell">
+                        <input type="text" id="addLogger.maxFileSize"
+                               data-dojo-type="dijit/form/ValidationTextBox"
+                               data-dojo-props="
+                              name: 'maxFileSize',
+                              placeHolder: 'maximum file size',
+                              promptMessage: 'Enter file size limit of log files before they roll over. You cann append logback size specifiers (e.g., mb or kb)',
+                              title: 'Enter file size limit of logfiles before they roll over'"/>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Log Message Format:</div>
+                    <div class="formLabel-controlCell tableContainer-valueCell">
+                        <input type="text" id="addLogger.layout"
+                               data-dojo-type="dijit/form/ValidationTextBox"
+                               data-dojo-props="
+                              name: 'layout',
+                              placeHolder: '%d %-5p [%t] \(%c{2}\) - %m%n',
+                              promptMessage: 'Enter the format of the log messages using logback formating',
+                              title: 'Enter the format of the log messages using logback formating'"/>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </div>
+</div>

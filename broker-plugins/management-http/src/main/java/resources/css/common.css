@@ -342,7 +342,8 @@ div .messages {
 {
     width:50px;
     height:50px;
-    background:url("../images/warning.png") left center no-repeat;
+    background:url("../images/warning-yellow.svg") left center no-repeat;
+    background-size: contain;
     display: inline-block;
     float: left;
 }

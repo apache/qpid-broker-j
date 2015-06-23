@@ -37,6 +37,7 @@ define(["dojo/parser",
         "qpid/management/addGroupProvider",
         "qpid/management/addAccessControlProvider",
         "qpid/management/editBroker",
+        "qpid/management/addLogger",
         "dojo/text!showBroker.html",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
@@ -52,7 +53,7 @@ define(["dojo/parser",
         "dijit/MenuItem",
         "dojo/domReady!"],
        function (parser, query, json, connect, memory, properties, updater, util, UpdatableStore, EnhancedGrid, registry, entities,
-        addAuthenticationProvider, addVirtualHostNodeAndVirtualHost, addPort, addStore, addGroupProvider, addAccessControlProvider, editBroker, template) {
+        addAuthenticationProvider, addVirtualHostNodeAndVirtualHost, addPort, addStore, addGroupProvider, addAccessControlProvider, editBroker, addLogger, template) {
 
            var brokerAttributeNames = ["name", "operatingSystem", "platform", "productVersion", "modelVersion",
                                         "statisticsReportingPeriod", "statisticsReportingResetEnabled", "confidentialConfigurationEncryptionProvider",
@@ -234,6 +235,27 @@ define(["dojo/parser",
                                                 that.brokerUpdater);
                                 }
                             );
+
+                            var addLoggerButtonNode = query(".addBrokerLogger", contentPane.containerNode)[0];
+                            var addLoggerButton = registry.byNode(addLoggerButtonNode);
+                            addLoggerButton.on("click",
+                             function(evt){
+                                addLogger.show(that.management, that.modelObj, "BrokerLogger");
+                             });
+
+                            var deleteLoggerButtonNode = query(".deleteBrokerLogger", contentPane.containerNode)[0];
+                            var deleteLoggerButton = registry.byNode(deleteLoggerButtonNode);
+                            deleteLoggerButton.on("click",
+                             function(evt)
+                             {
+                                util.deleteSelectedObjects(
+                                    that.brokerUpdater.brokerLoggersGrid.grid,
+                                    "Are you sure you want to delete broker logger",
+                                    that.management,
+                                    {type: "brokerlogger", parent:that.modelObj},
+                                    that.brokerUpdater);
+                             });
+
                             });
                         }
            };
@@ -562,6 +584,26 @@ define(["dojo/parser",
                                                }, gridProperties, EnhancedGrid);
                              that.displayACLWarnMessage(aclData);
 
+                             var brokerLoggerData = that.brokerData.brokerloggers || [];
+                             that.brokerLoggersGrid =
+                               new UpdatableStore(brokerLoggerData, query(".broker-loggers")[0],
+                                               [ { name: "Name",  field: "name",  width: "40%"},
+                                                 { name: "State", field: "state", width: "20%"},
+                                                 { name: "Type",  field: "type", width: "20%"},
+                                                 { name: "Exclude Virtual Host Logs",  field: "virtualHostLogEventExcluded", width: "20%",
+                                                     formatter: function(val){
+                                                       return util.buildCheckboxMarkup(val);
+                                                     }
+                                                 }
+                                               ], function(obj) {
+                                                       connect.connect(obj.grid, "onRowDblClick", obj.grid,
+                                                       function(evt){
+                                                           var idx = evt.rowIndex,
+                                                               theItem = this.getItem(idx);
+                                                           var name = obj.dataStore.getValue(theItem,"name");
+                                                           that.controller.show("brokerlogger", name, brokerObj, theItem.id);
+                                                       });
+                                               }, gridProperties, EnhancedGrid);
                              updater.add( that);
 
                          });
@@ -679,6 +721,10 @@ define(["dojo/parser",
                          var data = that.brokerData.accesscontrolproviders ? that.brokerData.accesscontrolproviders :[];
                          that.accessControlProvidersGrid.update(data);
                          that.displayACLWarnMessage(data);
+                       }
+                       if (that.brokerLoggersGrid)
+                       {
+                         that.brokerLoggersGrid.update(that.brokerData.brokerloggers);
                        }
                    });
            };
