@@ -39,7 +39,7 @@ public interface Filterable extends FilterableMessage
 
     long getArrivalTime();
 
-    public class Factory
+    class Factory
     {
 
         public static Filterable newInstance(final ServerMessage message, final InstanceProperties properties)
@@ -131,6 +131,23 @@ public interface Filterable extends FilterableMessage
                     return message.getMessageHeader().getHeader(name);
                 }
 
+                @Override
+                public String toString()
+                {
+                    StringBuilder builder = new StringBuilder();
+                    builder.append(getClass().getName());
+                    builder.append(" [messageNumber=");
+                    builder.append(getMessageNumber());
+                    if (getMessageId() != null)
+                    {
+                        builder.append(", id=");
+                        builder.append(getMessageId());
+                    }
+                    builder.append("]");
+
+
+                    return builder.toString();
+                }
             };
         }
     }

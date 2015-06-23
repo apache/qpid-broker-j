@@ -32,8 +32,13 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.server.consumer.ConsumerTarget;
 import org.apache.qpid.server.filter.FilterManager;
+import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.logging.EventLogger;
@@ -57,7 +62,7 @@ class QueueConsumerImpl
     extends AbstractConfiguredObject<QueueConsumerImpl>
         implements QueueConsumer<QueueConsumerImpl>, LogSubject
 {
-
+    private final static Logger LOGGER = LoggerFactory.getLogger(QueueConsumerImpl.class);
     private final AtomicBoolean _targetClosed = new AtomicBoolean(false);
     private final AtomicBoolean _closed = new AtomicBoolean(false);
     private final long _consumerNumber;
@@ -409,7 +414,26 @@ class QueueConsumerImpl
                 return false;
             }
         }
-        return (_filters == null) || _filters.allAllow(entry.asFilterable());
+
+        if (_filters == null)
+        {
+            return true;
+        }
+        else
+        {
+            Filterable msg = entry.asFilterable();
+            try
+            {
+                return _filters.allAllow(msg);
+            }
+            catch (SelectorParsingException e)
+            {
+                LOGGER.info(this + " could not evaluate filter [" + _filters
+                             + "]  against message " + msg
+                             + ". Error was : " + e.getMessage());
+                return false;
+            }
+        }
     }
 
     protected String getFilterLogString()

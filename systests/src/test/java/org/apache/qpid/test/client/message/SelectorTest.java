@@ -55,12 +55,10 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
 
     private static final String BAD_MATHS_SELECTOR = " 1 % 5";
 
-    private static final long RECIEVE_TIMEOUT = 1000;
-
     protected void setUp() throws Exception
     {
         super.setUp();
-        init((AMQConnection) getConnection("guest", "guest"));
+        init((AMQConnection) getConnection());
     }
 
     private void init(AMQConnection connection) throws JMSException
@@ -85,10 +83,7 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
     public void testUsingOnMessage() throws Exception
     {
         String selector = "Cost = 2 AND \"property-with-hyphen\" = 'wibble'";
-        // selector = "JMSType = Special AND Cost = 2 AND AMQMessageID > 0 AND JMSDeliveryMode=" + DeliveryMode.NON_PERSISTENT;
-
-        Session session = (AMQSession) _connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
-        // _session.createConsumer(destination).setMessageListener(this);
+        Session session = _connection.createSession(false, AMQSession.NO_ACKNOWLEDGE);
         session.createConsumer(_destination, selector).setMessageListener(this);
 
         try
@@ -206,7 +201,6 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
             caught = true;
         }
         assertTrue("No exception thrown!", caught);
-        caught = false;
 
     }
 
@@ -219,20 +213,14 @@ public class SelectorTest extends QpidBrokerTestCase implements MessageListener
 
         sentMsg.setIntProperty("testproperty", 1); // 1 % 5
         producer.send(sentMsg);
-        Message recvd = consumer.receive(RECIEVE_TIMEOUT);
-        assertNotNull(recvd);
+        Message recvd = consumer.receive(RECEIVE_TIMEOUT);
+        assertNotNull("Message matching selector should be received", recvd);
 
         sentMsg.setStringProperty("testproperty", "hello"); // "hello" % 5 makes no sense
         producer.send(sentMsg);
-        try
-        {
-            recvd = consumer.receive(RECIEVE_TIMEOUT);
-            assertNull(recvd);
-        }
-        catch (Exception e)
-        {
+        recvd = consumer.receive(RECEIVE_TIMEOUT);
+        assertNull("Message ausing runtime selector error should be received", recvd);
 
-        }
         assertFalse("Connection should not be closed", _connection.isClosed());
     }
 
