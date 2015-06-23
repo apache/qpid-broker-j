@@ -953,9 +953,8 @@ public class AMQChannel
     {
         if (_logger.isDebugEnabled())
         {
-                    _logger.debug(debugIdentity() + " Adding unacked message(" + entry.getMessage().toString() + " DT:" + deliveryTag
+            _logger.debug(debugIdentity() + " Adding unacked message(" + entry.getMessage().toString() + " DT:" + deliveryTag
                                + ") for " + consumer + " on " + entry.getOwningResource().getName());
-
         }
 
         _unacknowledgedMessageMap.add(deliveryTag, entry);
@@ -1113,7 +1112,7 @@ public class AMQChannel
         {
             if (!msgToRequeue.isEmpty())
             {
-                _logger.debug("Preparing (" + msgToRequeue.size() + ") message to requeue to.");
+                _logger.debug("Preparing (" + msgToRequeue.size() + ") message to requeue");
             }
         }
 
@@ -1815,7 +1814,12 @@ public class AMQChannel
 
                     if (altExchange == null)
                     {
-                        _logger.debug("No alternate exchange configured for queue, must discard the message as unable to DLQ: delivery tag: " + deliveryTag);
+                        if (_logger.isDebugEnabled())
+                        {
+                            _logger.debug(
+                                    "No alternate exchange configured for queue, must discard the message as unable to DLQ: delivery tag: "
+                                    + deliveryTag);
+                        }
                         getVirtualHost().getEventLogger().message(_logSubject,
                                                                   ChannelMessages.DISCARDMSG_NOALTEXCH(msg.getMessageNumber(),
                                                                                                        queue.getName(),
@@ -1824,9 +1828,12 @@ public class AMQChannel
                     }
                     else
                     {
-                        _logger.debug(
-                                "Routing process provided no queues to enqueue the message on, must discard message as unable to DLQ: delivery tag: "
-                                + deliveryTag);
+                        if (_logger.isDebugEnabled())
+                        {
+                            _logger.debug(
+                                    "Routing process provided no queues to enqueue the message on, must discard message as unable to DLQ: delivery tag: "
+                                    + deliveryTag);
+                        }
                         getVirtualHost().getEventLogger().message(_logSubject,
                                                                   ChannelMessages.DISCARDMSG_NOROUTE(msg.getMessageNumber(),
                                                                                                      altExchange.getName()));
@@ -2224,7 +2231,10 @@ public class AMQChannel
         MessageSource queue = queueName == null ? getDefaultQueue() : vHost.getMessageSource(queueName.toString());
         if (queue == null)
         {
-            _logger.debug("No queue for '" + queueName + "'");
+            if (_logger.isDebugEnabled())
+            {
+                _logger.debug("No queue for '" + queueName + "'");
+            }
             if (queueName != null)
             {
                 _connection.closeConnection(AMQConstant.NOT_FOUND, "No such queue, '" + queueName + "'", _channelId);
@@ -2426,17 +2436,23 @@ public class AMQChannel
                     // message.reject();
 
                     final boolean maxDeliveryCountEnabled = isMaxDeliveryCountEnabled(deliveryTag);
-                    _logger.debug("maxDeliveryCountEnabled: "
-                                  + maxDeliveryCountEnabled
-                                  + " deliveryTag "
-                                  + deliveryTag);
+                    if (_logger.isDebugEnabled())
+                    {
+                        _logger.debug("maxDeliveryCountEnabled: "
+                                      + maxDeliveryCountEnabled
+                                      + " deliveryTag "
+                                      + deliveryTag);
+                    }
                     if (maxDeliveryCountEnabled)
                     {
                         final boolean deliveredTooManyTimes = isDeliveredTooManyTimes(deliveryTag);
-                        _logger.debug("deliveredTooManyTimes: "
-                                      + deliveredTooManyTimes
-                                      + " deliveryTag "
-                                      + deliveryTag);
+                        if (_logger.isDebugEnabled())
+                        {
+                            _logger.debug("deliveredTooManyTimes: "
+                                          + deliveredTooManyTimes
+                                          + " deliveryTag "
+                                          + deliveryTag);
+                        }
                         if (deliveredTooManyTimes)
                         {
                             deadLetter(deliveryTag);
@@ -2587,17 +2603,23 @@ public class AMQChannel
                         message.reject();
 
                         final boolean maxDeliveryCountEnabled = isMaxDeliveryCountEnabled(deliveryTag);
-                        _logger.debug("maxDeliveryCountEnabled: "
-                                      + maxDeliveryCountEnabled
-                                      + " deliveryTag "
-                                      + deliveryTag);
+                        if (_logger.isDebugEnabled())
+                        {
+                            _logger.debug("maxDeliveryCountEnabled: "
+                                          + maxDeliveryCountEnabled
+                                          + " deliveryTag "
+                                          + deliveryTag);
+                        }
                         if (maxDeliveryCountEnabled)
                         {
                             final boolean deliveredTooManyTimes = isDeliveredTooManyTimes(deliveryTag);
-                            _logger.debug("deliveredTooManyTimes: "
-                                          + deliveredTooManyTimes
-                                          + " deliveryTag "
-                                          + deliveryTag);
+                            if (_logger.isDebugEnabled())
+                            {
+                                _logger.debug("deliveredTooManyTimes: "
+                                              + deliveredTooManyTimes
+                                              + " deliveryTag "
+                                              + deliveryTag);
+                            }
                             if (deliveredTooManyTimes)
                             {
                                 deadLetter(deliveryTag);
@@ -3133,7 +3155,7 @@ public class AMQChannel
                         }
                     }
 
-                    if (_logger.isInfoEnabled())
+                    if (_logger.isDebugEnabled())
                     {
                         _logger.debug("Binding queue "
                                      + queue
@@ -3230,7 +3252,10 @@ public class AMQChannel
                                                                         queue.getConsumerCount());
                         _connection.writeFrame(responseBody.generateFrame(getChannelId()));
 
-                        _logger.debug("Queue " + queueName + " declared successfully");
+                        if (_logger.isDebugEnabled())
+                        {
+                            _logger.debug("Queue " + queueName + " declared successfully");
+                        }
                     }
                 }
             }
@@ -3280,7 +3305,10 @@ public class AMQChannel
                                                                     queue.getConsumerCount());
                     _connection.writeFrame(responseBody.generateFrame(getChannelId()));
 
-                    _logger.debug("Queue " + queueName + " declared successfully");
+                    if (_logger.isDebugEnabled())
+                    {
+                        _logger.debug("Queue " + queueName + " declared successfully");
+                    }
                 }
             }
             catch (QueueExistsException qe)
@@ -3336,7 +3364,10 @@ public class AMQChannel
                                                                         queue.getConsumerCount());
                         _connection.writeFrame(responseBody.generateFrame(getChannelId()));
 
-                        _logger.debug("Queue " + queueName + " declared successfully");
+                        if (_logger.isDebugEnabled())
+                        {
+                            _logger.debug("Queue " + queueName + " declared successfully");
+                        }
                     }
                 }
             }
