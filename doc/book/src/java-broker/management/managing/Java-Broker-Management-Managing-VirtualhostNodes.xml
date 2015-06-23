@@ -50,6 +50,10 @@
           <para><emphasis>Name the virtualhost node</emphasis>.</para>
         </listitem>
         <listitem>
+          <para><emphasis>Default Virtual Host Node</emphasis>. If true, messaging clients which do
+            not specify a virtualhost name will be connected to the virtualhost beneath this node.</para>
+        </listitem>
+        <listitem>
           <para><emphasis>Store Path or JDBC URL.</emphasis> Refers the location used to store the
             configuration of the virtualhost.</para>
         </listitem>
@@ -131,8 +135,8 @@
         <listitem>
           <para><emphasis>Delete</emphasis>. Deletes the virtualhost node and the virtualhost
             contained within it. All exchanges and queues, any the messages contained within it are
-            removed. In the HA case, deleting the virtualhost node causes it be removed
-            permanently from the group.</para>
+            removed. In the HA case, deleting the virtualhost node causes it be removed permanently
+            from the group.</para>
         </listitem>
       </itemizedlist>
     </para>
