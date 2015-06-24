@@ -20,53 +20,53 @@
 <div class="dijitHidden">
     <div data-dojo-type="dijit/Dialog" data-dojo-props="title:'Add Logger'" id="addLogger">
         <form id="addLogger.form" method="post" data-dojo-type="dijit/form/Form">
+            <div class="hidden infoPane" id="brokerLoggerEditWarning">Changes will only take effect after Broker restart.</div>
+            <div class="hidden infoPane" id="virtualHostlLoggerEditWarning">Changes will only take effect after VirtualHost restart.</div>
             <div id="addLogger.contentPane">
-                <div class="formBox">
-                    <div class="clear">
-                        <div class="formLabel-labelCell tableContainer-labelCell">Name*:</div>
-                        <div class="formLabel-controlCell tableContainer-valueCell">
-                            <input type="text" id="addLogger.name"
-                                   data-dojo-type="dijit/form/ValidationTextBox"
-                                   data-dojo-props="
-                              name: 'name',
-                              placeHolder: 'logger name',
-                              required: true,
-                              promptMessage: 'Name of logger, must be unique',
-                              title: 'Enter a unique logger name'" />
-                        </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Name*:</div>
+                    <div class="formLabel-controlCell tableContainer-valueCell">
+                        <input type="text" id="addLogger.name"
+                               data-dojo-type="dijit/form/ValidationTextBox"
+                               data-dojo-props="
+                          name: 'name',
+                          placeHolder: 'logger name',
+                          required: true,
+                          promptMessage: 'Name of logger, must be unique',
+                          title: 'Enter a unique logger name'" />
                     </div>
-                    <div class="clear">
-                        <div class="formLabel-labelCell tableContainer-labelCell">Type*:</div>
-                        <div class="tableContainer-valueCell formLabel-controlCell">
-                            <select id="addLogger.type" data-dojo-type="dijit/form/FilteringSelect"
-                                    data-dojo-props="
-                                    name: 'type',
-                                    required: true,
-                                    placeHolder: 'select logger type',
-                                    promptMessage: 'Type of logger',
-                                    title: 'Select type',
-                                    searchAttr: 'name'">
-                            </select>
-                        </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Type*:</div>
+                    <div class="tableContainer-valueCell formLabel-controlCell">
+                        <select id="addLogger.type" data-dojo-type="dijit/form/FilteringSelect"
+                                data-dojo-props="
+                                name: 'type',
+                                required: true,
+                                placeHolder: 'select logger type',
+                                promptMessage: 'Type of logger',
+                                title: 'Select type',
+                                searchAttr: 'name'">
+                        </select>
                     </div>
-                    <div class="clear">
-                        <div id="addLogger.categoryFields"></div>
-                    </div>
-                    <div class="clear">
-                        <div id="addLogger.typeFields"></div>
-                    </div>
-                    <div class="clear">
-                        <div class="formLabel-labelCell tableContainer-labelCell">Durable:</div>
-                        <div class="formLabel-controlCell tableContainer-valueCell">
-                            <input type="checkbox" id="addLogger.durable"
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Durable:</div>
+                    <div class="formLabel-controlCell tableContainer-valueCell">
+                        <input type="checkbox" id="addLogger.durable"
                                data-dojo-type="dijit/form/CheckBox"
                                data-dojo-props="
-                              name: 'durable',
-                              required: false,
-                              title: 'If selected, persists logger in the configuration store',
-                              checked: true"/>
-                        </div>
+                          name: 'durable',
+                          required: false,
+                          title: 'If selected, persists logger in the configuration store',
+                          checked: true"/>
                     </div>
+                </div>
+                <div class="clear">
+                    <div id="addLogger.categoryFields"></div>
+                </div>
+                <div class="clear">
+                    <div id="addLogger.typeFields"></div>
                 </div>
                 <div class="clear"></div>
             </div>

@@ -32,7 +32,7 @@ public interface BrokerNameAndLevelFilter<X extends BrokerNameAndLevelFilter<X>>
     String LOGGER_NAME = "loggerName";
     String LEVEL = "level";
 
-    @ManagedAttribute( defaultValue = "" )
+    @ManagedAttribute( defaultValue = "", immutable = true )
     String getLoggerName();
 
     @ManagedAttribute(defaultValue = "INFO", validValues = {"org.apache.qpid.server.logging.LogLevel#validValues()"})

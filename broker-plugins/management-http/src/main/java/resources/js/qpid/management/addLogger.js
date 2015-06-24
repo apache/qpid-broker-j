@@ -21,6 +21,7 @@
 define(["dojo/_base/lang",
         "dojo/dom",
         "dojo/dom-construct",
+        "dojo/dom-style",
         "dijit/registry",
         "dojo/parser",
         "dojo/store/Memory",
@@ -43,7 +44,7 @@ define(["dojo/_base/lang",
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (lang, dom, construct, registry, parser, memory, array, event, json, util, template)
+    function (lang, dom, construct, domStyle, registry, parser, memory, array, event, json, util, template)
     {
         var addLogger =
         {
@@ -95,6 +96,11 @@ define(["dojo/_base/lang",
                 {
                   this._configure(actualData.type);
                 }
+
+                var brokerLoggerEditWarningNode = dom.byId("brokerLoggerEditWarning");
+                var virtualHostlLoggerEditWarningNode = dom.byId("virtualHostlLoggerEditWarning");
+                domStyle.set(brokerLoggerEditWarningNode, "display", !this.isNew && this.category == "BrokerLogger" ? "block" : "none");
+                domStyle.set(virtualHostlLoggerEditWarningNode, "display", !this.isNew && this.category == "VirtualHostLogger" ? "block" : "none");
 
                 this._loadCategoryUserInterfacesAndShowDialog(actualData);
             },

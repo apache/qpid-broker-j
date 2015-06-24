@@ -156,7 +156,11 @@ define(["dojo/_base/lang",
                                promise.then(
                                  function(instances)
                                  {
-                                    util.applyToWidgets(that.typeFieldsContainer, that.category, type, that.initialData, that.management.metadata);
+                                    util.applyToWidgets(that.typeFieldsContainer, that.category, type, that.initialData, metadata);
+                                    if (!this.isNew)
+                                    {
+                                      util.disableWidgetsForImmutableFields(that.allFieldsContainer, that.category, type, metadata);
+                                    }
                                  });
                              }
                          }
