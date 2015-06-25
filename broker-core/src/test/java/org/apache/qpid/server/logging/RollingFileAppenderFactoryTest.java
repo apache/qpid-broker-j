@@ -37,7 +37,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class RollingFileAppenderFactoryTest extends QpidTestCase
 {
     public static final String FILE_NAME = "TEST";
-    public static final String LAYOUT = "%d %-5p [%t] \\(%c{2}\\) - %m%n";
+    public static final String LAYOUT = "%d %-5p [%t] \\(%c{2}\\) # %m%n";
     public static final String MAX_FILE_SIZE = "100mb";
     public static final int MAX_HISTORY = 10;
 
@@ -74,6 +74,7 @@ public class RollingFileAppenderFactoryTest extends QpidTestCase
         TriggeringPolicy triggeringPolicy = ((TimeBasedRollingPolicy) rollingPolicy).getTimeBasedFileNamingAndTriggeringPolicy();
         assertTrue("Unexpected triggering policy", triggeringPolicy instanceof RollingFileAppenderFactory.DailyTriggeringPolicy);
         assertEquals("Unexpected triggering policy", MAX_FILE_SIZE, ((RollingFileAppenderFactory.DailyTriggeringPolicy) triggeringPolicy).getMaxFileSize());
+        assertEquals("Unexpected layout", LAYOUT, ((PatternLayoutEncoder)appender.getEncoder()).getPattern());
     }
 
     public void testCreateRollingFileAppenderNonDailyRolling()

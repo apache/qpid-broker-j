@@ -69,7 +69,7 @@ public class RollingFileAppenderFactory
             sizeTriggeringPolicy.start();
         }
         final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-        encoder.setPattern("%d %-5p [%t] \\(%c{2}\\) - %m%n");
+        encoder.setPattern(fileLoggerSettings.getLayout());
         encoder.setContext(loggerContext);
         encoder.start();
         appender.setEncoder(encoder);
