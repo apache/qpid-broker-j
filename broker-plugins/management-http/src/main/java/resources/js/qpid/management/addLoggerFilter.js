@@ -157,7 +157,7 @@ define(["dojo/_base/lang",
                                  function(instances)
                                  {
                                     util.applyToWidgets(that.typeFieldsContainer, that.category, type, that.initialData, metadata);
-                                    if (!this.isNew)
+                                    if (!that.isNew)
                                     {
                                       util.disableWidgetsForImmutableFields(that.allFieldsContainer, that.category, type, metadata);
                                     }
