@@ -43,7 +43,7 @@ public interface MessageSource extends TransactionLogResource, MessageNode
 
     void removeConsumerRegistrationListener(ConsumerRegistrationListener<? super MessageSource> listener);
 
-    boolean verifySessionAccess(AMQSessionModel<?,?> session);
+    boolean verifySessionAccess(AMQSessionModel<?> session);
 
     interface ConsumerRegistrationListener<Q extends MessageSource>
     {

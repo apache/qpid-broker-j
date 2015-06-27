@@ -37,7 +37,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 public class BrokerTestHelper_0_8 extends BrokerTestHelper
 {
 
-    public static AMQChannel createChannel(int channelId, AMQProtocolEngine session) throws AMQException
+    public static AMQChannel createChannel(int channelId, AMQPConnection_0_8 session) throws AMQException
     {
         AMQChannel channel = new AMQChannel(session, channelId, session.getVirtualHost().getMessageStore());
         session.addChannel(channel);
@@ -66,7 +66,10 @@ public class BrokerTestHelper_0_8 extends BrokerTestHelper
 
         AmqpPort port = mock(AmqpPort.class);
         when(port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
-        return new InternalTestProtocolSession(virtualHost, createBrokerMock(), port);
+        final InternalTestProtocolSession internalTestProtocolSession =
+                new InternalTestProtocolSession(virtualHost, createBrokerMock(), port);
+        internalTestProtocolSession.create();
+        return internalTestProtocolSession;
     }
 
     public static void publishMessages(AMQChannel channel, int numberOfMessages, String queueName, String exchangeName)

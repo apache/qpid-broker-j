@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -60,8 +61,8 @@ import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.model.adapter.ConnectionAdapter;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
@@ -78,16 +79,11 @@ import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
-import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.transport.NetworkConnectionScheduler;
-import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -99,14 +95,10 @@ import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
-public class AMQProtocolEngine implements ProtocolEngine,
-                                          AMQConnectionModel<AMQProtocolEngine, AMQChannel>,
-                                          ServerMethodProcessor<ServerChannelMethodProcessor>
+public class AMQPConnection_0_8
+        extends AbstractAMQPConnection<AMQPConnection_0_8>
+        implements ServerMethodProcessor<ServerChannelMethodProcessor>
 {
-
-
-    private final AggregateTicker _aggregateTicker;
-    private ConnectionAdapter _adapter;
 
     enum ConnectionState
     {
@@ -118,7 +110,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
         OPEN
     }
 
-    private static final Logger _logger = LoggerFactory.getLogger(AMQProtocolEngine.class);
+    private static final Logger _logger = LoggerFactory.getLogger(AMQPConnection_0_8.class);
 
     // to save boxing the channelId and looking up in a map... cache in an array the low numbered
     // channels.  This value must be of the form 2^x - 1.
@@ -129,23 +121,14 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
     private static final long CLOSE_OK_TIMEOUT = 10000l;
 
-    private final AmqpPort<?> _port;
     private final long _creationTime;
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
-
-    private AMQShortString _contextKey;
-
-    private String _clientVersion = null;
-    private String _clientProduct = null;
-    private String _remoteProcessPid = null;
 
     private volatile VirtualHostImpl<?,?,?> _virtualHost;
 
     private final Map<Integer, AMQChannel> _channelMap =
             new HashMap<>();
-    private final CopyOnWriteArrayList<SessionModelListener> _sessionListeners =
-            new CopyOnWriteArrayList<>();
 
     private final AMQChannel[] _cachedChannels = new AMQChannel[CHANNEL_CACHE_SIZE + 1];
 
@@ -168,44 +151,31 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
     private ProtocolVersion _protocolVersion = ProtocolVersion.getLatestSupportedVersion();
     private final MethodRegistry _methodRegistry = new MethodRegistry(_protocolVersion);
-    private final List<Action<? super AMQProtocolEngine>> _connectionCloseTaskList =
+    private final List<Action<? super AMQPConnection_0_8>> _connectionCloseTaskList =
             new CopyOnWriteArrayList<>();
 
-    private final Queue<Action<? super AMQProtocolEngine>> _asyncTaskList =
+    private final Queue<Action<? super AMQPConnection_0_8>> _asyncTaskList =
             new ConcurrentLinkedQueue<>();
 
     private Map<Integer, Long> _closingChannelsList = new ConcurrentHashMap<>();
     private ProtocolOutputConverter _protocolOutputConverter;
-    private final Subject _authorizedSubject = new Subject();
 
-    private final long _connectionId;
     private Object _reference = new Object();
 
     private LogSubject _logSubject;
 
-    private volatile long _lastIoTime;
-
-    private long _writtenBytes;
-
     private int _maxFrameSize;
     private final AtomicBoolean _closing = new AtomicBoolean(false);
 
-    private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
-
-    private NetworkConnection _network;
-    private ByteBufferSender _sender;
+    private final NetworkConnection _network;
+    private final ByteBufferSender _sender;
 
     private volatile boolean _deferFlush;
     private volatile long _lastReceivedTime = System.currentTimeMillis();
     private volatile long _lastWriteTime = System.currentTimeMillis();
     private boolean _blocking;
 
-    private final Broker<?> _broker;
-    private final Transport _transport;
-
     private volatile boolean _closeWhenNoRoute;
-    private volatile boolean _stopped;
-    private long _readBytes;
     private boolean _authenticated;
     private boolean _compressionSupported;
     private int _messageCompressionThreshold;
@@ -217,59 +187,41 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
     private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
 
-    public AMQProtocolEngine(Broker<?> broker,
-                             final NetworkConnection network,
-                             final long connectionId,
-                             AmqpPort<?> port,
-                             Transport transport, final AggregateTicker aggregateTicker)
+    public AMQPConnection_0_8(Broker<?> broker,
+                              final NetworkConnection network,
+                              AmqpPort<?> port, Transport transport, final long connectionId,
+                              final AggregateTicker aggregateTicker)
     {
-        _broker = broker;
-        _port = port;
-        _transport = transport;
-        _aggregateTicker = aggregateTicker;
+        super(broker, network, port, transport, connectionId, aggregateTicker);
         _maxNoOfChannels = broker.getConnection_sessionCountLimit();
         _decoder = new BrokerDecoder(this);
-        _connectionId = connectionId;
         _logSubject = new ConnectionLogSubject(this);
-        _binaryDataLimit = _broker.getContextKeys(false).contains(BROKER_DEBUG_BINARY_DATA_LENGTH)
-                ? _broker.getContextValue(Integer.class, BROKER_DEBUG_BINARY_DATA_LENGTH)
+        _binaryDataLimit = getBroker().getContextKeys(false).contains(BROKER_DEBUG_BINARY_DATA_LENGTH)
+                ? getBroker().getContextValue(Integer.class, BROKER_DEBUG_BINARY_DATA_LENGTH)
                 : DEFAULT_DEBUG_BINARY_DATA_LENGTH;
 
         int maxMessageSize = port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
         _maxMessageSize = (maxMessageSize > 0) ? (long) maxMessageSize : Long.MAX_VALUE;
 
-        _authorizedSubject.getPrincipals().add(new ConnectionPrincipal(this));
+        getSubject().getPrincipals().add(new ConnectionPrincipal(this));
+        _network = network;
+        _sender = network.getSender();
         runAsSubject(new PrivilegedAction<Void>()
         {
 
             @Override
             public Void run()
             {
-                setNetworkConnection(network);
 
                 getEventLogger().message(ConnectionMessages.OPEN(null, null, null, null, false, false, false, false));
-
-                _closeWhenNoRoute = _broker.getConnection_closeWhenNoRoute();
 
                 return null;
             }
         });
+        _closeWhenNoRoute = getBroker().getConnection_closeWhenNoRoute();
 
-        _messagesDelivered = new StatisticsCounter("messages-delivered-" + _connectionId);
-        _dataDelivered = new StatisticsCounter("data-delivered-" + _connectionId);
-        _messagesReceived = new StatisticsCounter("messages-received-" + _connectionId);
-        _dataReceived = new StatisticsCounter("data-received-" + _connectionId);
         _creationTime = System.currentTimeMillis();
 
-        _adapter = new ConnectionAdapter(this);
-        _adapter.create();
-    }
-
-
-    @Override
-    public AggregateTicker getAggregateTicker()
-    {
-        return _aggregateTicker;
     }
 
     @Override
@@ -280,22 +232,10 @@ public class AMQProtocolEngine implements ProtocolEngine,
     }
 
     @Override
-    public ProtocolEngine getProtocolEngine()
-    {
-        return this;
-    }
-
-    @Override
-    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
-    {
-        ((NonBlockingConnection)_network).changeScheduler(networkConnectionScheduler);
-    }
-
-    @Override
     public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
     {
         _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
-        for(AMQSessionModel<?,?> session : getSessionModels())
+        for(AMQSessionModel<?> session : getSessionModels())
         {
             for (Consumer<?> consumer : session.getConsumers())
             {
@@ -326,12 +266,6 @@ public class AMQProtocolEngine implements ProtocolEngine,
     }
 
     @Override
-    public Subject getSubject()
-    {
-        return _authorizedSubject;
-    }
-
-    @Override
     public boolean isTransportBlockedForWriting()
     {
         return _transportBlockedForWriting;
@@ -345,17 +279,6 @@ public class AMQProtocolEngine implements ProtocolEngine,
         {
             channel.transportStateChanged();
         }
-    }
-
-    public void setNetworkConnection(NetworkConnection network)
-    {
-        setNetworkConnection(network, network.getSender());
-    }
-
-    public void setNetworkConnection(NetworkConnection network, ByteBufferSender sender)
-    {
-        _network = network;
-        _sender = sender;
     }
 
     public void setMaxFrameSize(int frameMax)
@@ -383,7 +306,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
     public void received(final ByteBuffer msg)
     {
-        Subject.doAs(_authorizedSubject, new PrivilegedAction<Void>()
+        Subject.doAs(getSubject(), new PrivilegedAction<Void>()
         {
             @Override
             public Void run()
@@ -391,18 +314,16 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
                 final long arrivalTime = System.currentTimeMillis();
                 if (!_authenticated &&
-                    (arrivalTime - _creationTime) > _port.getContextValue(Long.class,
-                                                                          Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY))
+                    (arrivalTime - _creationTime) > getPort().getContextValue(Long.class,
+                                                                              Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY))
                 {
                     _logger.warn("Connection has taken more than "
-                                 + _port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)
+                                 + getPort().getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)
                                  + "ms to establish identity.  Closing as possible DoS.");
                     getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
                     closeNetworkConnection();
                 }
                 _lastReceivedTime = arrivalTime;
-                _lastIoTime = arrivalTime;
-                _readBytes += msg.remaining();
 
                 try
                 {
@@ -517,7 +438,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
             setProtocolVersion(pv);
 
             StringBuilder mechanismBuilder = new StringBuilder();
-            SubjectCreator subjectCreator = _port.getAuthenticationProvider().getSubjectCreator(_transport.isSecure());
+            SubjectCreator subjectCreator = getPort().getAuthenticationProvider().getSubjectCreator(getTransport().isSecure());
             for(String mechanismName : subjectCreator.getMechanisms())
             {
                 if(mechanismBuilder.length() != 0)
@@ -540,13 +461,13 @@ public class AMQProtocolEngine implements ProtocolEngine,
             serverProperties.setString(ServerPropertyNames.QPID_BUILD,
                     QpidProperties.getBuildVersion());
             serverProperties.setString(ServerPropertyNames.QPID_INSTANCE_NAME,
-                    _broker.getName());
+                    getBroker().getName());
             serverProperties.setString(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE,
                     String.valueOf(_closeWhenNoRoute));
             serverProperties.setString(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED,
-                                       String.valueOf(_broker.isMessageCompressionEnabled()));
+                                       String.valueOf(getBroker().isMessageCompressionEnabled()));
             serverProperties.setString(ConnectionStartProperties.QPID_CONFIRMED_PUBLISH_SUPPORTED, Boolean.TRUE.toString());
-            serverProperties.setString(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED, String.valueOf(_broker.isVirtualHostPropertiesNodeEnabled()));
+            serverProperties.setString(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED, String.valueOf(getBroker().isVirtualHostPropertiesNodeEnabled()));
 
 
             AMQMethodBody responseBody = getMethodRegistry().createConnectionStartBody((short) getProtocolMajorVersion(),
@@ -578,7 +499,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
         try
         {
-            _writtenBytes += frame.writePayload(_sender);
+            frame.writePayload(_sender);
         }
         catch (IOException e)
         {
@@ -587,23 +508,12 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
 
         final long time = System.currentTimeMillis();
-        _lastIoTime = time;
         _lastWriteTime = time;
 
         if(!_deferFlush)
         {
             _sender.flush();
         }
-    }
-
-    public AMQShortString getContextKey()
-    {
-        return _contextKey;
-    }
-
-    public void setContextKey(AMQShortString contextKey)
-    {
-        _contextKey = contextKey;
     }
 
     public List<AMQChannel> getChannels()
@@ -650,22 +560,6 @@ public class AMQProtocolEngine implements ProtocolEngine,
         if (((channelId & CHANNEL_CACHE_SIZE) == channelId))
         {
             _cachedChannels[channelId] = channel;
-        }
-    }
-
-    private void sessionAdded(final AMQSessionModel<?,?> session)
-    {
-        for(SessionModelListener l : _sessionListeners)
-        {
-            l.sessionAdded(session);
-        }
-    }
-
-    private void sessionRemoved(final AMQSessionModel<?,?> session)
-    {
-        for(SessionModelListener l : _sessionListeners)
-        {
-            l.sessionRemoved(session);
         }
     }
 
@@ -854,7 +748,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
             {
                 if (_virtualHost != null)
                 {
-                    _virtualHost.deregisterConnection(_adapter);
+                    _virtualHost.deregisterConnection(this);
                 }
                 closeAllChannels();
             }
@@ -938,7 +832,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
                 {
                     final long timeoutTime = System.currentTimeMillis() + CLOSE_OK_TIMEOUT;
                     final NetworkConnection network = _network;
-                    _aggregateTicker.addTicker(new ConnectionClosingTicker(timeoutTime, network));
+                    getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, network));
 
                 }
             }
@@ -956,7 +850,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
     public String toString()
     {
-        return getRemoteAddress() + "(" + (getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName() + ")");
+        return _network.getRemoteAddress() + "(" + (getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName() + ")");
     }
 
     private String getLocalFQDN()
@@ -1005,20 +899,17 @@ public class AMQProtocolEngine implements ProtocolEngine,
                 }
             }
 
-            _clientVersion = clientProperties.getString(ConnectionStartProperties.VERSION_0_8);
-            _clientProduct = clientProperties.getString(ConnectionStartProperties.PRODUCT);
-            _remoteProcessPid = clientProperties.getString(ConnectionStartProperties.PID);
-
             String clientId = clientProperties.getString(ConnectionStartProperties.CLIENT_ID_0_8);
-            if (clientId != null)
-            {
-                setContextKey(new AMQShortString(clientId));
-            }
 
-            getEventLogger().message(ConnectionMessages.OPEN(clientId,
+            setClientVersion(clientProperties.getString(ConnectionStartProperties.VERSION_0_8));
+            setClientProduct(clientProperties.getString(ConnectionStartProperties.PRODUCT));
+            setRemoteProcessPid(clientProperties.getString(ConnectionStartProperties.PID));
+            setClientId(clientId == null ? UUID.randomUUID().toString() : clientId);
+
+            getEventLogger().message(ConnectionMessages.OPEN(getClientId(),
                                                              _protocolVersion.toString(),
-                                                             _clientVersion,
-                                                             _clientProduct,
+                                                             getClientVersion(),
+                                                             getClientProduct(),
                                                              true,
                                                              true,
                                                              true,
@@ -1061,7 +952,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
     public void setVirtualHost(VirtualHostImpl<?,?,?> virtualHost)
     {
         _virtualHost = virtualHost;
-        _adapter.virtualHostAssociated();
+        virtualHostAssociated();
 
         _messageCompressionThreshold = virtualHost.getContextValue(Integer.class,
                                                                    Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
@@ -1069,17 +960,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
         {
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
-        _authorizedSubject.getPrincipals().add(virtualHost.getPrincipal());
-    }
-
-    public void addDeleteTask(Action<? super AMQProtocolEngine> task)
-    {
-        _connectionCloseTaskList.add(task);
-    }
-
-    public void removeDeleteTask(Action<? super AMQProtocolEngine> task)
-    {
-        _connectionCloseTaskList.remove(task);
+        getSubject().getPrincipals().add(virtualHost.getPrincipal());
     }
 
     public ProtocolOutputConverter getProtocolOutputConverter()
@@ -1095,37 +976,21 @@ public class AMQProtocolEngine implements ProtocolEngine,
         }
 
         _authenticated = true;
-        _authorizedSubject.getPrincipals().addAll(authorizedSubject.getPrincipals());
-        _authorizedSubject.getPrivateCredentials().addAll(authorizedSubject.getPrivateCredentials());
-        _authorizedSubject.getPublicCredentials().addAll(authorizedSubject.getPublicCredentials());
+        getSubject().getPrincipals().addAll(authorizedSubject.getPrincipals());
+        getSubject().getPrivateCredentials().addAll(authorizedSubject.getPrivateCredentials());
+        getSubject().getPublicCredentials().addAll(authorizedSubject.getPublicCredentials());
 
     }
 
     public Subject getAuthorizedSubject()
     {
-        return _authorizedSubject;
+        return getSubject();
     }
 
     public Principal getAuthorizedPrincipal()
     {
 
-        return _authorizedSubject.getPrincipals(AuthenticatedPrincipal.class).size() == 0 ? null : AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(_authorizedSubject);
-    }
-
-    public SocketAddress getRemoteAddress()
-    {
-        return _network.getRemoteAddress();
-    }
-
-    @Override
-    public String getRemoteProcessPid()
-    {
-        return _remoteProcessPid;
-    }
-
-    public SocketAddress getLocalAddress()
-    {
-        return _network.getLocalAddress();
+        return getSubject().getPrincipals(AuthenticatedPrincipal.class).size() == 0 ? null : AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(getSubject());
     }
 
     public Principal getPeerPrincipal()
@@ -1164,29 +1029,6 @@ public class AMQProtocolEngine implements ProtocolEngine,
         }
     }
 
-    private void performDeleteTasks()
-    {
-        if(runningAsSubject())
-        {
-            for (Action<? super AMQProtocolEngine> task : _connectionCloseTaskList)
-            {
-                task.performAction(this);
-            }
-        }
-        else
-        {
-            runAsSubject(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    performDeleteTasks();
-                    return null;
-                }
-            });
-        }
-
-    }
 
     @Override
     public void encryptedTransport()
@@ -1195,7 +1037,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
     public void readerIdle()
     {
-        Subject.doAs(_authorizedSubject, new PrivilegedAction<Object>()
+        Subject.doAs(getSubject(), new PrivilegedAction<Object>()
         {
             @Override
             public Object run()
@@ -1212,65 +1054,9 @@ public class AMQProtocolEngine implements ProtocolEngine,
         writeFrame(HeartbeatBody.FRAME);
     }
 
-    public long getReadBytes()
-    {
-        return _readBytes;
-    }
-
-    public long getWrittenBytes()
-    {
-        return _writtenBytes;
-    }
-
-    public long getLastIoTime()
-    {
-        return _lastIoTime;
-    }
-
-    @Override
-    public AmqpPort<?> getPort()
-    {
-        return _port;
-    }
-
-    @Override
-    public Transport getTransport()
-    {
-        return _transport;
-    }
-
-    @Override
-    public void stop()
-    {
-        _stopped = true;
-    }
-
-    @Override
-    public boolean isStopped()
-    {
-        return _stopped;
-    }
-
-    @Override
-    public String getVirtualHostName()
-    {
-        return _virtualHost == null ? null : _virtualHost.getName();
-    }
-
     public long getLastReceivedTime()
     {
         return _lastReceivedTime;
-    }
-
-    public String getClientVersion()
-    {
-        return _clientVersion;
-    }
-
-    @Override
-    public String getClientProduct()
-    {
-        return _clientProduct;
     }
 
     public long getSessionCountLimit()
@@ -1278,28 +1064,18 @@ public class AMQProtocolEngine implements ProtocolEngine,
         return getMaximumNumberOfChannels();
     }
 
-    public boolean isDurable()
-    {
-        return false;
-    }
-
-    public long getConnectionId()
-    {
-        return _connectionId;
-    }
-
     public String getAddress()
     {
-        return String.valueOf(getRemoteAddress());
+        return String.valueOf(_network.getRemoteAddress());
     }
 
-    public void closeSessionAsync(final AMQChannel session, final AMQConstant cause, final String message)
+    public void closeSessionAsync(final AMQSessionModel<?> session, final AMQConstant cause, final String message)
     {
-        addAsyncTask(new Action<AMQProtocolEngine>()
+        addAsyncTask(new Action<AMQPConnection_0_8>()
         {
 
             @Override
-            public void performAction(final AMQProtocolEngine object)
+            public void performAction(final AMQPConnection_0_8 object)
             {
                 int channelId = session.getChannelId();
                 closeChannel(channelId, cause, message);
@@ -1319,10 +1095,10 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
     public void closeAsync(final AMQConstant cause, final String message)
     {
-        Action<AMQProtocolEngine> action = new Action<AMQProtocolEngine>()
+        Action<AMQPConnection_0_8> action = new Action<AMQPConnection_0_8>()
         {
             @Override
-            public void performAction(final AMQProtocolEngine object)
+            public void performAction(final AMQPConnection_0_8 object)
             {
                 closeConnection(0, new AMQConnectionException(cause, message, 0, 0,
                                                               getMethodRegistry(),
@@ -1333,7 +1109,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
         addAsyncTask(action);
     }
 
-    private void addAsyncTask(final Action<AMQProtocolEngine> action)
+    private void addAsyncTask(final Action<AMQPConnection_0_8> action)
     {
         _asyncTaskList.add(action);
         notifyWork();
@@ -1384,79 +1160,22 @@ public class AMQProtocolEngine implements ProtocolEngine,
         return _logSubject;
     }
 
-    public void registerMessageDelivered(long messageSize)
-    {
-        _messagesDelivered.registerEvent(1L);
-        _dataDelivered.registerEvent(messageSize);
-        _virtualHost.registerMessageDelivered(messageSize);
-    }
-
-    public void registerMessageReceived(long messageSize, long timestamp)
-    {
-        _messagesReceived.registerEvent(1L, timestamp);
-        _dataReceived.registerEvent(messageSize, timestamp);
-        _virtualHost.registerMessageReceived(messageSize, timestamp);
-    }
-
-    public StatisticsCounter getMessageReceiptStatistics()
-    {
-        return _messagesReceived;
-    }
-
-    public StatisticsCounter getDataReceiptStatistics()
-    {
-        return _dataReceived;
-    }
-
-    public StatisticsCounter getMessageDeliveryStatistics()
-    {
-        return _messagesDelivered;
-    }
-
-    public StatisticsCounter getDataDeliveryStatistics()
-    {
-        return _dataDelivered;
-    }
-
-    public void resetStatistics()
-    {
-        _messagesDelivered.reset();
-        _dataDelivered.reset();
-        _messagesReceived.reset();
-        _dataReceived.reset();
-    }
-
-    public String getRemoteAddressString()
-    {
-        return String.valueOf(getRemoteAddress());
-    }
-
-    public String getClientId()
-    {
-        return String.valueOf(getContextKey());
-    }
-
     @Override
     public String getRemoteContainerName()
     {
-        return String.valueOf(getContextKey());
+        return getClientId();
     }
 
-    @Override
-    public void addSessionListener(final SessionModelListener listener)
-    {
-        _sessionListeners.add(listener);
-    }
-
-    @Override
-    public void removeSessionListener(final SessionModelListener listener)
-    {
-        _sessionListeners.remove(listener);
-    }
 
     public void setDeferFlush(boolean deferFlush)
     {
         _deferFlush = deferFlush;
+    }
+
+    @Override
+    public boolean hasSessionWithName(final byte[] name)
+    {
+        return false;
     }
 
     @Override
@@ -1561,11 +1280,6 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
                     if(virtualHost.authoriseCreateConnection(this))
                     {
-                        if (getContextKey() == null)
-                        {
-                            setContextKey(new AMQShortString(Long.toString(System.currentTimeMillis())));
-                        }
-
                         MethodRegistry methodRegistry = getMethodRegistry();
                         AMQMethodBody responseBody = methodRegistry.createConnectionOpenOkBody(virtualHostName);
 
@@ -1930,7 +1644,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
     public boolean isCompressionSupported()
     {
-        return _compressionSupported && _broker.isMessageCompressionEnabled();
+        return _compressionSupported && getBroker().isMessageCompressionEnabled();
     }
 
     public int getMessageCompressionThreshold()
@@ -1938,14 +1652,9 @@ public class AMQProtocolEngine implements ProtocolEngine,
         return _messageCompressionThreshold;
     }
 
-    public Broker<?> getBroker()
-    {
-        return _broker;
-    }
-
     public SubjectCreator getSubjectCreator()
     {
-        return _port.getAuthenticationProvider().getSubjectCreator(getTransport().isSecure());
+        return getPort().getAuthenticationProvider().getSubjectCreator(getTransport().isSecure());
     }
 
     public EventLogger getEventLogger()
@@ -1956,7 +1665,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
         }
         else
         {
-            return _broker.getEventLogger();
+            return getBroker().getEventLogger();
         }
     }
 
@@ -2032,11 +1741,11 @@ public class AMQProtocolEngine implements ProtocolEngine,
     @Override
     public void processPending()
     {
-        List<? extends AMQSessionModel<?,?>> sessionsWithPending = new ArrayList<>(getSessionModels());
+        List<? extends AMQSessionModel<?>> sessionsWithPending = new ArrayList<>(getSessionModels());
         while(!sessionsWithPending.isEmpty())
         {
-            final Iterator<? extends AMQSessionModel<?, ?>> iter = sessionsWithPending.iterator();
-            AMQSessionModel<?, ?> session;
+            final Iterator<? extends AMQSessionModel<?>> iter = sessionsWithPending.iterator();
+            AMQSessionModel<?> session;
             while(iter.hasNext())
             {
                 session = iter.next();
@@ -2049,7 +1758,7 @@ public class AMQProtocolEngine implements ProtocolEngine,
 
         while(_asyncTaskList.peek() != null)
         {
-            Action<? super AMQProtocolEngine> asyncAction = _asyncTaskList.poll();
+            Action<? super AMQPConnection_0_8> asyncAction = _asyncTaskList.poll();
             asyncAction.performAction(this);
         }
 

@@ -31,7 +31,6 @@ import javax.net.ssl.SSLSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.network.NetworkConnection;

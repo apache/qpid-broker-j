@@ -175,7 +175,7 @@ public class DefaultAccessControl implements AccessControl
         Set<ConnectionPrincipal> principals = subject.getPrincipals(ConnectionPrincipal.class);
         if(!principals.isEmpty())
         {
-            SocketAddress address = principals.iterator().next().getConnection().getRemoteAddress();
+            SocketAddress address = principals.iterator().next().getConnection().getRemoteSocketAddress();
             if(address instanceof InetSocketAddress)
             {
                 addressOfClient = ((InetSocketAddress) address).getAddress();

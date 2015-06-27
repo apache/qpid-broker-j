@@ -65,7 +65,7 @@ public class ProtocolEngineCreator_1_0_0_SASL implements ProtocolEngineCreator
                                             Transport transport,
                                             long id, final AggregateTicker aggregateTicker)
     {
-        return new ProtocolEngine_1_0_0(network, broker, id, port, transport, aggregateTicker, true);
+        return new AMQPConnection_1_0(broker, network, port, transport, id, aggregateTicker, true);
     }
 
 

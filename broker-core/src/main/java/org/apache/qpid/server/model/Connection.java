@@ -22,7 +22,7 @@ package org.apache.qpid.server.model;
 
 import java.util.Collection;
 
-import org.apache.qpid.server.protocol.AMQConnectionModel;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 
 @ManagedObject( creatable = false )
 public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
@@ -85,7 +85,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     VirtualHost getVirtualHost();
 
     @DerivedAttribute
-    Port getPort();
+    Port<?> getPort();
 
     @ManagedStatistic
     long getBytesIn();
@@ -109,5 +109,5 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     Collection<Session> getSessions();
 
 
-    AMQConnectionModel<?,?> getUnderlyingConnection();
+    AbstractAMQPConnection<?> getUnderlyingConnection();
 }

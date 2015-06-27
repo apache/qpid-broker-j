@@ -993,7 +993,7 @@ class ManagementNode implements MessageSource, MessageDestination
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?, ?> session)
+    public boolean verifySessionAccess(final AMQSessionModel<?> session)
     {
         return true;
     }

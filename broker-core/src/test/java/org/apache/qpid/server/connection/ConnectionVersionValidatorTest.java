@@ -40,14 +40,14 @@ import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class ConnectionVersionValidatorTest extends QpidTestCase
 {
 
     private VirtualHost _virtualHostMock;
-    private AMQConnectionModel _connectionMock;
+    private AMQPConnection _connectionMock;
     private EventLogger _eventLoggerMock;
     private ConnectionVersionValidator _connectionValidator;
 
@@ -57,7 +57,7 @@ public class ConnectionVersionValidatorTest extends QpidTestCase
 
         _connectionValidator = new ConnectionVersionValidator();
         _virtualHostMock = mock(VirtualHost.class);
-        _connectionMock = mock(AMQConnectionModel.class);
+        _connectionMock = mock(AMQPConnection.class);
         _eventLoggerMock = mock(EventLogger.class);
         Broker brokerMock = mock(Broker.class);
 

@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.transport.AMQPConnection;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
 
@@ -43,7 +43,7 @@ public class ChannelLogSubject extends AbstractLogSubject
          * 3 - Virtualhost
          * 4 - Channel ID
          */
-        AMQConnectionModel connection = session.getConnectionModel();
+        AMQPConnection connection = session.getAMQPConnection();
         setLogStringWithFormat(CHANNEL_FORMAT,
                                connection == null ? -1L : connection.getConnectionId(),
                                (connection == null || connection.getAuthorizedPrincipal() == null) ? "?" : connection.getAuthorizedPrincipal().getName(),

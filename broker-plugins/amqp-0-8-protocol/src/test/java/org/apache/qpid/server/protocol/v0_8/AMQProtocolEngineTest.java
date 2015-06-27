@@ -80,7 +80,9 @@ public class AMQProtocolEngineTest extends QpidTestCase
 
     public void testSetClientPropertiesForNoRouteProvidedAsString()
     {
-        AMQProtocolEngine engine = new AMQProtocolEngine(_broker, _network, 0, _port, _transport, new AggregateTicker());
+        AMQPConnection_0_8
+                engine = new AMQPConnection_0_8(_broker, _network, _port, _transport, 0, new AggregateTicker());
+        engine.create();
         assertTrue("Unexpected closeWhenNoRoute before client properties set", engine.isCloseWhenNoRoute());
 
         Map<String, Object> clientProperties = new HashMap<String, Object>();
@@ -92,7 +94,9 @@ public class AMQProtocolEngineTest extends QpidTestCase
 
     public void testSetClientPropertiesForNoRouteProvidedAsBoolean()
     {
-        AMQProtocolEngine engine = new AMQProtocolEngine(_broker, _network, 0, _port, _transport, new AggregateTicker());
+        AMQPConnection_0_8
+                engine = new AMQPConnection_0_8(_broker, _network, _port, _transport, 0, new AggregateTicker());
+        engine.create();
         assertTrue("Unexpected closeWhenNoRoute before client properties set", engine.isCloseWhenNoRoute());
 
         Map<String, Object> clientProperties = new HashMap<String, Object>();

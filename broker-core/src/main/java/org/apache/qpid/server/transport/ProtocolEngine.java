@@ -20,15 +20,11 @@
  */
 package org.apache.qpid.server.transport;
 
-import java.net.SocketAddress;
-
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferReceiver;
-import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.TransportActivity;
 
 /**
@@ -37,17 +33,6 @@ import org.apache.qpid.transport.network.TransportActivity;
  */
 public interface ProtocolEngine extends ByteBufferReceiver, TransportActivity
 {
-   // Returns the remote address of the NetworkDriver
-   SocketAddress getRemoteAddress();
-
-   // Returns the local address of the NetworkDriver
-   SocketAddress getLocalAddress();
-
-   // Returns number of bytes written
-   long getWrittenBytes();
-
-   // Returns number of bytes read
-   long getReadBytes();
 
    // Called by the NetworkDriver when the socket has been closed for reading
    void closed();
@@ -58,13 +43,6 @@ public interface ProtocolEngine extends ByteBufferReceiver, TransportActivity
 
    // Called when the NetworkEngine has not read data for the specified period of time (will close the connection)
    void readerIdle();
-
-   void setNetworkConnection(NetworkConnection network, ByteBufferSender sender);
-
-   /**
-    * Gets the connection ID associated with this ProtocolEngine
-    */
-   long getConnectionId();
 
    Subject getSubject();
 

@@ -275,7 +275,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
                 return true;
             }
         }
-        if(typeElement.getKind()==ElementKind.ENUM)
+        if(typeElement != null && typeElement.getKind()==ElementKind.ENUM)
         {
             return true;
         }
@@ -290,11 +290,14 @@ public class AttributeAnnotationValidator extends AbstractProcessor
 
         final TypeElement managedAttributeTypeValueElement =
                 elementUtils.getTypeElement(ManagedAttributeValueTypeValidator.MANAGED_ATTRIBUTE_VALUE_TYPE_CLASS_NAME);
-        for(AnnotationMirror annotation : typeElement.getAnnotationMirrors())
+        if(typeElement != null)
         {
-            if(annotation.getAnnotationType().asElement().equals(managedAttributeTypeValueElement))
+            for (AnnotationMirror annotation : typeElement.getAnnotationMirrors())
             {
-                return true;
+                if (annotation.getAnnotationType().asElement().equals(managedAttributeTypeValueElement))
+                {
+                    return true;
+                }
             }
         }
         if(typeUtils.isSameType(type,elementUtils.getTypeElement("java.lang.Object").asType()))

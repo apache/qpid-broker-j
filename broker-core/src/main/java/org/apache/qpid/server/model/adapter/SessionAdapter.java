@@ -39,14 +39,15 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
 
-final class SessionAdapter extends AbstractConfiguredObject<SessionAdapter> implements Session<SessionAdapter>
+public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapter> implements Session<SessionAdapter>
 {
     // Attributes
     private final AMQSessionModel _session;
 
-    public SessionAdapter(final ConnectionAdapter connectionAdapter,
+    public SessionAdapter(final AbstractAMQPConnection<?> connectionAdapter,
                           final AMQSessionModel session)
     {
         super(parentsMap(connectionAdapter), createAttributes(session));

@@ -255,7 +255,7 @@ public class ServerSessionDelegate extends SessionDelegate
                 }
                 else
                 {
-                    ProtocolEngine protocolEngine = getServerConnection(session).getProtocolEngine();
+                    ProtocolEngine protocolEngine = getServerConnection(session).getAmqpConnection();
                     FlowCreditManager_0_10 creditManager = new WindowCreditManager(0L,0L, protocolEngine);
 
                     FilterManager filterManager = null;

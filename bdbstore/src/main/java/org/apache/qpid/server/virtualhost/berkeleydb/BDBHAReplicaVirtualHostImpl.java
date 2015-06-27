@@ -47,13 +47,14 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
+import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
 
@@ -500,7 +501,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public boolean authoriseCreateConnection(final AMQConnectionModel<?, ?> connection)
+    public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         return false;
     }
@@ -547,13 +548,13 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public void registerConnection(final Connection<?> connection)
+    public void registerConnection(final AMQPConnection<?> connection)
     {
         throwUnsupportedForReplica();
     }
 
     @Override
-    public void deregisterConnection(final Connection<?> connection)
+    public void deregisterConnection(final AMQPConnection<?> connection)
     {
         throwUnsupportedForReplica();
     }

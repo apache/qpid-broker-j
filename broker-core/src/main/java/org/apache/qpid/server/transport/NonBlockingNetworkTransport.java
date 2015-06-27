@@ -50,7 +50,7 @@ public class NonBlockingNetworkTransport
     private static final int HANDSHAKE_TIMEOUT = Integer.getInteger(CommonProperties.HANDSHAKE_TIMEOUT_PROP_NAME ,
                                                                     CommonProperties.HANDSHAKE_TIMEOUT_DEFAULT);
     private final Set<TransportEncryption> _encryptionSet;
-    private final ProtocolEngineFactory _factory;
+    private final MultiVersionProtocolEngineFactory _factory;
     private final ServerSocketChannel _serverSocket;
     private final int _timeout;
     private final NetworkConnectionScheduler _scheduler;
@@ -133,7 +133,7 @@ public class NonBlockingNetworkTransport
         {
             socketChannel = serverSocketChannel.accept();
 
-            final ProtocolEngine engine =
+            final MultiVersionProtocolEngine engine =
                     _factory.newProtocolEngine(socketChannel.socket().getRemoteSocketAddress());
 
             if(engine != null)
@@ -171,7 +171,7 @@ public class NonBlockingNetworkTransport
                                                   _scheduler,
                                                   _port);
 
-                engine.setNetworkConnection(connection, connection.getSender());
+                engine.setNetworkConnection(connection);
                 connection.setMaxReadIdle(HANDSHAKE_TIMEOUT);
 
                 idleTimeoutTicker.setConnection(connection);

@@ -92,7 +92,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     @Override
     public boolean doIsSuspended()
     {
-        return _link.getSession().getConnectionModel().isStopped() || getState() != State.ACTIVE;
+        return _link.getSession().getAMQPConnection().isConnectionStopped() || getState() != State.ACTIVE;
 
     }
 
@@ -264,7 +264,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                     }
 
                 }
-                getSession().getConnectionModel().registerMessageDelivered(message.getSize());
+                getSession().getAMQPConnection().registerMessageDelivered(message.getSize());
                 getEndpoint().transfer(transfer);
             }
             else
@@ -297,7 +297,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         synchronized (_link.getLock())
         {
 
-            ProtocolEngine protocolEngine = getSession().getConnection().getProtocolEngine();
+            ProtocolEngine protocolEngine = getSession().getConnection().getAmqpConnection();
             final boolean hasCredit = _link.isAttached() && getEndpoint().hasCreditToSend() && !protocolEngine.isTransportBlockedForWriting();
             if(!hasCredit && getState() == State.ACTIVE)
             {
@@ -335,7 +335,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     {
         synchronized(_link.getLock())
         {
-            ProtocolEngine protocolEngine = getSession().getConnection().getProtocolEngine();
+            ProtocolEngine protocolEngine = getSession().getConnection().getAmqpConnection();
             if(isSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
             {
                 updateState(State.SUSPENDED, State.ACTIVE);

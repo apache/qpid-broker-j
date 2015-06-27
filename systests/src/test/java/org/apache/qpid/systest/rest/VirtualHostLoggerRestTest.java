@@ -29,7 +29,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.logging.VirtualHostFileLogger;
-import org.apache.qpid.server.logging.messages.QueueMessages;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHostLogger;

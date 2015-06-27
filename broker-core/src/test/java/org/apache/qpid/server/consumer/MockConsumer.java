@@ -24,14 +24,20 @@ package org.apache.qpid.server.consumer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Type;
 import java.net.SocketAddress;
+import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
@@ -43,20 +49,23 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfigurationChangeListener;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.protocol.SessionModelListener;
+import org.apache.qpid.server.store.ConfiguredObjectRecord;
+import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.queue.AMQQueue;
-import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -314,7 +323,7 @@ public class MockConsumer implements ConsumerTarget
     }
 
 
-    private static class MockSessionModel implements AMQSessionModel
+    private static class MockSessionModel implements AMQSessionModel<MockSessionModel>
     {
         private final UUID _id = UUID.randomUUID();
         private Session _modelObject;
@@ -338,9 +347,9 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public AMQConnectionModel getConnectionModel()
+        public AMQPConnection<?> getAMQPConnection()
         {
-            return new MockConnectionModel();
+            return null;
         }
 
         @Override
@@ -499,11 +508,6 @@ public class MockConsumer implements ConsumerTarget
 
         }
 
-        @Override
-        public int compareTo(final Object o)
-        {
-            return 0;
-        }
 
         @Override
         public void transportStateChanged()
@@ -528,9 +532,15 @@ public class MockConsumer implements ConsumerTarget
         {
 
         }
+
+        @Override
+        public int compareTo(final AMQSessionModel o)
+        {
+            return 0;
+        }
     }
 
-    private static class MockConnectionModel implements AMQConnectionModel
+    private static class MockConnectionModel implements AMQPConnection<MockConnectionModel>
     {
 
         @Override
@@ -544,42 +554,12 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public StatisticsCounter getMessageDeliveryStatistics()
-        {
-            return null;
-        }
-
-        @Override
-        public StatisticsCounter getMessageReceiptStatistics()
-        {
-            return null;
-        }
-
-        @Override
-        public StatisticsCounter getDataDeliveryStatistics()
-        {
-            return null;
-        }
-
-        @Override
-        public StatisticsCounter getDataReceiptStatistics()
-        {
-            return null;
-        }
-
-        @Override
-        public void resetStatistics()
-        {
-
-        }
-
-        @Override
         public void closeAsync(AMQConstant cause, String message)
         {
         }
 
         @Override
-        public void closeSessionAsync(AMQSessionModel session, AMQConstant cause,
+        public void closeSessionAsync(AMQSessionModel<?> session, AMQConstant cause,
                                       String message)
         {
         }
@@ -591,12 +571,6 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public List<AMQSessionModel> getSessionModels()
-        {
-            return null;
-        }
-
-        @Override
         public void block()
         {
         }
@@ -604,12 +578,7 @@ public class MockConsumer implements ConsumerTarget
         @Override
         public void unblock()
         {
-        }
 
-        @Override
-        public LogSubject getLogSubject()
-        {
-            return null;
         }
 
         @Override
@@ -618,13 +587,7 @@ public class MockConsumer implements ConsumerTarget
             return "remoteAddress:1234";
         }
 
-        public SocketAddress getRemoteAddress()
-        {
-            return null;
-        }
-
-        @Override
-        public String getRemoteProcessPid()
+        public SocketAddress getRemoteSocketAddress()
         {
             return null;
         }
@@ -642,18 +605,6 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public void addSessionListener(final SessionModelListener listener)
-        {
-
-        }
-
-        @Override
-        public void removeSessionListener(final SessionModelListener listener)
-        {
-
-        }
-
-        @Override
         public void notifyWork()
         {
 
@@ -666,9 +617,9 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public ProtocolEngine getProtocolEngine()
+        public boolean hasSessionWithName(final byte[] name)
         {
-            return null;
+            return false;
         }
 
         @Override
@@ -684,13 +635,37 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public String getClientProduct()
+        public boolean isIncoming()
+        {
+            return false;
+        }
+
+        @Override
+        public String getLocalAddress()
         {
             return null;
         }
 
         @Override
-        public Principal getAuthorizedPrincipal()
+        public String getPrincipal()
+        {
+            return null;
+        }
+
+        @Override
+        public String getRemoteAddress()
+        {
+            return null;
+        }
+
+        @Override
+        public String getRemoteProcessName()
+        {
+            return null;
+        }
+
+        @Override
+        public String getRemoteProcessPid()
         {
             return null;
         }
@@ -702,13 +677,61 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
+        public Principal getAuthorizedPrincipal()
+        {
+            return null;
+        }
+
+        @Override
+        public AmqpPort<?> getPort()
+        {
+            return null;
+        }
+
+        @Override
+        public long getBytesIn()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getBytesOut()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getMessagesIn()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getMessagesOut()
+        {
+            return 0;
+        }
+
+        @Override
         public long getLastIoTime()
         {
             return 0;
         }
 
         @Override
-        public AmqpPort<?> getPort()
+        public int getSessionCount()
+        {
+            return 0;
+        }
+
+        @Override
+        public Collection<Session> getSessions()
+        {
+            return null;
+        }
+
+        @Override
+        public AbstractAMQPConnection<?> getUnderlyingConnection()
         {
             return null;
         }
@@ -720,12 +743,7 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public void stop()
-        {
-        }
-
-        @Override
-        public boolean isStopped()
+        public boolean isConnectionStopped()
         {
             return false;
         }
@@ -755,5 +773,293 @@ public class MockConsumer implements ConsumerTarget
         }
 
 
+        @Override
+        public UUID getId()
+        {
+            return null;
+        }
+
+        @Override
+        public String getName()
+        {
+            return null;
+        }
+
+        @Override
+        public String getDescription()
+        {
+            return null;
+        }
+
+        @Override
+        public String getType()
+        {
+            return null;
+        }
+
+        @Override
+        public Map<String, String> getContext()
+        {
+            return null;
+        }
+
+        @Override
+        public <T> T getContextValue(final Class<T> clazz, final String propertyName)
+        {
+            return null;
+        }
+
+        @Override
+        public <T> T getContextValue(final Class<T> clazz, final Type t, final String propertyName)
+        {
+            return null;
+        }
+
+        @Override
+        public Set<String> getContextKeys(final boolean excludeSystem)
+        {
+            return null;
+        }
+
+        @Override
+        public String getLastUpdatedBy()
+        {
+            return null;
+        }
+
+        @Override
+        public long getLastUpdatedTime()
+        {
+            return 0;
+        }
+
+        @Override
+        public String getCreatedBy()
+        {
+            return null;
+        }
+
+        @Override
+        public long getCreatedTime()
+        {
+            return 0;
+        }
+
+        @Override
+        public org.apache.qpid.server.model.State getDesiredState()
+        {
+            return null;
+        }
+
+        @Override
+        public org.apache.qpid.server.model.State getState()
+        {
+            return null;
+        }
+
+        @Override
+        public void addChangeListener(final ConfigurationChangeListener listener)
+        {
+
+        }
+
+        @Override
+        public boolean removeChangeListener(final ConfigurationChangeListener listener)
+        {
+            return false;
+        }
+
+        @Override
+        public <T extends ConfiguredObject> T getParent(final Class<T> clazz)
+        {
+            return null;
+        }
+
+        @Override
+        public boolean isDurable()
+        {
+            return false;
+        }
+
+        @Override
+        public LifetimePolicy getLifetimePolicy()
+        {
+            return null;
+        }
+
+        @Override
+        public Collection<String> getAttributeNames()
+        {
+            return null;
+        }
+
+        @Override
+        public Object getAttribute(final String name)
+        {
+            return null;
+        }
+
+        @Override
+        public Map<String, Object> getActualAttributes()
+        {
+            return null;
+        }
+
+        @Override
+        public Object setAttribute(final String name, final Object expected, final Object desired)
+                throws IllegalStateException, AccessControlException, IllegalArgumentException
+        {
+            return null;
+        }
+
+        @Override
+        public Map<String, Number> getStatistics()
+        {
+            return null;
+        }
+
+        @Override
+        public <C extends ConfiguredObject> Collection<C> getChildren(final Class<C> clazz)
+        {
+            return null;
+        }
+
+        @Override
+        public <C extends ConfiguredObject> C getChildById(final Class<C> clazz, final UUID id)
+        {
+            return null;
+        }
+
+        @Override
+        public <C extends ConfiguredObject> C getChildByName(final Class<C> clazz, final String name)
+        {
+            return null;
+        }
+
+        @Override
+        public <C extends ConfiguredObject> C createChild(final Class<C> childClass,
+                                                          final Map<String, Object> attributes,
+                                                          final ConfiguredObject... otherParents)
+        {
+            return null;
+        }
+
+        @Override
+        public <C extends ConfiguredObject> ListenableFuture<C> createChildAsync(final Class<C> childClass,
+                                                                                 final Map<String, Object> attributes,
+                                                                                 final ConfiguredObject... otherParents)
+        {
+            return null;
+        }
+
+        @Override
+        public void setAttributes(final Map<String, Object> attributes)
+                throws IllegalStateException, AccessControlException, IllegalArgumentException
+        {
+
+        }
+
+        @Override
+        public ListenableFuture<Void> setAttributesAsync(final Map<String, Object> attributes)
+                throws IllegalStateException, AccessControlException, IllegalArgumentException
+        {
+            return null;
+        }
+
+        @Override
+        public Class<? extends ConfiguredObject> getCategoryClass()
+        {
+            return null;
+        }
+
+        @Override
+        public Class<? extends ConfiguredObject> getTypeClass()
+        {
+            return null;
+        }
+
+        @Override
+        public boolean managesChildStorage()
+        {
+            return false;
+        }
+
+        @Override
+        public <C extends ConfiguredObject<C>> C findConfiguredObject(final Class<C> clazz, final String name)
+        {
+            return null;
+        }
+
+        @Override
+        public ConfiguredObjectRecord asObjectRecord()
+        {
+            return null;
+        }
+
+        @Override
+        public void open()
+        {
+
+        }
+
+        @Override
+        public ListenableFuture<Void> openAsync()
+        {
+            return null;
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        @Override
+        public ListenableFuture<Void> closeAsync()
+        {
+            return null;
+        }
+
+        @Override
+        public ListenableFuture<Void> deleteAsync()
+        {
+            return null;
+        }
+
+        @Override
+        public TaskExecutor getTaskExecutor()
+        {
+            return null;
+        }
+
+        @Override
+        public TaskExecutor getChildExecutor()
+        {
+            return null;
+        }
+
+        @Override
+        public ConfiguredObjectFactory getObjectFactory()
+        {
+            return null;
+        }
+
+        @Override
+        public Model getModel()
+        {
+            return null;
+        }
+
+        @Override
+        public void delete()
+        {
+
+        }
+
+        @Override
+        public void decryptSecrets()
+        {
+
+        }
     }
 }

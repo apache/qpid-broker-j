@@ -385,7 +385,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     @Override
     public boolean doIsSuspended()
     {
-        return getState()!=State.ACTIVE || _channel.isSuspended() || _deleted.get() || _channel.getConnectionModel().isStopped();
+        return getState()!=State.ACTIVE || _channel.isSuspended() || _deleted.get() || _channel.getAMQPConnection().isConnectionStopped();
     }
 
     /**
@@ -450,7 +450,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         return _consumerTag;
     }
 
-    private AMQProtocolEngine getConnection()
+    private AMQPConnection_0_8 getConnection()
     {
         return _channel.getConnection();
     }

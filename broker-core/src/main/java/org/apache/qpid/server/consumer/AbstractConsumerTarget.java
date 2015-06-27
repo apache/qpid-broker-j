@@ -88,7 +88,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     @Override
     public final boolean isSuspended()
     {
-        return getSessionModel().getConnectionModel().isMessageAssignmentSuspended() || doIsSuspended();
+        return getSessionModel().getAMQPConnection().isMessageAssignmentSuspended() || doIsSuspended();
     }
 
     protected abstract boolean doIsSuspended();
@@ -185,7 +185,7 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
         _queue.add(new ConsumerMessageInstancePair(consumer, entry, batch));
-        getSessionModel().getConnectionModel().notifyWork();
+        getSessionModel().getAMQPConnection().notifyWork();
         return entry.getMessage().getSize();
     }
 

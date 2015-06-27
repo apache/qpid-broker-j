@@ -52,7 +52,11 @@ import org.apache.qpid.amqp_1_0.type.FrameBody;
 import org.apache.qpid.amqp_1_0.type.Symbol;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
+import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.model.Broker;
@@ -72,25 +76,18 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
-public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
+public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_0>
+        implements FrameOutputHandler
 {
 
-    public static Logger LOGGER = LoggerFactory.getLogger(ProtocolEngine_1_0_0.class);
+    public static Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_1_0.class);
 
     public static final long CLOSE_REPONSE_TIMEOUT = 10000l;
-    private final AmqpPort<?> _port;
-    private final Transport _transport;
-    private final AggregateTicker _aggregateTicker;
-    private final boolean _useSASL;
-    private long _readBytes;
-    private long _writtenBytes;
 
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
-    private final Broker<?> _broker;
     private long _createTime = System.currentTimeMillis();
     private ConnectionEndpoint _endpoint;
-    private long _connectionId;
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
 
@@ -124,13 +121,10 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
 
     private FrameWriter _frameWriter;
     private ProtocolHandler _frameHandler;
-    private ByteBuffer _buf = ByteBuffer.allocate(1024 * 1024);
     private Object _sendLock = new Object();
     private byte _major;
     private byte _minor;
     private byte _revision;
-    private NetworkConnection _network;
-    private ByteBufferSender _sender;
     private Connection_1_0 _connection;
     private volatile boolean _transportBlockedForWriting;
 
@@ -154,30 +148,123 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
 
 
 
-    public ProtocolEngine_1_0_0(final NetworkConnection networkDriver,
-                                final Broker<?> broker,
-                                long id,
-                                AmqpPort<?> port,
-                                Transport transport,
-                                final AggregateTicker aggregateTicker,
-                                final boolean useSASL)
+    public AMQPConnection_1_0(final Broker<?> broker, final NetworkConnection network,
+                              AmqpPort<?> port, Transport transport, long id,
+                              final AggregateTicker aggregateTicker,
+                              final boolean useSASL)
     {
-        _connectionId = id;
-        _broker = broker;
-        _port = port;
-        _transport = transport;
-        _aggregateTicker = aggregateTicker;
-        _useSASL = useSASL;
-        if(networkDriver != null)
+        super(broker, network, port, transport, id, aggregateTicker);
+        _connection = createConnection(broker, network, port, transport, id, useSASL);
+
+        _connection.setAmqpConnection(this);
+        _endpoint = _connection.getConnectionEndpoint();
+        _endpoint.setConnectionEventListener(_connection);
+        _endpoint.setFrameOutputHandler(this);
+        final List<String> mechanisms = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure()).getMechanisms();
+        ByteBuffer headerResponse = useSASL ? initiateSasl() : initiateNonSasl(mechanisms);
+
+        _frameWriter =  new FrameWriter(_endpoint.getDescribedTypeRegistry());
+
+        getSender().send(headerResponse.duplicate());
+        getSender().flush();
+
+        if(useSASL)
         {
-            setNetworkConnection(networkDriver, networkDriver.getSender());
+            _endpoint.initiateSASL(mechanisms.toArray(new String[mechanisms.size()]));
         }
+
+
     }
 
-    @Override
-    public AggregateTicker getAggregateTicker()
+    public static Connection_1_0 createConnection(final Broker<?> broker,
+                                                  final NetworkConnection network,
+                                                  final AmqpPort<?> port,
+                                                  final Transport transport,
+                                                  final long id,
+                                                  final boolean useSASL)
     {
-        return _aggregateTicker;
+        Container container = new Container(broker.getId().toString());
+
+        SubjectCreator subjectCreator = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure());
+        final ConnectionEndpoint endpoint =
+                new ConnectionEndpoint(container, useSASL ? asSaslServerProvider(subjectCreator, network) : null);
+        endpoint.setLogger(new ConnectionEndpoint.FrameReceiptLogger()
+        {
+            @Override
+            public boolean isEnabled()
+            {
+                return FRAME_LOGGER.isDebugEnabled();
+            }
+
+            @Override
+            public void received(final SocketAddress remoteAddress, final short channel, final Object frame)
+            {
+                FRAME_LOGGER.debug("RECV[" + remoteAddress + "|" + channel + "] : " + frame);
+            }
+        });
+        Map<Symbol,Object> serverProperties = new LinkedHashMap<>();
+        serverProperties.put(Symbol.valueOf(ServerPropertyNames.PRODUCT), QpidProperties.getProductName());
+        serverProperties.put(Symbol.valueOf(ServerPropertyNames.VERSION), QpidProperties.getReleaseVersion());
+        serverProperties.put(Symbol.valueOf(ServerPropertyNames.QPID_BUILD), QpidProperties.getBuildVersion());
+        serverProperties.put(Symbol.valueOf(ServerPropertyNames.QPID_INSTANCE_NAME), broker.getName());
+
+        endpoint.setProperties(serverProperties);
+
+        endpoint.setRemoteAddress(network.getRemoteAddress());
+        return new Connection_1_0(endpoint, id, port, transport, subjectCreator);
+    }
+
+
+    public ByteBufferSender getSender()
+    {
+        return getNetwork().getSender();
+    }
+
+    public ByteBuffer initiateNonSasl(final List<String> mechanisms)
+    {
+        final ByteBuffer headerResponse;
+        if(mechanisms.contains(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
+           && getNetwork().getPeerPrincipal() != null)
+        {
+            _connection.setUserPrincipal(new AuthenticatedPrincipal(getNetwork().getPeerPrincipal()));
+        }
+        else if(mechanisms.contains(AnonymousAuthenticationManager.MECHANISM_NAME))
+        {
+            _connection.setUserPrincipal(new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
+        }
+        else
+        {
+            getNetwork().close();
+        }
+
+        _frameHandler = new FrameHandler(_endpoint);
+        headerResponse = AMQP_LAYER_HEADER;
+        return headerResponse;
+    }
+
+    public ByteBuffer initiateSasl()
+    {
+        final ByteBuffer headerResponse;
+        _endpoint.setSaslFrameOutput(this);
+
+        _endpoint.setOnSaslComplete(new Runnable()
+        {
+            public void run()
+            {
+                if (_endpoint.isAuthenticated())
+                {
+                    getSender().send(AMQP_LAYER_HEADER.duplicate());
+                    getSender().flush();
+                }
+                else
+                {
+                    getNetwork().close();
+                }
+            }
+        });
+        _frameHandler = new SASLFrameHandler(_endpoint);
+        headerResponse = SASL_LAYER_HEADER;
+        return headerResponse;
     }
 
     @Override
@@ -192,7 +279,7 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
     {
         _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
 
-        for(AMQSessionModel<?,?> session : _connection.getSessionModels())
+        for(AMQSessionModel<?> session : _connection.getSessionModels())
         {
             for(Consumer<?> consumer : session.getConsumers())
             {
@@ -213,26 +300,6 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
     }
 
 
-    public SocketAddress getRemoteAddress()
-    {
-        return _network.getRemoteAddress();
-    }
-
-    public SocketAddress getLocalAddress()
-    {
-        return _network.getLocalAddress();
-    }
-
-    public long getReadBytes()
-    {
-        return _readBytes;
-    }
-
-    public long getWrittenBytes()
-    {
-        return _writtenBytes;
-    }
-
     public void writerIdle()
     {
         //Todo
@@ -248,105 +315,15 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
     {
     }
 
-    public void setNetworkConnection(final NetworkConnection network, final ByteBufferSender sender)
-    {
-        _network = network;
-        _sender = sender;
-
-        Container container = new Container(_broker.getId().toString());
-
-        SubjectCreator subjectCreator = _port.getAuthenticationProvider().getSubjectCreator(_transport.isSecure());
-        _endpoint = new ConnectionEndpoint(container, _useSASL ? asSaslServerProvider(subjectCreator) : null);
-        _endpoint.setLogger(new ConnectionEndpoint.FrameReceiptLogger()
-        {
-            @Override
-            public boolean isEnabled()
-            {
-                return FRAME_LOGGER.isDebugEnabled();
-            }
-
-            @Override
-            public void received(final SocketAddress remoteAddress, final short channel, final Object frame)
-            {
-                FRAME_LOGGER.debug("RECV[" + remoteAddress + "|" + channel + "] : " + frame);
-            }
-        });
-        Map<Symbol,Object> serverProperties = new LinkedHashMap<Symbol, Object>();
-        serverProperties.put(Symbol.valueOf(ServerPropertyNames.PRODUCT), QpidProperties.getProductName());
-        serverProperties.put(Symbol.valueOf(ServerPropertyNames.VERSION), QpidProperties.getReleaseVersion());
-        serverProperties.put(Symbol.valueOf(ServerPropertyNames.QPID_BUILD), QpidProperties.getBuildVersion());
-        serverProperties.put(Symbol.valueOf(ServerPropertyNames.QPID_INSTANCE_NAME), _broker.getName());
-
-        _endpoint.setProperties(serverProperties);
-
-        _endpoint.setRemoteAddress(getRemoteAddress());
-        _connection = new Connection_1_0(_broker, _endpoint, _connectionId, _port, _transport, subjectCreator, this);
-
-        _endpoint.setConnectionEventListener(_connection);
-        _endpoint.setFrameOutputHandler(this);
-        ByteBuffer headerResponse;
-        final List<String> mechanisms = subjectCreator.getMechanisms();
-        if(_useSASL)
-        {
-            _endpoint.setSaslFrameOutput(this);
-
-            _endpoint.setOnSaslComplete(new Runnable()
-            {
-                public void run()
-                {
-                    if (_endpoint.isAuthenticated())
-                    {
-                        _sender.send(AMQP_LAYER_HEADER.duplicate());
-                        _sender.flush();
-                    }
-                    else
-                    {
-                        _network.close();
-                    }
-                }
-            });
-            _frameHandler = new SASLFrameHandler(_endpoint);
-            headerResponse = SASL_LAYER_HEADER;
-        }
-        else
-        {
-            if(mechanisms.contains(ExternalAuthenticationManagerImpl.MECHANISM_NAME)
-               && _network.getPeerPrincipal() != null)
-            {
-                _connection.setUserPrincipal(new AuthenticatedPrincipal(_network.getPeerPrincipal()));
-            }
-            else if(mechanisms.contains(AnonymousAuthenticationManager.MECHANISM_NAME))
-            {
-                _connection.setUserPrincipal(new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
-            }
-            else
-            {
-                _network.close();
-            }
-
-            _frameHandler = new FrameHandler(_endpoint);
-            headerResponse = AMQP_LAYER_HEADER;
-        }
-        _frameWriter =  new FrameWriter(_endpoint.getDescribedTypeRegistry());
-
-        _sender.send(headerResponse.duplicate());
-        _sender.flush();
-
-        if(_useSASL)
-        {
-            _endpoint.initiateSASL(mechanisms.toArray(new String[mechanisms.size()]));
-        }
-
-    }
-
-    private SaslServerProvider asSaslServerProvider(final SubjectCreator subjectCreator)
+    private static SaslServerProvider asSaslServerProvider(final SubjectCreator subjectCreator,
+                                                           final NetworkConnection network)
     {
         return new SaslServerProvider()
         {
             @Override
             public SaslServer getSaslServer(String mechanism, String fqdn) throws SaslException
             {
-                return subjectCreator.createSaslServer(mechanism, fqdn, _network.getPeerPrincipal());
+                return subjectCreator.createSaslServer(mechanism, fqdn, network.getPeerPrincipal());
             }
 
             @Override
@@ -359,12 +336,7 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
 
     public String getAddress()
     {
-        return getRemoteAddress().toString();
-    }
-
-    public boolean isDurable()
-    {
-        return false;
+        return getNetwork().getRemoteAddress().toString();
     }
 
     private final Logger RAW_LOGGER = LoggerFactory.getLogger("RAW");
@@ -381,9 +353,8 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
                 byte[] data = new byte[dup.remaining()];
                 dup.get(data);
                 Binary bin = new Binary(data);
-                RAW_LOGGER.debug("RECV[" + getRemoteAddress() + "] : " + bin.toString());
+                RAW_LOGGER.debug("RECV[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
             }
-            _readBytes += msg.remaining();
             switch(_state)
             {
                 case A:
@@ -487,7 +458,7 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
         catch(RuntimeException e)
         {
             LOGGER.error("Exception while processing incoming data", e);
-            _network.close();
+            getNetwork().close();
         }
      }
 
@@ -512,13 +483,13 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
         {
 
             LOGGER.error("Exception while closing", e);
-            _network.close();
+            getNetwork().close();
         }
     }
 
     void changeScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
-        ((NonBlockingConnection)_network).changeScheduler(networkConnectionScheduler);
+        ((NonBlockingConnection) getNetwork()).changeScheduler(networkConnectionScheduler);
     }
 
 
@@ -550,7 +521,7 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
             if (FRAME_LOGGER.isDebugEnabled())
             {
                 FRAME_LOGGER.debug("SEND["
-                                   + getRemoteAddress()
+                                   + getNetwork().getRemoteAddress()
                                    + "|"
                                    + amqFrame.getChannel()
                                    + "] : "
@@ -568,7 +539,6 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
             }
 
             dup.flip();
-            _writtenBytes += dup.limit();
 
             if (RAW_LOGGER.isDebugEnabled())
             {
@@ -576,11 +546,11 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
                 byte[] data = new byte[dup2.remaining()];
                 dup2.get(data);
                 Binary bin = new Binary(data);
-                RAW_LOGGER.debug("SEND[" + getRemoteAddress() + "] : " + bin.toString());
+                RAW_LOGGER.debug("SEND[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
             }
 
-            _sender.send(dup);
-            _sender.flush();
+            getSender().send(dup);
+            getSender().flush();
 
 
         }
@@ -593,23 +563,17 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
 
     }
 
-
+    @Override
+    protected void performDeleteTasks()
+    {
+        super.performDeleteTasks();
+    }
 
     public void close()
     {
-        getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis()+ CLOSE_REPONSE_TIMEOUT, _network));
+        getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis()+ CLOSE_REPONSE_TIMEOUT,
+                                                                   getNetwork()));
 
-    }
-
-    public long getConnectionId()
-    {
-        return _connectionId;
-    }
-
-    @Override
-    public Subject getSubject()
-    {
-        return _connection.getSubject();
     }
 
     public long getLastReadTime()
@@ -670,6 +634,62 @@ public class ProtocolEngine_1_0_0 implements ProtocolEngine, FrameOutputHandler
     public void setWorkListener(final Action<ProtocolEngine> listener)
     {
         _workListener.set(listener);
+    }
+
+    public boolean hasSessionWithName(final byte[] name)
+    {
+        return false;
+    }
+
+    public void closeAsync(final AMQConstant cause, final String message)
+    {
+        _connection.closeAsync(cause, message);
+    }
+
+    public Principal getAuthorizedPrincipal()
+    {
+        return _connection.getAuthorizedPrincipal();
+    }
+
+    public void closeSessionAsync(final AMQSessionModel<?> session,
+                                  final AMQConstant cause, final String message)
+    {
+        _connection.closeSessionAsync((Session_1_0) session, cause, message);
+    }
+
+    public void block()
+    {
+        _connection.block();
+    }
+
+    public String getRemoteContainerName()
+    {
+        return _connection.getRemoteContainerName();
+    }
+
+    public VirtualHost<?, ?, ?> getVirtualHost()
+    {
+        return _connection.getVirtualHost();
+    }
+
+    public List<Session_1_0> getSessionModels()
+    {
+        return _connection.getSessionModels();
+    }
+
+    public void unblock()
+    {
+        _connection.unblock();
+    }
+
+    public LogSubject getLogSubject()
+    {
+        return _connection.getLogSubject();
+    }
+
+    public long getSessionCountLimit()
+    {
+        return _connection.getSessionCountLimit();
     }
 
 }

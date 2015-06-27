@@ -49,7 +49,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class AMQChannelTest extends QpidTestCase
 {
     private VirtualHostImpl _virtualHost;
-    private AMQProtocolEngine _protocolSession;
+    private AMQPConnection_0_8 _protocolSession;
     private Map<Integer,String> _replies;
     private Broker _broker;
 
@@ -76,6 +76,7 @@ public class AMQChannelTest extends QpidTestCase
                         _replies.put(replyCode, replyText.toString());
                     }
         };
+        _protocolSession.create();
         _replies = new HashMap<Integer, String>();
     }
 
@@ -100,7 +101,9 @@ public class AMQChannelTest extends QpidTestCase
         AmqpPort port = mock(AmqpPort.class);
         when(port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
         // create a channel with the same channelId but on a different session
-        AMQChannel channel2 = new AMQChannel(new InternalTestProtocolSession(_virtualHost, _broker, port), 1, _virtualHost.getMessageStore());
+        final InternalTestProtocolSession connection = new InternalTestProtocolSession(_virtualHost, _broker, port);
+        connection.create();
+        AMQChannel channel2 = new AMQChannel(connection, 1, _virtualHost.getMessageStore());
         assertFalse("Unexpected compare result", channel1.compareTo(channel2) == 0);
         assertEquals("Unexpected compare result", 0, channel1.compareTo(channel1));
     }
@@ -162,6 +165,7 @@ public class AMQChannelTest extends QpidTestCase
                 frames.add(frame);
             }
         };
+        _protocolSession.create();
 
         AMQChannel channel = new AMQChannel(_protocolSession, 1, _virtualHost.getMessageStore());
 

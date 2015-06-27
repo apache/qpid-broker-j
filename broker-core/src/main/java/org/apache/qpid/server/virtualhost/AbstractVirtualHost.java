@@ -71,7 +71,6 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.queue.AMQQueue;
@@ -89,6 +88,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.MessageStoreProvider;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.LocalTransaction;
@@ -103,7 +103,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
 
 
-    private final Set<Connection<?>> _connections = newSetFromMap(new ConcurrentHashMap<Connection<?>, Boolean>());
+    private final Set<AMQPConnection<?>> _connections = newSetFromMap(new ConcurrentHashMap<AMQPConnection<?>, Boolean>());
     private final Set<VirtualHostConnectionListener> _connectionAssociationListeners = new CopyOnWriteArraySet<>();
 
     private static enum BlockingType { STORE, FILESYSTEM };
@@ -461,7 +461,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Collection<Connection<?>> getConnections()
+    public Collection<AMQPConnection<?>> getConnections()
     {
         return _connections;
     }
@@ -530,7 +530,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public boolean authoriseCreateConnection(final AMQConnectionModel<?, ?> connection)
+    public boolean authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         getSecurityManager().authoriseCreateConnection(connection);
         for(ConnectionValidator validator : _connectionValidators)
@@ -894,13 +894,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         for(Connection conn : _connections)
         {
-            conn.getUnderlyingConnection().stop();
+            conn.getUnderlyingConnection().stopConnection();
         }
 
         List<ListenableFuture<Void>> connectionCloseFutures = new ArrayList<>();
         while (!_connections.isEmpty())
         {
-            Iterator<Connection<?>> itr = _connections.iterator();
+            Iterator<AMQPConnection<?>> itr = _connections.iterator();
             while(itr.hasNext())
             {
                 Connection<?> connection = itr.next();
@@ -1148,7 +1148,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 {
                     _logger.debug("Checking for long running open transactions on connection " + connection);
                 }
-                for (AMQSessionModel<?,?> session : connection.getUnderlyingConnection().getSessionModels())
+                for (AMQSessionModel<?> session : connection.getUnderlyingConnection().getSessionModels())
                 {
                     if (_logger.isDebugEnabled())
                     {
@@ -1687,34 +1687,60 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public void registerConnection(final Connection<?> connection)
+    public void registerConnection(final AMQPConnection<?> connection)
     {
-        _connections.add(connection);
+        doSync(registerConnectionAsync(connection));
+    }
 
-        AMQConnectionModel<?,?> underlyingConnection = connection.getUnderlyingConnection();
-        if(_blocked.get())
+    public ListenableFuture<Void> registerConnectionAsync(final AMQPConnection<?> connection)
+    {
+        return doOnConfigThread(new Callable<ListenableFuture<Void>>()
         {
-            underlyingConnection.block();
-        }
+            @Override
+            public ListenableFuture<Void> call() throws Exception
+            {
+                _connections.add(connection);
 
-        underlyingConnection.setScheduler(_networkConnectionScheduler);
+                if(_blocked.get())
+                {
+                    connection.block();
+                }
 
-        for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
-        {
-            listener.connectionAssociated(connection);
-        }
+                connection.setScheduler(_networkConnectionScheduler);
+
+                for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
+                {
+                    listener.connectionAssociated(connection);
+                }
+                return Futures.immediateFuture(null);
+            }
+        });
+
     }
 
     @Override
-    public void deregisterConnection(final Connection<?> connection)
+    public void deregisterConnection(final AMQPConnection<?> connection)
     {
-        if (_connections.remove(connection))
+        doSync(deregisterConnectionAsync(connection));
+    }
+
+    public ListenableFuture<Void> deregisterConnectionAsync(final AMQPConnection<?> connection)
+    {
+        return doOnConfigThread(new Callable<ListenableFuture<Void>>()
         {
-            for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
+            @Override
+            public ListenableFuture<Void> call() throws Exception
             {
-                listener.connectionRemoved(connection);
+                if (_connections.remove(connection))
+                {
+                    for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
+                    {
+                        listener.connectionRemoved(connection);
+                    }
+                }
+                return Futures.immediateFuture(null);
             }
-        }
+        });
     }
 
 

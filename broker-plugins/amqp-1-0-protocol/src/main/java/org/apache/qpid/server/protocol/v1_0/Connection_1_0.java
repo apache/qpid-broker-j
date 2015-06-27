@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
 
-import java.net.SocketAddress;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.text.MessageFormat;
@@ -31,10 +30,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.security.auth.Subject;
 
@@ -43,46 +42,32 @@ import org.apache.qpid.amqp_1_0.transport.ConnectionEventListener;
 import org.apache.qpid.amqp_1_0.transport.LinkEndpoint;
 import org.apache.qpid.amqp_1_0.transport.SessionEndpoint;
 import org.apache.qpid.amqp_1_0.transport.SessionEventListener;
+import org.apache.qpid.amqp_1_0.type.Symbol;
 import org.apache.qpid.amqp_1_0.type.transport.AmqpError;
 import org.apache.qpid.amqp_1_0.type.transport.End;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.LogSubject;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.adapter.ConnectionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
-import org.apache.qpid.server.stats.StatisticsCounter;
-import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
-public class Connection_1_0 implements ConnectionEventListener, AMQConnectionModel<Connection_1_0,Session_1_0>
+public class Connection_1_0 implements ConnectionEventListener
 {
 
     private final AmqpPort<?> _port;
-    private final Broker<?> _broker;
     private final SubjectCreator _subjectCreator;
-    private final ProtocolEngine_1_0_0 _protocolEngine;
-    private VirtualHostImpl _vhost;
+    private AMQPConnection_1_0 _amqpConnection;
+    private VirtualHostImpl<?,?,?> _vhost;
     private final Transport _transport;
-    private final ConnectionEndpoint _conn;
+    private final ConnectionEndpoint _connectionEndpoint;
     private final long _connectionId;
     private final Collection<Session_1_0> _sessions = Collections.synchronizedCollection(new ArrayList<Session_1_0>());
     private final Object _reference = new Object();
-    private final Subject _subject = new Subject();
-
-    private final CopyOnWriteArrayList<SessionModelListener> _sessionListeners =
-            new CopyOnWriteArrayList<SessionModelListener>();
-
-    private final StatisticsCounter _messageDeliveryStatistics, _messageReceiptStatistics, _dataDeliveryStatistics, _dataReceiptStatistics;
 
     private final LogSubject _logSubject = new LogSubject()
     {
@@ -100,42 +85,34 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         }
     };
 
-    private volatile boolean _stopped;
-
-
-    private List<Action<? super Connection_1_0>> _closeTasks =
-            Collections.synchronizedList(new ArrayList<Action<? super Connection_1_0>>());
-
     private final Queue<Action<? super Connection_1_0>> _asyncTaskList =
             new ConcurrentLinkedQueue<>();
 
 
     private boolean _closedOnOpen;
-    private ConnectionAdapter _adapter;
 
 
-    public Connection_1_0(Broker<?> broker,
-                          ConnectionEndpoint conn,
+    public Connection_1_0(ConnectionEndpoint connectionEndpoint,
                           long connectionId,
                           AmqpPort<?> port,
                           Transport transport,
-                          final SubjectCreator subjectCreator,
-                          final ProtocolEngine_1_0_0 protocolEngine)
+                          final SubjectCreator subjectCreator)
     {
-        _protocolEngine = protocolEngine;
-        _broker = broker;
         _port = port;
         _transport = transport;
-        _conn = conn;
+        _connectionEndpoint = connectionEndpoint;
         _connectionId = connectionId;
-        _subject.getPrincipals().add(new ConnectionPrincipal(this));
         _subjectCreator = subjectCreator;
-        _messageDeliveryStatistics = new StatisticsCounter("messages-delivered-" + getConnectionId());
-        _dataDeliveryStatistics = new StatisticsCounter("data-delivered-" + getConnectionId());
-        _messageReceiptStatistics = new StatisticsCounter("messages-received-" + getConnectionId());
-        _dataReceiptStatistics = new StatisticsCounter("data-received-" + getConnectionId());
-        _adapter = new ConnectionAdapter(this);
-        _adapter.create();
+    }
+
+    void setAmqpConnection(final AMQPConnection_1_0 amqpConnection)
+    {
+        _amqpConnection = amqpConnection;
+    }
+
+    public ConnectionEndpoint getConnectionEndpoint()
+    {
+        return _connectionEndpoint;
     }
 
     public Object getReference()
@@ -146,35 +123,48 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
     @Override
     public void openReceived()
     {
-        String host = _conn.getLocalHostname();
+        String host = _connectionEndpoint.getLocalHostname();
+        Map clientProperties = _connectionEndpoint.getRemoteProperties();
+        if(clientProperties != null)
+        {
+            if(clientProperties.containsKey(Symbol.valueOf("product")))
+            {
+                _amqpConnection.setClientProduct(clientProperties.get(Symbol.valueOf("product")).toString());
+            }
+            if(clientProperties.containsKey(Symbol.valueOf("version")))
+            {
+                _amqpConnection.setClientVersion(clientProperties.get(Symbol.valueOf("version")).toString());
+            }
+            _amqpConnection.setClientId(_connectionEndpoint.getRemoteContainerId());
+        }
         _vhost = ((AmqpPort)_port).getVirtualHost(host);
         if(_vhost == null)
         {
             final Error err = new Error();
             err.setCondition(AmqpError.NOT_FOUND);
             err.setDescription("Unknown hostname in connection open: '" + host + "'");
-            _conn.close(err);
+            _connectionEndpoint.close(err);
             _closedOnOpen = true;
         }
         else
         {
-            final Principal user = _conn.getUser();
+            final Principal user = _connectionEndpoint.getUser();
             if(user != null)
             {
                 setUserPrincipal(user);
             }
-            _subject.getPrincipals().add(_vhost.getPrincipal());
-            if(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_subject) == null)
+            _amqpConnection.getSubject().getPrincipals().add(_vhost.getPrincipal());
+            if(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_amqpConnection.getSubject()) == null)
             {
                 final Error err = new Error();
                 err.setCondition(AmqpError.NOT_ALLOWED);
                 err.setDescription("Connection has not been authenticated");
-                _conn.close(err);
+                _connectionEndpoint.close(err);
                 _closedOnOpen = true;
             }
             else
             {
-                _adapter.virtualHostAssociated();
+                _amqpConnection.virtualHostAssociated();
             }
         }
     }
@@ -182,9 +172,9 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
     void setUserPrincipal(final Principal user)
     {
         Subject authSubject = _subjectCreator.createSubjectWithGroups(user);
-        _subject.getPrincipals().addAll(authSubject.getPrincipals());
-        _subject.getPublicCredentials().addAll(authSubject.getPublicCredentials());
-        _subject.getPrivateCredentials().addAll(authSubject.getPrivateCredentials());
+        _amqpConnection.getSubject().getPrincipals().addAll(authSubject.getPrincipals());
+        _amqpConnection.getSubject().getPublicCredentials().addAll(authSubject.getPublicCredentials());
+        _amqpConnection.getSubject().getPrivateCredentials().addAll(authSubject.getPrivateCredentials());
     }
 
     public void remoteSessionCreation(SessionEndpoint endpoint)
@@ -193,7 +183,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         {
             final Session_1_0 session = new Session_1_0(this, endpoint);
             _sessions.add(session);
-            sessionAdded(session);
+            _amqpConnection.sessionAdded(session);
             endpoint.setSessionEventListener(new SessionEventListener()
             {
                 @Override
@@ -231,20 +221,9 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
     {
         if(!_closedOnOpen)
         {
-
             _sessions.remove(session);
-            sessionRemoved(session);
+            _amqpConnection.sessionRemoved(session);
         }
-    }
-
-    public void removeDeleteTask(final Action<? super Connection_1_0> task)
-    {
-        _closeTasks.remove( task );
-    }
-
-    public void addDeleteTask(final Action<? super Connection_1_0> task)
-    {
-        _closeTasks.add( task );
     }
 
     private void addAsyncTask(final Action<Connection_1_0> action)
@@ -256,7 +235,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
 
     public void closeReceived()
     {
-        Collection<Session_1_0> sessions = new ArrayList(_sessions);
+        Collection<Session_1_0> sessions = new ArrayList<>(_sessions);
 
         for(Session_1_0 session : sessions)
         {
@@ -265,7 +244,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
 
         if(_vhost != null)
         {
-            _vhost.deregisterConnection(_adapter);
+            _vhost.deregisterConnection(_amqpConnection);
         }
 
 
@@ -273,29 +252,16 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
 
     void performCloseTasks()
     {
-        List<Action<? super Connection_1_0>> taskCopy;
-
-        synchronized (_closeTasks)
-        {
-            taskCopy = new ArrayList<Action<? super Connection_1_0>>(_closeTasks);
-        }
-        for(Action<? super Connection_1_0> task : taskCopy)
-        {
-            task.performAction(this);
-        }
-        synchronized (_closeTasks)
-        {
-            _closeTasks.clear();
-        }
+        _amqpConnection.performDeleteTasks();
     }
 
     public void closed()
     {
+        performCloseTasks();
         closeReceived();
     }
 
 
-    @Override
     public void closeAsync(AMQConstant cause, String message)
     {
         Action<Connection_1_0> action = new Action<Connection_1_0>()
@@ -303,27 +269,23 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
             @Override
             public void performAction(final Connection_1_0 object)
             {
-                _conn.close();
+                _connectionEndpoint.close();
 
             }
         };
         addAsyncTask(action);
-
     }
 
-    @Override
     public void block()
     {
         // TODO
     }
 
-    @Override
     public void unblock()
     {
         // TODO
     }
 
-    @Override
     public void closeSessionAsync(final Session_1_0 session, final AMQConstant cause, final String message)
     {
         addAsyncTask(new Action<Connection_1_0>()
@@ -336,221 +298,70 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         });
     }
 
-    @Override
     public long getConnectionId()
     {
         return _connectionId;
     }
 
-    @Override
     public List<Session_1_0> getSessionModels()
     {
-        return new ArrayList<Session_1_0>(_sessions);
+        return new ArrayList<>(_sessions);
     }
 
-    @Override
     public LogSubject getLogSubject()
     {
         return _logSubject;
     }
 
-    @Override
     public String getRemoteAddressString()
     {
-        return String.valueOf(_conn.getRemoteAddress());
+        return String.valueOf(_connectionEndpoint.getRemoteAddress());
     }
 
-    public SocketAddress getRemoteAddress()
-    {
-        return _conn.getRemoteAddress();
-    }
-
-    @Override
-    public String getRemoteProcessPid()
-    {
-        return null;  // TODO
-    }
-
-    @Override
     public String getClientId()
     {
-        return _conn.getRemoteContainerId();
+        return _connectionEndpoint.getRemoteContainerId();
     }
 
-    @Override
     public String getRemoteContainerName()
     {
-        return _conn.getRemoteContainerId();
-    }
-
-    @Override
-    public String getClientVersion()
-    {
-        return "";  //TODO
-    }
-
-    @Override
-    public String getClientProduct()
-    {
-        return "";  //TODO
+        return _connectionEndpoint.getRemoteContainerId();
     }
 
     public Principal getAuthorizedPrincipal()
     {
-        Set<AuthenticatedPrincipal> authPrincipals = _subject.getPrincipals(AuthenticatedPrincipal.class);
+        Set<AuthenticatedPrincipal> authPrincipals = _amqpConnection.getSubject().getPrincipals(AuthenticatedPrincipal.class);
         return authPrincipals.isEmpty() ? null : authPrincipals.iterator().next();
     }
 
-    @Override
     public long getSessionCountLimit()
     {
         return 0;  // TODO
     }
 
-    @Override
-    public long getLastIoTime()
-    {
-        return 0;  // TODO
-    }
-
-    @Override
-    public String getVirtualHostName()
-    {
-        return _vhost == null ? null : _vhost.getName();
-    }
-
-    @Override
     public AmqpPort<?> getPort()
     {
         return _port;
     }
 
-    @Override
-    public ProtocolEngine getProtocolEngine()
+    public AMQPConnection_1_0 getAmqpConnection()
     {
-        return _protocolEngine;
+        return _amqpConnection;
     }
 
-    @Override
-    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
-    {
-        _protocolEngine.changeScheduler(networkConnectionScheduler);
-    }
-
-    @Override
     public Transport getTransport()
     {
         return _transport;
     }
 
-    @Override
-    public void stop()
-    {
-        _stopped = true;
-    }
-
-    @Override
-    public boolean isStopped()
-    {
-        return _stopped;
-    }
-
-    @Override
-    public void registerMessageReceived(long messageSize, long timestamp)
-    {
-        _messageReceiptStatistics.registerEvent(1L, timestamp);
-        _dataReceiptStatistics.registerEvent(messageSize, timestamp);
-        _vhost.registerMessageReceived(messageSize,timestamp);
-
-    }
-
-    @Override
-    public void registerMessageDelivered(long messageSize)
-    {
-
-        _messageDeliveryStatistics.registerEvent(1L);
-        _dataDeliveryStatistics.registerEvent(messageSize);
-        _vhost.registerMessageDelivered(messageSize);
-    }
-
-    @Override
-    public StatisticsCounter getMessageDeliveryStatistics()
-    {
-        return _messageDeliveryStatistics;
-    }
-
-    @Override
-    public StatisticsCounter getMessageReceiptStatistics()
-    {
-        return _messageReceiptStatistics;
-    }
-
-    @Override
-    public StatisticsCounter getDataDeliveryStatistics()
-    {
-        return _dataDeliveryStatistics;
-    }
-
-    @Override
-    public StatisticsCounter getDataReceiptStatistics()
-    {
-        return _dataReceiptStatistics;
-    }
-
-    @Override
-    public void resetStatistics()
-    {
-        _dataDeliveryStatistics.reset();
-        _dataReceiptStatistics.reset();
-        _messageDeliveryStatistics.reset();
-        _messageReceiptStatistics.reset();
-    }
-
-
-
-    AMQConnectionModel getModel()
-    {
-        return this;
-    }
-
-
     Subject getSubject()
     {
-        return _subject;
+        return _amqpConnection.getSubject();
     }
 
     public VirtualHostImpl getVirtualHost()
     {
         return _vhost;
-    }
-
-
-    @Override
-    public void addSessionListener(final SessionModelListener listener)
-    {
-        _sessionListeners.add(listener);
-    }
-
-    @Override
-    public void removeSessionListener(final SessionModelListener listener)
-    {
-        _sessionListeners.remove(listener);
-    }
-
-    private void sessionAdded(final AMQSessionModel<?,?> session)
-    {
-        for(SessionModelListener l : _sessionListeners)
-        {
-            l.sessionAdded(session);
-        }
-    }
-
-    private void sessionRemoved(final AMQSessionModel<?,?> session)
-    {
-        for(SessionModelListener l : _sessionListeners)
-        {
-            l.sessionRemoved(session);
-        }
     }
 
 
@@ -562,25 +373,18 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         }
     }
 
-    @Override
     public void notifyWork()
     {
-        _protocolEngine.notifyWork();
-    }
-
-    @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        return _protocolEngine.isMessageAssignmentSuspended();
+        _amqpConnection.notifyWork();
     }
 
     public void processPending()
     {
-        List<? extends AMQSessionModel<?,?>> sessionsWithPending = new ArrayList<>(getSessionModels());
+        List<? extends AMQSessionModel<?>> sessionsWithPending = new ArrayList<>(getSessionModels());
         while(!sessionsWithPending.isEmpty())
         {
-            final Iterator<? extends AMQSessionModel<?, ?>> iter = sessionsWithPending.iterator();
-            AMQSessionModel<?, ?> session;
+            final Iterator<? extends AMQSessionModel<?>> iter = sessionsWithPending.iterator();
+            AMQSessionModel<?> session;
             while(iter.hasNext())
             {
                 session = iter.next();
@@ -605,7 +409,7 @@ public class Connection_1_0 implements ConnectionEventListener, AMQConnectionMod
         return "Connection_1_0["
                +  _connectionId
                + " "
-               + _protocolEngine.getRemoteAddress().toString()
+               + _amqpConnection.getAddress()
                + (_vhost == null ? "" : (" vh : " + _vhost.getName()))
                + ']';
     }

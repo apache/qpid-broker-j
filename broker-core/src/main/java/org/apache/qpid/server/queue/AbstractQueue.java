@@ -84,7 +84,6 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TypedContent;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.access.Operation;
@@ -93,6 +92,7 @@ import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -342,7 +342,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         Subject activeSubject = Subject.getSubject(AccessController.getContext());
         Set<SessionPrincipal> sessionPrincipals = activeSubject == null ? Collections.<SessionPrincipal>emptySet() : activeSubject.getPrincipals(SessionPrincipal.class);
-        AMQSessionModel<?,?> sessionModel;
+        AMQSessionModel<?> sessionModel;
         if(sessionPrincipals.isEmpty())
         {
             sessionModel = null;
@@ -360,14 +360,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
 
                 case PRINCIPAL:
-                    _exclusiveOwner = sessionModel.getConnectionModel().getAuthorizedPrincipal();
+                    _exclusiveOwner = sessionModel.getAMQPConnection().getAuthorizedPrincipal();
                     break;
                 case CONTAINER:
-                    _exclusiveOwner = sessionModel.getConnectionModel().getRemoteContainerName();
+                    _exclusiveOwner = sessionModel.getAMQPConnection().getRemoteContainerName();
                     break;
                 case CONNECTION:
-                    _exclusiveOwner = sessionModel.getConnectionModel();
-                    addExclusivityConstraint(sessionModel.getConnectionModel());
+                    _exclusiveOwner = sessionModel.getAMQPConnection();
+                    addExclusivityConstraint(sessionModel.getAMQPConnection());
                     break;
                 case SESSION:
                     _exclusiveOwner = sessionModel;
@@ -405,7 +405,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             if(sessionModel != null)
             {
-                addLifetimeConstraint(sessionModel.getConnectionModel());
+                addLifetimeConstraint(sessionModel.getAMQPConnection());
             }
             else
             {
@@ -717,12 +717,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONNECTION:
                 if(exclusiveOwner == null)
                 {
-                    exclusiveOwner = target.getSessionModel().getConnectionModel();
-                    addExclusivityConstraint(target.getSessionModel().getConnectionModel());
+                    exclusiveOwner = target.getSessionModel().getAMQPConnection();
+                    addExclusivityConstraint(target.getSessionModel().getAMQPConnection());
                 }
                 else
                 {
-                    if(exclusiveOwner != target.getSessionModel().getConnectionModel())
+                    if(exclusiveOwner != target.getSessionModel().getAMQPConnection())
                     {
                         throw new ConsumerAccessRefused();
                     }
@@ -751,11 +751,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case PRINCIPAL:
                 if(exclusiveOwner == null)
                 {
-                    exclusiveOwner = target.getSessionModel().getConnectionModel().getAuthorizedPrincipal();
+                    exclusiveOwner = target.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();
                 }
                 else
                 {
-                    if(!exclusiveOwner.equals(target.getSessionModel().getConnectionModel().getAuthorizedPrincipal()))
+                    if(!exclusiveOwner.equals(target.getSessionModel().getAMQPConnection().getAuthorizedPrincipal()))
                     {
                         throw new ConsumerAccessRefused();
                     }
@@ -764,11 +764,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case CONTAINER:
                 if(exclusiveOwner == null)
                 {
-                    exclusiveOwner = target.getSessionModel().getConnectionModel().getRemoteContainerName();
+                    exclusiveOwner = target.getSessionModel().getAMQPConnection().getRemoteContainerName();
                 }
                 else
                 {
-                    if(!exclusiveOwner.equals(target.getSessionModel().getConnectionModel().getRemoteContainerName()))
+                    if(!exclusiveOwner.equals(target.getSessionModel().getAMQPConnection().getRemoteContainerName()))
                     {
                         throw new ConsumerAccessRefused();
                     }
@@ -2718,7 +2718,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?, ?> session)
+    public boolean verifySessionAccess(final AMQSessionModel<?> session)
     {
         boolean allowed;
         switch(_exclusive)
@@ -2730,13 +2730,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 allowed = _exclusiveOwner == null || _exclusiveOwner == session;
                 break;
             case CONNECTION:
-                allowed = _exclusiveOwner == null || _exclusiveOwner == session.getConnectionModel();
+                allowed = _exclusiveOwner == null || _exclusiveOwner == session.getAMQPConnection();
                 break;
             case PRINCIPAL:
-                allowed = _exclusiveOwner == null || _exclusiveOwner.equals(session.getConnectionModel().getAuthorizedPrincipal());
+                allowed = _exclusiveOwner == null || _exclusiveOwner.equals(session.getAMQPConnection().getAuthorizedPrincipal());
                 break;
             case CONTAINER:
-                allowed = _exclusiveOwner == null || _exclusiveOwner.equals(session.getConnectionModel().getRemoteContainerName());
+                allowed = _exclusiveOwner == null || _exclusiveOwner.equals(session.getAMQPConnection().getRemoteContainerName());
                 break;
             case LINK:
                 allowed = _exclusiveSubscriber == null || _exclusiveSubscriber.getSessionModel() == session;
@@ -2822,7 +2822,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _exclusiveOwner = session;
                 break;
             case LINK:
-                _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getConnectionModel();
+                _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getAMQPConnection();
         }
     }
 
@@ -2833,14 +2833,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             case NONE:
             case CONTAINER:
             case PRINCIPAL:
-                AMQConnectionModel con = null;
+                AMQPConnection con = null;
                 for(ConsumerImpl c : getConsumers())
                 {
                     if(con == null)
                     {
-                        con = c.getSessionModel().getConnectionModel();
+                        con = c.getSessionModel().getAMQPConnection();
                     }
-                    else if(!con.equals(c.getSessionModel().getConnectionModel()))
+                    else if(!con.equals(c.getSessionModel().getAMQPConnection()))
                     {
                         throw new ExistingConsumerPreventsExclusive();
                     }
@@ -2848,10 +2848,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _exclusiveOwner = con;
                 break;
             case SESSION:
-                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getConnectionModel();
+                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getAMQPConnection();
                 break;
             case LINK:
-                _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getConnectionModel();
+                _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getAMQPConnection();
         }
     }
 
@@ -2866,9 +2866,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     if(containerID == null)
                     {
-                        containerID = c.getSessionModel().getConnectionModel().getRemoteContainerName();
+                        containerID = c.getSessionModel().getAMQPConnection().getRemoteContainerName();
                     }
-                    else if(!containerID.equals(c.getSessionModel().getConnectionModel().getRemoteContainerName()))
+                    else if(!containerID.equals(c.getSessionModel().getAMQPConnection().getRemoteContainerName()))
                     {
                         throw new ExistingConsumerPreventsExclusive();
                     }
@@ -2876,13 +2876,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _exclusiveOwner = containerID;
                 break;
             case CONNECTION:
-                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQConnectionModel)_exclusiveOwner).getRemoteContainerName();
+                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQPConnection)_exclusiveOwner).getRemoteContainerName();
                 break;
             case SESSION:
-                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getConnectionModel().getRemoteContainerName();
+                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getAMQPConnection().getRemoteContainerName();
                 break;
             case LINK:
-                _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getConnectionModel().getRemoteContainerName();
+                _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getAMQPConnection().getRemoteContainerName();
         }
     }
 
@@ -2897,9 +2897,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     if(principal == null)
                     {
-                        principal = c.getSessionModel().getConnectionModel().getAuthorizedPrincipal();
+                        principal = c.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();
                     }
-                    else if(!principal.equals(c.getSessionModel().getConnectionModel().getAuthorizedPrincipal()))
+                    else if(!principal.equals(c.getSessionModel().getAMQPConnection().getAuthorizedPrincipal()))
                     {
                         throw new ExistingConsumerPreventsExclusive();
                     }
@@ -2907,13 +2907,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 _exclusiveOwner = principal;
                 break;
             case CONNECTION:
-                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQConnectionModel)_exclusiveOwner).getAuthorizedPrincipal();
+                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQPConnection)_exclusiveOwner).getAuthorizedPrincipal();
                 break;
             case SESSION:
-                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getConnectionModel().getAuthorizedPrincipal();
+                _exclusiveOwner = _exclusiveOwner == null ? null : ((AMQSessionModel)_exclusiveOwner).getAMQPConnection().getAuthorizedPrincipal();
                 break;
             case LINK:
-                _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getConnectionModel().getAuthorizedPrincipal();
+                _exclusiveOwner = _exclusiveSubscriber == null ? null : _exclusiveSubscriber.getSessionModel().getAMQPConnection().getAuthorizedPrincipal();
         }
     }
 

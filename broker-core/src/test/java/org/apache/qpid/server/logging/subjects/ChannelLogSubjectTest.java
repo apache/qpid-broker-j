@@ -38,7 +38,7 @@ public class ChannelLogSubjectTest extends ConnectionLogSubjectTest
         super.setUp();
 
         AMQSessionModel session = mock(AMQSessionModel.class);
-        when(session.getConnectionModel()).thenReturn(getConnection());
+        when(session.getAMQPConnection()).thenReturn(getConnection());
         when(session.getChannelId()).thenReturn(_channelID);
         _subject = new ChannelLogSubject(session);
     }

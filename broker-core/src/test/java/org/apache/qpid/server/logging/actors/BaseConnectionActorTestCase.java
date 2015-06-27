@@ -21,13 +21,13 @@
 package org.apache.qpid.server.logging.actors;
 
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
 {
-    private AMQConnectionModel _session;
+    private AMQPConnection<?> _connection;
     private VirtualHostImpl _virtualHost;
 
     @Override
@@ -35,7 +35,7 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
     {
         super.setUp();
         BrokerTestHelper.setUp();
-        _session = BrokerTestHelper.createConnection();
+        _connection = BrokerTestHelper.createConnection();
         _virtualHost = BrokerTestHelper.createVirtualHost("test");
     }
 
@@ -53,9 +53,9 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
             {
                 _virtualHost.close();
             }
-            if (_session != null)
+            if (_connection != null)
             {
-                _session.closeAsync(AMQConstant.CONNECTION_FORCED, "");
+                _connection.closeAsync(AMQConstant.CONNECTION_FORCED, "");
             }
         }
         finally
@@ -65,9 +65,9 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
         }
     }
 
-    public AMQConnectionModel getConnection()
+    public AMQPConnection<?> getConnection()
     {
-        return _session;
+        return _connection;
     }
 
 }

@@ -21,7 +21,8 @@
 package org.apache.qpid.server.logging.subjects;
 
 import java.text.MessageFormat;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
+
+import org.apache.qpid.server.transport.AMQPConnection;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SOCKET_FORMAT;
@@ -32,11 +33,11 @@ public class ConnectionLogSubject extends AbstractLogSubject
 {
 
     // The Session this Actor is representing
-    private AMQConnectionModel _session;
+    private AMQPConnection<?> _connection;
 
-    public ConnectionLogSubject(AMQConnectionModel session)
+    public ConnectionLogSubject(AMQPConnection<?> connection)
     {
-        _session = session;
+        _connection = connection;
     }
 
     // Used to stop re-creating the _logString when we reach our final format
@@ -55,9 +56,9 @@ public class ConnectionLogSubject extends AbstractLogSubject
     {
         if (!_upToDate)
         {
-            if (_session.getAuthorizedPrincipal() != null)
+            if (_connection.getAuthorizedPrincipal() != null)
             {
-                if (_session.getVirtualHostName() != null)
+                if (_connection.getVirtualHostName() != null)
                 {
                     /**
                      * LOG FORMAT used by the AMQPConnectorActor follows
@@ -70,10 +71,10 @@ public class ConnectionLogSubject extends AbstractLogSubject
                      * 0 - Connection ID 1 - User ID 2 - IP 3 - Virtualhost
                      */
                     setLogString("[" + MessageFormat.format(CONNECTION_FORMAT,
-                                                            _session.getConnectionId(),
-                                                            _session.getAuthorizedPrincipal().getName(),
-                                                            _session.getRemoteAddressString(),
-                                                            _session.getVirtualHostName())
+                                                            _connection.getConnectionId(),
+                                                            _connection.getAuthorizedPrincipal().getName(),
+                                                            _connection.getRemoteAddressString(),
+                                                            _connection.getVirtualHostName())
                                  + "] ");
 
                     _upToDate = true;
@@ -81,9 +82,9 @@ public class ConnectionLogSubject extends AbstractLogSubject
                 else
                 {
                     setLogString("[" + MessageFormat.format(USER_FORMAT,
-                                                            _session.getConnectionId(),
-                                                            _session.getAuthorizedPrincipal().getName(),
-                                                            _session.getRemoteAddressString())
+                                                            _connection.getConnectionId(),
+                                                            _connection.getAuthorizedPrincipal().getName(),
+                                                            _connection.getRemoteAddressString())
                                  + "] ");
 
                 }
@@ -91,8 +92,8 @@ public class ConnectionLogSubject extends AbstractLogSubject
             else
             {
                     setLogString("[" + MessageFormat.format(SOCKET_FORMAT,
-                                                            _session.getConnectionId(),
-                                                            _session.getRemoteAddressString())
+                                                            _connection.getConnectionId(),
+                                                            _connection.getRemoteAddressString())
                                  + "] ");
             }
         }

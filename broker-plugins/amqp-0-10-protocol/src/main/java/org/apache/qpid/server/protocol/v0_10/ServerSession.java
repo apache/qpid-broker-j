@@ -75,6 +75,7 @@ import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.AuthorizationHolder;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -113,7 +114,7 @@ import org.apache.qpid.transport.network.Ticker;
 
 public class ServerSession extends Session
         implements AuthorizationHolder,
-                   AMQSessionModel<ServerSession,ServerConnection>, LogSubject, AsyncAutoCommitTransaction.FutureRecorder,
+                   AMQSessionModel<ServerSession>, LogSubject, AsyncAutoCommitTransaction.FutureRecorder,
                    Deletable<ServerSession>
 
 {
@@ -192,7 +193,7 @@ public class ServerSession extends Session
             @Override
             public void doTimeoutAction(String reason)
             {
-                getConnectionModel().closeSessionAsync(ServerSession.this, AMQConstant.RESOURCE_ERROR, reason);
+                getAMQPConnection().closeSessionAsync(ServerSession.this, AMQConstant.RESOURCE_ERROR, reason);
             }
         }, getVirtualHost());
 
@@ -275,7 +276,7 @@ public class ServerSession extends Session
                                      message.getInitialRoutingAddress(),
                                      instanceProperties, _transaction, _checkCapacityAction
                                     );
-        getConnectionModel().registerMessageReceived(message.getSize(), message.getArrivalTime());
+        getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
         incrementOutstandingTxnsIfNecessary();
         incrementUncommittedMessageSize(message.getStoredMessage());
         return enqueues;
@@ -321,7 +322,7 @@ public class ServerSession extends Session
     public void sendMessage(MessageTransfer xfr,
                             Runnable postIdSettingAction)
     {
-        getConnectionModel().registerMessageDelivered(xfr.getBodySize());
+        getAMQPConnection().registerMessageDelivered(xfr.getBodySize());
         invoke(xfr, postIdSettingAction);
     }
 
@@ -787,9 +788,10 @@ public class ServerSession extends Session
         return _id;
     }
 
-    public ServerConnection getConnectionModel()
+    @Override
+    public AMQPConnection<?> getAMQPConnection()
     {
-        return getConnection();
+        return getConnection().getAmqpConnection();
     }
 
     public String getClientID()
@@ -897,7 +899,7 @@ public class ServerSession extends Session
                             ? getConnection().getConnectionId()
                             : -1;
 
-        String remoteAddress = String.valueOf(getConnection().getRemoteAddress());
+        String remoteAddress = String.valueOf(getConnection().getRemoteSocketAddress());
         return "[" +
                MessageFormat.format(CHANNEL_FORMAT,
                                     connectionId,
@@ -1188,13 +1190,13 @@ public class ServerSession extends Session
     @Override
     public void addTicker(final Ticker ticker)
     {
-        getConnection().getProtocolEngine().getAggregateTicker().addTicker(ticker);
+        getConnection().getAmqpConnection().getAggregateTicker().addTicker(ticker);
     }
 
     @Override
     public void removeTicker(final Ticker ticker)
     {
-        getConnection().getProtocolEngine().getAggregateTicker().removeTicker(ticker);
+        getConnection().getAmqpConnection().getAggregateTicker().removeTicker(ticker);
     }
 
 

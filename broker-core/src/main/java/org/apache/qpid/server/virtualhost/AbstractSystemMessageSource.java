@@ -124,7 +124,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     }
 
     @Override
-    public boolean verifySessionAccess(final AMQSessionModel<?, ?> session)
+    public boolean verifySessionAccess(final AMQSessionModel<?> session)
     {
         return true;
     }

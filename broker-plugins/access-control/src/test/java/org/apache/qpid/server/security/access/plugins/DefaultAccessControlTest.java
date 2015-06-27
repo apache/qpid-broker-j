@@ -35,7 +35,6 @@ import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.security.Result;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectType;
@@ -44,6 +43,7 @@ import org.apache.qpid.server.security.access.Permission;
 import org.apache.qpid.server.security.access.config.Rule;
 import org.apache.qpid.server.security.access.config.RuleSet;
 import org.apache.qpid.server.security.auth.TestPrincipalUtils;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -239,8 +239,8 @@ public class DefaultAccessControlTest extends QpidTestCase
         final InetAddress inetAddress = InetAddress.getLocalHost();
         final InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, 1);
 
-        AMQConnectionModel connectionModel = mock(AMQConnectionModel.class);
-        when(connectionModel.getRemoteAddress()).thenReturn(inetSocketAddress);
+        AMQPConnection connectionModel = mock(AMQPConnection.class);
+        when(connectionModel.getRemoteSocketAddress()).thenReturn(inetSocketAddress);
 
         subject.getPrincipals().add(new ConnectionPrincipal(connectionModel));
 
@@ -269,8 +269,8 @@ public class DefaultAccessControlTest extends QpidTestCase
         final InetAddress inetAddress = InetAddress.getLocalHost();
         final InetSocketAddress inetSocketAddress = new InetSocketAddress(inetAddress, 1);
 
-        AMQConnectionModel connectionModel = mock(AMQConnectionModel.class);
-        when(connectionModel.getRemoteAddress()).thenReturn(inetSocketAddress);
+        AMQPConnection connectionModel = mock(AMQPConnection.class);
+        when(connectionModel.getRemoteSocketAddress()).thenReturn(inetSocketAddress);
 
         subject.getPrincipals().add(new ConnectionPrincipal(connectionModel));
 

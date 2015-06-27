@@ -59,7 +59,6 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
@@ -69,6 +68,7 @@ import org.apache.qpid.server.queue.LastValueQueueImpl;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.PriorityQueueImpl;
 import org.apache.qpid.server.queue.StandardQueueImpl;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.BrokerTestHelper;
@@ -676,8 +676,8 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         queueArguments.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);
         queueArguments.put(Queue.EXCLUSIVE, exclusive ? ExclusivityPolicy.CONTAINER : ExclusivityPolicy.NONE);
         AMQSessionModel sessionModel = mock(AMQSessionModel.class);
-        AMQConnectionModel connectionModel = mock(AMQConnectionModel.class);
-        when(sessionModel.getConnectionModel()).thenReturn(connectionModel);
+        AMQPConnection connectionModel = mock(AMQPConnection.class);
+        when(sessionModel.getAMQPConnection()).thenReturn(connectionModel);
         when(connectionModel.getRemoteContainerName()).thenReturn(queueOwner);
         SessionPrincipal principal = new SessionPrincipal(sessionModel);
         AMQQueue<?> queue = Subject.doAs(new Subject(true,

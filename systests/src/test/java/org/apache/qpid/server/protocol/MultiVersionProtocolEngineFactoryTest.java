@@ -20,9 +20,7 @@
 */
 package org.apache.qpid.server.protocol;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.net.InetSocketAddress;
@@ -34,12 +32,8 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.*;
-import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
-import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -125,79 +119,6 @@ public class MultiVersionProtocolEngineFactoryTest extends QpidTestCase
                     (byte) 0
             };
 
-
-    private byte[] getAmqpHeader(final Protocol version)
-    {
-        switch(version)
-        {
-            case AMQP_0_8:
-                return AMQP_0_8_HEADER;
-            case AMQP_0_9:
-                return AMQP_0_9_HEADER;
-            case AMQP_0_9_1:
-                return AMQP_0_9_1_HEADER;
-            case AMQP_0_10:
-                return AMQP_0_10_HEADER;
-            case AMQP_1_0:
-                return AMQP_1_0_0_HEADER;
-            default:
-                fail("unknown AMQP version, appropriate header must be added for new protocol version");
-                return null;
-        }
-    }
-
-    /**
-     * Test to verify that connections established using a MultiVersionProtocolEngine are assigned
-     * IDs from a common sequence, independent of the protocol version under use.
-     */
-    public void testDifferentProtocolVersionsShareCommonIDNumberingSequence()
-    {
-        Set<Protocol> protocols = getAllAMQPProtocols();
-
-        SubjectCreator subjectCreator = mock(SubjectCreator.class);
-
-        AuthenticationProvider<?> authProvider = mock(AuthenticationProvider.class);
-        when(authProvider.getSubjectCreator(false)).thenReturn(subjectCreator);
-
-        AmqpPort port = mock(AmqpPort.class);
-        when(port.canAcceptNewConnection(any(SocketAddress.class))).thenReturn(true);
-        when(port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
-        when(port.getAuthenticationProvider()).thenReturn(authProvider);
-
-        TaskExecutor childExecutor = _broker.getChildExecutor();
-        when(port.getChildExecutor()).thenReturn(childExecutor);
-        when(port.getCategoryClass()).thenReturn(Port.class);
-        when(port.getModel()).thenReturn(BrokerModel.getInstance());
-
-        when(port.getContextValue(eq(Long.class), eq(Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY))).thenReturn(10000l);
-        MultiVersionProtocolEngineFactory factory =
-            new MultiVersionProtocolEngineFactory(_broker, protocols, null, port,
-                    org.apache.qpid.server.model.Transport.TCP);
-
-        //create a dummy to retrieve the 'current' ID number
-        long previousId = factory.newProtocolEngine(mock(SocketAddress.class)).getConnectionId();
-
-        //create a protocol engine and send the AMQP header for all supported AMQP verisons,
-        //ensuring the ID assigned increases as expected
-        for(Protocol protocol : protocols)
-        {
-            long expectedID = previousId + 1;
-            byte[] header = getAmqpHeader(protocol);
-            assertNotNull("protocol header should not be null", header);
-
-            ProtocolEngine engine = factory.newProtocolEngine(null);
-            TestNetworkConnection conn = new TestNetworkConnection();
-            engine.setNetworkConnection(conn, conn.getSender());
-            assertEquals("ID did not increment as expected", expectedID, engine.getConnectionId());
-
-            //actually feed in the AMQP header for this protocol version, and ensure the ID remains consistent
-            engine.received(ByteBuffer.wrap(header));
-            assertEquals("ID was not as expected following receipt of the AMQP version header", expectedID, engine.getConnectionId());
-
-            previousId = expectedID;
-            engine.closed();
-        }
-    }
 
     protected Set<Protocol> getAllAMQPProtocols()
     {

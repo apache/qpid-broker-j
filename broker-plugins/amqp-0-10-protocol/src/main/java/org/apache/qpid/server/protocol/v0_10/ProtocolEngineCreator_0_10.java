@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
@@ -30,8 +27,6 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
-import org.apache.qpid.server.security.SubjectCreator;
-import org.apache.qpid.transport.ConnectionDelegate;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
@@ -72,25 +67,11 @@ public class ProtocolEngineCreator_0_10 implements ProtocolEngineCreator
                                             Transport transport,
                                             long id, final AggregateTicker aggregateTicker)
     {
-        String fqdn = null;
-        SocketAddress address = network.getLocalAddress();
-        if (address instanceof InetSocketAddress)
-        {
-            fqdn = ((InetSocketAddress) address).getHostName();
-        }
-        SubjectCreator subjectCreator = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure());
-        ConnectionDelegate connDelegate = new ServerConnectionDelegate(broker, fqdn, subjectCreator);
 
-        ServerConnection conn = new ServerConnection(id, broker, port, transport);
-
-        conn.setConnectionDelegate(connDelegate);
-        conn.setRemoteAddress(network.getRemoteAddress());
-        conn.setLocalAddress(network.getLocalAddress());
-
-        ProtocolEngine_0_10 protocolEngine = new ProtocolEngine_0_10(conn, network, aggregateTicker);
-        conn.setProtocolEngine(protocolEngine);
-
-        return protocolEngine;
+        final AMQPConnection_0_10 protocolEngine_0_10 =
+                new AMQPConnection_0_10(broker, network, port, transport, id, aggregateTicker);
+        protocolEngine_0_10.create();
+        return protocolEngine_0_10;
     }
 
     @Override

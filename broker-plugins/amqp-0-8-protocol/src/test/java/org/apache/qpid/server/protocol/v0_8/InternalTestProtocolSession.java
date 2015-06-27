@@ -56,7 +56,7 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 
-public class InternalTestProtocolSession extends AMQProtocolEngine implements ProtocolOutputConverter
+public class InternalTestProtocolSession extends AMQPConnection_0_8 implements ProtocolOutputConverter
 {
     private static final Logger _logger = LoggerFactory.getLogger(InternalTestProtocolSession.class);
     // ChannelID(LIST)  -> LinkedList<Pair>
@@ -66,7 +66,7 @@ public class InternalTestProtocolSession extends AMQProtocolEngine implements Pr
 
     public InternalTestProtocolSession(VirtualHostImpl virtualHost, Broker<?> broker, final AmqpPort<?> port) throws AMQException
     {
-        super(broker, new TestNetworkConnection(), ID_GENERATOR.getAndIncrement(), port, null, new AggregateTicker());
+        super(broker, new TestNetworkConnection(), port, null, ID_GENERATOR.getAndIncrement(), new AggregateTicker());
 
         _channelDelivers = new HashMap<Integer, Map<String, LinkedList<DeliveryPair>>>();
 

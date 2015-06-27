@@ -23,14 +23,14 @@ package org.apache.qpid.server.connection;
 import java.net.SocketAddress;
 
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.security.auth.SocketConnectionPrincipal;
+import org.apache.qpid.server.transport.AMQPConnection;
 
 public class ConnectionPrincipal implements SocketConnectionPrincipal
 {
-    private final AMQConnectionModel _connection;
+    private final AMQPConnection<?> _connection;
 
-    public ConnectionPrincipal(final AMQConnectionModel connection)
+    public ConnectionPrincipal(final AMQPConnection<?> connection)
     {
         _connection = connection;
     }
@@ -44,10 +44,10 @@ public class ConnectionPrincipal implements SocketConnectionPrincipal
     @Override
     public SocketAddress getRemoteAddress()
     {
-        return _connection.getRemoteAddress();
+        return _connection.getRemoteSocketAddress();
     }
 
-    public AMQConnectionModel getConnection()
+    public AMQPConnection<?> getConnection()
     {
         return _connection;
     }

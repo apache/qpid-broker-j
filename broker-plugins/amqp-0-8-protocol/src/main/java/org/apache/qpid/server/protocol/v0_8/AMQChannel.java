@@ -101,6 +101,7 @@ import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
@@ -117,7 +118,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.Ticker;
 
 public class AMQChannel
-        implements AMQSessionModel<AMQChannel, AMQProtocolEngine>,
+        implements AMQSessionModel<AMQChannel>,
                    AsyncAutoCommitTransaction.FutureRecorder,
                    ServerChannelMethodProcessor
 {
@@ -175,7 +176,7 @@ public class AMQChannel
     private final AtomicLong _txnRejects = new AtomicLong(0);
     private final AtomicLong _txnCount = new AtomicLong(0);
 
-    private final AMQProtocolEngine _connection;
+    private final AMQPConnection_0_8 _connection;
     private AtomicBoolean _closing = new AtomicBoolean(false);
 
     private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
@@ -225,7 +226,7 @@ public class AMQChannel
      */
     private boolean _logChannelFlowMessages = true;
 
-    public AMQChannel(AMQProtocolEngine connection, int channelId, final MessageStore messageStore)
+    public AMQChannel(AMQPConnection_0_8 connection, int channelId, final MessageStore messageStore)
     {
         _creditManager = new Pre0_10CreditManager(0l,0l, connection);
         _noAckCreditManager = new NoAckCreditManager(connection);
@@ -575,7 +576,7 @@ public class AMQChannel
      * Pre-requisite: the current message is judged to have no destination queues.
      *
      * @throws AMQConnectionException if the message is mandatory close-on-no-route
-     * @see AMQProtocolEngine#isCloseWhenNoRoute()
+     * @see AMQPConnection_0_8#isCloseWhenNoRoute()
      */
     private Runnable handleUnroutableMessage(AMQMessage message)
     {
@@ -1354,7 +1355,7 @@ public class AMQChannel
         return _closing.get();
     }
 
-    public AMQProtocolEngine getConnection()
+    public AMQPConnection_0_8 getConnection()
     {
         return _connection;
     }
@@ -1421,14 +1422,14 @@ public class AMQChannel
     }
 
     @Override
-    public AMQProtocolEngine getConnectionModel()
+    public AMQPConnection<?> getAMQPConnection()
     {
         return _connection;
     }
 
     public String getClientID()
     {
-        return String.valueOf(_connection.getContextKey());
+        return _connection.getClientId();
     }
 
     public LogSubject getLogSubject()

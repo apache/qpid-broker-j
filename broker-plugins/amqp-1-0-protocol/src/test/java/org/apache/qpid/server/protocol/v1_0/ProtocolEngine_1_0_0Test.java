@@ -41,6 +41,7 @@ import java.util.UUID;
 import javax.security.auth.Subject;
 
 import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -70,7 +71,7 @@ import org.apache.qpid.transport.network.NetworkConnection;
 
 public class ProtocolEngine_1_0_0Test extends QpidTestCase
 {
-    private ProtocolEngine_1_0_0 _protocolEngine_1_0_0;
+    private AMQPConnection_1_0 _protocolEngine_1_0_0;
     private NetworkConnection _networkConnection;
     private Broker<?> _broker;
     private AmqpPort _port;
@@ -78,7 +79,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     private AuthenticationProvider _authenticationProvider;
     private List<ByteBuffer> _sentBuffers;
     private FrameWriter _frameWriter;
-    private Connection _connection;
+    private AMQPConnection _connection;
     private VirtualHostImpl _virtualHost;
 
     @Override
@@ -103,7 +104,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _virtualHost = mock(VirtualHostImpl.class);
         when(_virtualHost.getChildExecutor()).thenReturn(taskExecutor);
         when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
-        final ArgumentCaptor<Connection> connectionCaptor = ArgumentCaptor.forClass(Connection.class);
+        final ArgumentCaptor<AMQPConnection> connectionCaptor = ArgumentCaptor.forClass(AMQPConnection.class);
         doAnswer(new Answer()
         {
             @Override
@@ -169,7 +170,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        verify(_virtualHost).registerConnection(any(Connection.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
@@ -192,7 +193,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        verify(_virtualHost, never()).registerConnection(any(Connection.class));
+        verify(_virtualHost, never()).registerConnection(any(AMQPConnection.class));
         verify(_networkConnection).close();
     }
 
@@ -222,7 +223,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        verify(_virtualHost).registerConnection(any(Connection.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
         assertNotNull(authPrincipal);
         assertEquals(authPrincipal, new AuthenticatedPrincipal(principal));
@@ -264,7 +265,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        verify(_virtualHost).registerConnection(any(Connection.class));
+        verify(_virtualHost).registerConnection(any(AMQPConnection.class));
         AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
@@ -273,8 +274,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
     private void createEngine(final boolean useSASL, Transport transport)
     {
-        _protocolEngine_1_0_0 = new ProtocolEngine_1_0_0(_networkConnection,
-                                                         _broker, 1, _port, transport, new AggregateTicker(),
+        _protocolEngine_1_0_0 = new AMQPConnection_1_0(_broker, _networkConnection,
+                                                         _port, transport, 1, new AggregateTicker(),
                                                          useSASL);
     }
 

@@ -104,26 +104,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         return _delegate.isMessageAssignmentSuspended();
     }
 
-    public SocketAddress getRemoteAddress()
-    {
-        return _delegate.getRemoteAddress();
-    }
-
-    public SocketAddress getLocalAddress()
-    {
-        return _delegate.getLocalAddress();
-    }
-
-    public long getWrittenBytes()
-    {
-        return _delegate.getWrittenBytes();
-    }
-
-    public long getReadBytes()
-    {
-        return _delegate.getReadBytes();
-    }
-
     public void closed()
     {
         _logger.debug("Closed");
@@ -165,7 +145,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
     public long getConnectionId()
     {
-        return _delegate.getConnectionId();
+        return _id;
     }
 
     @Override
@@ -188,7 +168,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
     private static final int MINIMUM_REQUIRED_HEADER_BYTES = 8;
 
-    public void setNetworkConnection(NetworkConnection network, ByteBufferSender sender)
+    public void setNetworkConnection(NetworkConnection network)
     {
         _network = network;
         SocketAddress address = _network.getLocalAddress();
@@ -200,7 +180,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         {
             throw new IllegalArgumentException("Unsupported socket address class: " + address);
         }
-        _sender = sender;
+        _sender = network.getSender();
     }
 
     @Override
@@ -297,26 +277,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
         }
 
-        public SocketAddress getRemoteAddress()
-        {
-            return _network.getRemoteAddress();
-        }
-
-        public SocketAddress getLocalAddress()
-        {
-            return _network.getLocalAddress();
-        }
-
-        public long getWrittenBytes()
-        {
-            return 0;
-        }
-
-        public long getReadBytes()
-        {
-            return 0;
-        }
-
         public void received(ByteBuffer msg)
         {
             _logger.error("Error processing incoming data, could not negotiate a common protocol");
@@ -343,11 +303,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
         }
 
-        public void setNetworkConnection(NetworkConnection network, ByteBufferSender sender)
-        {
-
-        }
-
         @Override
         public long getLastReadTime()
         {
@@ -358,11 +313,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         public long getLastWriteTime()
         {
             return 0;
-        }
-
-        public long getConnectionId()
-        {
-            return _id;
         }
 
         @Override
@@ -395,26 +345,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         private final ByteBuffer _header = ByteBuffer.allocate(MINIMUM_REQUIRED_HEADER_BYTES);
         private long _lastReadTime = System.currentTimeMillis();
         private final AtomicBoolean _hasWork = new AtomicBoolean();
-
-        public SocketAddress getRemoteAddress()
-        {
-            return _network.getRemoteAddress();
-        }
-
-        public SocketAddress getLocalAddress()
-        {
-            return _network.getLocalAddress();
-        }
-
-        public long getWrittenBytes()
-        {
-            return 0;
-        }
-
-        public long getReadBytes()
-        {
-            return 0;
-        }
 
         @Override
         public void setMessageAssignmentSuspended(final boolean value)
@@ -585,11 +515,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         }
 
 
-        public long getConnectionId()
-        {
-            return _id;
-        }
-
         @Override
         public Subject getSubject()
         {
@@ -614,7 +539,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                 _delegate = new ClosedDelegateProtocolEngine();
                 if(_logger.isDebugEnabled())
                 {
-                    _logger.debug("Connection from  " + getRemoteAddress() + " was closed before any protocol version was established.");
+                    _logger.debug("Connection from  " + _network.getRemoteAddress() + " was closed before any protocol version was established.");
                 }
             }
             catch(Exception e)
@@ -652,11 +577,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
             {
                 _transport = Transport.SSL;
             }
-        }
-
-        public void setNetworkConnection(NetworkConnection network, ByteBufferSender sender)
-        {
-
         }
 
         @Override

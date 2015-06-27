@@ -26,7 +26,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 
 import org.apache.qpid.ssl.SSLContextFactory;
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;

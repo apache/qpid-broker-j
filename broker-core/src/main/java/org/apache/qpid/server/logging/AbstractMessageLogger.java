@@ -24,11 +24,11 @@ package org.apache.qpid.server.logging;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.logging.subjects.LogSubjectFormat;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.ManagementConnectionPrincipal;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
+import org.apache.qpid.server.transport.AMQPConnection;
 
 import javax.security.auth.Subject;
 import java.security.AccessController;
@@ -145,7 +145,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
         return "["+taskPrincipal.getName()+"] ";
     }
 
-    protected String generateConnectionMessage(final AMQConnectionModel connection)
+    protected String generateConnectionMessage(final AMQPConnection<?> connection)
     {
         if (connection.getAuthorizedPrincipal() != null)
         {
@@ -190,7 +190,7 @@ public abstract class AbstractMessageLogger implements MessageLogger
 
     protected String generateSessionMessage(final AMQSessionModel session)
     {
-        AMQConnectionModel connection = session.getConnectionModel();
+        AMQPConnection<?> connection = session.getAMQPConnection();
         return "[" + MessageFormat.format(CHANNEL_FORMAT, connection == null ? -1L : connection.getConnectionId(),
                                           (connection == null || connection.getAuthorizedPrincipal() == null)
                                                   ? "?"

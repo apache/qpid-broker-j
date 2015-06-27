@@ -50,7 +50,7 @@ public class AckTest extends QpidTestCase
     private ConsumerTarget_0_8 _subscriptionTarget;
     private ConsumerImpl _consumer;
 
-    private AMQProtocolEngine _protocolEngine;
+    private AMQPConnection_0_8 _protocolEngine;
 
     private TestMemoryMessageStore _messageStore;
 

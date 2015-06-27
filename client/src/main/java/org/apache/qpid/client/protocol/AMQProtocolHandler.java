@@ -65,7 +65,6 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQMethodEvent;
 import org.apache.qpid.protocol.AMQMethodListener;
 import org.apache.qpid.thread.Threading;
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;

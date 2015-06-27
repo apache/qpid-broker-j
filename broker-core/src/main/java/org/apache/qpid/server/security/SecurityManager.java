@@ -62,7 +62,6 @@ import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostLoggerFilter;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectProperties.Property;
@@ -71,6 +70,7 @@ import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.OperationLoggingDetails;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.TaskPrincipal;
+import org.apache.qpid.server.transport.AMQPConnection;
 
 public class SecurityManager
 {
@@ -251,7 +251,7 @@ public class SecurityManager
         }
     }
 
-    public void authoriseCreateConnection(final AMQConnectionModel connection)
+    public void authoriseCreateConnection(final AMQPConnection<?> connection)
     {
         String virtualHostName = connection.getVirtualHostName();
         ObjectProperties properties = new ObjectProperties(virtualHostName);

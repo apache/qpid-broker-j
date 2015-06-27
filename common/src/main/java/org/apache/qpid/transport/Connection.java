@@ -736,7 +736,7 @@ public class Connection extends ConnectionInvoker
         }
     }
 
-    public SocketAddress getRemoteAddress()
+    public SocketAddress getRemoteSocketAddress()
     {
         return _remoteAddress;
     }

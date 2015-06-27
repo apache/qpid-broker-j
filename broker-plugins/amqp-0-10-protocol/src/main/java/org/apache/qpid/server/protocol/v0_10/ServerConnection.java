@@ -34,7 +34,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -44,23 +43,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.model.adapter.ConnectionAdapter;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
-import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.protocol.SessionModelListener;
 import org.apache.qpid.server.security.AuthorizationHolder;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
-import org.apache.qpid.server.stats.StatisticsCounter;
-import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
@@ -75,7 +67,7 @@ import org.apache.qpid.transport.Option;
 import org.apache.qpid.transport.ProtocolEvent;
 import org.apache.qpid.transport.Session;
 
-public class ServerConnection extends Connection implements AMQConnectionModel<ServerConnection, ServerSession>,
+public class ServerConnection extends Connection implements //AMQConnectionModel<ServerConnection, ServerSession>,
                                                             LogSubject, AuthorizationHolder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
@@ -83,9 +75,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     private final Broker<?> _broker;
     private AtomicBoolean _logClosed = new AtomicBoolean(false);
 
-    private final Subject _authorizedSubject = new Subject();
     private Principal _authorizedPrincipal = null;
-    private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
     private final long _connectionId;
     private final Object _reference = new Object();
     private VirtualHostImpl<?,?,?> _virtualHost;
@@ -94,23 +84,15 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     private boolean _blocking;
     private final Transport _transport;
 
-    private final CopyOnWriteArrayList<Action<? super ServerConnection>> _connectionCloseTaskList =
-            new CopyOnWriteArrayList<Action<? super ServerConnection>>();
-
     private final Queue<Action<? super ServerConnection>> _asyncTaskList =
             new ConcurrentLinkedQueue<>();
 
-    private final CopyOnWriteArrayList<SessionModelListener> _sessionListeners =
-            new CopyOnWriteArrayList<SessionModelListener>();
-
-    private volatile boolean _stopped;
     private int _messageCompressionThreshold;
     private final int _maxMessageSize;
 
-    private ProtocolEngine_0_10 _protocolEngine;
+    private AMQPConnection_0_10 _amqpConnection;
     private boolean _ignoreFutureInput;
     private boolean _ignoreAllButConnectionCloseOk;
-    private ConnectionAdapter _adapter;
 
     public ServerConnection(final long connectionId,
                             Broker<?> broker,
@@ -118,7 +100,6 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
                             final Transport transport)
     {
         _connectionId = connectionId;
-        _authorizedSubject.getPrincipals().add(new ConnectionPrincipal(this));
         _broker = broker;
 
         _port = port;
@@ -127,13 +108,6 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         int maxMessageSize = port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
         _maxMessageSize = (maxMessageSize > 0) ? maxMessageSize : Integer.MAX_VALUE;
 
-
-        _messagesDelivered = new StatisticsCounter("messages-delivered-" + getConnectionId());
-        _dataDelivered = new StatisticsCounter("data-delivered-" + getConnectionId());
-        _messagesReceived = new StatisticsCounter("messages-received-" + getConnectionId());
-        _dataReceived = new StatisticsCounter("data-received-" + getConnectionId());
-        _adapter = new ConnectionAdapter(this);
-        _adapter.create();
     }
 
     public Object getReference()
@@ -177,19 +151,19 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
                     true,
                     true));
 
-            _adapter.virtualHostAssociated();
+            _amqpConnection.virtualHostAssociated();
         }
 
         if (state == State.CLOSE_RCVD || state == State.CLOSED || state == State.CLOSING)
         {
             if(_virtualHost != null)
             {
-                _virtualHost.deregisterConnection(_adapter);
+                _virtualHost.deregisterConnection(_amqpConnection);
             }
         }
         if(state == State.CLOSING)
         {
-            getProtocolEngine().getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_OK_TIMEOUT, getNetworkConnection()));
+            getAmqpConnection().getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_OK_TIMEOUT, getNetworkConnection()));
         }
         if (state == State.CLOSED)
         {
@@ -211,26 +185,14 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         return (ServerConnectionDelegate) super.getConnectionDelegate();
     }
 
-    public void setConnectionDelegate(ServerConnectionDelegate delegate)
+    public AMQPConnection_0_10 getAmqpConnection()
     {
-        super.setConnectionDelegate(delegate);
+        return _amqpConnection;
     }
 
-    @Override
-    public ProtocolEngine getProtocolEngine()
+    public void setAmqpConnection(final AMQPConnection_0_10 serverProtocolEngine)
     {
-        return _protocolEngine;
-    }
-
-    @Override
-    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
-    {
-        _protocolEngine.setScheduler(networkConnectionScheduler);
-    }
-
-    public void setProtocolEngine(final ProtocolEngine_0_10 serverProtocolEngine)
-    {
-        _protocolEngine = serverProtocolEngine;
+        _amqpConnection = serverProtocolEngine;
     }
 
     public VirtualHostImpl<?,?,?> getVirtualHost()
@@ -249,37 +211,17 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         {
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
-        _authorizedSubject.getPrincipals().add(_virtualHost.getPrincipal());
+        _amqpConnection.getSubject().getPrincipals().add(_virtualHost.getPrincipal());
     }
 
-    @Override
-    public String getVirtualHostName()
-    {
-        return _virtualHost == null ? null : _virtualHost.getName();
-    }
-
-    @Override
     public AmqpPort<?> getPort()
     {
         return _port;
     }
 
-    @Override
     public Transport getTransport()
     {
         return _transport;
-    }
-
-    @Override
-    public void stop()
-    {
-        _stopped = true;
-    }
-
-    @Override
-    public boolean isStopped()
-    {
-        return _stopped;
     }
 
     public void closeSessionAsync(final ServerSession session, final AMQConstant cause, final String message)
@@ -345,7 +287,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         Subject subject;
         if (event.isConnectionControl())
         {
-            subject = _authorizedSubject;
+            subject = _amqpConnection.getSubject();
         }
         else
         {
@@ -356,7 +298,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
             }
             else
             {
-                subject = _authorizedSubject;
+                subject = _amqpConnection.getSubject();
             }
         }
 
@@ -446,10 +388,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
 
     protected void performDeleteTasks()
     {
-        for(Action<? super ServerConnection> task : _connectionCloseTaskList)
-        {
-            task.performAction(this);
-        }
+        _amqpConnection.performDeleteTasks();
     }
 
     public synchronized void block()
@@ -480,7 +419,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     public synchronized void registerSession(final Session ssn)
     {
         super.registerSession(ssn);
-        sessionAdded((ServerSession)ssn);
+        _amqpConnection.sessionAdded((ServerSession) ssn);
         if(_blocking)
         {
             ((ServerSession)ssn).block();
@@ -490,13 +429,13 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
     @Override
     public synchronized void removeSession(final Session ssn)
     {
-        sessionRemoved((ServerSession)ssn);
+        _amqpConnection.sessionRemoved((ServerSession) ssn);
         super.removeSession(ssn);
     }
 
     public List<ServerSession> getSessionModels()
     {
-        List<ServerSession> sessions = new ArrayList<ServerSession>();
+        List<ServerSession> sessions = new ArrayList<>();
         for (Session ssn : getChannels())
         {
             sessions.add((ServerSession) ssn);
@@ -504,54 +443,13 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         return sessions;
     }
 
-    public void registerMessageDelivered(long messageSize)
-    {
-        _messagesDelivered.registerEvent(1L);
-        _dataDelivered.registerEvent(messageSize);
-        _virtualHost.registerMessageDelivered(messageSize);
-    }
-
-    public void registerMessageReceived(long messageSize, long timestamp)
-    {
-        _messagesReceived.registerEvent(1L, timestamp);
-        _dataReceived.registerEvent(messageSize, timestamp);
-        _virtualHost.registerMessageReceived(messageSize, timestamp);
-    }
-
-    public StatisticsCounter getMessageReceiptStatistics()
-    {
-        return _messagesReceived;
-    }
-
-    public StatisticsCounter getDataReceiptStatistics()
-    {
-        return _dataReceived;
-    }
-
-    public StatisticsCounter getMessageDeliveryStatistics()
-    {
-        return _messagesDelivered;
-    }
-
-    public StatisticsCounter getDataDeliveryStatistics()
-    {
-        return _dataDelivered;
-    }
-
-    public void resetStatistics()
-    {
-        _messagesDelivered.reset();
-        _dataDelivered.reset();
-        _messagesReceived.reset();
-        _dataReceived.reset();
-    }
 
     /**
      * @return authorizedSubject
      */
     public Subject getAuthorizedSubject()
     {
-        return _authorizedSubject;
+        return _amqpConnection.getSubject();
     }
 
     /**
@@ -568,7 +466,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         }
         else
         {
-            _authorizedSubject.getPrincipals().addAll(authorizedSubject.getPrincipals());
+            getAuthorizedSubject().getPrincipals().addAll(authorizedSubject.getPrincipals());
 
             _authorizedPrincipal = AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(authorizedSubject);
         }
@@ -586,13 +484,7 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
 
     public String getRemoteAddressString()
     {
-        return String.valueOf(getRemoteAddress());
-    }
-
-    @Override
-    public String getRemoteProcessPid()
-    {
-        return getConnectionDelegate().getRemoteProcessPid();
+        return String.valueOf(getRemoteSocketAddress());
     }
 
     @Override
@@ -636,59 +528,22 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         super.send(event);
     }
 
-    public long getLastIoTime()
-    {
-        return _lastIoTime.longValue();
-    }
-
-    @Override
     public String getClientId()
     {
         return getConnectionDelegate().getClientId();
     }
 
-    @Override
     public String getRemoteContainerName()
     {
         return getConnectionDelegate().getClientId();
     }
 
-    @Override
-    public void addSessionListener(final SessionModelListener listener)
-    {
-        _sessionListeners.add(listener);
-    }
 
-    @Override
-    public void removeSessionListener(final SessionModelListener listener)
-    {
-        _sessionListeners.remove(listener);
-    }
-
-    private void sessionAdded(final AMQSessionModel<?,?> session)
-    {
-        for(SessionModelListener l : _sessionListeners)
-        {
-            l.sessionAdded(session);
-        }
-    }
-
-    private void sessionRemoved(final AMQSessionModel<?,?> session)
-    {
-        for(SessionModelListener l : _sessionListeners)
-        {
-            l.sessionRemoved(session);
-        }
-    }
-
-
-    @Override
     public String getClientVersion()
     {
         return getConnectionDelegate().getClientVersion();
     }
 
-    @Override
     public String getClientProduct()
     {
         return getConnectionDelegate().getClientProduct();
@@ -721,22 +576,10 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         super.doHeartBeat();
     }
 
-    @Override
-    public void addDeleteTask(final Action<? super ServerConnection> task)
-    {
-        _connectionCloseTaskList.add(task);
-    }
-
     private void addAsyncTask(final Action<ServerConnection> action)
     {
         _asyncTaskList.add(action);
         notifyWork();
-    }
-
-    @Override
-    public void removeDeleteTask(final Action<? super ServerConnection> task)
-    {
-        _connectionCloseTaskList.remove(task);
     }
 
     public int getMessageCompressionThreshold()
@@ -757,26 +600,18 @@ public class ServerConnection extends Connection implements AMQConnectionModel<S
         }
     }
 
-    @Override
     public void notifyWork()
     {
-        _protocolEngine.notifyWork();
-    }
-
-
-    @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        return _protocolEngine.isMessageAssignmentSuspended();
+        _amqpConnection.notifyWork();
     }
 
     public void processPending()
     {
-        List<? extends AMQSessionModel<?,?>> sessionsWithPending = new ArrayList<>(getSessionModels());
+        List<? extends AMQSessionModel<?>> sessionsWithPending = new ArrayList<>(getSessionModels());
         while(!sessionsWithPending.isEmpty())
         {
-            final Iterator<? extends AMQSessionModel<?, ?>> iter = sessionsWithPending.iterator();
-            AMQSessionModel<?, ?> session;
+            final Iterator<? extends AMQSessionModel<?>> iter = sessionsWithPending.iterator();
+            AMQSessionModel<?> session;
             while(iter.hasNext())
             {
                 session = iter.next();

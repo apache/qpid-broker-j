@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.transport.network.security;
 
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 

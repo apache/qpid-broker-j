@@ -43,12 +43,12 @@ import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
@@ -181,34 +181,34 @@ public class BrokerTestHelper
         return createVirtualHost(attributes, broker, defaultVHN);
     }
 
-    public static AMQSessionModel<?,?> createSession(int channelId, AMQConnectionModel<?,?> connection)
+    public static AMQSessionModel<?> createSession(int channelId, AMQPConnection<?> connection)
     {
         @SuppressWarnings("rawtypes")
         AMQSessionModel session = mock(AMQSessionModel.class);
-        when(session.getConnectionModel()).thenReturn(connection);
+        when(session.getAMQPConnection()).thenReturn(connection);
         when(session.getChannelId()).thenReturn(channelId);
         return session;
     }
 
-    public static AMQSessionModel<?,?> createSession(int channelId) throws Exception
+    public static AMQSessionModel<?> createSession(int channelId) throws Exception
     {
-        AMQConnectionModel<?,?> session = createConnection();
+        AMQPConnection<?> session = createConnection();
         return createSession(channelId, session);
     }
 
-    public static AMQSessionModel<?,?> createSession() throws Exception
+    public static AMQSessionModel<?> createSession() throws Exception
     {
         return createSession(1);
     }
 
-    public static AMQConnectionModel<?,?> createConnection() throws Exception
+    public static AMQPConnection<?> createConnection() throws Exception
     {
         return createConnection("test");
     }
 
-    public static AMQConnectionModel<?,?> createConnection(String hostName) throws Exception
+    public static AMQPConnection<?> createConnection(String hostName) throws Exception
     {
-        return mock(AMQConnectionModel.class);
+        return mock(AMQPConnection.class);
     }
 
     public static ExchangeImpl<?> createExchange(String hostName, final boolean durable, final EventLogger eventLogger) throws Exception

@@ -28,7 +28,6 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.security.SSLStatus;

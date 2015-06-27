@@ -45,10 +45,10 @@ import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.*;
 import org.apache.qpid.transport.network.NetworkConnection;
@@ -211,7 +211,7 @@ public class ServerConnectionDelegate extends ServerDelegate
             sconn.setVirtualHost(vhost);
             try
             {
-                if(!vhost.authoriseCreateConnection(sconn))
+                if(!vhost.authoriseCreateConnection(sconn.getAmqpConnection()))
                 {
                     sconn.setState(Connection.State.CLOSING);
                     sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, "Connection not authorized");
@@ -367,23 +367,19 @@ public class ServerConnectionDelegate extends ServerDelegate
         final Principal authorizedPrincipal = sconn.getAuthorizedPrincipal();
         final String userId = authorizedPrincipal == null ? "" : authorizedPrincipal.getName();
 
-        final Iterator<org.apache.qpid.server.model.Connection<?>> connections =
+        final Iterator<? extends org.apache.qpid.server.model.Connection<?>> connections =
                         ((ServerConnection)conn).getVirtualHost().getConnections().iterator();
         while(connections.hasNext())
         {
             final org.apache.qpid.server.model.Connection<?> modelConnnection = connections.next();
-            final AMQConnectionModel amqConnectionModel = modelConnnection.getUnderlyingConnection();
-            if (amqConnectionModel instanceof ServerConnection)
-            {
-                ServerConnection otherConnection = (ServerConnection)amqConnectionModel;
+            final AMQPConnection<?> amqConnectionModel = modelConnnection.getUnderlyingConnection();
 
-                final String userName = amqConnectionModel.getAuthorizedPrincipal() == null
-                        ? ""
-                        : amqConnectionModel.getAuthorizedPrincipal().getName();
-                if (userId.equals(userName) && otherConnection.hasSessionWithName(name))
-                {
-                    return false;
-                }
+            final String userName = amqConnectionModel.getAuthorizedPrincipal() == null
+                    ? ""
+                    : amqConnectionModel.getAuthorizedPrincipal().getName();
+            if (userId.equals(userName) && amqConnectionModel.hasSessionWithName(name))
+            {
+                return false;
             }
         }
         return true;
@@ -402,8 +398,18 @@ public class ServerConnectionDelegate extends ServerDelegate
                 _compressionSupported = Boolean.parseBoolean(String.valueOf(compressionSupported));
 
             }
+            final AMQPConnection_0_10 protocolEngine = ((ServerConnection) conn).getAmqpConnection();
+            protocolEngine.setClientId(getStringClientProperty(ConnectionStartProperties.CLIENT_ID_0_10));
+            protocolEngine.setClientProduct(getStringClientProperty(ConnectionStartProperties.PRODUCT));
+            protocolEngine.setClientVersion(getStringClientProperty(ConnectionStartProperties.VERSION_0_10));
+            protocolEngine.setRemoteProcessPid(getStringClientProperty(ConnectionStartProperties.PID));
         }
         super.connectionStartOk(conn, ok);
+    }
+
+    private String getStringClientProperty(final String name)
+    {
+        return (_clientProperties == null || _clientProperties.get(name) == null) ? null : String.valueOf(_clientProperties.get(name));
     }
 
     public Map<String,Object> getClientProperties()

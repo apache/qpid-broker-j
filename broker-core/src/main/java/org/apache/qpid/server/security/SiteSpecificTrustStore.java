@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.server.security;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;

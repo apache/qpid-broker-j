@@ -227,7 +227,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
             _conn.setUsername(_qpidConnection.getUserID());
             _conn.setMaximumChannelCount(_qpidConnection.getChannelMax());
             _conn.getFailoverPolicy().attainedConnection();
-            _conn.logConnected(_qpidConnection.getLocalAddress(), _qpidConnection.getRemoteAddress());
+            _conn.logConnected(_qpidConnection.getLocalAddress(), _qpidConnection.getRemoteSocketAddress());
             _conn.setConnectionSettings(conSettings);
         }
         catch (ProtocolVersionException pe)

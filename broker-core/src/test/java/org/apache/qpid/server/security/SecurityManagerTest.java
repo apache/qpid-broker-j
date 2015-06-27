@@ -59,13 +59,13 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostLoggerFilter;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.access.ObjectProperties;
 import org.apache.qpid.server.security.access.ObjectProperties.Property;
 import org.apache.qpid.server.security.access.ObjectType;
 import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.security.access.OperationLoggingDetails;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class SecurityManagerTest extends QpidTestCase
@@ -190,7 +190,7 @@ public class SecurityManagerTest extends QpidTestCase
 
     public void testAuthoriseCreateConnection()
     {
-        AMQConnectionModel<?,?> connection = mock(AMQConnectionModel.class);
+        AMQPConnection<?> connection = mock(AMQPConnection.class);
         when(connection.getVirtualHostName()).thenReturn(TEST_VIRTUAL_HOST);
 
         ObjectProperties properties = new ObjectProperties();

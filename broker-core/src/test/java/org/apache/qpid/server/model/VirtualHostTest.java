@@ -53,12 +53,12 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.model.adapter.ConnectionAdapter;
-import org.apache.qpid.server.protocol.AMQConnectionModel;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
@@ -230,10 +230,10 @@ public class VirtualHostTest extends QpidTestCase
         VirtualHost<?, ?, ?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
-        AMQConnectionModel connection = createMockProtocolConnection(virtualHost);
+        AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
         assertEquals("Unexpected number of connections before connection registered", 0, virtualHost.getConnectionCount());
 
-        Connection modelConnection = mock(Connection.class);
+        AMQPConnection modelConnection = mock(AMQPConnection.class);
         when(modelConnection.getUnderlyingConnection()).thenReturn(connection);
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         virtualHost.registerConnection(modelConnection);
@@ -257,12 +257,12 @@ public class VirtualHostTest extends QpidTestCase
         VirtualHost<?, ?, ?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
-        AMQConnectionModel connection = createMockProtocolConnection(virtualHost);
+        AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
         assertEquals("Unexpected number of connections before connection registered",
                 0,
                 virtualHost.getConnectionCount());
 
-        Connection modelConnection = mock(Connection.class);
+        AMQPConnection modelConnection = mock(AMQPConnection.class);
         when(modelConnection.getUnderlyingConnection()).thenReturn(connection);
         virtualHost.registerConnection(modelConnection);
 
@@ -397,9 +397,9 @@ public class VirtualHostTest extends QpidTestCase
         return host;
     }
 
-    private AMQConnectionModel createMockProtocolConnection(final VirtualHost<?, ?, ?> virtualHost)
+    private AbstractAMQPConnection createMockProtocolConnection(final VirtualHost<?, ?, ?> virtualHost)
     {
-        final AMQConnectionModel connection = mock(AMQConnectionModel.class);
+        final AbstractAMQPConnection connection = mock(AbstractAMQPConnection.class);
         final List<Action<?>> tasks = new ArrayList<>();
         final ArgumentCaptor<Action> deleteTaskCaptor = ArgumentCaptor.forClass(Action.class);
         Answer answer = new Answer()

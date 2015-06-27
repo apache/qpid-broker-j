@@ -85,6 +85,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
@@ -93,7 +94,7 @@ import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.Ticker;
 
-public class Session_1_0 implements SessionEventListener, AMQSessionModel<Session_1_0, Connection_1_0>, LogSubject
+public class Session_1_0 implements SessionEventListener, AMQSessionModel<Session_1_0>, LogSubject
 {
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
@@ -573,9 +574,9 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     }
 
     @Override
-    public Connection_1_0 getConnectionModel()
+    public AMQPConnection<?> getAMQPConnection()
     {
-        return _connection;
+        return _connection.getAmqpConnection();
     }
 
     @Override
@@ -737,9 +738,9 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
 
     public String toLogString()
     {
-        long connectionId = getConnectionModel().getConnectionId();
+        long connectionId = getAMQPConnection().getConnectionId();
 
-        String remoteAddress = getConnectionModel().getRemoteAddressString();
+        String remoteAddress = getAMQPConnection().getRemoteAddressString();
 
         return "[" +
                MessageFormat.format(CHANNEL_FORMAT,
@@ -943,13 +944,13 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     @Override
     public void addTicker(final Ticker ticker)
     {
-        getConnection().getProtocolEngine().getAggregateTicker().addTicker(ticker);
+        getConnection().getAmqpConnection().getAggregateTicker().addTicker(ticker);
     }
 
     @Override
     public void removeTicker(final Ticker ticker)
     {
-        getConnection().getProtocolEngine().getAggregateTicker().removeTicker(ticker);
+        getConnection().getAmqpConnection().getAggregateTicker().removeTicker(ticker);
     }
 
     private void consumerAdded(Consumer<?> consumer)

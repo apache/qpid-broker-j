@@ -45,8 +45,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketHandler;
 
-import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.transport.ProtocolEngineFactory;
+import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -67,7 +66,7 @@ class WebSocketProvider implements AcceptingTransport
     private final AmqpPort<?> _port;
     private final Set<Protocol> _supported;
     private final Protocol _defaultSupportedProtocolReply;
-    private final ProtocolEngineFactory _factory;
+    private final MultiVersionProtocolEngineFactory _factory;
     private Server _server;
 
     WebSocketProvider(final Transport transport,
@@ -202,7 +201,7 @@ class WebSocketProvider implements AcceptingTransport
         private final Certificate _userCertificate;
         private Connection _connection;
         private final Transport _transport;
-        private ProtocolEngine _engine;
+        private MultiVersionProtocolEngine _engine;
 
         private AmqpWebSocket(final Transport transport,
                               final SocketAddress localAddress,
@@ -231,7 +230,7 @@ class WebSocketProvider implements AcceptingTransport
             final ConnectionWrapper connectionWrapper =
                     new ConnectionWrapper(connection, _localAddress, _remoteAddress);
             connectionWrapper.setPeerCertificate(_userCertificate);
-            _engine.setNetworkConnection(connectionWrapper, connectionWrapper.getSender());
+            _engine.setNetworkConnection(connectionWrapper);
 
         }
 

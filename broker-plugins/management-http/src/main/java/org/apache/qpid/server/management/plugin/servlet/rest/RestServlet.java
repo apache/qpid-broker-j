@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.lang.reflect.WildcardType;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -663,6 +664,14 @@ public class RestServlet extends AbstractServlet
             if(bounds.length == 1)
             {
                 return getRawType(bounds[0]);
+            }
+        }
+        else if(t instanceof WildcardType)
+        {
+            Type[] upperBounds = ((WildcardType)t).getUpperBounds();
+            if(upperBounds.length == 1)
+            {
+                return getRawType(upperBounds[0]);
             }
         }
         throw new ServerScopedRuntimeException("Unable to process type when constructing configuration model: " + t);

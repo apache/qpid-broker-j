@@ -25,7 +25,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class MaxChannelsTest extends QpidTestCase
 {
-    private AMQProtocolEngine _session;
+    private AMQPConnection_0_8 _session;
 
     @Override
     public void setUp() throws Exception

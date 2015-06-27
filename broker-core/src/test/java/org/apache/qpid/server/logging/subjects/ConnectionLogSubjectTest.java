@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.protocol.AMQConnectionModel;
+import org.apache.qpid.server.transport.AMQPConnection;
 
 import java.security.Principal;
 
@@ -38,7 +38,7 @@ public class ConnectionLogSubjectTest extends AbstractTestLogSubject
     private static final String IP_STRING = "127.0.0.1:1";
     private static final String VHOST = "test";
 
-    private AMQConnectionModel _connection;
+    private AMQPConnection _connection;
 
     @Override
     public void setUp() throws Exception
@@ -48,7 +48,7 @@ public class ConnectionLogSubjectTest extends AbstractTestLogSubject
         final Principal principal = mock(Principal.class);
         when(principal.getName()).thenReturn(USER);
 
-        _connection = mock(AMQConnectionModel.class);
+        _connection = mock(AMQPConnection.class);
         when(_connection.getConnectionId()).thenReturn(CONNECTION_ID);
         when(_connection.getAuthorizedPrincipal()).thenReturn(principal);
         when(_connection.getRemoteAddressString()).thenReturn("/"+IP_STRING);
@@ -66,7 +66,7 @@ public class ConnectionLogSubjectTest extends AbstractTestLogSubject
         verifyConnection(CONNECTION_ID, USER, IP_STRING, VHOST, message);
     }
 
-    public AMQConnectionModel getConnection()
+    public AMQPConnection getConnection()
     {
         return _connection;
     }

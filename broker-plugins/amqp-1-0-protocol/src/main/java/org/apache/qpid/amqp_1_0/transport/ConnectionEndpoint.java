@@ -150,6 +150,7 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
     private boolean _secure;
     private Principal _externalPrincipal;
     private List<Runnable> _postLockActions = new ArrayList<>();
+    private Map _remoteProperties;
 
     public ConnectionEndpoint(Container container, SaslServerProvider cbs)
     {
@@ -360,7 +361,6 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
             _receivingSessions = new SessionEndpoint[_channelMax + 1];
             _sendingSessions = new SessionEndpoint[_channelMax + 1];
         }
-
         UnsignedInteger remoteDesiredMaxFrameSize =
                 open.getMaxFrameSize() == null ? UnsignedInteger.valueOf(DEFAULT_MAX_FRAME) : open.getMaxFrameSize();
 
@@ -375,7 +375,7 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
         {
             _idleTimeout = open.getIdleTimeOut().longValue();
         }
-
+        _remoteProperties = open.getProperties();
         _connectionEventListener.openReceived();
 
         switch (_state)
@@ -394,6 +394,11 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
         }
 */
         notifyAll();
+    }
+
+    public Map getRemoteProperties()
+    {
+        return _remoteProperties;
     }
 
     public synchronized void receiveClose(short channel, Close close)

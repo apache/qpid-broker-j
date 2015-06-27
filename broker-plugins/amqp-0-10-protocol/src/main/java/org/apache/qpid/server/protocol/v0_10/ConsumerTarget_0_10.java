@@ -107,7 +107,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     @Override
     public boolean doIsSuspended()
     {
-        return getState()!=State.ACTIVE || _deleted.get() || _session.isClosing() || _session.getConnectionModel().isStopped(); // TODO check for Session suspension
+        return getState()!=State.ACTIVE || _deleted.get() || _session.isClosing() || _session.getAMQPConnection().isConnectionStopped(); // TODO check for Session suspension
     }
 
     public boolean close()
@@ -559,10 +559,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         switch(flowMode)
         {
             case CREDIT:
-                _creditManager = new CreditCreditManager(0l, 0l, _session.getConnection().getProtocolEngine());
+                _creditManager = new CreditCreditManager(0l, 0l, _session.getConnection().getAmqpConnection());
                 break;
             case WINDOW:
-                _creditManager = new WindowCreditManager(0l, 0l, _session.getConnection().getProtocolEngine());
+                _creditManager = new WindowCreditManager(0l, 0l, _session.getConnection().getAmqpConnection());
                 break;
             default:
                 // this should never happen, as 0-10 is finalised and so the enum should never change

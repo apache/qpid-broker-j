@@ -29,7 +29,6 @@ import static org.apache.qpid.transport.util.Functions.str;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.Constant;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.FrameSizeObserver;

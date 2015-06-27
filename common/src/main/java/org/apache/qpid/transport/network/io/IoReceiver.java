@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.net.ssl.SSLSocket;
 
 import org.apache.qpid.thread.Threading;
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.Ticker;

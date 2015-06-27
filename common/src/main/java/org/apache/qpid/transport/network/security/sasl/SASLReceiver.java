@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 
 import javax.security.sasl.SaslException;
 
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.SenderException;
 import org.apache.qpid.transport.util.Logger;
