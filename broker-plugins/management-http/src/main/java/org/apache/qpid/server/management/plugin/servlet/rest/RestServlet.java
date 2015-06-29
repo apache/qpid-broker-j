@@ -16,9 +16,7 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -46,7 +44,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
@@ -607,10 +605,10 @@ public class RestServlet extends AbstractServlet
             }
         }
         Object returnVal = operation.perform(subject, operationArguments);
-        if(returnVal instanceof TypedContent)
+        if(returnVal instanceof Content)
         {
-            TypedContent typedContent = (TypedContent)returnVal;
-            writeTypedContent(typedContent, request, response);
+            Content content = (Content)returnVal;
+            writeTypedContent(content, request, response);
         }
         else
         {

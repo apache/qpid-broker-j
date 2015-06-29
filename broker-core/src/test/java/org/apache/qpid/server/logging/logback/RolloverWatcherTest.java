@@ -23,13 +23,13 @@ package org.apache.qpid.server.logging.logback;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.util.FileUtils;
@@ -72,11 +72,12 @@ public class RolloverWatcherTest extends QpidTestCase
 
         final File activeFile = new File(_baseFolder, "test.log");
         TestFileUtils.saveTextContentInFile("test", activeFile);
-        TypedContent content = _rolloverWatcher.getTypedContent(activeFile.getAbsolutePath(), true);
+        PathTypedContent content = _rolloverWatcher.getTypedContent(activeFile.getAbsolutePath(), true);
 
         assertEquals("Unexpected content type", "text/plain", content.getContentType());
-        assertEquals("Unexpected data", "test", readStream(content.openInputStream()));
-        assertEquals("Unexpected size", 4, content.getSize());
+        assertEquals("Unexpected data", "test", readContent(content));
+        assertEquals("Unexpected size", 4, content.getContentLength());
+        assertEquals("Unexpected content disposition", "attachment; filename=\"" + activeFile.getName().toString() + "\"", content.getContentDisposition());
     }
 
     public void testGetTypedForNullFile() throws Exception
@@ -99,11 +100,12 @@ public class RolloverWatcherTest extends QpidTestCase
 
         TestFileUtils.saveTextContentInFile("test.gz", new File(_baseFolder, "test1.gz"));
 
-        TypedContent content = _rolloverWatcher.getTypedContent("test1.gz", false);
+        PathTypedContent content = _rolloverWatcher.getTypedContent("test1.gz", false);
 
         assertEquals("Unexpected content type", "application/x-gzip", content.getContentType());
-        assertEquals("Unexpected data", "test.gz", readStream(content.openInputStream()));
-        assertEquals("Unexpected size", 7, content.getSize());
+        assertEquals("Unexpected data", "test.gz", readContent(content));
+        assertEquals("Unexpected size", 7, content.getContentLength());
+        assertEquals("Unexpected content disposition", "attachment; filename=\"test1.gz\"", content.getContentDisposition());
     }
 
     public void testGetTypedContentForNonExistingRolledFile() throws Exception
@@ -112,11 +114,20 @@ public class RolloverWatcherTest extends QpidTestCase
         Path baseFolder = new File(getTestName()).toPath();
         _rolloverWatcher.onRollover(baseFolder, files);
 
-        TypedContent content = _rolloverWatcher.getTypedContent("test3.zip", false);
+        PathTypedContent content = _rolloverWatcher.getTypedContent("test3.zip", false);
 
         assertEquals("Unexpected content type", "application/x-zip", content.getContentType());
-        assertNull("Unexpected content stream", content.openInputStream());
-        assertEquals("Unexpected size", 0, content.getSize());
+        assertEquals("Unexpected content disposition", "attachment", content.getContentDisposition());
+        assertEquals("Unexpected size", 0, content.getContentLength());
+        try
+        {
+            readContent(content);
+            fail("FileNotFoundException is expected");
+        }
+        catch(FileNotFoundException e)
+        {
+            //pass
+        }
     }
 
     public void testGetContentType() throws Exception
@@ -126,15 +137,10 @@ public class RolloverWatcherTest extends QpidTestCase
         assertEquals("Unexpected content type for zip file", "application/x-zip", _rolloverWatcher.getContentType("test.zip"));
     }
 
-    private String readStream(InputStream contentStream) throws IOException
+    private String readContent(Content content) throws IOException
     {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int length;
-        while ((length = contentStream.read(buffer)) > 0)
-        {
-            os.write(buffer, 0, length);
-        }
+        content.write(os);
         return new String(os.toByteArray());
     }
 }

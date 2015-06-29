@@ -20,19 +20,11 @@
  */
 package org.apache.qpid.server.logging;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
-import javax.activation.MimetypesFileTypeMap;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
@@ -41,10 +33,9 @@ import ch.qos.logback.core.Context;
 import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 import org.apache.qpid.server.logging.logback.RolloverWatcher;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.util.DaemonThreadFactory;
 
 public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerImpl> implements BrokerFileLogger<BrokerFileLoggerImpl>, FileLoggerSettings
@@ -125,7 +116,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     }
 
     @Override
-    public TypedContent getFile(final String fileName)
+    public Content getFile(final String fileName)
     {
         return _rolloverWatcher.getTypedContent(fileName, _fileName.equals(fileName));
     }

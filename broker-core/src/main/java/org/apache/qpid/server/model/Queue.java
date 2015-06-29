@@ -248,6 +248,6 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     long clearQueue();
 
     @ManagedOperation
-    TypedContent getMessageContent(@Param(name = "messageId") long messageId);
+    Content getMessageContent(@Param(name = "messageId") long messageId);
 
 }

@@ -34,7 +34,7 @@ import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 import org.apache.qpid.server.logging.logback.RolloverWatcher;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.DaemonThreadFactory;
 
@@ -119,7 +119,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     }
 
     @Override
-    public TypedContent getFile(final String fileName)
+    public Content getFile(final String fileName)
     {
         return _rolloverWatcher.getTypedContent(fileName, _fileName.equals(fileName));
     }

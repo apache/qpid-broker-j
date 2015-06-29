@@ -20,45 +20,58 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.ContentHeader;
+import org.apache.qpid.server.model.Content;
 
-public class PathTypedContent implements TypedContent
+public class PathTypedContent implements Content
 {
     private final Path _path;
     private final String _contentType;
+    private final String _disposition;
+    private final long _contentSize;
 
-    public PathTypedContent(Path path,  String contentType)
+    public PathTypedContent(Path path, String contentType)
     {
         _path = path;
         _contentType = contentType;
+        _disposition = _path == null ? "attachment" : "attachment; filename=\"" + _path.getFileName().toString() + "\"";
+        _contentSize = _path == null ? 0 : _path.toFile().length();
     }
 
-    @Override
+    @ContentHeader("Content-Type")
     public String getContentType()
     {
         return _contentType;
     }
 
-    @Override
-    public InputStream openInputStream() throws IOException
+    @ContentHeader("Content-Length")
+    public long getContentLength()
     {
-        return _path == null ? null : new FileInputStream(_path.toFile());
+        return _contentSize;
+    }
+
+    @ContentHeader("Content-Disposition")
+    public String getContentDisposition()
+    {
+        return _disposition;
     }
 
     @Override
-    public long getSize()
+    public void write(OutputStream outputStream) throws IOException
     {
-        return _path == null ? 0 : _path.toFile().length();
-    }
-
-    @Override
-    public String getFileName()
-    {
-        return _path == null ? null : _path.getFileName().toString();
+        if (_path != null && _path.toFile().exists())
+        {
+            Files.copy(_path, outputStream);
+        }
+        else
+        {
+            throw new FileNotFoundException();
+        }
     }
 }

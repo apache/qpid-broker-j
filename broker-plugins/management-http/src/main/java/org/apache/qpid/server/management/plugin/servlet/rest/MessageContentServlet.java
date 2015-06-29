@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.VirtualHost;
 
 public class MessageContentServlet extends AbstractServlet
@@ -49,7 +49,7 @@ public class MessageContentServlet extends AbstractServlet
     {
         Queue queue = getQueueFromRequest(request);
         String path[] = getPathInfoElements(request);
-        TypedContent content = queue.getMessageContent(Long.parseLong(path[2]));
+        Content content = queue.getMessageContent(Long.parseLong(path[2]));
         if(content != null)
         {
             writeTypedContent(content, request, response);

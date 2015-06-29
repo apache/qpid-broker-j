@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.logging;
 
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.Collection;
 
 import org.apache.qpid.server.model.BrokerLogger;
@@ -31,7 +28,7 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.Param;
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.Content;
 
 @ManagedObject( category = false, type = BrokerFileLogger.TYPE)
 public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerLogger<X>
@@ -63,5 +60,5 @@ public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerL
     Collection<String> getRolledFiles();
 
     @ManagedOperation(nonModifying = true)
-    TypedContent getFile(@Param(name = "fileName") String fileName);
+    Content getFile(@Param(name = "fileName") String fileName);
 }

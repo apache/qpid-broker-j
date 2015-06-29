@@ -19,7 +19,9 @@
 package org.apache.qpid.server.queue;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -47,6 +49,7 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.model.ContentHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +86,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -2525,6 +2528,37 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    public static class MessageContent implements Content
+    {
+        private final byte[] _data;
+        private final String _mimeType;
+
+        public MessageContent(byte[] data, String mimeType )
+        {
+            _data = data;
+            _mimeType = mimeType;
+        }
+
+        @Override
+        public void write(OutputStream outputStream) throws IOException
+        {
+            outputStream.write(_data);
+        }
+
+        @ContentHeader("Content-Type")
+        public String getContentType()
+        {
+            return _mimeType;
+        }
+
+        @ContentHeader("Content-Length")
+        public long getSize()
+        {
+            return _data.length;
+        }
+
+    }
+
     private final class QueueEntryListener implements StateChangeListener<MessageInstance, QueueEntry.State>
     {
 
@@ -3254,38 +3288,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public TypedContent getMessageContent(final long messageId)
+    public Content getMessageContent(final long messageId)
     {
         final MessageFinder messageFinder = new MessageFinder(messageId);
         visit(messageFinder);
         if(messageFinder.isFound())
         {
-            return new TypedContent()
-                    {
-                        @Override
-                        public String getContentType()
-                        {
-                            return messageFinder.getMimeType();
-                        }
-
-                        @Override
-                        public InputStream openInputStream()
-                        {
-                            return new ByteArrayInputStream(messageFinder.getContent());
-                        }
-
-                        @Override
-                        public long getSize()
-                        {
-                            return messageFinder.getContent().length;
-                        }
-
-                        @Override
-                        public String getFileName()
-                        {
-                            return null;
-                        }
-            };
+            return new MessageContent(messageFinder.getContent(), messageFinder.getMimeType());
         }
         else
         {

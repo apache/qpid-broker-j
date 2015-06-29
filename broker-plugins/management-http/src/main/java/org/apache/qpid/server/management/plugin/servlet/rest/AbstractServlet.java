@@ -22,14 +22,16 @@ package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.security.auth.Subject;
 import javax.servlet.ServletConfig;
@@ -39,7 +41,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.ContentHeader;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.slf4j.Logger;
@@ -332,44 +335,62 @@ public abstract class AbstractServlet extends HttpServlet
         return null;
     }
 
-    protected void writeTypedContent(TypedContent typedContent, HttpServletRequest request, HttpServletResponse response) throws IOException
+    protected void writeTypedContent(Content content, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        response.setContentType(typedContent.getContentType());
-        response.setContentLength((int) typedContent.getSize());
-        String fileName = typedContent.getFileName();
-        if (fileName != null)
+        Map<ContentHeader, Method> contentHeaderGetters = getContentHeaderMethods(content);
+        if (contentHeaderGetters != null)
         {
-            response.setHeader("Content-disposition", "attachment; filename=\"" + fileName + "\"");
-        }
+            for (Map.Entry<ContentHeader, Method> entry: contentHeaderGetters.entrySet())
+            {
+                final String headerName = entry.getKey().value();
+                try
+                {
+                    response.setHeader(headerName, String.valueOf(entry.getValue().invoke(content)));
+                }
+                catch (Exception e)
+                {
+                    LOGGER.warn("Unexpected exception whilst setting response header " + headerName, e);
+                }
+            }
 
-        try (InputStream contentStream = typedContent.openInputStream())
+        }
+        try(OutputStream os = getOutputStream(request, response))
         {
-            writeStreamContent(contentStream, request, response);
+            content.write(os);
+            response.setStatus(HttpServletResponse.SC_OK);
         }
         catch (FileNotFoundException e)
         {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }
+        catch(IOException e)
+        {
+            LOGGER.warn("Unexpected exception processing request", e);
+            sendJsonErrorResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+        }
     }
 
-    protected void writeStreamContent(InputStream contentStream, HttpServletRequest request, HttpServletResponse response) throws IOException
+    private Map<ContentHeader, Method> getContentHeaderMethods(Content content)
     {
-        if (contentStream == null)
+        Map<ContentHeader, Method> results = new HashMap<>();
+        Method[] methods = content.getClass().getMethods();
+        for (Method method: methods)
         {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        }
-        else
-        {
-            response.setStatus(HttpServletResponse.SC_OK);
-            try (OutputStream os = getOutputStream(request, response))
+            if (method.isAnnotationPresent(ContentHeader.class))
             {
-                byte[] buffer = new byte[8192];
-                int length;
-                while ((length = contentStream.read(buffer)) > 0)
+                final Class<?>[] parameterTypes = method.getParameterTypes();
+                if (parameterTypes.length >0)
                 {
-                    os.write(buffer, 0, length);
+                    LOGGER.warn("Parameters are found on method " + method.getName()
+                            + " annotated with ContentHeader annotation. No parameter is allowed. Ignoring ContentHeader annotation.");
+                }
+                else
+                {
+                    results.put(method.getAnnotation(ContentHeader.class), method);
                 }
             }
         }
+        return results;
     }
+
 }
