@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -37,6 +39,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.model.TypedContent;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.slf4j.Logger;
@@ -327,5 +330,46 @@ public abstract class AbstractServlet extends HttpServlet
             return pathInfoElements;
         }
         return null;
+    }
+
+    protected void writeTypedContent(TypedContent typedContent, HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        response.setContentType(typedContent.getContentType());
+        response.setContentLength((int) typedContent.getSize());
+        String fileName = typedContent.getFileName();
+        if (fileName != null)
+        {
+            response.setHeader("Content-disposition", "attachment; filename=\"" + fileName + "\"");
+        }
+
+        try (InputStream contentStream = typedContent.openInputStream())
+        {
+            writeStreamContent(contentStream, request, response);
+        }
+        catch (FileNotFoundException e)
+        {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
+
+    protected void writeStreamContent(InputStream contentStream, HttpServletRequest request, HttpServletResponse response) throws IOException
+    {
+        if (contentStream == null)
+        {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        }
+        else
+        {
+            response.setStatus(HttpServletResponse.SC_OK);
+            try (OutputStream os = getOutputStream(request, response))
+            {
+                byte[] buffer = new byte[8192];
+                int length;
+                while ((length = contentStream.read(buffer)) > 0)
+                {
+                    os.write(buffer, 0, length);
+                }
+            }
+        }
     }
 }

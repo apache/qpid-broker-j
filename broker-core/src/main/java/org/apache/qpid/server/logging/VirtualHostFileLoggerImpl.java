@@ -21,19 +21,28 @@
 package org.apache.qpid.server.logging;
 
 import java.security.Principal;
+import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 
+import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
+import org.apache.qpid.server.logging.logback.RolloverWatcher;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.TypedContent;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.util.DaemonThreadFactory;
 
 public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<VirtualHostFileLoggerImpl> implements VirtualHostFileLogger<VirtualHostFileLoggerImpl>, FileLoggerSettings
 {
     private final Principal _principal;
+    private final RolloverWatcher _rolloverWatcher;
+    private final ScheduledExecutorService _rolledPolicyExecutor;
 
     @ManagedAttributeField
     private String _layout;
@@ -57,6 +66,8 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     {
         super(attributes, virtualHost);
         _principal = virtualHost.getPrincipal();
+        _rolloverWatcher = new RolloverWatcher();
+        _rolledPolicyExecutor = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory("RolledFileScanner-" + getName()));
     }
 
     @Override
@@ -99,6 +110,37 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     public String getLayout()
     {
         return _layout;
+    }
+
+    @Override
+    public Collection<String> getRolledFiles()
+    {
+        return _rolloverWatcher.getRolledFiles();
+    }
+
+    @Override
+    public TypedContent getFile(final String fileName)
+    {
+        return _rolloverWatcher.getTypedContent(fileName, _fileName.equals(fileName));
+    }
+
+    @Override
+    public void stopLogging()
+    {
+        super.stopLogging();
+        _rolledPolicyExecutor.shutdown();
+    }
+
+    @Override
+    public RollingPolicyDecorator.RolloverListener getRolloverListener()
+    {
+        return _rolloverWatcher;
+    }
+
+    @Override
+    public ScheduledExecutorService getExecutorService()
+    {
+        return _rolledPolicyExecutor;
     }
 
     @Override

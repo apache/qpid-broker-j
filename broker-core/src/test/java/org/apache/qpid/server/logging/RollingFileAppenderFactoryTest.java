@@ -23,6 +23,8 @@ package org.apache.qpid.server.logging;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Context;
@@ -32,6 +34,7 @@ import ch.qos.logback.core.rolling.RollingPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import ch.qos.logback.core.rolling.helper.CompressionMode;
+import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class RollingFileAppenderFactoryTest extends QpidTestCase
@@ -57,6 +60,7 @@ public class RollingFileAppenderFactoryTest extends QpidTestCase
         when(_settings.isRollDaily()).thenReturn(Boolean.TRUE);
         when(_settings.isRollOnRestart()).thenReturn(Boolean.TRUE);
         when(_settings.getMaxHistory()).thenReturn(MAX_HISTORY);
+        when(_settings.getExecutorService()).thenReturn(mock(ScheduledExecutorService.class));
     }
 
     public void testCreateRollingFileAppenderDailyRolling()
@@ -66,7 +70,9 @@ public class RollingFileAppenderFactoryTest extends QpidTestCase
         assertEquals("Unexpected appender file name", FILE_NAME, appender.getFile());
 
         RollingPolicy rollingPolicy = appender.getRollingPolicy();
-        assertTrue("Unexpected rolling policy", rollingPolicy instanceof TimeBasedRollingPolicy);
+        assertTrue("Unexpected rolling policy", rollingPolicy instanceof RollingPolicyDecorator);
+        rollingPolicy = ((RollingPolicyDecorator)rollingPolicy).getDecorated();
+        assertTrue("Unexpected decorated rolling policy", rollingPolicy instanceof TimeBasedRollingPolicy);
         assertEquals("Unexpected max history", MAX_HISTORY, ((TimeBasedRollingPolicy) rollingPolicy).getMaxHistory());
         assertEquals("Unexpected file name pattern", FILE_NAME + ".%d{yyyy-MM-dd}.%i.gz", ((TimeBasedRollingPolicy) rollingPolicy).getFileNamePattern());
         assertEquals("Unexpected compression mode", CompressionMode.GZ, rollingPolicy.getCompressionMode());
@@ -87,7 +93,9 @@ public class RollingFileAppenderFactoryTest extends QpidTestCase
         assertEquals("Unexpected appender file name", FILE_NAME, appender.getFile());
 
         RollingPolicy rollingPolicy = appender.getRollingPolicy();
-        assertTrue("Unexpected rolling policy", rollingPolicy instanceof RollingFileAppenderFactory.SimpleRollingPolicy);
+        assertTrue("Unexpected rolling policy", rollingPolicy instanceof RollingPolicyDecorator);
+        rollingPolicy = ((RollingPolicyDecorator)rollingPolicy).getDecorated();
+        assertTrue("Unexpected decorated rolling policy", rollingPolicy instanceof RollingFileAppenderFactory.SimpleRollingPolicy);
         assertEquals("Unexpected max history", MAX_HISTORY, ((RollingFileAppenderFactory.SimpleRollingPolicy) rollingPolicy).getMaxIndex());
         assertEquals("Unexpected file name pattern", FILE_NAME + ".%i", ((RollingFileAppenderFactory.SimpleRollingPolicy) rollingPolicy).getFileNamePattern());
         assertEquals("Unexpected compression mode", CompressionMode.NONE, rollingPolicy.getCompressionMode());

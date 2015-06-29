@@ -20,9 +20,17 @@
  */
 package org.apache.qpid.server.model;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 @ManagedAttributeValueType
 public interface TypedContent
 {
     String getContentType();
-    byte[] getData();
+
+    InputStream openInputStream() throws IOException;
+
+    long getSize();
+
+    String getFileName();
 }

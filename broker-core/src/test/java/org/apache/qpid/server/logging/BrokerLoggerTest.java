@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.logging;
 
+import static org.apache.qpid.server.util.LoggerTestHelper.assertLoggedEvent;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -125,8 +126,8 @@ public class BrokerLoggerTest extends QpidTestCase
 
         logger.debug("Test2");
         logger.info("Test3");
-        assertLoggedEvent(false, "Test2", logger.getName(), Level.DEBUG);
-        assertLoggedEvent(true, "Test3", logger.getName(), Level.INFO);
+        assertLoggedEvent(_loggerAppender, false, "Test2", logger.getName(), Level.DEBUG);
+        assertLoggedEvent(_loggerAppender, true, "Test3", logger.getName(), Level.INFO);
     }
 
     public void testRemoveExistingFilter()
@@ -140,12 +141,12 @@ public class BrokerLoggerTest extends QpidTestCase
         Logger logger = LoggerFactory.getLogger("org.apache.qpid");
 
         logger.info("Test1");
-        assertLoggedEvent(true, "Test1", logger.getName(), Level.INFO);
+        assertLoggedEvent(_loggerAppender, true, "Test1", logger.getName(), Level.INFO);
 
         createdFilter.delete();
 
         logger.info("Test2");
-        assertLoggedEvent(false, "Test2", logger.getName(), Level.INFO);
+        assertLoggedEvent(_loggerAppender, false, "Test2", logger.getName(), Level.INFO);
     }
 
     public void testDeleteLogger()
@@ -158,24 +159,4 @@ public class BrokerLoggerTest extends QpidTestCase
         assertNull("Appender found when it should have been deleted", rootLogger.getAppender(_brokerLogger.getName()));
     }
 
-    private void assertLoggedEvent(boolean exists, String message, String loggerName, Level level)
-    {
-        List<ILoggingEvent> events;
-        synchronized(_loggerAppender)
-        {
-            events = new ArrayList<>(_loggerAppender.list);
-        }
-
-        boolean logged = false;
-        for (ILoggingEvent event: events)
-        {
-            if (event.getFormattedMessage().equals(message) && event.getLoggerName().equals(loggerName) && event.getLevel() == level)
-            {
-                logged = true;
-                break;
-            }
-        }
-        assertEquals("Event " + message + " from logger " + loggerName + " of log level " + level
-                + " is " + (exists ? "not" : "") + " found", exists, logged);
-    }
 }

@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -3267,11 +3269,23 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         }
 
                         @Override
-                        public byte[] getData()
+                        public InputStream openInputStream()
                         {
-                            return messageFinder.getContent();
+                            return new ByteArrayInputStream(messageFinder.getContent());
                         }
-                    };
+
+                        @Override
+                        public long getSize()
+                        {
+                            return messageFinder.getContent().length;
+                        }
+
+                        @Override
+                        public String getFileName()
+                        {
+                            return null;
+                        }
+            };
         }
         else
         {

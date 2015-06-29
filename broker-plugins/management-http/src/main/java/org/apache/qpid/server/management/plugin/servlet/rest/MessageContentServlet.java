@@ -52,9 +52,7 @@ public class MessageContentServlet extends AbstractServlet
         TypedContent content = queue.getMessageContent(Long.parseLong(path[2]));
         if(content != null)
         {
-            response.setContentType(content.getContentType());
-            response.setContentLength(content.getData().length);
-            getOutputStream(request, response).write(content.getData());
+            writeTypedContent(content, request, response);
         }
     }
 

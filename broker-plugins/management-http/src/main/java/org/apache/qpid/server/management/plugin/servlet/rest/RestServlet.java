@@ -16,7 +16,9 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -608,10 +610,7 @@ public class RestServlet extends AbstractServlet
         if(returnVal instanceof TypedContent)
         {
             TypedContent typedContent = (TypedContent)returnVal;
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.setContentType(typedContent.getContentType());
-            response.setContentLength(typedContent.getData().length);
-            getOutputStream(request, response).write(typedContent.getData());
+            writeTypedContent(typedContent, request, response);
         }
         else
         {

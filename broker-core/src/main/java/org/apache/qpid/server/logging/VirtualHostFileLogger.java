@@ -21,8 +21,15 @@
 package org.apache.qpid.server.logging;
 
 
+import java.nio.file.Path;
+import java.util.Collection;
+
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
+import org.apache.qpid.server.model.Param;
+import org.apache.qpid.server.model.TypedContent;
 import org.apache.qpid.server.model.VirtualHostLogger;
 
 @ManagedObject( category = false, type = VirtualHostFileLogger.TYPE)
@@ -51,4 +58,10 @@ public interface VirtualHostFileLogger<X extends VirtualHostFileLogger<X>> exten
 
     @ManagedAttribute(defaultValue = "%d %-5p [%t] \\(%c{2}\\) - %m%n")
     String getLayout();
+
+    @DerivedAttribute
+    Collection<String> getRolledFiles();
+
+    @ManagedOperation(nonModifying = true)
+    TypedContent getFile(@Param(name = "fileName") String fileName);
 }

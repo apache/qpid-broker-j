@@ -20,18 +20,38 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
+import javax.activation.MimetypesFileTypeMap;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 
+import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
+import org.apache.qpid.server.logging.logback.RolloverWatcher;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.TypedContent;
+import org.apache.qpid.server.util.DaemonThreadFactory;
 
 public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerImpl> implements BrokerFileLogger<BrokerFileLoggerImpl>, FileLoggerSettings
 {
+    private final RolloverWatcher _rolloverWatcher;
+    private final ScheduledExecutorService _rolledPolicyExecutor;
+
     @ManagedAttributeField
     private String _layout;
     @ManagedAttributeField
@@ -46,11 +66,15 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     private int _maxHistory;
     @ManagedAttributeField
     private String _maxFileSize;
+    private Collection<String> _rolledFiles;
+    private Path _baseFolder;
 
     @ManagedObjectFactoryConstructor
     protected BrokerFileLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);
+        _rolloverWatcher = new RolloverWatcher();
+        _rolledPolicyExecutor = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory("RolledFileScanner-" + getName()));
     }
 
     @Override
@@ -93,6 +117,36 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     public String getLayout()
     {
         return _layout;
+    }
+    @Override
+    public Collection<String> getRolledFiles()
+    {
+        return _rolloverWatcher.getRolledFiles();
+    }
+
+    @Override
+    public TypedContent getFile(final String fileName)
+    {
+        return _rolloverWatcher.getTypedContent(fileName, _fileName.equals(fileName));
+    }
+
+    @Override
+    public void stopLogging()
+    {
+        super.stopLogging();
+        _rolledPolicyExecutor.shutdown();
+    }
+
+    @Override
+    public RollingPolicyDecorator.RolloverListener getRolloverListener()
+    {
+        return _rolloverWatcher;
+    }
+
+    @Override
+    public ScheduledExecutorService getExecutorService()
+    {
+        return _rolledPolicyExecutor;
     }
 
     @Override
