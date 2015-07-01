@@ -18,9 +18,7 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.security.AccessControlException;
@@ -49,7 +47,11 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.apache.qpid.server.model.ContentHeader;
+
+import org.apache.qpid.server.message.MessageInfo;
+import org.apache.qpid.server.message.MessageInfoFacade;
+import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.RestContentHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2528,7 +2530,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    public static class MessageContent implements Content
+    public static class MessageContent implements Content, CustomRestHeaders
     {
         private final byte[] _data;
         private final String _mimeType;
@@ -2545,13 +2547,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             outputStream.write(_data);
         }
 
-        @ContentHeader("Content-Type")
+        @RestContentHeader("Content-Type")
         public String getContentType()
         {
             return _mimeType;
         }
 
-        @ContentHeader("Content-Length")
+        @RestContentHeader("Content-Length")
         public long getSize()
         {
             return _data.length;
@@ -3302,6 +3304,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    public List<MessageInfo> getMessageInfo(int first, int last)
+    {
+        final MessageCollector messageCollector = new MessageCollector(first, last, false);
+        visit(messageCollector);
+        return messageCollector.getMessages();
+
+    }
+
     private void authorizeMethod(String methodName)
     {
         getSecurityManager().authoriseMethod(Operation.UPDATE,
@@ -3379,4 +3389,52 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return _found;
         }
     }
+
+    private class MessageCollector implements QueueEntryVisitor
+    {
+
+
+
+        private class MessageRangeList extends ArrayList<MessageInfo> implements CustomRestHeaders
+        {
+            @RestContentHeader("Content-Range")
+            public String getContentRange()
+            {
+                String min = isEmpty() ? "0" : String.valueOf(_first);
+                String max = isEmpty() ? "0" : String.valueOf(_first + size() - 1);
+                return "" + min + "-" + max + "/" + getQueueDepthMessages();
+            }
+        }
+
+        private final int _first;
+        private final int _last;
+        private int _position = -1;
+        private final List<MessageInfo> _messages = new MessageRangeList();
+        private final boolean _includeHeaders;
+
+        private MessageCollector(int first, int last, boolean includeHeaders)
+        {
+            _first = first;
+            _last = last;
+            _includeHeaders = includeHeaders;
+        }
+
+
+        public boolean visit(QueueEntry entry)
+        {
+
+            _position++;
+            if((_first == -1 || _position >= _first) && (_last == -1 || _position <= _last))
+            {
+                _messages.add(new MessageInfoFacade(entry, _includeHeaders));
+            }
+            return _last != -1 && _position > _last;
+        }
+
+        public List<MessageInfo> getMessages()
+        {
+            return _messages;
+        }
+    }
+
 }

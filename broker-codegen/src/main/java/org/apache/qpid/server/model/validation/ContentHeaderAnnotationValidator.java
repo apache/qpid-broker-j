@@ -40,8 +40,8 @@ import java.util.Set;
 @SupportedAnnotationTypes(ContentHeaderAnnotationValidator.CONTENT_HEADER_CLASS_NAME)
 public class ContentHeaderAnnotationValidator extends AbstractProcessor
 {
-    public static final String CONTENT_HEADER_CLASS_NAME = "org.apache.qpid.server.model.ContentHeader";
-    public static final String CONTENT_CLASS_NAME = "org.apache.qpid.server.model.Content";
+    public static final String CONTENT_HEADER_CLASS_NAME = "org.apache.qpid.server.model.RestContentHeader";
+    public static final String CONTENT_CLASS_NAME = "org.apache.qpid.server.model.CustomRestHeaders";
     private static final Set<TypeKind> VALID_PRIMITIVE_TYPES = new HashSet<>(Arrays.asList(
             TypeKind.BOOLEAN,
             TypeKind.BYTE,

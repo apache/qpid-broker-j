@@ -279,6 +279,7 @@ public class MessageServlet extends AbstractServlet
 
     }
 
+
     private void addIfPresentAndNotZero(Map<String, Object> object, String name, Object property)
     {
         if(property instanceof Number)

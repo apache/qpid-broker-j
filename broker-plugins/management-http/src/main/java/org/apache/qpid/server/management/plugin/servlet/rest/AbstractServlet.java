@@ -42,7 +42,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.model.Content;
-import org.apache.qpid.server.model.ContentHeader;
+import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.RestContentHeader;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 import org.slf4j.Logger;
@@ -259,7 +260,7 @@ public abstract class AbstractServlet extends HttpServlet
         sendJsonResponse(object, request, response, HttpServletResponse.SC_OK, true);
     }
 
-    protected void sendJsonResponse(Object object, HttpServletRequest request, HttpServletResponse response, int responseCode, boolean sendCachingHeaders) throws IOException
+    protected final void sendJsonResponse(Object object, HttpServletRequest request, HttpServletResponse response, int responseCode, boolean sendCachingHeaders) throws IOException
     {
         response.setStatus(responseCode);
         response.setContentType("application/json");
@@ -270,19 +271,20 @@ public abstract class AbstractServlet extends HttpServlet
             sendCachingHeadersOnResponse(response);
         }
 
+
+        if(object instanceof CustomRestHeaders)
+        {
+            setResponseHeaders(response, (CustomRestHeaders) object);
+        }
         writeObjectToResponse(object, request, response);
     }
 
-    protected void sendJsonErrorResponse(HttpServletRequest request,
-                                         HttpServletResponse response,
-                                         int responseCode,
-                                         String message) throws IOException
+    protected final void sendJsonErrorResponse(HttpServletRequest request,
+                                               HttpServletResponse response,
+                                               int responseCode,
+                                               String message) throws IOException
     {
-        response.setStatus(responseCode);
-        response.setContentType("application/json");
-        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-
-        writeObjectToResponse(Collections.singletonMap("errorMessage", message), request, response);
+        sendJsonResponse(Collections.singletonMap("errorMessage", message), request, response, responseCode, false);
     }
 
     protected void sendError(final HttpServletResponse resp, int responseCode)
@@ -337,31 +339,15 @@ public abstract class AbstractServlet extends HttpServlet
 
     protected void writeTypedContent(Content content, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        Map<ContentHeader, Method> contentHeaderGetters = getContentHeaderMethods(content);
-        if (contentHeaderGetters != null)
-        {
-            for (Map.Entry<ContentHeader, Method> entry: contentHeaderGetters.entrySet())
-            {
-                final String headerName = entry.getKey().value();
-                try
-                {
-                    response.setHeader(headerName, String.valueOf(entry.getValue().invoke(content)));
-                }
-                catch (Exception e)
-                {
-                    LOGGER.warn("Unexpected exception whilst setting response header " + headerName, e);
-                }
-            }
-
-        }
         try(OutputStream os = getOutputStream(request, response))
         {
-            content.write(os);
+            if(content instanceof CustomRestHeaders)
+            {
+                setResponseHeaders(response, (CustomRestHeaders) content);
+            }
             response.setStatus(HttpServletResponse.SC_OK);
-        }
-        catch (FileNotFoundException e)
-        {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            content.write(os);
+
         }
         catch(IOException e)
         {
@@ -370,13 +356,34 @@ public abstract class AbstractServlet extends HttpServlet
         }
     }
 
-    private Map<ContentHeader, Method> getContentHeaderMethods(Content content)
+    private void setResponseHeaders(final HttpServletResponse response, final CustomRestHeaders customRestHeaders)
     {
-        Map<ContentHeader, Method> results = new HashMap<>();
+        Map<RestContentHeader, Method> contentHeaderGetters = getContentHeaderMethods(customRestHeaders);
+        if (contentHeaderGetters != null)
+        {
+            for (Map.Entry<RestContentHeader, Method> entry : contentHeaderGetters.entrySet())
+            {
+                final String headerName = entry.getKey().value();
+                try
+                {
+                    response.setHeader(headerName, String.valueOf(entry.getValue().invoke(customRestHeaders)));
+                }
+                catch (Exception e)
+                {
+                    LOGGER.warn("Unexpected exception whilst setting response header " + headerName, e);
+                }
+            }
+
+        }
+    }
+
+    private Map<RestContentHeader, Method> getContentHeaderMethods(CustomRestHeaders content)
+    {
+        Map<RestContentHeader, Method> results = new HashMap<>();
         Method[] methods = content.getClass().getMethods();
         for (Method method: methods)
         {
-            if (method.isAnnotationPresent(ContentHeader.class))
+            if (method.isAnnotationPresent(RestContentHeader.class))
             {
                 final Class<?>[] parameterTypes = method.getParameterTypes();
                 if (parameterTypes.length >0)
@@ -386,7 +393,8 @@ public abstract class AbstractServlet extends HttpServlet
                 }
                 else
                 {
-                    results.put(method.getAnnotation(ContentHeader.class), method);
+                    method.setAccessible(true);
+                    results.put(method.getAnnotation(RestContentHeader.class), method);
                 }
             }
         }

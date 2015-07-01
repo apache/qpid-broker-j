@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.store.MessageDurability;
 
@@ -247,7 +248,11 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedOperation
     long clearQueue();
 
-    @ManagedOperation
+    @ManagedOperation(nonModifying = true)
     Content getMessageContent(@Param(name = "messageId") long messageId);
+
+    @ManagedOperation(nonModifying = true)
+    List<MessageInfo> getMessageInfo(@Param(name = "first", defaultValue = "-1") int first, @Param(name = "last", defaultValue = "-1") int last);
+
 
 }

@@ -26,10 +26,11 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.qpid.server.model.ContentHeader;
+import org.apache.qpid.server.model.CustomRestHeaders;
+import org.apache.qpid.server.model.RestContentHeader;
 import org.apache.qpid.server.model.Content;
 
-public class PathTypedContent implements Content
+public class PathTypedContent implements Content, CustomRestHeaders
 {
     private final Path _path;
     private final String _contentType;
@@ -44,19 +45,19 @@ public class PathTypedContent implements Content
         _contentSize = _path == null ? 0 : _path.toFile().length();
     }
 
-    @ContentHeader("Content-Type")
+    @RestContentHeader("Content-Type")
     public String getContentType()
     {
         return _contentType;
     }
 
-    @ContentHeader("Content-Length")
+    @RestContentHeader("Content-Length")
     public long getContentLength()
     {
         return _contentSize;
     }
 
-    @ContentHeader("Content-Disposition")
+    @RestContentHeader("Content-Disposition")
     public String getContentDisposition()
     {
         return _disposition;
