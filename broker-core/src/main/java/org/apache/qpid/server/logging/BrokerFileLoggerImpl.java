@@ -20,9 +20,10 @@
  */
 package org.apache.qpid.server.logging;
 
-import java.nio.file.Path;
+import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -36,12 +37,13 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.util.DaemonThreadFactory;
 
 public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerImpl> implements BrokerFileLogger<BrokerFileLoggerImpl>, FileLoggerSettings
 {
-    private final RolloverWatcher _rolloverWatcher;
-    private final ScheduledExecutorService _rolledPolicyExecutor;
+    private RolloverWatcher _rolloverWatcher;
+    private ScheduledExecutorService _rolledPolicyExecutor;
 
     @ManagedAttributeField
     private String _layout;
@@ -57,15 +59,20 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     private int _maxHistory;
     @ManagedAttributeField
     private String _maxFileSize;
-    private Collection<String> _rolledFiles;
-    private Path _baseFolder;
 
     @ManagedObjectFactoryConstructor
     protected BrokerFileLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);
-        _rolloverWatcher = new RolloverWatcher();
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        _rolloverWatcher = new RolloverWatcher(getFileName());
         _rolledPolicyExecutor = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory("RolledFileScanner-" + getName()));
+
+        super.postResolveChildren();
     }
 
     @Override
@@ -109,16 +116,44 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     {
         return _layout;
     }
+
     @Override
-    public Collection<String> getRolledFiles()
+    public Collection<LogFileDetails> getLogFiles()
     {
-        return _rolloverWatcher.getRolledFiles();
+        return _rolloverWatcher.getLogFileDetails();
     }
 
     @Override
     public Content getFile(final String fileName)
     {
-        return _rolloverWatcher.getTypedContent(fileName, _fileName.equals(fileName));
+        if (!getSecurityManager().authoriseLogsAccess(this))
+        {
+            throw new AccessControlException("Permission denied to access log content");
+        }
+
+        return _rolloverWatcher.getFileContent(fileName);
+    }
+
+    @Override
+    public Content getFiles(@Param(name = "fileName") Set<String> fileName)
+    {
+        if (!getSecurityManager().authoriseLogsAccess(this))
+        {
+            throw new AccessControlException("Permission denied to access log content");
+        }
+
+        return _rolloverWatcher.getFilesAsZippedContent(fileName);
+    }
+
+    @Override
+    public Content getAllFiles()
+    {
+        if (!getSecurityManager().authoriseLogsAccess(this))
+        {
+            throw new AccessControlException("Permission denied to access log content");
+        }
+
+        return _rolloverWatcher.getAllFilesAsZippedContent();
     }
 
     @Override

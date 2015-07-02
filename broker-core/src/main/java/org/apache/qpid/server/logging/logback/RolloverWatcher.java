@@ -22,17 +22,30 @@ package org.apache.qpid.server.logging.logback;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import org.apache.qpid.server.logging.LogFileDetails;
+import org.apache.qpid.server.logging.PathContent;
+import org.apache.qpid.server.logging.ZippedContent;
+import org.apache.qpid.server.model.Content;
 
 public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
 {
+    private final Path _activeFilePath;
     private volatile Collection<String> _rolledFiles;
     private volatile Path _baseFolder;
 
-    public RolloverWatcher()
+    public RolloverWatcher(final String activeFileName)
     {
+        _activeFilePath = new File(activeFileName).toPath();
         _rolledFiles = Collections.emptyList();
     }
 
@@ -43,28 +56,73 @@ public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
         _baseFolder = baseFolder;
     }
 
-    public PathTypedContent getTypedContent(String fileName, boolean activeFile)
+    public PathContent getFileContent(String fileName)
     {
         if (fileName == null)
         {
             throw new IllegalArgumentException("File name cannot be null");
         }
 
+        Path path = getPath(fileName);
+        return new PathContent(path, getContentType(fileName));
+    }
+
+    private Path getPath(String fileName)
+    {
         Path path = null;
-        if (activeFile)
+        File active = _activeFilePath.toFile();
+        if (fileName.equals(active.getName()))
         {
-            path =  new File(fileName).toPath();
+            path =  active.toPath();
         }
         else if (_rolledFiles.contains(fileName))
         {
             path = _baseFolder.resolve(fileName);
         }
-        return new PathTypedContent(path, getContentType(fileName));
+        return path;
     }
 
     public Collection<String> getRolledFiles()
     {
         return _rolledFiles;
+    }
+
+    public List<LogFileDetails> getLogFileDetails()
+    {
+        List<LogFileDetails> results = new ArrayList<>();
+        results.add(getFileDetails(_activeFilePath));
+        List<String> rolledFiles = new ArrayList<>(_rolledFiles);
+        for (String fileName : rolledFiles)
+        {
+            Path file = _baseFolder.resolve(fileName);
+            LogFileDetails details = getFileDetails(file);
+            results.add(details);
+        }
+        return results;
+    }
+
+    private LogFileDetails getFileDetails(Path path)
+    {
+        File file = path.toFile();
+        return new LogFileDetails(getDisplayName(path), file.lastModified(), file.length());
+    }
+
+    private String getDisplayName(Path path)
+    {
+        String displayName = path.getFileName().toString();
+        if (!_activeFilePath.equals(path) && (_baseFolder != null))
+        {
+            try
+            {
+                displayName = _baseFolder.relativize(path).toString();
+            }
+            catch (IllegalArgumentException e)
+            {
+                // active file might not be relative to root
+                // returning a file name
+            }
+        }
+        return displayName;
     }
 
     public String getContentType(String fileName)
@@ -82,5 +140,28 @@ public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
         {
             return "text/plain";
         }
+    }
+
+    public ZippedContent getFilesAsZippedContent(Set<String> fileNames)
+    {
+        Map<String, Path> paths = new TreeMap<>();
+        for (String name: fileNames)
+        {
+            Path filePath = getPath(name);
+            if (filePath != null)
+            {
+                paths.put(name, filePath);
+            }
+        }
+
+        return new ZippedContent(paths);
+    }
+
+    public ZippedContent getAllFilesAsZippedContent()
+    {
+        Set<String> fileNames = new HashSet<>(_rolledFiles);
+        fileNames.add(getDisplayName(_activeFilePath));
+
+        return getFilesAsZippedContent(fileNames);
     }
 }

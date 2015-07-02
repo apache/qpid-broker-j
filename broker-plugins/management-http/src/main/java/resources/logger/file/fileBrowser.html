@@ -19,15 +19,11 @@
  -
  -->
 <div>
-  <div class="contentArea" style="height:320px;overflow:auto">
-     <div><b>Select log files to download</b></div>
-     <div class="logFilesGrid" style='height:300px;width: 580px'></div>
-  </div>
-  <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
-     <button value="Download" data-dojo-type="dijit.form.Button"
-       class="downloadLogsButton"
-       data-dojo-props="iconClass: 'downloadLogsIcon', label: 'Download' "></button>
-     <button value="Close" data-dojo-type="dijit.form.Button" data-dojo-props="label: 'Close'"
-       class="downloadLogsDialogCloseButton"></button>
-  </div>
+    <div data-dojo-type="dijit.TitlePane" data-dojo-props="title: 'Log Files'" class="clear logFilesGridPanel">
+        <div class="logFilesGrid hidden"></div>
+        <div class="clear">
+            <button data-dojo-type="dijit.form.Button" class="downloadButton">Download Selected</button>
+            <button data-dojo-type="dijit.form.Button" class="downloadAllButton">Download All</button>
+        </div>
+    </div>
 </div>

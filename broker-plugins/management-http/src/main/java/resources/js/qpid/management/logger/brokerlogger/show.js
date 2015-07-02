@@ -20,14 +20,20 @@
  */
  define(["qpid/common/util",
          "dojo/query",
+         "dojo/_base/lang",
          "dojo/text!logger/brokerlogger/show.html",
          "qpid/common/CategoryTabExtension",
          "dojo/domReady!"],
-   function (util, query, template, CategoryTabExtension)
+   function (util, query, lang, template, CategoryTabExtension)
    {
      function BrokerLogger(params)
      {
-       CategoryTabExtension.call(this, params.containerNode, template, "typeSpecificAttributes", params.metadata, params.data, "qpid/management/logger/brokerlogger/");
+       var categoryExtensionParams = lang.mixin(params, {
+                                                          template: template,
+                                                          typeSpecificAttributesClassName: "typeSpecificAttributes",
+                                                          baseUrl: "qpid/management/logger/brokerlogger/"
+                                                        });
+       CategoryTabExtension.call(this, categoryExtensionParams);
      }
 
      util.extend(BrokerLogger, CategoryTabExtension);

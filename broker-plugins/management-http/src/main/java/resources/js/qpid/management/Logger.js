@@ -192,7 +192,7 @@ define(["dojo/parser",
         }
       }
 
-      storeNodes(["name", "state", "type", "loggerAttributes", "filterWarning", "durable"]);
+      storeNodes(["name", "state", "type", "loggerAttributes", "loggerTypeSpecificDetails", "filterWarning", "durable"]);
     }
 
     Updater.prototype.update = function (callback)
@@ -236,8 +236,11 @@ define(["dojo/parser",
           {
             that.details = new Details({
               containerNode: that.loggerAttributes,
+              typeSpecificDetailsNode: that.loggerTypeSpecificDetails,
               metadata: that.tabObject.management.metadata,
-              data: data
+              data: data,
+              management: that.tabObject.management,
+              modelObj: that.tabObject.modelObj
             });
           }
         );

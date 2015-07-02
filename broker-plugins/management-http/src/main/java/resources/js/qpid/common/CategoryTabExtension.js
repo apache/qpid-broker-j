@@ -23,17 +23,20 @@ define(["qpid/common/util",
     "dojo/domReady!"],
   function (util, query)
   {
-    function CategoryTabExtension(containerNode, template, attributesNode, metadata, data, typeBaseFolder)
+    function CategoryTabExtension(params)
     {
       var that = this;
-      this.base = typeBaseFolder;
-      this.metadata = metadata;
-      util.parse(containerNode, template,
+      this.base = params.baseUrl;
+      this.metadata = params.metadata;
+      this.management = params.management;
+      this.typeSpecificDetailsContainer = params.typeSpecificDetailsNode;
+      this.modelObj = params.modelObj;
+      util.parse(params.containerNode, params.template,
         function()
         {
-          that.typeSpecificAttributesContainer = query("." + attributesNode, containerNode)[0];
-          that.postParse(containerNode);
-          that.update(data)
+          that.typeSpecificAttributesContainer = query("." + params.typeSpecificAttributesClassName, params.containerNode)[0];
+          that.postParse(params.containerNode);
+          that.update(params.data)
         });
     }
 
@@ -53,7 +56,15 @@ define(["qpid/common/util",
           require([this.base + data.type.toLowerCase() + "/show"],
             function(Details)
             {
-              that.details = new Details({containerNode:that.typeSpecificAttributesContainer, metadata: that.metadata, data:data});
+              that.details = new Details(
+                {
+                  containerNode: that.typeSpecificAttributesContainer,
+                  typeSpecificDetailsNode: that.typeSpecificDetailsContainer,
+                  metadata: that.metadata,
+                  data:data,
+                  management: that.management,
+                  modelObj: that.modelObj
+                });
             }
           );
         }

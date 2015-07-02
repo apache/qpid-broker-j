@@ -337,9 +337,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
 
         root.addServlet(new ServletHolder(new TimeZoneServlet()), "/service/timezones");
-        // QPID-6516
-//        root.addServlet(new ServletHolder(new LogFileListingServlet()), "/service/logfilenames");
-//        root.addServlet(new ServletHolder(new Log FileServlet()), "/service/logfile");
 
         final SessionManager sessionManager = root.getSessionHandler().getSessionManager();
         sessionManager.getSessionCookieConfig().setName(JSESSIONID_COOKIE_PREFIX + lastPort);

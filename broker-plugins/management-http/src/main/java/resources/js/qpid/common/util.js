@@ -476,7 +476,8 @@ define(["dojo/_base/xhr",
                                 {
                                     postParseCallback();
                                 }
-                             });
+                             },
+                             function(e){console.error("Parse error:" + e);});
            }
            util.buildUI = function(containerNode, parent, htmlTemplateLocation, fieldNames, obj, postParseCallback)
            {

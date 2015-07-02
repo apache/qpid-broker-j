@@ -20,14 +20,20 @@
  */
 define(["qpid/common/util",
     "dojo/query",
+    "dojo/_base/lang",
     "dojo/text!logger/virtualhostlogger/show.html",
     "qpid/common/CategoryTabExtension",
     "dojo/domReady!"],
-  function (util, query, template, CategoryTabExtension)
+  function (util, query, lang, template, CategoryTabExtension)
   {
     function VirtualHostLogger(params)
     {
-      CategoryTabExtension.call(this, params.containerNode, template, "typeSpecificAttributes", params.metadata, params.data, "qpid/management/logger/virtualhostlogger/");
+      var categoryExtensionParams = lang.mixin(params, {
+                                                          template: template,
+                                                          typeSpecificAttributesClassName: "typeSpecificAttributes",
+                                                          baseUrl: "qpid/management/logger/virtualhostlogger/"
+                                                        });
+      CategoryTabExtension.call(this, categoryExtensionParams);
     }
 
     return util.extend(VirtualHostLogger, CategoryTabExtension);

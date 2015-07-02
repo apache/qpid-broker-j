@@ -19,18 +19,29 @@
  *
  */
 define(["qpid/common/util",
-    "dojo/query",
-    "dojox/html/entities",
     "dojo/text!logger/file/show.html",
     "qpid/common/TypeTabExtension",
+    "qpid/management/logger/FileBrowser",
     "dojo/domReady!"],
-  function (util, query, entities, template, TypeTabExtension)
+  function (util, template, TypeTabExtension, FileBrowser)
   {
     function BrokerFileLogger(params)
     {
+      this.fileBrowser = new FileBrowser({containerNode: params.typeSpecificDetailsNode,
+                                          management: params.management,
+                                          data: params.data,
+                                          modelObj: params.modelObj});
       TypeTabExtension.call(this, params.containerNode, template, "BrokerLogger", "File", params.metadata, params.data);
     }
 
-    return util.extend(BrokerFileLogger, TypeTabExtension);
+    util.extend(BrokerFileLogger, TypeTabExtension);
+
+    BrokerFileLogger.prototype.update = function (restData)
+    {
+      TypeTabExtension.prototype.update.call(this, restData);
+      this.fileBrowser.update(restData);
+    }
+
+    return BrokerFileLogger;
   }
 );

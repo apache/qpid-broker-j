@@ -28,6 +28,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.logging.BrokerFileLogger;
 import org.apache.qpid.server.logging.BrokerMemoryLogger;
 import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
@@ -74,6 +75,8 @@ public class BrokerACLTest extends QpidRestTestCase
         AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " CONFIGURE BROKER",
                 "ACL DENY-LOG " + DENIED_USER + " CONFIGURE BROKER",
+                "ACL ALLOW-LOG " + ALLOWED_USER + " ACCESS_LOGS BROKER",
+                "ACL DENY-LOG " + DENIED_USER + " ACCESS_LOGS BROKER",
                 "ACL DENY-LOG ALL ALL");
 
                 _secondaryAclFileContent =
@@ -865,6 +868,28 @@ public class BrokerACLTest extends QpidRestTestCase
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
         getRestTestHelper().submitRequest("brokerlogger/memory", "DELETE", null, HttpServletResponse.SC_OK);
         getRestTestHelper().submitRequest("brokerlogger/memory", "GET", HttpServletResponse.SC_NOT_FOUND);
+    }
+
+    public void testDownloadBrokerLoggerFileAllowedDenied() throws Exception
+    {
+        final String loggerName = "testFileLogger";
+        final String loggerPath = "brokerlogger/" + loggerName;
+
+        getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(BrokerLogger.NAME, loggerName);
+        attributes.put(ConfiguredObject.TYPE, BrokerFileLogger.TYPE);
+        getRestTestHelper().submitRequest("brokerlogger", "PUT", attributes, HttpServletResponse.SC_CREATED);
+
+        getRestTestHelper().submitRequest(loggerPath + "/getFile?fileName=qpid.log", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(loggerPath + "/getFiles?fileName=qpid.log", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(loggerPath + "/getAllFiles", "GET", HttpServletResponse.SC_OK);
+
+        getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
+        getRestTestHelper().submitRequest(loggerPath + "/getFile?fileName=qpid.log", "GET", HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest(loggerPath + "/getFiles?fileName=qpid.log", "GET", HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest(loggerPath + "/getAllFiles", "GET", HttpServletResponse.SC_FORBIDDEN);
     }
 
     /* === Broker Logger Filters === */

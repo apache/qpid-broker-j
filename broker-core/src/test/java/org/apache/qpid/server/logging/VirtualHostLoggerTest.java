@@ -25,12 +25,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +56,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
 {
     private VirtualHost<?,?,?> _virtualHost;
     private TaskExecutor _taskExecutor;
+    private File _baseFolder;
     private File _logFile;
 
     @Override
@@ -94,10 +98,11 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         _virtualHost = new TestMemoryVirtualHost(attributes, node);
         _virtualHost.open();
 
-        _logFile = new File(TMP_FOLDER, "tmp-virtual-host.log." + System.currentTimeMillis());
-        if (_logFile.exists())
+        _baseFolder = new File(TMP_FOLDER, "test-sub-folder");
+        _logFile = new File(_baseFolder, "tmp-virtual-host.log." + System.currentTimeMillis());
+        if (_baseFolder.exists())
         {
-            assertTrue(String.format("Log file '%s' is not deleted in setUp", _logFile.getPath()), _logFile.delete());
+            FileUtils.delete(_baseFolder, true);
         }
     }
 
@@ -108,9 +113,9 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         {
             _virtualHost.close();
             _taskExecutor.stopImmediately();
-            if (_logFile != null && _logFile.exists())
+            if (_baseFolder != null && _baseFolder.exists())
             {
-                _logFile.delete();
+                FileUtils.delete(_baseFolder, true);
             }
         }
         finally
@@ -119,13 +124,28 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         }
     }
 
-    public void testAddLogger()
+    public void testAddLoggerWithDefaultSettings()
     {
         VirtualHostLogger logger = createVirtualHostLogger();
 
         assertTrue("Unexpected logger created " + logger, logger instanceof VirtualHostFileLogger);
         assertEquals("Unexpected log file", _logFile.getPath(), ((VirtualHostFileLogger<?>) logger).getFileName());
         assertEquals("Unexpected state on creation", State.ACTIVE, logger.getState());
+        assertTrue("Log file does not exists", _logFile.exists());
+
+        Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
+                .getAppender(logger.getName());
+        assertTrue("Appender was not started", appender.isStarted());
+    }
+
+    public void testAddLoggerWithRollDailyOn()
+    {
+        VirtualHostLogger logger = createVirtualHostLogger(Collections.<String, Object>singletonMap("rollDaily", true));
+
+        assertTrue("Unexpected logger created " + logger, logger instanceof VirtualHostFileLogger);
+        assertEquals("Unexpected log file", _logFile.getPath(), ((VirtualHostFileLogger<?>) logger).getFileName());
+        assertEquals("Unexpected state on creation", State.ACTIVE, logger.getState());
+        assertTrue("Log file does not exists", _logFile.exists());
 
         Appender<ILoggingEvent> appender = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME))
                 .getAppender(logger.getName());
@@ -168,10 +188,29 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         assertNull("Appender was not deleted", appender);
     }
 
+    public void testGetLogFiles()
+    {
+        VirtualHostFileLogger logger = (VirtualHostFileLogger)createVirtualHostLogger();
+
+        Collection<LogFileDetails> logFileDetails = logger.getLogFiles();
+        assertEquals("File details should not be empty", 1, logFileDetails.size());
+
+        for(LogFileDetails logFile : logFileDetails)
+        {
+            assertEquals("Unexpected log name", _logFile.getName(), logFile.getName());
+            assertEquals("Unexpected log name", 0, logFile.getSize());
+            assertEquals("Unexpected log name", _logFile.lastModified(), logFile.getLastModified());
+        }
+    }
 
     private VirtualHostLogger createVirtualHostLogger()
     {
-        Map<String, Object> attributes = new HashMap<>();
+        return createVirtualHostLogger(Collections.<String,Object>emptyMap());
+    }
+
+    private VirtualHostLogger createVirtualHostLogger(Map<String, Object> additionalAttributes)
+    {
+        Map<String, Object> attributes = new HashMap<>(additionalAttributes);
         attributes.put(VirtualHostLogger.NAME, getTestName());
         attributes.put(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
         attributes.put(VirtualHostFileLogger.FILE_NAME, _logFile.getPath());

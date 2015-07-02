@@ -21,6 +21,7 @@
 package org.apache.qpid.server.security;
 
 import static org.apache.qpid.server.security.access.ObjectType.BROKER;
+import static org.apache.qpid.server.security.access.ObjectType.VIRTUALHOST;
 import static org.apache.qpid.server.security.access.Operation.ACCESS_LOGS;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -964,7 +965,7 @@ public class SecurityManagerTest extends QpidTestCase
         ObjectProperties properties = new OperationLoggingDetails(description);
 
         assertDeleteAuthorization(configuredObject, Operation.CONFIGURE, ObjectType.BROKER,
-                properties, parent );
+                properties, parent);
     }
 
     private void assertAuthorization(Operation operation, ConfiguredObject<?> configuredObject, Operation aclOperation, ObjectType aclObjectType, ObjectProperties expectedProperties, ConfiguredObject... objects)
@@ -1045,15 +1046,28 @@ public class SecurityManagerTest extends QpidTestCase
         verify(_accessControl, times(2)).authorise(eq(aclOperation), eq(aclObjectType), eq(expectedProperties));
     }
 
-    public void testAuthoriseLogsAccess()
+    public void testAuthoriseLogsAccessOnBroker()
     {
         configureAccessPlugin(Result.ALLOWED);
-        assertTrue(_securityManager.authoriseLogsAccess());
+        assertTrue(_securityManager.authoriseLogsAccess(_broker));
+
         verify(_accessControl).authorise(ACCESS_LOGS, BROKER, ObjectProperties.EMPTY);
 
         configureAccessPlugin(Result.DENIED);
-        assertFalse(_securityManager.authoriseLogsAccess());
+        assertFalse(_securityManager.authoriseLogsAccess(_broker));
         verify(_accessControl, times(2)).authorise(ACCESS_LOGS, BROKER, ObjectProperties.EMPTY);
+    }
+
+    public void testAuthoriseLogsAccessOnVirtualHost()
+    {
+        configureAccessPlugin(Result.ALLOWED);
+        assertTrue(_securityManager.authoriseLogsAccess(_virtualHost));
+        ObjectProperties expectedObjectProperties = new ObjectProperties((String)_virtualHost.getAttribute(ConfiguredObject.NAME));
+        verify(_accessControl).authorise(ACCESS_LOGS, VIRTUALHOST, expectedObjectProperties);
+
+        configureAccessPlugin(Result.DENIED);
+        assertFalse(_securityManager.authoriseLogsAccess(_virtualHost));
+        verify(_accessControl, times(2)).authorise(ACCESS_LOGS, VIRTUALHOST, expectedObjectProperties);
     }
 
     private void configureAccessPlugin(Result result)

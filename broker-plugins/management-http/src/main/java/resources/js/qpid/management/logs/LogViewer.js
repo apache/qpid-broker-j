@@ -25,10 +25,9 @@ define(["dojo/_base/xhr",
         "dijit/registry",
         "qpid/common/grid/GridUpdater",
         "qpid/common/grid/UpdatableGrid",
-        "qpid/management/logs/LogFileDownloadDialog",
         "dojo/text!../../../logs/showLogViewer.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, locale, registry, GridUpdater, UpdatableGrid, LogFileDownloadDialog, markup) {
+       function (xhr, parser, query, locale, registry, GridUpdater, UpdatableGrid, markup) {
 
            var defaulGridRowLimit = 4096;
            var currentTimeZone;
@@ -65,14 +64,6 @@ define(["dojo/_base/xhr",
            };
            LogViewer.prototype._postParse = function()
            {
-               var self = this;
-
-               this.downloadLogsButton = registry.byNode(query(".downloadLogs", this.contentPane.containerNode)[0]);
-               this.downloadLogDialog = new LogFileDownloadDialog({userPreferences:this.management.userPreferences});
-
-               this.downloadLogsButton.on("click", function(evt){
-                   self.downloadLogDialog.showDialog();
-               });
                this._buildGrid();
            };
 

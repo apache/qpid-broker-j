@@ -21,14 +21,15 @@
 
 package org.apache.qpid.server.logging.logback;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashSet;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
+import org.apache.qpid.server.logging.LogFileDetails;
+import org.apache.qpid.server.logging.PathContent;
+import org.apache.qpid.server.logging.ZippedContent;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
@@ -38,12 +39,14 @@ public class RolloverWatcherTest extends QpidTestCase
 {
     private RolloverWatcher _rolloverWatcher;
     private File _baseFolder;
+    private File _activeFile;
 
     public void setUp() throws Exception
     {
         super.setUp();
-        _rolloverWatcher = new RolloverWatcher();
         _baseFolder = TestFileUtils.createTestDirectory("rollover", true);
+        _activeFile = new File(_baseFolder, "test.log");
+        _rolloverWatcher = new RolloverWatcher(_activeFile.toString());
     }
 
     @Override
@@ -70,21 +73,20 @@ public class RolloverWatcherTest extends QpidTestCase
     {
         _rolloverWatcher.onRollover(_baseFolder.toPath(), new String[]{});
 
-        final File activeFile = new File(_baseFolder, "test.log");
-        TestFileUtils.saveTextContentInFile("test", activeFile);
-        PathTypedContent content = _rolloverWatcher.getTypedContent(activeFile.getAbsolutePath(), true);
+        TestFileUtils.saveTextContentInFile("test", _activeFile);
+        PathContent content = _rolloverWatcher.getFileContent(_activeFile.getName());
 
         assertEquals("Unexpected content type", "text/plain", content.getContentType());
         assertEquals("Unexpected data", "test", readContent(content));
         assertEquals("Unexpected size", 4, content.getContentLength());
-        assertEquals("Unexpected content disposition", "attachment; filename=\"" + activeFile.getName().toString() + "\"", content.getContentDisposition());
+        assertEquals("Unexpected content disposition", "attachment; filename=\"" + _activeFile.getName().toString() + "\"", content.getContentDisposition());
     }
 
     public void testGetTypedForNullFile() throws Exception
     {
         try
         {
-            _rolloverWatcher.getTypedContent(null, true);
+            _rolloverWatcher.getFileContent(null);
             fail("IllegalArgumentException is expected for null file name");
         }
         catch (IllegalArgumentException e)
@@ -100,7 +102,7 @@ public class RolloverWatcherTest extends QpidTestCase
 
         TestFileUtils.saveTextContentInFile("test.gz", new File(_baseFolder, "test1.gz"));
 
-        PathTypedContent content = _rolloverWatcher.getTypedContent("test1.gz", false);
+        PathContent content = _rolloverWatcher.getFileContent("test1.gz");
 
         assertEquals("Unexpected content type", "application/x-gzip", content.getContentType());
         assertEquals("Unexpected data", "test.gz", readContent(content));
@@ -114,7 +116,7 @@ public class RolloverWatcherTest extends QpidTestCase
         Path baseFolder = new File(getTestName()).toPath();
         _rolloverWatcher.onRollover(baseFolder, files);
 
-        PathTypedContent content = _rolloverWatcher.getTypedContent("test3.zip", false);
+        PathContent content = _rolloverWatcher.getFileContent("test3.zip");
 
         assertEquals("Unexpected content type", "application/x-zip", content.getContentType());
         assertEquals("Unexpected content disposition", "attachment", content.getContentDisposition());
@@ -135,6 +137,117 @@ public class RolloverWatcherTest extends QpidTestCase
         assertEquals("Unexpected content type for log file", "text/plain", _rolloverWatcher.getContentType("test.log"));
         assertEquals("Unexpected content type for gzip file", "application/x-gzip", _rolloverWatcher.getContentType("test.gz"));
         assertEquals("Unexpected content type for zip file", "application/x-zip", _rolloverWatcher.getContentType("test.zip"));
+    }
+
+    public void testGetLogFileDetails() throws Exception
+    {
+        String[] files = createTestRolledFilesAndNotifyWatcher();
+
+        List<LogFileDetails> logFileDetails = _rolloverWatcher.getLogFileDetails();
+        final int expectedNumberOfEntries = files.length + 1; // add one for the active file
+        assertEquals("getLogFileDetails returned unexpected number of entries", expectedNumberOfEntries, logFileDetails.size());
+
+        List<String> expectedFiles = new ArrayList<>(Arrays.asList(files));
+        expectedFiles.add(_activeFile.getName());
+
+        for (String expectedFileName : expectedFiles)
+        {
+            boolean found = false;
+            for (LogFileDetails details : logFileDetails)
+            {
+                if (details.getName().equals(expectedFileName))
+                {
+                    found = true;
+                    final File file = new File(_baseFolder, expectedFileName);
+                    assertEquals("FileDetail for \"" + expectedFileName + "\" has unexpected lastModified time", file.lastModified(), details.getLastModified());
+                    assertEquals("FileDetail for \"" + expectedFileName + "\" has unexpected size", file.length(), details.getSize());
+                    break;
+                }
+            }
+            assertTrue("File \"" + expectedFileName + "\" expected but not found in logFileDetails", found);
+        }
+    }
+
+    public void testGetFilesAsZippedContentWithNonLogFile() throws Exception
+    {
+        String[] fileNames = createTestRolledFilesAndNotifyWatcher();
+        String nonLogFileName = "nonLogFile.txt";
+        TestFileUtils.saveTextContentInFile(nonLogFileName, new File(_baseFolder, nonLogFileName));
+
+        String[] requestedFiles = new String[]{ fileNames[0], fileNames[2], nonLogFileName };
+        String[] expectedFiles = new String[]{ fileNames[0], fileNames[2] };
+
+        ZippedContent content = _rolloverWatcher.getFilesAsZippedContent(new HashSet<>(Arrays.asList(requestedFiles)));
+        assertZippedContent(expectedFiles, content);
+    }
+
+    public void testGetFilesAsZippedContent() throws Exception
+    {
+        String[] fileNames = createTestRolledFilesAndNotifyWatcher();
+        String[] requestedFiles = new String[]{ fileNames[0], fileNames[2] };
+
+        ZippedContent content = _rolloverWatcher.getFilesAsZippedContent(new HashSet<>(Arrays.asList(requestedFiles)));
+        assertZippedContent(requestedFiles, content);
+    }
+
+    public void testGetFilesAsZippedContentWithNonExistingFile() throws Exception
+    {
+        String[] fileNames = createTestRolledFilesAndNotifyWatcher();
+        new File(_baseFolder, fileNames[2]).delete();
+        String[] requestedFiles = new String[]{ fileNames[0], fileNames[2] };
+        String[] expectedFiles = new String[]{ fileNames[0] };
+
+        ZippedContent content = _rolloverWatcher.getFilesAsZippedContent(new HashSet<>(Arrays.asList(requestedFiles)));
+        assertZippedContent(expectedFiles, content);
+    }
+
+    public void testGetAllFilesAsZippedContent() throws Exception
+    {
+        String[] fileNames = createTestRolledFilesAndNotifyWatcher();
+
+        ZippedContent content = _rolloverWatcher.getAllFilesAsZippedContent();
+        assertZippedContent(fileNames, content);
+    }
+
+    private String[] createTestRolledFilesAndNotifyWatcher()
+    {
+        String[] fileNames = {"test1.gz", "test2.gz", "test3.gz"};
+        for (String fileName : fileNames)
+        {
+            TestFileUtils.saveTextContentInFile(fileName, new File(_baseFolder, fileName));
+        }
+        _rolloverWatcher.onRollover(_baseFolder.toPath(), fileNames);
+        return fileNames;
+    }
+
+    private void assertZippedContent(String[] expectedZipEntries, ZippedContent zippedContent) throws IOException
+    {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        zippedContent.write(outputStream);
+
+        byte[] zipFileContent = outputStream.toByteArray();
+        ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(zipFileContent));
+
+        byte[] buffer = new byte[10];
+        Map<String, String> unzippedContent = new HashMap<>();
+        ZipEntry zipEntry;
+        while ((zipEntry = zipInputStream.getNextEntry()) != null)
+        {
+            int len = 0;
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            while ((len = zipInputStream.read(buffer)) > 0)
+            {
+                output.write(buffer, 0, len);
+            }
+            unzippedContent.put(zipEntry.getName(), new String(output.toByteArray()));
+        }
+
+        assertEquals("ZippedContent has unexpected number of entries.", expectedZipEntries.length, unzippedContent.size());
+        for (String fileName : expectedZipEntries)
+        {
+            assertTrue("ZippedContent does not contain expected file \"" + fileName + "\".", unzippedContent.containsKey(fileName));
+            assertEquals("ZippedContent entry \"" + fileName + "\" has unexpected content.", fileName, unzippedContent.get(fileName));
+        }
     }
 
     private String readContent(Content content) throws IOException

@@ -43,7 +43,7 @@ public class LogRecordsServlet extends AbstractServlet
     @Override
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (!getBroker().getSecurityManager().authoriseLogsAccess())
+        if (!getBroker().getSecurityManager().authoriseLogsAccess(getBroker()))
         {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Broker logs access is denied");
             return;

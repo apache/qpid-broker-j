@@ -633,13 +633,16 @@ public class SecurityManager
         }
     }
 
-    public boolean authoriseLogsAccess()
+    public boolean authoriseLogsAccess(ConfiguredObject configuredObject)
     {
+        Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
+        final ObjectType objectType = getACLObjectTypeManagingConfiguredObjectOfCategory(categoryClass);
+        final ObjectProperties objectProperties = objectType == BROKER ? ObjectProperties.EMPTY : new ObjectProperties((String)configuredObject.getAttribute(ConfiguredObject.NAME));
         return checkAllPlugins(new AccessCheck()
         {
             Result allowed(AccessControl plugin)
             {
-                return plugin.authorise(ACCESS_LOGS, BROKER, ObjectProperties.EMPTY);
+                return plugin.authorise(ACCESS_LOGS, objectType, objectProperties);
             }
         });
     }

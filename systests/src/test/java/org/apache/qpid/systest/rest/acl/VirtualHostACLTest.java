@@ -26,9 +26,12 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.logging.VirtualHostFileLogger;
 import org.apache.qpid.server.management.plugin.HttpManagement;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostLogger;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.server.virtualhost.ProvidedStoreVirtualHostImpl;
@@ -107,6 +110,31 @@ public class VirtualHostACLTest extends QpidRestTestCase
         attributes.put(VirtualHost.DESCRIPTION, "new description");
 
         getRestTestHelper().submitRequest("virtualhost/" + TEST2_VIRTUALHOST + "/" + TEST2_VIRTUALHOST, "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
+    }
+
+    public void testDownloadVirtualHostLoggerFileAllowedDenied() throws Exception
+    {
+        final String virtualHostName = "testVirtualHost";
+        final String loggerName = "testFileLogger";
+        final String loggerPath = "virtualhostlogger/" + VHN_WITHOUT_VH + "/" + virtualHostName + "/" + loggerName;
+
+        getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
+
+        createVirtualHost(VHN_WITHOUT_VH, virtualHostName);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(VirtualHostLogger.NAME, loggerName);
+        attributes.put(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
+        getRestTestHelper().submitRequest("virtualhostlogger/" + VHN_WITHOUT_VH + "/" + virtualHostName, "PUT", attributes, HttpServletResponse.SC_CREATED);
+
+        getRestTestHelper().submitRequest(loggerPath + "/getFile?fileName=qpid.log", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(loggerPath + "/getFiles?fileName=qpid.log", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(loggerPath + "/getAllFiles", "GET", HttpServletResponse.SC_OK);
+
+        getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
+        getRestTestHelper().submitRequest(loggerPath + "/getFile?fileName=qpid.log", "GET", HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest(loggerPath + "/getFiles?fileName=qpid.log", "GET", HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest(loggerPath + "/getAllFiles", "GET", HttpServletResponse.SC_FORBIDDEN);
     }
 
     /* === Utility Methods === */

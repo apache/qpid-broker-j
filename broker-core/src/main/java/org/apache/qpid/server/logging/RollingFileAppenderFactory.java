@@ -31,6 +31,7 @@ import ch.qos.logback.core.rolling.RollingPolicyBase;
 import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+import ch.qos.logback.core.rolling.TriggeringPolicy;
 import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 
 public class RollingFileAppenderFactory
@@ -42,34 +43,38 @@ public class RollingFileAppenderFactory
         appender.setAppend(true);
         appender.setContext(loggerContext);
 
-        RollingPolicyBase policy;
+        TriggeringPolicy triggeringPolicy;
+        RollingPolicyBase rollingPolicy;
         if(fileLoggerSettings.isRollDaily())
         {
-            DailyTriggeringPolicy triggeringPolicy = new DailyTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), fileLoggerSettings.getMaxFileSize());
-            triggeringPolicy.setContext(loggerContext);
-            TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<>();
-            rollingPolicy.setMaxHistory(fileLoggerSettings.getMaxHistory());
-            rollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(triggeringPolicy);
-            rollingPolicy.setFileNamePattern(fileLoggerSettings.getFileName() + ".%d{yyyy-MM-dd}.%i" + (fileLoggerSettings.isCompressOldFiles()
+            DailyTriggeringPolicy dailyTriggeringPolicy = new DailyTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), fileLoggerSettings.getMaxFileSize());
+            dailyTriggeringPolicy.setContext(loggerContext);
+            TimeBasedRollingPolicy<ILoggingEvent> timeBasedRollingPolicy = new TimeBasedRollingPolicy<>();
+            timeBasedRollingPolicy.setMaxHistory(fileLoggerSettings.getMaxHistory());
+            timeBasedRollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(dailyTriggeringPolicy);
+            timeBasedRollingPolicy.setFileNamePattern(fileLoggerSettings.getFileName() + ".%d{yyyy-MM-dd}.%i" + (fileLoggerSettings.isCompressOldFiles()
                     ? ".gz"
                     : ""));
-            policy = rollingPolicy;
+            rollingPolicy = timeBasedRollingPolicy;
+            triggeringPolicy = dailyTriggeringPolicy;
         }
         else
         {
             SizeTriggeringPolicy sizeTriggeringPolicy = new SizeTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), fileLoggerSettings.getMaxFileSize());
             sizeTriggeringPolicy.setContext(loggerContext);
-            SimpleRollingPolicy rollingPolicy = new SimpleRollingPolicy(fileLoggerSettings.getMaxHistory());
-            rollingPolicy.setFileNamePattern(fileLoggerSettings.getFileName() + ".%i" + (fileLoggerSettings.isCompressOldFiles() ? ".gz" : ""));
-            appender.setTriggeringPolicy(sizeTriggeringPolicy);
-            sizeTriggeringPolicy.start();
-            policy = rollingPolicy;
+            SimpleRollingPolicy simpleRollingPolicy = new SimpleRollingPolicy(fileLoggerSettings.getMaxHistory());
+            simpleRollingPolicy.setFileNamePattern(fileLoggerSettings.getFileName() + ".%i" + (fileLoggerSettings.isCompressOldFiles() ? ".gz" : ""));
+            rollingPolicy = simpleRollingPolicy;
+            triggeringPolicy = sizeTriggeringPolicy;
         }
-        policy.setContext(loggerContext);
-        RollingPolicyDecorator decorator = new RollingPolicyDecorator(policy, fileLoggerSettings.getRolloverListener(), fileLoggerSettings.getExecutorService());
+
+        rollingPolicy.setContext(loggerContext);
+        RollingPolicyDecorator decorator = new RollingPolicyDecorator(rollingPolicy, fileLoggerSettings.getRolloverListener(), fileLoggerSettings.getExecutorService());
         decorator.setParent(appender);
         appender.setRollingPolicy(decorator);
+        appender.setTriggeringPolicy(triggeringPolicy);
         decorator.start();
+        triggeringPolicy.start();
 
         final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(fileLoggerSettings.getLayout());
