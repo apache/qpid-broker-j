@@ -892,6 +892,24 @@ public class BrokerACLTest extends QpidRestTestCase
         getRestTestHelper().submitRequest(loggerPath + "/getAllFiles", "GET", HttpServletResponse.SC_FORBIDDEN);
     }
 
+    public void testViewMemoryLoggerEntriesAllowedDenied() throws Exception
+    {
+        final String loggerName = "testMemoryLogger";
+        final String loggerPath = "brokerlogger/" + loggerName;
+
+        getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(BrokerLogger.NAME, loggerName);
+        attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+        getRestTestHelper().submitRequest("brokerlogger", "PUT", attributes, HttpServletResponse.SC_CREATED);
+
+        getRestTestHelper().submitRequest(loggerPath + "/getLogEntries?lastLogId=0", "GET", HttpServletResponse.SC_OK);
+
+        getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
+        getRestTestHelper().submitRequest(loggerPath + "/getLogEntries?lastLogId=0", "GET", HttpServletResponse.SC_FORBIDDEN);
+    }
+
     /* === Broker Logger Filters === */
 
     public void testCreateBrokerLoggerFilterAllowedDenied() throws Exception

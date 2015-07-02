@@ -173,20 +173,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
 
-        if(_logRecorder == null)
-        {
-            Collection<BrokerLogger> loggers = getChildren(BrokerLogger.class);
-            for (BrokerLogger<?> logger : loggers)
-            {
-                if (logger instanceof BrokerMemoryLogger)
-                {
-                    Appender appender = rootLogger.getAppender(logger.getName());
-                    _logRecorder = new LogRecorder((RecordEventAppender) appender);
-                    break;
-                }
-            }
-        }
-
         StartupAppender startupAppender = (StartupAppender) rootLogger.getAppender(StartupAppender.class.getName());
         if (startupAppender != null)
         {
@@ -625,12 +611,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public SecurityManager getSecurityManager()
     {
         return _securityManager;
-    }
-
-    @Override
-    public LogRecorder getLogRecorder()
-    {
-        return _logRecorder;
     }
 
     @Override

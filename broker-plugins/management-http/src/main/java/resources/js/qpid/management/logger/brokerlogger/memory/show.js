@@ -23,14 +23,18 @@ define(["qpid/common/util",
     "dojox/html/entities",
     "dojo/text!logger/memory/show.html",
     "qpid/common/TypeTabExtension",
+    "qpid/management/logger/LogViewer",
     "dojo/domReady!"],
-  function (util, query, entities, template, TypeTabExtension)
+  function (util, query, entities, template, TypeTabExtension, LogViewer)
   {
     function BrokerMemoryLogger(params)
     {
+      this.logViewer = new LogViewer(params.modelObj, params.management, params.typeSpecificDetailsNode);
       TypeTabExtension.call(this, params.containerNode, template, "BrokerLogger", "Memory", params.metadata, params.data);
     }
 
-    return util.extend(BrokerMemoryLogger, TypeTabExtension);
+    util.extend(BrokerMemoryLogger, TypeTabExtension);
+
+    return BrokerMemoryLogger;
   }
 );

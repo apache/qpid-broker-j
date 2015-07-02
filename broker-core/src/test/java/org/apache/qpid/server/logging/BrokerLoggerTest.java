@@ -21,14 +21,13 @@
 package org.apache.qpid.server.logging;
 
 import static org.apache.qpid.server.util.LoggerTestHelper.assertLoggedEvent;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import ch.qos.logback.classic.Level;
@@ -41,6 +40,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.security.SecurityManager;
@@ -55,6 +55,7 @@ public class BrokerLoggerTest extends QpidTestCase
     private AbstractBrokerLogger<?> _brokerLogger;
     private ListAppender _loggerAppender;
     private TaskExecutor _taskExecutor;
+    private Broker<?> _broker;
 
     @Override
     public void setUp() throws Exception
@@ -68,16 +69,18 @@ public class BrokerLoggerTest extends QpidTestCase
 
         Model model = BrokerModel.getInstance();
 
-        org.apache.qpid.server.security.SecurityManager securityManager = mock(SecurityManager.class);
-        Broker<?> broker = mock(Broker.class);
-        when(broker.getSecurityManager()).thenReturn(securityManager);
-        when(broker.getModel()).thenReturn(model);
-        when(broker.getChildExecutor()).thenReturn(_taskExecutor);
-        doReturn(Broker.class).when(broker).getCategoryClass();
+        SecurityManager securityManager = mock(SecurityManager.class);
+        when(securityManager.authoriseLogsAccess(any(ConfiguredObject.class))).thenReturn(true);
+
+        _broker = mock(Broker.class);
+        when(_broker.getSecurityManager()).thenReturn(securityManager);
+        when(_broker.getModel()).thenReturn(model);
+        when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
+        doReturn(Broker.class).when(_broker).getCategoryClass();
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("name", APPENDER_NAME);
-        _brokerLogger = new AbstractBrokerLogger(attributes, broker)
+        _brokerLogger = new AbstractBrokerLogger(attributes, _broker)
         {
             @Override
             public Appender<ILoggingEvent> createAppenderInstance(Context context)
@@ -87,6 +90,8 @@ public class BrokerLoggerTest extends QpidTestCase
         };
         _brokerLogger.open();
     }
+
+
 
     @Override
     public void tearDown() throws Exception
@@ -159,4 +164,58 @@ public class BrokerLoggerTest extends QpidTestCase
         assertNull("Appender found when it should have been deleted", rootLogger.getAppender(_brokerLogger.getName()));
     }
 
+    public void testBrokerMemoryLoggerGetLogEntries()
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(BrokerMemoryLogger.NAME, getTestName());
+        attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+        BrokerMemoryLogger logger = new BrokerMemoryLoggerImplFactory().createInstance(attributes, _broker);
+        try
+        {
+            logger.open();
+
+            Map<String, Object> filterAttributes = new HashMap<>();
+            filterAttributes.put(BrokerNameAndLevelFilter.NAME, "1");
+            filterAttributes.put(BrokerNameAndLevelFilter.LEVEL, LogLevel.ALL);
+            filterAttributes.put(BrokerNameAndLevelFilter.LOGGER_NAME, "");
+            filterAttributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
+            logger.createChild(BrokerLoggerFilter.class, filterAttributes);
+
+            Logger messageLogger = LoggerFactory.getLogger("org.apache.qpid.test");
+            messageLogger.debug("test message 1");
+            Collection<LogRecord> logRecords = logger.getLogEntries(0);
+
+            LogRecord foundRecord = findLogRecord("test message 1", logRecords);
+
+            assertNotNull("Record is not found", foundRecord);
+
+            messageLogger.debug("test message 2");
+
+            Collection<LogRecord> logRecords2 = logger.getLogEntries(foundRecord.getId());
+            for (LogRecord record: logRecords2)
+            {
+                assertTrue("Record id " + record.getId() + " is below " + foundRecord.getId(), record.getId() > foundRecord.getId());
+            }
+
+            LogRecord foundRecord2 = findLogRecord("test message 2", logRecords2);
+
+            assertNotNull("Record2 is not found", foundRecord2);
+        }
+        finally
+        {
+            logger.delete();
+        }
+    }
+
+    private LogRecord findLogRecord(String message, Collection<LogRecord> logRecords)
+    {
+        for (LogRecord record: logRecords)
+        {
+            if (message.equals(record.getMessage()))
+            {
+                return record;
+            }
+        }
+        return null;
+    }
 }

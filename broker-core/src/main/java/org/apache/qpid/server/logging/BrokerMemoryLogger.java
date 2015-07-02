@@ -20,9 +20,13 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.util.Collection;
+
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
+import org.apache.qpid.server.model.Param;
 
 @ManagedObject( category = false, type = BrokerMemoryLogger.TYPE)
 public interface BrokerMemoryLogger<X extends BrokerMemoryLogger<X>> extends BrokerLogger<X>
@@ -31,5 +35,8 @@ public interface BrokerMemoryLogger<X extends BrokerMemoryLogger<X>> extends Bro
 
     @ManagedAttribute( defaultValue = "4096" )
     int getMaxRecords();
+
+    @ManagedOperation(nonModifying = true)
+    Collection<LogRecord> getLogEntries(@Param(name="lastLogId", defaultValue="0") long lastLogId);
 
 }

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.helpers.CyclicBuffer;
@@ -29,11 +31,12 @@ public class RecordEventAppender extends AppenderBase<ILoggingEvent>
 
     private CyclicBuffer<LogRecord> _buffer;
     private final int _size;
-    private volatile int _recordId;
+    private AtomicLong _recordId;
 
     RecordEventAppender(final int size)
     {
         _size = size;
+        _recordId = new AtomicLong();
     }
 
     public void start()
@@ -53,7 +56,7 @@ public class RecordEventAppender extends AppenderBase<ILoggingEvent>
     {
         if (isStarted())
         {
-            _buffer.add(new LogRecord(_recordId++,eventObject));
+            _buffer.add(new LogRecord(_recordId.incrementAndGet(), eventObject));
         }
     }
 

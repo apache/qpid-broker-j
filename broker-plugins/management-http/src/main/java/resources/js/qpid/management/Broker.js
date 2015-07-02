@@ -81,12 +81,6 @@ define(["dojo/parser",
                             {
                             that.brokerUpdater = new BrokerUpdater(contentPane.containerNode, that.modelObj, that.controller);
 
-                            var logViewerButton = query(".logViewer", contentPane.containerNode)[0];
-                            registry.byNode(logViewerButton).on("click", function(evt){
-                              that.controller.show("logViewer", "");
-                            });
-
-
                             var addProviderButton = query(".addAuthenticationProvider", contentPane.containerNode)[0];
                             connect.connect(registry.byNode(addProviderButton), "onClick", function(evt){
                                 addAuthenticationProvider.show(that.management, that.modelObj);

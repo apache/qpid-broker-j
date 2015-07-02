@@ -69,7 +69,6 @@ import org.apache.qpid.server.management.plugin.servlet.DefinedFileServlet;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.RootServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
-import org.apache.qpid.server.management.plugin.servlet.rest.LogRecordsServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LoggedOnUserPreferencesServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogoutServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.MessageContentServlet;
@@ -315,9 +314,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new MessageServlet()), "/service/message/*");
         root.addServlet(new ServletHolder(new MessageContentServlet()), "/service/message-content/*");
         root.addServlet(new ServletHolder(new QueueReportServlet()), "/service/queuereport/*");
-
-
-        root.addServlet(new ServletHolder(new LogRecordsServlet()), "/service/logrecords");
 
         root.addServlet(new ServletHolder(new MetaDataServlet(getModel())), "/service/metadata");
 

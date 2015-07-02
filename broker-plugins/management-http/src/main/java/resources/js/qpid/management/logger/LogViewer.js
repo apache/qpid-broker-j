@@ -25,9 +25,9 @@ define(["dojo/_base/xhr",
         "dijit/registry",
         "qpid/common/grid/GridUpdater",
         "qpid/common/grid/UpdatableGrid",
-        "dojo/text!../../../logs/showLogViewer.html",
+        "dojo/text!logger/memory/showLogViewer.html",
         "dojo/domReady!"],
-       function (xhr, parser, query, locale, registry, GridUpdater, UpdatableGrid, markup) {
+       function (xhr, parser, query, locale, registry, GridUpdater, UpdatableGrid, template) {
 
            var defaulGridRowLimit = 4096;
            var currentTimeZone;
@@ -41,34 +41,19 @@ define(["dojo/_base/xhr",
              return data;
            }
 
-           function LogViewer(name, parent, controller) {
-               var self = this;
-               this.management = controller.management;
-               this.name = name;
+           function LogViewer(loggerModelObj, management, containerNode) {
+               var that = this;
+               this.management = management;
+               this.modelObj = {type: loggerModelObj.type, name: "getLogEntries", parent: loggerModelObj};
                this.lastLogId = 0;
-               this.contentPane = null;
-               this.downloadLogsButton = null;
-               this.downloadLogDialog = null;
+               this.containerNode = containerNode;
+               containerNode.innerHTML = template;
+               parser.parse(containerNode).then(function(instances){that._buildGrid();});
            }
 
-           LogViewer.prototype.getTitle = function() {
-               return "Log Viewer";
-           };
-
-           LogViewer.prototype.open = function(contentPane) {
-               var self = this;
-               this.contentPane = contentPane;
-               this.contentPane.containerNode.innerHTML = markup;
-
-               parser.parse(this.contentPane.containerNode).then(function(instances){self._postParse();});
-           };
-           LogViewer.prototype._postParse = function()
-           {
-               this._buildGrid();
-           };
 
            LogViewer.prototype._buildGrid = function() {
-               var self = this;
+               var that = this;
                var userPreferences = this.management.userPreferences;
                currentTimeZone = userPreferences.getTimeZoneDescription();
                var gridStructure = [
@@ -104,11 +89,11 @@ define(["dojo/_base/xhr",
                    },
                    { name: "Level", field: "level", width: "50px", datatype: "string", autoComplete: true, hidden: true},
                    { name: "Logger", field: "logger", width: "150px", datatype: "string", autoComplete: false, hidden: true},
-                   { name: "Thread", field: "thread", width: "100px", datatype: "string", hidden: true},
+                   { name: "Thread", field: "threadName", width: "100px", datatype: "string", hidden: true},
                    { name: "Log Message", field: "message", width: "auto", datatype: "string"}
                ];
 
-               var gridNode = query("#broker-logfile", this.contentPane.containerNode)[0];
+               var gridNode = query(".logEntries", this.containerNode)[0];
                try
                {
                  var updater = new GridUpdater({
@@ -116,7 +101,7 @@ define(["dojo/_base/xhr",
                      updatable: false,
                      serviceUrl: function()
                      {
-                       return "service/logrecords?lastLogId=" + self.lastLogId;
+                       return that.management.buildObjectURL(that.modelObj, {lastLogId: that.lastLogId});
                      },
                      onUpdate: function(items)
                      {
@@ -133,7 +118,7 @@ define(["dojo/_base/xhr",
                          }
                          if (maxId != -1)
                          {
-                           self.lastLogId = maxId
+                           that.lastLogId = maxId
                          }
                        }
                      },
@@ -156,9 +141,9 @@ define(["dojo/_base/xhr",
                   }), gridNode);
                  var onStyleRow = function(row)
                  {
-                   var item = self.grid.getItem(row.index);
+                   var item = that.grid.getItem(row.index);
                    if(item){
-                      var level = self.grid.store.getValue(item, "level", null);
+                      var level = that.grid.store.getValue(item, "level", null);
                       var changed = false;
                       if(level == "ERROR"){
                           row.customClasses += " redBackground";
@@ -172,7 +157,7 @@ define(["dojo/_base/xhr",
                       }
                       if (changed)
                       {
-                          self.grid.focus.styleRow(row);
+                          that.grid.focus.styleRow(row);
                       }
                    }
                  };
@@ -189,25 +174,6 @@ define(["dojo/_base/xhr",
                }
            };
 
-           LogViewer.prototype.close = function() {
-             this.management.userPreferences.removeListener(this);
-             if (this.grid)
-             {
-                 this.grid.destroy();
-                 this.grid = null;
-             }
-             if (this.downloadLogDialog)
-             {
-                 this.downloadLogDialog.destroy();
-                 this.downloadLogDialog = null;
-             }
-             if (this.downloadLogsButton)
-             {
-                 this.downloadLogsButton.destroy();
-                 this.downloadLogsButton = null;
-             }
-           };
-
            LogViewer.prototype.onPreferencesChange = function(data)
            {
              var userPreferences = this.management.userPreferences;
@@ -218,6 +184,11 @@ define(["dojo/_base/xhr",
                 this.grid._refresh();
              }
            };
+
+           LogViewer.prototype.close = function(data)
+           {
+             this.management.userPreferences.removeListener(this);
+           }
 
            return LogViewer;
        });

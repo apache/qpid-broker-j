@@ -164,11 +164,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
      */
     SecurityManager getSecurityManager();
 
-    /**
-     * TODO: A temporary hack to expose log recorder via broker instance.
-     */
-    LogRecorder getLogRecorder();
-
     VirtualHost<?,?,?> findVirtualHostByName(String name);
 
     VirtualHostNode findDefautVirtualHostNode();
