@@ -339,68 +339,75 @@ public class RestServlet extends AbstractServlet
     @Override
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        String[] pathInfoElements = getPathInfoElements(request);
-        if (pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1)
+        try
         {
-            doOperation(request, response);
-        }
-        else
-        {
-            // TODO - sort special params, everything else should act as a filter
-            String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
-            boolean extractInitialConfig = getBooleanParameterFromRequest(request, EXTRACT_INITIAL_CONFIG_PARAM);
-
-            if (attachmentFilename != null)
+            String[] pathInfoElements = getPathInfoElements(request);
+            if (pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1)
             {
-                setContentDispositionHeaderIfNecessary(response, attachmentFilename);
-            }
-
-            Collection<ConfiguredObject<?>> allObjects = getObjects(request);
-
-            if (allObjects.isEmpty() && isSingleObjectRequest(request))
-            {
-                sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
-                return;
-            }
-
-            int depth;
-            boolean actuals;
-            boolean includeSystemContext;
-            boolean inheritedActuals;
-            int oversizeThreshold;
-
-            if (extractInitialConfig)
-            {
-                depth = Integer.MAX_VALUE;
-                oversizeThreshold = Integer.MAX_VALUE;
-                actuals = true;
-                includeSystemContext = false;
-                inheritedActuals = false;
+                doOperation(request, response);
             }
             else
             {
-                depth = getIntParameterFromRequest(request, DEPTH_PARAM, DEFAULT_DEPTH);
-                oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, DEFAULT_OVERSIZE);
-                actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
-                includeSystemContext = getBooleanParameterFromRequest(request, INCLUDE_SYS_CONTEXT_PARAM);
-                inheritedActuals = getBooleanParameterFromRequest(request, INHERITED_ACTUALS_PARAM);
+                // TODO - sort special params, everything else should act as a filter
+                String attachmentFilename = request.getParameter(CONTENT_DISPOSITION_ATTACHMENT_FILENAME_PARAM);
+                boolean extractInitialConfig = getBooleanParameterFromRequest(request, EXTRACT_INITIAL_CONFIG_PARAM);
+
+                if (attachmentFilename != null)
+                {
+                    setContentDispositionHeaderIfNecessary(response, attachmentFilename);
+                }
+
+                Collection<ConfiguredObject<?>> allObjects = getObjects(request);
+
+                if (allObjects.isEmpty() && isSingleObjectRequest(request))
+                {
+                    sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
+                    return;
+                }
+
+                int depth;
+                boolean actuals;
+                boolean includeSystemContext;
+                boolean inheritedActuals;
+                int oversizeThreshold;
+
+                if (extractInitialConfig)
+                {
+                    depth = Integer.MAX_VALUE;
+                    oversizeThreshold = Integer.MAX_VALUE;
+                    actuals = true;
+                    includeSystemContext = false;
+                    inheritedActuals = false;
+                }
+                else
+                {
+                    depth = getIntParameterFromRequest(request, DEPTH_PARAM, DEFAULT_DEPTH);
+                    oversizeThreshold = getIntParameterFromRequest(request, OVERSIZE_PARAM, DEFAULT_OVERSIZE);
+                    actuals = getBooleanParameterFromRequest(request, ACTUALS_PARAM);
+                    includeSystemContext = getBooleanParameterFromRequest(request, INCLUDE_SYS_CONTEXT_PARAM);
+                    inheritedActuals = getBooleanParameterFromRequest(request, INHERITED_ACTUALS_PARAM);
+                }
+
+                List<Map<String, Object>> output = new ArrayList<>();
+                for (ConfiguredObject configuredObject : allObjects)
+                {
+
+                    output.add(_objectConverter.convertObjectToMap(configuredObject, getConfiguredClass(),
+                            depth, actuals, inheritedActuals, includeSystemContext, extractInitialConfig, oversizeThreshold, request.isSecure()));
+                }
+
+
+                boolean sendCachingHeaders = attachmentFilename == null;
+                sendJsonResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output,
+                        request,
+                        response,
+                        HttpServletResponse.SC_OK,
+                        sendCachingHeaders);
             }
-
-            List<Map<String, Object>> output = new ArrayList<>();
-            for (ConfiguredObject configuredObject : allObjects)
-            {
-
-                output.add(_objectConverter.convertObjectToMap(configuredObject, getConfiguredClass(),
-                        depth, actuals, inheritedActuals, includeSystemContext, extractInitialConfig, oversizeThreshold, request.isSecure()));
-            }
-
-
-            boolean sendCachingHeaders = attachmentFilename == null;
-            sendJsonResponse(extractInitialConfig && output.size() == 1 ? output.get(0) : output,
-                    request,
-                    response,
-                    HttpServletResponse.SC_OK,
-                    sendCachingHeaders);
+        }
+        catch (RuntimeException e)
+        {
+            setResponseStatus(request, response, e);
         }
     }
 
