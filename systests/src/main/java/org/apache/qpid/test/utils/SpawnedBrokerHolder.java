@@ -115,14 +115,6 @@ public class SpawnedBrokerHolder implements BrokerHolder
         processEnv.put("QPID_PNAME", "-DPNAME=QPBRKR -DTNAME=\"" + _name + "\"");
         processEnv.put("QPID_WORK", qpidWork);
 
-        // Use the environment variable to set amqj.logging.level for the broker
-        // The value used is a 'server' value in the test configuration to
-        // allow a differentiation between the client and broker logging levels.
-        if (System.getProperty("amqj.server.logging.level") != null)
-        {
-            processEnv.put("AMQJ_LOGGING_LEVEL", System.getProperty("amqj.server.logging.level"));
-        }
-
         // Add all the environment settings the test requested
         if (!_environmentSettings.isEmpty())
         {

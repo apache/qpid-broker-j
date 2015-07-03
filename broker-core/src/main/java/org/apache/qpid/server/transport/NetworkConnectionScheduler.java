@@ -63,10 +63,10 @@ public class NetworkConnectionScheduler
     {
         try
         {
-            _selectorThread = new SelectorThread(this);
+            _name = name;
+            _selectorThread = new SelectorThread(this);  // TODO: Publishes partially constructed object
             _selectorThread.start();
             _poolSize = threadPoolSize;
-            _name = name;
             _executor = new ThreadPoolExecutor(_poolSize, _poolSize, 0L, TimeUnit.MILLISECONDS,
                                                new LinkedBlockingQueue<Runnable>(), factory);
             _executor.prestartAllCoreThreads();

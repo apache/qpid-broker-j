@@ -47,7 +47,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class TaskExecutorImpl implements TaskExecutor
 {
-    private static final String TASK_EXECUTION_THREAD_NAME = "Broker-Configuration-Thread";
+    private static final String TASK_EXECUTION_THREAD_NAME = "Broker-Config";
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskExecutorImpl.class);
     private final PrincipalAccessor _principalAccessor;
 

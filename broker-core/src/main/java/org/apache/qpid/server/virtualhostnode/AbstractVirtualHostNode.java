@@ -106,7 +106,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     {
         super(Collections.<Class<? extends ConfiguredObject>,ConfiguredObject<?>>singletonMap(Broker.class, parent),
               attributes);
-        _virtualHostExecutor = getTaskExecutor().getFactory().newInstance("VirtualHostNode-" + getName() + "-Configuration-Thread", new TaskExecutor.PrincipalAccessor()
+        _virtualHostExecutor = getTaskExecutor().getFactory().newInstance("VirtualHostNode-" + getName() + "-Config", new TaskExecutor.PrincipalAccessor()
         {
             @Override
             public Principal getPrincipal()

@@ -39,7 +39,7 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.sift.SiftingAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
@@ -57,6 +57,10 @@ import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
+import org.apache.qpid.server.logging.BrokerLogbackSocketLogger;
+import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
+import org.apache.qpid.server.model.BrokerLogger;
+import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -67,8 +71,10 @@ import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.url.URLSyntaxException;
 import org.apache.qpid.util.FileUtils;
 import org.apache.qpid.util.SystemUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * Qpid base class for system testing test cases.
@@ -76,6 +82,8 @@ import org.slf4j.LoggerFactory;
 public class QpidBrokerTestCase extends QpidTestCase
 {
     private TaskExecutor _taskExecutor;
+
+    public static final int LOGBACK_REMOTE_PORT = LogbackSocketPortNumberDefiner.getLogbackSocketPortNumber();
 
     public static final String GUEST_USERNAME = "guest";
     public static final String GUEST_PASSWORD = "guest";
@@ -86,6 +94,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     protected static final int LOGMONITOR_TIMEOUT = 5000;
 
     protected long RECEIVE_TIMEOUT = Long.getLong("qpid.test_receive_timeout", 1000l);
+
 
     private Map<String, String> _propertiesSetForBroker = new HashMap<String, String>();
 
@@ -170,18 +179,29 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public File getOutputFile()
     {
-
-        // get log file from file appender
         final ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        File appender = getFileFromSiftingAppender(logger);
+
+        return appender;
+    }
+
+    private File getFileFromSiftingAppender(final ch.qos.logback.classic.Logger logger)
+    {
+        String key = MDC.get(QpidTestCase.CLASS_QUALIFIED_TEST_NAME);
+
         for (Iterator<Appender<ILoggingEvent>> index = logger.iteratorForAppenders(); index.hasNext(); /* do nothing */ )
         {
             Appender<ILoggingEvent> appender = index.next();
-            if (appender instanceof FileAppender)
+            if (appender instanceof SiftingAppender)
             {
-                return new File(((FileAppender)appender).getFile());
+                SiftingAppender siftingAppender = (SiftingAppender) appender;
+                Appender subAppender = siftingAppender.getAppenderTracker().find(key);
+                if (subAppender instanceof FileAppender)
+                {
+                    return new File(((FileAppender)subAppender).getFile());
+                }
             }
         }
-
         return null;
     }
 
@@ -255,6 +275,31 @@ public class QpidBrokerTestCase extends QpidTestCase
             configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_RMI_PORT, Port.PORT, getManagementPort(actualPort));
             configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_JMX_PORT, Port.PORT, getManagementPort(actualPort) + JMXPORT_CONNECTORSERVER_OFFSET);
 
+            String remotelogback = "remotelogback";
+
+            Map<String, String> mdc = new HashMap<>();
+            mdc.put(CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
+            mdc.put("origin", "B-" + actualPort);
+
+            Map<String, Object> loggerAttrs = new HashMap<>();
+            loggerAttrs.put(BrokerLogger.TYPE, BrokerLogbackSocketLogger.TYPE);
+            loggerAttrs.put(BrokerLogbackSocketLogger.NAME, remotelogback);
+            loggerAttrs.put(BrokerLogbackSocketLogger.PORT, LOGBACK_REMOTE_PORT);
+
+            loggerAttrs.put(BrokerLogbackSocketLogger.MAPPED_DIAGNOSTIC_CONTEXT,
+                            mdc);
+
+            configuration.addObjectConfiguration(BrokerLogger.class, loggerAttrs);
+
+            Map<String, Object> filterAttrs = new HashMap<>();
+            filterAttrs.put(BrokerLoggerFilter.NAME, "1");
+            filterAttrs.put(BrokerLoggerFilter.TYPE, BrokerNameAndLevelFilter.TYPE);
+            filterAttrs.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
+            filterAttrs.put(BrokerNameAndLevelFilter.LOGGER_NAME, "org.apache.qpid.*");
+
+            configuration.addObjectConfiguration(BrokerLogger.class,
+                                                 remotelogback, BrokerLoggerFilter.class, filterAttrs);
+
             String workDir = System.getProperty("QPID_WORK") + File.separator + TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST + File.separator + actualPort;
             configuration.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, JsonVirtualHostNode.STORE_PATH, workDir);
         }
@@ -272,11 +317,6 @@ public class QpidBrokerTestCase extends QpidTestCase
     {
         // Initialize this for each test run
         _env = new HashMap<String, String>();
-
-        // Log4j properties expects this to be set
-        System.setProperty("qpid.testMethod", "-" + getName());
-        System.setProperty("qpid.testClass", getClass().getName());
-
 
         try
         {
@@ -303,11 +343,6 @@ public class QpidBrokerTestCase extends QpidTestCase
 
             _logger.info("==========  stop " + getTestName() + " ==========");
 
-            final ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-
-            final LoggerContext context = logger.getLoggerContext();
-            context.reset();
-            context.stop();
         }
     }
 
@@ -1245,7 +1280,6 @@ public class QpidBrokerTestCase extends QpidTestCase
             jvmOptions.putAll(_propertiesSetForBroker);
 
             copySystemProperty("amqj.protocol.logging.level", jvmOptions);
-            copySystemProperty("root.logging.level", jvmOptions);
 
             copySystemProperty("test.port", jvmOptions);
             copySystemProperty("test.mport", jvmOptions);

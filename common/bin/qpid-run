@@ -78,7 +78,6 @@ fi
 #Set the default system properties that we'll use now that they have
 #all been initialised
 declare -a SYSTEM_PROPS
-SYSTEM_PROPS[${#SYSTEM_PROPS[@]}]="-Damqj.logging.level=$AMQJ_LOGGING_LEVEL"
 SYSTEM_PROPS[${#SYSTEM_PROPS[@]}]="-DQPID_HOME=$QPID_HOME"
 SYSTEM_PROPS[${#SYSTEM_PROPS[@]}]="-DQPID_WORK=$QPID_WORK"
 

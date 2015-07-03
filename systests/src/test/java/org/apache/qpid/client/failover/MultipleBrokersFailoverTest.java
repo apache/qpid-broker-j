@@ -71,7 +71,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
         super.setUp();
 
         int numBrokers = 4;
-        int port = findFreePort();
+        int port = getPort();
         _brokerPorts = new int[numBrokers];
 
         // we need to create 4 brokers:

@@ -97,7 +97,7 @@ public final class IoSender implements Runnable, ByteBufferSender
         }
 
         senderThread.setDaemon(true);
-        senderThread.setName(String.format("IoSender-%s", _remoteSocketAddress));
+        senderThread.setName(String.format("IoSndr-%s", _remoteSocketAddress));
     }
 
     public void initiate()

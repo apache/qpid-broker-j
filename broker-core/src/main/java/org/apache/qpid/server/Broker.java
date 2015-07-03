@@ -69,6 +69,7 @@ public class Broker
     private volatile SystemConfig _systemConfig;
 
     private final Action<Integer> _shutdownAction;
+    private boolean _loggerContextStarted;
 
 
     public Broker()
@@ -131,7 +132,10 @@ public class Broker
         if (_configuringOwnLogging)
         {
             LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-            loggerContext.stop();
+            if (_loggerContextStarted)
+            {
+                loggerContext.stop();
+            }
         }
 
         if (_shutdownAction != null)
@@ -158,7 +162,11 @@ public class Broker
             {
                 ch.qos.logback.classic.Logger logger =
                         (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-                logger.getLoggerContext().reset();
+                if (!logger.getLoggerContext().isStarted())
+                {
+                    logger.getLoggerContext().start();
+                    _loggerContextStarted = true;
+                }
                 logger.setAdditive(true);
                 logger.setLevel(Level.ALL);
 

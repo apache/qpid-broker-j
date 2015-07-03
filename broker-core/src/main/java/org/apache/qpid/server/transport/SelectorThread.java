@@ -60,7 +60,7 @@ class SelectorThread extends Thread
 
     SelectorThread(final NetworkConnectionScheduler scheduler) throws IOException
     {
-        super("SelectorThread-" + scheduler.getName());
+        super("Selector-" + scheduler.getName());
 
         _selector = Selector.open();
         _scheduler = scheduler;

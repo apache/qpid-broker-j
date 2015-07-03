@@ -194,9 +194,6 @@
         <resource>
             <directory>src/main/resources</directory>
         </resource>
-        <resource>
-            <directory>${test.resource.directory}/test-profiles/test_resources</directory>
-        </resource>
     </resources>
   </build>
 

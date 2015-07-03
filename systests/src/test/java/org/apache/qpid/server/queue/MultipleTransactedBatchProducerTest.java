@@ -53,8 +53,6 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
 
     public void setUp() throws Exception
     {
-        //debug level logging often makes this test pass artificially, turn the level down to info.
-        setSystemProperty("amqj.server.logging.level", "INFO");
         _receivedLatch = new CountDownLatch(MESSAGE_COUNT * NUM_PRODUCERS);
 
         getBrokerConfiguration().addJmxManagementConfiguration();

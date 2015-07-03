@@ -27,27 +27,6 @@
     "path" : "${QPID_HOME}${file.separator}etc${file.separator}passwd"
   } ],
   "brokerloggers" : [ {
-    "name" : "logfile",
-    "type" : "File",
-    "fileName" : "${test.output.dir}${file.separator}TEST-${qpid.testClass}${qpid.testMethod}.txt",
-    "rollDaily" : false,
-    "rollOnRestart" : true,
-    "compressOldFiles" : false,
-    "maxFileSize" : "200mb",
-    "maxHistory" : 1,
-    "safeMode" : true,
-    "brokerloggerfilters" : [ {
-      "name" : "1",
-      "type" : "NameAndLevel",
-      "level" : "INFO",
-      "loggerName" : "" 
-    }, {
-      "name" : "2",
-      "type" : "NameAndLevel",
-      "level" : "DEBUG",
-      "loggerName" : "org.apache.qpid.*" 
-    } ]
-  }, {
     "name" : "memory",
     "type" : "Memory",
     "maxRecords" : 4096,

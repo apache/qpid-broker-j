@@ -16,22 +16,26 @@
   ~ KIND, either express or implied.  See the License for the
   ~ specific language governing permissions and limitations
   ~ under the License.
+  ~
   -->
-<configuration scan="true" scanPeriod="10 seconds">
-    <appender name="TestAppender" class="ch.qos.logback.core.FileAppender">
-        <file>${test.output.dir}${file.separator}TEST-${qpid.testClass}${qpid.testMethod}.txt</file>
-        <append>false</append>
-        <encoder>
-            <immediateFlush>true</immediateFlush>
-            <pattern>%d %-5p [%t] \(%c{2}\) - %m%n</pattern>
-        </encoder>
+<configuration debug="true">
+
+    <appender name="RootSiftAppender" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <discriminator>
+            <Key>classQualifiedTestName</Key>
+            <DefaultValue>testrun</DefaultValue>
+        </discriminator>
+        <sift>
+            <appender name="FILE-${classQualifiedTestName}" class="ch.qos.logback.core.FileAppender">
+                <File>${test.output.dir}${file.separator}TEST-${classQualifiedTestName}.txt</File>
+                <Append>False</Append>
+                <encoder>
+                    <pattern>%date %-5level [%thread] %logger{10} %msg%n</pattern>
+                </encoder>
+            </appender>
+        </sift>
     </appender>
-
-    <logger name="org.apache.qpid" level="${amqj.logging.level}"/>
-    <logger name="qpid.message" level="INFO"/>
-
     <root level="debug">
-        <appender-ref ref="TestAppender"/>
+        <appender-ref ref="RootSiftAppender"/>
     </root>
-    <!-- General logging hierarchy --><!-- Log all info events to file -->
 </configuration>

@@ -30,6 +30,7 @@ import junit.framework.TestCase;
 import junit.framework.TestResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 public class QpidTestCase extends TestCase
 {
@@ -38,19 +39,19 @@ public class QpidTestCase extends TestCase
     private static final String TEST_EXCLUDEFILES = "test.excludefiles";
     private static final String VIRTUAL_HOST_NODE_TYPE = "virtualhostnode.type";
     private static final String VIRTUAL_HOST_NODE_CONTEXT_BLUEPRINT = "virtualhostnode.context.blueprint";
+
     public static final String QPID_HOME = System.getProperty("QPID_HOME");
-    public static final String TEST_RESOURCES_DIR = QPID_HOME + "/../test-profiles/test_resources/";
-    public static final String TEST_PROFILES_DIR = QPID_HOME + "/../test-profiles/";
+    public static final String TEST_PROFILES_DIR = QPID_HOME + File.separator + ".." + File.separator + "test-profiles" + File.separator;
+    public static final String TEST_RESOURCES_DIR = TEST_PROFILES_DIR + "test_resources/";
     public static final String TMP_FOLDER = System.getProperty("java.io.tmpdir");
+    public static final String CLASS_QUALIFIED_TEST_NAME = "classQualifiedTestName";
 
     private static final Logger _logger = LoggerFactory.getLogger(QpidTestCase.class);
     private static QpidTestCase _currentInstance;
 
-    private final Map<String, String> _propertiesSetForTest = new HashMap<String, String>();
+    private final Map<String, String> _propertiesSetForTest = new HashMap<>();
 
-    private String _testName;
-
-    private Set<Runnable> _tearDownRegistry = new HashSet<>();
+    private final Set<Runnable> _tearDownRegistry = new HashSet<>();
 
     /**
      * Some tests are excluded when the property test.excludes is set to true.
@@ -75,12 +76,12 @@ public class QpidTestCase extends TestCase
             {
                 for (String exclude : testExcludes.split("\\s+"))
                 {
-                    exclusionListURIs += TEST_PROFILES_DIR + "/" + exclude + ";";
+                    exclusionListURIs += TEST_PROFILES_DIR + File.separator + exclude + ";";
                 }
             }
 
-            List<String> exclusionList = new ArrayList<String>();
 
+            List<String> exclusionList = new ArrayList<>();
             for (String uri : exclusionListURIs.split(";\\s*"))
             {
                 File file = new File(uri);
@@ -120,11 +121,15 @@ public class QpidTestCase extends TestCase
                 }
             }
 
-            _exclusionList = exclusionList;
+            _exclusionList = Collections.unmodifiableList(exclusionList);
+        }
+        else
+        {
+            _exclusionList = Collections.emptyList();
         }
     }
 
-    private static List<String> _exclusionList;
+    private static final List<String> _exclusionList;
 
     public QpidTestCase()
     {
@@ -133,17 +138,27 @@ public class QpidTestCase extends TestCase
 
     public void run(TestResult testResult)
     {
-        _currentInstance = this;
-        if (_exclusionList != null && (_exclusionList.contains(getClass().getPackage().getName() + ".*") ||
-                                       _exclusionList.contains(getClass().getName() + "#*") ||
-                                       _exclusionList.contains(getClass().getName() + "#" + getName())))
+        try
         {
-            _logger.info("Test: " + getName() + " is excluded");
-            testResult.endTest(this);
+            _currentInstance = this;
+            MDC.put(CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
+
+            if (_exclusionList.contains(getClass().getPackage().getName() + ".*") ||
+                _exclusionList.contains(getClass().getName() + "#*") ||
+                _exclusionList.contains(getClass().getName() + "#" + getName()))
+            {
+                _logger.info("Test: " + getName() + " is excluded");
+                testResult.endTest(this);
+            }
+            else
+            {
+                super.run(testResult);
+            }
         }
-        else
+        finally
         {
-            super.run(testResult);
+            _currentInstance = null;
+            MDC.remove(CLASS_QUALIFIED_TEST_NAME);
         }
     }
 
@@ -157,6 +172,16 @@ public class QpidTestCase extends TestCase
         }
 
         return storeType != null ? storeType : "TestMemory";
+    }
+
+    protected String getClassQualifiedTestName()
+    {
+        return getClass().getCanonicalName() + "-" + getName();
+    }
+
+    protected String getTestName()
+    {
+        return getClass().getSimpleName() + "." + getName();
     }
 
     public String getTestProfileVirtualHostNodeBlueprint()
@@ -243,27 +268,19 @@ public class QpidTestCase extends TestCase
         }
     }
 
-    protected void tearDown() throws java.lang.Exception
+    protected void setUp() throws Exception
     {
-        _logger.info("========== tearDown " + _testName + " ==========");
+        _logger.info("========== start " + getTestName() + " ==========");
+    }
+
+    protected void tearDown() throws Exception
+    {
+        _logger.info("========== tearDown " + getTestName() + " ==========");
         revertTestSystemProperties();
         for (Runnable runnable : _tearDownRegistry)
         {
             runnable.run();
         }
         _tearDownRegistry.clear();
-        _currentInstance = null;
-    }
-
-    protected void setUp() throws Exception
-    {
-        _currentInstance = this;
-        _testName = getClass().getSimpleName() + "." + getName();
-        _logger.info("========== start " + _testName + " ==========");
-    }
-
-    protected String getTestName()
-    {
-        return _testName;
     }
 }
