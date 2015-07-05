@@ -132,18 +132,14 @@ public class RuleSet implements EventLoggerProvider
 
             // Save the rules we selected
             objects.put(objectType, filtered);
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Cached " + objectType + " RulesList: " + filtered);
-            }
+
+            _logger.debug("Cached {} RulesList: {}", objectType, filtered);
         }
 
         // Return the cached rules
         List<Rule> rules = objects.get(objectType);
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Returning RuleList: " + rules);
-        }
+
+        _logger.debug("Returning RuleList: {}", rules);
 
         return rules;
     }
@@ -290,29 +286,23 @@ public class RuleSet implements EventLoggerProvider
     {
         ClientAction action = new ClientAction(operation, objectType, properties);
 
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Checking action: " + action);
-        }
+        _logger.debug("Checking action: {}", action);
 
         // get the list of rules relevant for this request
         List<Rule> rules = getRules(subject, operation, objectType);
         if (rules == null)
         {
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("No rules found, returning default result");
-            }
+
+            _logger.debug("No rules found, returning default result");
+
             return getDefault();
         }
 
         // Iterate through a filtered set of rules dealing with this identity and operation
         for (Rule rule : rules)
         {
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Checking against rule: " + rule);
-            }
+
+            _logger.debug("Checking against rule: {}", rule);
 
             if (action.matches(rule.getAclAction(), addressOfClient))
             {

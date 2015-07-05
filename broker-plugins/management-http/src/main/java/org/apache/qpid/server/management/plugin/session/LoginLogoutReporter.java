@@ -69,10 +69,7 @@ public class LoginLogoutReporter implements HttpSessionBindingListener
 
     private void reportLogin()
     {
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("User logging in : " + _principal);
-        }
+        LOGGER.debug("User logging in : {}", _principal);
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
         {
@@ -87,10 +84,7 @@ public class LoginLogoutReporter implements HttpSessionBindingListener
 
     private void reportLogout()
     {
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("User logging out : " + _principal);
-        }
+        LOGGER.debug("User logging out : {}", _principal);
 
         Subject.doAs(_subject, new PrivilegedAction<Void>()
         {

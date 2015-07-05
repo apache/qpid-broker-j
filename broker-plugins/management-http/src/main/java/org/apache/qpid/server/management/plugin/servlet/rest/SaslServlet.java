@@ -128,10 +128,8 @@ public class SaslServlet extends AbstractServlet
             {
                 if(id == null)
                 {
-                    if(LOGGER.isDebugEnabled())
-                    {
-                        LOGGER.debug("Creating SaslServer for mechanism: " + mechanism);
-                    }
+                    LOGGER.debug("Creating SaslServer for mechanism: {}", mechanism);
+
                     SaslServer saslServer = subjectCreator.createSaslServer(mechanism, request.getServerName(), null/*TODO*/);
                     evaluateSaslResponse(request, response, session, saslResponse, saslServer, subjectCreator);
                 }

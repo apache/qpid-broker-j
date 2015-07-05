@@ -84,10 +84,7 @@ public class DerbyMessageStore extends AbstractDerbyMessageStore
 
         if (storePath != null)
         {
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Deleting store " + storePath);
-            }
+            LOGGER.debug("Deleting store {}", storePath);
 
             File configFile = new File(storePath);
             if (!FileUtils.delete(configFile, true))

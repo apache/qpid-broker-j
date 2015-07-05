@@ -80,10 +80,7 @@ public class AutoCommitTransaction implements ServerTransaction
         {
             if(record != null)
             {
-                if (_logger.isDebugEnabled())
-                {
-                    _logger.debug("Dequeue of message number " + record.getMessageNumber() + " from transaction log. Queue : " + record.getQueueId());
-                }
+                _logger.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
 
                 txn = _messageStore.newTransaction();
                 txn.dequeueMessage(record);
@@ -111,10 +108,7 @@ public class AutoCommitTransaction implements ServerTransaction
                 MessageEnqueueRecord enqueueRecord = entry.getEnqueueRecord();
                 if(enqueueRecord != null)
                 {
-                    if (_logger.isDebugEnabled())
-                    {
-                        _logger.debug("Dequeue of message number " + enqueueRecord.getMessageNumber() + " from transaction log. Queue : " + enqueueRecord.getQueueId());
-                    }
+                    _logger.debug("Dequeue of message number {} from transaction log. Queue : {}", enqueueRecord.getMessageNumber(), enqueueRecord.getQueueId());
 
                     if(txn == null)
                     {
@@ -149,10 +143,7 @@ public class AutoCommitTransaction implements ServerTransaction
             final MessageEnqueueRecord record;
             if(queue.getMessageDurability().persist(message.isPersistent()))
             {
-                if (_logger.isDebugEnabled())
-                {
-                    _logger.debug("Enqueue of message number " + message.getMessageNumber() + " to transaction log. Queue : " + queue.getName());
-                }
+                _logger.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
 
                 txn = _messageStore.newTransaction();
                 record = txn.enqueueMessage(queue, message);
@@ -205,10 +196,8 @@ public class AutoCommitTransaction implements ServerTransaction
             {
                 if (queue.getMessageDurability().persist(message.isPersistent()))
                 {
-                    if (_logger.isDebugEnabled())
-                    {
-                        _logger.debug("Enqueue of message number " + message.getMessageNumber() + " to transaction log. Queue : " + queue.getName());
-                    }
+                    _logger.debug("Enqueue of message number {} to transaction log. Queue : {}", message.getMessageNumber(), queue.getName());
+
                     if (txn == null)
                     {
                         txn = _messageStore.newTransaction();

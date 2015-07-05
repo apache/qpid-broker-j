@@ -108,25 +108,15 @@ public class DtxBranch
 
     public void setTimeout(long timeout)
     {
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Setting timeout to " + timeout + "s for DtxBranch " + _xid);
-        }
+        _logger.debug("Setting timeout to {}s for DtxBranch {}", timeout, _xid);
 
         if(_timeoutFuture != null)
         {
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Attempting to cancel previous timeout task future for DtxBranch " + _xid);
-            }
+            _logger.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
 
             boolean succeeded = _timeoutFuture.cancel(false);
 
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Cancelling previous timeout task " + (succeeded ? "succeeded" : "failed")
-                              + " for DtxBranch " + _xid);
-            }
+            _logger.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
         }
 
         _timeout = timeout;
@@ -140,20 +130,13 @@ public class DtxBranch
         {
             long delay = 1000*_timeout;
 
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Scheduling timeout and rollback after " + delay/1000 +
-                              "s for DtxBranch " + _xid);
-            }
+            _logger.debug("Scheduling timeout and rollback after {}s for DtxBranch {}", delay/1000, _xid);
 
             _timeoutFuture = _vhost.scheduleTask(delay, new Runnable()
             {
                 public void run()
                 {
-                    if(_logger.isDebugEnabled())
-                    {
-                        _logger.debug("Timing out DtxBranch " + _xid);
-                    }
+                    _logger.debug("Timing out DtxBranch {}", _xid);
 
                     setState(State.TIMEDOUT);
                     rollback();
@@ -230,10 +213,7 @@ public class DtxBranch
 
     public void prepare() throws StoreException
     {
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Performing prepare for DtxBranch " + _xid);
-        }
+        _logger.debug("Performing prepare for DtxBranch {}", _xid);
 
         Transaction txn = _store.newTransaction();
         _storedXidRecord = txn.recordXid(_xid.getFormat(),
@@ -248,26 +228,16 @@ public class DtxBranch
 
     public synchronized void rollback() throws StoreException
     {
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Performing rollback for DtxBranch " + _xid);
-        }
+        _logger.debug("Performing rollback for DtxBranch {}", _xid);
 
         if(_timeoutFuture != null)
         {
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Attempting to cancel previous timeout task future for DtxBranch " + _xid);
-            }
+            _logger.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
 
             boolean succeeded = _timeoutFuture.cancel(false);
             _timeoutFuture = null;
 
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Cancelling previous timeout task " + (succeeded ? "succeeded" : "failed")
-                              + " for DtxBranch " + _xid);
-            }
+            _logger.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
         }
 
         if(_transaction != null)
@@ -290,26 +260,16 @@ public class DtxBranch
 
     public void commit() throws StoreException
     {
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Performing commit for DtxBranch " + _xid);
-        }
+        _logger.debug("Performing commit for DtxBranch {}", _xid);
 
         if(_timeoutFuture != null)
         {
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Attempting to cancel previous timeout task future for DtxBranch " + _xid);
-            }
+            _logger.debug("Attempting to cancel previous timeout task future for DtxBranch {}", _xid);
 
             boolean succeeded = _timeoutFuture.cancel(false);
             _timeoutFuture = null;
 
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("Cancelling previous timeout task " + (succeeded ? "succeeded" : "failed")
-                              + " for DtxBranch " + _xid);
-            }
+            _logger.debug("Cancelling previous timeout task {} for DtxBranch {}", (succeeded ? "succeeded" : "failed"), _xid);
         }
 
         if(_transaction == null)

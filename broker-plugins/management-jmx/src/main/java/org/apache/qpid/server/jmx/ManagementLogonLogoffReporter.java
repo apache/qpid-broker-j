@@ -60,10 +60,7 @@ public class ManagementLogonLogoffReporter implements  NotificationListener, Not
         final String connectionId = ((JMXConnectionNotification) notification).getConnectionId();
         final String type = notification.getType();
 
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Notification connectionId : " + connectionId + " type : " + type);
-        }
+        LOGGER.debug("Notification connectionId : {} type : {}", connectionId, type);
 
         Subject subject = _usernameAccessor.getSubjectConnectionId(connectionId);
         if(subject == null)

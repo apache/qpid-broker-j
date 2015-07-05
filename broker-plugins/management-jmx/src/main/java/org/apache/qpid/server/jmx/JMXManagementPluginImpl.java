@@ -255,18 +255,12 @@ public class JMXManagementPluginImpl
     {
         for (MBeanProvider provider : _mBeanProviders)
         {
-            if(LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Consulting mbean provider : " + provider + " for child : " + child);
-            }
+            LOGGER.debug("Consulting mbean provider : {} for child : {}", provider, child);
 
             ManagedObject mBean = null;
             if (provider.isChildManageableByMBean(child) && !providerMBeanExists(child, provider))
             {
-                if(LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Provider of type " + provider.getType() + " will create mbean for " + child);
-                }
+                LOGGER.debug("Provider of type {} will create mbean for {}", provider.getType() , child);
 
                 mBean = provider.createMBean(child, registry);
                 if (mBean != null)

@@ -2373,10 +2373,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // therefore we should schedule this runner again (unless someone beats us to it :-) ).
         if (iterations == 0)
         {
-            if (_logger.isDebugEnabled())
-            {
-                _logger.debug("Rescheduling runner:" + runner);
-            }
+            _logger.debug("Rescheduling runner: {}", runner);
             return 0L;
         }
         return rVal;
@@ -2412,10 +2409,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                     if(acquiredForDequeueing)
                     {
-                        if (_logger.isDebugEnabled())
-                        {
-                            _logger.debug("Dequeuing expired node " + node);
-                        }
+                        _logger.debug("Dequeuing expired node {}", node);
                         // Then dequeue it.
                         dequeueEntry(node);
                     }

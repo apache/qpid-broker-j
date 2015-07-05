@@ -24,7 +24,6 @@ import java.util.Collection;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
-import org.apache.qpid.server.logging.LogRecorder;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 

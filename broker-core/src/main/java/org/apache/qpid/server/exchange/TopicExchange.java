@@ -77,10 +77,8 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
         assert queue != null;
         assert bindingKey != null;
 
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Updating binding of queue " + queue.getName() + " with routing key " + bindingKey);
-        }
+        _logger.debug("Updating binding of queue {} with routing key {}", queue.getName(), bindingKey);
+
 
         String routingKey = TopicNormalizer.normalize(bindingKey);
 
@@ -140,10 +138,8 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
         assert queue != null;
         assert bindingKey != null;
 
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Registering queue " + queue.getName() + " with routing key " + bindingKey);
-        }
+        _logger.debug("Registering queue {} with routing key {}", queue.getName(), bindingKey);
+
 
         String routingKey = TopicNormalizer.normalize(bindingKey);
 
@@ -259,10 +255,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
         {
             Map<String,Object> bindingArgs = _bindings.remove(binding);
 
-            if (_logger.isDebugEnabled())
-            {
-                _logger.debug("deregisterQueue " + bindingArgs);
-            }
+            _logger.debug("deregisterQueue {}", bindingArgs);
 
             String bindingKey = TopicNormalizer.normalize(binding.getBindingKey());
             TopicExchangeResult result = _topicExchangeResults.get(bindingKey);

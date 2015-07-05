@@ -285,10 +285,8 @@ public class Broker
                 //ignore, means the JVM is already shutting down
             }
 
-            if(LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Removed shutdown hook: " + removed);
-            }
+            LOGGER.debug("Removed shutdown hook: {}", removed);
+
         }
         else
         {

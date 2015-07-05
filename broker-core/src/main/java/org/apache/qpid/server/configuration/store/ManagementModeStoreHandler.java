@@ -143,10 +143,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
                 }
                 if (quiesce)
                 {
-                    if (LOGGER.isDebugEnabled())
-                    {
-                        LOGGER.debug("Management mode quiescing entry " + object);
-                    }
+                    LOGGER.debug("Management mode quiescing entry {}", object);
 
                     // save original state
                     _quiescedEntriesOriginalState.put(object.getId(), attributes.get(ATTRIBUTE_STATE));
@@ -429,10 +426,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
                 }
                 if (quiesce)
                 {
-                    if (LOGGER.isDebugEnabled())
-                    {
-                        LOGGER.debug("Management mode quiescing entry " + entry);
-                    }
+                    LOGGER.debug("Management mode quiescing entry {}", entry);
 
                     // save original state
                     quiescedEntries.put(entry.getId(), attributes.get(ATTRIBUTE_STATE));

@@ -139,10 +139,7 @@ public class TaskExecutorImpl implements TaskExecutor
     public <T> Future<T> submit(Task<T> task)
     {
         checkState();
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Submitting task: " + task);
-        }
+        LOGGER.debug("Submitting task: {}", task);
         Future<T> future = null;
         if (isTaskExecutorThread())
         {
@@ -316,15 +313,9 @@ public class TaskExecutorImpl implements TaskExecutor
 
     private <T> T executeTask(Task<T> userTask)
     {
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Performing task " + userTask);
-        }
+        LOGGER.debug("Performing task {}", userTask);
         T result = userTask.execute();
-        if (LOGGER.isDebugEnabled())
-        {
-            LOGGER.debug("Task " + userTask + " is performed successfully with result:" + result);
-        }
+        LOGGER.debug("Task {} is performed successfully with result: {}", userTask, result);
         return result;
     }
 

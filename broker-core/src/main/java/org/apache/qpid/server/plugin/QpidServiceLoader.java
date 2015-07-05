@@ -82,10 +82,7 @@ public class QpidServiceLoader
             throw new ServerScopedRuntimeException("At least one implementation of " + clazz + " expected");
         }
 
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Found " + serviceImplementations.size() + " implementations of " + clazz);
-        }
+        _logger.debug("Found {} implementations of {}", serviceImplementations.size(), clazz);
 
         return serviceImplementations;
     }

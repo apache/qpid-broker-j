@@ -182,11 +182,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      */
     StorableMessageMetaData getMessageMetaData(long messageId) throws StoreException
     {
-        if (getLogger().isDebugEnabled())
-        {
-            getLogger().debug("public MessageMetaData getMessageMetaData(Long messageId = "
-                              + messageId + "): called");
-        }
+        getLogger().debug("public MessageMetaData getMessageMetaData(Long messageId = {}): called", messageId);
 
         DatabaseEntry key = new DatabaseEntry();
         LongBinding.longToEntry(messageId, key);
@@ -234,36 +230,23 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     DatabaseEntry key = new DatabaseEntry();
                     LongBinding.longToEntry(messageId, key);
 
-                    if (getLogger().isDebugEnabled())
-                    {
-                        getLogger().debug("Removing message id " + messageId);
-                    }
+                    getLogger().debug("Removing message id {}", messageId);
 
 
                     OperationStatus status = getMessageMetaDataDb().delete(tx, key);
                     if (status == OperationStatus.NOTFOUND)
                     {
-                        if (getLogger().isDebugEnabled())
-                        {
-                            getLogger().debug("Message id " + messageId
-                                + " not found (attempt to remove failed - probably application initiated rollback)");
-                        }
+                        getLogger().debug("Message id {} not found (attempt to remove failed - probably application initiated rollback)",messageId);
                     }
 
-                    if (getLogger().isDebugEnabled())
-                    {
-                        getLogger().debug("Deleted metadata for message " + messageId);
-                    }
+                    getLogger().debug("Deleted metadata for message {}", messageId);
 
                     //now remove the content data from the store if there is any.
                     DatabaseEntry contentKeyEntry = new DatabaseEntry();
                     LongBinding.longToEntry(messageId, contentKeyEntry);
                     getMessageContentDb().delete(tx, contentKeyEntry);
 
-                    if (getLogger().isDebugEnabled())
-                    {
-                        getLogger().debug("Deleted content for message " + messageId);
-                    }
+                    getLogger().debug("Deleted content for message {}", messageId);
 
                     getEnvironmentFacade().commit(tx, sync);
 
@@ -281,9 +264,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     }
                     catch(RuntimeException e2)
                     {
-                        getLogger().warn(
-                                "Unable to abort transaction after LockConflictException on removal of message with id "
-                                + messageId,
+                        getLogger().warn("Unable to abort transaction after LockConflictException on removal of message with id {}", messageId,
                                 e2);
                         // rethrow the original log conflict exception, the secondary exception should already have
                         // been logged.
@@ -292,8 +273,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     }
 
 
-                    getLogger().warn("Lock timeout exception. Retrying (attempt "
-                                     + (attempts + 1) + " of " + LOCK_RETRY_ATTEMPTS + ") " + e);
+                    getLogger().warn("Lock timeout exception. Retrying (attempt {} of {} ", new Object[] {(attempts + 1), LOCK_RETRY_ATTEMPTS,  e});
 
                     if(++attempts < LOCK_RETRY_ATTEMPTS)
                     {
@@ -374,10 +354,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         ContentBinding contentTupleBinding = ContentBinding.getInstance();
 
 
-        if (getLogger().isDebugEnabled())
-        {
-            getLogger().debug("Message Id: " + messageId + " Getting content body from offset: " + offset);
-        }
+        getLogger().debug("Message Id: {} Getting content body from offset: {}", messageId, offset);
+
 
         try
         {
@@ -422,10 +400,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         ContentBinding contentTupleBinding = ContentBinding.getInstance();
 
 
-        if (getLogger().isDebugEnabled())
-        {
-            getLogger().debug("Message Id: " + messageId + " Getting content body");
-        }
+        getLogger().debug("Message Id: {} Getting content body", messageId);
 
         try
         {
@@ -546,11 +521,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 throw new StoreException("Error adding content for message id " + messageId + ": " + status);
             }
 
-            if (getLogger().isDebugEnabled())
-            {
-                getLogger().debug("Storing content for message " + messageId + " in transaction " + tx);
+            getLogger().debug("Storing content for message {} in transaction {}", messageId,  tx);
 
-            }
         }
         catch (RuntimeException e)
         {
@@ -574,12 +546,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                                StorableMessageMetaData messageMetaData)
             throws StoreException
     {
-        if (getLogger().isDebugEnabled())
-        {
-            getLogger().debug("storeMetaData called for transaction " + tx
-                              + ", messageId " + messageId
-                              + ", messageMetaData " + messageMetaData);
-        }
+        getLogger().debug("storeMetaData called for transaction {}, messageId {}, messageMetaData {} ",
+                          new Object[] {tx, messageId, messageMetaData});
 
         DatabaseEntry key = new DatabaseEntry();
         LongBinding.longToEntry(messageId, key);
@@ -590,10 +558,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         try
         {
             getMessageMetaDataDb().put(tx, key, value);
-            if (getLogger().isDebugEnabled())
-            {
-                getLogger().debug("Storing message metadata for message id " + messageId + " in transaction " + tx);
-            }
+            getLogger().debug("Storing message metadata for message id {} in transaction {}", messageId, tx);
+
         }
         catch (RuntimeException e)
         {
@@ -629,14 +595,14 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
             if (getLogger().isDebugEnabled())
             {
-                getLogger().debug("Enqueuing message " + messageId + " on queue "
-                                  + queue.getName() + " with id " + queue.getId() + " in transaction " + tx);
+                getLogger().debug("Enqueuing message {} on queue {} with id {} in transaction {}",
+                                  new Object[]{messageId, queue.getName(), queue.getId(), tx});
             }
             getDeliveryDb().put(tx, key, value);
         }
         catch (RuntimeException e)
         {
-            getLogger().error("Failed to enqueue: " + e.getMessage(), e);
+            getLogger().error("Failed to enqueue: {}", e.getMessage(), e);
             throw getEnvironmentFacade().handleDatabaseException("Error writing enqueued message with id "
                                                                  + messageId
                                                                  + " for queue "
@@ -665,10 +631,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         QueueEntryKey queueEntryKey = new QueueEntryKey(queueId, messageId);
         UUID id = queueId;
         keyBinding.objectToEntry(queueEntryKey, key);
-        if (getLogger().isDebugEnabled())
-        {
-            getLogger().debug("Dequeue message id " + messageId + " from queue with id " + id);
-        }
+
+        getLogger().debug("Dequeue message id {} from queue with id {}", messageId, id);
 
         try
         {
@@ -683,11 +647,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 throw new StoreException("Unable to remove message with id " + messageId + " on queue with id " + id);
             }
 
-            if (getLogger().isDebugEnabled())
-            {
-                getLogger().debug("Removed message " + messageId + " on queue with id " + id);
+            getLogger().debug("Removed message {} on queue with id {}", messageId, id);
 
-            }
         }
         catch (RuntimeException e)
         {
@@ -787,11 +748,8 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         FutureResult result = getEnvironmentFacade().commit(tx, syncCommit);
 
-        if (getLogger().isDebugEnabled())
-        {
-            String transactionType = syncCommit ? "synchronous" : "asynchronous";
-            getLogger().debug("commitTranImpl completed " + transactionType + " transaction " + tx);
-        }
+        getLogger().debug("commitTranImpl completed {} transaction {}",
+                          syncCommit ? "synchronous" : "asynchronous", tx);
 
         return result;
     }
@@ -805,10 +763,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      */
     private void abortTran(final Transaction tx) throws StoreException
     {
-        if (getLogger().isDebugEnabled())
-        {
-            getLogger().debug("abortTran called for transaction " + tx);
-        }
+        getLogger().debug("abortTran called for transaction {}", tx);
 
         try
         {

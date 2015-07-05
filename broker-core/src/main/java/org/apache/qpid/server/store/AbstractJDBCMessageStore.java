@@ -205,17 +205,14 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void upgradeIfNecessary(ConfiguredObject<?> parent) throws SQLException
     {
-        Connection conn = newAutoCommitConnection();
-        try
+        try (Connection conn = newAutoCommitConnection())
         {
 
-            PreparedStatement statement = conn.prepareStatement(SELECT_FROM_DB_VERSION);
-            try
+            try (PreparedStatement statement = conn.prepareStatement(SELECT_FROM_DB_VERSION))
             {
-                ResultSet rs = statement.executeQuery();
-                try
+                try (ResultSet rs = statement.executeQuery())
                 {
-                    if(!rs.next())
+                    if (!rs.next())
                     {
                         throw new StoreException(DB_VERSION_TABLE_NAME + " does not contain the database version");
                     }
@@ -232,19 +229,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                             throw new StoreException("Unknown database version: " + version);
                     }
                 }
-                finally
-                {
-                    rs.close();
-                }
             }
-            finally
-            {
-                statement.close();
-            }
-        }
-        finally
-        {
-            conn.close();
         }
 
     }
@@ -261,24 +246,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void updateDbVersion(int newVersion) throws SQLException
     {
-        Connection conn = newAutoCommitConnection();
-        try
+        try (Connection conn = newAutoCommitConnection())
         {
-
-            PreparedStatement statement = conn.prepareStatement(UPDATE_DB_VERSION);
-            try
+            try (PreparedStatement statement = conn.prepareStatement(UPDATE_DB_VERSION))
             {
-                statement.setInt(1,newVersion);
+                statement.setInt(1, newVersion);
                 statement.execute();
             }
-            finally
-            {
-                statement.close();
-            }
-        }
-        finally
-        {
-            conn.close();
         }
     }
 
@@ -346,25 +320,15 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         if(!tableExists(DB_VERSION_TABLE_NAME, conn))
         {
-            Statement stmt = conn.createStatement();
-            try
+            try (Statement stmt = conn.createStatement())
             {
                 stmt.execute(CREATE_DB_VERSION_TABLE);
             }
-            finally
-            {
-                stmt.close();
-            }
 
-            PreparedStatement pstmt = conn.prepareStatement(INSERT_INTO_DB_VERSION);
-            try
+            try (PreparedStatement pstmt = conn.prepareStatement(INSERT_INTO_DB_VERSION))
             {
                 pstmt.setInt(1, DB_VERSION);
                 pstmt.execute();
-            }
-            finally
-            {
-                pstmt.close();
             }
         }
     }
@@ -373,15 +337,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         if(!tableExists(QUEUE_ENTRY_TABLE_NAME, conn))
         {
-            Statement stmt = conn.createStatement();
-            try
+            try (Statement stmt = conn.createStatement())
             {
-                stmt.execute("CREATE TABLE "+ QUEUE_ENTRY_TABLE_NAME +" ( queue_id varchar(36) not null, message_id "
+                stmt.execute("CREATE TABLE " + QUEUE_ENTRY_TABLE_NAME + " ( queue_id varchar(36) not null, message_id "
                              + getSqlBigIntType() + " not null, PRIMARY KEY (queue_id, message_id) )");
-            }
-            finally
-            {
-                stmt.close();
             }
         }
 
@@ -391,8 +350,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         if(!tableExists(META_DATA_TABLE_NAME, conn))
         {
-            Statement stmt = conn.createStatement();
-            try
+            try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
                              + META_DATA_TABLE_NAME
@@ -402,10 +360,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                              + getSqlBlobType()
                              + ", PRIMARY KEY ( message_id ) )");
             }
-            finally
-            {
-                stmt.close();
-            }
         }
 
     }
@@ -414,8 +368,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         if(!tableExists(MESSAGE_CONTENT_TABLE_NAME, conn))
         {
-            Statement stmt = conn.createStatement();
-            try
+            try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
                              + MESSAGE_CONTENT_TABLE_NAME
@@ -425,10 +378,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                              + getSqlBlobType()
                              + ", PRIMARY KEY (message_id) )");
             }
-            finally
-            {
-                stmt.close();
-            }
         }
 
     }
@@ -437,8 +386,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         if(!tableExists(XID_TABLE_NAME, conn))
         {
-            Statement stmt = conn.createStatement();
-            try
+            try (Statement stmt = conn.createStatement())
             {
                 stmt.execute("CREATE TABLE "
                              + XID_TABLE_NAME
@@ -451,10 +399,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                              +
                              "global_id, branch_id ))");
             }
-            finally
-            {
-                stmt.close();
-            }
         }
     }
 
@@ -462,19 +406,27 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     {
         if(!tableExists(XID_ACTIONS_TABLE_NAME, conn))
         {
-            Statement stmt = conn.createStatement();
-            try
+            try (Statement stmt = conn.createStatement())
             {
-                stmt.execute("CREATE TABLE " + XID_ACTIONS_TABLE_NAME + " ( format " + getSqlBigIntType() + " not null,"
-                             + " global_id " + getSqlVarBinaryType(64) + " not null, branch_id " + getSqlVarBinaryType(
-                        64) + " not null, " +
-                             "action_type char not null, queue_id varchar(36) not null, message_id " + getSqlBigIntType() + " not null" +
-                             ",  PRIMARY KEY ( " +
+                stmt.execute("CREATE TABLE "
+                             + XID_ACTIONS_TABLE_NAME
+                             + " ( format "
+                             + getSqlBigIntType()
+                             + " not null,"
+                             + " global_id "
+                             + getSqlVarBinaryType(64)
+                             + " not null, branch_id "
+                             + getSqlVarBinaryType(
+                        64)
+                             + " not null, "
+                             +
+                             "action_type char not null, queue_id varchar(36) not null, message_id "
+                             + getSqlBigIntType()
+                             + " not null"
+                             +
+                             ",  PRIMARY KEY ( "
+                             +
                              "format, global_id, branch_id, action_type, queue_id, message_id))");
-            }
-            finally
-            {
-                stmt.close();
             }
         }
     }
@@ -515,17 +467,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
                     if (results == 0)
                     {
-                        if (getLogger().isDebugEnabled())
-                        {
-                            getLogger().debug("Message id " + messageId
-                                              + " not found (attempt to remove failed - probably application initiated rollback)");
-                        }
+                        getLogger().debug("Message id {} not found (attempt to remove failed - probably application initiated rollback)", messageId);
                     }
 
-                    if (getLogger().isDebugEnabled())
-                    {
-                        getLogger().debug("Deleted metadata for message " + messageId);
-                    }
+                    getLogger().debug("Deleted metadata for message {}", messageId);
 
                     stmt = conn.prepareStatement(DELETE_FROM_MESSAGE_CONTENT);
                     stmt.setLong(1, messageId);
@@ -645,16 +590,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                                   + "]");
             }
 
-            PreparedStatement stmt = conn.prepareStatement(INSERT_INTO_QUEUE_ENTRY);
-            try
+            try (PreparedStatement stmt = conn.prepareStatement(INSERT_INTO_QUEUE_ENTRY))
             {
                 stmt.setString(1, queue.getId().toString());
-                stmt.setLong(2,messageId);
+                stmt.setLong(2, messageId);
                 stmt.executeUpdate();
-            }
-            finally
-            {
-                stmt.close();
             }
 
         }
@@ -675,29 +615,21 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         try
         {
-            PreparedStatement stmt = conn.prepareStatement(DELETE_FROM_QUEUE_ENTRY);
-            try
+            try (PreparedStatement stmt = conn.prepareStatement(DELETE_FROM_QUEUE_ENTRY))
             {
                 stmt.setString(1, queueId.toString());
                 stmt.setLong(2, messageId);
                 int results = stmt.executeUpdate();
 
 
-
-                if(results != 1)
+                if (results != 1)
                 {
                     throw new StoreException("Unable to find message with id " + messageId
                                              + " on queue with id " + queueId);
                 }
 
-                if (getLogger().isDebugEnabled())
-                {
-                    getLogger().debug("Dequeuing message " + messageId + " on queue with id " + queueId);
-                }
-            }
-            finally
-            {
-                stmt.close();
+                getLogger().debug("Dequeuing message {} on queue with id {}", messageId, queueId);
+
             }
 
         }
@@ -862,10 +794,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             Connection conn = connWrapper.getConnection();
             conn.commit();
 
-            if (getLogger().isDebugEnabled())
-            {
-                getLogger().debug("commit tran completed");
-            }
+            getLogger().debug("commit tran completed");
 
             conn.close();
         }
@@ -983,10 +912,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             throw new StoreException("Fatal internal error: transactional context is empty at abortTran");
         }
 
-        if (getLogger().isDebugEnabled())
-        {
-            getLogger().debug("abort tran called: " + connWrapper.getConnection());
-        }
+        getLogger().debug("abort tran called: {}", connWrapper.getConnection());
 
         try
         {
@@ -1004,15 +930,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private void storeMetaData(Connection conn, long messageId, StorableMessageMetaData metaData)
             throws SQLException
     {
-        if(getLogger().isDebugEnabled())
-        {
-            getLogger().debug("Adding metadata for message " + messageId);
-        }
+        getLogger().debug("Adding metadata for message {}", messageId);
 
         PreparedStatement stmt = conn.prepareStatement(INSERT_INTO_META_DATA);
         try
         {
-            stmt.setLong(1,messageId);
+            stmt.setLong(1, messageId);
 
             final int bodySize = 1 + metaData.getStorableSize();
             byte[] underlying = new byte[bodySize];
@@ -1025,12 +948,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             ByteArrayInputStream bis = new ByteArrayInputStream(underlying);
             try
             {
-                stmt.setBinaryStream(2,bis,underlying.length);
+                stmt.setBinaryStream(2, bis, underlying.length);
                 int result = stmt.executeUpdate();
 
-                if(result == 0)
+                if (result == 0)
                 {
-                    throw new StoreException("Unable to add meta data for message " +messageId);
+                    throw new StoreException("Unable to add meta data for message " + messageId);
                 }
             }
             finally
@@ -1174,10 +1097,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     private void addContent(Connection conn, long messageId, ByteBuffer src)
     {
-        if(getLogger().isDebugEnabled())
-        {
-            getLogger().debug("Adding content for message " + messageId);
-        }
+        getLogger().debug("Adding content for message {}", messageId);
+
         PreparedStatement stmt = null;
 
         try
@@ -1789,10 +1710,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         @Override
         public void remove()
         {
-            if (getLogger().isDebugEnabled())
-            {
-                getLogger().debug("REMOVE called on message: " + _messageId);
-            }
+            getLogger().debug("REMOVE called on message: {}", _messageId);
             checkMessageStoreOpen();
 
             int delta = getMetaData().getContentSize();
@@ -1832,10 +1750,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                                                                        : ByteBuffer.wrap(_messageDataRef.getData()));
 
 
-                if(getLogger().isDebugEnabled())
-                {
-                    getLogger().debug("Storing message " + _messageId + " to store");
-                }
+                getLogger().debug("Storing message {} to store", _messageId);
 
                 MessageDataRef<T> hardRef = _messageDataRef;
                 MessageDataSoftRef<T> messageDataSoftRef;

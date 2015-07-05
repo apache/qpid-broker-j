@@ -57,7 +57,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         super.postResolveChildren();
 
         LoggerContext loggerContext = ROOT_LOGGER.getLoggerContext();
-
+        QpidLoggerTurboFilter.installIfNecessary(loggerContext);
         Appender<ILoggingEvent> appender = createAppenderInstance(loggerContext);
         appender.setName(getName());
         appender.setContext(loggerContext);

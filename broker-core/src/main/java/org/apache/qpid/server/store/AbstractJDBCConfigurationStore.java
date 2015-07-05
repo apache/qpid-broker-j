@@ -205,10 +205,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             if(tableExists)
             {
                 int configVersion = getConfigVersion(connection);
-                if (getLogger().isDebugEnabled())
-                {
-                    getLogger().debug("Upgrader read existing config version " + configVersion);
-                }
+
+                getLogger().debug("Upgrader read existing config version {}", configVersion);
 
                 switch(configVersion)
                 {
@@ -256,10 +254,8 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             if(tableExists)
             {
                 int configVersion = getConfigVersion(connection);
-                if (getLogger().isDebugEnabled())
-                {
-                    getLogger().debug("Upgrader read existing config version " + configVersion);
-                }
+
+                getLogger().debug("Upgrader read existing config version {}", configVersion);
 
                 stringifiedConfigVersion = "0." + configVersion;
             }
@@ -271,10 +267,7 @@ public abstract class AbstractJDBCConfigurationStore implements MessageStoreProv
             ConfiguredObjectRecord virtualHostRecord = new ConfiguredObjectRecordImpl(virtualHostId, "VirtualHost", virtualHostAttributes);
             insertConfiguredObject(virtualHostRecord, connection);
 
-            if (getLogger().isDebugEnabled())
-            {
-                getLogger().debug("Upgrader created VirtualHost configuration entry with config version " + stringifiedConfigVersion);
-            }
+            getLogger().debug("Upgrader created VirtualHost configuration entry with config version {}", stringifiedConfigVersion);
 
             Map<UUID,Map<String,Object>> bindingsToUpdate = new HashMap<UUID, Map<String, Object>>();
             List<UUID> others = new ArrayList<UUID>();

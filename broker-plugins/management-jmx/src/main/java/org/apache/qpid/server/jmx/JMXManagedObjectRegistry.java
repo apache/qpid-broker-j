@@ -416,10 +416,8 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
         final RMIServerSocketFactory ssf;
         if(useCustomRmiRegistry)
         {
-            if (_log.isDebugEnabled())
-            {
-                _log.debug("Using registry-protecting RMIServerSocketFactory");
-            }
+            _log.debug("Using registry-protecting RMIServerSocketFactory");
+
             ssf = new RegistryProtectingRMIServerSocketFactory();
         }
         else

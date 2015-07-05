@@ -107,10 +107,7 @@ public class FanoutExchange extends AbstractExchange<FanoutExchange>
         }
 
 
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Publishing message to queue " + result);
-        }
+        _logger.debug("Publishing message to queue {}", result);
 
         return result;
 

@@ -83,10 +83,7 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
             {
                 if(assignedSub == null)
                 {
-                    if(_logger.isDebugEnabled())
-                    {
-                        _logger.debug("Assigning group " + groupVal + " to sub " + sub);
-                    }
+                    _logger.debug("Assigning group {} to sub {}", groupVal, sub);
                     assignedSub = _groupMap.putIfAbsent(group, sub);
                     return assignedSub == null || assignedSub == sub;
                 }

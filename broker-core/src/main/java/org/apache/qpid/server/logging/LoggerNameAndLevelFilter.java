@@ -26,7 +26,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
 
-public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent>
+public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements EffectiveLevelFilter
 {
     private final Filter<ILoggingEvent> _filter;
     private final String _loggerName;
@@ -95,6 +95,20 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent>
                     return event.getLevel().isGreaterOrEqual(_level) && event.getLoggerName().equals(loggerName) ? FilterReply.ACCEPT : FilterReply.NEUTRAL;
                 }
             };
+        }
+    }
+
+    public Level getEffectiveLevel(final Logger logger)
+    {
+        if((_loggerName == null || "".equals(_loggerName) || Logger.ROOT_LOGGER_NAME.equals(_loggerName))
+          || (_loggerName.endsWith(".*") && logger.getName().startsWith(_loggerName.substring(0,_loggerName.length()-2)))
+          || _loggerName.equals(logger.getName()))
+        {
+            return _level;
+        }
+        else
+        {
+            return Level.OFF;
         }
     }
 }

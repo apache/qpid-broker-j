@@ -71,6 +71,7 @@ public abstract class AbstractNameAndLevelFilter<X extends AbstractNameAndLevelF
             public void run()
             {
                 deleted();
+                QpidLoggerTurboFilter.filterRemovedFromRootContext(_filter);
                 setState(State.DELETED);
                 returnVal.set(null);
 
@@ -83,6 +84,7 @@ public abstract class AbstractNameAndLevelFilter<X extends AbstractNameAndLevelF
     private ListenableFuture<Void> doActivate()
     {
         setState(State.ACTIVE);
+        QpidLoggerTurboFilter.filterAddedToRootContext(_filter);
         return Futures.immediateFuture(null);
     }
 }

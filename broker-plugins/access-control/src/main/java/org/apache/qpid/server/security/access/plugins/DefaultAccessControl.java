@@ -61,10 +61,8 @@ public class DefaultAccessControl implements AccessControl
     {
         _fileName = name;
         _eventLogger = eventLogger;
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Creating AccessControl instance");
-        }
+
+        _logger.debug("Creating AccessControl instance");
     }
 
     DefaultAccessControl(RuleSet rs)

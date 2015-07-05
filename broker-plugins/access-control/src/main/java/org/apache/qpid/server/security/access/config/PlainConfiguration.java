@@ -84,10 +84,7 @@ public class PlainConfiguration implements ConfigurationFile
 
         try(Reader fileReader = configReader)
         {
-            if(_logger.isDebugEnabled())
-            {
-                _logger.debug("About to load ACL file");
-            }
+            _logger.debug("About to load ACL file");
 
             _st = new StreamTokenizer(new BufferedReader(fileReader));
             _st.resetSyntax(); // setup the tokenizer

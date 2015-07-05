@@ -61,10 +61,8 @@ public class AclRulePredicates
             _properties.put(property, value);
         }
 
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Parsed " + property + " with value " + value);
-        }
+
+        _logger.debug("Parsed {} with value {}",  property, value);
     }
 
     private void checkFirewallRuleNotAlreadyDefined(String key, String value)

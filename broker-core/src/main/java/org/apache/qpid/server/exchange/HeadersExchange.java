@@ -93,10 +93,7 @@ public class HeadersExchange extends AbstractExchange<HeadersExchange>
                                         final String routingKey,
                                         final InstanceProperties instanceProperties)
     {
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Exchange " + getName() + ": routing message with headers " + payload.getMessageHeader());
-        }
+        _logger.debug("Exchange {}: routing message with headers {}", getName(), payload.getMessageHeader());
 
         LinkedHashSet<BaseQueue> queues = new LinkedHashSet<BaseQueue>();
 
@@ -177,10 +174,8 @@ public class HeadersExchange extends AbstractExchange<HeadersExchange>
         }
 
         boolean removedBinding = _bindingHeaderMatchers.remove(new HeadersBinding(binding));
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Removing Binding: " + removedBinding);
-        }
+        _logger.debug("Removing Binding: {}", removedBinding);
+
     }
 
 }

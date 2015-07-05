@@ -456,10 +456,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                     deletedQueues = true;
                     queues = new ArrayList<BaseQueue>(allQueues);
                 }
-                if(_logger.isDebugEnabled())
-                {
-                    _logger.debug("Exchange: " + getName() + " - attempt to enqueue message onto deleted queue " + q.getName());
-                }
+                _logger.debug("Exchange: {} - attempt to enqueue message onto deleted queue {}", getName(), q.getName());
+
                 queues.remove(q);
             }
         }
@@ -679,10 +677,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         if ((getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS || getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_LINKS )
             && getBindingCount() == 0)
         {
-            if (_logger.isDebugEnabled())
-            {
-                _logger.debug("Auto-deleting exchange:" + this);
-            }
+            _logger.debug("Auto-deleting exchange: {}", this);
 
             if(getTaskExecutor().isTaskExecutorThread())
             {

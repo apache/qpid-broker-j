@@ -51,10 +51,7 @@ public class NetworkFirewallRule implements FirewallRule
             }
         }
 
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Created " + this);
-        }
+        _logger.debug("Created {}", this);
     }
 
     @Override
@@ -64,18 +61,14 @@ public class NetworkFirewallRule implements FirewallRule
         {
             if (network.contains(ip))
             {
-                if(_logger.isDebugEnabled())
-                {
-                    _logger.debug("Client address " + ip + " matches configured network " + network);
-                }
+
+                _logger.debug("Client address {} matches configured network {}", ip, network);
+
                 return true;
             }
         }
 
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Client address " + ip + " does not match any configured networks");
-        }
+        _logger.debug("Client address {} does not match any configured networks", ip);
 
         return false;
     }

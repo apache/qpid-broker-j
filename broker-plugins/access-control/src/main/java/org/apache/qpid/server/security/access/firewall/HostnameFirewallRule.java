@@ -51,10 +51,8 @@ public class HostnameFirewallRule implements FirewallRule
             _hostnamePatterns[i++] = Pattern.compile(hostname);
         }
 
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Created " + this);
-        }
+        _logger.debug("Created {}", this);
+
     }
 
     @Override
@@ -79,10 +77,7 @@ public class HostnameFirewallRule implements FirewallRule
             }
         }
 
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Hostname " + hostname + " matches no configured hostname patterns");
-        }
+        _logger.debug("Hostname {} matches no configured hostname patterns", hostname);
 
         return false;
     }

@@ -885,10 +885,7 @@ public class RestServlet extends AbstractServlet
     {
         if (e instanceof AccessControlException)
         {
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("AccessControlException, sending " + HttpServletResponse.SC_FORBIDDEN, e);
-            }
+            LOGGER.debug("AccessControlException, sending {}", HttpServletResponse.SC_FORBIDDEN, e);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         }
         else

@@ -94,33 +94,25 @@ public class ExternalSaslServer implements SaslServer
             String username;
             String dn = ((X500Principal) _externalPrincipal).getName(X500Principal.RFC2253);
 
-            if(LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Parsing username from Principal DN: " + dn);
-            }
+            LOGGER.debug("Parsing username from Principal DN: {}", dn);
 
             username = SSLUtil.getIdFromSubjectDN(dn);
             if (username.isEmpty())
             {
                 // CN is empty => Cannot construct username => Authentication failed => return null
-                if(LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("CN value was empty in Principal name, unable to construct username");
-                }
+                LOGGER.debug("CN value was empty in Principal name, unable to construct username");
+
                 return null;
             }
-            if(LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Constructing Principal with username: " + username);
-            }
+
+            LOGGER.debug("Constructing Principal with username: {}", username);
+
             return new UsernamePrincipal(username);
         }
         else
         {
-            if(LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Using external Principal: " + _externalPrincipal);
-            }
+            LOGGER.debug("Using external Principal: {}", _externalPrincipal);
+
             return _externalPrincipal;
         }
     }

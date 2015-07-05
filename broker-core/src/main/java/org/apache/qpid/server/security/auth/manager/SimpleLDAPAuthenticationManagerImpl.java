@@ -236,10 +236,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
             if (server.isComplete())
             {
                 String authorizationID = server.getAuthorizationID();
-                if (_logger.isDebugEnabled())
-                {
-                    _logger.debug("Authenticated as " + authorizationID);
-                }
+                _logger.debug("Authenticated as {}", authorizationID);
 
                 return new AuthenticationResult(new UsernamePrincipal(authorizationID));
             }
@@ -377,10 +374,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
 
         Class<? extends AbstractLDAPSSLSocketFactory> clazz = LDAPSSLSocketFactoryGenerator.createSubClass(clazzName, sslContext.getSocketFactory());
-        if (_logger.isDebugEnabled())
-        {
-            _logger.debug("Connection to Directory will use custom SSL socket factory : " +  clazz);
-        }
+        _logger.debug("Connection to Directory will use custom SSL socket factory : {}",  clazz);
         return clazz;
     }
 
