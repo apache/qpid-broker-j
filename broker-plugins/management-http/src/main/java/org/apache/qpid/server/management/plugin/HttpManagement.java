@@ -69,6 +69,7 @@ import org.apache.qpid.server.management.plugin.servlet.DefinedFileServlet;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.RootServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.JsonValueServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LoggedOnUserPreferencesServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogoutServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.MessageContentServlet;
@@ -504,6 +505,21 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
 
         }
+
+        final ServletHolder versionsServletHolder = new ServletHolder(new JsonValueServlet(getApiProperties()));
+        root.addServlet(versionsServletHolder,"/api");
+        root.addServlet(versionsServletHolder,"/api/");
+
+    }
+
+    private Map<String, Object> getApiProperties()
+    {
+        return Collections.<String,Object>singletonMap("supportedVersions", getSupportedRestApiVersions());
+    }
+
+    private List<String> getSupportedRestApiVersions()
+    {
+        return Collections.singletonList(String.valueOf(BrokerModel.MODEL_MAJOR_VERSION));
     }
 
     private void logOperationalListenMessages(Collection<Port<?>> ports)
