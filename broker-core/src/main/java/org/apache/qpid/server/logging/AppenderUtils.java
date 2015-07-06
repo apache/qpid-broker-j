@@ -34,11 +34,11 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
 import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 
-public class RollingFileAppenderFactory
+public class AppenderUtils
 {
-    public static RollingFileAppender<ILoggingEvent> configureRollingFileAppender(FileLoggerSettings fileLoggerSettings,
-                                                                           Context loggerContext,
-                                                                           final RollingFileAppender<ILoggingEvent> appender)
+    public static void configureRollingFileAppender(FileLoggerSettings fileLoggerSettings,
+                                                    Context loggerContext,
+                                                    RollingFileAppender<ILoggingEvent> appender)
     {
         appender.setFile(fileLoggerSettings.getFileName());
         appender.setAppend(true);
@@ -82,7 +82,6 @@ public class RollingFileAppenderFactory
         encoder.setContext(loggerContext);
         encoder.start();
         appender.setEncoder(encoder);
-        return appender;
     }
 
 

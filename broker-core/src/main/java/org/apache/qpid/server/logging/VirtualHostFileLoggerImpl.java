@@ -199,8 +199,8 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
                 }
             }
         };
-        RollingFileAppenderFactory.configureRollingFileAppender(this, loggerContext,
-                                                                       appender);
+        AppenderUtils.configureRollingFileAppender(this, loggerContext,
+                                                   appender);
         return appender;
     }
 

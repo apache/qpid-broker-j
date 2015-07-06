@@ -196,8 +196,8 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
                                                                     }
                                                                 }
                                                             };
-        return RollingFileAppenderFactory.configureRollingFileAppender(this, loggerContext,
-                                                                       appender);
+        AppenderUtils.configureRollingFileAppender(this, loggerContext, appender);
+        return appender;
     }
 
 }
