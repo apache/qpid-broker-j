@@ -24,12 +24,12 @@ public interface MessageGroupManager
 {
     public interface ConsumerResetHelper
     {
-        public void resetSubPointersForGroups(QueueConsumer<?> consumer, boolean clearAssignments);
+        void resetSubPointersForGroups(QueueEntry entry);
 
         boolean isEntryAheadOfConsumer(QueueEntry entry, QueueConsumer<?> sub);
     }
 
-    QueueConsumer getAssignedConsumer(QueueEntry entry);
+    boolean mightAssign(QueueEntry entry, final QueueConsumer sub);
 
     boolean acceptMessage(QueueConsumer<?> sub, QueueEntry entry);
 

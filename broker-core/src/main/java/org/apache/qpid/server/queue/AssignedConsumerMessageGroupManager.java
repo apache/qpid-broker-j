@@ -53,10 +53,19 @@ public class AssignedConsumerMessageGroupManager implements MessageGroupManager
         return val;
     }
 
-    public QueueConsumer<?> getAssignedConsumer(final QueueEntry entry)
+    public boolean mightAssign(final QueueEntry entry, QueueConsumer sub)
     {
         Object groupVal = entry.getMessage().getMessageHeader().getHeader(_groupId);
-        return groupVal == null ? null : _groupMap.get(groupVal.hashCode() & _groupMask);
+
+        if(groupVal == null)
+        {
+            return true;
+        }
+        else
+        {
+            QueueConsumer assignedSub = _groupMap.get(groupVal.hashCode() & _groupMask);
+            return assignedSub == null || assignedSub == sub;
+        }
     }
 
     public boolean acceptMessage(QueueConsumer<?> sub, QueueEntry entry)

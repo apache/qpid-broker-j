@@ -917,7 +917,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
             if(_messageGroupManager != null)
             {
-                resetSubPointersForGroups(consumer, true);
+                resetSubPointersForGroups(consumer);
             }
 
             synchronized (_consumerListeners)
@@ -990,32 +990,33 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    public void resetSubPointersForGroups(QueueConsumer<?> consumer, boolean clearAssignments)
+    public void resetSubPointersForGroups(QueueConsumer<?> consumer)
     {
         QueueEntry entry = _messageGroupManager.findEarliestAssignedAvailableEntry(consumer);
-        if(clearAssignments)
-        {
-            _messageGroupManager.clearAssignments(consumer);
-        }
+        _messageGroupManager.clearAssignments(consumer);
 
         if(entry != null)
         {
-            QueueConsumerList.ConsumerNodeIterator subscriberIter = _consumerList.iterator();
-            // iterate over all the subscribers, and if they are in advance of this queue entry then move them backwards
-            while (subscriberIter.advance())
-            {
-                QueueConsumer<?> sub = subscriberIter.getNode().getConsumer();
-
-                // we don't make browsers send the same stuff twice
-                if (sub.seesRequeues())
-                {
-                    updateSubRequeueEntry(sub, entry);
-                }
-            }
-
-            deliverAsync();
-
+            resetSubPointersForGroups(entry);
         }
+    }
+
+    public void resetSubPointersForGroups(final QueueEntry entry)
+    {
+        QueueConsumerList.ConsumerNodeIterator subscriberIter = _consumerList.iterator();
+        // iterate over all the subscribers, and if they are in advance of this queue entry then move them backwards
+        while (subscriberIter.advance())
+        {
+            QueueConsumer<?> sub = subscriberIter.getNode().getConsumer();
+
+            // we don't make browsers send the same stuff twice
+            if (sub.seesRequeues())
+            {
+                updateSubRequeueEntry(sub, entry);
+            }
+        }
+
+        deliverAsync();
     }
 
     public void addBinding(final BindingImpl binding)
@@ -1338,12 +1339,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private boolean mightAssign(final QueueConsumer sub, final QueueEntry entry)
     {
-        if(_messageGroupManager == null || !sub.acquires())
-        {
-            return true;
-        }
-        QueueConsumer assigned = _messageGroupManager.getAssignedConsumer(entry);
-        return (assigned == null) || (assigned == sub);
+        return _messageGroupManager == null || !sub.acquires() || _messageGroupManager.mightAssign(entry, sub);
     }
 
     protected void checkConsumersNotAheadOfDelivery(final QueueEntry entry)

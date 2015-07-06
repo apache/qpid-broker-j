@@ -31,6 +31,8 @@ import org.apache.qpid.server.message.ServerMessage;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 public class DefinedGroupMessageGroupManager implements MessageGroupManager
 {
@@ -46,6 +48,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         private final Object _group;
         private QueueConsumer<?> _consumer;
         private int _activeCount;
+        private final SortedSet<QueueEntry> _skippedEntries = new TreeSet<>();
 
         private Group(final Object key, final QueueConsumer<?> consumer)
         {
@@ -66,11 +69,19 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
             }
         }
         
-        public void subtract()
+        public void subtract(final QueueEntry entry, final boolean released)
         {
+            if(!released)
+            {
+                _skippedEntries.remove(entry);
+            }
             if(--_activeCount == 0)
             {
-                _resetHelper.resetSubPointersForGroups(_consumer, false);
+                if(!_skippedEntries.isEmpty())
+                {
+                    _resetHelper.resetSubPointersForGroups(_skippedEntries.first());
+                    _skippedEntries.clear();
+                }
                 _consumer = null;
                 _groupMap.remove(_group);
             }
@@ -118,6 +129,11 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
                     ", _activeCount=" + _activeCount +
                     '}';
         }
+
+        public void addSkippedEntry(final QueueEntry entry)
+        {
+            _skippedEntries.add(entry);
+        }
     }
 
     public DefinedGroupMessageGroupManager(final String groupId, String defaultGroup, ConsumerResetHelper resetHelper)
@@ -127,12 +143,17 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         _resetHelper = resetHelper;
     }
     
-    public synchronized QueueConsumer<?> getAssignedConsumer(final QueueEntry entry)
+    public synchronized boolean mightAssign(final QueueEntry entry, final QueueConsumer sub)
     {
         Object groupId = getKey(entry);
 
         Group group = _groupMap.get(groupId);
-        return group == null || !group.isValid() ? null : group.getConsumer();
+        final boolean possibleAssginment = group == null || !group.isValid() || group.getConsumer() == sub;
+        if(!possibleAssginment)
+        {
+            group.addSkippedEntry(entry);
+        }
+        return possibleAssginment;
     }
 
     public synchronized boolean acceptMessage(final QueueConsumer<?> sub, final QueueEntry entry)
@@ -169,6 +190,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         }
         else
         {
+            group.addSkippedEntry(entry);
             return false;            
         }
     }
@@ -259,7 +281,7 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
                         }
                         else if(oldState == QueueEntry.State.ACQUIRED)
                         {
-                            _group.subtract();
+                            _group.subtract((QueueEntry) entry, newState == MessageInstance.State.AVAILABLE);
                         }
                     }
                 }
