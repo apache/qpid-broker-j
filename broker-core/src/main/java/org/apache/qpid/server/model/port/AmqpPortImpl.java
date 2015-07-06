@@ -398,12 +398,23 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
     private Protocol getDefaultAmqpSupportedReply()
     {
-        String defaultAmqpSupportedReply = System.getProperty(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY);
+        String defaultAmqpSupportedReply = getContextKeys(false).contains(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY) ?
+                getContextValue(String.class, BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY) : null;
+        Protocol protocol = null;
         if (defaultAmqpSupportedReply != null && defaultAmqpSupportedReply.length() != 0)
         {
-            return Protocol.valueOf("AMQP_" + defaultAmqpSupportedReply.substring(1));
+            protocol = Protocol.valueOf("AMQP_" + defaultAmqpSupportedReply.substring(1));
         }
-        return null;
+        final Set<Protocol> protocolSet = getProtocols();
+        if(protocol != null && !protocolSet.contains(protocol))
+        {
+            LOGGER.warn("The configured default reply ({}) to an unsupported protocol version initiation is not"
+                         + " supported on this port.  Only the following versions are supported: {}",
+                         defaultAmqpSupportedReply, protocolSet);
+
+            protocol = null;
+        }
+        return protocol;
     }
 
     public static Set<Protocol> getInstalledProtocols()

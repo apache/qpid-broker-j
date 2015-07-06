@@ -26,6 +26,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -69,7 +70,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
     public MultiVersionProtocolEngine(final Broker<?> broker,
                                       final Set<Protocol> supported,
-                                      final Protocol defaultSupportedReply,
+                                      Protocol defaultSupportedReply,
                                       AmqpPort<?> port,
                                       Transport transport,
                                       final long id,
@@ -78,8 +79,10 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     {
         if(defaultSupportedReply != null && !supported.contains(defaultSupportedReply))
         {
-            throw new IllegalArgumentException("The configured default reply (" + defaultSupportedReply
-                                             + ") to an unsupported protocol version initiation is itself not supported!");
+            _logger.warn("The configured default reply ({}) to an unsupported protocol version initiation is not"
+                         + " supported on this port.  Only the following versions are supported: {}",
+                         defaultSupportedReply, supported);
+            defaultSupportedReply = null;
         }
 
         _id = id;

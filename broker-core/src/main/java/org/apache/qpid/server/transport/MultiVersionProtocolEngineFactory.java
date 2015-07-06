@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.logging.subjects.PortLogSubject;
 import org.apache.qpid.server.model.Broker;
@@ -40,6 +43,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 public class MultiVersionProtocolEngineFactory implements ProtocolEngineFactory
 {
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0);
+    private static final Logger _logger = LoggerFactory.getLogger(MultiVersionProtocolEngineFactory.class);
 
     private final Broker<?> _broker;
     private final Set<Protocol> _supported;
@@ -51,15 +55,17 @@ public class MultiVersionProtocolEngineFactory implements ProtocolEngineFactory
             _connectionCountDecrementingTask = new ConnectionCountDecrementingTask();
 
     public MultiVersionProtocolEngineFactory(Broker<?> broker,
-                                             final Set<Protocol> supportedVersions,
-                                             final Protocol defaultSupportedReply,
+                                             Set<Protocol> supportedVersions,
+                                             Protocol defaultSupportedReply,
                                              AmqpPort<?> port,
                                              Transport transport)
     {
         if(defaultSupportedReply != null && !supportedVersions.contains(defaultSupportedReply))
         {
-            throw new IllegalArgumentException("The configured default reply (" + defaultSupportedReply
-                                             + ") to an unsupported protocol version initiation is itself not supported!");
+            _logger.warn("The configured default reply ({}) to an unsupported protocol version initiation is not"
+                         + " supported on this port.  Only the following versions are supported: {}",
+                         defaultSupportedReply, supportedVersions);
+            defaultSupportedReply = null;
         }
 
         _broker = broker;
