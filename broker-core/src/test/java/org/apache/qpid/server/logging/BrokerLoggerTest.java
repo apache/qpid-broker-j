@@ -61,8 +61,6 @@ public class BrokerLoggerTest extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        _loggerAppender = new ListAppender();
-        _loggerAppender.setName(APPENDER_NAME);
 
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
@@ -85,6 +83,24 @@ public class BrokerLoggerTest extends QpidTestCase
             @Override
             public Appender<ILoggingEvent> createAppenderInstance(Context context)
             {
+                _loggerAppender = new ListAppender<ILoggingEvent>()
+                {
+                    @Override
+                    protected void append(final ILoggingEvent eventObject)
+                    {
+                        super.append(eventObject);
+                        switch(eventObject.getLevel().toInt())
+                        {
+                            case Level.ERROR_INT:
+                                incrementErrorCount();
+                                break;
+                            case Level.WARN_INT:
+                                incrementWarnCount();
+                        }
+                    }
+                };
+                _loggerAppender.setName(APPENDER_NAME);
+
                 return _loggerAppender;
             }
         };
@@ -207,6 +223,50 @@ public class BrokerLoggerTest extends QpidTestCase
         }
     }
 
+    public void testStatistics()
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("loggerName", "org.apache.qpid.*");
+        attributes.put("level", LogLevel.WARN);
+        attributes.put("name", "test");
+        attributes.put("type", BrokerNameAndLevelFilter.TYPE);
+
+
+        final BrokerLoggerFilter filter = _brokerLogger.createChild(BrokerLoggerFilter.class, attributes);
+
+        assertEquals(0l, _brokerLogger.getWarnCount());
+        assertEquals(0l, _brokerLogger.getErrorCount());
+
+        Logger messageLogger = LoggerFactory.getLogger("org.apache.qpid.test");
+        messageLogger.warn("warn");
+        assertEquals(1l, _brokerLogger.getWarnCount());
+        assertEquals(0l, _brokerLogger.getErrorCount());
+
+        messageLogger.error("error");
+        assertEquals(1l, _brokerLogger.getWarnCount());
+        assertEquals(1l, _brokerLogger.getErrorCount());
+
+        filter.delete();
+
+        attributes = new HashMap<>();
+        attributes.put("loggerName", "org.apache.qpid.*");
+        attributes.put("level", LogLevel.ERROR);
+        attributes.put("name", "test");
+        attributes.put("type", BrokerNameAndLevelFilter.TYPE);
+
+
+        _brokerLogger.createChild(BrokerLoggerFilter.class, attributes);
+
+        messageLogger.warn("warn");
+        assertEquals(1l, _brokerLogger.getWarnCount());
+        assertEquals(1l, _brokerLogger.getErrorCount());
+        messageLogger.error("error");
+        assertEquals(1l, _brokerLogger.getWarnCount());
+        assertEquals(2l, _brokerLogger.getErrorCount());
+
+
+
+    }
     private LogRecord findLogRecord(String message, Collection<LogRecord> logRecords)
     {
         for (LogRecord record: logRecords)

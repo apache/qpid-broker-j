@@ -44,14 +44,12 @@ public class RollingFileAppenderFactoryTest extends QpidTestCase
     public static final String MAX_FILE_SIZE = "100mb";
     public static final int MAX_HISTORY = 10;
 
-    private RollingFileAppenderFactory _helper;
     private FileLoggerSettings _settings;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
-        _helper = new RollingFileAppenderFactory();
         _settings = mock(FileLoggerSettings.class);
         when(_settings.getFileName()).thenReturn(FILE_NAME);
         when(_settings.getLayout()).thenReturn(LAYOUT);
@@ -65,7 +63,9 @@ public class RollingFileAppenderFactoryTest extends QpidTestCase
 
     public void testCreateRollingFileAppenderDailyRolling()
     {
-        RollingFileAppender<ILoggingEvent> appender = _helper.createRollingFileAppender(_settings, mock(Context.class));
+        RollingFileAppender<ILoggingEvent> appender = RollingFileAppenderFactory.configureRollingFileAppender(_settings,
+                                                                                           mock(Context.class),
+                                                                                           new RollingFileAppender<ILoggingEvent>());
 
         assertEquals("Unexpected appender file name", FILE_NAME, appender.getFile());
 
@@ -88,7 +88,9 @@ public class RollingFileAppenderFactoryTest extends QpidTestCase
         when(_settings.isRollDaily()).thenReturn(Boolean.FALSE);
         when(_settings.isCompressOldFiles()).thenReturn(Boolean.FALSE);
 
-        RollingFileAppender<ILoggingEvent> appender = _helper.createRollingFileAppender(_settings, mock(Context.class));
+        RollingFileAppender<ILoggingEvent> appender = RollingFileAppenderFactory.configureRollingFileAppender(_settings,
+                                                                                           mock(Context.class),
+                                                                                           new RollingFileAppender<ILoggingEvent>());
 
         assertEquals("Unexpected appender file name", FILE_NAME, appender.getFile());
 

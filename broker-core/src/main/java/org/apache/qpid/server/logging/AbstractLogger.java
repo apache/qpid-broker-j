@@ -22,6 +22,7 @@ package org.apache.qpid.server.logging;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -42,6 +43,9 @@ import org.apache.qpid.server.model.StateTransition;
 public abstract class AbstractLogger<X extends AbstractLogger<X>> extends AbstractConfiguredObject<X>
 {
     private final static ch.qos.logback.classic.Logger ROOT_LOGGER = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME));
+
+    private final AtomicLong _errorCount = new AtomicLong();
+    private final AtomicLong _warnCount = new AtomicLong();
 
     protected AbstractLogger(Map<String, Object> attributes, ConfiguredObject<?> parent)
     {
@@ -112,6 +116,26 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents)
     {
         return getObjectFactory().createAsync(childClass, attributes, this);
+    }
+
+    public final long getErrorCount()
+    {
+        return _errorCount.get();
+    }
+
+    public final long getWarnCount()
+    {
+        return _warnCount.get();
+    }
+
+    protected final void incrementErrorCount()
+    {
+        _errorCount.incrementAndGet();
+    }
+
+    protected final void incrementWarnCount()
+    {
+        _warnCount.incrementAndGet();
     }
 
     public void stopLogging()

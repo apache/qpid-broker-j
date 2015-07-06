@@ -27,9 +27,11 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
+import ch.qos.logback.core.rolling.RollingFileAppender;
 
 import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 import org.apache.qpid.server.logging.logback.RolloverWatcher;
@@ -178,7 +180,24 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
-        return new RollingFileAppenderFactory().createRollingFileAppender(this, loggerContext);
+        final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<ILoggingEvent>()
+                                                            {
+                                                                @Override
+                                                                protected void append(final ILoggingEvent eventObject)
+                                                                {
+                                                                    super.append(eventObject);
+                                                                    switch(eventObject.getLevel().toInt())
+                                                                    {
+                                                                        case Level.ERROR_INT:
+                                                                            incrementErrorCount();
+                                                                            break;
+                                                                        case Level.WARN_INT:
+                                                                            incrementWarnCount();
+                                                                    }
+                                                                }
+                                                            };
+        return RollingFileAppenderFactory.configureRollingFileAppender(this, loggerContext,
+                                                                       appender);
     }
 
 }

@@ -22,6 +22,7 @@ package org.apache.qpid.server.logging;
 
 import java.util.Map;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
@@ -52,7 +53,22 @@ public class BrokerConsoleLoggerImpl extends AbstractBrokerLogger<BrokerConsoleL
     @Override
     protected Appender<ILoggingEvent> createAppenderInstance(Context context)
     {
-        ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
+        ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<ILoggingEvent>()
+                                                            {
+                                                                @Override
+                                                                protected void append(final ILoggingEvent eventObject)
+                                                                {
+                                                                    super.append(eventObject);
+                                                                    switch(eventObject.getLevel().toInt())
+                                                                    {
+                                                                        case Level.ERROR_INT:
+                                                                            incrementErrorCount();
+                                                                            break;
+                                                                        case Level.WARN_INT:
+                                                                            incrementWarnCount();
+                                                                    }
+                                                                }
+                                                            };
 
         final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(getLayout());

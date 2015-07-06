@@ -23,6 +23,7 @@ package org.apache.qpid.server.logging;
 
 import java.util.Map;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.net.SocketAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
@@ -91,14 +92,22 @@ public class BrokerLogbackSocketLoggerImpl
     protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
         SocketAppender socketAppender = new SocketAppender()
-        {
-            @Override
-            protected void append(final ILoggingEvent event)
-            {
-                augmentWithMDC(event);
-                super.append(event);
-            }
-        };
+                                        {
+                                            @Override
+                                            protected void append(final ILoggingEvent event)
+                                            {
+                                                augmentWithMDC(event);
+                                                super.append(event);
+                                                switch(event.getLevel().toInt())
+                                                {
+                                                    case Level.ERROR_INT:
+                                                        incrementErrorCount();
+                                                        break;
+                                                    case Level.WARN_INT:
+                                                        incrementWarnCount();
+                                                }
+                                            }
+                                        };
         socketAppender.setPort(_port);
         socketAppender.setRemoteHost(_remoteHost);
         socketAppender.setIncludeCallerData(_includeCallerData);

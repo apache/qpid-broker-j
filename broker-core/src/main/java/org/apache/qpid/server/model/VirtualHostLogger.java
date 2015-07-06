@@ -24,4 +24,10 @@ package org.apache.qpid.server.model;
 public interface VirtualHostLogger <X extends VirtualHostLogger<X>> extends ConfiguredObject<X>
 {
     void stopLogging();
+
+    @ManagedStatistic
+    long getErrorCount();
+
+    @ManagedStatistic
+    long getWarnCount();
 }

@@ -36,9 +36,10 @@ import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 
 public class RollingFileAppenderFactory
 {
-    public RollingFileAppender<ILoggingEvent> createRollingFileAppender(FileLoggerSettings fileLoggerSettings, Context loggerContext)
+    public static RollingFileAppender<ILoggingEvent> configureRollingFileAppender(FileLoggerSettings fileLoggerSettings,
+                                                                           Context loggerContext,
+                                                                           final RollingFileAppender<ILoggingEvent> appender)
     {
-        RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         appender.setFile(fileLoggerSettings.getFileName());
         appender.setAppend(true);
         appender.setContext(loggerContext);
@@ -85,7 +86,7 @@ public class RollingFileAppenderFactory
     }
 
 
-    class DailyTriggeringPolicy extends SizeAndTimeBasedFNATP<ILoggingEvent>
+    static class DailyTriggeringPolicy extends SizeAndTimeBasedFNATP<ILoggingEvent>
     {
         private final boolean _rollOnRestart;
         private boolean _isFirst = true;
@@ -123,7 +124,7 @@ public class RollingFileAppenderFactory
 
     }
 
-    class SizeTriggeringPolicy extends SizeBasedTriggeringPolicy<ILoggingEvent>
+    static class SizeTriggeringPolicy extends SizeBasedTriggeringPolicy<ILoggingEvent>
     {
         private final boolean _rollOnRestart;
         private boolean _isFirst = true;
@@ -151,7 +152,7 @@ public class RollingFileAppenderFactory
 
     }
 
-    class SimpleRollingPolicy extends FixedWindowRollingPolicy
+    static class SimpleRollingPolicy extends FixedWindowRollingPolicy
     {
         private int _maxFiles;
 

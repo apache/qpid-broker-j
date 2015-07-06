@@ -27,4 +27,10 @@ public interface BrokerLogger<X extends BrokerLogger<X>> extends ConfiguredObjec
     boolean isVirtualHostLogEventExcluded();
 
     void stopLogging();
+
+    @ManagedStatistic
+    long getErrorCount();
+
+    @ManagedStatistic
+    long getWarnCount();
 }
