@@ -144,6 +144,11 @@ public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
 
     public ZippedContent getFilesAsZippedContent(Set<String> fileNames)
     {
+        if (fileNames == null)
+        {
+            throw new IllegalArgumentException("File name cannot be null");
+        }
+
         Map<String, Path> paths = new TreeMap<>();
         for (String name: fileNames)
         {

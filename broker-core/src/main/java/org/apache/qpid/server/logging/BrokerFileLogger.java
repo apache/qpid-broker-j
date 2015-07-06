@@ -35,6 +35,7 @@ import org.apache.qpid.server.model.Content;
 public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerLogger<X>
 {
     String TYPE = "File";
+    String FILE_NAME = "fileName";
 
     @ManagedAttribute( defaultValue = "${qpid.work_dir}${file.separator}log${file.separator}qpid.log")
     String getFileName();

@@ -34,6 +34,9 @@ import javax.management.JMException;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.logging.BrokerFileLogger;
+import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
+import org.apache.qpid.server.model.BrokerLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +46,6 @@ import org.apache.qpid.server.jmx.mbeans.ServerInformationMBean;
 import org.apache.qpid.server.jmx.mbeans.Shutdown;
 import org.apache.qpid.server.jmx.mbeans.UserManagementMBean;
 import org.apache.qpid.server.jmx.mbeans.VirtualHostMBean;
-import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
@@ -86,6 +88,7 @@ public class JMXManagementPluginImpl
     private final Set<MBeanProvider> _mBeanProviders;
     private final ChangeListener _changeListener;
     private final PluginMBeansProvider _pluginMBeanProvider;
+    private LoggingManagementMBean _loggingManagementMBean;
 
     @ManagedObjectFactoryConstructor
     public JMXManagementPluginImpl(Map<String, Object> attributes, Broker<?> broker)
@@ -169,13 +172,15 @@ public class JMXManagementPluginImpl
             {
                 createObjectMBeans(authenticationProvider);
             }
+            Collection<BrokerLogger> brokerLoggers = broker.getChildren(BrokerLogger.class);
+            for (BrokerLogger brokerLogger : brokerLoggers)
+            {
+                createObjectMBeans(brokerLogger);
+            }
         }
         new Shutdown(_objectRegistry);
         new ServerInformationMBean(_objectRegistry, broker);
-        if (LoggingManagementFacade.getCurrentInstance() != null)
-        {
-            new LoggingManagementMBean(LoggingManagementFacade.getCurrentInstance(), _objectRegistry);
-        }
+
         _objectRegistry.start();
         setState(State.ACTIVE);
         _allowPortActivation = false;
@@ -211,6 +216,7 @@ public class JMXManagementPluginImpl
         }
         getBroker().removeChangeListener(_changeListener);
         closeObjectRegistry();
+        _loggingManagementMBean = null;
     }
 
     private void unregisterObjectMBeans(ConfiguredObject<?> object)
@@ -340,6 +346,19 @@ public class JMXManagementPluginImpl
                         mbean = new UserManagementMBean((PasswordCredentialManagingAuthenticationProvider<?>) object, _objectRegistry);
                         registerMBean(object, _pluginMBeanProvider, mbean);
                     }
+                    else if (object instanceof BrokerFileLogger)
+                    {
+                        if (_loggingManagementMBean == null)
+                        {
+                            _loggingManagementMBean = new LoggingManagementMBean((BrokerFileLogger) object, _objectRegistry);
+                            LOGGER.info("LoggingManagementMBean created for BrokerFileLogger '{}'", object.getName());
+                        }
+                        else
+                        {
+                            LOGGER.warn("There are multiple BrokerFileLoggers. LoggingManagementMBean was already created. Ignoring BrokerFileLogger '{}'", object.getName());
+                        }
+                    }
+
                 }
                 createAdditionalMBeansFromProvidersIfNecessary(object, _objectRegistry);
             }
@@ -408,7 +427,10 @@ public class JMXManagementPluginImpl
                     object.removeChangeListener(_changeListener);
                 }
                 unregisterObjectMBeans(object);
-                _children.remove(object);
+                if (_children.remove(object) == _loggingManagementMBean)
+                {
+                    _loggingManagementMBean = null;
+                }
                 destroyChildrenMBeans(object);
             }
         }
@@ -443,7 +465,10 @@ public class JMXManagementPluginImpl
 
     private boolean supportedConfiguredObject(ConfiguredObject<?> object)
     {
-        return object instanceof VirtualHostNode || object instanceof VirtualHost || object instanceof PasswordCredentialManagingAuthenticationProvider;
+        return (object instanceof VirtualHostNode ||
+                object instanceof VirtualHost ||
+                object instanceof PasswordCredentialManagingAuthenticationProvider ||
+                object instanceof BrokerFileLogger);
     }
 
     private class PluginMBeansProvider implements MBeanProvider

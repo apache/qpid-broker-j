@@ -28,20 +28,16 @@ import javax.jms.JMSException;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.logging.AbstractTestLogging;
 import org.apache.qpid.util.FileUtils;
-import org.apache.qpid.util.LogMonitor;
 
 /**
  * Series of tests to validate the external Java broker starts up as expected.
  */
 public class BrokerStartupTest extends AbstractTestLogging
 {
-    public void setUp() throws Exception
+    @Override
+    public void startBroker()
     {
-        // We either do this here or have a null check in tearDown.
-        // As when this test is run against profiles other than java it will NPE
-        _monitor = new LogMonitor(getOutputFile());
-        //We explicitly do not call super.setUp as starting up the broker is
-        //part of the test case.
+        // Each test starts its own broker so no-op here because it is called from super.setup()
     }
 
     /**

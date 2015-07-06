@@ -51,17 +51,6 @@ public class LogMonitor
     private int _linesToSkip = 0;
 
     /**
-     * Create a new LogMonitor that creates a new Log4j Appender and monitors
-     * all log4j output via the current configuration.
-     *
-     * @throws IOException if there is a problem creating the temporary file.
-     */
-    public LogMonitor() throws IOException
-    {
-        this(null);
-    }
-
-    /**
      * Create a new LogMonitor on the specified file if the file does not exist
      * or the value is null then a new Log4j appender will be added and
      * monitoring set up on that appender.
@@ -70,19 +59,23 @@ public class LogMonitor
      * have the level correctly configured.ng
      *
      * @param file the file to monitor
-     *
-     * @throws IOException if there is a problem creating a temporary file
      */
-    public LogMonitor(File file) throws IOException
+    public LogMonitor(File file)
     {
-        if (file != null && file.exists())
+        if (file != null)
         {
-            _logfile = file;
+            if (file.exists())
+            {
+                _logfile = file;
+            }
+            else
+            {
+                throw new IllegalArgumentException("File to be monitored does not exist.");
+            }
         }
         else
         {
-            // This is mostly for running the test outside of the ant setup
-            _logfile = File.createTempFile("LogMonitor", ".log");
+            throw new IllegalArgumentException("File to be monitored is not specified.");
         }
 
         _logger.info("Created LogMonitor. Monitoring file: " + _logfile.getAbsolutePath());

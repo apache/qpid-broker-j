@@ -20,219 +20,298 @@
  */
 package org.apache.qpid.server.jmx.mbeans;
 
+import static ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME;
+
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Matchers.anyString;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
 import org.apache.qpid.management.common.mbeans.LoggingManagement;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
-import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
+import org.apache.qpid.server.logging.BrokerFileLogger;
+import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
+import org.apache.qpid.server.logging.LogLevel;
+import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class LoggingManagementMBeanTest extends QpidTestCase
 {
-    private static final String TEST_LEVEL1 = "LEVEL1";
-    private static final String TEST_LEVEL2 = "LEVEL2";
+    private static final String INHERITED_PSUEDO_LOG_LEVEL = "INHERITED";
+    private static final String TEST_LOGGER_NAME = "org.apache.qpid.test";
+    private static final String UNSUPPORTED_LOG_LEVEL = "unsupported";
 
     private LoggingManagementMBean _loggingMBean;
-    private LoggingManagementFacade _mockLoggingFacade;
     private ManagedObjectRegistry _mockManagedObjectRegistry;
+    private BrokerFileLogger _brokerFileLogger;
 
     @Override
     protected void setUp() throws Exception
     {
-        _mockLoggingFacade = mock(LoggingManagementFacade.class);
-        final List<String> listOfLevels = new ArrayList<String>()
-        {{
-            add(TEST_LEVEL1);
-            add(TEST_LEVEL2);
-        }};
-        when(_mockLoggingFacade.getAvailableLoggerLevels()).thenReturn(listOfLevels);
-
+        super.setUp();
         _mockManagedObjectRegistry = mock(ManagedObjectRegistry.class);
 
-        _loggingMBean = new LoggingManagementMBean(_mockLoggingFacade, _mockManagedObjectRegistry);
+        _brokerFileLogger = mock(BrokerFileLogger.class);
+        _loggingMBean = new LoggingManagementMBean(_brokerFileLogger, _mockManagedObjectRegistry);
     }
 
     public void testMBeanRegistersItself() throws Exception
     {
-        LoggingManagementMBean connectionMBean = new LoggingManagementMBean(_mockLoggingFacade, _mockManagedObjectRegistry);
+        LoggingManagementMBean connectionMBean = new LoggingManagementMBean(_brokerFileLogger, _mockManagedObjectRegistry);
         verify(_mockManagedObjectRegistry).registerObject(connectionMBean);
     }
 
     public void testLog4jLogWatchInterval() throws Exception
     {
-        final Integer value = 5000;
-        when(_mockLoggingFacade.getLog4jLogWatchInterval()).thenReturn(value);
-
-        assertEquals("Unexpected watch interval",value, _loggingMBean.getLog4jLogWatchInterval());
+        assertEquals("Unexpected watch interval", new Integer(-1), _loggingMBean.getLog4jLogWatchInterval());
     }
 
     public void testGetAvailableLoggerLevels()  throws Exception
     {
-        String[] actualLevels = _loggingMBean.getAvailableLoggerLevels();
-        assertEquals(3, actualLevels.length);
-        assertEquals(TEST_LEVEL1, actualLevels[0]);
-        assertEquals(TEST_LEVEL2, actualLevels[1]);
-        assertEquals(LoggingManagementMBean.INHERITED_PSUEDO_LOG_LEVEL, actualLevels[2]);
+        Set<String> expectedLogLevels = new HashSet<>(LogLevel.validValues());
+        Set<String> actualLevels = new HashSet<>(Arrays.asList(_loggingMBean.getAvailableLoggerLevels()));
+        assertEquals(expectedLogLevels, actualLevels);
     }
 
     public void testViewEffectiveRuntimeLoggerLevels()  throws Exception
     {
-        Map<String, String> loggerLevels = new TreeMap<String, String>();
-        loggerLevels.put("a.b.D", TEST_LEVEL2);
-        loggerLevels.put("a.b.C", TEST_LEVEL1);
-        loggerLevels.put("a.b.c.E", TEST_LEVEL2);
+        Collection<BrokerLoggerFilter> filters = new ArrayList<>();
+        filters.add(createMockFilter("a.b.D", LogLevel.DEBUG));
+        filters.add(createMockFilter("a.b.C", LogLevel.INFO));
+        filters.add(createMockFilter("", LogLevel.WARN));
 
-        when(_mockLoggingFacade.retrieveRuntimeLoggersLevels()).thenReturn(loggerLevels );
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(filters);
 
         TabularData table = _loggingMBean.viewEffectiveRuntimeLoggerLevels();
         assertEquals(3, table.size());
 
         final CompositeData row1 = table.get(new String[] {"a.b.C"} );
-        final CompositeData row2 = table.get(new String[] {"a.b.D"} );
-        final CompositeData row3 = table.get(new String[] {"a.b.c.E"} );
-        assertChannelRow(row1, "a.b.C", TEST_LEVEL1);
-        assertChannelRow(row2, "a.b.D", TEST_LEVEL2);
-        assertChannelRow(row3, "a.b.c.E", TEST_LEVEL2);
+        final CompositeData row2 = table.get(new String[]{"a.b.D"});
+        final CompositeData row3 = table.get(new String[]{""});
+        assertChannelRow(row1, "a.b.C", LogLevel.INFO.name());
+        assertChannelRow(row2, "a.b.D", LogLevel.DEBUG.name());
+        assertChannelRow(row3, "", LogLevel.WARN.name());
+    }
+
+    private BrokerNameAndLevelFilter createMockFilter(String loggerName, LogLevel logLevel, boolean durability)
+    {
+        BrokerNameAndLevelFilter filter = mock(BrokerNameAndLevelFilter.class);
+        when(filter.getLevel()).thenReturn(logLevel);
+        when(filter.getLoggerName()).thenReturn(loggerName);
+        when(filter.isDurable()).thenReturn(durability);
+        return filter;
+    }
+
+    private BrokerNameAndLevelFilter createMockFilter(String loggerName, LogLevel logLevel)
+    {
+        return createMockFilter(loggerName, logLevel, false);
     }
 
     public void testGetRuntimeRootLoggerLevel()  throws Exception
     {
-        when(_mockLoggingFacade.retrieveRuntimeRootLoggerLevel()).thenReturn(TEST_LEVEL1);
+        assertEquals(LogLevel.OFF.toString(), _loggingMBean.getRuntimeRootLoggerLevel());
 
-        assertEquals(TEST_LEVEL1, _loggingMBean.getRuntimeRootLoggerLevel());
+        BrokerLoggerFilter rootFilterWithNull = createMockFilter(null, LogLevel.WARN);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithNull));
+        assertEquals(LogLevel.WARN.name(), _loggingMBean.getRuntimeRootLoggerLevel());
+
+        BrokerLoggerFilter rootFilterWithEmptyName = createMockFilter("", LogLevel.ERROR);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithEmptyName));
+        assertEquals(LogLevel.ERROR.name(), _loggingMBean.getRuntimeRootLoggerLevel());
+
+        BrokerLoggerFilter rootFilterWithRootLoggerName = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithRootLoggerName));
+        assertEquals(LogLevel.DEBUG.name(), _loggingMBean.getRuntimeRootLoggerLevel());
     }
 
     public void testSetRuntimeRootLoggerLevel()  throws Exception
     {
-        _loggingMBean.setRuntimeRootLoggerLevel(TEST_LEVEL1);
-        verify(_mockLoggingFacade).setRuntimeRootLoggerLevel(TEST_LEVEL1);
+        assertFalse("Should not be able to set runtime root log level without existing filter",
+                _loggingMBean.setRuntimeRootLoggerLevel(LogLevel.WARN.name()));
+
+        BrokerLoggerFilter durableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableRootFilter));
+        assertFalse("Should not be able to set runtime root log level on durable root filter",
+                _loggingMBean.setRuntimeRootLoggerLevel(LogLevel.WARN.name()));
+
+        BrokerLoggerFilter nonDurableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableRootFilter));
+        assertTrue("Should be able to set runtime root log level on non-durable root filter",
+                _loggingMBean.setRuntimeRootLoggerLevel(LogLevel.WARN.name()));
     }
 
-    public void testSetRuntimeRootLoggerLevelWhenLoggingLevelUnknown()  throws Exception
+    public void testSetRuntimeRootLoggerLevelWhenLoggingLevelUnsupported()  throws Exception
     {
-        boolean result = _loggingMBean.setRuntimeRootLoggerLevel("unknown");
-        assertFalse(result);
-        verify(_mockLoggingFacade, never()).setRuntimeRootLoggerLevel("unknown");
+        BrokerLoggerFilter nonDurableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableRootFilter));
+
+        String currentRootLogLevel = _loggingMBean.getRuntimeRootLoggerLevel();
+
+        boolean result = _loggingMBean.setRuntimeRootLoggerLevel(UNSUPPORTED_LOG_LEVEL);
+        assertFalse("Should not be able to set runtime root logger level to unsupported value", result);
+
+        assertEquals("Runtime root log level was changed unexpectedly on setting level to unsupported value",
+                currentRootLogLevel, _loggingMBean.getRuntimeRootLoggerLevel());
+
+        result = _loggingMBean.setRuntimeRootLoggerLevel(INHERITED_PSUEDO_LOG_LEVEL);
+        assertFalse("Should not be able to set runtime root logger level to INHERITED value", result);
+
+        assertEquals("Runtime root log level was changed unexpectedly on setting level to INHERITED value",
+                currentRootLogLevel, _loggingMBean.getRuntimeRootLoggerLevel());
     }
 
-    public void testSetRuntimeRootLoggerLevelWhenLoggingLevelInherited()  throws Exception
+    public void testSetRuntimeLoggerLevel()  throws Exception
     {
-        boolean result = _loggingMBean.setRuntimeRootLoggerLevel(LoggingManagementMBean.INHERITED_PSUEDO_LOG_LEVEL);
-        assertFalse(result);
-        verify(_mockLoggingFacade, never()).setRuntimeRootLoggerLevel(anyString());
+        assertFalse("Should not be able to set runtime log level without existing filter '" + TEST_LOGGER_NAME + "'",
+                _loggingMBean.setRuntimeLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
+
+        BrokerLoggerFilter durableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableFilter));
+        assertFalse("Should not be able to set runtime log level on durable filter '" + TEST_LOGGER_NAME + "'",
+                _loggingMBean.setRuntimeLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
+
+        BrokerLoggerFilter nonDurableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableFilter));
+        assertTrue("Should be able to set runtime log level on non-durable filter '" + TEST_LOGGER_NAME + "'",
+                _loggingMBean.setRuntimeLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
     }
 
-    public void testSetRuntimeLoggerLevel() throws Exception
+    public void testSetRuntimeLoggerLevelWhenLoggingLevelUnsupported()  throws Exception
     {
-        _loggingMBean.setRuntimeLoggerLevel("a.b.c.D", TEST_LEVEL1);
-        verify(_mockLoggingFacade).setRuntimeLoggerLevel("a.b.c.D", TEST_LEVEL1);
-    }
+        boolean result = _loggingMBean.setRuntimeLoggerLevel(TEST_LOGGER_NAME, UNSUPPORTED_LOG_LEVEL);
+        assertFalse("Should not be able to set runtime logger level to unsupported value", result);
 
-    public void testSetRuntimeLoggerLevelWhenLoggingLevelUnknown()  throws Exception
-    {
-        boolean result = _loggingMBean.setRuntimeLoggerLevel("a.b.c.D", "unknown");
-        assertFalse(result);
-        verify(_mockLoggingFacade, never()).setRuntimeLoggerLevel(anyString(), anyString());
-    }
-
-    public void testSetRuntimeLoggerLevelWhenLoggingLevelInherited()  throws Exception
-    {
-        boolean result = _loggingMBean.setRuntimeLoggerLevel("a.b.c.D", LoggingManagementMBean.INHERITED_PSUEDO_LOG_LEVEL);
-        assertTrue(result);
-        verify(_mockLoggingFacade).setRuntimeLoggerLevel("a.b.c.D", null);
+        result = _loggingMBean.setRuntimeLoggerLevel(TEST_LOGGER_NAME, INHERITED_PSUEDO_LOG_LEVEL);
+        assertFalse("Should not be able to set runtime logger level to INHERITED value", result);
     }
 
     public void testViewEffectiveConfigFileLoggerLevels()  throws Exception
     {
-        Map<String, String> loggerLevels = new TreeMap<String, String>();
-        loggerLevels.put("a.b.D", "level2");
-        loggerLevels.put("a.b.C", TEST_LEVEL1);
-        loggerLevels.put("a.b.c.E", "level2");
+        Collection<BrokerLoggerFilter> filters = new ArrayList<>();
+        filters.add(createMockFilter("a.b.D", LogLevel.DEBUG, true));
+        filters.add(createMockFilter("a.b.C", LogLevel.INFO, true));
+        filters.add(createMockFilter("", LogLevel.WARN, true));
+        filters.add(createMockFilter("a.b.E", LogLevel.WARN, false));
 
-        when(_mockLoggingFacade.retrieveConfigFileLoggersLevels()).thenReturn(loggerLevels );
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(filters);
 
         TabularData table = _loggingMBean.viewConfigFileLoggerLevels();
         assertEquals(3, table.size());
 
-        final CompositeData row1 = table.get(new String[] {"a.b.C"} );
-        final CompositeData row2 = table.get(new String[] {"a.b.D"} );
-        final CompositeData row3 = table.get(new String[] {"a.b.c.E"} );
-        assertChannelRow(row1, "a.b.C", TEST_LEVEL1);
-        assertChannelRow(row2, "a.b.D", TEST_LEVEL2);
-        assertChannelRow(row3, "a.b.c.E", TEST_LEVEL2);
+        final CompositeData row1 = table.get(new String[]{"a.b.C"});
+        final CompositeData row2 = table.get(new String[]{"a.b.D"});
+        final CompositeData row3 = table.get(new String[]{""});
+        assertChannelRow(row1, "a.b.C", LogLevel.INFO.name());
+        assertChannelRow(row2, "a.b.D", LogLevel.DEBUG.name());
+        assertChannelRow(row3, "", LogLevel.WARN.name());
     }
 
     public void testGetConfigFileRootLoggerLevel() throws Exception
     {
-        when(_mockLoggingFacade.retrieveConfigFileRootLoggerLevel()).thenReturn(TEST_LEVEL1);
+        assertEquals("Unexpected config root logger level when no filter is set", LogLevel.OFF.name(), _loggingMBean.getConfigFileRootLoggerLevel());
 
-        assertEquals(TEST_LEVEL1, _loggingMBean.getConfigFileRootLoggerLevel());
+        BrokerLoggerFilter rootFilterWithNullName = createMockFilter(null, LogLevel.WARN, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithNullName));
+        assertEquals("Unexpected config root logger level", LogLevel.WARN.name(), _loggingMBean.getConfigFileRootLoggerLevel());
+
+        BrokerLoggerFilter rootFilterWithEmptyName = createMockFilter("", LogLevel.ERROR, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithEmptyName));
+        assertEquals("Unexpected config root logger level", LogLevel.ERROR.name(), _loggingMBean.getConfigFileRootLoggerLevel());
+
+        BrokerLoggerFilter rootFilterWithRootLoggerName = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithRootLoggerName));
+        assertEquals("Unexpected config root logger level", LogLevel.DEBUG.name(), _loggingMBean.getConfigFileRootLoggerLevel());
+
+        BrokerLoggerFilter nonDurableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableRootFilter));
+        assertEquals("Unexpected config root logger level when root filter is non-durable", LogLevel.OFF.name(), _loggingMBean.getConfigFileRootLoggerLevel());
     }
 
     public void testSetConfigFileRootLoggerLevel()  throws Exception
     {
-        when(_mockLoggingFacade.getAvailableLoggerLevels()).thenReturn(Collections.singletonList(TEST_LEVEL1));
-        _loggingMBean.setConfigFileRootLoggerLevel(TEST_LEVEL1);
-        verify(_mockLoggingFacade).setConfigFileRootLoggerLevel(TEST_LEVEL1);
+        assertFalse("Should not be able to set config root log level without existing filter",
+                _loggingMBean.setConfigFileRootLoggerLevel(LogLevel.WARN.name()));
+
+        BrokerLoggerFilter durableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableRootFilter));
+        assertTrue("Should be able to set config root log level on durable root filter",
+                _loggingMBean.setConfigFileRootLoggerLevel(LogLevel.WARN.name()));
+
+        BrokerLoggerFilter nonDurableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableRootFilter));
+        assertFalse("Should not be able to set config root log level on non-durable root filter",
+                _loggingMBean.setConfigFileRootLoggerLevel(LogLevel.WARN.name()));
     }
 
-    public void testSetConfigFileRootLoggerLevelWhenLoggingLevelUnknown()  throws Exception
-    {
-        when(_mockLoggingFacade.getAvailableLoggerLevels()).thenReturn(Collections.singletonList(TEST_LEVEL1));
-        boolean result = _loggingMBean.setConfigFileRootLoggerLevel("unknown");
-        assertFalse(result);
-        verify(_mockLoggingFacade, never()).setConfigFileRootLoggerLevel("unknown");
-    }
 
-    public void testSetConfigFileRootLoggerLevelWhenLoggingLevelInherited()  throws Exception
+    public void testSetConfigFileRootLoggerLevelWhenLoggingLevelUnsupported()  throws Exception
     {
-        when(_mockLoggingFacade.getAvailableLoggerLevels()).thenReturn(Collections.singletonList(TEST_LEVEL1));
-        boolean result = _loggingMBean.setConfigFileRootLoggerLevel(LoggingManagementMBean.INHERITED_PSUEDO_LOG_LEVEL);
-        assertFalse(result);
-        verify(_mockLoggingFacade, never()).setConfigFileRootLoggerLevel(anyString());
+        BrokerLoggerFilter durableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableRootFilter));
+
+        String currentRootLogLevel = _loggingMBean.getConfigFileRootLoggerLevel();
+
+        boolean result = _loggingMBean.setConfigFileRootLoggerLevel(UNSUPPORTED_LOG_LEVEL);
+        assertFalse("Should not be able to set config root logger level to unsupported value", result);
+
+        assertEquals("Runtime root log level was changed unexpectedly on setting level to unsupported value",
+                currentRootLogLevel, _loggingMBean.getConfigFileRootLoggerLevel());
+
+        result = _loggingMBean.setConfigFileRootLoggerLevel(INHERITED_PSUEDO_LOG_LEVEL);
+        assertFalse("Should not be able to set config root logger level to INHERITED value", result);
+
+        assertEquals("Config root log level was changed unexpectedly on setting level to INHERITED value",
+                currentRootLogLevel, _loggingMBean.getConfigFileRootLoggerLevel());
     }
 
     public void testSetConfigFileLoggerLevel() throws Exception
     {
-        when(_mockLoggingFacade.getAvailableLoggerLevels()).thenReturn(Collections.singletonList(TEST_LEVEL1));
-        _loggingMBean.setConfigFileLoggerLevel("a.b.c.D", TEST_LEVEL1);
-        verify(_mockLoggingFacade).setConfigFileLoggerLevel("a.b.c.D", TEST_LEVEL1);
+        assertFalse("Should not be able to set config log level without existing filter",
+                _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
+
+        BrokerLoggerFilter durableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableFilter));
+        assertTrue("Should be able to set config log level on durable filter",
+                _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
+
+        BrokerLoggerFilter nonDurableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableFilter));
+        assertFalse("Should not be able to set config log level on non-durable filter",
+                _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
     }
 
-    public void testSetConfigFileLoggerLevelWhenLoggingLevelUnknown()  throws Exception
+    public void testSetConfigFileLoggerLevelWhenLoggingLevelUnsupported()  throws Exception
     {
-        when(_mockLoggingFacade.getAvailableLoggerLevels()).thenReturn(Collections.singletonList(TEST_LEVEL1));
-        boolean result = _loggingMBean.setConfigFileLoggerLevel("a.b.c.D", "unknown");
-        assertFalse(result);
-        verify(_mockLoggingFacade, never()).setConfigFileLoggerLevel("a.b.c.D", "unknown");
-    }
+        BrokerLoggerFilter durableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableFilter));
 
-    public void testSetConfigFileLoggerLevelWhenLoggingLevelInherited()  throws Exception
-    {
-        when(_mockLoggingFacade.getAvailableLoggerLevels()).thenReturn(Collections.singletonList(TEST_LEVEL1));
-        boolean result = _loggingMBean.setConfigFileLoggerLevel("a.b.c.D", LoggingManagementMBean.INHERITED_PSUEDO_LOG_LEVEL);
-        assertTrue(result);
-        verify(_mockLoggingFacade).setConfigFileLoggerLevel("a.b.c.D", null);
+        boolean result = _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, UNSUPPORTED_LOG_LEVEL);
+        assertFalse("Should not be able to set config root logger level to unsupported value", result);
+
+        result = _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, INHERITED_PSUEDO_LOG_LEVEL);
+        assertFalse("Should not be able to set config root logger level to INHERITED value", result);
     }
 
     public void testReloadConfigFile() throws Exception
     {
-        _loggingMBean.reloadConfigFile();
-
-        verify(_mockLoggingFacade).reload();
+        try
+        {
+            _loggingMBean.reloadConfigFile();
+            fail("Reloading is unsupported");
+        }
+        catch(UnsupportedOperationException e)
+        {
+            // pass
+        }
     }
 
     private void assertChannelRow(final CompositeData row, String logger, String level)
@@ -241,4 +320,5 @@ public class LoggingManagementMBeanTest extends QpidTestCase
         assertEquals("Unexpected logger name", logger, row.get(LoggingManagement.LOGGER_NAME));
         assertEquals("Unexpected level", level, row.get(LoggingManagement.LOGGER_LEVEL));
     }
+
 }

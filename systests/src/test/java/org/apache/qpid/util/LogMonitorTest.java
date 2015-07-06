@@ -21,141 +21,82 @@
 package org.apache.qpid.util;
 
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.qpid.test.utils.TestFileUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 
 public class LogMonitorTest extends QpidTestCase
 {
 
     private LogMonitor _monitor;
+    private File _testFile;
 
     @Override
     public void setUp() throws Exception
     {
-        _monitor = new LogMonitor();
+        super.setUp();
+        _testFile = TestFileUtils.createTempFile(this);
+        _monitor = new LogMonitor(_testFile);
         _monitor.getMonitoredFile().deleteOnExit(); // Make sure we clean up
     }
-    
-    /**
-     * Test that a new file is created when attempting to set up a monitor with
-     * the default constructor.
-     */
-    public void testMonitor()
+
+    @Override
+    protected void tearDown() throws Exception
     {
-        //Validate that the monitor is now running on a new file
-        assertTrue("New file does not have correct name:" + _monitor.
-                getMonitoredFile().getName(),
-                _monitor.getMonitoredFile().getName().contains("LogMonitor"));
+        super.tearDown();
+        _testFile.delete();
     }
 
-    /**
-     * Test that creation of a monitor on an existing file is possible
-     *
-     * This also tests taht getMonitoredFile works
-     *
-     * @throws IOException if there is a problem creating the temporary file
-     */
     public void testMonitorNormalFile() throws IOException
     {
-        File testFile = File.createTempFile("testMonitorFile", ".log");
-        testFile.deleteOnExit();
-
-        //Ensure that we can create a monitor on a file
-        try
-        {
-            _monitor = new LogMonitor(testFile);
-            assertEquals(testFile, _monitor.getMonitoredFile());
-        }
-        catch (IOException ioe)
-        {
-            fail("IOE thrown:" + ioe);
-        }
-
+        assertEquals(_testFile, _monitor.getMonitoredFile());
     }
 
-    /**
-     * Test that a new file is created when attempting to set up a monitor on
-     * a null input value.
-     */
-    public void testMonitorNullFile()
+    public void testMonitorNullFileThrows()
     {
-        // Validate that a NPE is thrown with null input
         try
         {
-            LogMonitor montior = new LogMonitor(null);
-            //Validte that the monitor is now running on a new file
-            assertTrue("New file does not have correct name:" + montior.
-                    getMonitoredFile().getName(),
-                       montior.getMonitoredFile().getName().contains("LogMonitor"));
+            new LogMonitor(null);
+            fail("It should not be possible to monitor null.");
         }
-        catch (IOException ioe)
+        catch (IllegalArgumentException e)
         {
-            fail("IOE thrown:" + ioe);
+            // pass
         }
     }
 
-    /**
-     * Test that a new file is created when attempting to set up a monitor on
-     * a non existing file.
-     *
-     * @throws IOException if there is a problem setting up the nonexistent file
-     */
-    public void testMonitorNonExistentFile() throws IOException
+    public void testMonitorNonExistentFileThrows() throws IOException
     {
-        //Validate that we get a FileNotFound if the file does not exist
-
-        File nonexist = File.createTempFile("nonexist", ".out");
-
-        assertTrue("Unable to delete file for our test", nonexist.delete());
-
-        assertFalse("Unable to test as our test file exists.", nonexist.exists());
+        assertTrue("Unable to delete file for our test", _testFile.delete());
+        assertFalse("Unable to test as our test file exists.", _testFile.exists());
 
         try
         {
-            LogMonitor montior = new LogMonitor(nonexist);
-            //Validte that the monitor is now running on a new file
-            assertTrue("New file does not have correct name:" + montior.
-                    getMonitoredFile().getName(),
-                       montior.getMonitoredFile().getName().contains("LogMonitor"));
+            new LogMonitor(_testFile);
+            fail("It should not be possible to monitor non existing file.");
         }
-        catch (IOException ioe)
+        catch (IllegalArgumentException e)
         {
-            fail("IOE thrown:" + ioe);
+            // pass
         }
     }
 
-    /**
-     * Test that Log file matches logged messages.
-     *
-     * @throws java.io.IOException if there is a problem creating LogMontior
-     */
     public void testFindMatches_Match() throws IOException
     {
-
         String message = getName() + ": Test Message";
-
-        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(message);
-
+        appendTestMessage(message);
         validateLogContainsMessage(_monitor, message);
     }
 
-    /**
-     * Test that Log file does not match a message not logged.
-     *
-     * @throws java.io.IOException if there is a problem creating LogMontior
-     */
     public void testFindMatches_NoMatch() throws IOException
     {
         String message = getName() + ": Test Message";
-
-        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(message);
-
         String notLogged = "This text was not logged";
-
+        appendTestMessage(message);
         validateLogDoesNotContainMessage(_monitor, notLogged);
     }
 
@@ -169,17 +110,17 @@ public class LogMonitorTest extends QpidTestCase
 
         // Verify that we can time out waiting for a message
         assertFalse("Message was logged ",
-                    _monitor.waitForMessage(message, TIME_OUT / 2));
+                    _monitor.waitForMessage(message, 100));
 
         // Verify that the message did eventually get logged.
         assertTrue("Message was never logged.",
-                    _monitor.waitForMessage(message, TIME_OUT));
+                    _monitor.waitForMessage(message, TIME_OUT * 2));
     }
 
     public void testDiscardPoint() throws IOException
     {
         String firstMessage = getName() + ": Test Message1";
-        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(firstMessage);
+        appendTestMessage(firstMessage);
 
         validateLogContainsMessage(_monitor, firstMessage);
 
@@ -188,16 +129,14 @@ public class LogMonitorTest extends QpidTestCase
         validateLogDoesNotContainMessage(_monitor, firstMessage);
 
         String secondMessage = getName() + ": Test Message2";
-        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(secondMessage);
+        appendTestMessage(secondMessage);
         validateLogContainsMessage(_monitor, secondMessage);
     }
 
     public void testRead() throws IOException
     {
         String message = getName() + ": Test Message";
-
-        LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(message);
-
+        appendTestMessage(message);
         String fileContents = _monitor.readFile();
 
         assertTrue("Logged message not found when reading file.",
@@ -242,7 +181,7 @@ public class LogMonitorTest extends QpidTestCase
         assertEquals("Incorrect result set size", 1, results.size());
 
         assertTrue("Logged Message'" + message + "' not present in results:"
-                   + results.get(0), results.get(0).contains(message));
+                + results.get(0), results.get(0).contains(message));
     }
 
     /**
@@ -267,9 +206,21 @@ public class LogMonitorTest extends QpidTestCase
                     //ignore
                 }
 
-                LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME).warn(message);
+                appendTestMessage(message);
             }
         }).start();
     }
 
+
+    private void appendTestMessage(String msg)
+    {
+        try (OutputStream outputStream = new FileOutputStream(_testFile, true))
+        {
+            outputStream.write(String.format("%s%n", msg).getBytes());
+        }
+        catch (IOException e)
+        {
+            fail("Cannot write to test file '" + _testFile.getAbsolutePath() + "'");
+        }
+    }
 }

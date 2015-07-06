@@ -20,10 +20,15 @@
  */
 package org.apache.qpid.server.jmx.mbeans;
 
+import static ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.management.JMException;
 import javax.management.openmbean.CompositeData;
@@ -36,6 +41,10 @@ import javax.management.openmbean.TabularData;
 import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 
+import org.apache.qpid.server.logging.BrokerFileLogger;
+import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
+import org.apache.qpid.server.logging.LogLevel;
+import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +53,6 @@ import org.apache.qpid.management.common.mbeans.annotations.MBeanDescription;
 import org.apache.qpid.server.jmx.AMQManagedObject;
 import org.apache.qpid.server.jmx.ManagedObject;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
-import org.apache.qpid.server.logging.log4j.LoggingFacadeException;
-import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 
@@ -53,13 +60,10 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 @MBeanDescription("Logging Management Interface")
 public class LoggingManagementMBean extends AMQManagedObject implements LoggingManagement
 {
-    public static final String INHERITED_PSUEDO_LOG_LEVEL = "INHERITED";
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggingManagementMBean.class);
-    private static final TabularType LOGGER_LEVEL_TABULAR_TYE;
+    private static final TabularType LOGGER_LEVEL_TABULAR_TYPE;
     private static final CompositeType LOGGER_LEVEL_COMPOSITE_TYPE;
-
-    private final LoggingManagementFacade _loggingManagementFacade;
-    private final String[] _allAvailableLogLevels;
+    private static final String UNSUPPORTED_LOGGER_FILTER_TYPE = "<UNSUPPORTED>";
 
     static
     {
@@ -72,7 +76,7 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
                                                          COMPOSITE_ITEM_DESCRIPTIONS.toArray(new String[COMPOSITE_ITEM_DESCRIPTIONS.size()]),
                                                          loggerLevelItemTypes);
 
-            LOGGER_LEVEL_TABULAR_TYE = new TabularType("LoggerLevel", "List of loggers with levels",
+            LOGGER_LEVEL_TABULAR_TYPE = new TabularType("LoggerLevel", "List of loggers with levels",
                                                        LOGGER_LEVEL_COMPOSITE_TYPE,
                                                        TABULAR_UNIQUE_INDEX.toArray(new String[TABULAR_UNIQUE_INDEX.size()]));
         }
@@ -82,13 +86,17 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
         }
     }
 
-    public LoggingManagementMBean(LoggingManagementFacade loggingManagementFacade, ManagedObjectRegistry registry) throws JMException
+    private final String[] _allAvailableLogLevels;
+    private final BrokerFileLogger _brokerFileLogger;
+
+    public LoggingManagementMBean(BrokerFileLogger brokerFileLogger, ManagedObjectRegistry registry) throws JMException
     {
         super(LoggingManagement.class, LoggingManagement.TYPE, registry);
         register();
-        _loggingManagementFacade = loggingManagementFacade;
-        // QPID-6516 : TODO
-        _allAvailableLogLevels = null;//buildAllAvailableLoggerLevelsWithInheritedPsuedoLogLevel(_loggingManagementFacade);
+        _brokerFileLogger = brokerFileLogger;
+
+        Collection<String> validLogLevels = LogLevel.validValues();
+        _allAvailableLogLevels = validLogLevels.toArray(new String[validLogLevels.size()]);
     }
 
     @Override
@@ -106,7 +114,7 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
     @Override
     public Integer getLog4jLogWatchInterval()
     {
-        return _loggingManagementFacade.getLog4jLogWatchInterval();
+        return -1;
     }
     
     @Override
@@ -118,183 +126,60 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
     @Override
     public TabularData viewEffectiveRuntimeLoggerLevels()
     {
-        Map<String, String> levels = _loggingManagementFacade.retrieveRuntimeLoggersLevels();
-        return createTabularDataFromLevelsMap(levels);
+        return getTabularData(findFiltersByDurability(FilterDurability.EITHER));
     }
 
     @Override
     public String getRuntimeRootLoggerLevel()
     {
-        return _loggingManagementFacade.retrieveRuntimeRootLoggerLevel();
+        return getLogLevel(ROOT_LOGGER_NAME, FilterDurability.NONDURABLE);
     }
 
     @Override
     public boolean setRuntimeRootLoggerLevel(String level)
     {
-        try
-        {
-            validateLevelNotAllowingInherited(level);
-        }
-        catch (IllegalArgumentException iae)
-        {
-            LOGGER.warn(level + " is not a known level");
-            return false;
-        }
-
-        _loggingManagementFacade.setRuntimeRootLoggerLevel(level);
-        return true;
+        return setRuntimeLoggerLevel(ROOT_LOGGER_NAME, level);
     }
 
     @Override
     public boolean setRuntimeLoggerLevel(String logger, String level)
     {
-        String validatedLevel;
-        try
-        {
-            validatedLevel = getValidateLevelAllowingInherited(level);
-        }
-        catch (IllegalArgumentException iae)
-        {
-            LOGGER.warn(level + " is not a known level");
-            return false;
-        }
-
-        try
-        {
-            _loggingManagementFacade.setRuntimeLoggerLevel(logger, validatedLevel);
-        }
-        catch (LoggingFacadeException e)
-        {
-            LOGGER.error("Cannot set runtime logging level", e);
-           return false;
-        }
-        return true;
+        return setLogLevel(logger, level, FilterDurability.NONDURABLE);
     }
 
     @Override
     public TabularData viewConfigFileLoggerLevels()
     {
-        Map<String,String> levels;
-        try
-        {
-            levels = _loggingManagementFacade.retrieveConfigFileLoggersLevels();
-        }
-        catch (LoggingFacadeException e)
-        {
-            LOGGER.error("Cannot determine logging levels", e);
-           return null;
-        }
-
-        return createTabularDataFromLevelsMap(levels);
+        return getTabularData(findFiltersByDurability(FilterDurability.DURABLE));
     }
 
     @Override
-    public String getConfigFileRootLoggerLevel()throws IOException
+    public String getConfigFileRootLoggerLevel() throws IOException
     {
-        try
-        {
-            return _loggingManagementFacade.retrieveConfigFileRootLoggerLevel().toUpperCase();
-        }
-        catch (LoggingFacadeException e)
-        {
-            LOGGER.warn("The log4j configuration get config request was aborted: ", e);
-            throw new IOException("The log4j configuration get config request was aborted: " + e.getMessage());
-        }
+        return getLogLevel(ROOT_LOGGER_NAME, FilterDurability.DURABLE);
     }
 
     @Override
     public boolean setConfigFileLoggerLevel(String logger, String level)
     {
-        String validatedLevel;
-        try
-        {
-            validatedLevel = getValidateLevelAllowingInherited(level);
-        }
-        catch (IllegalArgumentException iae)
-        {
-            LOGGER.warn(level + " is not a known level");
-            return false;
-        }
-
-        try
-        {
-            _loggingManagementFacade.setConfigFileLoggerLevel(logger, validatedLevel);
-        }
-        catch (LoggingFacadeException e)
-        {
-            LOGGER.warn("The log4j configuration set config request was aborted: ", e);
-            return false;
-        }
-        return true;
+        return setLogLevel(logger, level, FilterDurability.DURABLE);
     }
-    
+
     @Override
     public boolean setConfigFileRootLoggerLevel(String level)
     {
-        try
-        {
-            validateLevelNotAllowingInherited(level);
-        }
-        catch (IllegalArgumentException iae)
-        {
-            LOGGER.warn(level + " is not a known level");
-            return false;
-        }
-
-        try
-        {
-            _loggingManagementFacade.setConfigFileRootLoggerLevel(level);
-            return true;
-        }
-        catch (LoggingFacadeException e)
-        {
-            LOGGER.warn("The log4j configuration set config request was aborted: ", e);
-            return false;
-        }
+        return setConfigFileLoggerLevel(ROOT_LOGGER_NAME, level);
     }
 
     @Override
     public void reloadConfigFile() throws IOException
     {
-        try
-        {
-
-            _loggingManagementFacade.reload();
-        }
-        catch (LoggingFacadeException e)
-        {
-            LOGGER.warn("The log4j configuration reload request was aborted: ", e);
-            throw new IOException("The log4j configuration reload request was aborted: " + e.getMessage());
-        }
-    }
-
-    private String getValidateLevelAllowingInherited(String level)
-    {
-        if(level == null
-            || "null".equalsIgnoreCase(level)
-            || INHERITED_PSUEDO_LOG_LEVEL.equalsIgnoreCase(level))
-        {
-            //the string "null" or "inherited" signals to inherit from a parent logger,
-            //using a null Level reference for the logger.
-            return null;
-        }
-
-        validateLevelNotAllowingInherited(level);
-        return level;
-    }
-
-    private void validateLevelNotAllowingInherited(String level)
-    {
-        final List<String> availableLoggerLevels = _loggingManagementFacade.getAvailableLoggerLevels();
-        if (level == null || !availableLoggerLevels.contains(level.toUpperCase()))
-        {
-            throw new IllegalArgumentException(level + " not known");
-        }
+        throw new UnsupportedOperationException("Reloading of configuration file is not supported.");
     }
 
     private TabularData createTabularDataFromLevelsMap(Map<String, String> levels)
     {
-        TabularData loggerLevelList = new TabularDataSupport(LOGGER_LEVEL_TABULAR_TYE);
+        TabularData loggerLevelList = new TabularDataSupport(LOGGER_LEVEL_TABULAR_TYPE);
         for (Map.Entry<String,String> entry : levels.entrySet())
         {
             String loggerName = entry.getKey();
@@ -322,12 +207,144 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
         }
     }
 
-    private String[] buildAllAvailableLoggerLevelsWithInheritedPsuedoLogLevel(LoggingManagementFacade loggingManagementFacade)
+    private boolean isValidLogLevel(String logLevel)
     {
-        List<String> levels = loggingManagementFacade.getAvailableLoggerLevels();
-        List<String> mbeanLevels = new ArrayList<String>(levels);
-        mbeanLevels.add(INHERITED_PSUEDO_LOG_LEVEL);
+        try
+        {
+            LogLevel.valueOf(logLevel);
+            return true;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
 
-        return mbeanLevels.toArray(new String[mbeanLevels.size()]);
+    private TabularData getTabularData(Collection<BrokerLoggerFilter<?>> filters)
+    {
+        Map<String,String> logToLevelMap = new TreeMap<>();
+        for (BrokerLoggerFilter<?> filter: filters)
+        {
+            if (filter instanceof BrokerNameAndLevelFilter)
+            {
+                BrokerNameAndLevelFilter<?> nameAndLevelFilter = (BrokerNameAndLevelFilter)filter;
+                logToLevelMap.put(nameAndLevelFilter.getLoggerName(), nameAndLevelFilter.getLevel().name());
+            }
+            else
+            {
+                logToLevelMap.put(UNSUPPORTED_LOGGER_FILTER_TYPE, "");
+            }
+        }
+        return createTabularDataFromLevelsMap(logToLevelMap);
+    }
+
+    private String getLogLevel(String loggerName, FilterDurability filterDurability)
+    {
+        LogLevel level = LogLevel.OFF;
+        List<BrokerNameAndLevelFilter<?>> filters = findFiltersByLoggerNameAndDurability(loggerName, filterDurability);
+
+        for(BrokerNameAndLevelFilter<?> filter: filters)
+        {
+            final LogLevel filterLevel = filter.getLevel();
+            if (level.compareTo(filterLevel) > 0)
+            {
+                level = filterLevel;
+            }
+        }
+        return level.name();
+    }
+
+    private boolean setLogLevel(String logger, String level, FilterDurability durability)
+    {
+        if (!isValidLogLevel(level))
+        {
+            LOGGER.warn("{} is not a known level", level);
+            return false;
+        }
+
+        List<BrokerNameAndLevelFilter<?>> filters = findFiltersByLoggerNameAndDurability(logger, durability);
+        if (filters.isEmpty())
+        {
+            LOGGER.warn("There is no logger with name '{}' and durability '{}'", logger, durability.name().toLowerCase());
+            return false;
+        }
+
+        LogLevel targetLevel = LogLevel.valueOf(level);
+        for (BrokerNameAndLevelFilter<?> filter: filters)
+        {
+            try
+            {
+                filter.setAttributes(Collections.<String, Object>singletonMap(BrokerNameAndLevelFilter.LEVEL, targetLevel));
+            }
+            catch(RuntimeException e)
+            {
+                LOGGER.error("Aborting setting runtime logging level due to failure", e);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private List<BrokerLoggerFilter<?>> findFiltersByDurability(FilterDurability durability)
+    {
+        Collection<BrokerLoggerFilter<?>> filters = _brokerFileLogger.getChildren(BrokerLoggerFilter.class);
+        List<BrokerLoggerFilter<?>> results = new ArrayList<>();
+        if (durability == durability.EITHER)
+        {
+            results.addAll(filters);
+        }
+        else
+        {
+            for (BrokerLoggerFilter<?> filter: filters)
+            {
+                if (durability == FilterDurability.valueOf(filter.isDurable()))
+                {
+                    results.add(filter);
+                }
+            }
+        }
+        return results;
+    }
+
+    private List<BrokerNameAndLevelFilter<?>> findFiltersByLoggerNameAndDurability(String loggerName, FilterDurability filterDurability)
+    {
+        List<BrokerNameAndLevelFilter<?>> results = new ArrayList<>();
+        Collection<BrokerLoggerFilter<?>> filters = findFiltersByDurability(filterDurability);
+        String sanitizedLoggerName = sanitizeLoggerName(loggerName);
+        for (BrokerLoggerFilter<?> filter: filters)
+        {
+            if (filter instanceof BrokerNameAndLevelFilter)
+            {
+                BrokerNameAndLevelFilter<?> brokerNameAndLevelFilter = (BrokerNameAndLevelFilter<?>)filter;
+                String filterLoggerName = sanitizeLoggerName(brokerNameAndLevelFilter.getLoggerName());
+                if (sanitizedLoggerName.equals(filterLoggerName))
+                {
+                    results.add(brokerNameAndLevelFilter);
+                }
+            }
+        }
+        return results;
+    }
+
+    private String sanitizeLoggerName(String loggerName)
+    {
+        if (loggerName == null || "".equals(loggerName))
+        {
+            return ROOT_LOGGER_NAME;
+        }
+        return loggerName;
+    }
+
+    private enum FilterDurability
+    {
+        DURABLE,
+        NONDURABLE,
+        EITHER;
+
+        public static FilterDurability valueOf(boolean durable)
+        {
+            return durable ? DURABLE : NONDURABLE;
+        }
     }
 }
