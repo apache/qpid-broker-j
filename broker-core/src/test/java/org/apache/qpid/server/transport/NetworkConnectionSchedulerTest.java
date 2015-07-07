@@ -60,7 +60,7 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         when(timidEngine.getAggregateTicker()).thenReturn(new AggregateTicker());
 
         final NetworkConnectionScheduler scheduler = new NetworkConnectionScheduler(getName(), 1);
-
+        scheduler.start();
         NonBlockingNetworkTransport transport = new NonBlockingNetworkTransport(engineFactory, EnumSet.of(TransportEncryption.NONE),
                                                                                 scheduler, port);
 

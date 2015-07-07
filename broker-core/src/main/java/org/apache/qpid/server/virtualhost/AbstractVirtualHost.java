@@ -1770,6 +1770,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool",
                                                                      getConnectionThreadCount(),
                                                                      connectionThreadFactory);
+        _networkConnectionScheduler.start();
         MessageStore messageStore = getMessageStore();
         messageStore.openMessageStore(this);
 

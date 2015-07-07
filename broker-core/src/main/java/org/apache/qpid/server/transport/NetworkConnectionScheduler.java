@@ -37,9 +37,10 @@ import org.apache.qpid.transport.TransportException;
 public class NetworkConnectionScheduler
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConnectionScheduler.class);
+    private final ThreadFactory _factory;
 
-    private final SelectorThread _selectorThread;
-    private final ThreadPoolExecutor _executor;
+    private volatile SelectorThread _selectorThread;
+    private volatile ThreadPoolExecutor _executor;
     private final AtomicInteger _running = new AtomicInteger();
     private final int _poolSize;
     private final String _name;
@@ -47,28 +48,35 @@ public class NetworkConnectionScheduler
     public NetworkConnectionScheduler(final String name, int threadPoolSize)
     {
         this(name, threadPoolSize, new ThreadFactory()
-        {
-            final AtomicInteger _count = new AtomicInteger();
+                                    {
+                                        final AtomicInteger _count = new AtomicInteger();
 
-            @Override
-            public Thread newThread(final Runnable r)
-            {
-                Thread t = Executors.defaultThreadFactory().newThread(r);
-                t.setName("IO-pool-" + name + "-" + _count.incrementAndGet());
-                return t;
-            }
-        });
+                                        @Override
+                                        public Thread newThread(final Runnable r)
+                                        {
+                                            Thread t = Executors.defaultThreadFactory().newThread(r);
+                                            t.setName("IO-pool-" + name + "-" + _count.incrementAndGet());
+                                            return t;
+                                        }
+                                    });
     }
+
     public NetworkConnectionScheduler(String name, int threadPoolSize, ThreadFactory factory)
+    {
+        _name = name;
+        _poolSize = threadPoolSize;
+        _factory = factory;
+    }
+
+
+    public void start()
     {
         try
         {
-            _name = name;
-            _selectorThread = new SelectorThread(this);  // TODO: Publishes partially constructed object
+            _selectorThread = new SelectorThread(this);
             _selectorThread.start();
-            _poolSize = threadPoolSize;
             _executor = new ThreadPoolExecutor(_poolSize, _poolSize, 0L, TimeUnit.MILLISECONDS,
-                                               new LinkedBlockingQueue<Runnable>(), factory);
+                                               new LinkedBlockingQueue<Runnable>(), _factory);
             _executor.prestartAllCoreThreads();
         }
         catch (IOException e)
@@ -145,8 +153,16 @@ public class NetworkConnectionScheduler
 
     public void close()
     {
-        _selectorThread.close();
-        _executor.shutdown();
+        if(_selectorThread != null)
+        {
+            _selectorThread.close();
+            _selectorThread = null;
+        }
+        if(_executor != null)
+        {
+            _executor.shutdown();
+            _executor = null;
+        }
     }
 
 

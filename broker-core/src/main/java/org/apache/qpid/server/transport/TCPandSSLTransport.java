@@ -71,6 +71,7 @@ class TCPandSSLTransport implements AcceptingTransport
         }
 
         _scheduler = new NetworkConnectionScheduler("Port-"+_port.getName(), _port.getThreadPoolSize());
+        _scheduler.start();
         _networkTransport = new NonBlockingNetworkTransport(protocolEngineFactory,
                                                             encryptionSet, _scheduler, _port);
         _networkTransport.start();
