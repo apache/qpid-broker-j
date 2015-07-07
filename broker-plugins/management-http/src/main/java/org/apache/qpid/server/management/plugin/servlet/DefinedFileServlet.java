@@ -97,6 +97,7 @@ public class DefinedFileServlet extends HttpServlet
         }
         else
         {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             try (OutputStream output = HttpManagementUtil.getOutputStream(request, response))
             {
                 final String notFoundMessage = "Unknown path '"
@@ -106,7 +107,6 @@ public class DefinedFileServlet extends HttpServlet
                                  + "://" + request.getServerName() + ":" + request.getServerPort() + _apiDocsPath + "\n";
                 output.write(notFoundMessage.getBytes(StandardCharsets.UTF_8));
             }
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
         }
     }
 }

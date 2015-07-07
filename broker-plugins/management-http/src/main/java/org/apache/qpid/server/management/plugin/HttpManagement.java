@@ -305,10 +305,13 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         addRestServlet(root, Broker.class);
 
         ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel(), Collections.<String>emptyList()));
-        root.addServlet(apiDocsServlet, "/apidocs");
-        root.addServlet(apiDocsServlet, "/apidocs/");
-        root.addServlet(apiDocsServlet, "/apidocs/latest");
-        root.addServlet(apiDocsServlet, "/apidocs/latest/");
+        final ServletHolder rewriteSerlvet = new ServletHolder(new RewriteServlet("^(.*)$", "$1/"));
+        for(String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/"+getLatestSupportedVersion()})
+        {
+            root.addServlet(rewriteSerlvet, path);
+            root.addServlet(apiDocsServlet, path + "/");
+        }
+
         root.addServlet(new ServletHolder(new UserPreferencesServlet()), "/service/userpreferences/*");
         root.addServlet(new ServletHolder(new LoggedOnUserPreferencesServlet()), "/service/preferences");
         root.addServlet(new ServletHolder(new StructureServlet()), "/service/structure");
@@ -519,7 +522,13 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private List<String> getSupportedRestApiVersions()
     {
-        return Collections.singletonList(String.valueOf(BrokerModel.MODEL_MAJOR_VERSION));
+        // TODO - actually support multiple versions and add those versions to the list
+        return Collections.singletonList(getLatestSupportedVersion());
+    }
+
+    private String getLatestSupportedVersion()
+    {
+        return "v"+String.valueOf(BrokerModel.MODEL_MAJOR_VERSION);
     }
 
     private void logOperationalListenMessages(Collection<Port<?>> ports)
