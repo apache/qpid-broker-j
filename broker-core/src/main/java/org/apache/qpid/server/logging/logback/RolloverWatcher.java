@@ -32,13 +32,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.logging.LogFileDetails;
 import org.apache.qpid.server.logging.PathContent;
 import org.apache.qpid.server.logging.ZippedContent;
-import org.apache.qpid.server.model.Content;
 
 public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RolloverWatcher.class);
     private final Path _activeFilePath;
     private volatile Collection<String> _rolledFiles;
     private volatile Path _baseFolder;
@@ -54,6 +57,16 @@ public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
     {
         _rolledFiles = Collections.unmodifiableCollection(Arrays.asList(relativeFileNames));
         _baseFolder = baseFolder;
+    }
+
+    @Override
+    public void onNoRolloverDetected(final Path baseFolder, final String[] relativeFileNames)
+    {
+        if (_baseFolder == null)
+        {
+            _baseFolder = baseFolder;
+        }
+        LOGGER.warn("Exceeded maximum number of rescans without detecting rolled over log file.");
     }
 
     public PathContent getFileContent(String fileName)

@@ -20,24 +20,25 @@
  */
 package org.apache.qpid.server.logging.logback;
 
-import static org.apache.qpid.server.util.LoggerTestHelper.assertLoggedEvent;
-import static org.apache.qpid.server.util.LoggerTestHelper.createAndRegisterAppender;
-import static org.apache.qpid.server.util.LoggerTestHelper.deleteAndUnregisterAppender;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.concurrent.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import ch.qos.logback.classic.Level;
+
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.FileAppender;
-import ch.qos.logback.core.read.ListAppender;
 import ch.qos.logback.core.rolling.RollingPolicyBase;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
@@ -85,7 +86,7 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
     public File createTestFile(String fileName) throws IOException
     {
         File testFile = new File(_baseFolder, fileName);
-        testFile.createNewFile();
+        assertTrue("Cannot create a new file " + testFile.getPath(), testFile.createNewFile());
         return testFile;
     }
 
@@ -130,18 +131,13 @@ public class RollingPolicyDecoratorTest extends QpidTestCase
 
     public void testRolloverRescanLimit() throws IOException
     {
-        ListAppender loggerAppender = createAndRegisterAppender("testAppender");
-        try
-        {
-            _policy.rollover();
-            verify(_delegate).rollover();
-            _policy.rollover();
-            assertLoggedEvent(loggerAppender, true, RollingPolicyDecorator.WARNING_MESSAGE, RollingPolicyDecorator.class.getName(), Level.WARN);
-        }
-        finally
-        {
-            deleteAndUnregisterAppender(loggerAppender);
-        }
+        _policy.rollover();
+        verify(_delegate).rollover();
+        Matcher<String[]> matcher = getMatcher(new String[]{_testFile.getName()});
+        verify(_listener).onRollover(eq(_baseFolder.toPath()), argThat(matcher));
+        _policy.rollover();
+        verify(_delegate, times(2)).rollover();
+        verify(_listener).onNoRolloverDetected(eq(_baseFolder.toPath()), argThat(matcher));
     }
 
     public void testSequentialRollover() throws IOException

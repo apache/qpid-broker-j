@@ -64,7 +64,7 @@ public class LoggerTestHelper
         List<ILoggingEvent> events;
         synchronized(appender)
         {
-            events = new ArrayList<>(appender.list);
+            events = new ArrayList<ILoggingEvent>(appender.list);
         }
 
         boolean logged = false;

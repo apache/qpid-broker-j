@@ -54,7 +54,6 @@ public class RollingPolicyDecorator implements RollingPolicy
     public static final int DEFAULT_RESCAN_LIMIT = 60;
     public static final String ROLLOVER_RESCAN_LIMIT_PROPERTY_NAME = "qpid.logger_rollover_rescan_limit";
     private static final Logger LOGGER = LoggerFactory.getLogger(RollingPolicyDecorator.class);
-    public static final String WARNING_MESSAGE = "Exceeded maximum number of rescans without detecting rolled over log file.";
 
     private final RollingPolicyBase _decorated;
     private final RolloverListener _listener;
@@ -138,6 +137,7 @@ public class RollingPolicyDecorator implements RollingPolicy
     public interface RolloverListener
     {
         void onRollover(Path baseFolder, String[] relativeFileNames);
+        void onNoRolloverDetected(Path baseFolder, String[] relativeFileNames);
     }
 
     public RollingPolicyBase getDecorated()
@@ -198,7 +198,7 @@ public class RollingPolicyDecorator implements RollingPolicy
                     }
                     else
                     {
-                        LOGGER.warn(WARNING_MESSAGE);
+                        _listener.onNoRolloverDetected(_rolledFilesBaseFolder, rolloverFiles);
                     }
                 }
             }
