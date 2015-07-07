@@ -156,12 +156,10 @@ public class NetworkConnectionScheduler
         if(_selectorThread != null)
         {
             _selectorThread.close();
-            _selectorThread = null;
         }
         if(_executor != null)
         {
             _executor.shutdown();
-            _executor = null;
         }
     }
 
