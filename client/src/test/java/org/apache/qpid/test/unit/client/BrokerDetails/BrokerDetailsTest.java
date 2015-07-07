@@ -187,7 +187,7 @@ public class BrokerDetailsTest extends QpidTestCase
     {
         String brokerURL = "tcp://localhost:5672?idle_timeout='60000'";
         BrokerDetails broker = new BrokerDetails(brokerURL);
-        assertEquals(60000, Integer.parseInt(broker.getProperty(BrokerDetails.OPTIONS_IDLE_TIMEOUT)));
+        assertEquals(60000, Integer.parseInt(broker.getProperty("idle_timeout")));
 
         assertEquals(Integer.valueOf(60), broker.buildConnectionSettings().getHeartbeatInterval08());
     }
