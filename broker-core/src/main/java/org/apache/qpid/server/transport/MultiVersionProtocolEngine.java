@@ -77,14 +77,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                                       ProtocolEngineCreator[] creators,
                                       final Runnable onCloseTask)
     {
-        if(defaultSupportedReply != null && !supported.contains(defaultSupportedReply))
-        {
-            _logger.warn("The configured default reply ({}) to an unsupported protocol version initiation is not"
-                         + " supported on this port.  Only the following versions are supported: {}",
-                         defaultSupportedReply, supported);
-            defaultSupportedReply = null;
-        }
-
         _id = id;
         _broker = broker;
         _supported = supported;

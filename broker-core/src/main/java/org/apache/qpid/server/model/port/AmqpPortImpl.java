@@ -403,7 +403,14 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         Protocol protocol = null;
         if (defaultAmqpSupportedReply != null && defaultAmqpSupportedReply.length() != 0)
         {
-            protocol = Protocol.valueOf("AMQP_" + defaultAmqpSupportedReply.substring(1));
+            try
+            {
+                protocol = Protocol.valueOf("AMQP_" + defaultAmqpSupportedReply.substring(1));
+            }
+            catch(IllegalArgumentException e)
+            {
+                LOGGER.warn("The configured default reply ({}) is not a valid value for a protocol.  This value will be ignored", defaultAmqpSupportedReply);
+            }
         }
         final Set<Protocol> protocolSet = getProtocols();
         if(protocol != null && !protocolSet.contains(protocol))
