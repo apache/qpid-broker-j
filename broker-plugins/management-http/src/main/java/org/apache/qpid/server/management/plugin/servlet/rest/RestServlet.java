@@ -45,6 +45,7 @@ import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
@@ -133,7 +134,7 @@ public class RestServlet extends AbstractServlet
             String[] hierarchyItems = hierarchy.split(",");
             for (String item : hierarchyItems)
             {
-                Class<?> itemClass = null;
+                Class<?> itemClass;
                 try
                 {
                     itemClass = Class.forName(item);
@@ -165,7 +166,7 @@ public class RestServlet extends AbstractServlet
     protected Collection<ConfiguredObject<?>> getObjects(HttpServletRequest request)
     {
         String[] pathInfoElements = getPathInfoElements(request);
-        List<String> names = new ArrayList<String>();
+        List<String> names = new ArrayList<>();
         if(pathInfoElements != null)
         {
             if(pathInfoElements.length > _hierarchy.length)
@@ -178,16 +179,18 @@ public class RestServlet extends AbstractServlet
             names.addAll(Arrays.asList(pathInfoElements));
         }
 
-        Collection<ConfiguredObject<?>> parents = new ArrayList<ConfiguredObject<?>>();
+        Collection<ConfiguredObject<?>> parents = new ArrayList<>();
         parents.add(getBroker());
-        Collection<ConfiguredObject<?>> children = new ArrayList<ConfiguredObject<?>>();
+        Collection<ConfiguredObject<?>> children = new ArrayList<>();
 
         Map<Class<? extends ConfiguredObject>, String> filters =
-                new HashMap<Class<? extends ConfiguredObject>, String>();
+                new HashMap<>();
 
+        final Model model = getBroker().getModel();
+        boolean wildcard = false;
         for(int i = 0; i < _hierarchy.length; i++)
         {
-            if(i == 0 || getBroker().getModel().getChildTypes(_hierarchy[i - 1]).contains(_hierarchy[i]))
+            if(i == 0 || model.getChildTypes(_hierarchy[i - 1]).contains(_hierarchy[i]))
             {
 
                 for(ConfiguredObject<?> parent : parents)
@@ -204,9 +207,14 @@ public class RestServlet extends AbstractServlet
                                 children.add(child);
                             }
                         }
+                        if(children.isEmpty())
+                        {
+                            return null;
+                        }
                     }
                     else
                     {
+                        wildcard = true;
                         children.addAll((Collection<? extends ConfiguredObject<?>>) parent.getChildren(_hierarchy[i]));
                     }
                 }
@@ -221,16 +229,20 @@ public class RestServlet extends AbstractServlet
                 {
                     filters.put(_hierarchy[i], names.get(i));
                 }
+                else
+                {
+                    wildcard = true;
+                }
             }
 
             parents = children;
-            children = new ArrayList<ConfiguredObject<?>>();
+            children = new ArrayList<>();
         }
 
-        if(!filters.isEmpty())
+        if(!filters.isEmpty() && !parents.isEmpty())
         {
             Collection<ConfiguredObject<?>> potentials = parents;
-            parents = new ArrayList<ConfiguredObject<?>>();
+            parents = new ArrayList<>();
 
             for(ConfiguredObject o : potentials)
             {
@@ -263,16 +275,16 @@ public class RestServlet extends AbstractServlet
             }
         }
 
-        return filter(parents, request);
+        return parents.isEmpty() && !wildcard ? null : filter(parents, request);
     }
 
     private Collection<ConfiguredObject<?>> filter(Collection<ConfiguredObject<?>> objects, HttpServletRequest request)
     {
 
 
-        Map<String, Collection<String>> filters = new HashMap<String, Collection<String>>();
+        Map<String, Collection<String>> filters = new HashMap<>();
 
-        for(String param : (Collection<String>) Collections.list(request.getParameterNames()))
+        for(String param : Collections.list(request.getParameterNames()))
         {
             if(!RESERVED_PARAMS.contains(param))
             {
@@ -285,7 +297,7 @@ public class RestServlet extends AbstractServlet
             return objects;
         }
 
-        Collection<ConfiguredObject<?>> filteredObj = new ArrayList<ConfiguredObject<?>>(objects);
+        Collection<ConfiguredObject<?>> filteredObj = new ArrayList<>(objects);
 
         Iterator<ConfiguredObject<?>> iter = filteredObj.iterator();
 
@@ -310,7 +322,7 @@ public class RestServlet extends AbstractServlet
                                                                 Class<? extends ConfiguredObject> ancestorType,
                                                                 ConfiguredObject child)
     {
-        Collection<ConfiguredObject> ancestors = new HashSet<ConfiguredObject>();
+        Collection<ConfiguredObject> ancestors = new HashSet<>();
         Collection<Class<? extends ConfiguredObject>> parentTypes = child.getModel().getParentTypes(childType);
 
         for(Class<? extends ConfiguredObject> parentClazz : parentTypes)
@@ -359,7 +371,7 @@ public class RestServlet extends AbstractServlet
 
                 Collection<ConfiguredObject<?>> allObjects = getObjects(request);
 
-                if (allObjects.isEmpty() && isSingleObjectRequest(request))
+                if (allObjects == null || allObjects.isEmpty() && isSingleObjectRequest(request))
                 {
                     sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
                     return;
@@ -434,7 +446,7 @@ public class RestServlet extends AbstractServlet
             }
             else
             {
-                response.setHeader(CONTENT_DISPOSITION, String.format("attachment"));  // Agent will allow user to choose a name
+                response.setHeader(CONTENT_DISPOSITION, "attachment");  // Agent will allow user to choose a name
             }
         }
     }
@@ -580,35 +592,40 @@ public class RestServlet extends AbstractServlet
         }
         else
         {
-            if (requestMethod.equals("GET"))
+            switch (requestMethod)
             {
-                if (operation.isNonModifying())
-                {
-                    operationArguments = getOperationArgumentsAsMap(request);
-                }
-                else
-                {
-                    response.addHeader("Allow", "POST");
+                case "GET":
+                    if (operation.isNonModifying())
+                    {
+                        operationArguments = getOperationArgumentsAsMap(request);
+                    }
+                    else
+                    {
+                        response.addHeader("Allow", "POST");
+                        sendJsonErrorResponse(request,
+                                              response,
+                                              HttpServletResponse.SC_METHOD_NOT_ALLOWED,
+                                              "Operation "
+                                              + operationName
+                                              + " modifies the object so you must use POST.");
+                        return;
+                    }
+
+                    break;
+                case "POST":
+                    operationArguments = getRequestProvidedObject(request);
+                    break;
+                default:
+                    response.addHeader("Allow", (operation.isNonModifying() ? "POST, GET" : "POST"));
                     sendJsonErrorResponse(request,
                                           response,
                                           HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                                          "Operation " + operationName + " modifies the object so you must use POST.");
+                                          "Operation "
+                                          + operationName
+                                          + " does not support the "
+                                          + requestMethod
+                                          + " requestMethod.");
                     return;
-                }
-
-            }
-            else if (requestMethod.equals("POST"))
-            {
-                operationArguments = getRequestProvidedObject(request);
-            }
-            else
-            {
-                response.addHeader("Allow", (operation.isNonModifying() ? "POST, GET" : "POST"));
-                sendJsonErrorResponse(request,
-                                      response,
-                                      HttpServletResponse.SC_METHOD_NOT_ALLOWED,
-                                      "Operation " + operationName + " does not support the " + requestMethod + " requestMethod.");
-                return;
             }
         }
         Object returnVal = operation.perform(subject, operationArguments);
@@ -932,13 +949,20 @@ public class RestServlet extends AbstractServlet
         try
         {
             Collection<ConfiguredObject<?>> allObjects = getObjects(request);
-            for(ConfiguredObject o : allObjects)
+            if(allObjects != null)
             {
-                o.delete();
-            }
+                for (ConfiguredObject o : allObjects)
+                {
+                    o.delete();
+                }
 
-            sendCachingHeadersOnResponse(response);
-            response.setStatus(HttpServletResponse.SC_OK);
+                sendCachingHeadersOnResponse(response);
+                response.setStatus(HttpServletResponse.SC_OK);
+            }
+            else
+            {
+                sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
+            }
         }
         catch(RuntimeException e)
         {
@@ -980,8 +1004,7 @@ public class RestServlet extends AbstractServlet
 
     private String ensureFilenameIsRfc2183(final String requestedFilename)
     {
-        String fileNameRfc2183 = requestedFilename.replaceAll("[\\P{InBasic_Latin}\\\\:/]", "");
-        return fileNameRfc2183;
+        return requestedFilename.replaceAll("[\\P{InBasic_Latin}\\\\:/]", "");
     }
 
 }
