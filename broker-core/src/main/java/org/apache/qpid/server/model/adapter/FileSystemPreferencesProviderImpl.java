@@ -37,15 +37,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
-import org.codehaus.jackson.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -377,9 +378,9 @@ public class FileSystemPreferencesProviderImpl
         {
             _storeFile = preferencesFile;
             _objectMapper = new ObjectMapper();
-            _objectMapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
+            _objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
             _objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
-            _preferences = new TreeMap<String, Map<String, Object>>();
+            _preferences = new TreeMap<>();
             _fileHelper = new FileHelper();
         }
 

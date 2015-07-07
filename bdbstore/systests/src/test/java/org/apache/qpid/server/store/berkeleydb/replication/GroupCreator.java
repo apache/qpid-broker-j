@@ -43,9 +43,9 @@ import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.sleepycat.je.rep.ReplicationConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
 import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -518,7 +518,7 @@ public class GroupCreator
 
         StringWriter writer = new StringWriter();
         ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         mapper.writeValue(writer, bluePrint);
         return writer.toString();
     }

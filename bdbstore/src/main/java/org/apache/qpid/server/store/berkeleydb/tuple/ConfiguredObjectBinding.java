@@ -28,13 +28,12 @@ import java.util.UUID;
 import org.apache.qpid.server.model.ConfiguredObjectJacksonModule;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.BDBConfiguredObjectRecord;
-
-import org.codehaus.jackson.map.ObjectMapper;
 
 public class ConfiguredObjectBinding extends TupleBinding<ConfiguredObjectRecord>
 {

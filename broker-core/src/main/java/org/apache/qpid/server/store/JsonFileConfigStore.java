@@ -41,8 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +102,7 @@ public class JsonFileConfigStore implements DurableConfigurationStore
     {
 
         _objectMapper = ConfiguredObjectJacksonModule.newObjectMapper();
-        _objectMapper.enable(SerializationConfig.Feature.INDENT_OUTPUT);
+        _objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
         _rootClass = rootClass;
         _fileHelper = new FileHelper();
     }

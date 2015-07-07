@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -44,8 +43,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.CustomRestHeaders;
 import org.apache.qpid.server.model.RestContentHeader;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -303,7 +303,7 @@ public abstract class AbstractServlet extends HttpServlet
     {
         OutputStream stream = getOutputStream(request, response);
         ObjectMapper mapper = ConfiguredObjectJacksonModule.newObjectMapper();
-        mapper.configure(SerializationConfig.Feature.INDENT_OUTPUT, true);
+        mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
         mapper.writeValue(stream, object);
     }
 

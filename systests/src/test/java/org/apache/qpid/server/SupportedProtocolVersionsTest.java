@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.configuration.ClientProperties;

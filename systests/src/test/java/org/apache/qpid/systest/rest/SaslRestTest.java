@@ -37,9 +37,6 @@ import java.util.Map;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.manager.Base64MD5PasswordDatabaseAuthenticationManager;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -295,7 +292,7 @@ public class SaslRestTest extends QpidRestTestCase
     }
 
     public int authenticateUser(HttpURLConnection requestChallengeConnection, String userName, String userPassword, String mechanism)
-            throws IOException, JsonParseException, JsonMappingException, Exception
+            throws Exception
     {
         // get the response
         Map<String, Object> response = getRestTestHelper().readJsonResponseAsMap(requestChallengeConnection);

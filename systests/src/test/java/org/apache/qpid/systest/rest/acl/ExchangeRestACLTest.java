@@ -29,8 +29,6 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -217,7 +215,7 @@ public class ExchangeRestACLTest extends QpidRestTestCase
         getRestTestHelper().submitRequest(_exchangeUrl, "GET", expectedResponseCode);
     }
 
-    private int createBinding(String bindingName) throws IOException, JsonGenerationException, JsonMappingException
+    private int createBinding(String bindingName) throws IOException
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Binding.NAME, bindingName);

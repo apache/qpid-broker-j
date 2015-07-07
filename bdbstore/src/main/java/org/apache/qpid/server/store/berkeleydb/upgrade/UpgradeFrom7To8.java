@@ -36,11 +36,11 @@ import org.apache.qpid.server.store.berkeleydb.tuple.ConfiguredObjectBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.MessageMetaDataBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.UUIDTupleBinding;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.je.Sequence;
 import com.sleepycat.je.SequenceConfig;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 
 import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.bind.tuple.TupleBinding;

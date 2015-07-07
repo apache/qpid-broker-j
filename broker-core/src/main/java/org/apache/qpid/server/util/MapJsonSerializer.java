@@ -23,8 +23,9 @@ package org.apache.qpid.server.util;
 import java.io.StringWriter;
 import java.util.Map;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 
 public class MapJsonSerializer
 {

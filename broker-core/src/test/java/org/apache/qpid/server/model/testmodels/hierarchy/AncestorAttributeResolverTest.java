@@ -24,11 +24,12 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.qpid.server.model.AncestorAttributeResolver;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.codehaus.jackson.map.ObjectMapper;
 
 public class AncestorAttributeResolverTest extends QpidTestCase
 {

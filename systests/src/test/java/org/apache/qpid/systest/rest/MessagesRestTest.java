@@ -37,8 +37,6 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.servlet.http.HttpServletResponse;
 
-import org.codehaus.jackson.map.JsonMappingException;
-
 public class MessagesRestTest extends QpidRestTestCase
 {
 
@@ -296,7 +294,7 @@ public class MessagesRestTest extends QpidRestTestCase
     }
 
 
-    private List<Long> getMesssageIds(String queueName) throws IOException, JsonMappingException
+    private List<Long> getMesssageIds(String queueName) throws IOException
     {
         List<Map<String, Object>> messages = getRestTestHelper().getJsonAsList("/service/message/test/" + queueName);
         List<Long> ids = new ArrayList<Long>();

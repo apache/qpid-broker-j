@@ -33,7 +33,8 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.util.FileUtils;
-import org.codehaus.jackson.map.ObjectMapper;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.MDC;
 
 public class BrokerTest extends QpidTestCase

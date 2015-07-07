@@ -45,7 +45,7 @@ import java.util.UUID;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 

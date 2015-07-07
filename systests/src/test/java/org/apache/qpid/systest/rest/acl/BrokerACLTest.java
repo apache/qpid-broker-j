@@ -34,8 +34,6 @@ import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -1048,7 +1046,7 @@ public class BrokerACLTest extends QpidRestTestCase
         getRestTestHelper().submitRequest(path, "GET", expectedResponseCode);
     }
 
-    private int createKeyStore(String name, String certAlias) throws IOException, JsonGenerationException, JsonMappingException
+    private int createKeyStore(String name, String certAlias) throws IOException
     {
         Map<String, Object> keyStoreAttributes = new HashMap<String, Object>();
         keyStoreAttributes.put(KeyStore.NAME, name);
@@ -1059,7 +1057,7 @@ public class BrokerACLTest extends QpidRestTestCase
         return getRestTestHelper().submitRequest("keystore/" + name, "PUT", keyStoreAttributes);
     }
 
-    private int createTrustStore(String name, boolean peersOnly) throws IOException, JsonGenerationException, JsonMappingException
+    private int createTrustStore(String name, boolean peersOnly) throws IOException
     {
         Map<String, Object> trustStoreAttributes = new HashMap<String, Object>();
         trustStoreAttributes.put(TrustStore.NAME, name);

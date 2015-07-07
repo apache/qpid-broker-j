@@ -26,9 +26,6 @@ import java.util.Properties;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
-
 import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
@@ -174,7 +171,7 @@ public class UserRestACLTest extends QpidRestTestCase
         assertEquals(passwordExpectedToBeCorrect, passwordIsCorrect);
     }
 
-    private void assertUserDoesNotExist(String newUser) throws JsonParseException, JsonMappingException, IOException
+    private void assertUserDoesNotExist(String newUser) throws IOException
     {
         String path = "user/" + TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER + "/" + newUser;
         getRestTestHelper().submitRequest(path, "GET", HttpServletResponse.SC_NOT_FOUND);
