@@ -56,13 +56,13 @@ public class ConnectionSettingsTest extends QpidTestCase
     @SuppressWarnings("deprecation")
     public void testTcpNoDelayLegacyOverrideTrue()
     {
-        systemPropertyOverrideForTcpDelay(ClientProperties.AMQJ_TCP_NODELAY_PROP_NAME, true);
+        systemPropertyOverrideForTcpDelay(LegacyClientProperties.AMQJ_TCP_NODELAY_PROP_NAME, true);
     }
 
     @SuppressWarnings("deprecation")
     public void testTcpNoDelayLegacyOverrideFalse()
     {
-        systemPropertyOverrideForTcpDelay(ClientProperties.AMQJ_TCP_NODELAY_PROP_NAME, false);
+        systemPropertyOverrideForTcpDelay(LegacyClientProperties.AMQJ_TCP_NODELAY_PROP_NAME, false);
     }
 
     public void testKeyManagerFactoryAlgorithmDefault()
@@ -80,7 +80,7 @@ public class ConnectionSettingsTest extends QpidTestCase
     public void testKeyManagerFactoryAlgorithmLegacyOverridden()
     {
         String algorithmName = TEST_ALGORITHM_NAME;
-        systemPropertyOverrideForKeyFactoryAlgorithm(ClientProperties.QPID_SSL_KEY_STORE_CERT_TYPE_PROP_NAME, algorithmName);
+        systemPropertyOverrideForKeyFactoryAlgorithm(LegacyClientProperties.QPID_SSL_KEY_STORE_CERT_TYPE_PROP_NAME, algorithmName);
     }
 
     public void testTrustManagerFactoryAlgorithmDefault()
@@ -98,7 +98,7 @@ public class ConnectionSettingsTest extends QpidTestCase
     public void testTrustManagerFactoryAlgorithmLegacyOverridden()
     {
         String algorithmName = TEST_ALGORITHM_NAME;
-        systemPropertyOverrideForTrustFactoryAlgorithm(ClientProperties.QPID_SSL_TRUST_STORE_CERT_TYPE_PROP_NAME, algorithmName);
+        systemPropertyOverrideForTrustFactoryAlgorithm(LegacyClientProperties.QPID_SSL_TRUST_STORE_CERT_TYPE_PROP_NAME, algorithmName);
     }
 
     public void testSendBufferSizeDefault()
@@ -114,7 +114,7 @@ public class ConnectionSettingsTest extends QpidTestCase
     @SuppressWarnings("deprecation")
     public void testtestSendBufferSizeOverriddenLegacyOverridden()
     {
-        systemPropertyOverrideForSocketBufferSize(ClientProperties.LEGACY_SEND_BUFFER_SIZE_PROP_NAME, 1024, false);
+        systemPropertyOverrideForSocketBufferSize(LegacyClientProperties.LEGACY_SEND_BUFFER_SIZE_PROP_NAME, 1024, false);
     }
 
     public void testReceiveBufferSizeDefault()
@@ -130,7 +130,7 @@ public class ConnectionSettingsTest extends QpidTestCase
     @SuppressWarnings("deprecation")
     public void testReceiveBufferSizeOverriddenLegacyOverridden()
     {
-        systemPropertyOverrideForSocketBufferSize(ClientProperties.LEGACY_RECEIVE_BUFFER_SIZE_PROP_NAME, 1024, true);
+        systemPropertyOverrideForSocketBufferSize(LegacyClientProperties.LEGACY_RECEIVE_BUFFER_SIZE_PROP_NAME, 1024, true);
     }
 
     public void testHeartbeatingDefaults()
@@ -153,8 +153,8 @@ public class ConnectionSettingsTest extends QpidTestCase
     @SuppressWarnings("deprecation")
 	public void testHeartbeatingOverriddenUsingAmqjLegacyOption()
     {
-        resetSystemProperty(ClientProperties.AMQJ_HEARTBEAT_DELAY, "30");
-        resetSystemProperty(ClientProperties.AMQJ_HEARTBEAT_TIMEOUT_FACTOR, "1.5");
+        resetSystemProperty(LegacyClientProperties.AMQJ_HEARTBEAT_DELAY, "30");
+        resetSystemProperty(LegacyClientProperties.AMQJ_HEARTBEAT_TIMEOUT_FACTOR, "1.5");
 
         assertEquals(Integer.valueOf(30), _conConnectionSettings.getHeartbeatInterval08());
         assertEquals(30, _conConnectionSettings.getHeartbeatInterval010());
@@ -164,7 +164,7 @@ public class ConnectionSettingsTest extends QpidTestCase
     @SuppressWarnings("deprecation")
     public void testHeartbeatingOverriddenUsingOlderLegacyOption()
     {
-        resetSystemProperty(ClientProperties.IDLE_TIMEOUT_PROP_NAME, "30000");
+        resetSystemProperty(LegacyClientProperties.IDLE_TIMEOUT_PROP_NAME, "30000");
 
         assertEquals(Integer.valueOf(30), _conConnectionSettings.getHeartbeatInterval08());
         assertEquals(30, _conConnectionSettings.getHeartbeatInterval010());

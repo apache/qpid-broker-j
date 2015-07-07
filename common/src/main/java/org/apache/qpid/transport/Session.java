@@ -91,7 +91,7 @@ public class Session extends SessionInvoker
     private SessionDelegate delegate;
     private SessionListener listener = new DefaultSessionListener();
     private final long timeout = Long.getLong(ClientProperties.QPID_SYNC_OP_TIMEOUT,
-                                        Long.getLong(ClientProperties.AMQJ_DEFAULT_SYNCWRITE_TIMEOUT,
+                                        Long.getLong(LegacyClientProperties.AMQJ_DEFAULT_SYNCWRITE_TIMEOUT,
                                                      ClientProperties.DEFAULT_SYNC_OPERATION_TIMEOUT));
     private final long blockedSendTimeout = Long.getLong(ClientProperties.QPID_FLOW_CONTROL_WAIT_FAILURE,
                                                          ClientProperties.DEFAULT_FLOW_CONTROL_WAIT_FAILURE);

@@ -126,6 +126,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     private static final boolean PROTOCOL_DEBUG = (System.getProperty("amqj.protocol.logging.level") != null);
 
     private static final long MAXIMUM_STATE_WAIT_TIME = Long.parseLong(System.getProperty("amqj.MaximumStateWait", "30000"));
+    private static final String AMQJ_DEFAULT_SYNCWRITE_TIMEOUT = "amqj.default_syncwrite_timeout";
 
     /**
      * The connection that this protocol handler is associated with. There is a 1-1 mapping between connection
@@ -163,7 +164,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
     /** Defines the default timeout to use for synchronous protocol commands. */
     private final long DEFAULT_SYNC_TIMEOUT = Long.getLong(ClientProperties.QPID_SYNC_OP_TIMEOUT,
-                                                           Long.getLong(ClientProperties.AMQJ_DEFAULT_SYNCWRITE_TIMEOUT,
+                                                           Long.getLong(AMQJ_DEFAULT_SYNCWRITE_TIMEOUT,
                                                                         ClientProperties.DEFAULT_SYNC_OPERATION_TIMEOUT));
 
     /** Object to lock on when changing the latch */

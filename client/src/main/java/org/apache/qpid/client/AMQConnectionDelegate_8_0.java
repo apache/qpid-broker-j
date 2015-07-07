@@ -66,9 +66,13 @@ import org.apache.qpid.transport.network.security.SecurityLayerFactory;
 public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQConnectionDelegate_8_0.class);
+
+    // deprectaed legacy name for the option
+    private static final String AMQJ_DEFAULT_SYNCWRITE_TIMEOUT = "amqj.default_syncwrite_timeout";
+
     private final AMQConnection _conn;
     private final long _timeout = Long.getLong(ClientProperties.QPID_SYNC_OP_TIMEOUT,
-                                               Long.getLong(ClientProperties.AMQJ_DEFAULT_SYNCWRITE_TIMEOUT,
+                                               Long.getLong(AMQJ_DEFAULT_SYNCWRITE_TIMEOUT,
                                                             ClientProperties.DEFAULT_SYNC_OPERATION_TIMEOUT));
     private boolean _messageCompressionSupported;
     private boolean _addrSyntaxSupported;

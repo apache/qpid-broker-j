@@ -76,20 +76,6 @@ public class ClientProperties
     public static final String SYNC_PUBLISH_PROP_NAME = "sync_publish";
 
     /**
-     * Frequency of heartbeat messages (in milliseconds)
-     * @see #QPID_HEARTBEAT_INTERVAL
-     */
-    @Deprecated
-    public static final String IDLE_TIMEOUT_PROP_NAME = "idle_timeout";
-
-    /**
-     * Frequency of heartbeat messages (in seconds)
-     * @see #QPID_HEARTBEAT_INTERVAL
-     */
-    @Deprecated
-    public static final String AMQJ_HEARTBEAT_DELAY = "amqj.heartbeat.delay";
-
-    /**
      * Frequency of heartbeat messages (in seconds)
      */
     public static final String QPID_HEARTBEAT_INTERVAL = "qpid.heartbeat";
@@ -98,12 +84,6 @@ public class ClientProperties
      * Default heartbeat interval (used by 0-10 protocol).
      */
     public static final int QPID_HEARTBEAT_INTERVAL_010_DEFAULT = 120;
-
-    /**
-     * @see #QPID_HEARTBEAT_TIMEOUT_FACTOR
-     */
-    @Deprecated
-    public static final String AMQJ_HEARTBEAT_TIMEOUT_FACTOR = "amqj.heartbeat.timeoutFactor";
 
     /**
      * The factor applied to {@link #QPID_HEARTBEAT_INTERVAL} that determines the maximum
@@ -138,8 +118,6 @@ public class ClientProperties
      * synchronous operations.
      */
     public static final String QPID_SYNC_OP_TIMEOUT = "qpid.sync_op_timeout";
-    @Deprecated
-    public static final String AMQJ_DEFAULT_SYNCWRITE_TIMEOUT = "amqj.default_syncwrite_timeout";
 
     /**
      * A default timeout value for synchronous operations
@@ -162,8 +140,6 @@ public class ClientProperties
      * System properties to change the default value used for TCP_NODELAY
      */
     public static final String QPID_TCP_NODELAY_PROP_NAME = "qpid.tcp_nodelay";
-    @Deprecated
-    public static final String AMQJ_TCP_NODELAY_PROP_NAME = "amqj.tcp_nodelay";
 
     /**
      * System property to set the reject behaviour. default value will be 'normal' but can be
@@ -175,21 +151,13 @@ public class ClientProperties
 
     /**
      * System property used to set the key manager factory algorithm.
-     *
-     * Historically, Qpid referred to this as {@value #QPID_SSL_KEY_STORE_CERT_TYPE_PROP_NAME}.
      */
     public static final String QPID_SSL_KEY_MANAGER_FACTORY_ALGORITHM_PROP_NAME = "qpid.ssl.KeyManagerFactory.algorithm";
-    @Deprecated
-    public static final String QPID_SSL_KEY_STORE_CERT_TYPE_PROP_NAME = "qpid.ssl.keyStoreCertType";
 
     /**
      * System property used to set the trust manager factory algorithm.
-     *
-     * Historically, Qpid referred to this as {@value #QPID_SSL_TRUST_STORE_CERT_TYPE_PROP_NAME}.
      */
     public static final String QPID_SSL_TRUST_MANAGER_FACTORY_ALGORITHM_PROP_NAME = "qpid.ssl.TrustManagerFactory.algorithm";
-    @Deprecated
-    public static final String QPID_SSL_TRUST_STORE_CERT_TYPE_PROP_NAME = "qpid.ssl.trustStoreCertType";
 
     /**
      * System property to enable allow dispatcher thread to be run as a daemon thread
@@ -204,21 +172,13 @@ public class ClientProperties
 
     /**
      * System property used to set the socket receive buffer size.
-     *
-     * Historically, Qpid referred to this as {@value #LEGACY_RECEIVE_BUFFER_SIZE_PROP_NAME}.
      */
     public static final String RECEIVE_BUFFER_SIZE_PROP_NAME  = "qpid.receive_buffer_size";
-    @Deprecated
-    public static final String LEGACY_RECEIVE_BUFFER_SIZE_PROP_NAME  = "amqj.receiveBufferSize";
 
     /**
      * System property used to set the socket send buffer size.
-     *
-     * Historically, Qpid referred to this as {@value #LEGACY_SEND_BUFFER_SIZE_PROP_NAME}.
      */
     public static final String SEND_BUFFER_SIZE_PROP_NAME  = "qpid.send_buffer_size";
-    @Deprecated
-    public static final String LEGACY_SEND_BUFFER_SIZE_PROP_NAME  = "amqj.sendBufferSize";
 
     /**
      * System property to set the time (in millis) to wait before failing when sending and

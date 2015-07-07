@@ -18,8 +18,6 @@
  */
 package org.apache.qpid.client;
 
-import static org.apache.qpid.configuration.ClientProperties.AMQJ_HEARTBEAT_DELAY;
-import static org.apache.qpid.configuration.ClientProperties.IDLE_TIMEOUT_PROP_NAME;
 import static org.apache.qpid.configuration.ClientProperties.QPID_HEARTBEAT_INTERVAL;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -162,7 +160,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
     @SuppressWarnings("deprecation")
     public void testHeartbeatsEnabledUsingAmqjLegacySystemProperty() throws Exception
     {
-        setTestSystemProperty(AMQJ_HEARTBEAT_DELAY, "1");
+        setTestSystemProperty("amqj.heartbeat.delay", "1");
         AMQConnection conn = (AMQConnection) getConnection();
         conn.setHeartbeatListener(_listener);
         conn.start();
@@ -178,7 +176,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
     @SuppressWarnings("deprecation")
     public void testHeartbeatsEnabledUsingOlderLegacySystemProperty() throws Exception
     {
-        setTestSystemProperty(IDLE_TIMEOUT_PROP_NAME, "1000");
+        setTestSystemProperty("idle_timeout", "1000");
         AMQConnection conn = (AMQConnection) getConnection();
         conn.setHeartbeatListener(_listener);
         conn.start();
