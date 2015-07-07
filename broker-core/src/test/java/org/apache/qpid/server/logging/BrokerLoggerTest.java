@@ -65,6 +65,10 @@ public class BrokerLoggerTest extends QpidTestCase
         _taskExecutor = new TaskExecutorImpl();
         _taskExecutor.start();
 
+        _loggerAppender = new ListAppender<>();
+        _loggerAppender.setName(APPENDER_NAME);
+
+
         Model model = BrokerModel.getInstance();
 
         SecurityManager securityManager = mock(SecurityManager.class);
@@ -83,24 +87,6 @@ public class BrokerLoggerTest extends QpidTestCase
             @Override
             public Appender<ILoggingEvent> createAppenderInstance(Context context)
             {
-                _loggerAppender = new ListAppender<ILoggingEvent>()
-                {
-                    @Override
-                    protected void append(final ILoggingEvent eventObject)
-                    {
-                        super.append(eventObject);
-                        switch(eventObject.getLevel().toInt())
-                        {
-                            case Level.ERROR_INT:
-                                incrementErrorCount();
-                                break;
-                            case Level.WARN_INT:
-                                incrementWarnCount();
-                        }
-                    }
-                };
-                _loggerAppender.setName(APPENDER_NAME);
-
                 return _loggerAppender;
             }
         };

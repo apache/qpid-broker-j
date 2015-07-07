@@ -27,6 +27,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
@@ -47,7 +48,9 @@ public class CompositeFilterTest extends QpidTestCase
 
         compositeFilter.addFilter(createFilter(FilterReply.ACCEPT));
 
-        FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
+        final ILoggingEvent loggingEvent = mock(ILoggingEvent.class);
+        when(loggingEvent.getLevel()).thenReturn(Level.ERROR);
+        FilterReply reply = compositeFilter.decide(loggingEvent);
         assertEquals("Unexpected reply with ACCEPT filter added", FilterReply.ACCEPT, reply);
     }
 
@@ -57,7 +60,9 @@ public class CompositeFilterTest extends QpidTestCase
 
         compositeFilter.addFilter(createFilter(FilterReply.NEUTRAL));
 
-        FilterReply reply = compositeFilter.decide(mock(ILoggingEvent.class));
+        final ILoggingEvent loggingEvent = mock(ILoggingEvent.class);
+        when(loggingEvent.getLevel()).thenReturn(Level.ERROR);
+        FilterReply reply = compositeFilter.decide(loggingEvent);
         assertEquals("Unexpected reply with NEUTRAL filter added", FilterReply.DENY, reply);
     }
 
@@ -100,7 +105,9 @@ public class CompositeFilterTest extends QpidTestCase
 
         compositeFilter.removeFilter(brokerFilterDeny);
 
-        FilterReply reply2 = compositeFilter.decide(mock(ILoggingEvent.class));
+        final ILoggingEvent loggingEvent = mock(ILoggingEvent.class);
+        when(loggingEvent.getLevel()).thenReturn(Level.ERROR);
+        FilterReply reply2 = compositeFilter.decide(loggingEvent);
         assertEquals("Unexpected reply", FilterReply.ACCEPT, reply2);
 
         verify(brokerFilterNeutral.asFilter(), times(2)).decide(any(ILoggingEvent.class));

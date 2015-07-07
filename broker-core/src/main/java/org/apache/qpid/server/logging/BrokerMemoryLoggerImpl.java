@@ -60,22 +60,7 @@ public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLog
         {
             throw new IllegalStateException("RecordEventAppender is already created");
         }
-        RecordEventAppender appender =  new RecordEventAppender(getMaxRecords())
-                                        {
-                                            @Override
-                                            protected void append(final ILoggingEvent eventObject)
-                                            {
-                                                super.append(eventObject);
-                                                switch(eventObject.getLevel().toInt())
-                                                {
-                                                    case Level.ERROR_INT:
-                                                        incrementErrorCount();
-                                                        break;
-                                                    case Level.WARN_INT:
-                                                        incrementWarnCount();
-                                                }
-                                            }
-                                        };
+        RecordEventAppender appender =  new RecordEventAppender(getMaxRecords());
         _logRecorder = new LogRecorder(appender);
         return appender;
     }

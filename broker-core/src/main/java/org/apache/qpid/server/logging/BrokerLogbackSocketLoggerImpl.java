@@ -98,14 +98,6 @@ public class BrokerLogbackSocketLoggerImpl
                                             {
                                                 augmentWithMDC(event);
                                                 super.append(event);
-                                                switch(event.getLevel().toInt())
-                                                {
-                                                    case Level.ERROR_INT:
-                                                        incrementErrorCount();
-                                                        break;
-                                                    case Level.WARN_INT:
-                                                        incrementWarnCount();
-                                                }
                                             }
                                         };
         socketAppender.setPort(_port);

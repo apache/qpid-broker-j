@@ -53,22 +53,7 @@ public class BrokerConsoleLoggerImpl extends AbstractBrokerLogger<BrokerConsoleL
     @Override
     protected Appender<ILoggingEvent> createAppenderInstance(Context context)
     {
-        ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<ILoggingEvent>()
-                                                            {
-                                                                @Override
-                                                                protected void append(final ILoggingEvent eventObject)
-                                                                {
-                                                                    super.append(eventObject);
-                                                                    switch(eventObject.getLevel().toInt())
-                                                                    {
-                                                                        case Level.ERROR_INT:
-                                                                            incrementErrorCount();
-                                                                            break;
-                                                                        case Level.WARN_INT:
-                                                                            incrementWarnCount();
-                                                                    }
-                                                                }
-                                                            };
+        ConsoleAppender<ILoggingEvent> consoleAppender = new ConsoleAppender<>();
 
         final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
         encoder.setPattern(getLayout());

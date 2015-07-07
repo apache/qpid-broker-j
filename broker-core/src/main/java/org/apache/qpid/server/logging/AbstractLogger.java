@@ -22,7 +22,6 @@ package org.apache.qpid.server.logging;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -44,8 +43,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
 {
     private final static ch.qos.logback.classic.Logger ROOT_LOGGER = ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME));
 
-    private final AtomicLong _errorCount = new AtomicLong();
-    private final AtomicLong _warnCount = new AtomicLong();
+    private final CompositeFilter _compositeFilter = new CompositeFilter();
 
     protected AbstractLogger(Map<String, Object> attributes, ConfiguredObject<?> parent)
     {
@@ -53,7 +51,15 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         addChangeListener(new FilterListener());
     }
 
-    protected abstract CompositeFilter getCompositeFilter();
+    protected final void addFilter(LoggerFilter filter)
+    {
+        _compositeFilter.addFilter(filter);
+    }
+
+    protected final void removeFilter(LoggerFilter filter)
+    {
+        _compositeFilter.removeFilter(filter);
+    }
 
     @Override
     protected void postResolveChildren()
@@ -68,9 +74,9 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
 
         for(LoggerFilter filter : getLoggerFilters())
         {
-            getCompositeFilter().addFilter(filter);
+            _compositeFilter.addFilter(filter);
         }
-        appender.addFilter(getCompositeFilter());
+        appender.addFilter(_compositeFilter);
 
         ROOT_LOGGER.addAppender(appender);
         appender.start();
@@ -120,22 +126,12 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
 
     public final long getErrorCount()
     {
-        return _errorCount.get();
+        return _compositeFilter.getErrorCount();
     }
 
     public final long getWarnCount()
     {
-        return _warnCount.get();
-    }
-
-    protected final void incrementErrorCount()
-    {
-        _errorCount.incrementAndGet();
-    }
-
-    protected final void incrementWarnCount()
-    {
-        _warnCount.incrementAndGet();
+        return _compositeFilter.getWarnCount();
     }
 
     public void stopLogging()
@@ -156,7 +152,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         {
             if (child instanceof LoggerFilter)
             {
-                getCompositeFilter().addFilter((LoggerFilter) child);
+                addFilter((LoggerFilter) child);
             }
         }
 
@@ -165,7 +161,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         {
             if (child instanceof LoggerFilter)
             {
-                getCompositeFilter().removeFilter((LoggerFilter) child);
+                removeFilter((LoggerFilter) child);
             }
         }
 

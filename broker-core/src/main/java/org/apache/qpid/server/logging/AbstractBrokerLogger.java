@@ -32,13 +32,17 @@ public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> ex
 {
     @ManagedAttributeField
     private boolean _virtualHostLogEventExcluded;
-    private final CompositeFilter _compositeFilter;
 
     protected AbstractBrokerLogger(Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);
-        _compositeFilter = new CompositeFilter();
-        _compositeFilter.addFilter(new VirtualHostLogEventExcludingFilter(this));
+    }
+
+    @Override
+    protected void onResolve()
+    {
+        super.onResolve();
+        addFilter(new VirtualHostLogEventExcludingFilter(this));
     }
 
     @Override
@@ -53,9 +57,5 @@ public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> ex
         return _virtualHostLogEventExcluded;
     }
 
-    @Override
-    protected CompositeFilter getCompositeFilter()
-    {
-        return _compositeFilter;
-    }
+
 }

@@ -183,24 +183,8 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
-        final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<ILoggingEvent>()
-        {
-            @Override
-            protected void append(final ILoggingEvent eventObject)
-            {
-                super.append(eventObject);
-                switch(eventObject.getLevel().toInt())
-                {
-                    case Level.ERROR_INT:
-                        incrementErrorCount();
-                        break;
-                    case Level.WARN_INT:
-                        incrementWarnCount();
-                }
-            }
-        };
-        AppenderUtils.configureRollingFileAppender(this, loggerContext,
-                                                   appender);
+        final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
+        AppenderUtils.configureRollingFileAppender(this, loggerContext, appender);
         return appender;
     }
 

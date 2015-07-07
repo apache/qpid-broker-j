@@ -20,10 +20,17 @@
  */
 package org.apache.qpid.server.logging;
 
+import static ch.qos.logback.classic.Level.ERROR_INT;
+import static ch.qos.logback.classic.Level.WARN_INT;
+import static ch.qos.logback.core.spi.FilterReply.ACCEPT;
+import static ch.qos.logback.core.spi.FilterReply.DENY;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
@@ -31,10 +38,12 @@ import ch.qos.logback.core.spi.FilterReply;
 public class CompositeFilter extends Filter<ILoggingEvent>
 {
     private List<Filter<ILoggingEvent>> _filterList = new CopyOnWriteArrayList<>();
+    private final AtomicLong _warnCount = new AtomicLong();
+    private final AtomicLong _errorCount = new AtomicLong();
 
     public void addFilter(LoggerFilter filter)
     {
-        Filter f = filter.asFilter();
+        Filter<ILoggingEvent> f = filter.asFilter();
         f.setName(filter.getName());
         _filterList.add(f);
     }
@@ -56,14 +65,40 @@ public class CompositeFilter extends Filter<ILoggingEvent>
     @Override
     public FilterReply decide(ILoggingEvent event)
     {
-        for(Filter filter : _filterList)
+        FilterReply reply = DENY;
+        for(Filter<ILoggingEvent> filter : _filterList)
         {
-            FilterReply reply = filter.decide(event);
-            if (reply == FilterReply.DENY || reply == FilterReply.ACCEPT)
+            reply = filter.decide(event);
+            if (reply == DENY || reply == ACCEPT)
             {
-                return reply;
+                break;
             }
         }
-        return FilterReply.DENY;
+        if(reply == ACCEPT)
+        {
+            switch(event.getLevel().toInt())
+            {
+                case WARN_INT:
+                    _warnCount.incrementAndGet();
+                    break;
+                case ERROR_INT:
+                    _errorCount.incrementAndGet();
+                    break;
+                default:
+                    // do nothing
+            }
+            return ACCEPT;
+        }
+        return DENY;
+    }
+
+    public long getErrorCount()
+    {
+        return _errorCount.get();
+    }
+
+    public long getWarnCount()
+    {
+        return _warnCount.get();
     }
 }
