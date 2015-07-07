@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -98,7 +99,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         _queue = _virtualHost.createQueue(attributes);
 
-        _exchange = (DirectExchange) _virtualHost.getExchange(ExchangeDefaults.DIRECT_EXCHANGE_NAME);
+        _exchange = (DirectExchange) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
     }
 
     @Override

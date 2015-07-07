@@ -215,7 +215,7 @@ public class ServerSessionDelegate extends SessionDelegate
                 VirtualHostImpl<?,?,?> vhost = getVirtualHost(session);
 
                 final Collection<MessageSource> sources = new HashSet<>();
-                final MessageSource queue = vhost.getMessageSource(queueName);
+                final MessageSource queue = vhost.getAttainedMessageSource(queueName);
                 if(queue != null)
                 {
                     sources.add(queue);
@@ -230,7 +230,7 @@ public class ServerSessionDelegate extends SessionDelegate
                         sourceName = sourceName.trim();
                         if(sourceName.length() != 0)
                         {
-                            MessageSource source = vhost.getMessageSource(sourceName);
+                            MessageSource source = vhost.getAttainedMessageSource(sourceName);
                             if(source == null)
                             {
                                 sources.clear();
@@ -940,7 +940,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
     private ExchangeImpl getExchange(Session session, String exchangeName)
     {
-        return getVirtualHost(session).getExchange(exchangeName);
+        return getVirtualHost(session).getAttainedExchange(exchangeName);
     }
 
     private MessageDestination getDestinationForMessage(Session ssn, MessageTransfer xfr)
@@ -950,7 +950,7 @@ public class ServerSessionDelegate extends SessionDelegate
         MessageDestination destination;
         if(xfr.hasDestination())
         {
-            destination = virtualHost.getMessageDestination(xfr.getDestination());
+            destination = virtualHost.getAttainedMessageDestination(xfr.getDestination());
             if(destination == null)
             {
                 destination = virtualHost.getDefaultDestination();
@@ -1081,8 +1081,8 @@ public class ServerSessionDelegate extends SessionDelegate
                 {
                     method.setBindingKey(method.getQueue());
                 }
-                AMQQueue queue = virtualHost.getQueue(method.getQueue());
-                ExchangeImpl exchange = virtualHost.getExchange(exchangeName);
+                AMQQueue queue = virtualHost.getAttainedQueue(method.getQueue());
+                ExchangeImpl exchange = virtualHost.getAttainedExchange(exchangeName);
                 if(queue == null)
                 {
                     exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1141,8 +1141,8 @@ public class ServerSessionDelegate extends SessionDelegate
         }
         else
         {
-            AMQQueue queue = virtualHost.getQueue(method.getQueue());
-            ExchangeImpl exchange = virtualHost.getExchange(method.getExchange());
+            AMQQueue queue = virtualHost.getAttainedQueue(method.getQueue());
+            ExchangeImpl exchange = virtualHost.getAttainedExchange(method.getExchange());
             if(queue == null)
             {
                 exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1181,7 +1181,7 @@ public class ServerSessionDelegate extends SessionDelegate
         if(!nameNullOrEmpty(method.getExchange()))
         {
             isDefaultExchange = false;
-            exchange = virtualHost.getExchange(method.getExchange());
+            exchange = virtualHost.getAttainedExchange(method.getExchange());
 
             if(exchange == null)
             {
@@ -1357,12 +1357,12 @@ public class ServerSessionDelegate extends SessionDelegate
 
     private MessageSource getMessageSource(Session session, String queue)
     {
-        return getVirtualHost(session).getMessageSource(queue);
+        return getVirtualHost(session).getAttainedMessageSource(queue);
     }
 
     private AMQQueue getQueue(Session session, String queue)
     {
-        return getVirtualHost(session).getQueue(queue);
+        return getVirtualHost(session).getAttainedQueue(queue);
     }
 
     @Override
@@ -1380,7 +1380,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
         if(method.getPassive())
         {
-            queue = virtualHost.getQueue(queueName);
+            queue = virtualHost.getAttainedQueue(queueName);
 
             if (queue == null)
             {

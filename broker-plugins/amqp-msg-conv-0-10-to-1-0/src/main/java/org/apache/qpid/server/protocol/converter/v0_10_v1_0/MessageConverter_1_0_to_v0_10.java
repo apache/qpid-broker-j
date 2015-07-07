@@ -161,7 +161,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
                 String[] parts = origReplyTo.split("/",2);
                 replyTo = new ReplyTo(parts[0],parts[1]);
             }
-            else if(vhost.getExchange(origReplyTo) != null)
+            else if(vhost.getAttainedExchange(origReplyTo) != null)
             {
                 replyTo = new ReplyTo(origReplyTo,"");
             }

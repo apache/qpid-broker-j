@@ -106,6 +106,9 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     @ManagedContextDefault( name = "virtualhost.connectionThreadCount")
     public static final int DEFAULT_CONNECTION_THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 
+    @ManagedContextDefault( name = "virtualhost.awaitAttainmentTimeout")
+    public static final int DEFAULT_AWAIT_ATTAINMENT_TIMEOUT = 5000;
+
     @ManagedAttribute( defaultValue = "${virtualhost.connectionThreadCount}")
     int getConnectionThreadCount();
 
@@ -199,8 +202,6 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     }
 
     void executeTransaction(TransactionalOperation op);
-
-    E getExchange(UUID id);
 
     MessageStore getMessageStore();
 

@@ -45,9 +45,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -106,18 +109,18 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
 
 
-    private final Map<String,Object> _attributes = new HashMap<String, Object>();
+    private final Map<String,Object> _attributes = new HashMap<>();
     private final Map<Class<? extends ConfiguredObject>, ConfiguredObject> _parents =
-            new HashMap<Class<? extends ConfiguredObject>, ConfiguredObject>();
+            new HashMap<>();
     private final Collection<ConfigurationChangeListener> _changeListeners =
-            new ArrayList<ConfigurationChangeListener>();
+            new ArrayList<>();
 
     private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObject<?>>> _children =
-            new ConcurrentHashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObject<?>>>();
-    private final Map<Class<? extends ConfiguredObject>, Map<UUID,ConfiguredObject<?>>> _childrenById =
-            new ConcurrentHashMap<Class<? extends ConfiguredObject>, Map<UUID,ConfiguredObject<?>>>();
-    private final Map<Class<? extends ConfiguredObject>, Map<String,ConfiguredObject<?>>> _childrenByName =
-            new ConcurrentHashMap<Class<? extends ConfiguredObject>, Map<String,ConfiguredObject<?>>>();
+            new ConcurrentHashMap<>();
+    private final Map<Class<? extends ConfiguredObject>, ConcurrentMap<UUID,ConfiguredObject<?>>> _childrenById =
+            new ConcurrentHashMap<>();
+    private final Map<Class<? extends ConfiguredObject>, ConcurrentMap<String,ConfiguredObject<?>>> _childrenByName =
+            new ConcurrentHashMap<>();
 
 
     @ManagedAttributeField
@@ -160,6 +163,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private LifetimePolicy _lifetimePolicy;
 
     private final Map<String, ConfiguredObjectAttribute<?,?>> _attributeTypes;
+
     private final Map<String, ConfiguredObjectTypeRegistry.AutomatedField> _automatedFields;
     private final Map<State, Map<State, Method>> _stateChangeMethods;
 
@@ -172,6 +176,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     @ManagedAttributeField
     private State _desiredState;
+
+
+    private volatile SettableFuture<ConfiguredObject<X>> _attainStateFuture = SettableFuture.create();
     private boolean _openComplete;
     private boolean _openFailed;
     private volatile State _state = State.UNINITIALIZED;
@@ -1166,6 +1173,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         State currentState = getState();
         State desiredState = getDesiredState();
         ListenableFuture<Void> returnVal;
+
+        if (_attainStateFuture.isDone())
+        {
+            _attainStateFuture = SettableFuture.create();
+        }
+
         if(currentState != desiredState)
         {
             Method stateChangingMethod = getStateChangeMethod(currentState, desiredState);
@@ -1174,8 +1187,17 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 try
                 {
                     returnVal = (ListenableFuture<Void>) stateChangingMethod.invoke(this);
+                    doAfter(returnVal, new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            _attainStateFuture.set(AbstractConfiguredObject.this);
+                        }
+                    });
                     if(getState() != currentState)
                     {
+                        // TODO - KW - shouldn't I be done after too???
                         notifyStateChanged(currentState, getState());
                     }
                 }
@@ -1200,11 +1222,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             else
             {
                 returnVal = Futures.immediateFuture(null);
+                _attainStateFuture.set(this);
             }
         }
         else
         {
             returnVal = Futures.immediateFuture(null);
+            _attainStateFuture.set(this);
         }
         return returnVal;
     }
@@ -1724,15 +1748,17 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             Class categoryClass = child.getCategoryClass();
             UUID childId = child.getId();
             String name = child.getName();
-            if(_childrenById.get(categoryClass).containsKey(childId))
+            ConfiguredObject<?> existingWithSameId = _childrenById.get(categoryClass).get(childId);
+            if(existingWithSameId != null)
             {
-                throw new DuplicateIdException(child);
+                throw new DuplicateIdException(existingWithSameId);
             }
             if(getModel().getParentTypes(categoryClass).size() == 1)
             {
-                if (_childrenByName.get(categoryClass).containsKey(name))
+                ConfiguredObject<?> existingWithSameName = _childrenByName.get(categoryClass).putIfAbsent(name, child);
+                if (existingWithSameName != null)
                 {
-                    throw new DuplicateNameException(child);
+                    throw new DuplicateNameException(existingWithSameName);
                 }
                 _childrenByName.get(categoryClass).put(name, child);
             }
@@ -1756,6 +1782,39 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         try
         {
             return async.get();
+        }
+        catch (InterruptedException e)
+        {
+            throw new ServerScopedRuntimeException(e);
+        }
+        catch (ExecutionException e)
+        {
+            Throwable cause = e.getCause();
+            if(cause instanceof RuntimeException)
+            {
+                throw (RuntimeException) cause;
+            }
+            else if(cause instanceof Error)
+            {
+                throw (Error) cause;
+            }
+            else if(cause != null)
+            {
+                throw new ServerScopedRuntimeException(cause);
+            }
+            else
+            {
+                throw new ServerScopedRuntimeException(e);
+            }
+
+        }
+    }
+
+    protected final <R>  R doSync(ListenableFuture<R> async, long timeout, TimeUnit units) throws TimeoutException
+    {
+        try
+        {
+            return async.get(timeout, units);
         }
         catch (InterruptedException e)
         {
@@ -1855,6 +1914,41 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     public <C extends ConfiguredObject> Collection<C> getChildren(final Class<C> clazz)
     {
         return Collections.unmodifiableList((List<? extends C>) _children.get(clazz));
+    }
+
+    @Override
+    public <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildByName(final Class<C> childClass,
+                                                                                   final String name)
+    {
+        C child = getChildByName(childClass, name);
+        if (child instanceof AbstractConfiguredObject)
+        {
+            return ((AbstractConfiguredObject)child).getAttainStateFuture();
+        }
+        else
+        {
+            return Futures.immediateFuture(child);
+        }
+    }
+
+    @Override
+    public <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildById(final Class<C> childClass,
+                                                                                   final UUID id)
+    {
+        C child = getChildById(childClass, id);
+        if (child instanceof AbstractConfiguredObject)
+        {
+            return ((AbstractConfiguredObject)child).getAttainStateFuture();
+        }
+        else
+        {
+            return Futures.immediateFuture(child);
+        }
+    }
+
+    private <C extends ConfiguredObject> ListenableFuture<C> getAttainStateFuture()
+    {
+        return (ListenableFuture<C>) _attainStateFuture;
     }
 
     @Override
@@ -2641,24 +2735,29 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     public final static class DuplicateIdException extends IllegalArgumentException
     {
-        private DuplicateIdException(final ConfiguredObject<?> child)
+        private DuplicateIdException(final ConfiguredObject<?> existing)
         {
-            super("Child of type " + child.getClass().getSimpleName() + " already exists with id of " + child.getId());
+            super("Child of type " + existing.getClass().getSimpleName() + " already exists with id of " + existing.getId());
         }
     }
 
     public final static class DuplicateNameException extends IllegalArgumentException
     {
-        private final String _name;
-        private DuplicateNameException(final ConfiguredObject<?> child)
+        private final ConfiguredObject<?> _existing;
+        private DuplicateNameException(final ConfiguredObject<?> existing)
         {
-            super("Child of type " + child.getClass().getSimpleName() + " already exists with name of " + child.getName());
-            _name = child.getName();
+            super("Child of type " + existing.getClass().getSimpleName() + " already exists with name of " + existing.getName());
+            _existing = existing;
         }
 
         public String getName()
         {
-            return _name;
+            return _existing.getName();
+        }
+
+        public ConfiguredObject<?> getExisting()
+        {
+            return _existing;
         }
     }
 

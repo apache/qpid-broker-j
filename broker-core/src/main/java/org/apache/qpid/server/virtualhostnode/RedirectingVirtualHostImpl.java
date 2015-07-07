@@ -55,7 +55,6 @@ import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
 
@@ -166,13 +165,13 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public MessageDestination getMessageDestination(final String name)
+    public MessageDestination getAttainedMessageDestination(final String name)
     {
         return null;
     }
 
     @Override
-    public ExchangeImpl<?> getExchange(final String name)
+    public ExchangeImpl<?> getAttainedExchange(final String name)
     {
         return null;
     }
@@ -311,19 +310,19 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public AMQQueue<?> getQueue(final String name)
+    public AMQQueue<?> getAttainedQueue(final String name)
     {
         return null;
     }
 
     @Override
-    public MessageSource getMessageSource(final String name)
+    public MessageSource getAttainedMessageSource(final String name)
     {
         return null;
     }
 
     @Override
-    public AMQQueue<?> getQueue(final UUID id)
+    public AMQQueue<?> getAttainedQueue(final UUID id)
     {
         return null;
     }
@@ -350,12 +349,6 @@ class RedirectingVirtualHostImpl
 
     @Override
     public DurableConfigurationStore getDurableConfigurationStore()
-    {
-        return null;
-    }
-
-    @Override
-    public ExchangeImpl<?> getExchange(final UUID id)
     {
         return null;
     }
@@ -578,4 +571,5 @@ class RedirectingVirtualHostImpl
     {
 
     }
+
 }

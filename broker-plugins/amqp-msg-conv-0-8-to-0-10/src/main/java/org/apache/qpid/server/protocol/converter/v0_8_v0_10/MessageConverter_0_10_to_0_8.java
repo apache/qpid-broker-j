@@ -112,7 +112,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                     exchangeName = "";
                 }
 
-                ExchangeImpl exchange = vhost.getExchange(exchangeName);
+                ExchangeImpl exchange = vhost.getAttainedExchange(exchangeName);
                 String exchangeClass = exchange == null
                                             ? ExchangeDefaults.DIRECT_EXCHANGE_CLASS
                                             : exchange.getType();

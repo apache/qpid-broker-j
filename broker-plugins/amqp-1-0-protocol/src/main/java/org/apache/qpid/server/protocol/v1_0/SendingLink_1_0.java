@@ -208,7 +208,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                     name = UUID.randomUUID().toString();
                 }
 
-                AMQQueue queue = _vhost.getQueue(name);
+                AMQQueue queue = _vhost.getAttainedQueue(name);
                 ExchangeImpl exchange = exchangeDestination.getExchange();
 
                 if(queue == null)

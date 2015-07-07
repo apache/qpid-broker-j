@@ -128,7 +128,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
     private void verifyQueueRegistered(String queueName)
     {
-        assertNotNull("Queue " + queueName + " was not created", _virtualHost.getQueue(queueName));
+        assertNotNull("Queue " + queueName + " was not created", _virtualHost.getChildByName(Queue.class, queueName));
     }
 
     public void testPriorityQueueRegistration() throws Exception
@@ -165,7 +165,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         //verify that no alternate exchange or DLQ were produced
 
         assertNull("Queue should not have an alternate exchange as DLQ wasn't enabled", queue.getAlternateExchange());
-        assertNull("The DLQ should not exist", _virtualHost.getQueue(dlQueueName));
+        assertNull("The DLQ should not exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
 
         verifyRegisteredQueueCount(1);
     }
@@ -181,8 +181,8 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         String dlExchangeName = queueName + VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
-        assertNull("The DLQ should not yet exist", _virtualHost.getQueue(dlQueueName));
-        assertNull("The alternate exchange should not yet exist", _virtualHost.getExchange(dlExchangeName));
+        assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
+        assertNull("The alternate exchange should not yet exist", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
 
         Map<String,Object> attributes = new HashMap<String, Object>();
 
@@ -197,10 +197,10 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         assertEquals("Alternate exchange name was not as expected", dlExchangeName, altExchange.getName());
         assertEquals("Alternate exchange type was not as expected", ExchangeDefaults.FANOUT_EXCHANGE_CLASS, altExchange.getType());
 
-        assertNotNull("The alternate exchange was not registered as expected", _virtualHost.getExchange(dlExchangeName));
-        assertEquals("The registered exchange was not the expected exchange instance", altExchange, _virtualHost.getExchange(dlExchangeName));
+        assertNotNull("The alternate exchange was not registered as expected", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
+        assertEquals("The registered exchange was not the expected exchange instance", altExchange, _virtualHost.getChildByName(Exchange.class, dlExchangeName));
 
-        AMQQueue dlQueue = _virtualHost.getQueue(dlQueueName);
+        AMQQueue dlQueue = (AMQQueue) _virtualHost.getChildByName(Queue.class, dlQueueName);
         assertNotNull("The DLQ was not registered as expected", dlQueue);
         assertTrue("DLQ should have been bound to the alternate exchange", ((ExchangeImpl)altExchange).isBound(dlQueue));
         assertNull("DLQ should have no alternate exchange", dlQueue.getAlternateExchange());
@@ -221,10 +221,10 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         String dlExchangeName = queueName + VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
-        assertNull("The DLQ should not yet exist", _virtualHost.getQueue(dlQueueName));
-        assertNull("The alternate exchange should not yet exist", _virtualHost.getExchange(dlExchangeName));
+        assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
+        assertNull("The alternate exchange should not yet exist", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
 
-        Map<String,Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Queue.ID, UUID.randomUUID());
         attributes.put(Queue.NAME, queueName);
         attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, true);
@@ -238,10 +238,10 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         assertEquals("Alternate exchange name was not as expected", dlExchangeName, altExchange.getName());
         assertEquals("Alternate exchange type was not as expected", ExchangeDefaults.FANOUT_EXCHANGE_CLASS, altExchange.getType());
 
-        assertNotNull("The alternate exchange was not registered as expected", _virtualHost.getExchange(dlExchangeName));
-        assertEquals("The registered exchange was not the expected exchange instance", altExchange, _virtualHost.getExchange(dlExchangeName));
+        assertNotNull("The alternate exchange was not registered as expected", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
+        assertEquals("The registered exchange was not the expected exchange instance", altExchange, _virtualHost.getChildByName(Exchange.class, dlExchangeName));
 
-        AMQQueue dlQueue = _virtualHost.getQueue(dlQueueName);
+        AMQQueue dlQueue = (AMQQueue) _virtualHost.getChildByName(Queue.class, dlQueueName);
         assertNotNull("The DLQ was not registered as expected", dlQueue);
         assertTrue("DLQ should have been bound to the alternate exchange", ((ExchangeImpl)altExchange).isBound(dlQueue));
         assertNull("DLQ should have no alternate exchange", dlQueue.getAlternateExchange());
@@ -264,8 +264,9 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         String dlExchangeName = queueName + VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
-        assertNull("The DLQ should not yet exist", _virtualHost.getQueue(dlQueueName));
-        assertNull("The alternate exchange should not exist", _virtualHost.getExchange(dlExchangeName));
+        assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
+        assertNull("The alternate exchange should not exist", _virtualHost.getChildByName(Exchange.class,
+                                                                                          dlExchangeName));
 
         attributes.put(Queue.ID, UUID.randomUUID());
         attributes.put(Queue.NAME, queueName);
@@ -274,9 +275,8 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         AMQQueue queue = _virtualHost.createQueue(attributes);
 
         assertNull("Queue should not have an alternate exchange as DLQ is disabled", queue.getAlternateExchange());
-        assertNull("The alternate exchange should still not exist", _virtualHost.getExchange(dlExchangeName));
-
-        assertNull("The DLQ should still not exist", _virtualHost.getQueue(dlQueueName));
+        assertNull("The alternate exchange should still not exist", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
+        assertNull("The DLQ should still not exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
 
         //only 1 queue should have been registered
         verifyRegisteredQueueCount(1);
@@ -294,10 +294,10 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         String dlExchangeName = queueName + VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
-        assertNull("The DLQ should not yet exist", _virtualHost.getQueue(dlQueueName));
-        assertNull("The alternate exchange should not exist", _virtualHost.getExchange(dlExchangeName));
+        assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
+        assertNull("The alternate exchange should not exist", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
 
-        Map<String,Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Queue.ID, UUID.randomUUID());
         attributes.put(Queue.NAME, queueName);
 
@@ -312,8 +312,8 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
         //ensure that the autodelete property overrides the request to enable DLQ
         assertNull("Queue should not have an alternate exchange as queue is autodelete", queue.getAlternateExchange());
-        assertNull("The alternate exchange should not exist as queue is autodelete", _virtualHost.getExchange(dlExchangeName));
-        assertNull("The DLQ should not exist as queue is autodelete", _virtualHost.getQueue(dlQueueName));
+        assertNull("The alternate exchange should not exist as queue is autodelete", _virtualHost.getChildByName( Exchange.class, dlExchangeName));
+        assertNull("The DLQ should not exist as queue is autodelete", _virtualHost.getChildByName(Queue.class, dlQueueName));
 
         //only 1 queue should have been registered
         verifyRegisteredQueueCount(1);

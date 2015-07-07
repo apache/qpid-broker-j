@@ -30,6 +30,7 @@ import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
@@ -86,7 +87,7 @@ public class BrokerTestHelper_0_8 extends BrokerTestHelper
         }
         else
         {
-            destination = channel.getVirtualHost().getExchange(exchangeName);
+            destination = (MessageDestination) channel.getVirtualHost().getChildByName(Exchange.class, exchangeName);
         }
         for (int count = 0; count < numberOfMessages; count++)
         {

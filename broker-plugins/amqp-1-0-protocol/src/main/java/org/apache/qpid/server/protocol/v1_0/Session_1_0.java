@@ -163,7 +163,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                     if(!addr.startsWith("/") && addr.contains("/"))
                     {
                         String[] parts = addr.split("/",2);
-                        ExchangeImpl exchg = getVirtualHost().getExchange(parts[0]);
+                        ExchangeImpl exchg = getVirtualHost().getAttainedExchange(parts[0]);
                         if(exchg != null)
                         {
                             ExchangeDestination exchangeDestination =
@@ -180,14 +180,14 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                     }
                     else
                     {
-                        MessageSource queue = getVirtualHost().getMessageSource(addr);
+                        MessageSource queue = getVirtualHost().getAttainedMessageSource(addr);
                         if(queue != null)
                         {
                             destination = new MessageSourceDestination(queue);
                         }
                         else
                         {
-                            ExchangeImpl exchg = getVirtualHost().getExchange(addr);
+                            ExchangeImpl exchg = getVirtualHost().getAttainedExchange(addr);
                             if(exchg != null)
                             {
                                 destination = new ExchangeDestination(exchg, source.getDurable(), source.getExpiryPolicy());
@@ -325,7 +325,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         if(!addr.startsWith("/") && addr.contains("/"))
                         {
                             String[] parts = addr.split("/",2);
-                            ExchangeImpl exchange = getVirtualHost().getExchange(parts[0]);
+                            ExchangeImpl exchange = getVirtualHost().getAttainedExchange(parts[0]);
                             if(exchange != null)
                             {
                                 ExchangeDestination exchangeDestination =
@@ -346,7 +346,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         }
                         else
                         {
-                            MessageDestination messageDestination = getVirtualHost().getMessageDestination(addr);
+                            MessageDestination messageDestination = getVirtualHost().getAttainedMessageDestination(addr);
                             if(messageDestination != null)
                             {
                                 destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
@@ -354,7 +354,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                             }
                             else
                             {
-                                AMQQueue queue = getVirtualHost().getQueue(addr);
+                                AMQQueue queue = getVirtualHost().getAttainedQueue(addr);
                                 if(queue != null)
                                 {
 

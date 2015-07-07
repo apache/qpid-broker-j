@@ -22,11 +22,15 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -92,6 +96,97 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertEquals(engineName, engine.getName());
         assertEquals(TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE, engine.getType());
+
+    }
+
+    public void testGetChildren_NewChild()
+    {
+        final String carName = "myCar";
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+
+
+        String engineName = "myEngine";
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, engineName);
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+
+        // Check we can observe the new child from the parent
+
+        assertEquals(1, car.getChildren(TestEngine.class).size());
+        assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
+        assertEquals(engine, car.getChildByName(TestEngine.class, engine.getName()));
+
+        ListenableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
+        assertNotNull(attainedChild);
+        assertTrue("Engine should have already attained state", attainedChild.isDone());
+    }
+
+    public void testGetChildren_RecoveredChild() throws Exception
+    {
+        final String carName = "myCar";
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+
+        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
+
+        String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, engineName);
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+
+        ConfiguredObjectRecord engineCor = new ConfiguredObjectRecord()
+        {
+            @Override
+            public UUID getId()
+            {
+                return UUID.randomUUID();
+            }
+
+            @Override
+            public String getType()
+            {
+                return TestEngine.class.getSimpleName();
+            }
+
+            @Override
+            public Map<String, Object> getAttributes()
+            {
+                return engineAttributes;
+            }
+
+            @Override
+            public Map<String, UUID> getParents()
+            {
+                return Collections.singletonMap(TestCar.class.getSimpleName(), car.getId());
+            }
+        };
+
+        // Recover and resolve the child.  Resolving the child registers the child with its parent (car),
+        // but the child is not open, so won't have attained state
+        TestEngine engine = (TestEngine) _model.getObjectFactory().recover(engineCor, car).resolve();
+
+        // Check we can observe the recovered child from the parent
+        assertEquals(1, car.getChildren(TestEngine.class).size());
+        assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
+        assertEquals(engine, car.getChildByName(TestEngine.class, engine.getName()));
+
+        ListenableFuture attainedChild = car.getAttainedChildByName(TestEngine.class, engine.getName());
+        assertNotNull(attainedChild);
+        assertFalse("Engine should not have yet attained state", attainedChild.isDone());
+
+        engine.open();
+
+        assertTrue("Engine should have now attained state", attainedChild.isDone());
+        assertEquals(engine, attainedChild.get());
+
+
 
     }
 

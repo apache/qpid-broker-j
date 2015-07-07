@@ -51,10 +51,10 @@ public interface VirtualHostImpl< X extends VirtualHostImpl<X,Q,E>, Q extends AM
 
     String getName();
 
-    Q getQueue(String name);
-    MessageSource getMessageSource(String name);
+    Q getAttainedQueue(String name);
+    Q getAttainedQueue(UUID id);
 
-    Q getQueue(UUID id);
+    MessageSource getAttainedMessageSource(String name);
 
     Collection<Q> getQueues();
 
@@ -69,10 +69,9 @@ public interface VirtualHostImpl< X extends VirtualHostImpl<X,Q,E>, Q extends AM
     void removeExchange(E exchange, boolean force) throws ExchangeIsAlternateException,
                                                                  RequiredExchangeException;
 
-    MessageDestination getMessageDestination(String name);
+    E getAttainedExchange(String name);
 
-    E getExchange(String name);
-    E getExchange(UUID id);
+    MessageDestination getAttainedMessageDestination(String name);
 
 
     MessageDestination getDefaultDestination();

@@ -655,37 +655,37 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public AMQQueue<?> getQueue(String name)
+    public AMQQueue<?> getAttainedQueue(String name)
     {
-        AMQQueue<?> childByName = (AMQQueue<?>) getChildByName(Queue.class, name);
-        if(childByName == null && getGlobalAddressDomains() != null)
+        Queue child = awaitChildClassToAttainState(Queue.class, name);
+        if(child == null && getGlobalAddressDomains() != null)
         {
             for(String domain : getGlobalAddressDomains())
             {
                 if(name.startsWith(domain + "/"))
                 {
-                    childByName = (AMQQueue<?>) getChildByName(Queue.class,name.substring(domain.length()));
-                    if(childByName != null)
+                    child = awaitChildClassToAttainState(Queue.class, name.substring(domain.length()));
+                    if(child != null)
                     {
                         break;
                     }
                 }
             }
         }
-        return childByName;
+        return (AMQQueue<?>) child;
     }
 
     @Override
-    public MessageSource getMessageSource(final String name)
+    public MessageSource getAttainedMessageSource(final String name)
     {
         MessageSource systemSource = _systemNodeSources.get(name);
-        return systemSource == null ? getQueue(name) : systemSource;
+        return systemSource == null ? (MessageSource) awaitChildClassToAttainState(Queue.class, name) : systemSource;
     }
 
     @Override
-    public AMQQueue<?> getQueue(UUID id)
+    public AMQQueue<?> getAttainedQueue(UUID id)
     {
-        return (AMQQueue<?>) getChildById(Queue.class, id);
+        return (AMQQueue<?>) awaitChildClassToAttainState(Queue.class, id);
     }
 
     @Override
@@ -736,44 +736,67 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         catch (DuplicateNameException e)
         {
-            throw new QueueExistsException(String.format("Queue with name '%s' already exists", e.getName()), getQueue(e.getName()));
+            throw new QueueExistsException(String.format("Queue with name '%s' already exists", e.getName()),
+                                           (AMQQueue) e.getExisting());
         }
 
     }
 
 
     @Override
-    public MessageDestination getMessageDestination(final String name)
+    public MessageDestination getAttainedMessageDestination(final String name)
     {
         MessageDestination destination = _systemNodeDestinations.get(name);
-        return destination == null ? getExchange(name) : destination;
+        return destination == null ? getAttainedExchange(name) : destination;
     }
 
     @Override
-    public ExchangeImpl getExchange(String name)
+    public ExchangeImpl getAttainedExchange(String name)
     {
-        ExchangeImpl childByName = getChildByName(ExchangeImpl.class, name);
-        if(childByName == null && getGlobalAddressDomains() != null)
+        Exchange child = awaitChildClassToAttainState(Exchange.class, name);
+        if(child == null && getGlobalAddressDomains() != null)
         {
             for(String domain : getGlobalAddressDomains())
             {
                 if(name.startsWith(domain + "/"))
                 {
-                    childByName = getChildByName(ExchangeImpl.class,name.substring(domain.length()));
-                    if(childByName != null)
+                    child = awaitChildClassToAttainState(Exchange.class, name.substring(domain.length()));
+                    if(child != null)
                     {
                         break;
                     }
                 }
             }
         }
-        return childByName;
+        return (ExchangeImpl) child;
     }
 
-    @Override
-    public ExchangeImpl getExchange(UUID id)
+    private <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final String name)
     {
-        return getChildById(ExchangeImpl.class, id);
+        ListenableFuture<C> attainedChildByName = getAttainedChildByName(childClass, name);
+        try
+        {
+            return (C) doSync(attainedChildByName, DEFAULT_AWAIT_ATTAINMENT_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (TimeoutException e)
+        {
+            _logger.warn("Gave up waiting for {} '{}' to attain state. Check object's state via Management.", childClass.getSimpleName(), name);
+            return null;
+        }
+    }
+
+    private <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final UUID id)
+    {
+        ListenableFuture<C> attainedChildByName = getAttainedChildById(childClass, id);
+        try
+        {
+            return (C) doSync(attainedChildByName, DEFAULT_AWAIT_ATTAINMENT_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (TimeoutException e)
+        {
+            _logger.warn("Gave up waiting for {} with ID {} to attain state. Check object's state via Management.", childClass.getSimpleName(), id);
+            return null;
+        }
     }
 
     @Override
@@ -818,7 +841,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                 {
                                     if(t instanceof DuplicateNameException)
                                     {
-                                        returnVal.setException(new ExchangeExistsException(getExchange(((DuplicateNameException)t).getName())));
+                                        DuplicateNameException dne = (DuplicateNameException) t;
+                                        returnVal.setException(new ExchangeExistsException((ExchangeImpl) dne.getExisting()));
                                     }
                                     else
                                     {
@@ -1539,7 +1563,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         AMQQueue dlQueue = null;
 
         {
-            dlQueue = getQueue(dlQueueName);
+            dlQueue = (AMQQueue) getChildByName(Queue.class, dlQueueName);
 
             if(dlQueue == null)
             {

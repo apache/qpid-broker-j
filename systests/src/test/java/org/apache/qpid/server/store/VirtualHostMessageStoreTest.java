@@ -52,6 +52,7 @@ import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
@@ -258,7 +259,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
                 6,  _virtualHost.getQueues().size());
 
         //clear the queue
-        _virtualHost.getQueue(durableQueueName).clearQueue();
+        _virtualHost.getChildByName(Queue.class, durableQueueName).clearQueue();
 
         //check the messages are gone
         validateMessageOnQueue(durableQueueName, 0);
@@ -291,13 +292,13 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         //Validate the non-Durable Queues were not recovered.
         assertNull("Non-Durable queue still registered:" + priorityQueueName,
-                _virtualHost.getQueue(priorityQueueName));
+                _virtualHost.getChildByName(Queue.class, priorityQueueName));
         assertNull("Non-Durable queue still registered:" + queueName,
-                _virtualHost.getQueue(queueName));
+                _virtualHost.getChildByName(Queue.class, queueName));
         assertNull("Non-Durable queue still registered:" + priorityTopicQueueName,
-                _virtualHost.getQueue(priorityTopicQueueName));
+                _virtualHost.getChildByName(Queue.class, priorityTopicQueueName));
         assertNull("Non-Durable queue still registered:" + topicQueueName,
-                _virtualHost.getQueue(topicQueueName));
+                _virtualHost.getChildByName(Queue.class, topicQueueName));
 
         //Validate normally expected properties of Queues/Topics
         validateDurableQueueProperties();
@@ -327,7 +328,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         //test that removing the queue means it is not recovered next time
 
-        final AMQQueue<?> queue = _virtualHost.getQueue(durableQueueName);
+        final Queue queue = _virtualHost.getChildByName(Queue.class, durableQueueName);
         _virtualHost.getDurableConfigurationStore().remove(queue.asObjectRecord());
 
         reloadVirtualHost();
@@ -335,7 +336,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         assertEquals("Incorrect number of queues registered after second recovery",
                 0,  _virtualHost.getQueues().size());
         assertNull("Durable queue was not removed:" + durableQueueName,
-                _virtualHost.getQueue(durableQueueName));
+                _virtualHost.getChildByName(Queue.class, durableQueueName));
     }
 
     /**
@@ -379,15 +380,16 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         //test that removing the exchange means it is not recovered next time
 
-        final ExchangeImpl<?> exchange = _virtualHost.getExchange(directExchangeName);
+        final ExchangeImpl<?> exchange =
+                (ExchangeImpl<?>) _virtualHost.getChildByName(Exchange.class,  directExchangeName);
         _virtualHost.getDurableConfigurationStore().remove(exchange.asObjectRecord());
 
         reloadVirtualHost();
 
         assertEquals("Incorrect number of exchanges registered after second recovery",
-                origExchangeCount,  _virtualHost.getExchanges().size());
+                     origExchangeCount, _virtualHost.getExchanges().size());
         assertNull("Durable exchange was not removed:" + directExchangeName,
-                   _virtualHost.getExchange(directExchangeName));
+                   _virtualHost.getChildByName(Exchange.class, directExchangeName));
     }
 
     /**
@@ -433,27 +435,28 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         //create durable queue and exchange, bind them
         ExchangeImpl<?> exch = createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, directExchangeName, true);
         createQueue(durableQueueName, false, true, false, false);
-        bindQueueToExchange(exch, directRouting, _virtualHost.getQueue(durableQueueName), false);
+        bindQueueToExchange(exch, directRouting, _virtualHost.getChildByName(Queue.class, durableQueueName), false);
 
         assertEquals("Incorrect number of bindings registered before recovery",
-                1, _virtualHost.getQueue(durableQueueName).getBindings().size());
+                1, _virtualHost.getChildByName(Queue.class, durableQueueName).getBindings().size());
 
         //verify binding is actually normally recovered
         reloadVirtualHost();
 
         assertEquals("Incorrect number of bindings registered after first recovery",
-                1, _virtualHost.getQueue(durableQueueName).getBindings().size());
+                1, _virtualHost.getChildByName(Queue.class, durableQueueName).getBindings().size());
 
-        exch = _virtualHost.getExchange(directExchangeName);
+        exch = (ExchangeImpl<?>) _virtualHost.getChildByName(Exchange.class, directExchangeName);
         assertNotNull("Exchange was not recovered", exch);
 
         //remove the binding and verify result after recovery
-        unbindQueueFromExchange(exch, directRouting, _virtualHost.getQueue(durableQueueName), false);
+        unbindQueueFromExchange(exch, directRouting,
+                                (AMQQueue<?>) _virtualHost.getChildByName(Queue.class, durableQueueName), false);
 
         reloadVirtualHost();
 
         assertEquals("Incorrect number of bindings registered after second recovery",
-                0, _virtualHost.getQueue(durableQueueName).getBindings().size());
+                0, _virtualHost.getChildByName(Queue.class, durableQueueName).getBindings().size());
     }
 
     /**
@@ -478,9 +481,9 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         //check the old exchange objects are not the same as the new exchanges
         assertTrue(directExchangeName + " exchange NOT reloaded",
-                _virtualHost.getExchange(directExchangeName) != oldExchanges.get(directExchangeName));
+                _virtualHost.getChildByName(Exchange.class, directExchangeName) != oldExchanges.get(directExchangeName));
         assertTrue(topicExchangeName + " exchange NOT reloaded",
-                _virtualHost.getExchange(topicExchangeName) != oldExchanges.get(topicExchangeName));
+                _virtualHost.getChildByName(Exchange.class, topicExchangeName) != oldExchanges.get(topicExchangeName));
 
         // There should only be the original exchanges + our 2 recovered durable exchanges
         assertEquals("Incorrect number of exchanges available",
@@ -493,11 +496,11 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         assertEquals("Incorrect number of (durable) queues following recovery", 6, _virtualHost.getQueues().size());
 
-        validateBindingProperties(_virtualHost.getQueue(durablePriorityQueueName).getBindings(), false);
-        validateBindingProperties(_virtualHost.getQueue(durablePriorityTopicQueueName).getBindings(), true);
-        validateBindingProperties(_virtualHost.getQueue(durableQueueName).getBindings(), false);
-        validateBindingProperties(_virtualHost.getQueue(durableTopicQueueName).getBindings(), true);
-        validateBindingProperties(_virtualHost.getQueue(durableExclusiveQueueName).getBindings(), false);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durablePriorityQueueName).getBindings(), false);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durablePriorityTopicQueueName).getBindings(), true);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableQueueName).getBindings(), false);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableTopicQueueName).getBindings(), true);
+        validateBindingProperties(_virtualHost.getChildByName(Queue.class, durableExclusiveQueueName).getBindings(), false);
     }
 
     /**
@@ -525,29 +528,29 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
     private void setQueueExclusivity(boolean exclusive) throws MessageSource.ExistingConsumerPreventsExclusive
     {
-        AMQQueue<?> queue = _virtualHost.getQueue(durableExclusiveQueueName);
+        AMQQueue<?> queue = (AMQQueue<?>) _virtualHost.getChildByName(Queue.class, durableExclusiveQueueName);
         queue.setAttribute(Queue.EXCLUSIVE, queue.getExclusive(), exclusive ? ExclusivityPolicy.CONTAINER : ExclusivityPolicy.NONE);
     }
 
     private void validateQueueExclusivityProperty(boolean expected)
     {
-        AMQQueue<?> queue = _virtualHost.getQueue(durableExclusiveQueueName);
+        Queue queue = _virtualHost.getChildByName(Queue.class, durableExclusiveQueueName);
 
-        assertEquals("Queue exclusivity was incorrect", queue.isExclusive(), expected);
+        assertEquals("Queue exclusivity was incorrect", expected, queue.getExclusive() != ExclusivityPolicy.NONE);
     }
 
 
     private void validateDurableQueueProperties()
     {
-        validateQueueProperties(_virtualHost.getQueue(durablePriorityQueueName), true, true, false, false);
-        validateQueueProperties(_virtualHost.getQueue(durablePriorityTopicQueueName), true, true, false, false);
-        validateQueueProperties(_virtualHost.getQueue(durableQueueName), false, true, false, false);
-        validateQueueProperties(_virtualHost.getQueue(durableTopicQueueName), false, true, false, false);
-        validateQueueProperties(_virtualHost.getQueue(durableExclusiveQueueName), false, true, true, false);
-        validateQueueProperties(_virtualHost.getQueue(durableLastValueQueueName), false, true, true, true);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durablePriorityQueueName), true, true, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durablePriorityTopicQueueName), true, true, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableQueueName), false, true, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableTopicQueueName), false, true, false, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableExclusiveQueueName), false, true, true, false);
+        validateQueueProperties(_virtualHost.getChildByName(Queue.class, durableLastValueQueueName), false, true, true, true);
     }
 
-    private void validateQueueProperties(AMQQueue<?> queue, boolean usePriority, boolean durable, boolean exclusive, boolean lastValueQueue)
+    private void validateQueueProperties(Queue queue, boolean usePriority, boolean durable, boolean exclusive, boolean lastValueQueue)
     {
         if(usePriority || lastValueQueue)
         {
@@ -572,7 +575,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         assertEquals("Queue owner is not as expected for queue " + queue.getName(), exclusive ? queueOwner : null, queue.getOwner());
         assertEquals("Queue durability is not as expected for queue " + queue.getName(), durable, queue.isDurable());
-        assertEquals("Queue exclusivity is not as expected for queue " + queue.getName(), exclusive, queue.isExclusive());
+        assertEquals("Queue exclusivity is not as expected for queue " + queue.getName(), exclusive, queue.getExclusive() != ExclusivityPolicy.NONE);
     }
 
     /**
@@ -731,26 +734,27 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
     private void bindAllQueuesToExchange(ExchangeImpl<?> exchange, String routingKey)
     {
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(durablePriorityQueueName), false);
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(durableQueueName), false);
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(priorityQueueName), false);
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(queueName), false);
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(durableExclusiveQueueName), false);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, durablePriorityQueueName), false);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, durableQueueName), false);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, priorityQueueName), false);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, queueName), false);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, durableExclusiveQueueName), false);
     }
 
     private void bindAllTopicQueuesToExchange(ExchangeImpl<?> exchange, String routingKey)
     {
 
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(durablePriorityTopicQueueName), true);
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(durableTopicQueueName), true);
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(priorityTopicQueueName), true);
-        bindQueueToExchange(exchange, routingKey, _virtualHost.getQueue(topicQueueName), true);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class,
+                                                                              durablePriorityTopicQueueName), true);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, durableTopicQueueName), true);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, priorityTopicQueueName), true);
+        bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, topicQueueName), true);
     }
 
 
     protected void bindQueueToExchange(ExchangeImpl<?> exchange,
                                        String routingKey,
-                                       AMQQueue<?> queue,
+                                       Queue queue,
                                        boolean useSelector)
     {
         Map<String,Object> bindArguments = new HashMap<String, Object>();
@@ -762,7 +766,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         try
         {
-            exchange.addBinding(routingKey, queue, bindArguments);
+            exchange.addBinding(routingKey, (AMQQueue) queue, bindArguments);
         }
         catch (Exception e)
         {
@@ -818,7 +822,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
     private void validateMessageOnQueue(String queueName, long messageCount)
     {
-        AMQQueue<?> queue = _virtualHost.getQueue(queueName);
+        Queue queue = _virtualHost.getChildByName(Queue.class, queueName);
 
         assertNotNull("Queue(" + queueName + ") not correctly registered:", queue);
 

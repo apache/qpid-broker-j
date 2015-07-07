@@ -239,6 +239,12 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
     <C extends ConfiguredObject> C createChild(Class<C> childClass,
                                                Map<String, Object> attributes,
                                                ConfiguredObject... otherParents);
+
+    <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildById(Class<C> childClass,
+                                                                          UUID id);
+
+    <C extends ConfiguredObject> ListenableFuture<C> getAttainedChildByName(Class<C> childClass, String name);
+
     <C extends ConfiguredObject> ListenableFuture<C> createChildAsync(Class<C> childClass,
                                                                       Map<String, Object> attributes,
                                                                       ConfiguredObject... otherParents);

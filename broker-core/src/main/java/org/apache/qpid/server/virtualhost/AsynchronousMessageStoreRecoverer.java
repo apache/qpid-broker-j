@@ -260,7 +260,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 }
                 for (Transaction.EnqueueRecord record : enqueues)
                 {
-                    final AMQQueue<?> queue = getVirtualHost().getQueue(record.getResource().getId());
+                    final AMQQueue<?> queue = getVirtualHost().getAttainedQueue(record.getResource().getId());
                     if (queue != null)
                     {
                         final long messageId = record.getMessage().getMessageNumber();
@@ -320,7 +320,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 for (Transaction.DequeueRecord record : dequeues)
                 {
 
-                    final AMQQueue<?> queue = getVirtualHost().getQueue(record.getEnqueueRecord().getQueueId());
+                    final AMQQueue<?> queue = getVirtualHost().getAttainedQueue(record.getEnqueueRecord().getQueueId());
 
                     if (queue != null)
                     {

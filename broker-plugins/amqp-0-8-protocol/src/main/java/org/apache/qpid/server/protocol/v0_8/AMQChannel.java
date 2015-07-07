@@ -2106,7 +2106,7 @@ public class AMQChannel
         sync();
         String queueName = AMQShortString.toString(queue);
 
-        MessageSource queue1 = queueName == null ? getDefaultQueue() : vHost.getMessageSource(queueName);
+        MessageSource queue1 = queueName == null ? getDefaultQueue() : vHost.getAttainedMessageSource(queueName);
         final Collection<MessageSource> sources = new HashSet<>();
         if (queue1 != null)
         {
@@ -2122,7 +2122,7 @@ public class AMQChannel
                 sourceName = sourceName.trim();
                 if (sourceName.length() != 0)
                 {
-                    MessageSource source = vHost.getMessageSource(sourceName);
+                    MessageSource source = vHost.getAttainedMessageSource(sourceName);
                     if (source == null)
                     {
                         sources.clear();
@@ -2229,7 +2229,7 @@ public class AMQChannel
 
         VirtualHostImpl vHost = _connection.getVirtualHost();
         sync();
-        MessageSource queue = queueName == null ? getDefaultQueue() : vHost.getMessageSource(queueName.toString());
+        MessageSource queue = queueName == null ? getDefaultQueue() : vHost.getAttainedMessageSource(queueName.toString());
         if (queue == null)
         {
             if (_logger.isDebugEnabled())
@@ -2318,7 +2318,7 @@ public class AMQChannel
             }
             else
             {
-                destination = vHost.getMessageDestination(exchangeName.toString());
+                destination = vHost.getAttainedMessageDestination(exchangeName.toString());
             }
 
             // if the exchange does not exist we raise a channel exception
@@ -2704,7 +2704,7 @@ public class AMQChannel
                 }
                 else
                 {
-                    MessageSource queue = virtualHost.getMessageSource(queueName.toString());
+                    MessageSource queue = virtualHost.getAttainedMessageSource(queueName.toString());
                     if (queue == null)
                     {
                         replyCode = ExchangeBoundOkBody.QUEUE_NOT_FOUND;
@@ -2721,14 +2721,14 @@ public class AMQChannel
             {
                 if (queueName == null)
                 {
-                    replyCode = virtualHost.getQueue(routingKey.toString()) == null
+                    replyCode = virtualHost.getAttainedQueue(routingKey.toString()) == null
                             ? ExchangeBoundOkBody.NO_QUEUE_BOUND_WITH_RK
                             : ExchangeBoundOkBody.OK;
                     replyText = null;
                 }
                 else
                 {
-                    AMQQueue queue = virtualHost.getQueue(queueName.toString());
+                    AMQQueue queue = virtualHost.getAttainedQueue(queueName.toString());
                     if (queue == null)
                     {
 
@@ -2747,7 +2747,7 @@ public class AMQChannel
         }
         else
         {
-            ExchangeImpl exchange = virtualHost.getExchange(exchangeName.toString());
+            ExchangeImpl exchange = virtualHost.getAttainedExchange(exchangeName.toString());
             if (exchange == null)
             {
 
@@ -2772,7 +2772,7 @@ public class AMQChannel
                 else
                 {
 
-                    AMQQueue queue = virtualHost.getQueue(queueName.toString());
+                    AMQQueue queue = virtualHost.getAttainedQueue(queueName.toString());
                     if (queue == null)
                     {
                         replyCode = ExchangeBoundOkBody.QUEUE_NOT_FOUND;
@@ -2799,7 +2799,7 @@ public class AMQChannel
             }
             else if (queueName != null)
             {
-                AMQQueue queue = virtualHost.getQueue(queueName.toString());
+                AMQQueue queue = virtualHost.getAttainedQueue(queueName.toString());
                 if (queue == null)
                 {
                     replyCode = ExchangeBoundOkBody.QUEUE_NOT_FOUND;
@@ -2893,7 +2893,7 @@ public class AMQChannel
         {
             if (passive)
             {
-                exchange = virtualHost.getExchange(exchangeName.toString());
+                exchange = virtualHost.getAttainedExchange(exchangeName.toString());
                 if (exchange == null)
                 {
                     closeChannel(AMQConstant.NOT_FOUND, "Unknown exchange: '" + exchangeName + "'");
@@ -2948,7 +2948,7 @@ public class AMQChannel
                 }
                 catch (ReservedExchangeNameException e)
                 {
-                    Exchange existing = virtualHost.getExchange(exchangeName.toString());
+                    Exchange existing = virtualHost.getAttainedExchange(exchangeName.toString());
                     if (existing != null && new AMQShortString(existing.getType()).equals(type))
                     {
                         sync();
@@ -3042,7 +3042,7 @@ public class AMQChannel
             {
                 final String exchangeName = exchangeStr.toString();
 
-                final ExchangeImpl exchange = virtualHost.getExchange(exchangeName);
+                final ExchangeImpl exchange = virtualHost.getAttainedExchange(exchangeName);
                 if (exchange == null)
                 {
                     closeChannel(AMQConstant.NOT_FOUND, "No such exchange: '" + exchangeStr + "'");
@@ -3108,7 +3108,7 @@ public class AMQChannel
         }
         else
         {
-            queue = virtualHost.getQueue(queueName.toString());
+            queue = virtualHost.getAttainedQueue(queueName.toString());
             routingKey = routingKey == null ? AMQShortString.EMPTY_STRING : routingKey.intern();
         }
 
@@ -3130,7 +3130,7 @@ public class AMQChannel
 
             final String exchangeName = exchange.toString();
 
-            final ExchangeImpl exch = virtualHost.getExchange(exchangeName);
+            final ExchangeImpl exch = virtualHost.getAttainedExchange(exchangeName);
             if (exch == null)
             {
                 closeChannel(AMQConstant.NOT_FOUND,
@@ -3221,7 +3221,7 @@ public class AMQChannel
 
         if (passive)
         {
-            queue = virtualHost.getQueue(queueName.toString());
+            queue = virtualHost.getAttainedQueue(queueName.toString());
             if (queue == null)
             {
                 closeChannel(AMQConstant.NOT_FOUND,
@@ -3402,7 +3402,7 @@ public class AMQChannel
         }
         else
         {
-            queue = virtualHost.getQueue(queueName.toString());
+            queue = virtualHost.getAttainedQueue(queueName.toString());
         }
 
         if (queue == null)
@@ -3465,7 +3465,7 @@ public class AMQChannel
 
             _connection.closeConnection(AMQConstant.NOT_ALLOWED, "No queue specified.", getChannelId());
         }
-        else if ((queueName != null) && (queue = virtualHost.getQueue(queueName.toString())) == null)
+        else if ((queueName != null) && (queue = virtualHost.getAttainedQueue(queueName.toString())) == null)
         {
             closeChannel(AMQConstant.NOT_FOUND, "Queue '" + queueName + "' does not exist.");
         }
@@ -3517,7 +3517,7 @@ public class AMQChannel
         final boolean useDefaultQueue = queueName == null;
         final AMQQueue queue = useDefaultQueue
                 ? getDefaultQueue()
-                : virtualHost.getQueue(queueName.toString());
+                : virtualHost.getAttainedQueue(queueName.toString());
 
 
         if (queue == null)
@@ -3537,7 +3537,7 @@ public class AMQChannel
         else
         {
 
-            final ExchangeImpl exch = virtualHost.getExchange(exchange.toString());
+            final ExchangeImpl exch = virtualHost.getAttainedExchange(exchange.toString());
 
             if (exch == null)
             {

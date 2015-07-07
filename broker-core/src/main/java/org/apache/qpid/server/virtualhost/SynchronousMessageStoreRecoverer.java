@@ -82,7 +82,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         {
             eventLogger.message(logSubject, TransactionLogMessages.RECOVERED(entry.getValue(), entry.getKey()));
             eventLogger.message(logSubject, TransactionLogMessages.RECOVERY_COMPLETE(entry.getKey(), true));
-            virtualHost.getQueue(entry.getKey()).completeRecovery();
+            virtualHost.getAttainedQueue(entry.getKey()).completeRecovery();
         }
 
         Collection<AMQQueue> allQueues = virtualHost.getQueues();
@@ -178,7 +178,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         {
             final UUID queueId = record.getQueueId();
             long messageId = record.getMessageNumber();
-            AMQQueue<?> queue = _virtualHost.getQueue(queueId);
+            AMQQueue<?> queue = _virtualHost.getAttainedQueue(queueId);
             if(queue != null)
             {
                 String queueName = queue.getName();
@@ -262,7 +262,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             }
             for(EnqueueRecord record : enqueues)
             {
-                final AMQQueue<?> queue = _virtualHost.getQueue(record.getResource().getId());
+                final AMQQueue<?> queue = _virtualHost.getAttainedQueue(record.getResource().getId());
                 if(queue != null)
                 {
                     final long messageId = record.getMessage().getMessageNumber();
@@ -318,7 +318,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             }
             for(Transaction.DequeueRecord record : dequeues)
             {
-                final AMQQueue<?> queue = _virtualHost.getQueue(record.getEnqueueRecord().getQueueId());
+                final AMQQueue<?> queue = _virtualHost.getAttainedQueue(record.getEnqueueRecord().getQueueId());
                 if(queue != null)
                 {
                     final long messageId = record.getEnqueueRecord().getMessageNumber();

@@ -435,8 +435,8 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         when(queue.getMessageDurability()).thenReturn(MessageDurability.DEFAULT);
         when(queue.getId()).thenReturn(queueId);
         when(queue.getName()).thenReturn("test-queue");
-        when(_virtualHost.getQueue(queueId)).thenReturn(queue);
-        when(_virtualHost.getQueue("test-queue")).thenReturn(queue);
+        when(_virtualHost.getAttainedQueue(queueId)).thenReturn(queue);
+        when(_virtualHost.getAttainedQueue("test-queue")).thenReturn(queue);
         return queue;
     }
 
