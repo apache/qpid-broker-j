@@ -156,7 +156,7 @@ public class CurrentThreadTaskExecutor implements TaskExecutor
     @Override
     public Executor getExecutor()
     {
-        return MoreExecutors.sameThreadExecutor();
+        return MoreExecutors.directExecutor();
     }
 
     @Override

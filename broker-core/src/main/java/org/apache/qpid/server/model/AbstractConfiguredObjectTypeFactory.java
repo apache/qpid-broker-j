@@ -87,7 +87,7 @@ abstract public class AbstractConfiguredObjectTypeFactory<X extends AbstractConf
             {
                 returnVal.setException(t);
             }
-        },MoreExecutors.sameThreadExecutor());
+        },MoreExecutors.directExecutor());
 
         return returnVal;
     }

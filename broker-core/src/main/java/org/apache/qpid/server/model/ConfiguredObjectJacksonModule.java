@@ -55,7 +55,7 @@ public class ConfiguredObjectJacksonModule extends SimpleModule
 
     private  ConfiguredObjectJacksonModule()
     {
-        super("ConfiguredObjectSerializer", new Version(1,0,0,null));
+        super("ConfiguredObjectSerializer", new Version(1,0,0,null, "org.apache.qpid", "broker-core"));
         addConfiguredObjectSerializer();
         addManageableAttributeTypeSerializer();
         addCertificateSerializer();

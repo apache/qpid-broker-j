@@ -602,7 +602,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         // No need to decrement counter as setting the exception will complete the future
                         returnVal.setException(t);
                     }
-                }, MoreExecutors.sameThreadExecutor());
+                }, MoreExecutors.directExecutor());
             }
         });
 
