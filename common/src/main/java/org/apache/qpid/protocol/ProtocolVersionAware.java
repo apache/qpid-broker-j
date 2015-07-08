@@ -28,21 +28,5 @@ import org.apache.qpid.framing.ProtocolVersion;
  */
 public interface ProtocolVersionAware
 {
-    /**
-     * @deprecated
-     * Reports the AMQP minor version, that the implementer can handle.
-     *
-     * @return The AMQP minor version.
-     */
-    public byte getProtocolMinorVersion();
-
-    /**
-     * @deprecated
-     * Reports the AMQP major version, that the implementer can handle.
-     *
-     * @return The AMQP major version.
-     */
-    public byte getProtocolMajorVersion();
-
-    public ProtocolVersion getProtocolVersion();
+    ProtocolVersion getProtocolVersion();
 }

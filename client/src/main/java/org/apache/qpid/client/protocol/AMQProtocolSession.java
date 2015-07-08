@@ -72,15 +72,13 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
 
     private final AMQProtocolHandler _protocolHandler;
 
-    private ConcurrentMap<Integer, AMQSession> _channelId2SessionMap = new ConcurrentHashMap<Integer, AMQSession>();
-
-    private ConcurrentMap _closingChannels = new ConcurrentHashMap();
+    private ConcurrentMap<Integer,AMQSession<?,?>> _closingChannels = new ConcurrentHashMap<>();
 
     /**
      * Maps from a channel id to an unprocessed message. This is used to tie together the JmsDeliverBody (which arrives
      * first) with the subsequent content header and content bodies.
      */
-    private final ConcurrentMap<Integer, UnprocessedMessage> _channelId2UnprocessedMsgMap = new ConcurrentHashMap<Integer, UnprocessedMessage>();
+    private final ConcurrentMap<Integer, UnprocessedMessage> _channelId2UnprocessedMsgMap = new ConcurrentHashMap<>();
     private final UnprocessedMessage[] _channelId2UnprocessedMsgArray = new UnprocessedMessage[16];
 
     private int _queueId = 1;
@@ -195,8 +193,6 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
 
     /**
      * Callback invoked from the BasicDeliverMethodHandler when a message has been received.
-     *
-     * @param message
      *
      * @throws QpidException if this was not expected
      */
@@ -313,7 +309,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
      *
      * @param session the AMQSession being closed
      */
-    public void closeSession(AMQSession session)
+    public void closeSession(AMQSession<?,?> session)
     {
         if (_logger.isDebugEnabled())
         {
@@ -419,16 +415,6 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         _methodDispatcher = ClientMethodDispatcherImpl.newMethodDispatcher(pv, this);
   }
 
-    public byte getProtocolMinorVersion()
-    {
-        return _protocolVersion.getMinorVersion();
-    }
-
-    public byte getProtocolMajorVersion()
-    {
-        return _protocolVersion.getMajorVersion();
-    }
-
     public ProtocolVersion getProtocolVersion()
     {
         return _protocolVersion;
@@ -448,11 +434,6 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
     {
         final AMQSession session = getSession(channelId);
         session.setTicket(ticket);
-    }
-
-    public void setMethodDispatcher(MethodDispatcher methodDispatcher)
-    {
-        _methodDispatcher = methodDispatcher;
     }
 
     public void setFlowControl(final int channelId, final boolean active)
@@ -490,43 +471,6 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
     protected AMQProtocolHandler getProtocolHandler()
     {
         return _protocolHandler;
-    }
-
-    /** Maps from the channel id to the AMQSession that it represents. */
-    protected ConcurrentMap<Integer, AMQSession> getChannelId2SessionMap()
-    {
-        return _channelId2SessionMap;
-    }
-
-    protected void setChannelId2SessionMap(ConcurrentMap<Integer, AMQSession> channelId2SessionMap)
-    {
-        _channelId2SessionMap = channelId2SessionMap;
-    }
-
-    protected ConcurrentMap getClosingChannels()
-    {
-        return _closingChannels;
-    }
-
-    protected void setClosingChannels(ConcurrentMap closingChannels)
-    {
-        _closingChannels = closingChannels;
-    }
-
-    /** Counter to ensure unique queue names */
-    protected int getQueueId()
-    {
-        return _queueId;
-    }
-
-    protected void setQueueId(int queueId)
-    {
-        _queueId = queueId;
-    }
-
-    protected Object getQueueIdLock()
-    {
-        return _queueIdLock;
     }
 
     protected AMQConnection getConnection()

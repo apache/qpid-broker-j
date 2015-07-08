@@ -859,16 +859,6 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
         _failoverState= failoverState;
     }
 
-    public byte getProtocolMajorVersion()
-    {
-        return _protocolSession.getProtocolMajorVersion();
-    }
-
-    public byte getProtocolMinorVersion()
-    {
-        return _protocolSession.getProtocolMinorVersion();
-    }
-
     public MethodRegistry getMethodRegistry()
     {
         return _protocolSession.getMethodRegistry();

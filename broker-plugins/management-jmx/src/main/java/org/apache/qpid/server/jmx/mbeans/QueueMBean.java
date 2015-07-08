@@ -321,6 +321,7 @@ public class QueueMBean extends AMQManagedObject implements ManagedQueue, QueueN
         return alternateExchange == null ? null : alternateExchange.getName();
     }
 
+    @Deprecated
     public TabularData viewMessages(int fromIndex, int toIndex)
             throws IOException, JMException
     {
@@ -437,6 +438,7 @@ public class QueueMBean extends AMQManagedObject implements ManagedQueue, QueueN
         return visitor.getEntry();
     }
 
+    @Deprecated
     public void deleteMessageFromTop() throws IOException, JMException
     {
         VirtualHost vhost = _queue.getParent(VirtualHost.class);

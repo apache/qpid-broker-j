@@ -602,7 +602,7 @@ class ManagementNode implements MessageSource, MessageDestination
     private InternalMessage createFailureResponse(final InternalMessage requestMessage,
                                        final int statusCode,
                                        final String stateDescription,
-                                       String... params)
+                                       Object... params)
     {
         final InternalMessageHeader requestHeader = requestMessage.getMessageHeader();
         final MutableMessageHeader responseHeader = new MutableMessageHeader();
