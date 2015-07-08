@@ -70,7 +70,6 @@ public class BrokerOptions
     private int _managementModeJmxPortOverride;
     private int _managementModeHttpPortOverride;
     private String _managementModePassword;
-    private boolean _skipLoggingConfiguration;
     private boolean _overwriteConfigurationStore;
     private Map<String, String> _configProperties = new HashMap<String,String>();
     private boolean _startupLoggedToSystemOut = true;
@@ -254,16 +253,6 @@ public class BrokerOptions
     public void setInitialConfigurationLocation(String initialConfigurationLocation)
     {
         _initialConfigurationLocation = initialConfigurationLocation;
-    }
-
-    public boolean isSkipLoggingConfiguration()
-    {
-        return _skipLoggingConfiguration;
-    }
-
-    public void setSkipLoggingConfiguration(boolean skipLoggingConfiguration)
-    {
-        _skipLoggingConfiguration = skipLoggingConfiguration;
     }
 
     /**

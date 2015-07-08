@@ -90,7 +90,6 @@ public class BrokerTest extends QpidTestCase
     {
         BrokerOptions options = new BrokerOptions();
         options.setInitialSystemProperties(_initialSystemProperties.getAbsolutePath());
-        options.setSkipLoggingConfiguration(true);
         options.setStartupLoggedToSystemOut(true);
         options.setInitialConfigurationLocation(_initialConfiguration.getAbsolutePath());
         _broker = new Broker();

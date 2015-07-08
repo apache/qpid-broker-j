@@ -176,7 +176,7 @@ public class QpidTestCase extends TestCase
 
     protected String getClassQualifiedTestName()
     {
-        return getClass().getCanonicalName() + "-" + getName();
+        return getClass().getCanonicalName() + "." + getName();
     }
 
     protected String getTestName()

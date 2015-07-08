@@ -63,13 +63,12 @@ public class Broker
 
     private volatile Thread _shutdownHookThread;
     private EventLogger _eventLogger;
-    private boolean _configuringOwnLogging = false;
     private final TaskExecutor _taskExecutor = new TaskExecutorImpl();
 
     private volatile SystemConfig _systemConfig;
 
     private final Action<Integer> _shutdownAction;
-    private boolean _loggerContextStarted;
+    private volatile boolean _loggerContextStarted;
 
 
     public Broker()
@@ -80,16 +79,6 @@ public class Broker
     public Broker(Action<Integer> shutdownAction)
     {
         _shutdownAction = shutdownAction;
-    }
-
-    protected static class InitException extends RuntimeException
-    {
-        private static final long serialVersionUID = 1L;
-
-        InitException(String msg, Throwable cause)
-        {
-            super(msg, cause);
-        }
     }
 
     public void shutdown()
@@ -129,13 +118,10 @@ public class Broker
     {
         _taskExecutor.stop();
 
-        if (_configuringOwnLogging)
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        if (_loggerContextStarted)
         {
-            LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-            if (_loggerContextStarted)
-            {
-                loggerContext.stop();
-            }
+            loggerContext.stop();
         }
 
         if (_shutdownAction != null)

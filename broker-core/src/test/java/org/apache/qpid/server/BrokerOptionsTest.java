@@ -150,17 +150,6 @@ public class BrokerOptionsTest extends QpidTestCase
         assertEquals(5555, _options.getManagementModeHttpPortOverride());
     }
 
-    public void testDefaultSkipLoggingConfiguration()
-    {
-        assertFalse(_options.isSkipLoggingConfiguration());
-    }
-
-    public void testOverriddenSkipLoggingConfiguration()
-    {
-        _options.setSkipLoggingConfiguration(true);
-        assertTrue(_options.isSkipLoggingConfiguration());
-    }
-
     public void testDefaultOverwriteConfigurationStore()
     {
         assertFalse(_options.isOverwriteConfigurationStore());

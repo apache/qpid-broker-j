@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,24 +17,4 @@
 # under the License.
 #
 
-# Parse arguments taking all - prefixed args as JAVA_OPTS
-
-declare -a ARGS
-for arg in "$@"; do
-    if [[ $arg == -java:* ]]; then
-        JAVA_OPTS="${JAVA_OPTS}-`echo $arg|cut -d ':' -f 2`  "
-    else
-        ARGS[${#ARGS[@]}]="$arg"
-    fi
-done
-
-if [ -z "${QPID_HOME}" ]; then
-    WHEREAMI=`dirname "$0"`
-    export QPID_HOME=`cd ${WHEREAMI}/../ && pwd`
-fi
-
-# BDB's je JAR expected to be found in lib/opt
-LIBS="${QPID_HOME}/lib/*:${QPID_HOME}/lib/plugins/*:${QPID_HOME}/lib/opt/*"
-
-echo "Starting Hot Backup Script"
-java -Dlogback.configurationFile=backup-logback.xml ${JAVA_OPTS} -cp "${LIBS}" org.apache.qpid.server.store.berkeleydb.BDBBackup "${ARGS[@]}"
+org.apache.qpid.server.logging.logback.NoopConfigurator

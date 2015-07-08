@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,29 +18,17 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.logging.log4j;
+package org.apache.qpid.server.logging.logback;
 
-public class LoggingFacadeException extends Exception
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.Configurator;
+import ch.qos.logback.core.spi.ContextAwareBase;
+
+public class NoopConfigurator extends ContextAwareBase implements Configurator
 {
-
-    public LoggingFacadeException()
+    @Override
+    public void configure(LoggerContext loggerContext)
     {
-        super();
+        // no-op
     }
-
-    public LoggingFacadeException(String message, Throwable cause)
-    {
-        super(message, cause);
-    }
-
-    public LoggingFacadeException(String message)
-    {
-        super(message);
-    }
-
-    public LoggingFacadeException(Throwable cause)
-    {
-        super(cause);
-    }
-
 }

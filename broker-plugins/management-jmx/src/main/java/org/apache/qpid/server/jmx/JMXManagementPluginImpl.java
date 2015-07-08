@@ -35,7 +35,6 @@ import javax.management.JMException;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.logging.BrokerFileLogger;
-import org.apache.qpid.server.logging.log4j.LoggingManagementFacade;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
