@@ -129,7 +129,7 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
         File file = new File(fileLocation);
         if(!file.exists())
         {
-            LOGGER.warn("Configuration Encryption is enabled, but no configuration secret was found. A new configuration secret will be created at {}",fileLocation);
+            LOGGER.warn("Configuration encryption is enabled, but no configuration secret was found. A new configuration secret will be created at '{}'.", fileLocation);
             createAndPopulateKeyFile(file);
         }
         if(!file.isFile())
