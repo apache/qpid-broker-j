@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.io.IOError;
+import java.io.IOException;
 import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Map;
@@ -27,23 +29,31 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 
+import ch.qos.logback.core.status.Status;
+import ch.qos.logback.core.status.StatusListener;
+import ch.qos.logback.core.status.StatusManager;
 import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 import org.apache.qpid.server.logging.logback.RolloverWatcher;
+import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.Param;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.util.DaemonThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerImpl> implements BrokerFileLogger<BrokerFileLoggerImpl>, FileLoggerSettings
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BrokerFileLoggerImpl.class);
+
     private RolloverWatcher _rolloverWatcher;
     private ScheduledExecutorService _rolledPolicyExecutor;
 
@@ -61,6 +71,8 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     private int _maxHistory;
     @ManagedAttributeField
     private String _maxFileSize;
+    private StatusManager _statusManager;
+    private StatusListener _logbackStatusListener;
 
     @ManagedObjectFactoryConstructor
     protected BrokerFileLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
@@ -180,9 +192,62 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     protected Appender<ILoggingEvent> createAppenderInstance(Context loggerContext)
     {
+        SystemConfig<?> systemConfig = (SystemConfig<?>)getParent(Broker.class).getParent(SystemConfig.class);
+        _logbackStatusListener = new BrokerFileLoggerStatusListener(this, systemConfig);
+        _statusManager = loggerContext.getStatusManager();
+        _statusManager.add(_logbackStatusListener);
+
         final RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<>();
         AppenderUtils.configureRollingFileAppender(this, loggerContext, appender);
         return appender;
+    }
+
+    @Override
+    protected void onClose()
+    {
+        super.onClose();
+
+        if (_statusManager != null)
+        {
+            _statusManager.remove(_logbackStatusListener);
+        }
+    }
+
+    static class BrokerFileLoggerStatusListener implements StatusListener
+    {
+        private final SystemConfig<?> _systemConfig;
+        private final BrokerFileLogger<?> _brokerFileLogger;
+
+        public BrokerFileLoggerStatusListener(BrokerFileLogger<?> brokerFileLogger, SystemConfig<?> systemConfig)
+        {
+            _brokerFileLogger = brokerFileLogger;
+            _systemConfig = systemConfig;
+        }
+
+        @Override
+        public void addStatusEvent(Status status)
+        {
+            Throwable throwable = status.getThrowable();
+            if (status.getEffectiveLevel() == Status.ERROR
+                    && (throwable instanceof IOException || throwable instanceof IOError))
+            {
+                LOGGER.error("Unexpected I/O error whilst trying to write to log file. Log messages could be lost.", throwable);
+                if (_brokerFileLogger.getContextValue(Boolean.class, BROKER_FAIL_ON_LOGGER_IO_ERROR))
+                {
+                    try
+                    {
+                        _brokerFileLogger.stopLogging();
+                        _systemConfig.getEventLogger().message(BrokerMessages.FATAL_ERROR(
+                                String.format("Shutting down the broker because context variable '%s' is set and unexpected i/o issue occurred: %s",
+                                        BROKER_FAIL_ON_LOGGER_IO_ERROR, throwable.getMessage())));
+                    }
+                    finally
+                    {
+                        _systemConfig.closeAsync();
+                    }
+                }
+            }
+        }
     }
 
 }

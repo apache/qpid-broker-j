@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.Param;
@@ -36,6 +37,10 @@ public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerL
 {
     String TYPE = "File";
     String FILE_NAME = "fileName";
+
+    String BROKER_FAIL_ON_LOGGER_IO_ERROR = "broker.failOnLoggerIOError";
+    @ManagedContextDefault(name = BROKER_FAIL_ON_LOGGER_IO_ERROR)
+    String DEFAULT_BROKER_FAIL_ON_LOGGER_IO_ERROR = "false";
 
     @ManagedAttribute( defaultValue = "${qpid.work_dir}${file.separator}log${file.separator}qpid.log")
     String getFileName();
