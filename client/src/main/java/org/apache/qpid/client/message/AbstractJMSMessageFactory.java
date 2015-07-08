@@ -32,7 +32,7 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.client.AMQTopic;
@@ -53,7 +53,7 @@ public abstract class AbstractJMSMessageFactory
                                                          List bodies,
                                                          AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
                                                          AMQSession_0_8.DestinationCache<AMQTopic> topicDestinationCache,
-                                                         final int addressType) throws AMQException
+                                                         final int addressType) throws QpidException
     {
         ByteBuffer data;
         final boolean debug = _logger.isDebugEnabled();
@@ -125,12 +125,13 @@ public abstract class AbstractJMSMessageFactory
         return createMessage(delegate, data);
     }
 
-    protected abstract AbstractJMSMessage createMessage(AbstractAMQMessageDelegate delegate, ByteBuffer data) throws AMQException;
+    protected abstract AbstractJMSMessage createMessage(AbstractAMQMessageDelegate delegate, ByteBuffer data) throws
+                                                                                                              QpidException;
 
 
     protected AbstractJMSMessage create010MessageWithBody(long messageNbr, MessageProperties msgProps,
                                                           DeliveryProperties deliveryProps,
-                                                          java.nio.ByteBuffer body) throws AMQException
+                                                          java.nio.ByteBuffer body) throws QpidException
     {
         ByteBuffer data;
         final boolean debug = _logger.isDebugEnabled();
@@ -170,7 +171,7 @@ public abstract class AbstractJMSMessageFactory
                                                          AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
                                                          AMQSession_0_8.DestinationCache<AMQTopic> topicDestinationCache,
                                                          int addressType)
-            throws JMSException, AMQException
+            throws JMSException, QpidException
     {
         final AbstractJMSMessage msg = create08MessageWithBody(messageNbr, contentHeader, exchange, routingKey, bodies, queueDestinationCache, topicDestinationCache, addressType);
         msg.setJMSRedelivered(redelivered);
@@ -180,7 +181,7 @@ public abstract class AbstractJMSMessageFactory
 
     public AbstractJMSMessage createMessage(long messageNbr, boolean redelivered, MessageProperties msgProps,
                                             DeliveryProperties deliveryProps, java.nio.ByteBuffer body)
-            throws JMSException, AMQException
+            throws JMSException, QpidException
     {
         final AbstractJMSMessage msg =
                 create010MessageWithBody(messageNbr,msgProps,deliveryProps, body);

@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionClosedException;
 import org.apache.qpid.AMQDisconnectedException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -98,7 +98,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
             // We allow 1 second for initial connection and failover logic on top of 6s of sleep.
             assertTrue("Failover took more than 11 seconds:(" + duration + ")", duration < 11000);
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             fail(e.getMessage());
         }
@@ -148,7 +148,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
             // We allow 3 second for initial connection and failover logic on top of 6s of sleep.
             assertTrue("Failover took more than 9 seconds:(" + duration + ")", duration < 9000);
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             fail(e.getMessage());
         }
@@ -237,7 +237,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
             // Occasionally it takes 1s so we have to set CONNECT_DELAY to be higher to take that in to account. 
             assertTrue("Notification of the connection failure took was : " + CONNECT_DELAY + " >:(" + duration + ")", duration < CONNECT_DELAY);
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             fail(e.getMessage());
         }

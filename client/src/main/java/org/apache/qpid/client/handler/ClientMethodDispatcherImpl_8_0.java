@@ -20,7 +20,7 @@
  */
  package org.apache.qpid.client.handler;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.AMQMethodNotImplementedException;
 import org.apache.qpid.framing.BasicRecoverSyncBody;
@@ -37,7 +37,7 @@ public class ClientMethodDispatcherImpl_8_0 extends ClientMethodDispatcherImpl i
         super(session);
     }
 
-    public boolean dispatchChannelAlert(ChannelAlertBody body, int channelId) throws AMQException
+    public boolean dispatchChannelAlert(ChannelAlertBody body, int channelId) throws QpidException
     {
         return false;
     }
@@ -56,14 +56,14 @@ public class ClientMethodDispatcherImpl_8_0 extends ClientMethodDispatcherImpl i
     }
 
     @Override
-    public boolean dispatchQueueUnbind(final QueueUnbindBody body, final int channelId) throws AMQException
+    public boolean dispatchQueueUnbind(final QueueUnbindBody body, final int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
     @Override
     public boolean dispatchBasicRecoverSync(final BasicRecoverSyncBody body, final int channelId)
-            throws AMQException
+            throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }

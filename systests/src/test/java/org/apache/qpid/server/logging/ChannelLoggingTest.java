@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
@@ -338,7 +338,7 @@ public class ChannelLoggingTest extends AbstractTestLogging
             ((AMQSession<?,?>)session2).declareAndBind((AMQDestination) queue);
             fail("Exception not thrown");
         }
-        catch (AMQException acce)
+        catch (QpidException acce)
         {
             // pass
         }

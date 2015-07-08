@@ -23,11 +23,12 @@ package org.apache.qpid.client.protocol;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.qpid.AMQException;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQAuthenticationException;
 import org.apache.qpid.client.MockAMQConnection;
 import org.apache.qpid.client.state.AMQState;
@@ -95,19 +96,19 @@ public class AMQProtocolHandlerTest extends QpidTestCase
      */
     public void testFrameListenerUpdateWithAMQException() throws InterruptedException
     {
-        AMQException trigger = new AMQAuthenticationException(AMQConstant.ACCESS_REFUSED,
+        AMQAuthenticationException trigger = new AMQAuthenticationException(AMQConstant.ACCESS_REFUSED,
                                                               "AMQPHTest", new RuntimeException());
 
         performWithException(trigger);
 
 
-        AMQException receivedException = (AMQException) _listener.getReceivedException();
+        Exception receivedException = _listener.getReceivedException();
 
         assertEquals("Return exception was not the expected type",
                      AMQAuthenticationException.class, receivedException.getClass());
 
         assertEquals("The _Listener did not receive the correct error code",
-                     trigger.getErrorCode(), receivedException.getErrorCode());
+                     trigger.getErrorCode(), ((AMQAuthenticationException)receivedException).getErrorCode());
     }
 
     /**
@@ -218,9 +219,9 @@ public class AMQProtocolHandlerTest extends QpidTestCase
         assertNotNull("The _Listener did not receive the exception", _listener.getReceivedException());
 
         assertTrue("Received exception not an AMQException",
-                      _listener.getReceivedException() instanceof AMQException);
+                      _listener.getReceivedException() instanceof QpidException);
 
-        AMQException receivedException = (AMQException) _listener.getReceivedException();
+        QpidException receivedException = (QpidException) _listener.getReceivedException();
 
         assertTrue("The _Listener did not receive the correct message",
                    receivedException.getMessage().startsWith(trigger.getMessage()));

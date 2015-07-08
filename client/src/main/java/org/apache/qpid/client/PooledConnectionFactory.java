@@ -55,7 +55,7 @@ import javax.naming.StringRefAddr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.jms.*;
 import org.apache.qpid.url.URLSyntaxException;
@@ -246,14 +246,14 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
             }
             return proxyConnection(underlying, identity);
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating connection: " + e.getMessage()),
                                                        e);
         }
     }
 
-    protected CommonConnection newConnectionInstance(final ConnectionURL connectionDetails) throws AMQException
+    protected CommonConnection newConnectionInstance(final ConnectionURL connectionDetails) throws QpidException
     {
         return new AMQConnection(connectionDetails);
     }

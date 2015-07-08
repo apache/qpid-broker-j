@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.client;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.transport.TestNetworkConnection;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.QueueDeclareOkBody;
@@ -52,7 +52,7 @@ public class AMQSession_0_8Test extends QpidTestCase
                 {
                     _connection.getProtocolHandler().methodBodyReceived(1, new QueueDeclareOkBody(AMQShortString.valueOf(testQueueName), 0, 0));
                 }
-                catch (AMQException e)
+                catch (QpidException e)
                 {
                     throw new RuntimeException(e);
                 }

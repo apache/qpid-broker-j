@@ -25,7 +25,7 @@ import java.io.IOException;
 import javax.jms.JMSException;
 import javax.jms.XASession;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
 import org.apache.qpid.framing.ProtocolVersion;
@@ -33,7 +33,7 @@ import org.apache.qpid.jms.Session;
 
 public interface AMQConnectionDelegate
 {
-    ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws IOException, AMQException;
+    ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws IOException, QpidException;
 
     Session createSession(final boolean transacted, final int acknowledgeMode,
      final int prefetchHigh, final int prefetchLow) throws JMSException;
@@ -51,9 +51,9 @@ public interface AMQConnectionDelegate
 
     XASession createXASession(int ackMode) throws JMSException;
 
-    void resubscribeSessions() throws JMSException, AMQException, FailoverException;
+    void resubscribeSessions() throws JMSException, QpidException, FailoverException;
 
-    void closeConnection(long timeout) throws JMSException, AMQException;
+    void closeConnection(long timeout) throws JMSException, QpidException;
 
     <T, E extends Exception> T executeRetrySupport(FailoverProtectedOperation<T,E> operation) throws E;
 
@@ -63,7 +63,7 @@ public interface AMQConnectionDelegate
 
     ProtocolVersion getProtocolVersion();
 
-    boolean verifyClientID() throws JMSException, AMQException;
+    boolean verifyClientID() throws JMSException, QpidException;
 
     /**
      * Tests whether the server has advertised support for the specified feature

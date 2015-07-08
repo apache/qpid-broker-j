@@ -28,13 +28,13 @@ package org.apache.qpid;
  * TODO Why replace java.nio.UnresolvedAddressException with this? This is checked, which may explain why, but it
  *       doesn't wrap the underlying exception.
  */
-public class AMQUnresolvedAddressException extends AMQException
+public class AMQUnresolvedAddressException extends QpidException
 {
     private String _broker;
 
     public AMQUnresolvedAddressException(String message, String broker, Throwable cause)
     {
-        super(null, message, cause);
+        super(message, cause);
         _broker = broker;
     }
 

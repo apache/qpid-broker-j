@@ -32,7 +32,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -55,7 +55,8 @@ public class EnsureNondestructiveConsumersTest extends QpidBrokerTestCase
         _connection.start();
     }
 
-    private void createQueueEnsureNondestructiveConsumerOption(boolean ensureNonDestructiveConsumer) throws AMQException
+    private void createQueueEnsureNondestructiveConsumerOption(boolean ensureNonDestructiveConsumer) throws
+                                                                                                     QpidException
     {
         final Map<String,Object> arguments = new HashMap<>();
 
@@ -65,7 +66,7 @@ public class EnsureNondestructiveConsumersTest extends QpidBrokerTestCase
         ((AMQSession<?,?>) _session).declareAndBind((AMQDestination)_queue);
     }
 
-    public void testEnsureNondestructiveConsumers() throws AMQException, JMSException
+    public void testEnsureNondestructiveConsumers() throws QpidException, JMSException
     {
         createQueueEnsureNondestructiveConsumerOption(true);
         final MessageProducer prod = _session.createProducer(_queue);

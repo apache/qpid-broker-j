@@ -40,7 +40,7 @@ import javax.jms.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination.DestSyntax;
 import org.apache.qpid.client.message.AMQMessageDelegate_0_10;
 import org.apache.qpid.client.message.AbstractJMSMessage;
@@ -72,14 +72,15 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
     private byte[] userIDBytes;
 
     BasicMessageProducer_0_10(AMQConnection connection, AMQDestination destination, boolean transacted, int channelId,
-                              AMQSession session, long producerId, Boolean immediate, Boolean mandatory) throws AMQException
+                              AMQSession session, long producerId, Boolean immediate, Boolean mandatory) throws
+                                                                                                         QpidException
     {
         super(_logger, connection, destination, transacted, channelId, session, producerId, immediate, mandatory);
         
         userIDBytes = Strings.toUTF8(getUserID());
     }
 
-    void declareDestination(AMQDestination destination) throws AMQException
+    void declareDestination(AMQDestination destination) throws QpidException
     {
         if (destination.getDestSyntax() == DestSyntax.BURL)
         {
@@ -105,7 +106,7 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
             }
             catch(Exception e)
             {
-                AMQException ex = new AMQException("Exception occured while verifying destination",e);                
+                QpidException ex = new QpidException("Exception occured while verifying destination",e);
                 throw ex;                
             }
         }

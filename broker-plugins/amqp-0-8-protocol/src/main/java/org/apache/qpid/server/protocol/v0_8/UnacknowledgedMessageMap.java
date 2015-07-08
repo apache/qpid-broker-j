@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.server.message.MessageInstance;
 
 
@@ -35,7 +35,7 @@ public interface UnacknowledgedMessageMap
         /**
          * @param deliveryTag
          *@param message the message being iterated over @return true to stop iteration, false to continue
-         * @throws AMQException
+         * @throws QpidException
          */
         boolean callback(final long deliveryTag, MessageInstance message);
 

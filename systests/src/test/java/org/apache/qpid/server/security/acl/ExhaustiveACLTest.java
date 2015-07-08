@@ -23,6 +23,7 @@ import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
@@ -65,7 +66,7 @@ public class ExhaustiveACLTest extends AbstractACLTestCase
 		{
 			createQueue(vhost, user, name, autoDelete, durable);
 		}
-		catch (AMQException e)
+		catch (QpidException e)
 		{
 			fail(String.format("Create queue should have worked for \"%s\" for user %s@%s, autoDelete=%s, durable=%s",
                                name, user, vhost, Boolean.toString(autoDelete), Boolean.toString(durable)));

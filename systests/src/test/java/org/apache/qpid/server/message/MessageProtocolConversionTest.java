@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.message;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
@@ -58,18 +58,18 @@ public class MessageProtocolConversionTest extends QpidBrokerTestCase
         _connection_0_9_1 = getConnection();
     }
 
-    public void test0_9_1_to_0_10_conversion() throws JMSException, AMQException
+    public void test0_9_1_to_0_10_conversion() throws JMSException, QpidException
     {
         doConversionTests(_connection_0_9_1, _connection_0_10);
     }
 
-    public void test_0_10_to_0_9_1_conversion() throws JMSException, AMQException
+    public void test_0_10_to_0_9_1_conversion() throws JMSException, QpidException
     {
 
         doConversionTests(_connection_0_10, _connection_0_9_1);
     }
 
-    private void doConversionTests(Connection producerConn, Connection consumerConn) throws JMSException, AMQException
+    private void doConversionTests(Connection producerConn, Connection consumerConn) throws JMSException, QpidException
     {
         Session producerSession = producerConn.createSession(false, Session.AUTO_ACKNOWLEDGE);
         Session consumerSession = consumerConn.createSession(false, Session.AUTO_ACKNOWLEDGE);

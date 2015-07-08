@@ -35,7 +35,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
@@ -112,7 +112,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
      *  c1 ack --->
      *
      */
-    private void simpleGroupAssignment(boolean sharedGroups) throws AMQException, JMSException
+    private void simpleGroupAssignment(boolean sharedGroups) throws QpidException, JMSException
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put(QueueArgumentsConverter.QPID_GROUP_HEADER_KEY,"group");
@@ -202,7 +202,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
      * requires c2 to go "backwards" in the queue).
      *
      **/
-    private void consumerCloseGroupAssignment(boolean sharedGroups) throws AMQException, JMSException
+    private void consumerCloseGroupAssignment(boolean sharedGroups) throws QpidException, JMSException
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put(QueueArgumentsConverter.QPID_GROUP_HEADER_KEY,"group");
@@ -301,7 +301,7 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
      * requires c2 to go "backwards" in the queue). The first such message should be marked as redelivered
      *
      */
-    private void consumerCloseWithRelease(boolean sharedGroups) throws AMQException, JMSException
+    private void consumerCloseWithRelease(boolean sharedGroups) throws QpidException, JMSException
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put(QueueArgumentsConverter.QPID_GROUP_HEADER_KEY,"group");
@@ -383,17 +383,17 @@ public class MessageGroupQueueTest extends QpidBrokerTestCase
         assertNull(consumer2.receive(1000));
     }
 
-    public void testGroupAssignmentSurvivesEmpty() throws JMSException, AMQException
+    public void testGroupAssignmentSurvivesEmpty() throws JMSException, QpidException
     {
         groupAssignmentOnEmpty(false);
     }
 
-    public void testSharedGroupAssignmentDoesNotSurviveEmpty() throws JMSException, AMQException
+    public void testSharedGroupAssignmentDoesNotSurviveEmpty() throws JMSException, QpidException
     {
         groupAssignmentOnEmpty(true);
     }
 
-    private void groupAssignmentOnEmpty(boolean sharedGroups) throws AMQException, JMSException
+    private void groupAssignmentOnEmpty(boolean sharedGroups) throws QpidException, JMSException
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put(QueueArgumentsConverter.QPID_GROUP_HEADER_KEY,"group");

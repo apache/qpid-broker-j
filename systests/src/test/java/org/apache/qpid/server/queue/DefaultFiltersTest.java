@@ -32,7 +32,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -55,7 +55,7 @@ public class DefaultFiltersTest extends QpidBrokerTestCase
         _connection.start();
     }
 
-    private void createQueueWithDefaultFilter(String selector) throws AMQException
+    private void createQueueWithDefaultFilter(String selector) throws QpidException
     {
         final Map<String,Object> arguments = new HashMap<>();
         selector = selector.replace("\\", "\\\\");
@@ -67,7 +67,7 @@ public class DefaultFiltersTest extends QpidBrokerTestCase
         ((AMQSession<?,?>) _session).declareAndBind((AMQDestination)_queue);
     }
 
-    public void testDefaultFilterIsApplied() throws AMQException, JMSException
+    public void testDefaultFilterIsApplied() throws QpidException, JMSException
     {
         createQueueWithDefaultFilter("foo = 1");
         final MessageProducer prod = _session.createProducer(_queue);
@@ -89,7 +89,7 @@ public class DefaultFiltersTest extends QpidBrokerTestCase
     }
 
 
-    public void testDefaultFilterIsOverridden() throws AMQException, JMSException
+    public void testDefaultFilterIsOverridden() throws QpidException, JMSException
     {
         createQueueWithDefaultFilter("foo = 1");
         final MessageProducer prod = _session.createProducer(_queue);

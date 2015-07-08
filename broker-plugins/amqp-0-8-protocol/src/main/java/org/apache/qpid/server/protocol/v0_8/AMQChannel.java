@@ -48,7 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.*;
@@ -258,7 +258,7 @@ public class AMQChannel
                 {
                     closeConnection(reason);
                 }
-                catch (AMQException e)
+                catch (QpidException e)
                 {
                     throw new ConnectionScopedRuntimeException(e);
                 }
@@ -693,7 +693,7 @@ public class AMQChannel
      * @param exclusive Flag requesting exclusive access to the queue
      * @return the consumer tag. This is returned to the subscriber and used in subsequent unsubscribe requests
      *
-     * @throws org.apache.qpid.AMQException                  if something goes wrong
+     * @throws QpidException                  if something goes wrong
      */
     public AMQShortString consumeFromSource(AMQShortString tag, Collection<MessageSource> sources, boolean acks,
                                             FieldTable arguments, boolean exclusive, boolean noLocal)
@@ -1772,7 +1772,7 @@ public class AMQChannel
      * Typically called from the HouseKeepingThread instead of the main receiver thread,
      * therefore uses a lock to close the connection in a thread-safe manner.
      */
-    private void closeConnection(String reason) throws AMQException
+    private void closeConnection(String reason) throws QpidException
     {
         _connection.closeAsync(AMQConstant.RESOURCE_ERROR, reason);
     }

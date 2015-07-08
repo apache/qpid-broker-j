@@ -20,13 +20,13 @@
  */
 package org.apache.qpid.client.state;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQMethodBody;
 
-public class AMQMethodNotImplementedException extends AMQException
+public class AMQMethodNotImplementedException extends QpidException
 {
     public AMQMethodNotImplementedException(AMQMethodBody body)
     {
-        super(null, "Unexpected Method Received: " + body.getClass().getName(), null);
+        super("Unexpected Method Received: " + body.getClass().getName(), null);
     }
 }

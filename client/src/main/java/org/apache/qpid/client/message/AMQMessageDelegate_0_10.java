@@ -41,7 +41,7 @@ import javax.jms.MessageNotWriteableException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQPInvalidClassException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQDestination.DestSyntax;
@@ -320,7 +320,7 @@ public class AMQMessageDelegate_0_10 extends AbstractAMQMessageDelegate
                    getAMQSession().setLegacyFieldsForTopicType(amqd);
                }
            }
-           catch(AMQException ex)
+           catch(QpidException ex)
            {
                throw JMSExceptionHelper.chainJMSException(new JMSException(
                        "Error occured while figuring out the node type"), ex);

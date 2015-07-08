@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.client.handler;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.AMQMethodNotImplementedException;
 import org.apache.qpid.framing.BasicRecoverSyncBody;
@@ -37,29 +37,29 @@ public class ClientMethodDispatcherImpl_0_91 extends ClientMethodDispatcherImpl 
         super(session);
     }
 
-    public boolean dispatchBasicRecoverSyncOk(BasicRecoverSyncOkBody body, int channelId) throws AMQException
+    public boolean dispatchBasicRecoverSyncOk(BasicRecoverSyncOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
     @Override
     public boolean dispatchChannelAlert(final ChannelAlertBody body, final int channelId)
-            throws AMQException
+            throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchBasicRecoverSync(BasicRecoverSyncBody body, int channelId) throws AMQException
+    public boolean dispatchBasicRecoverSync(BasicRecoverSyncBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchQueueUnbind(QueueUnbindBody body, int channelId) throws AMQException
+    public boolean dispatchQueueUnbind(QueueUnbindBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchQueueUnbindOk(QueueUnbindOkBody body, int channelId) throws AMQException
+    public boolean dispatchQueueUnbindOk(QueueUnbindOkBody body, int channelId) throws QpidException
     {
         return false;
     }

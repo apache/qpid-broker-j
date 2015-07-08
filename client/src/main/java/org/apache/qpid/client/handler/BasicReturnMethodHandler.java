@@ -23,7 +23,7 @@ package org.apache.qpid.client.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.message.ReturnMessage;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.StateAwareMethodListener;
@@ -42,7 +42,7 @@ public class BasicReturnMethodHandler implements StateAwareMethodListener<BasicR
 
 
     public void methodReceived(AMQProtocolSession session, BasicReturnBody body, int channelId)
-    throws AMQException
+    throws QpidException
     {
         _logger.debug("New JmsBounce method received");
         final ReturnMessage msg = new ReturnMessage(

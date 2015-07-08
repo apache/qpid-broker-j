@@ -21,7 +21,7 @@
 
 package org.apache.qpid.server.queue;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -117,7 +117,7 @@ public class QueueDepthWithSelectorTest extends QpidBrokerTestCase
             
             connection.close();
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             fail(e.getMessage());
         }

@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.protocol;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQMethodBody;
 import org.apache.qpid.framing.ContentBody;
 import org.apache.qpid.framing.ContentHeaderBody;
@@ -48,10 +48,10 @@ public interface AMQVersionAwareProtocolSession extends AMQProtocolWriter, Proto
     MethodRegistry getMethodRegistry();
 
 
-    public void methodFrameReceived(int channelId, AMQMethodBody body) throws AMQException;
-    public void contentHeaderReceived(int channelId, ContentHeaderBody body) throws AMQException;
-    public void contentBodyReceived(int channelId, ContentBody body) throws AMQException;
-    public void heartbeatBodyReceived(int channelId, HeartbeatBody body) throws AMQException;
+    public void methodFrameReceived(int channelId, AMQMethodBody body) throws QpidException;
+    public void contentHeaderReceived(int channelId, ContentHeaderBody body) throws QpidException;
+    public void contentBodyReceived(int channelId, ContentBody body) throws QpidException;
+    public void heartbeatBodyReceived(int channelId, HeartbeatBody body) throws QpidException;
 
 
     public void setSender(ByteBufferSender sender);

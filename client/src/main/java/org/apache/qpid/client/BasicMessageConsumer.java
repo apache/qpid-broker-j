@@ -41,7 +41,7 @@ import javax.jms.MessageListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQInternalException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.filter.JMSSelectorFilter;
@@ -619,7 +619,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
                         }
                     }
                 }
-                catch (AMQException e)
+                catch (QpidException e)
                 {
                     throw JMSExceptionHelper.chainJMSException(new JMSException("Error closing consumer: " + e.getMessage()), e);
                 }
@@ -665,7 +665,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         }
     }
 
-    abstract void sendCancel() throws AMQException, FailoverException;
+    abstract void sendCancel() throws QpidException, FailoverException;
 
     /**
      * Called when you need to invalidate a consumer. Used for example when failover has occurred and the client has
@@ -1028,7 +1028,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         this._queuename = queuename;
     }
 
-    public void addBindingKey(AMQDestination amqd, String routingKey) throws AMQException
+    public void addBindingKey(AMQDestination amqd, String routingKey) throws QpidException
     {
         _session.addBindingKey(this,amqd,routingKey);
     }

@@ -23,7 +23,7 @@ package org.apache.qpid.client.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.ConnectionRedirectException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.StateAwareMethodListener;
@@ -48,7 +48,7 @@ public class ConnectionRedirectMethodHandler implements StateAwareMethodListener
     { }
 
     public void methodReceived(AMQProtocolSession session, ConnectionRedirectBody method, int channelId)
-            throws AMQException
+            throws QpidException
     {
         _logger.info("ConnectionRedirect frame received");
 

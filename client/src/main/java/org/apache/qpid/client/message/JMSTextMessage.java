@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.client.message;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.CustomJMSXProperty;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 
@@ -57,7 +57,7 @@ public class JMSTextMessage extends AbstractJMSMessage implements javax.jms.Text
     }
 
     JMSTextMessage(AMQMessageDelegate delegate, ByteBuffer data)
-            throws AMQException
+            throws QpidException
     {
         super(delegate, data!=null);
 

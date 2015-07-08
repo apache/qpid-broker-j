@@ -40,7 +40,7 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
@@ -549,7 +549,7 @@ public class LastValueQueueTest extends QpidBrokerTestCase
         }
     }
 
-    private void createConflationQueue(Session session) throws AMQException
+    private void createConflationQueue(Session session) throws QpidException
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put("qpid.last_value_queue_key",KEY_PROPERTY);

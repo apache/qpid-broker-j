@@ -26,7 +26,7 @@ import javax.jms.MessageListener;
 import javax.jms.Topic;
 import javax.jms.TopicSubscriber;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 
 /**
  * Wraps a MessageConsumer to fulfill the extended TopicSubscriber contract
@@ -126,7 +126,7 @@ class TopicSubscriberAdaptor<C extends BasicMessageConsumer> implements TopicSub
         return _consumer;
     }
 
-    public void addBindingKey(Topic topic, String bindingKey) throws AMQException
+    public void addBindingKey(Topic topic, String bindingKey) throws QpidException
     {
         _consumer.addBindingKey((AMQDestination) topic, bindingKey);
     }

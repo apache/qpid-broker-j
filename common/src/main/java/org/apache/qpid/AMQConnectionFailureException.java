@@ -20,36 +20,15 @@
  */
 package org.apache.qpid;
 
-import org.apache.qpid.protocol.AMQConstant;
-
-import java.util.Collection;
-
 /**
  * AMQConnectionFailureException indicates that a connection to a broker could not be formed.
  */
-public class AMQConnectionFailureException extends AMQException
+public class AMQConnectionFailureException extends QpidException
 {
-    private Collection<Exception> _exceptions;
-    
-	public AMQConnectionFailureException(String message, Throwable cause)
+
+    public AMQConnectionFailureException(String message, Throwable cause)
 	{
-		super(cause instanceof AMQException ? ((AMQException) cause).getErrorCode() : null, message, cause);
+		super(message, cause);
 	}
 
-    public AMQConnectionFailureException(AMQConstant errorCode, String message, Throwable cause)
-    {
-        super(errorCode, message, cause);
-    }
-
-    public AMQConnectionFailureException(String message, Collection<Exception> exceptions)
-    {
-        // Blah, I hate ? but java won't let super() be anything other than the first thing, sorry...
-        super (null, message, exceptions.isEmpty() ? null : exceptions.iterator().next());
-        this._exceptions = exceptions;
-    }
-    
-    public Collection<Exception> getLinkedExceptions()
-    {
-        return _exceptions;
-    }
 }

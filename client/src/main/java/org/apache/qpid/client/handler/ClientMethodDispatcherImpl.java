@@ -26,7 +26,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.AMQMethodNotImplementedException;
 import org.apache.qpid.client.state.AMQStateManager;
@@ -121,14 +121,14 @@ public class ClientMethodDispatcherImpl implements MethodDispatcher
         return _session.getStateManager();
     }
 
-    public boolean dispatchAccessRequestOk(AccessRequestOkBody body, int channelId) throws AMQException
+    public boolean dispatchAccessRequestOk(AccessRequestOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
     @Override
     public boolean dispatchQueueUnbindOk(final QueueUnbindOkBody body, final int channelId)
-            throws AMQException
+            throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
@@ -136,151 +136,151 @@ public class ClientMethodDispatcherImpl implements MethodDispatcher
     @Override
     public boolean dispatchBasicRecoverSyncOk(final BasicRecoverSyncOkBody basicRecoverSyncOkBody,
                                               final int channelId)
-            throws AMQException
+            throws QpidException
     {
         return false;
     }
 
     @Override
     public boolean dispatchChannelAlert(final ChannelAlertBody channelAlertBody, final int channelId)
-            throws AMQException
+            throws QpidException
     {
         return false;
     }
 
     @Override
     public boolean dispatchConfirmSelectOk(final ConfirmSelectOkBody confirmSelectOkBody, final int channelId)
-            throws AMQException
+            throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchBasicCancelOk(BasicCancelOkBody body, int channelId) throws AMQException
+    public boolean dispatchBasicCancelOk(BasicCancelOkBody body, int channelId) throws QpidException
     {
         _basicCancelOkMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchBasicConsumeOk(BasicConsumeOkBody body, int channelId) throws AMQException
+    public boolean dispatchBasicConsumeOk(BasicConsumeOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchBasicDeliver(BasicDeliverBody body, int channelId) throws AMQException
+    public boolean dispatchBasicDeliver(BasicDeliverBody body, int channelId) throws QpidException
     {
         _basicDeliverMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchBasicGetEmpty(BasicGetEmptyBody body, int channelId) throws AMQException
+    public boolean dispatchBasicGetEmpty(BasicGetEmptyBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchBasicGetOk(BasicGetOkBody body, int channelId) throws AMQException
+    public boolean dispatchBasicGetOk(BasicGetOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchBasicQosOk(BasicQosOkBody body, int channelId) throws AMQException
+    public boolean dispatchBasicQosOk(BasicQosOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchBasicReturn(BasicReturnBody body, int channelId) throws AMQException
+    public boolean dispatchBasicReturn(BasicReturnBody body, int channelId) throws QpidException
     {
         _basicReturnMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchChannelClose(ChannelCloseBody body, int channelId) throws AMQException
+    public boolean dispatchChannelClose(ChannelCloseBody body, int channelId) throws QpidException
     {
         _channelCloseMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchChannelCloseOk(ChannelCloseOkBody body, int channelId) throws AMQException
+    public boolean dispatchChannelCloseOk(ChannelCloseOkBody body, int channelId) throws QpidException
     {
         _channelCloseOkMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchChannelFlow(ChannelFlowBody body, int channelId) throws AMQException
+    public boolean dispatchChannelFlow(ChannelFlowBody body, int channelId) throws QpidException
     {
         _channelFlowMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchChannelFlowOk(ChannelFlowOkBody body, int channelId) throws AMQException
+    public boolean dispatchChannelFlowOk(ChannelFlowOkBody body, int channelId) throws QpidException
     {
         _channelFlowOkMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchChannelOpenOk(ChannelOpenOkBody body, int channelId) throws AMQException
+    public boolean dispatchChannelOpenOk(ChannelOpenOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchConnectionClose(ConnectionCloseBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionClose(ConnectionCloseBody body, int channelId) throws QpidException
     {
         _connectionCloseMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchConnectionCloseOk(ConnectionCloseOkBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionCloseOk(ConnectionCloseOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchConnectionOpenOk(ConnectionOpenOkBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionOpenOk(ConnectionOpenOkBody body, int channelId) throws QpidException
     {
         _connectionOpenOkMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchConnectionRedirect(ConnectionRedirectBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionRedirect(ConnectionRedirectBody body, int channelId) throws QpidException
     {
         _connectionRedirectMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchConnectionSecure(ConnectionSecureBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionSecure(ConnectionSecureBody body, int channelId) throws QpidException
     {
         _connectionSecureMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchConnectionStart(ConnectionStartBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionStart(ConnectionStartBody body, int channelId) throws QpidException
     {
         _connectionStartMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchConnectionTune(ConnectionTuneBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionTune(ConnectionTuneBody body, int channelId) throws QpidException
     {
         _connectionTuneMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchQueueDeleteOk(QueueDeleteOkBody body, int channelId) throws AMQException
+    public boolean dispatchQueueDeleteOk(QueueDeleteOkBody body, int channelId) throws QpidException
     {
         _queueDeleteOkMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchQueuePurgeOk(QueuePurgeOkBody body, int channelId) throws AMQException
+    public boolean dispatchQueuePurgeOk(QueuePurgeOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchAccessRequest(AccessRequestBody body, int channelId) throws AMQException
+    public boolean dispatchAccessRequest(AccessRequestBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
     @Override
-    public boolean dispatchBasicAck(BasicAckBody body, int channelId) throws AMQException
+    public boolean dispatchBasicAck(BasicAckBody body, int channelId) throws QpidException
     {
         return false;
     }
@@ -292,173 +292,173 @@ public class ClientMethodDispatcherImpl implements MethodDispatcher
     }
 
 
-    public boolean dispatchBasicCancel(BasicCancelBody body, int channelId) throws AMQException
+    public boolean dispatchBasicCancel(BasicCancelBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchBasicConsume(BasicConsumeBody body, int channelId) throws AMQException
+    public boolean dispatchBasicConsume(BasicConsumeBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchBasicGet(BasicGetBody body, int channelId) throws AMQException
+    public boolean dispatchBasicGet(BasicGetBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchBasicPublish(BasicPublishBody body, int channelId) throws AMQException
+    public boolean dispatchBasicPublish(BasicPublishBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchBasicQos(BasicQosBody body, int channelId) throws AMQException
+    public boolean dispatchBasicQos(BasicQosBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchBasicRecover(BasicRecoverBody body, int channelId) throws AMQException
+    public boolean dispatchBasicRecover(BasicRecoverBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchBasicReject(BasicRejectBody body, int channelId) throws AMQException
+    public boolean dispatchBasicReject(BasicRejectBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchChannelOpen(ChannelOpenBody body, int channelId) throws AMQException
+    public boolean dispatchChannelOpen(ChannelOpenBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchConnectionOpen(ConnectionOpenBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionOpen(ConnectionOpenBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchConnectionSecureOk(ConnectionSecureOkBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionSecureOk(ConnectionSecureOkBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchConnectionStartOk(ConnectionStartOkBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionStartOk(ConnectionStartOkBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchConnectionTuneOk(ConnectionTuneOkBody body, int channelId) throws AMQException
+    public boolean dispatchConnectionTuneOk(ConnectionTuneOkBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchExchangeBound(ExchangeBoundBody body, int channelId) throws AMQException
+    public boolean dispatchExchangeBound(ExchangeBoundBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchExchangeDeclare(ExchangeDeclareBody body, int channelId) throws AMQException
+    public boolean dispatchExchangeDeclare(ExchangeDeclareBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchExchangeDelete(ExchangeDeleteBody body, int channelId) throws AMQException
+    public boolean dispatchExchangeDelete(ExchangeDeleteBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchQueueBind(QueueBindBody body, int channelId) throws AMQException
+    public boolean dispatchQueueBind(QueueBindBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchQueueDeclare(QueueDeclareBody body, int channelId) throws AMQException
+    public boolean dispatchQueueDeclare(QueueDeclareBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchQueueDelete(QueueDeleteBody body, int channelId) throws AMQException
+    public boolean dispatchQueueDelete(QueueDeleteBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchQueuePurge(QueuePurgeBody body, int channelId) throws AMQException
+    public boolean dispatchQueuePurge(QueuePurgeBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
 
-    public boolean dispatchTxCommit(TxCommitBody body, int channelId) throws AMQException
+    public boolean dispatchTxCommit(TxCommitBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchTxRollback(TxRollbackBody body, int channelId) throws AMQException
+    public boolean dispatchTxRollback(TxRollbackBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchTxSelect(TxSelectBody body, int channelId) throws AMQException
+    public boolean dispatchTxSelect(TxSelectBody body, int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
     @Override
-    public boolean dispatchQueueUnbind(final QueueUnbindBody queueUnbindBody, final int channelId) throws AMQException
+    public boolean dispatchQueueUnbind(final QueueUnbindBody queueUnbindBody, final int channelId) throws QpidException
     {
         return false;
     }
 
     @Override
     public boolean dispatchBasicRecoverSync(final BasicRecoverSyncBody basicRecoverSyncBody, final int channelId)
-            throws AMQException
+            throws QpidException
     {
         return false;
     }
 
     @Override
-    public boolean dispatchConfirmSelect(final ConfirmSelectBody body, final int channelId) throws AMQException
+    public boolean dispatchConfirmSelect(final ConfirmSelectBody body, final int channelId) throws QpidException
     {
         throw new AMQMethodNotImplementedException(body);
     }
 
-    public boolean dispatchExchangeBoundOk(ExchangeBoundOkBody body, int channelId) throws AMQException
+    public boolean dispatchExchangeBoundOk(ExchangeBoundOkBody body, int channelId) throws QpidException
     {
         _exchangeBoundOkMethodHandler.methodReceived(_session, body, channelId);
         return true;
     }
 
-    public boolean dispatchExchangeDeclareOk(ExchangeDeclareOkBody body, int channelId) throws AMQException
+    public boolean dispatchExchangeDeclareOk(ExchangeDeclareOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchExchangeDeleteOk(ExchangeDeleteOkBody body, int channelId) throws AMQException
+    public boolean dispatchExchangeDeleteOk(ExchangeDeleteOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchQueueBindOk(QueueBindOkBody body, int channelId) throws AMQException
+    public boolean dispatchQueueBindOk(QueueBindOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchQueueDeclareOk(QueueDeclareOkBody body, int channelId) throws AMQException
+    public boolean dispatchQueueDeclareOk(QueueDeclareOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchTxCommitOk(TxCommitOkBody body, int channelId) throws AMQException
+    public boolean dispatchTxCommitOk(TxCommitOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchTxRollbackOk(TxRollbackOkBody body, int channelId) throws AMQException
+    public boolean dispatchTxRollbackOk(TxRollbackOkBody body, int channelId) throws QpidException
     {
         return false;
     }
 
-    public boolean dispatchTxSelectOk(TxSelectOkBody body, int channelId) throws AMQException
+    public boolean dispatchTxSelectOk(TxSelectOkBody body, int channelId) throws QpidException
     {
         return false;
     }

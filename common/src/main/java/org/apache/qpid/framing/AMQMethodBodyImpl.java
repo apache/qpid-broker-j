@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 
 import org.apache.qpid.AMQChannelException;
 import org.apache.qpid.AMQConnectionException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -91,7 +91,7 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
         return new AMQConnectionException(code, message, this, methodRegistry);
     }
 
-    public void handle(final int channelId, final AMQVersionAwareProtocolSession session) throws AMQException
+    public void handle(final int channelId, final AMQVersionAwareProtocolSession session) throws QpidException
     {
         session.methodFrameReceived(channelId, this);
     }

@@ -22,8 +22,9 @@ package org.apache.qpid.client;
 
 import javax.jms.InvalidDestinationException;
 import javax.jms.InvalidSelectorException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQInternalException;
+import org.apache.qpid.AMQException;
 import org.apache.qpid.client.filter.JMSSelectorFilter;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.protocol.AMQConstant;
@@ -86,16 +87,17 @@ public class AMQQueueBrowser implements QueueBrowser
             // TODO - should really validate queue exists, but we often rely on creating the consumer to create the queue :(
             // _session.declareQueuePassive( queue );
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
-            if(e.getErrorCode() == AMQConstant.NOT_FOUND)
+            AMQConstant errorCode = (e instanceof AMQException) ? ((AMQException)e).getErrorCode() : null;
+            if(errorCode == AMQConstant.NOT_FOUND)
             {
                 throw new InvalidDestinationException(e.getMessage());
             }
             else
             {
                 throw JMSExceptionHelper.chainJMSException(new JMSException(e.getMessage(),
-                                                                            String.valueOf(e.getErrorCode().getCode())),
+                                                                            String.valueOf(errorCode.getCode())),
                                                            e);
             }
         }

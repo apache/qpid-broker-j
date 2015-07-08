@@ -23,10 +23,10 @@ package org.apache.qpid;
 /**
  * AMQDisconnectedException indicates that a broker disconnected without failover.
  */
-public class AMQDisconnectedException extends AMQException
+public class AMQDisconnectedException extends QpidException
 {
     public AMQDisconnectedException(String msg, Throwable cause)
     {
-        super(null, msg, cause);
+        super(msg, cause);
     }
 }

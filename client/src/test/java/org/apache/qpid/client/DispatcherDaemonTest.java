@@ -20,7 +20,7 @@ package org.apache.qpid.client;
 
 import javax.jms.Session;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.url.URLSyntaxException;
@@ -55,7 +55,7 @@ public class DispatcherDaemonTest extends QpidTestCase
                 _session.getDispatcherThread().isDaemon());
     }
 
-    private AMQSession<?,?> createSession() throws AMQException, URLSyntaxException
+    private AMQSession<?,?> createSession() throws QpidException, URLSyntaxException
     {
         AMQConnection amqConnection = new MockAMQConnection(
                 "amqp://guest:guest@client/test?brokerlist='tcp://localhost:1'&maxprefetch='0'");

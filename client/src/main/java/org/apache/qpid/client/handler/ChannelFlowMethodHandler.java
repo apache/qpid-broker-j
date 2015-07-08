@@ -23,7 +23,7 @@ package org.apache.qpid.client.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.StateAwareMethodListener;
 import org.apache.qpid.framing.ChannelFlowBody;
@@ -43,7 +43,7 @@ public class ChannelFlowMethodHandler implements StateAwareMethodListener<Channe
     { }
 
     public void methodReceived(AMQProtocolSession session, ChannelFlowBody body, int channelId)
-            throws AMQException
+            throws QpidException
     {
         session.setFlowControl(channelId, body.getActive());
     }

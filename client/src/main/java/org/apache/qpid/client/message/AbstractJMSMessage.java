@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.client.message;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQSession;
 
 import javax.jms.Destination;
@@ -46,7 +46,7 @@ public abstract class AbstractJMSMessage implements org.apache.qpid.jms.Message
         setContentType(getMimeType());
     }
 
-    protected AbstractJMSMessage(AMQMessageDelegate delegate, boolean fromReceivedData) throws AMQException
+    protected AbstractJMSMessage(AMQMessageDelegate delegate, boolean fromReceivedData) throws QpidException
     {
 
         _delegate = delegate;

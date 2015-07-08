@@ -40,7 +40,7 @@ public class AMQChannelException extends AMQException
                                int methodId,
                                MethodRegistry methodRegistry)
     {
-        super(errorCode, msg);
+        super(errorCode, msg, null);
         _classId = classId;
         _methodId = methodId;
         _methodRegistry = methodRegistry;

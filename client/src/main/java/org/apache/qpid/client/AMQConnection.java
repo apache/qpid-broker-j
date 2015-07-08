@@ -62,6 +62,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionFailureException;
 import org.apache.qpid.AMQDisconnectedException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.AMQProtocolException;
 import org.apache.qpid.AMQUnresolvedAddressException;
@@ -248,11 +249,11 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
      * @param clientName  clientid
      * @param virtualHost virtualhost
      *
-     * @throws AMQException
+     * @throws QpidException
      * @throws URLSyntaxException
      */
     public AMQConnection(String broker, String username, String password, String clientName, String virtualHost)
-            throws AMQException, URLSyntaxException
+            throws QpidException, URLSyntaxException
     {
         this(new AMQConnectionURL(
                 ConnectionURL.AMQ_PROTOCOL + "://" + username + ":" + password + "@"
@@ -261,14 +262,14 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
     }
 
     public AMQConnection(String host, int port, String username, String password, String clientName, String virtualHost)
-            throws AMQException, URLSyntaxException
+            throws QpidException, URLSyntaxException
     {
         this(new AMQConnectionURL(
                    ConnectionURL.AMQ_PROTOCOL + "://" + username + ":" + password + "@"
                    + ((clientName == null) ? "" : clientName) + virtualHost + "?brokerlist='tcp://" + host + ":" + port + "'"));
     }
 
-    public AMQConnection(String connection) throws AMQException, URLSyntaxException
+    public AMQConnection(String connection) throws QpidException, URLSyntaxException
     {
         this(new AMQConnectionURL(connection));
     }
@@ -277,7 +278,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
      * TODO Some horrible stuff going on here with setting exceptions to be non-null to detect if an exception
      * was thrown during the connection! Intention not clear. Use a flag anyway, not exceptions... Will fix soon.
      */
-    public AMQConnection(ConnectionURL connectionURL) throws AMQException
+    public AMQConnection(ConnectionURL connectionURL) throws QpidException
     {
         if (connectionURL == null)
         {
@@ -469,7 +470,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         _connectionMetaData = new QpidConnectionMetaData(this);
     }
 
-    private void makeConnection() throws AMQException
+    private void makeConnection() throws QpidException
     {
         _connectionAttempted = true;
         if(_clientName == null)
@@ -700,7 +701,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         }
         catch (Exception e)
         {
-            if (!(e instanceof AMQException))
+            if (!(e instanceof QpidException))
             {
                 if (_logger.isInfoEnabled())
                 {
@@ -719,7 +720,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         return false;
     }
 
-    public ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws IOException, AMQException
+    public ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws IOException, QpidException
     {
         resetClosedFlag();
         return _delegate.makeBrokerConnection(brokerDetail);
@@ -778,7 +779,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                 {
                     makeConnection();
                 }
-                catch (AMQException e)
+                catch (QpidException e)
                 {
                     throw JMSExceptionHelper.chainJMSException(new JMSException("Unable to establish connection"),e);
                 }
@@ -805,7 +806,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                 {
                     ((AMQSession)session).start();
                 }
-                catch (AMQException e)
+                catch (QpidException e)
                 {
                     throw JMSExceptionHelper.chainJMSException(new JMSException(
                             "Failed to retrieve virtual host properties"), e);
@@ -837,7 +838,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                     {
                         ((AMQSession) _brokerTrustStoreSession).start();
                     }
-                    catch (AMQException e)
+                    catch (QpidException e)
                     {
                         throw JMSExceptionHelper.chainJMSException(new JMSException(
                                 "Failed to retrieve virtual host properties"), e);
@@ -1020,7 +1021,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                 {
                     s.start();
                 }
-                catch (AMQException e)
+                catch (QpidException e)
                 {
                     throw JMSExceptionHelper.chainJMSException(new JMSException("Connection.start failed"), e);
                 }
@@ -1040,7 +1041,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                 {
                     ((AMQSession) i.next()).stop();
                 }
-                catch (AMQException e)
+                catch (QpidException e)
                 {
                     throw JMSExceptionHelper.chainJMSException(new JMSException("Connection.stop failed."), e);
                 }
@@ -1379,7 +1380,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         return _failoverMutex;
     }
 
-    public void resubscribeSessions() throws JMSException, AMQException, FailoverException
+    public void resubscribeSessions() throws JMSException, QpidException, FailoverException
     {
         _delegate.resubscribeSessions();
     }
@@ -1754,7 +1755,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         return _useLegacyStreamMessageFormat;
     }
 
-    private void verifyClientID() throws AMQException
+    private void verifyClientID() throws QpidException
     {
         if (Boolean.getBoolean(ClientProperties.QPID_VERIFY_CLIENT_ID))
         {
@@ -1767,7 +1768,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             }
             catch(JMSException e)
             {
-                    throw new AMQException(e.getMessage(),e);
+                    throw new QpidException(e.getMessage(),e);
             }
         }
     }

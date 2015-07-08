@@ -40,7 +40,7 @@ import javax.jms.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
@@ -301,7 +301,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
     }
 
-    private void verifyDLQdepth(int expected, Session clientSession, boolean durableSub) throws AMQException
+    private void verifyDLQdepth(int expected, Session clientSession, boolean durableSub) throws QpidException
     {
         AMQDestination checkQueueDLQ;
         if(durableSub)
@@ -533,7 +533,8 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
     }
 
     private void doSynchronousTest(final Session session, final MessageConsumer consumer, final int deliveryMode, final int maxDeliveryCount,
-            final int expectedTotalNumberOfDeliveries, final List<Integer> redeliverMsgs) throws JMSException, AMQException, InterruptedException
+            final int expectedTotalNumberOfDeliveries, final List<Integer> redeliverMsgs) throws JMSException,
+                                                                                                 QpidException, InterruptedException
    {
         if(deliveryMode == Session.AUTO_ACKNOWLEDGE
                 || deliveryMode == Session.DUPS_OK_ACKNOWLEDGE

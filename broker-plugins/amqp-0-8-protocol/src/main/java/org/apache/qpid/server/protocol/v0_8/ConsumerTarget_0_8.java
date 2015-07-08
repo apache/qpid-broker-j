@@ -25,7 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.FieldTable;
@@ -120,7 +120,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
          * @param consumer
          * @param entry
          * @param batch
-         * @throws org.apache.qpid.AMQException
+         * @throws QpidException
          */
         @Override
         public void doSend(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
@@ -149,7 +149,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
                                                        AMQShortString consumerTag, FieldTable filters,
                                                        FlowCreditManager creditManager,
                                                        ClientDeliveryMethod deliveryMethod,
-                                                       RecordDeliveryMethod recordMethod) throws AMQException
+                                                       RecordDeliveryMethod recordMethod) throws QpidException
     {
         return new NoAckConsumer(channel, consumerTag, filters, creditManager, deliveryMethod, recordMethod);
     }

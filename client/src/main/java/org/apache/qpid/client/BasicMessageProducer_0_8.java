@@ -37,7 +37,7 @@ import javax.jms.Topic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.message.AMQMessageDelegate_0_8;
 import org.apache.qpid.client.message.AbstractJMSMessage;
@@ -69,12 +69,13 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
     private static final boolean SET_EXPIRATION_AS_TTL = Boolean.getBoolean(ClientProperties.SET_EXPIRATION_AS_TTL);
 
     BasicMessageProducer_0_8(AMQConnection connection, AMQDestination destination, boolean transacted, int channelId,
-            AMQSession session, AMQProtocolHandler protocolHandler, long producerId, Boolean immediate, Boolean mandatory) throws AMQException
+            AMQSession session, AMQProtocolHandler protocolHandler, long producerId, Boolean immediate, Boolean mandatory) throws
+                                                                                                                           QpidException
     {
         super(_logger,connection, destination,transacted,channelId,session, producerId, immediate, mandatory);
     }
 
-    void declareDestination(AMQDestination destination) throws AMQException
+    void declareDestination(AMQDestination destination) throws QpidException
     {
 
         if (destination.getDestSyntax() == AMQDestination.DestSyntax.ADDR)
@@ -364,7 +365,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
                     throw new JMSException("The message was not accepted by the server (e.g. because the address was no longer valid)");
                 }
             }
-            catch (AMQException e)
+            catch (QpidException e)
             {
                 throw JMSExceptionHelper.chainJMSException(new JMSException(e.getMessage()), e);
             }

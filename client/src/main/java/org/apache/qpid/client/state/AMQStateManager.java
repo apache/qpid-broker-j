@@ -27,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.framing.AMQMethodBody;
@@ -109,7 +110,7 @@ public class AMQStateManager implements AMQMethodListener
         }
     }
 
-    public <B extends AMQMethodBody> boolean methodReceived(AMQMethodEvent<B> evt) throws AMQException
+    public <B extends AMQMethodBody> boolean methodReceived(AMQMethodEvent<B> evt) throws QpidException
     {
         B method = evt.getMethod();
 
@@ -141,12 +142,14 @@ public class AMQStateManager implements AMQMethodListener
      */
     public void error(Exception error)
     {
-        if (error instanceof AMQException)
+        // TODO - this logic seems particularly strange and the assumptions it relies upon around the difference between
+        //        QpidException and non-QpidException have probably not been true for a while.
+        if (error instanceof QpidException)
         {
             // AMQException should be being notified before closing the
             // ProtocolSession. Which will change the State to CLOSED.
             // if we have a hard error.
-            if (((AMQException)error).isHardError())
+            if (!(error instanceof AMQException && !((AMQException)error).isHardError()))
             {
                 changeState(AMQState.CONNECTION_CLOSING);
             }

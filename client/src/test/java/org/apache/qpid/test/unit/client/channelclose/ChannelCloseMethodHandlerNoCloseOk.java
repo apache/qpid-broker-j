@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQChannelClosedException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQInvalidArgumentException;
 import org.apache.qpid.AMQInvalidRoutingKeyException;
 import org.apache.qpid.client.AMQNoConsumersException;
@@ -47,7 +47,7 @@ public class ChannelCloseMethodHandlerNoCloseOk implements StateAwareMethodListe
     }
 
     public void methodReceived(AMQProtocolSession session,  ChannelCloseBody method, int channelId)
-        throws AMQException
+        throws QpidException
     {
         _logger.debug("ChannelClose method received");
 

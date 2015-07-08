@@ -30,7 +30,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
@@ -169,7 +169,7 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
         session.close();
     }
 
-    private void createQueue(Session session) throws AMQException, JMSException
+    private void createQueue(Session session) throws QpidException, JMSException
     {
         _queue = new AMQQueue(ExchangeDefaults.DIRECT_EXCHANGE_NAME, _queueName);
         if (!((AMQSession<?,?>) session).isQueueBound((AMQDestination) _queue))

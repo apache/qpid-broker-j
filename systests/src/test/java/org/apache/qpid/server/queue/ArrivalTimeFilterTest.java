@@ -29,7 +29,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -53,7 +53,7 @@ public class ArrivalTimeFilterTest extends QpidBrokerTestCase
     }
 
 
-    public void testArrivalTime0() throws AMQException, JMSException, InterruptedException
+    public void testArrivalTime0() throws QpidException, JMSException, InterruptedException
     {
         createDestinationWithFilter(0);
         final MessageProducer prod = _session.createProducer(_queue);
@@ -74,7 +74,7 @@ public class ArrivalTimeFilterTest extends QpidBrokerTestCase
     }
 
 
-    public void testArrivalTime1000() throws AMQException, JMSException, InterruptedException
+    public void testArrivalTime1000() throws QpidException, JMSException, InterruptedException
     {
         createDestinationWithFilter(1000);
         final MessageProducer prod = _session.createProducer(_queue);
@@ -94,7 +94,7 @@ public class ArrivalTimeFilterTest extends QpidBrokerTestCase
         assertNotNull("Message should be received", receivedMsg);
     }
 
-    private void createDestinationWithFilter(final int period) throws AMQException, JMSException
+    private void createDestinationWithFilter(final int period) throws QpidException, JMSException
     {
         ((AMQSession<?,?>) _session).createQueue(_queueName, false, true, false, null);
         Queue queue = new org.apache.qpid.client.AMQQueue("amq.direct", _queueName);

@@ -17,7 +17,7 @@
  */
 package org.apache.qpid.client;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 
 import javax.jms.JMSException;
 import javax.jms.QueueSession;
@@ -193,7 +193,7 @@ public class XASessionImpl extends AMQSession_0_10 implements XASession, XATopic
     }
 
     @Override
-    void resubscribe() throws AMQException
+    void resubscribe() throws QpidException
     {
         super.resubscribe();
         createSession();

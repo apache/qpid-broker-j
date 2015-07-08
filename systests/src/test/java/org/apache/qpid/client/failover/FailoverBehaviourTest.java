@@ -18,7 +18,7 @@
  */
 package org.apache.qpid.client.failover;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQConnectionFactory;
@@ -1467,7 +1467,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
      * @return queue browser
      * @throws JMSException
      */
-    private QueueBrowser prepareQueueBrowser(int acknowledgeMode) throws JMSException, AMQException
+    private QueueBrowser prepareQueueBrowser(int acknowledgeMode) throws JMSException, QpidException
     {
         init(acknowledgeMode, false);
         _consumer.close();

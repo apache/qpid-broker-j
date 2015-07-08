@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionClosedException;
 import org.apache.qpid.AMQDisconnectedException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.AMQTimeoutException;
 import org.apache.qpid.client.AMQConnection;
@@ -382,7 +383,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
             // we notify the state manager of the error in case we have any clients waiting on a state
             // change. Those "waiters" will be interrupted and can handle the exception
-            AMQException amqe = new AMQException("Protocol handler error: " + cause, cause);
+            QpidException amqe = new QpidException("Protocol handler error: " + cause, cause);
             propagateExceptionToAllWaiters(amqe);
             _connection.exceptionReceived(cause);
         }
@@ -524,7 +525,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     }
 
     public void methodBodyReceived(final int channelId, final AMQBody bodyFrame)
-            throws AMQException
+            throws QpidException
     {
 
         if (_logger.isDebugEnabled())
@@ -555,11 +556,11 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
             }
             if (!wasAnyoneInterested)
             {
-                throw new AMQException(null, "AMQMethodEvent " + evt + " was not processed by any listener.  Listeners:"
+                throw new QpidException("AMQMethodEvent " + evt + " was not processed by any listener.  Listeners:"
                                              + _frameListeners, null);
             }
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             propagateExceptionToFrameListeners(e);
 
@@ -568,7 +569,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
     }
 
-    public StateWaiter createWaiter(Set<AMQState> states) throws AMQException
+    public StateWaiter createWaiter(Set<AMQState> states) throws QpidException
     {
         return getStateManager().createWaiter(states);
     }
@@ -664,7 +665,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
      * @param listener the blocking listener. Note the calling thread will block.
      */
     public AMQMethodEvent writeCommandFrameAndWaitForReply(AMQDataBlock frame, BlockingMethodFrameListener listener)
-            throws AMQException, FailoverException
+            throws QpidException, FailoverException
     {
         return writeCommandFrameAndWaitForReply(frame, listener, DEFAULT_SYNC_TIMEOUT);
     }
@@ -677,7 +678,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
      * @param listener the blocking listener. Note the calling thread will block.
      */
     public AMQMethodEvent writeCommandFrameAndWaitForReply(AMQDataBlock frame, BlockingMethodFrameListener listener,
-                                                           long timeout) throws AMQException, FailoverException
+                                                           long timeout) throws QpidException, FailoverException
     {
         try
         {
@@ -694,10 +695,9 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
                     Exception e = _stateManager.getLastException();
                     if (e != null)
                     {
-                        if (e instanceof AMQException)
+                        if (e instanceof QpidException)
                         {
-                            AMQException amqe = (AMQException) e;
-
+                            QpidException amqe = (QpidException) e;
                             throw amqe.cloneForCurrentThread();
                         }
                         else
@@ -727,19 +727,19 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     }
 
     /** More convenient method to write a frame and wait for it's response. */
-    public AMQMethodEvent syncWrite(AMQFrame frame, Class responseClass) throws AMQException, FailoverException
+    public AMQMethodEvent syncWrite(AMQFrame frame, Class responseClass) throws QpidException, FailoverException
     {
         return syncWrite(frame, responseClass, DEFAULT_SYNC_TIMEOUT);
     }
 
     /** More convenient method to write a frame and wait for it's response. */
-    public AMQMethodEvent syncWrite(AMQFrame frame, Class responseClass, long timeout) throws AMQException, FailoverException
+    public AMQMethodEvent syncWrite(AMQFrame frame, Class responseClass, long timeout) throws QpidException, FailoverException
     {
         return writeCommandFrameAndWaitForReply(frame, new SpecificMethodFrameListener(frame.getChannel(), responseClass),
                                                 timeout);
     }
 
-    public void closeSession(AMQSession session) throws AMQException
+    public void closeSession(AMQSession session) throws QpidException
     {
         _protocolSession.closeSession(session);
     }
@@ -752,9 +752,9 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
      *
      * @param timeout The timeout to wait for an acknowledgment to the close request.
      *
-     * @throws AMQException If the close fails for any reason.
+     * @throws QpidException If the close fails for any reason.
      */
-    public void closeConnection(long timeout) throws AMQException
+    public void closeConnection(long timeout) throws QpidException
     {
         if (!getStateManager().getCurrentState().equals(AMQState.CONNECTION_CLOSED))
         {

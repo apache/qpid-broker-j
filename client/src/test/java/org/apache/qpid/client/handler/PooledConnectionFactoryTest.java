@@ -41,7 +41,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.CommonConnection;
 import org.apache.qpid.client.PooledConnectionFactory;
 import org.apache.qpid.jms.ConnectionURL;
@@ -67,7 +67,7 @@ public class PooledConnectionFactoryTest extends QpidTestCase
         _connectionFactory = new PooledConnectionFactory()
         {
             @Override
-            protected CommonConnection newConnectionInstance(final ConnectionURL connectionDetails) throws AMQException
+            protected CommonConnection newConnectionInstance(final ConnectionURL connectionDetails) throws QpidException
             {
                 return _connectionCreator.newConnection(connectionDetails);
             }

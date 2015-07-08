@@ -39,7 +39,7 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.MessagePublishInfo;
@@ -64,7 +64,8 @@ public class InternalTestProtocolSession extends AMQPConnection_0_8 implements P
     private AtomicInteger _deliveryCount = new AtomicInteger(0);
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0);
 
-    public InternalTestProtocolSession(VirtualHostImpl virtualHost, Broker<?> broker, final AmqpPort<?> port) throws AMQException
+    public InternalTestProtocolSession(VirtualHostImpl virtualHost, Broker<?> broker, final AmqpPort<?> port) throws
+                                                                                                              QpidException
     {
         super(broker, new TestNetworkConnection(), port, null, ID_GENERATOR.getAndIncrement(), new AggregateTicker());
 

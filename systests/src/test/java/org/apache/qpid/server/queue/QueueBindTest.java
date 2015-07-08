@@ -30,7 +30,7 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.Session;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
@@ -67,7 +67,7 @@ public class QueueBindTest extends QpidBrokerTestCase
 
     }
 
-    private void runTestForTopicExchange(AMQDestination destination) throws AMQException, JMSException, Exception
+    private void runTestForTopicExchange(AMQDestination destination) throws QpidException, JMSException, Exception
     {
         // binding queue with empty arguments
         _session.declareAndBind(destination,Collections.<String, Object>emptyMap());
@@ -99,7 +99,7 @@ public class QueueBindTest extends QpidBrokerTestCase
         }
     }
 
-    private void runTestForNonTopicExhange(AMQQueue destination) throws AMQException, Exception, JMSException
+    private void runTestForNonTopicExhange(AMQQueue destination) throws QpidException, Exception, JMSException
     {
         // binding queue with empty arguments
         _session.declareAndBind(destination,

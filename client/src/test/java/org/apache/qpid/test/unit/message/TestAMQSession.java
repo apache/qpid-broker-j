@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.test.unit.message;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession_0_8;
@@ -54,17 +54,17 @@ public class TestAMQSession extends AMQSession_0_8
 
     public void sendQueueBind(AMQShortString queueName, AMQShortString routingKey, FieldTable arguments,
                               AMQShortString exchangeName, AMQDestination destination,
-                              boolean nowait) throws AMQException, FailoverException
+                              boolean nowait) throws QpidException, FailoverException
     {
 
     }
 
-    public void sendClose(long timeout) throws AMQException, FailoverException
+    public void sendClose(long timeout) throws QpidException, FailoverException
     {
 
     }
 
-    public void commitImpl() throws AMQException, FailoverException
+    public void commitImpl() throws QpidException, FailoverException
     {
 
     }
@@ -79,7 +79,8 @@ public class TestAMQSession extends AMQSession_0_8
         return null;
     }
 
-    public void sendCreateQueue(AMQShortString name, boolean autoDelete, boolean durable, boolean exclusive, Map<String, Object> arguments) throws AMQException, FailoverException
+    public void sendCreateQueue(AMQShortString name, boolean autoDelete, boolean durable, boolean exclusive, Map<String, Object> arguments) throws
+                                                                                                                                            QpidException, FailoverException
     {
 
     }
@@ -89,7 +90,7 @@ public class TestAMQSession extends AMQSession_0_8
         return null;
     }
 
-    public void sendRecover() throws AMQException, FailoverException
+    public void sendRecover() throws QpidException, FailoverException
     {
 
     }
@@ -104,7 +105,7 @@ public class TestAMQSession extends AMQSession_0_8
 
     }
 
-    public void sendRollback() throws AMQException, FailoverException
+    public void sendRollback() throws QpidException, FailoverException
     {
 
     }
@@ -124,7 +125,8 @@ public class TestAMQSession extends AMQSession_0_8
         return false;
     }
 
-    public void sendConsume(BasicMessageConsumer_0_8 consumer, AMQShortString queueName, boolean nowait, int tag) throws AMQException, FailoverException
+    public void sendConsume(BasicMessageConsumer_0_8 consumer, AMQShortString queueName, boolean nowait, int tag) throws
+                                                                                                                  QpidException, FailoverException
     {
 
     }
@@ -134,28 +136,29 @@ public class TestAMQSession extends AMQSession_0_8
         return null;
     }
 
-    protected Long requestQueueDepth(AMQDestination amqd) throws AMQException, FailoverException
+    protected Long requestQueueDepth(AMQDestination amqd) throws QpidException, FailoverException
     {
         return null;
     }
 
-    public void sendExchangeDeclare(AMQShortString name, AMQShortString type, boolean nowait, boolean durable, boolean autoDelete, boolean internal) throws AMQException, FailoverException
+    public void sendExchangeDeclare(AMQShortString name, AMQShortString type, boolean nowait, boolean durable, boolean autoDelete, boolean internal) throws
+                                                                                                                                                     QpidException, FailoverException
     {
 
     }
 
     public void sendQueueDeclare(AMQDestination amqd, AMQProtocolHandler protocolHandler,
-                                 boolean passive) throws AMQException, FailoverException
+                                 boolean passive) throws QpidException, FailoverException
     {
 
     }
 
-    public void sendQueueDelete(AMQShortString queueName) throws AMQException, FailoverException
+    public void sendQueueDelete(AMQShortString queueName) throws QpidException, FailoverException
     {
 
     }
 
-    public void sendSuspendChannel(boolean suspend) throws AMQException, FailoverException
+    public void sendSuspendChannel(boolean suspend) throws QpidException, FailoverException
     {
 
     }
@@ -201,7 +204,7 @@ public class TestAMQSession extends AMQSession_0_8
     }
 
     @Override
-    public AMQException getLastException()
+    public QpidException getLastException()
     {
         return null;
     }

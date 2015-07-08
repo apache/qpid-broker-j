@@ -23,7 +23,7 @@ package org.apache.qpid.framing;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
 
@@ -39,7 +39,7 @@ public interface AMQBody
     
     public void writePayload(DataOutput buffer) throws IOException;
     
-    void handle(final int channelId, final AMQVersionAwareProtocolSession amqProtocolSession) throws AMQException;
+    void handle(final int channelId, final AMQVersionAwareProtocolSession amqProtocolSession) throws QpidException;
 
     long writePayload(ByteBufferSender sender) throws IOException;
 }

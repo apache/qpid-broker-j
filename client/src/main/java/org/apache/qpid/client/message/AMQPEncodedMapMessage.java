@@ -21,7 +21,7 @@
 package org.apache.qpid.client.message;
 
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.transport.codec.BBEncoder;
 
@@ -46,7 +46,7 @@ public class AMQPEncodedMapMessage extends JMSMapMessage
         super(delegateFactory, data); 
     }
 
-    AMQPEncodedMapMessage(AMQMessageDelegate delegate, ByteBuffer data) throws AMQException
+    AMQPEncodedMapMessage(AMQMessageDelegate delegate, ByteBuffer data) throws QpidException
     {
         super(delegate, data);
     }

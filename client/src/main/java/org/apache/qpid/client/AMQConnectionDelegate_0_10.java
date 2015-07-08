@@ -36,6 +36,7 @@ import javax.jms.XASession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
@@ -203,9 +204,9 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
      *
      * @param brokerDetail The detail of the broker to connect to.
      * @throws IOException
-     * @throws AMQException
+     * @throws QpidException
      */
-    public ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws IOException, AMQException
+    public ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws IOException, QpidException
     {
         try
         {
@@ -257,7 +258,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         }
     }
 
-    public void resubscribeSessions() throws JMSException, AMQException, FailoverException
+    public void resubscribeSessions() throws JMSException, QpidException, FailoverException
     {
         _logger.info("Resuming connection");
         getQpidConnection().resume();
@@ -269,7 +270,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         }
     }
 
-    public void closeConnection(long timeout) throws JMSException, AMQException
+    public void closeConnection(long timeout) throws JMSException, QpidException
     {
         try
         {
@@ -277,7 +278,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         }
         catch (TransportException e)
         {
-            throw new AMQException(e.getMessage(), e);
+            throw new QpidException(e.getMessage(), e);
         }
     }
 
@@ -567,7 +568,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         return _qpidConnection;
     }
 
-    public boolean verifyClientID() throws JMSException, AMQException
+    public boolean verifyClientID() throws JMSException, QpidException
     {
         int prefetch = (int)_conn.getMaxPrefetch();
         AMQSession_0_10 ssn = (AMQSession_0_10)createSession(false, 1,prefetch,prefetch,_conn.getClientID());

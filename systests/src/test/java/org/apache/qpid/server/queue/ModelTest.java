@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.queue;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.management.common.mbeans.ManagedBroker;
 import org.apache.qpid.management.common.mbeans.ManagedQueue;
@@ -271,7 +271,7 @@ public class ModelTest extends QpidBrokerTestCase
      * @param autoDelete boolean if the queue is an autoDelete queue
      * @param exclusive  boolean if the queue is exclusive
      *
-     * @throws AMQException if there is a problem with the createQueue call
+     * @throws QpidException if there is a problem with the createQueue call
      * @throws JMException  if there is a problem with the JMX validatation
      * @throws IOException  if there is a problem with the JMX connection
      * @throws JMSException if there is a problem creating the JMS Session
@@ -281,7 +281,7 @@ public class ModelTest extends QpidBrokerTestCase
                                                 boolean durable,
                                                 boolean autoDelete,
                                                 boolean exclusive)
-            throws AMQException, JMException, IOException, JMSException
+            throws QpidException, JMException, IOException, JMSException
     {
         AMQSession session = (AMQSession) connection.createSession(false,
                                                                    Session.AUTO_ACKNOWLEDGE);

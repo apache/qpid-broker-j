@@ -26,7 +26,7 @@ import javax.jms.BytesMessage;
 import javax.jms.JMSException;
 import javax.jms.MessageEOFException;
 import javax.jms.MessageFormatException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.typedmessage.TypedBytesContentWriter;
 import org.apache.qpid.typedmessage.TypedBytesFormatException;
@@ -46,7 +46,7 @@ public class JMSBytesMessage extends AbstractBytesTypedMessage implements BytesM
         _typedBytesContentWriter = new TypedBytesContentWriter();
     }
 
-    JMSBytesMessage(AMQMessageDelegate delegate, ByteBuffer data) throws AMQException
+    JMSBytesMessage(AMQMessageDelegate delegate, ByteBuffer data) throws QpidException
     {
         super(delegate, data!=null);
         _typedBytesContentReader = new TypedBytesContentReader(data);

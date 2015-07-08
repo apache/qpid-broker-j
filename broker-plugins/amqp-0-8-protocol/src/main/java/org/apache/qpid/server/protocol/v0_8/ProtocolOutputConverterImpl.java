@@ -24,7 +24,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQBody;
 import org.apache.qpid.framing.AMQDataBlock;
 import org.apache.qpid.framing.AMQFrame;
@@ -265,7 +265,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             return size;
         }
 
-        public void handle(int channelId, AMQVersionAwareProtocolSession amqProtocolSession) throws AMQException
+        public void handle(int channelId, AMQVersionAwareProtocolSession amqProtocolSession) throws QpidException
         {
             throw new UnsupportedOperationException();
         }
@@ -366,9 +366,9 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         }
 
         public void handle(final int channelId, final AMQVersionAwareProtocolSession amqProtocolSession)
-            throws AMQException
+            throws QpidException
         {
-            throw new AMQException("This block should never be dispatched!");
+            throw new QpidException("This block should never be dispatched!");
         }
 
         @Override

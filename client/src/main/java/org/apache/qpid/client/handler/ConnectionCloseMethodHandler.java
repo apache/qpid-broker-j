@@ -24,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionClosedException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQSecurityException;
 import org.apache.qpid.client.AMQAuthenticationException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
@@ -52,14 +52,14 @@ public class ConnectionCloseMethodHandler implements StateAwareMethodListener<Co
     }
 
     public void methodReceived(AMQProtocolSession session, ConnectionCloseBody method, int channelId)
-            throws AMQException
+            throws QpidException
     {
         _logger.info("ConnectionClose frame received");
 
         AMQConstant errorCode = AMQConstant.getConstant(method.getReplyCode());
         AMQShortString reason = method.getReplyText();
 
-        AMQException error = null;
+        QpidException error = null;
 
         try
         {

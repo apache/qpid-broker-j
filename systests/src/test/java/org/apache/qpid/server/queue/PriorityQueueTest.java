@@ -38,7 +38,7 @@ import javax.naming.NamingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
@@ -83,7 +83,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
         super.tearDown();
     }
 
-    public void testPriority() throws JMSException, NamingException, AMQException
+    public void testPriority() throws JMSException, NamingException, QpidException
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put("x-qpid-priorities",10);
@@ -124,7 +124,7 @@ public class PriorityQueueTest extends QpidBrokerTestCase
         assertEquals("Incorrect number of message received", 50, receivedCount);
     }
 
-    public void testOddOrdering() throws AMQException, JMSException
+    public void testOddOrdering() throws QpidException, JMSException
     {
         final Map<String,Object> arguments = new HashMap<String, Object>();
         arguments.put("x-qpid-priorities",3);

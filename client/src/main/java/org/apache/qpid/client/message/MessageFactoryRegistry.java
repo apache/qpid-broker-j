@@ -29,7 +29,7 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.AMQSession_0_8;
@@ -111,7 +111,7 @@ public class MessageFactoryRegistry
                                             AMQSession_0_8.DestinationCache<AMQQueue> queueDestinationCache,
                                             AMQSession_0_8.DestinationCache<AMQTopic> topicDestinationCache,
                                             final int addressType)
-            throws AMQException, JMSException
+            throws QpidException, JMSException
     {
         BasicContentHeaderProperties properties = contentHeader.getProperties();
 
@@ -135,7 +135,7 @@ public class MessageFactoryRegistry
         return mf;
     }
 
-    public AbstractJMSMessage createMessage(MessageTransfer transfer) throws AMQException, JMSException
+    public AbstractJMSMessage createMessage(MessageTransfer transfer) throws QpidException, JMSException
     {
 
         MessageProperties mprop = transfer.getHeader().getMessageProperties();

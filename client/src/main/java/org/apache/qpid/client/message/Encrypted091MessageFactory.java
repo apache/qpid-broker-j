@@ -39,7 +39,7 @@ import javax.security.auth.x500.X500Principal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 
@@ -57,7 +57,7 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
 
     @Override
     protected AbstractJMSMessage createMessage(final AbstractAMQMessageDelegate delegate, final ByteBuffer data)
-            throws AMQException
+            throws QpidException
     {
         SecretKeySpec secretKeySpec;
         String algorithm;
@@ -81,7 +81,7 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
                         }
                         else
                         {
-                            throw new AMQException("If the property '"
+                            throw new QpidException("If the property '"
                                                    + MessageEncryptionHelper.KEY_INIT_VECTOR_PROPERTY
                                                    + "' is present, it must contain a byte array");
                         }
@@ -101,14 +101,14 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
                         }
                         else
                         {
-                            throw new AMQException("An encrypted message must contain the property '"
+                            throw new QpidException("An encrypted message must contain the property '"
                                                    + MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY
                                                    + "'");
                         }
                     }
                     else
                     {
-                        throw new AMQException("An encrypted message must contain the property '"
+                        throw new QpidException("An encrypted message must contain the property '"
                                                + MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY
                                                + "'");
                     }
@@ -116,7 +116,7 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
                 }
                 else
                 {
-                    throw new AMQException("Encrypted message must carry the encryption algorithm in the property '"
+                    throw new QpidException("Encrypted message must carry the encryption algorithm in the property '"
                                            + MessageEncryptionHelper.ENCRYPTED_KEYS_PROPERTY
                                            + "'");
                 }
@@ -164,10 +164,10 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
             }
             catch (GeneralSecurityException | IOException e)
             {
-                throw new AMQException("Could not decode encrypted message", e);
+                throw new QpidException("Could not decode encrypted message", e);
             }
         }
-        catch(AMQException e)
+        catch(QpidException e)
         {
             LOGGER.error("Error when attempting to decrypt message " + delegate.getDeliveryTag() + " to address ("+delegate.getJMSDestination()+").  Message will be delivered to the client encrypted", e);
             return _messageFactoryRegistry.getDefaultFactory().createMessage(delegate, data);
@@ -205,7 +205,7 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
     private SecretKeySpec getContentEncryptionKey(final Collection keyInfoObjList,
                                                   final String algorithm,
                                                   final AMQSession<?, ?> session)
-            throws AMQException, GeneralSecurityException, IOException
+            throws QpidException, GeneralSecurityException, IOException
     {
 
         for(Object keyInfoObject : keyInfoObjList)
@@ -234,13 +234,13 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
                         }
                         break;
                     default:
-                        throw new AMQException("Invalid format of 'x-qpid-encrypted-keys' - unknown key info type: " + type);
+                        throw new QpidException("Invalid format of 'x-qpid-encrypted-keys' - unknown key info type: " + type);
 
                 }
             }
             catch(ClassCastException e)
             {
-                throw new AMQException("Invalid format of 'x-qpid-encrypted-keys'");
+                throw new QpidException("Invalid format of 'x-qpid-encrypted-keys'");
             }
         }
         return null;

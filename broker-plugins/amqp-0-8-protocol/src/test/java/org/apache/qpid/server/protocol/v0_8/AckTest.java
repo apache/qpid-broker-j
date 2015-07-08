@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Set;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
@@ -80,12 +80,12 @@ public class AckTest extends QpidTestCase
         super.tearDown();
     }
 
-    private void publishMessages(int count) throws AMQException
+    private void publishMessages(int count) throws QpidException
     {
         publishMessages(count, false);
     }
 
-    private void publishMessages(int count, boolean persistent) throws AMQException
+    private void publishMessages(int count, boolean persistent) throws QpidException
     {
         for (int i = 1; i <= count; i++)
         {

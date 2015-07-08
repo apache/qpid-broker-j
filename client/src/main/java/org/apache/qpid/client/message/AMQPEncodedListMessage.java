@@ -23,7 +23,7 @@ package org.apache.qpid.client.message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.transport.codec.BBDecoder;
@@ -59,7 +59,7 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
     }
 
     AMQPEncodedListMessage(AMQMessageDelegate delegate, ByteBuffer data)
-            throws AMQException
+            throws QpidException
     {
         super(delegate, data);
         if (data != null)
@@ -70,8 +70,7 @@ public class AMQPEncodedListMessage extends JMSStreamMessage implements
             }
             catch (JMSException je)
             {
-                throw new AMQException(null,
-                        "Error populating ListMessage from ByteBuffer", je);
+                throw new QpidException("Error populating ListMessage from ByteBuffer", je);
             }
         }
         currentIndex = 0;

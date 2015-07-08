@@ -30,7 +30,7 @@ package org.apache.qpid.framing;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicAckBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
@@ -95,7 +95,7 @@ public class BasicAckBody extends AMQMethodBodyImpl implements EncodableAMQDataB
         writeBitfield( buffer, _bitfield0 );
     }
 
-    public boolean execute(MethodDispatcher dispatcher, int channelId) throws AMQException
+    public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchBasicAck(this, channelId);
 	}

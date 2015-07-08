@@ -44,7 +44,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.FileAppender;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
@@ -971,7 +971,8 @@ public class QpidBrokerTestCase extends QpidTestCase
         return con;
     }
 
-    protected Connection getClientConnection(String username, String password, String id) throws JMSException, URLSyntaxException, AMQException, NamingException
+    protected Connection getClientConnection(String username, String password, String id) throws JMSException, URLSyntaxException,
+                                                                                                 QpidException, NamingException
     {
         _logger.debug("get connection for id " + id);
         Connection con = getConnectionFactory().createConnection(username, password, id);

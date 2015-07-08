@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQSession;
 
 import javax.jms.Connection;
@@ -193,7 +193,7 @@ public class DurableQueueLoggingTest extends AbstractTestLogging
      * @throws javax.naming.NamingException
      * @throws java.io.IOException
      */
-    public void testCreateQueuePersistentPriority() throws NamingException, JMSException, IOException, AMQException
+    public void testCreateQueuePersistentPriority() throws NamingException, JMSException, IOException, QpidException
     {
         // To Create a Priority queue we need to use AMQSession specific code
         final Map<String, Object> arguments = new HashMap<String, Object>();
@@ -239,7 +239,8 @@ public class DurableQueueLoggingTest extends AbstractTestLogging
      * @throws javax.naming.NamingException
      * @throws java.io.IOException
      */
-    public void testCreateQueuePersistentAutoDeletePriority() throws NamingException, JMSException, IOException, AMQException
+    public void testCreateQueuePersistentAutoDeletePriority() throws NamingException, JMSException, IOException,
+                                                                     QpidException
     {
         // To Create a Priority queue we need to use AMQSession specific code
         final Map<String, Object> arguments = new HashMap<String, Object>();

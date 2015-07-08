@@ -22,7 +22,7 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import java.util.UUID;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.MessagePublishInfo;
@@ -52,7 +52,7 @@ public class ReferenceCountingTest extends QpidTestCase
     /**
      * Check that when the reference count is decremented the message removes itself from the store
      */
-    public void testMessageGetsRemoved() throws AMQException
+    public void testMessageGetsRemoved() throws QpidException
     {
         ContentHeaderBody chb = createPersistentContentHeader();
 
@@ -90,7 +90,7 @@ public class ReferenceCountingTest extends QpidTestCase
         return chb;
     }
 
-    public void testMessageRemains() throws AMQException
+    public void testMessageRemains() throws QpidException
     {
 
         MessagePublishInfo info = new MessagePublishInfo(null, false, false, null);

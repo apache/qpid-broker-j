@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQMethodBody;
 import org.apache.qpid.protocol.AMQMethodEvent;
 
@@ -33,7 +33,7 @@ import org.apache.qpid.protocol.AMQMethodEvent;
  * TODO  Missing method handler. Unlikely to ever happen, and if it does its a coding error. Consider replacing with a
  *       Runtime.
  */
-public class AMQNoMethodHandlerException extends AMQException
+public class AMQNoMethodHandlerException extends QpidException
 {
     public AMQNoMethodHandlerException(AMQMethodEvent<AMQMethodBody> evt)
     {

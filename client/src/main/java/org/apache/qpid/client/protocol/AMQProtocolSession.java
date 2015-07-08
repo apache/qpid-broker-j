@@ -29,6 +29,7 @@ import javax.security.sasl.SaslClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQSession;
@@ -197,9 +198,9 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
      *
      * @param message
      *
-     * @throws AMQException if this was not expected
+     * @throws QpidException if this was not expected
      */
-    public void unprocessedMessageReceived(final int channelId, UnprocessedMessage message) throws AMQException
+    public void unprocessedMessageReceived(final int channelId, UnprocessedMessage message) throws QpidException
     {
         if ((channelId & FAST_CHANNEL_ACCESS_MASK) == 0)
         {
@@ -211,19 +212,19 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         }
     }
 
-    public void contentHeaderReceived(int channelId, ContentHeaderBody contentHeader) throws AMQException
+    public void contentHeaderReceived(int channelId, ContentHeaderBody contentHeader) throws QpidException
     {
         final UnprocessedMessage_0_8 msg = (UnprocessedMessage_0_8) ((channelId & FAST_CHANNEL_ACCESS_MASK) == 0 ? _channelId2UnprocessedMsgArray[channelId]
                                                : _channelId2UnprocessedMsgMap.get(channelId));
 
         if (msg == null)
         {
-            throw new AMQException(null, "Error: received content header without having received a BasicDeliver frame first on session:" + this, null);
+            throw new QpidException("Error: received content header without having received a BasicDeliver frame first on session:" + this, null);
         }
 
         if (msg.getContentHeader() != null)
         {
-            throw new AMQException(null, "Error: received duplicate content header or did not receive correct number of content body frames on session:" + this, null);
+            throw new QpidException("Error: received duplicate content header or did not receive correct number of content body frames on session:" + this, null);
         }
 
         msg.setContentHeader(contentHeader);
@@ -233,7 +234,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         }
     }
 
-    public void contentBodyReceived(final int channelId, ContentBody contentBody) throws AMQException
+    public void contentBodyReceived(final int channelId, ContentBody contentBody) throws QpidException
     {
         UnprocessedMessage_0_8 msg;
         final boolean fastAccess = (channelId & FAST_CHANNEL_ACCESS_MASK) == 0;
@@ -248,7 +249,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
 
         if (msg == null)
         {
-            throw new AMQException(null, "Error: received content body without having received a JMSDeliver frame first", null);
+            throw new QpidException("Error: received content body without having received a JMSDeliver frame first", null);
         }
 
         if (msg.getContentHeader() == null)
@@ -261,7 +262,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
             {
                 _channelId2UnprocessedMsgMap.remove(channelId);
             }
-            throw new AMQException(null, "Error: received content body without having received a ContentHeader frame first", null);
+            throw new QpidException("Error: received content body without having received a ContentHeader frame first", null);
         }
 
         msg.receiveBody(contentBody);
@@ -272,7 +273,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         }
     }
 
-    public void heartbeatBodyReceived(int channelId, HeartbeatBody body) throws AMQException
+    public void heartbeatBodyReceived(int channelId, HeartbeatBody body) throws QpidException
     {
         _protocolHandler.heartbeatBodyReceived();
     }
@@ -339,7 +340,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
      * @return true if the client must respond to the server, i.e. if the server initiated the channel close, false if
      *         the channel close is just the server responding to the client's earlier request to close the channel.
      */
-    public boolean channelClosed(int channelId, AMQConstant code, String text) throws AMQException
+    public boolean channelClosed(int channelId, AMQConstant code, String text) throws QpidException
     {
 
         // if this is not a response to an earlier request to close the channel
@@ -352,7 +353,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
             }
             catch (JMSException e)
             {
-                throw new AMQException(null, "JMSException received while closing session", e);
+                throw new QpidException("JMSException received while closing session", e);
             }
 
             return true;
@@ -368,7 +369,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         return _connection;
     }
 
-    public void closeProtocolSession() throws AMQException
+    public void closeProtocolSession() throws QpidException
     {
         try
         {
@@ -460,7 +461,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         session.setFlowControl(active);
     }
 
-    public void methodFrameReceived(final int channel, final AMQMethodBody amqMethodBody) throws AMQException
+    public void methodFrameReceived(final int channel, final AMQMethodBody amqMethodBody) throws QpidException
     {
         _protocolHandler.methodBodyReceived(channel, amqMethodBody);
     }

@@ -26,7 +26,7 @@ import javax.jms.JMSException;
 import javax.jms.MessageEOFException;
 import javax.jms.MessageFormatException;
 import javax.jms.StreamMessage;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.typedmessage.TypedBytesContentWriter;
 import org.apache.qpid.typedmessage.TypedBytesFormatException;
@@ -49,14 +49,14 @@ public class JMSStreamMessage extends AbstractBytesTypedMessage implements Strea
 
     }
 
-    JMSStreamMessage(AMQMessageDelegateFactory delegateFactory, ByteBuffer data) throws AMQException
+    JMSStreamMessage(AMQMessageDelegateFactory delegateFactory, ByteBuffer data) throws QpidException
     {
         super(delegateFactory, data!=null);
         _typedBytesContentWriter = new TypedBytesContentWriter();
 
     }
 
-    JMSStreamMessage(AMQMessageDelegate delegate, ByteBuffer data) throws AMQException
+    JMSStreamMessage(AMQMessageDelegate delegate, ByteBuffer data) throws QpidException
     {
         super(delegate, data!=null);
         _typedBytesContentReader = new TypedBytesContentReader(data);

@@ -22,7 +22,7 @@ package org.apache.qpid.client;
 
 import java.io.IOException;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.url.URLSyntaxException;
@@ -30,19 +30,19 @@ import org.apache.qpid.url.URLSyntaxException;
 public class MockAMQConnection extends AMQConnection
 {
     public MockAMQConnection(String broker, String username, String password, String clientName, String virtualHost)
-            throws AMQException, URLSyntaxException
+            throws QpidException, URLSyntaxException
     {
         super(broker, username, password, clientName, virtualHost);
     }
 
     public MockAMQConnection(String host, int port, String username, String password, String clientName, String virtualHost)
-            throws AMQException, URLSyntaxException
+            throws QpidException, URLSyntaxException
     {
         super(host, port, username, password, clientName, virtualHost);
     }
 
     public MockAMQConnection(String connection)
-            throws AMQException, URLSyntaxException
+            throws QpidException, URLSyntaxException
     {
         super(connection);
     }

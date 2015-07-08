@@ -31,7 +31,7 @@ import javax.jms.QueueBrowser;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.naming.NamingException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -141,7 +141,7 @@ public class QueueBrowserAutoAckTest extends QpidBrokerTestCase
         {
             queueDepth = ((AMQSession) _clientSession).getQueueDepth((AMQDestination) _queue);
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
         }
 

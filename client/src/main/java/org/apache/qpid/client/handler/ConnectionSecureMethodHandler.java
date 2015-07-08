@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.client.handler;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.StateAwareMethodListener;
 import org.apache.qpid.framing.ConnectionSecureBody;
@@ -39,12 +39,12 @@ public class ConnectionSecureMethodHandler implements StateAwareMethodListener<C
     }
 
     public void methodReceived(AMQProtocolSession session, ConnectionSecureBody body, int channelId)
-                throws AMQException
+                throws QpidException
     {
         SaslClient client = session.getSaslClient();
         if (client == null)
         {
-            throw new AMQException(null, "No SASL client set up - cannot proceed with authentication", null);
+            throw new QpidException("No SASL client set up - cannot proceed with authentication", null);
         }
 
 
@@ -60,7 +60,7 @@ public class ConnectionSecureMethodHandler implements StateAwareMethodListener<C
         }
         catch (SaslException e)
         {
-            throw new AMQException(null, "Error processing SASL challenge: " + e, e);
+            throw new QpidException("Error processing SASL challenge: " + e, e);
         }
 
 

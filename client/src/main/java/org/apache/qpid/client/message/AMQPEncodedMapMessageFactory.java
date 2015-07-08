@@ -21,7 +21,7 @@
 package org.apache.qpid.client.message;
 
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 
 import java.nio.ByteBuffer;
 
@@ -30,7 +30,7 @@ public class AMQPEncodedMapMessageFactory extends AbstractJMSMessageFactory
 
     @Override
     protected AbstractJMSMessage createMessage(AbstractAMQMessageDelegate delegate,
-            ByteBuffer data) throws AMQException
+            ByteBuffer data) throws QpidException
     {
         return new AMQPEncodedMapMessage(delegate,data);
     }

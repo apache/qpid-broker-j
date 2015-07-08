@@ -28,6 +28,7 @@ import javax.jms.MessageListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQDestination.AddressOption;
 import org.apache.qpid.client.message.AMQMessageDelegateFactory;
@@ -151,7 +152,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
                 }
             }
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             _logger.error("Receivecd an Exception when receiving message",e);
             getSession().getAMQConnection().exceptionReceived(e);
@@ -162,7 +163,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
      * This method is invoked when this consumer is stopped.
      * It tells the broker to stop delivering messages to this consumer.
      */
-    @Override void sendCancel() throws AMQException
+    @Override void sendCancel() throws QpidException
     {
         _0_10session.getQpidSession().messageCancel(getConsumerTagString());
         postSubscription();
@@ -176,7 +177,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
             _0_10session.setCurrentException(se);
         }
 
-        AMQException amqe = _0_10session.getCurrentException();
+        QpidException amqe = _0_10session.getCurrentException();
         if (amqe != null)
         {
             throw amqe;
@@ -216,9 +217,9 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
      *
      * @param message The message to be checked.
      * @return true if the message matches the selector and can be acquired, false otherwise.
-     * @throws AMQException If the message preConditions cannot be checked due to some internal error.
+     * @throws QpidException If the message preConditions cannot be checked due to some internal error.
      */
-    private boolean checkPreConditions(AbstractJMSMessage message) throws AMQException
+    private boolean checkPreConditions(AbstractJMSMessage message) throws QpidException
     {
         boolean messageOk = true;
         try
@@ -280,15 +281,15 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
      * Acknowledge a message
      *
      * @param message The message to be acknowledged
-     * @throws AMQException If the message cannot be acquired due to some internal error.
+     * @throws QpidException If the message cannot be acquired due to some internal error.
      */
-    private void acknowledgeMessage(final AbstractJMSMessage message) throws AMQException
+    private void acknowledgeMessage(final AbstractJMSMessage message) throws QpidException
     {
         _0_10session.messageAcknowledge
             (Range.newInstance((int) message.getDeliveryTag()),
              getAcknowledgeMode() != org.apache.qpid.jms.Session.NO_ACKNOWLEDGE);
 
-        final AMQException amqe = _0_10session.getCurrentException();
+        final QpidException amqe = _0_10session.getCurrentException();
         if (amqe != null)
         {
             throw amqe;
@@ -300,13 +301,13 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
      * processed to ensure their AMQP command-id is marked completed.
      *
      * @param message The unwanted message to be flushed
-     * @throws AMQException If the unwanted message cannot be flushed due to some internal error.
+     * @throws QpidException If the unwanted message cannot be flushed due to some internal error.
      */
-    private void flushUnwantedMessage(final AbstractJMSMessage message) throws AMQException
+    private void flushUnwantedMessage(final AbstractJMSMessage message) throws QpidException
     {
         _0_10session.flushProcessed(Range.newInstance((int) message.getDeliveryTag()),false);
 
-        final AMQException amqe = _0_10session.getCurrentException();
+        final QpidException amqe = _0_10session.getCurrentException();
         if (amqe != null)
         {
             throw amqe;
@@ -318,9 +319,9 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
      *
      * @param message The message to be acquired
      * @return true if the message has been acquired, false otherwise.
-     * @throws AMQException If the message cannot be acquired due to some internal error.
+     * @throws QpidException If the message cannot be acquired due to some internal error.
      */
-    private boolean acquireMessage(final AbstractJMSMessage message) throws AMQException
+    private boolean acquireMessage(final AbstractJMSMessage message) throws QpidException
     {
         boolean result = false;
 
@@ -483,7 +484,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
     }
 
     
-    void postSubscription() throws AMQException
+    void postSubscription() throws QpidException
     {
         AMQDestination dest = this.getDestination();
         if (dest != null && dest.getDestSyntax() == AMQDestination.DestSyntax.ADDR)
@@ -579,7 +580,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
             }
             return message;
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             throw JMSExceptionHelper.chainJMSException(new JMSException("BasicMessageConsumer.receive failed"), e);
         }
@@ -613,7 +614,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
             }
             return message;
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             throw JMSExceptionHelper.chainJMSException(new JMSException("BasicMessageConsumer.receiveNoWait failed."),
                                                        e);

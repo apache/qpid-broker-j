@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.client.protocol;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.util.BlockingWaiter;
 import org.apache.qpid.framing.AMQMethodBody;
@@ -105,10 +105,10 @@ public abstract class BlockingMethodFrameListener extends BlockingWaiter<AMQMeth
      *
      * @return The AMQP method that was received.
      *
-     * @throws AMQException
+     * @throws QpidException
      * @throws FailoverException
      */
-    public AMQMethodEvent blockForFrame(long timeout) throws AMQException, FailoverException
+    public AMQMethodEvent blockForFrame(long timeout) throws QpidException, FailoverException
     {
         try
         {

@@ -21,7 +21,7 @@
 
 package org.apache.qpid.client.message;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.transport.util.Functions;
 
@@ -44,7 +44,7 @@ public abstract class AbstractBytesTypedMessage extends AbstractJMSMessage
         _readableMessage = fromReceivedMessage;
     }
 
-    AbstractBytesTypedMessage(AMQMessageDelegate delegate, boolean fromReceivedMessage) throws AMQException
+    AbstractBytesTypedMessage(AMQMessageDelegate delegate, boolean fromReceivedMessage) throws QpidException
     {
 
         super(delegate, fromReceivedMessage);

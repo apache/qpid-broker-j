@@ -24,7 +24,7 @@ import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -69,7 +69,7 @@ public class HeartbeatBody implements AMQBody
     }
 
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
-            throws AMQException
+            throws QpidException
     {
         session.heartbeatBodyReceived(channelId, this);
     }

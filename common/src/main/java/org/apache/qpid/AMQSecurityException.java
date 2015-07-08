@@ -41,14 +41,5 @@ public class AMQSecurityException extends AMQException
     {
         super(AMQConstant.ACCESS_REFUSED, ((msg == null) ? "Permission denied" : msg), cause);
     }
-    
-    public AMQSecurityException(String msg) 
-    {
-        this(msg, null);
-    }
-    
-    public AMQSecurityException()
-    {
-        this(null);
-    }
+
 }

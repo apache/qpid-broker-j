@@ -22,7 +22,7 @@ package org.apache.qpid.test.unit.topic;
 
 import javax.jms.JMSException;
 import javax.naming.NamingException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
@@ -265,7 +265,7 @@ public class TopicSessionTest extends QpidBrokerTestCase
 
 
     private void noLocalTest(AMQConnection con, AMQTopic topic)
-            throws JMSException, URLSyntaxException, AMQException, NamingException
+            throws JMSException, URLSyntaxException, QpidException, NamingException
     {
         TopicSession session1 = con.createTopicSession(true, AMQSession.AUTO_ACKNOWLEDGE);
         TopicSubscriber noLocal = session1.createSubscriber(topic,  "", true);

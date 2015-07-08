@@ -24,7 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
@@ -38,7 +38,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 public class BrokerTestHelper_0_8 extends BrokerTestHelper
 {
 
-    public static AMQChannel createChannel(int channelId, AMQPConnection_0_8 session) throws AMQException
+    public static AMQChannel createChannel(int channelId, AMQPConnection_0_8 session) throws QpidException
     {
         AMQChannel channel = new AMQChannel(session, channelId, session.getVirtualHost().getMessageStore());
         session.addChannel(channel);
@@ -74,7 +74,7 @@ public class BrokerTestHelper_0_8 extends BrokerTestHelper
     }
 
     public static void publishMessages(AMQChannel channel, int numberOfMessages, String queueName, String exchangeName)
-            throws AMQException
+            throws QpidException
     {
         AMQShortString routingKey = new AMQShortString(queueName);
         AMQShortString exchangeNameAsShortString = new AMQShortString(exchangeName);

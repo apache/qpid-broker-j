@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
@@ -66,7 +66,7 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
     private boolean _queueDeleted;
 
     @Override
-    public void setUp() throws AMQException
+    public void setUp() throws QpidException
     {
         _queueDeleted = false;
         _unacknowledgedMessageMap = new UnacknowledgedMessageMapImpl(100);
@@ -131,9 +131,9 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
      *
      * This test validates that the msgToResend map includes all the messages and none are left behind.
      *
-     * @throws AMQException the visit interface throws this
+     * @throws QpidException the visit interface throws this
      */
-    public void testResend() throws AMQException
+    public void testResend() throws QpidException
     {
         //We don't need the subscription object here.
         acquireMessages(_referenceList);
@@ -158,9 +158,9 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
      *
      * This test validates that the msgToRequeue map includes all the messages and none are left behind.
      *
-     * @throws AMQException the visit interface throws this
+     * @throws QpidException the visit interface throws this
      */
-    public void testRequeueDueToSubscriptionClosure() throws AMQException
+    public void testRequeueDueToSubscriptionClosure() throws QpidException
     {
         acquireMessages(_referenceList);
 

@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.server.logging.subjects.AbstractTestLogSubject;
@@ -79,7 +79,7 @@ public class QueueLoggingTest extends AbstractTestLogging
      * @throws javax.jms.JMSException
      * @throws javax.naming.NamingException
      */
-    public void testQueueDelete() throws NamingException, JMSException, IOException, FailoverException, AMQException
+    public void testQueueDelete() throws NamingException, JMSException, IOException, FailoverException, QpidException
     {
         // To force a queue Creation Event we need to create a consumer.
         Queue queue = _session.createQueue(getTestQueueName());

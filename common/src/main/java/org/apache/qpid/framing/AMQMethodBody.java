@@ -25,7 +25,7 @@ import java.io.IOException;
 
 import org.apache.qpid.AMQChannelException;
 import org.apache.qpid.AMQConnectionException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.protocol.AMQConstant;
 
 public interface AMQMethodBody extends AMQBody
@@ -70,5 +70,5 @@ public interface AMQMethodBody extends AMQBody
                                                          final MethodRegistry methodRegistry);
 
 
-    public boolean execute(MethodDispatcher methodDispatcher, int channelId) throws AMQException;
+    public boolean execute(MethodDispatcher methodDispatcher, int channelId) throws QpidException;
 }

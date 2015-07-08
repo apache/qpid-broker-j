@@ -17,7 +17,7 @@
  */
 package org.apache.qpid.client;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.jms.ConnectionURL;
 
 import javax.jms.JMSException;
@@ -37,7 +37,7 @@ public class XAConnectionImpl extends AMQConnection implements XAConnection, XAQ
     /**
      * Create a XAConnection from a connectionURL
      */
-    public XAConnectionImpl(ConnectionURL connectionURL) throws AMQException
+    public XAConnectionImpl(ConnectionURL connectionURL) throws QpidException
     {
         super(connectionURL);
     }

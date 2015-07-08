@@ -23,6 +23,8 @@ package org.apache.qpid.framing;
 import java.io.DataInput;
 import java.io.IOException;
 
+import org.apache.qpid.protocol.AMQConstant;
+
 public class ContentHeaderPropertiesFactory
 {
     private static final ContentHeaderPropertiesFactory _instance = new ContentHeaderPropertiesFactory();
@@ -50,7 +52,7 @@ public class ContentHeaderPropertiesFactory
         }
         else
         {
-        	throw new AMQFrameDecodingException(null, "Unsupport content header class id: " + classId, null);
+        	throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR, "Unsupport content header class id: " + classId, null);
         }
         properties.populatePropertiesFromBuffer(buffer, propertyFlags, size);
         return properties;

@@ -36,7 +36,7 @@ import javax.jms.Topic;
 
 import org.slf4j.Logger;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.client.message.MessageConverter;
 import org.apache.qpid.client.util.JMSExceptionHelper;
@@ -126,7 +126,8 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
     private PublishMode _publishMode = PublishMode.ASYNC_PUBLISH_ALL;
 
     protected BasicMessageProducer(Logger logger,AMQConnection connection, AMQDestination destination, boolean transacted, int channelId,
-                                   AMQSession session, long producerId, Boolean immediate, Boolean mandatory) throws AMQException
+                                   AMQSession session, long producerId, Boolean immediate, Boolean mandatory) throws
+                                                                                                              QpidException
     {
     	_logger = logger;
     	_connection = connection;
@@ -179,7 +180,7 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         }
     }
 
-    void resubscribe() throws AMQException
+    void resubscribe() throws QpidException
     {
         if (_destination != null && !_destination.neverDeclare())
         {
@@ -187,7 +188,7 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
         }
     }
 
-    abstract void declareDestination(AMQDestination destination) throws AMQException;
+    abstract void declareDestination(AMQDestination destination) throws QpidException;
 
     public void setDisableMessageID(boolean b) throws JMSException
     {
@@ -307,7 +308,7 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
             {
                 throw getSession().toJMSException("Exception while closing producer:" + e.getMessage(), e);
             }
-            catch (AMQException e)
+            catch (QpidException e)
             {
                 throw JMSExceptionHelper.chainJMSException(new JMSException("Exception while closing producer:"
                                                                             + e.getMessage()), e);

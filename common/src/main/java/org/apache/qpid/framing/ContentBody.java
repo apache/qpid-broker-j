@@ -25,7 +25,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -68,7 +68,7 @@ public class ContentBody implements AMQBody
     }
 
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
-            throws AMQException
+            throws QpidException
     {
         session.contentBodyReceived(channelId, this);
     }
@@ -166,7 +166,7 @@ public class ContentBody implements AMQBody
             return _length;
         }
 
-        public void handle(int channelId, AMQVersionAwareProtocolSession amqProtocolSession) throws AMQException
+        public void handle(int channelId, AMQVersionAwareProtocolSession amqProtocolSession) throws QpidException
         {
             throw new RuntimeException("Buffered Body only to be used for outgoing data");
         }

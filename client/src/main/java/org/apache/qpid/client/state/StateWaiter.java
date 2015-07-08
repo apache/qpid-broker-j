@@ -23,7 +23,7 @@ package org.apache.qpid.client.state;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.util.BlockingWaiter;
 
@@ -84,9 +84,9 @@ public class StateWaiter extends BlockingWaiter<AMQState>
     /**
      * Await for the required State to be achieved within the default timeout.
      * @return The achieved state that was requested.
-     * @throws AMQException The exception that prevented the required state from being achieved.
+     * @throws QpidException The exception that prevented the required state from being achieved.
      */
-    public AMQState await() throws AMQException
+    public AMQState await() throws QpidException
     {
         return await(_stateManager.getWaitTimeout());
     }
@@ -98,9 +98,9 @@ public class StateWaiter extends BlockingWaiter<AMQState>
      *
      * @param timeout The time in milliseconds to wait for any of the states to be achieved.
      * @return The achieved state that was requested.
-     * @throws AMQException The exception that prevented the required state from being achieved.
+     * @throws QpidException The exception that prevented the required state from being achieved.
      */
-    public AMQState await(long timeout) throws AMQException
+    public AMQState await(long timeout) throws QpidException
     {
         try
         {

@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.client.message;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.util.ClassLoadingAwareObjectInputStream;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.util.ByteBufferInputStream;
@@ -60,7 +60,7 @@ public class JMSObjectMessage extends AbstractJMSMessage implements ObjectMessag
      * Creates read only message for delivery to consumers
      */
 
-      JMSObjectMessage(AMQMessageDelegate delegate, final ByteBuffer data) throws AMQException
+      JMSObjectMessage(AMQMessageDelegate delegate, final ByteBuffer data) throws QpidException
       {
           super(delegate, data!=null);
 

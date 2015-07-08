@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.util.BytesDataOutput;
@@ -160,7 +160,7 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
 
     }
 
-    public ProtocolVersion checkVersion() throws AMQException
+    public ProtocolVersion checkVersion() throws QpidException
     {
 
         if(_protocolHeader.length != 4)

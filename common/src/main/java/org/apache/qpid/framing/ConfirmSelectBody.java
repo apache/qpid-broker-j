@@ -30,7 +30,7 @@ package org.apache.qpid.framing;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConfirmSelectBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
@@ -78,7 +78,7 @@ public class ConfirmSelectBody extends AMQMethodBodyImpl implements EncodableAMQ
         writeBitfield( buffer, _nowait ? (byte)1 : (byte)0 );
     }
 
-    public boolean execute(MethodDispatcher dispatcher, int channelId) throws AMQException
+    public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchConfirmSelect(this, channelId);
 	}

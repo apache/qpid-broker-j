@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.protocol;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQMethodBody;
 
 /**
@@ -47,12 +47,12 @@ public interface AMQMethodListener
      *         not prohibit the method event being delivered to subsequent listeners but can be used to determine if
      *         nobody has dealt with an incoming method frame.
      *
-     * @throws AMQException if an error has occurred. This exception may be delivered to all registered listeners using
+     * @throws QpidException if an error has occurred. This exception may be delivered to all registered listeners using
      *         the error() method (see below) allowing them to perform cleanup if necessary.
      * <p>
      * TODO Consider narrowing the exception.
      */
-    <B extends AMQMethodBody> boolean methodReceived(AMQMethodEvent<B> evt) throws AMQException;
+    <B extends AMQMethodBody> boolean methodReceived(AMQMethodEvent<B> evt) throws QpidException;
 
     /**
      * Notifies the listener of an error on the event context to which it is listening. The listener should perform

@@ -29,7 +29,7 @@ import java.util.Map;
 import javax.jms.JMSException;
 import javax.jms.MessageEOFException;
 import javax.jms.MessageFormatException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.typedmessage.TypedBytesContentWriter;
 import org.apache.qpid.typedmessage.TypedBytesFormatException;
@@ -60,7 +60,7 @@ public class JMSMapMessage extends AbstractJMSMessage implements javax.jms.MapMe
 
     }
 
-    JMSMapMessage(AMQMessageDelegate delegate, ByteBuffer data) throws AMQException
+    JMSMapMessage(AMQMessageDelegate delegate, ByteBuffer data) throws QpidException
     {
 
         super(delegate, data != null);
@@ -70,7 +70,7 @@ public class JMSMapMessage extends AbstractJMSMessage implements javax.jms.MapMe
         }
         catch (JMSException je)
         {
-            throw new AMQException(null, "Error populating MapMessage from ByteBuffer", je);
+            throw new QpidException("Error populating MapMessage from ByteBuffer", je);
 
         }
 

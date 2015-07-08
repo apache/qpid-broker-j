@@ -39,7 +39,7 @@ import javax.naming.NamingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
@@ -79,7 +79,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         super.tearDown();
     }
 
-    public void testSortOrder() throws JMSException, NamingException, AMQException
+    public void testSortOrder() throws JMSException, NamingException, QpidException
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -111,23 +111,23 @@ public class SortedQueueTest extends QpidBrokerTestCase
         assertEquals("Incorrect number of messages received", VALUES.length, messageCount);
     }
 
-    public void testAutoAckSortedQueue() throws JMSException, NamingException, AMQException
+    public void testAutoAckSortedQueue() throws JMSException, NamingException, QpidException
     {
         runThroughSortedQueueForSessionMode(Session.AUTO_ACKNOWLEDGE);
     }
 
-    public void testTransactedSortedQueue() throws JMSException, NamingException, AMQException
+    public void testTransactedSortedQueue() throws JMSException, NamingException, QpidException
     {
         runThroughSortedQueueForSessionMode(Session.SESSION_TRANSACTED);
     }
 
-    public void testClientAckSortedQueue() throws JMSException, NamingException, AMQException
+    public void testClientAckSortedQueue() throws JMSException, NamingException, QpidException
     {
         runThroughSortedQueueForSessionMode(Session.CLIENT_ACKNOWLEDGE);
     }
 
     private void runThroughSortedQueueForSessionMode(final int sessionMode) throws JMSException, NamingException,
-                    AMQException
+                                                                                   QpidException
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -158,7 +158,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         producer.close();
     }
 
-    public void testSortedQueueWithAscendingSortedKeys() throws JMSException, NamingException, AMQException
+    public void testSortedQueueWithAscendingSortedKeys() throws JMSException, NamingException, QpidException
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -195,7 +195,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         return isBrokerStorePersistent() ? 50000L: 5000L;
     }
 
-    public void testSortOrderWithNonUniqueKeys() throws JMSException, NamingException, AMQException
+    public void testSortOrderWithNonUniqueKeys() throws JMSException, NamingException, QpidException
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -229,7 +229,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         assertEquals("Incorrect number of messages received", 200, messageCount);
     }
 
-    public void testSortOrderWithUniqueKeySubset() throws JMSException, NamingException, AMQException
+    public void testSortOrderWithUniqueKeySubset() throws JMSException, NamingException, QpidException
     {
         final Queue queue = createQueue();
         final MessageProducer producer = _producerSession.createProducer(queue);
@@ -263,7 +263,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         assertEquals("Incorrect number of messages received", 100, messageCount);
     }
 
-    public void testGetNextWithAck() throws JMSException, NamingException, AMQException
+    public void testGetNextWithAck() throws JMSException, NamingException, QpidException
     {
         Queue _queue = createQueue();
         MessageProducer producer = _producerSession.createProducer(_queue);
@@ -334,7 +334,7 @@ public class SortedQueueTest extends QpidBrokerTestCase
         }
     }
 
-    private Queue createQueue() throws AMQException, JMSException
+    private Queue createQueue() throws QpidException, JMSException
     {
         final Map<String, Object> arguments = new HashMap<String, Object>();
         arguments.put(QueueArgumentsConverter.QPID_QUEUE_SORT_KEY, TEST_SORT_KEY);

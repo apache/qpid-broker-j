@@ -25,7 +25,7 @@ import javax.jms.QueueSession;
 import javax.jms.TopicSession;
 
 import org.apache.qpid.AMQConnectionFailureException;
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQUnresolvedAddressException;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.client.AMQConnection;
@@ -141,7 +141,7 @@ public class ConnectionTest extends QpidBrokerTestCase
         catch (AMQConnectionFailureException amqe)
         {
             assertNotNull("No cause set:" + amqe.getMessage(), amqe.getCause());
-            assertTrue("Exception was wrong type", amqe.getCause() instanceof AMQException);
+            assertTrue("Exception was wrong type", amqe.getCause() instanceof QpidException);
         }
         finally
         {
@@ -160,11 +160,11 @@ public class ConnectionTest extends QpidBrokerTestCase
             conn = new AMQConnection("amqp://guest:guest@clientid/testpath?brokerlist='" + _broker_NotRunning + "?retries='0''");
             fail("Connection should not be established");
         }
-        catch (AMQException amqe)
+        catch (QpidException amqe)
         {
             if (!(amqe instanceof AMQConnectionFailureException))
             {
-                fail("Correct exception not thrown. Excpected 'AMQConnectionException' got: " + amqe);
+                fail("Correct exception not thrown. Expected 'AMQConnectionException' got: " + amqe);
             }
         }
         finally
@@ -185,7 +185,7 @@ public class ConnectionTest extends QpidBrokerTestCase
             conn = new AMQConnection("amqp://guest:guest@clientid/testpath?brokerlist='" + _broker_BadDNS + "?retries='0''");
             fail("Connection should not be established");
         }
-        catch (AMQException amqe)
+        catch (QpidException amqe)
         {
             if (!(amqe instanceof AMQUnresolvedAddressException))
             {
@@ -212,7 +212,7 @@ public class ConnectionTest extends QpidBrokerTestCase
             conn = new AMQConnection("amqp://guest:guest@clientid/rubbishhost?brokerlist='" + broker + "'");
             fail("Connection should not be established");
         }
-        catch (AMQException amqe)
+        catch (QpidException amqe)
         {
             if (!(amqe instanceof AMQConnectionFailureException))
             {

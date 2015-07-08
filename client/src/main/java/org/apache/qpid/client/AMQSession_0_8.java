@@ -41,6 +41,7 @@ import javax.jms.JMSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.AMQUndeliveredException;
 import org.apache.qpid.client.failover.FailoverException;
@@ -133,7 +134,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         {
             reduceCreditAfterAcknowledge();
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             throw JMSExceptionHelper.chainJMSException(new JMSException("Session.reduceCreditAfterAcknowledge failed"),
                                                        e);
@@ -157,7 +158,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                 sync();
             }
         }
-        catch (AMQException a)
+        catch (QpidException a)
         {
             throw JMSExceptionHelper.chainJMSException(new JMSException("Failed to sync after acknowledge"), a);
         }
@@ -180,7 +181,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     public void sendQueueBind(final String queueName, final String routingKey, final Map<String,Object> arguments,
                               final String exchangeName, final AMQDestination destination,
-                              final boolean nowait) throws AMQException, FailoverException
+                              final boolean nowait) throws QpidException, FailoverException
     {
         if (destination == null || destination.getDestSyntax() == AMQDestination.DestSyntax.BURL)
         {
@@ -224,7 +225,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }
     }
 
-    public void sendClose(long timeout) throws AMQException, FailoverException
+    public void sendClose(long timeout) throws QpidException, FailoverException
     {
         // we also need to check the state manager for 08/09 as the
         // _connection variable may not be updated in time by the error receiving
@@ -248,7 +249,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }
     }
 
-    public void commitImpl() throws AMQException, FailoverException, TransportException
+    public void commitImpl() throws QpidException, FailoverException, TransportException
     {
         // Acknowledge all delivered messages
         while (true)
@@ -268,13 +269,14 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         _currentPrefetch.set(0);
     }
 
-    public void sendCreateQueue(String name, final boolean autoDelete, final boolean durable, final boolean exclusive, final Map<String, Object> arguments) throws AMQException,
+    public void sendCreateQueue(String name, final boolean autoDelete, final boolean durable, final boolean exclusive, final Map<String, Object> arguments) throws
+                                                                                                                                                            QpidException,
             FailoverException
     {
         sendQueueDeclare(name, durable, exclusive, autoDelete, arguments, false);
     }
 
-    public void sendRecover() throws AMQException, FailoverException
+    public void sendRecover() throws QpidException, FailoverException
     {
         enforceRejectBehaviourDuringRecover();
         getPrefetchedMessageTags().clear();
@@ -405,10 +407,10 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     {
         try
         {
-            AMQMethodEvent response = new FailoverRetrySupport<AMQMethodEvent, AMQException>(
-                    new FailoverProtectedOperation<AMQMethodEvent, AMQException>()
+            AMQMethodEvent response = new FailoverRetrySupport<AMQMethodEvent, QpidException>(
+                    new FailoverProtectedOperation<AMQMethodEvent, QpidException>()
                     {
-                        public AMQMethodEvent execute() throws AMQException, FailoverException
+                        public AMQMethodEvent execute() throws QpidException, FailoverException
                         {
                             return sendExchangeBound(exchangeName, routingKey, queueName);
 
@@ -420,7 +422,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
             return (responseBody.getReplyCode() == 0);
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             throw JMSExceptionHelper.chainJMSException(new JMSException("Queue bound query failed: " + e.getMessage()),
                                                        e);
@@ -434,17 +436,17 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
      */
     @Override
     protected boolean isBound(final String exchangeName, final String queueName, final String routingKey)
-            throws AMQException
+            throws QpidException
     {
         if(!getAMQConnection().getDelegate().supportsIsBound())
         {
             return false;
         }
 
-        AMQMethodEvent response = new FailoverNoopSupport<AMQMethodEvent, AMQException>(
-                new FailoverProtectedOperation<AMQMethodEvent, AMQException>()
+        AMQMethodEvent response = new FailoverNoopSupport<AMQMethodEvent, QpidException>(
+                new FailoverProtectedOperation<AMQMethodEvent, QpidException>()
                 {
-                    public AMQMethodEvent execute() throws AMQException, FailoverException
+                    public AMQMethodEvent execute() throws QpidException, FailoverException
                     {
                         return sendExchangeBound(exchangeName, routingKey, queueName);
 
@@ -459,17 +461,17 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
 
     protected boolean exchangeExists(final String exchangeName)
-            throws AMQException
+            throws QpidException
     {
         if(!getAMQConnection().getDelegate().supportsIsBound())
         {
             return false;
         }
 
-        AMQMethodEvent response = new FailoverNoopSupport<AMQMethodEvent, AMQException>(
-                new FailoverProtectedOperation<AMQMethodEvent, AMQException>()
+        AMQMethodEvent response = new FailoverNoopSupport<AMQMethodEvent, QpidException>(
+                new FailoverProtectedOperation<AMQMethodEvent, QpidException>()
                 {
-                    public AMQMethodEvent execute() throws AMQException, FailoverException
+                    public AMQMethodEvent execute() throws QpidException, FailoverException
                     {
                         return sendExchangeBound(exchangeName, null, null);
 
@@ -485,7 +487,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     private AMQMethodEvent sendExchangeBound(String exchangeName,
                                              String routingKey,
-                                             String queueName) throws AMQException, FailoverException
+                                             String queueName) throws QpidException, FailoverException
     {
         AMQFrame boundFrame = getProtocolHandler().getMethodRegistry().createExchangeBoundBody
                                 (exchangeName, routingKey, queueName).generateFrame(getChannelId());
@@ -497,7 +499,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     public void sendConsume(BasicMessageConsumer_0_8 consumer,
                             String queueName,
                             boolean nowait,
-                            int tag) throws AMQException, FailoverException
+                            int tag) throws QpidException, FailoverException
     {
         queueName = preprocessAddressTopic(consumer, queueName);
 
@@ -534,7 +536,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     }
 
     @Override
-    void createSubscriptionQueue(AMQDestination dest, boolean noLocal, String messageSelector) throws AMQException
+    void createSubscriptionQueue(AMQDestination dest, boolean noLocal, String messageSelector) throws QpidException
     {
         final Link link = dest.getLink();
         final String queueName ;
@@ -558,13 +560,13 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
         if (link.isDurable() && queueName.startsWith("TempQueue"))
         {
-            throw new AMQException("You cannot mark a subscription queue as durable without providing a name for the link.");
+            throw new QpidException("You cannot mark a subscription queue as durable without providing a name for the link.");
         }
 
-        (new FailoverNoopSupport<Void, AMQException>(
-                new FailoverProtectedOperation<Void, AMQException>()
+        (new FailoverNoopSupport<Void, QpidException>(
+                new FailoverProtectedOperation<Void, QpidException>()
                 {
-                    public Void execute() throws AMQException, FailoverException
+                    public Void execute() throws QpidException, FailoverException
                     {
 
                         // not setting alternate exchange
@@ -590,7 +592,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     @Override
     public void sendExchangeDeclare(final String name, final String type, final boolean nowait,
-            boolean durable, boolean autoDelete, boolean internal) throws AMQException, FailoverException
+            boolean durable, boolean autoDelete, boolean internal) throws QpidException, FailoverException
     {
         //The 'noWait' parameter is only used on the 0-10 path, it is ignored on the 0-8/0-9/0-9-1 path
 
@@ -607,7 +609,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     @Override
     public void sendExchangeDeclare(final String name, final String type, final boolean nowait,
                                     boolean durable, boolean autoDelete, Map<String,Object> arguments,
-                                    final boolean passive) throws AMQException, FailoverException
+                                    final boolean passive) throws QpidException, FailoverException
     {
         //The 'noWait' parameter is only used on the 0-10 path, it is ignored on the 0-8/0-9/0-9-1 path
 
@@ -626,7 +628,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         getProtocolHandler().syncWrite(exchangeDeclare, ExchangeDeclareOkBody.class);
     }
 
-    public void sendExchangeDelete(final String name) throws AMQException, FailoverException
+    public void sendExchangeDelete(final String name) throws QpidException, FailoverException
     {
         ExchangeDeleteBody body =
                 getMethodRegistry().createExchangeDeleteBody(getTicket(), name, false, false);
@@ -635,7 +637,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         getProtocolHandler().syncWrite(exchangeDeclare, ExchangeDeclareOkBody.class);
     }
 
-    private void sendQueueDeclare(final AMQDestination amqd, boolean passive) throws AMQException, FailoverException
+    private void sendQueueDeclare(final AMQDestination amqd, boolean passive) throws QpidException, FailoverException
     {
         String queueName = amqd.getAMQQueueName();
         boolean durable = amqd.isDurable();
@@ -648,7 +650,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                                   final boolean durable,
                                   final boolean exclusive,
                                   final boolean autoDelete, final Map<String,Object> arguments, final boolean passive)
-            throws AMQException, FailoverException
+            throws QpidException, FailoverException
     {
         QueueDeclareBody body =
                 getMethodRegistry().createQueueDeclareBody(getTicket(),
@@ -667,15 +669,15 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     @Override
     protected String declareQueue(final AMQDestination amqd, final boolean noLocal,
-                                  final boolean nowait, final boolean passive) throws AMQException
+                                  final boolean nowait, final boolean passive) throws QpidException
     {
         //The 'noWait' parameter is only used on the 0-10 path, it is ignored on the 0-8/0-9/0-9-1 path
 
         final AMQProtocolHandler protocolHandler = getProtocolHandler();
-        return new FailoverNoopSupport<String, AMQException>(
-                new FailoverProtectedOperation<String, AMQException>()
+        return new FailoverNoopSupport<String, QpidException>(
+                new FailoverProtectedOperation<String, QpidException>()
                 {
-                    public String execute() throws AMQException, FailoverException
+                    public String execute() throws QpidException, FailoverException
                     {
                         // Generate the queue name if the destination indicates that a client generated name is to be used.
                         if (amqd.isNameRequired())
@@ -690,7 +692,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                 }, getAMQConnection()).execute();
     }
 
-    public void sendQueueDelete(final String queueName) throws AMQException, FailoverException
+    public void sendQueueDelete(final String queueName) throws QpidException, FailoverException
     {
         QueueDeleteBody body = getMethodRegistry().createQueueDeleteBody(getTicket(),
                                                                          queueName,
@@ -702,7 +704,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         getProtocolHandler().syncWrite(queueDeleteFrame, QueueDeleteOkBody.class);
     }
 
-    public void sendSuspendChannel(boolean suspend) throws AMQException, FailoverException
+    public void sendSuspendChannel(boolean suspend) throws QpidException, FailoverException
     {
         ChannelFlowBody body = getMethodRegistry().createChannelFlowBody(!suspend);
         AMQFrame channelFlowFrame = body.generateFrame(getChannelId());
@@ -727,7 +729,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
            return new BasicMessageProducer_0_8(getAMQConnection(), (AMQDestination) destination, isTransacted(), getChannelId(),
                                  this, getProtocolHandler(), producerId, immediate, mandatory);
        }
-       catch (AMQException e)
+       catch (QpidException e)
        {
            throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating producer"), e);
        }
@@ -796,7 +798,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
 
 
-    public void sendRollback() throws AMQException, FailoverException
+    public void sendRollback() throws QpidException, FailoverException
     {
         TxRollbackBody body = getMethodRegistry().createTxRollbackBody();
         AMQFrame frame = body.generateFrame(getChannelId());
@@ -804,7 +806,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     }
 
     public void setPrefetchLimits(final int messagePrefetch, final long sizePrefetch)
-            throws AMQException, FailoverException
+            throws QpidException, FailoverException
     {
         _currentPrefetch.set(0);
         if(messagePrefetch > 0 || sizePrefetch > 0)
@@ -818,12 +820,12 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
 
 
-    protected boolean ensureCreditForReceive() throws AMQException
+    protected boolean ensureCreditForReceive() throws QpidException
     {
         return new FailoverNoopSupport<>(
-                new FailoverProtectedOperation<Boolean, AMQException>()
+                new FailoverProtectedOperation<Boolean, QpidException>()
                 {
-                    public Boolean execute() throws AMQException, FailoverException
+                    public Boolean execute() throws QpidException, FailoverException
                     {
                         int currentPrefetch = _currentPrefetch.get();
                         if (currentPrefetch >= getPrefetch() && getPrefetch() >= 0)
@@ -849,16 +851,16 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     }
 
-    protected void reduceCreditAfterAcknowledge() throws AMQException
+    protected void reduceCreditAfterAcknowledge() throws QpidException
     {
         boolean manageCredit = isManagingCredit();
 
         if(manageCredit && _creditChanged.compareAndSet(true,false))
         {
             new FailoverNoopSupport<>(
-                    new FailoverProtectedOperation<Void, AMQException>()
+                    new FailoverProtectedOperation<Void, QpidException>()
                     {
-                        public Void execute() throws AMQException, FailoverException
+                        public Void execute() throws QpidException, FailoverException
                         {
                             int prefetch = getPrefetch();
                             if(prefetch == 0)
@@ -945,7 +947,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }
     }
 
-    protected Long requestQueueDepth(AMQDestination amqd, boolean sync) throws AMQException, FailoverException
+    protected Long requestQueueDepth(AMQDestination amqd, boolean sync) throws QpidException, FailoverException
     {
 
         if(_useLegacyQueueDepthBehaviour || isBound(null, amqd.getAMQQueueName(), null))
@@ -984,14 +986,14 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         return AMQMessageDelegateFactory.FACTORY_0_8;
     }
 
-    public void sync() throws AMQException
+    public void sync() throws QpidException
     {
         declareExchange("amq.direct", "direct", false);
     }
 
     @Override
     public void resolveAddress(final AMQDestination dest, final boolean isConsumer, final boolean noLocal)
-            throws AMQException
+            throws QpidException
     {
         if(!isAddrSyntaxSupported())
         {
@@ -1005,7 +1007,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         return ((AMQConnectionDelegate_8_0)(getAMQConnection().getDelegate())).isAddrSyntaxSupported();
     }
 
-    public int resolveAddressType(AMQDestination dest) throws AMQException
+    public int resolveAddressType(AMQDestination dest) throws QpidException
     {
         int type = dest.getAddressType();
         String name = dest.getAddressName();
@@ -1035,14 +1037,14 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
             else
             {
                 //both a queue and exchange exist for that name
-                throw new AMQException("Ambiguous address, please specify queue or topic as node type");
+                throw new QpidException("Ambiguous address, please specify queue or topic as node type");
             }
             dest.setAddressType(type);
             return type;
         }
     }
 
-    protected void handleQueueNodeCreation(final AMQDestination dest, boolean noLocal) throws AMQException
+    protected void handleQueueNodeCreation(final AMQDestination dest, boolean noLocal) throws QpidException
     {
         final Node node = dest.getNode();
         final Map<String,Object> arguments = node.getDeclareArgs();
@@ -1056,10 +1058,10 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
             arguments.put("alternateExchange", altExchange);
         }
 
-        (new FailoverNoopSupport<Void, AMQException>(
-                new FailoverProtectedOperation<Void, AMQException>()
+        (new FailoverNoopSupport<Void, QpidException>(
+                new FailoverProtectedOperation<Void, QpidException>()
                 {
-                    public Void execute() throws AMQException, FailoverException
+                    public Void execute() throws QpidException, FailoverException
                     {
 
                         sendQueueDeclare(dest.getAddressName(),
@@ -1078,7 +1080,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         sync();
     }
 
-    void handleExchangeNodeCreation(AMQDestination dest) throws AMQException
+    void handleExchangeNodeCreation(AMQDestination dest) throws QpidException
     {
         Node node = dest.getNode();
         String altExchange = dest.getNode().getAlternateExchange();
@@ -1107,13 +1109,13 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     protected void doBind(final AMQDestination dest,
                         final AMQDestination.Binding binding,
                         final String queue,
-                        final String exchange) throws AMQException
+                        final String exchange) throws QpidException
     {
         final String bindingKey = binding.getBindingKey() == null ? queue : binding.getBindingKey();
 
-        new FailoverNoopSupport<Object, AMQException>(new FailoverProtectedOperation<Object, AMQException>()
+        new FailoverNoopSupport<Object, QpidException>(new FailoverProtectedOperation<Object, QpidException>()
         {
-            public Object execute() throws AMQException, FailoverException
+            public Object execute() throws QpidException, FailoverException
             {
 
 
@@ -1137,11 +1139,11 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     protected void doUnbind(final AMQDestination.Binding binding,
                             final String queue,
-                            final String exchange) throws AMQException
+                            final String exchange) throws QpidException
     {
-        new FailoverNoopSupport<Object, AMQException>(new FailoverProtectedOperation<Object, AMQException>()
+        new FailoverNoopSupport<Object, QpidException>(new FailoverProtectedOperation<Object, QpidException>()
         {
-            public Object execute() throws AMQException, FailoverException
+            public Object execute() throws QpidException, FailoverException
             {
 
                 if (isBound(null, queue, null))
@@ -1173,7 +1175,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         }, getAMQConnection()).execute();
     }
 
-    public boolean isQueueExist(AMQDestination dest, boolean assertNode) throws AMQException
+    public boolean isQueueExist(AMQDestination dest, boolean assertNode) throws QpidException
     {
         Node node = dest.getNode();
         return isQueueExist(dest.getAddressName(), assertNode,
@@ -1183,7 +1185,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
 
     public boolean isQueueExist(final String queueName, boolean assertNode,
                                 final boolean durable, final boolean autoDelete,
-                                final boolean exclusive, final Map<String, Object> args) throws AMQException
+                                final boolean exclusive, final Map<String, Object> args) throws QpidException
     {
         boolean match = isBound(null, queueName, null);
 
@@ -1191,16 +1193,16 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         {
             if(!match)
             {
-                throw new AMQException("Assert failed for queue : " + queueName  +". Queue does not exist." );
+                throw new QpidException("Assert failed for queue : " + queueName  +". Queue does not exist." );
 
             }
             else
             {
 
-                new FailoverNoopSupport<Void, AMQException>(
-                        new FailoverProtectedOperation<Void, AMQException>()
+                new FailoverNoopSupport<Void, QpidException>(
+                        new FailoverProtectedOperation<Void, QpidException>()
                         {
-                            public Void execute() throws AMQException, FailoverException
+                            public Void execute() throws QpidException, FailoverException
                             {
 
                                 sendQueueDeclare(queueName,
@@ -1221,7 +1223,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         return match;
     }
 
-    public boolean isExchangeExist(AMQDestination dest,boolean assertNode) throws AMQException
+    public boolean isExchangeExist(AMQDestination dest,boolean assertNode) throws QpidException
     {
         boolean match = exchangeExists(dest.getAddressName());
 
@@ -1256,7 +1258,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         {
             if (!match)
             {
-                throw new AMQException("Assert failed for address : " + dest  +". Exchange not found.");
+                throw new QpidException("Assert failed for address : " + dest  +". Exchange not found.");
             }
         }
 
@@ -1264,16 +1266,16 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     }
 
     @Override
-    void handleNodeDelete(final AMQDestination dest) throws AMQException
+    void handleNodeDelete(final AMQDestination dest) throws QpidException
     {
         if (AMQDestination.TOPIC_TYPE == dest.getAddressType())
         {
             if (isExchangeExist(dest,false))
             {
 
-                new FailoverNoopSupport<Object, AMQException>(new FailoverProtectedOperation<Object, AMQException>()
+                new FailoverNoopSupport<Object, QpidException>(new FailoverProtectedOperation<Object, QpidException>()
                 {
-                    public Object execute() throws AMQException, FailoverException
+                    public Object execute() throws QpidException, FailoverException
                     {
                         sendExchangeDelete(dest.getAddressName());
                         return null;
@@ -1287,9 +1289,9 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
             if (isQueueExist(dest,false))
             {
 
-                new FailoverNoopSupport<Object, AMQException>(new FailoverProtectedOperation<Object, AMQException>()
+                new FailoverNoopSupport<Object, QpidException>(new FailoverProtectedOperation<Object, QpidException>()
                 {
-                    public Object execute() throws AMQException, FailoverException
+                    public Object execute() throws QpidException, FailoverException
                     {
                         sendQueueDelete(dest.getAddressName());
                         return null;
@@ -1301,7 +1303,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     }
 
     @Override
-    void handleLinkDelete(AMQDestination dest) throws AMQException
+    void handleLinkDelete(AMQDestination dest) throws QpidException
     {
         // We need to destroy link bindings
         String defaultExchangeForBinding = dest.getAddressType() == AMQDestination.TOPIC_TYPE ? dest
@@ -1338,17 +1340,17 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     }
 
 
-    void deleteSubscriptionQueue(final AMQDestination dest) throws AMQException
+    void deleteSubscriptionQueue(final AMQDestination dest) throws QpidException
     {
         // We need to delete the subscription queue.
         if (dest.getAddressType() == AMQDestination.TOPIC_TYPE &&
             dest.getLink().getSubscriptionQueue().isExclusive() &&
             isQueueExist(dest.getQueueName(), false, false, false, false, null))
         {
-            (new FailoverNoopSupport<Void, AMQException>(
-                    new FailoverProtectedOperation<Void, AMQException>()
+            (new FailoverNoopSupport<Void, QpidException>(
+                    new FailoverProtectedOperation<Void, QpidException>()
                     {
-                        public Void execute() throws AMQException, FailoverException
+                        public Void execute() throws QpidException, FailoverException
                         {
 
                             sendQueueDelete(dest.getQueueName());
@@ -1395,7 +1397,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         return methodRegistry;
     }
 
-    public AMQException getLastException()
+    public QpidException getLastException()
     {
         // if the Connection has closed then we should throw any exception that
         // has occurred that we were not waiting for
@@ -1405,16 +1407,15 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         if (manager.getCurrentState().equals(AMQState.CONNECTION_CLOSED)
                 && e != null)
         {
-            if (e instanceof AMQException)
+            if (e instanceof QpidException)
             {
-                return (AMQException) e;
+                return (QpidException) e;
             }
             else
             {
-                AMQException amqe = new AMQException(AMQConstant
-                        .getConstant(AMQConstant.INTERNAL_ERROR.getCode()),
-                        e.getMessage(), e.getCause());
-                return amqe;
+                return new AMQException(AMQConstant.getConstant(AMQConstant.INTERNAL_ERROR.getCode()),
+                                                e.getMessage(), e.getCause());
+
             }
         }
         else

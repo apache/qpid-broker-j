@@ -34,18 +34,18 @@ import org.apache.qpid.test.utils.QpidTestCase;
  * Re-throwing a Subclass of AMQException that does not have the default AMQException constructor which will force the
  * creation of an AMQException.
  */
-public class AMQExceptionTest extends QpidTestCase
+public class QpidExceptionTest extends QpidTestCase
 {
     /**
      * Test that an AMQException will be correctly created and rethrown.
      */
     public void testRethrowGeneric()
     {
-        AMQException test = new AMQException(AMQConstant.ACCESS_REFUSED, "refused", new RuntimeException());
+        QpidException test = new QpidException("refused", new RuntimeException());
 
-        AMQException e = reThrowException(test);
+        QpidException e = reThrowException(test);
 
-        assertEquals("Exception not of correct class", AMQException.class, e.getClass());
+        assertEquals("Exception not of correct class", QpidException.class, e.getClass());
 
     }
 
@@ -57,7 +57,7 @@ public class AMQExceptionTest extends QpidTestCase
         AMQFrameDecodingException test = new AMQFrameDecodingException(AMQConstant.INTERNAL_ERROR,
                                                                        "Error",
                                                                        new Exception());
-        AMQException e = reThrowException(test);
+        QpidException e = reThrowException(test);
 
         assertEquals("Exception not of correct class", AMQFrameDecodingException.class, e.getClass());
     }
@@ -70,21 +70,23 @@ public class AMQExceptionTest extends QpidTestCase
     {
         AMQExceptionSubclass test = new AMQExceptionSubclass("Invalid Argument Exception");
 
-        AMQException e = reThrowException(test);
+        QpidException e = reThrowException(test);
 
-        assertEquals("Exception not of correct class", AMQException.class, e.getClass());
+        assertEquals("Exception not of correct class", QpidException.class, e.getClass());
     }
 
     /**
      * Private method to rethrown and validate the basic values of the rethrown
      * @param test Exception to rethrow
-     * @throws AMQException the rethrown exception
+     * @throws QpidException the rethrown exception
      */
-    private AMQException reThrowException(AMQException test)
+    private QpidException reThrowException(QpidException test)
     {
-        AMQException amqe = test.cloneForCurrentThread();
-
-        assertEquals("Error code does not match.", test.getErrorCode(), amqe.getErrorCode());
+        QpidException amqe = test.cloneForCurrentThread();
+        if(test instanceof AMQException)
+        {
+            assertEquals("Error code does not match.", ((AMQException)test).getErrorCode(), ((AMQException)amqe).getErrorCode());
+        }
         assertTrue("Exception message does not start as expected.", amqe.getMessage().startsWith(test.getMessage()));
         assertEquals("Test Exception is not set as the cause", test, amqe.getCause());
         assertEquals("Cause is not correct", test.getCause(), amqe.getCause().getCause());
@@ -107,12 +109,12 @@ public class AMQExceptionTest extends QpidTestCase
     /**
      * Private class that extends AMQException but does not have a default exception.
      */
-    private class AMQExceptionSubclass extends AMQException
+    private class AMQExceptionSubclass extends QpidException
     {
 
         public AMQExceptionSubclass(String msg)
         {
-            super(null, msg, null);
+            super(msg, null);
         }
     }
 }

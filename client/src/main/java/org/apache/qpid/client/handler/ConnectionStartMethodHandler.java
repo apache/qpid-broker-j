@@ -30,7 +30,7 @@ import javax.security.sasl.SaslException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.security.AMQCallbackHandler;
 import org.apache.qpid.client.security.CallbackHandlerRegistry;
@@ -65,7 +65,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
 
     @Override
     public void methodReceived(AMQProtocolSession session, ConnectionStartBody body, int channelId)
-            throws AMQException
+            throws QpidException
     {
         _log.debug("public void methodReceived(AMQStateManager stateManager, AMQProtocolSession protocolSession, "
             + "AMQMethodEvent evt): called");
@@ -100,7 +100,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
 
                 if (body.getMechanisms()== null)
                 {
-                    throw new AMQException(null, "mechanism not specified in ConnectionStart method frame", null);
+                    throw new QpidException("mechanism not specified in ConnectionStart method frame", null);
                 }
                 else
                 {
@@ -110,7 +110,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
 
                 if (mechanism == null)
                 {
-                    throw new AMQException(null, "No supported security mechanism found, passed: " + new String(body.getMechanisms()), null);
+                    throw new QpidException("No supported security mechanism found, passed: " + new String(body.getMechanisms()), null);
                 }
 
                 byte[] saslResponse;
@@ -121,7 +121,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
                             createCallbackHandler(mechanism, session));
                     if (sc == null)
                     {
-                        throw new AMQException(null, "Client SASL configuration error: no SaslClient could be created for mechanism " + mechanism
+                        throw new QpidException("Client SASL configuration error: no SaslClient could be created for mechanism " + mechanism
                             + ". Please ensure all factories are registered. See DynamicSaslRegistrar for "
                             + " details of how to register non-standard SASL client providers.", null);
                     }
@@ -132,12 +132,12 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
                 catch (SaslException e)
                 {
                     session.setSaslClient(null);
-                    throw new AMQException(null, "Unable to create SASL client: " + e, e);
+                    throw new QpidException("Unable to create SASL client: " + e, e);
                 }
 
                 if (body.getLocales() == null)
                 {
-                    throw new AMQException(null, "Locales is not defined in Connection Start method", null);
+                    throw new QpidException("Locales is not defined in Connection Start method", null);
                 }
 
                 final String locales = new String(body.getLocales(), "utf8");
@@ -148,7 +148,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
                 }
                 else
                 {
-                    throw new AMQException(null, "No locales sent from server, passed: " + locales, null);
+                    throw new QpidException("No locales sent from server, passed: " + locales, null);
                 }
 
                 session.getStateManager().changeState(AMQState.CONNECTION_NOT_TUNED);
@@ -186,7 +186,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
             }
             catch (UnsupportedEncodingException e)
             {
-                throw new AMQException(null, "Unable to decode data: " + e, e);
+                throw new QpidException("Unable to decode data: " + e, e);
             }
         }
         else
@@ -205,7 +205,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
     }
 
     private AMQCallbackHandler createCallbackHandler(String mechanism, AMQProtocolSession protocolSession)
-        throws AMQException
+        throws QpidException
     {
         try
         {
@@ -216,7 +216,7 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
         }
         catch (IllegalArgumentException e)
         {
-            throw new AMQException(null, "Unable to create callback handler: " + e, e);
+            throw new QpidException("Unable to create callback handler: " + e, e);
         }
     }
 

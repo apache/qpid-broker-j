@@ -34,7 +34,7 @@ import javax.jms.XASession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
 import org.apache.qpid.client.failover.FailoverRetrySupport;
@@ -80,7 +80,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
     private boolean _confirmedPublishNonTransactionalSupported;
     private boolean _virtualhostPropertiesSupported;
 
-    public void closeConnection(long timeout) throws JMSException, AMQException
+    public void closeConnection(long timeout) throws JMSException, QpidException
     {
         _conn.getProtocolHandler().closeConnection(timeout);
     }
@@ -110,7 +110,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
         return _confirmedPublishSupported;
     }
 
-    public ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws AMQException
+    public ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws QpidException
     {
         if (_logger.isDebugEnabled())
         {
@@ -184,7 +184,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
                 return _conn.getProtocolHandler().getSuggestedProtocolVersion();
             }
         }
-        catch(AMQException | RuntimeException e)
+        catch(QpidException | RuntimeException e)
         {
             network.close();
             throw e;
@@ -284,7 +284,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
                             session.setPrefetchLimits(prefetchHigh, 0);
                             success = true;
                         }
-                        catch (AMQException e)
+                        catch (QpidException e)
                         {
                             throw JMSExceptionHelper.chainJMSException(new JMSException("Error creating session: " + e),
                                                                        e);
@@ -303,7 +303,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
                             {
                                 session.start();
                             }
-                            catch (AMQException e)
+                            catch (QpidException e)
                             {
                                 throw JMSExceptionHelper.chainJMSException(new JMSException("Session.start failed"), e);
                             }
@@ -327,7 +327,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
     }
 
     private void createChannelOverWire(int channelId, boolean transacted)
-            throws AMQException, FailoverException
+            throws QpidException, FailoverException
     {
         ChannelOpenBody channelOpenBody = _conn.getProtocolHandler().getMethodRegistry().createChannelOpenBody(null);
         _conn.getProtocolHandler().syncWrite(channelOpenBody.generateFrame(channelId), ChannelOpenOkBody.class);
@@ -361,7 +361,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
      * For all sessions, and for all consumers in those sessions, resubscribe. This is called during failover handling.
      * The caller must hold the failover mutex before calling this method.
      */
-    public void resubscribeSessions() throws JMSException, AMQException, FailoverException
+    public void resubscribeSessions() throws JMSException, QpidException, FailoverException
     {
         ArrayList sessions = new ArrayList(_conn.getSessions().values());
         _logger.info(MessageFormat.format("Resubscribing sessions = {0} sessions.size={1}", sessions, sessions.size())); // FIXME: removeKey?
@@ -381,16 +381,16 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
     }
 
     private void reopenChannel(int channelId, int prefetchHigh, int prefetchLow, boolean transacted)
-    throws AMQException, FailoverException
+    throws QpidException, FailoverException
     {
         try
         {
             createChannelOverWire(channelId, transacted);
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             _conn.deregisterSession(channelId);
-            throw new AMQException(null, "Error reopening channel " + channelId + " after failover: " + e, e);
+            throw new QpidException("Error reopening channel " + channelId + " after failover: " + e, e);
         }
     }
 

@@ -31,6 +31,7 @@ import javax.jms.Topic;
 import javax.jms.TopicSubscriber;
 import javax.naming.NamingException;
 
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
@@ -82,7 +83,7 @@ public class ExternalACLTest extends AbstractACLTestCase
         assertNotNull("There was no linked exception", linkedException);
         Throwable cause = linkedException.getCause();
         assertNotNull("Cause was null", cause);
-        assertTrue("Wrong linked exception type", cause instanceof AMQException);
+        assertTrue("Wrong linked exception type", cause instanceof QpidException);
         AMQConstant errorCode = isBroker010() ? AMQConstant.CONNECTION_FORCED : AMQConstant.ACCESS_REFUSED;
         assertEquals("Incorrect error code received", errorCode, ((AMQException) cause).getErrorCode());
     }
@@ -122,7 +123,7 @@ public class ExternalACLTest extends AbstractACLTestCase
                      "ACL DENY-LOG  guest CREATE QUEUE virtualhost_name='test'");
     }
 
-    public void testClientCreateVirtualHostQueue() throws NamingException, JMSException, AMQException, Exception
+    public void testClientCreateVirtualHostQueue() throws NamingException, JMSException, QpidException, Exception
     {
         Connection conn = getConnection("test", "client", "guest");
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
@@ -320,7 +321,7 @@ public class ExternalACLTest extends AbstractACLTestCase
                      "ACL ALLOW-LOG client CREATE QUEUE name=\"ValidQueue\"");
     }
 
-    public void testClientCreateNamedQueueFailure() throws NamingException, JMSException, AMQException, Exception
+    public void testClientCreateNamedQueueFailure() throws NamingException, JMSException, QpidException, Exception
     {
         Connection conn = getConnection("test", "client", "guest");
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);

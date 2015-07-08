@@ -23,7 +23,7 @@ package org.apache.qpid.client.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.StateAwareMethodListener;
 import org.apache.qpid.framing.ChannelFlowOkBody;
@@ -42,7 +42,7 @@ public class ChannelFlowOkMethodHandler implements StateAwareMethodListener<Chan
     { }
 
     public void methodReceived(AMQProtocolSession session, ChannelFlowOkBody body, int channelId)
-            throws AMQException
+            throws QpidException
     {
 
         _logger.debug("Received Channel.Flow-Ok message, active = " + body.getActive());

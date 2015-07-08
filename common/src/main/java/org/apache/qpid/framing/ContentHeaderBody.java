@@ -26,8 +26,9 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.codec.MarkableDataInput;
+import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.util.BytesDataOutput;
@@ -115,7 +116,7 @@ public class ContentHeaderBody implements AMQBody
     }
 
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
-            throws AMQException
+            throws QpidException
     {
         session.contentHeaderReceived(channelId, this);
     }
@@ -185,7 +186,7 @@ public class ContentHeaderBody implements AMQBody
 
         if (classId != CLASS_ID)
         {
-            throw new AMQFrameDecodingException(null, "Unsupported content header class id: " + classId, null);
+            throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR, "Unsupported content header class id: " + classId, null);
         }
         properties = new BasicContentHeaderProperties();
         properties.populatePropertiesFromBuffer(buffer, propertyFlags, (int)(size-14));

@@ -30,7 +30,7 @@ package org.apache.qpid.framing;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 
 public class TxRollbackBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -65,7 +65,7 @@ public class TxRollbackBody extends AMQMethodBodyImpl implements EncodableAMQDat
     {
     }
 
-    public boolean execute(MethodDispatcher dispatcher, int channelId) throws AMQException
+    public boolean execute(MethodDispatcher dispatcher, int channelId) throws QpidException
 	{
         return dispatcher.dispatchTxRollback(this, channelId);
 	}

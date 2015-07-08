@@ -40,7 +40,7 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.management.common.mbeans.ManagedQueue;
@@ -428,7 +428,7 @@ public class ProducerFlowControlTest extends AbstractTestLogging
             {
                 ((AMQSession<?,?>)producerSession).sync();
             }
-            catch (AMQException e)
+            catch (QpidException e)
             {
                 _logger.error("Error performing sync", e);
                 throw new RuntimeException(e);

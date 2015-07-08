@@ -32,7 +32,7 @@ import java.util.Map;
 import javax.jms.Connection;
 import javax.jms.JMSException;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.DefaultVirtualHostAlias;
@@ -132,7 +132,7 @@ public class MultipleAuthenticationManagersTest extends QpidBrokerTestCase
             Connection conn = getAnonymousConnection();
             fail("Should not be able to create anonymous connection to the standard port");
         }
-        catch(AMQException e)
+        catch(QpidException e)
         {
             // pass
         }

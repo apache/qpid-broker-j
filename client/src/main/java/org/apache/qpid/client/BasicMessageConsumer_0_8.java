@@ -29,7 +29,7 @@ import javax.jms.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.message.AMQMessageDelegateFactory;
 import org.apache.qpid.client.message.AbstractJMSMessage;
@@ -115,7 +115,7 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
         return (AMQSession_0_8) super.getSession();
     }
 
-    void sendCancel() throws AMQException, FailoverException
+    void sendCancel() throws QpidException, FailoverException
     {
         BasicCancelBody body = getSession().getMethodRegistry().createBasicCancelBody(new AMQShortString(String.valueOf(getConsumerTag())), false);
 
@@ -130,7 +130,7 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
         }
     }
 
-    void postSubscription() throws AMQException
+    void postSubscription() throws QpidException
     {
         AMQDestination dest = this.getDestination();
         if (dest != null && dest.getDestSyntax() == AMQDestination.DestSyntax.ADDR)
@@ -200,7 +200,7 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
             }
             return message;
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             throw JMSExceptionHelper.chainJMSException(new JMSException("BasicMessageConsumer.receive failed."), e);
         }
@@ -233,7 +233,7 @@ public class BasicMessageConsumer_0_8 extends BasicMessageConsumer<UnprocessedMe
             }
             return message;
         }
-        catch (AMQException e)
+        catch (QpidException e)
         {
             throw JMSExceptionHelper.chainJMSException(new JMSException("BasicMessageConsumer.receiveNoWait failed"),
                                                        e);

@@ -241,7 +241,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
     {
         Exception linked = original.getLinkedException();
         assertNotNull("Linked exception should have been set", linked);
-        assertTrue("Linked exception should be an AMQException", linked instanceof AMQException);
+        assertTrue("Linked exception should be an AMQProtocolException", linked instanceof AMQException);
         assertEquals("Error code should be " + code.getCode(), code, ((AMQException) linked).getErrorCode());
     }
 

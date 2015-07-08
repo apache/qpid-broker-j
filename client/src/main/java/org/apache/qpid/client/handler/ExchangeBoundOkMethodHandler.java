@@ -23,7 +23,7 @@ package org.apache.qpid.client.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.state.StateAwareMethodListener;
 import org.apache.qpid.framing.ExchangeBoundOkBody;
@@ -45,7 +45,7 @@ public class ExchangeBoundOkMethodHandler implements StateAwareMethodListener<Ex
     { }
 
     public void methodReceived(AMQProtocolSession session, ExchangeBoundOkBody body, int channelId)
-            throws AMQException
+            throws QpidException
     {
         if (_logger.isDebugEnabled())
         {

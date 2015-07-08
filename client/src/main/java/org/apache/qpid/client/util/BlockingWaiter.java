@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQTimeoutException;
 import org.apache.qpid.client.failover.FailoverException;
 
@@ -134,10 +134,10 @@ public abstract class BlockingWaiter<T>
      *
      * @return The object that resolved the blocking.
      *
-     * @throws AMQException
+     * @throws QpidException
      * @throws FailoverException
      */
-    public Object block(long timeout) throws AMQException, FailoverException
+    public Object block(long timeout) throws QpidException, FailoverException
     {
         if (timeout < 0)
         {
@@ -181,9 +181,9 @@ public abstract class BlockingWaiter<T>
 
             if (_error != null)
             {
-                if (_error instanceof AMQException)
+                if (_error instanceof QpidException)
                 {
-                    throw (AMQException) _error;
+                    throw (QpidException) _error;
                 }
                 else if (_error instanceof FailoverException)
                 {
@@ -192,7 +192,7 @@ public abstract class BlockingWaiter<T>
                 }
                 else
                 {
-                    throw new AMQException("Woken up due to " + _error.getClass(), _error);
+                    throw new QpidException("Woken up due to " + _error.getClass(), _error);
                 }
             }
 
@@ -328,9 +328,9 @@ public abstract class BlockingWaiter<T>
      *
      * @return AMQException to throw to waiters when the Waiter is closed.
      */
-    private AMQException throwClosedException()
+    private QpidException throwClosedException()
     {
-        return new AMQException(null, "Waiter was closed.", null);
+        return new QpidException("Waiter was closed.", null);
     }
 
 }

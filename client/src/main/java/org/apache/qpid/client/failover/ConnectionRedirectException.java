@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.client.failover;
 
-import org.apache.qpid.AMQException;
+import org.apache.qpid.QpidException;
 
-public class ConnectionRedirectException extends AMQException
+public class ConnectionRedirectException extends QpidException
 {
     private final String _host;
     private final int _port;
