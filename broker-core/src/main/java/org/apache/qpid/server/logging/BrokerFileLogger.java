@@ -60,7 +60,7 @@ public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerL
     @ManagedAttribute( defaultValue = "100mb")
     String getMaxFileSize();
 
-    @ManagedAttribute(defaultValue = "%d %-5p [%t] \\(%c{2}\\) - %m%n")
+    @ManagedAttribute(defaultValue = "%date %-5level [%thread] \\(%logger{2}\\) - %msg%n")
     String getLayout();
 
     @DerivedAttribute
