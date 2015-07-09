@@ -40,5 +40,5 @@
     <root level="debug">
         <appender-ref ref="RootSiftAppender"/>
     </root>
-    <shutdownHook/>
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>
 </configuration>
