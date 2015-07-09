@@ -20,6 +20,8 @@
   -->
 <configuration debug="true">
 
+    <contextName>qpid-systests</contextName>
+
     <!-- Logging configuration used for this and other 'systests' modules.  This is named
          logback-test.xml in order that it is found in preference to the logback.xml
          found in qpid-test-utils (which is used for other, non-systests, modules).  -->
@@ -50,4 +52,5 @@
     <root level="warn">
         <appender-ref ref="RootSiftAppender"/>
     </root>
+    <shutdownHook/>
 </configuration>

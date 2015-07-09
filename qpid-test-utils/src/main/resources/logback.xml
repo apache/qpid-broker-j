@@ -20,6 +20,8 @@
   -->
 <configuration debug="true">
 
+    <contextName>qpid-test-utils</contextName>
+
     <appender name="RootSiftAppender" class="ch.qos.logback.classic.sift.SiftingAppender">
         <discriminator>
             <Key>classQualifiedTestName</Key>
@@ -38,4 +40,5 @@
     <root level="debug">
         <appender-ref ref="RootSiftAppender"/>
     </root>
+    <shutdownHook/>
 </configuration>

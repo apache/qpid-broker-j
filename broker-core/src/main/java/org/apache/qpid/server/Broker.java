@@ -36,7 +36,6 @@ import java.util.concurrent.TimeoutException;
 import javax.security.auth.Subject;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.common.QpidProperties;
@@ -68,7 +67,6 @@ public class Broker
     private volatile SystemConfig _systemConfig;
 
     private final Action<Integer> _shutdownAction;
-    private volatile boolean _loggerContextStarted;
 
 
     public Broker()
@@ -118,12 +116,6 @@ public class Broker
     {
         _taskExecutor.stop();
 
-        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        if (_loggerContextStarted)
-        {
-            loggerContext.stop();
-        }
-
         if (_shutdownAction != null)
         {
             _shutdownAction.performAction(exitStatusCode);
@@ -148,14 +140,11 @@ public class Broker
             {
                 ch.qos.logback.classic.Logger logger =
                         (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-                if (!logger.getLoggerContext().isStarted())
+                if (!logger.iteratorForAppenders().hasNext())
                 {
-                    logger.getLoggerContext().start();
-                    // TODO: Code is commented as a temporary workaround to make the tests working. Otherwise, stopping of context screws the tests
-                    //_loggerContextStarted = true;
+                    logger.setLevel(Level.ALL);
+                    logger.setAdditive(true);
                 }
-                logger.setAdditive(true);
-                logger.setLevel(Level.ALL);
 
                 StartupAppender startupAppender = new StartupAppender();
                 startupAppender.setContext(logger.getLoggerContext());

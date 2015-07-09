@@ -26,6 +26,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
 
+import ch.qos.logback.classic.ClassicConstants;
 import junit.framework.TestCase;
 import junit.framework.TestResult;
 import org.slf4j.Logger;
@@ -157,6 +158,7 @@ public class QpidTestCase extends TestCase
         }
         finally
         {
+            _logger.info(ClassicConstants.FINALIZE_SESSION_MARKER, "Shutting down sub-appender");
             _currentInstance = null;
             MDC.remove(CLASS_QUALIFIED_TEST_NAME);
         }
