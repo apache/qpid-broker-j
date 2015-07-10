@@ -20,8 +20,11 @@
  */
 package org.apache.qpid.client;
 
+import static org.apache.qpid.client.AMQConnection.JNDI_ADDRESS_CONNECTION_URL;
+
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.jms.ConnectionURL;
+import org.apache.qpid.jndi.ObjectFactory;
 import org.apache.qpid.url.AMQBindingURL;
 import org.apache.qpid.url.URLSyntaxException;
 
@@ -44,7 +47,6 @@ import javax.naming.RefAddr;
 import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
-import javax.naming.spi.ObjectFactory;
 
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -54,11 +56,11 @@ import java.util.UUID;
 
 
 public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionFactory, TopicConnectionFactory,
-                                             ObjectFactory, Referenceable, XATopicConnectionFactory,
+                                             javax.naming.spi.ObjectFactory, Referenceable, XATopicConnectionFactory,
                                              XAQueueConnectionFactory, XAConnectionFactory, Serializable
 {
     protected static final String NO_URL_CONFIGURED = "The connection factory wasn't created with a proper URL, the connection details are empty";
-
+    private final static  ObjectFactory OBJECT_FACTORY = new ObjectFactory();
 
     private ConnectionURL _connectionDetails;
 
@@ -215,55 +217,13 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
      * @return AMQConnection,AMQTopic,AMQQueue, or AMQConnectionFactory.
      *
      * @throws Exception
+     *
+     * @Deprecated Use {@link ObjectFactory} instead
      */
+    @Deprecated
     public Object getObjectInstance(Object obj, Name name, Context ctx, Hashtable env) throws Exception
     {
-        if (obj instanceof Reference)
-        {
-            Reference ref = (Reference) obj;
-
-            if (ref.getClassName().equals(AMQConnection.class.getName()))
-            {
-                RefAddr addr = ref.get(AMQConnection.class.getName());
-
-                if (addr != null)
-                {
-                    return new AMQConnection((String) addr.getContent());
-                }
-            }
-
-            if (ref.getClassName().equals(AMQQueue.class.getName()))
-            {
-                RefAddr addr = ref.get(AMQQueue.class.getName());
-
-                if (addr != null)
-                {
-                    return new AMQQueue(new AMQBindingURL((String) addr.getContent()));
-                }
-            }
-
-            if (ref.getClassName().equals(AMQTopic.class.getName()))
-            {
-                RefAddr addr = ref.get(AMQTopic.class.getName());
-
-                if (addr != null)
-                {
-                    return new AMQTopic(new AMQBindingURL((String) addr.getContent()));
-                }
-            }
-
-            if (ref.getClassName().equals(AMQConnectionFactory.class.getName()))
-            {
-                RefAddr addr = ref.get(AMQConnectionFactory.class.getName());
-
-                if (addr != null)
-                {
-                    return new AMQConnectionFactory((String) addr.getContent());
-                }
-            }
-
-        }
-        return null;
+        return OBJECT_FACTORY.getObjectInstance(obj, name, ctx, env);
     }
 
 
@@ -271,8 +231,8 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
     {
         return new Reference(
                 AMQConnectionFactory.class.getName(),
-                new StringRefAddr(AMQConnectionFactory.class.getName(), _connectionDetails.getURL()),
-                             AMQConnectionFactory.class.getName(), null);          // factory location
+                new StringRefAddr(JNDI_ADDRESS_CONNECTION_URL, _connectionDetails.getURL()),
+                             ObjectFactory.class.getName(), null);          // factory location
     }
 
     // ---------------------------------------------------------------------------------------------------

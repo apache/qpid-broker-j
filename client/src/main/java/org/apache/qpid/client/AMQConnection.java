@@ -57,6 +57,7 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 
+import org.apache.qpid.jndi.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,9 +88,11 @@ import org.apache.qpid.url.URLSyntaxException;
 
 public class AMQConnection extends Closeable implements CommonConnection, Referenceable
 {
-    private static final Logger _logger = LoggerFactory.getLogger(AMQConnection.class);
-    private static final AtomicLong CONN_NUMBER_GENERATOR = new AtomicLong();
+    public static final String JNDI_ADDRESS_CONNECTION_URL = "connectionURL";
 
+    private static final Logger _logger = LoggerFactory.getLogger(AMQConnection.class);
+
+    private static final AtomicLong CONN_NUMBER_GENERATOR = new AtomicLong();
     private static final long DEFAULT_CLOSE_TIMEOUT = Long.getLong(ClientProperties.QPID_CLOSE_TIMEOUT,
                                                                    ClientProperties.DEFAULT_CLOSE_TIMEOUT);
 
@@ -1599,8 +1602,8 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
 
     public Reference getReference() throws NamingException
     {
-        return new Reference(AMQConnection.class.getName(), new StringRefAddr(AMQConnection.class.getName(), toURL()),
-                             AMQConnectionFactory.class.getName(), null); // factory location
+        return new Reference(AMQConnection.class.getName(), new StringRefAddr(JNDI_ADDRESS_CONNECTION_URL, toURL()),
+                             ObjectFactory.class.getName(), null); // factory location
     }
 
     public String getDefaultTopicExchangeName()

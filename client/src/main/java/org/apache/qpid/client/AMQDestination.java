@@ -34,6 +34,7 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 
+import org.apache.qpid.jndi.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,8 @@ import org.apache.qpid.url.URLHelper;
 
 public abstract class AMQDestination implements Destination, Referenceable, Externalizable
 {
+    public static final String JNDI_ADDRESS_DESTINATION_ADDRESS = "address";
+
     private static final Logger _logger = LoggerFactory.getLogger(AMQDestination.class);
     private static final long serialVersionUID = -3152767926421156400L;
 
@@ -148,6 +151,11 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
               throw new IllegalArgumentException("Invalid Destination Syntax Type" +
                                                  " should be one of {BURL|ADDR}");
           }
+      }
+
+      public String asPrefix()
+      {
+          return name() + ":";
       }
     }
 
@@ -740,8 +748,9 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     {
         return new Reference(
                 this.getClass().getName(),
-                new StringRefAddr(this.getClass().getName(), toURL()),
-                AMQConnectionFactory.class.getName(),
+                new StringRefAddr(JNDI_ADDRESS_DESTINATION_ADDRESS,
+                        _destSyntax == DestSyntax.ADDR ? getAddress().toString() : DestSyntax.BURL.asPrefix() + toURL()),
+                ObjectFactory.class.getName(),
                 null);          // factory location
     }
 

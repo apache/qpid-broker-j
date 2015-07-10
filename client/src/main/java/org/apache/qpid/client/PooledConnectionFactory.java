@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.client;
 
+import static org.apache.qpid.client.AMQConnection.JNDI_ADDRESS_CONNECTION_URL;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -52,6 +54,7 @@ import javax.naming.NamingException;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
 
+import org.apache.qpid.jndi.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +65,10 @@ import org.apache.qpid.url.URLSyntaxException;
 
 public class PooledConnectionFactory implements ConnectionFactory, QueueConnectionFactory, TopicConnectionFactory
 {
+
+    public static final String JNDI_ADDRESS_MAX_POOL_SIZE = "maxPoolSize";
+    public static final String JNDI_ADDRESS_CONNECTION_TIMEOUT = "connectionTimeout";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PooledConnectionFactory.class);
 
     private static final AtomicInteger POOL_ID = new AtomicInteger();
@@ -388,10 +395,14 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
 
     public Reference getReference() throws NamingException
     {
-        return new Reference(
+        Reference reference = new Reference(
                 PooledConnectionFactory.class.getName(),
-                new StringRefAddr(PooledConnectionFactory.class.getName(), _connectionDetails.get().getURL()),
-                PooledConnectionFactory.class.getName(), null);          // factory location
+                new StringRefAddr(JNDI_ADDRESS_CONNECTION_URL, _connectionDetails.get().getURL()),
+                ObjectFactory.class.getName(), null);          // factory location
+
+        reference.add(new StringRefAddr(JNDI_ADDRESS_MAX_POOL_SIZE, String.valueOf(getMaxPoolSize())));
+        reference.add(new StringRefAddr(JNDI_ADDRESS_CONNECTION_TIMEOUT, String.valueOf(getMaxPoolSize())));
+        return reference;
     }
 
     private CommonConnection proxyConnection(CommonConnection underlying, ConnectionDetailsIdentifier identifier) throws JMSException
