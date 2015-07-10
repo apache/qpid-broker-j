@@ -21,14 +21,18 @@
 
 package org.apache.qpid.server.logging;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.net.SocketAppender;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.LoggingEventVO;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.util.Duration;
+import org.slf4j.MDC;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -96,8 +100,26 @@ public class BrokerLogbackSocketLoggerImpl
                                             @Override
                                             protected void append(final ILoggingEvent event)
                                             {
-                                                augmentWithMDC(event);
-                                                super.append(event);
+                                                Set<String> keys = new HashSet<>();
+                                                try
+                                                {
+                                                    for (Map.Entry<String, String> entry : _mappedDiagnosticContext.entrySet())
+                                                    {
+                                                        MDC.put(entry.getKey(), entry.getValue());
+                                                        keys.add(entry.getKey());
+                                                    }
+
+                                                    // Workaround for suspected Logback defect LOGBACK-1088
+                                                    event.prepareForDeferredProcessing();
+                                                    super.append(event);
+                                                }
+                                                finally
+                                                {
+                                                    for (String key : keys)
+                                                    {
+                                                        MDC.remove(key);
+                                                    }
+                                                }
                                             }
                                         };
         socketAppender.setPort(_port);
@@ -107,10 +129,4 @@ public class BrokerLogbackSocketLoggerImpl
         return socketAppender;
 
     }
-
-    private void augmentWithMDC(final ILoggingEvent event)
-    {
-        event.getMDCPropertyMap().putAll(_mappedDiagnosticContext);
-    }
-
 }
