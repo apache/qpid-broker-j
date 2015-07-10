@@ -16,6 +16,8 @@
  */
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
+import static org.apache.qpid.server.management.plugin.HttpManagementUtil.ensureFilenameIsRfc2183;
+
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -1001,11 +1003,6 @@ public class RestServlet extends AbstractServlet
     private boolean getBooleanParameterFromRequest(HttpServletRequest request, final String paramName)
     {
         return Boolean.parseBoolean(request.getParameter(paramName));
-    }
-
-    private String ensureFilenameIsRfc2183(final String requestedFilename)
-    {
-        return requestedFilename.replaceAll("[\\P{InBasic_Latin}\\\\:/]", "");
     }
 
 }

@@ -243,4 +243,9 @@ public class HttpManagementUtil
         }
         return outputStream;
     }
+
+    public static String ensureFilenameIsRfc2183(final String requestedFilename)
+    {
+        return requestedFilename.replaceAll("[\\P{InBasic_Latin}\\\\:/\\p{Cntrl}]", "");
+    }
 }
