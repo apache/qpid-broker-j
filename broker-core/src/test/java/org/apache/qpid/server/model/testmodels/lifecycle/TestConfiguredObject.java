@@ -146,13 +146,13 @@ public class TestConfiguredObject extends AbstractConfiguredObject
         return Futures.immediateFuture(null);
     }
 
-    @StateTransition( currentState = {State.ERRORED, State.UNINITIALIZED}, desiredState = State.DELETED )
+    @StateTransition( currentState = {State.ERRORED, State.UNINITIALIZED, State.ACTIVE}, desiredState = State.DELETED )
     protected ListenableFuture<Void> doDelete()
     {
         setState(State.DELETED);
         return Futures.immediateFuture(null);
     }
-
+    
     public boolean isOpened()
     {
         return _opened;

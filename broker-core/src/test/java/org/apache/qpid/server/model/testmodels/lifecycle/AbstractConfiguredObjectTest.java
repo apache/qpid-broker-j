@@ -19,8 +19,15 @@
 package org.apache.qpid.server.model.testmodels.lifecycle;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.ConfigurationChangeListener;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.IllegalStateTransitionException;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -214,4 +221,105 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected child1 state", State.ERRORED, child1.getState());
     }
 
+    public void testSuccessfulStateTransitionInvokesListener() throws Exception
+    {
+        TestConfiguredObject parent = new TestConfiguredObject("parent");
+        parent.create();
+
+        final AtomicReference<State> newState = new AtomicReference<>();
+        final AtomicInteger callCounter = new AtomicInteger();
+        parent.addChangeListener(new NoopChangeListener()
+        {
+            @Override
+            public void stateChanged(final ConfiguredObject<?> object, final State old, final State state)
+            {
+                super.stateChanged(object, old, state);
+                callCounter.incrementAndGet();
+                newState.set(state);
+            }
+        });
+
+        parent.delete();
+        assertEquals(State.DELETED, newState.get());
+        assertEquals(1, callCounter.get());
+    }
+
+    public void testUnsuccessfulStateTransitionDoesnotInvokesListener() throws Exception
+    {
+        final IllegalStateTransitionException expectedException =
+                new IllegalStateTransitionException("This test fails the state transition.");
+        TestConfiguredObject parent = new TestConfiguredObject("parent")
+        {
+            @Override
+            protected ListenableFuture<Void> doDelete()
+            {
+                throw expectedException;
+            }
+        };
+        parent.create();
+
+        final AtomicInteger callCounter = new AtomicInteger();
+        parent.addChangeListener(new NoopChangeListener()
+        {
+            @Override
+            public void stateChanged(final ConfiguredObject<?> object, final State old, final State state)
+            {
+                super.stateChanged(object, old, state);
+                callCounter.incrementAndGet();
+            }
+        });
+
+        try
+        {
+            parent.delete();
+            fail("Exception not thrown.");
+        }
+        catch (RuntimeException e)
+        {
+            assertSame("State transition threw unexpected exception.", expectedException, e);
+        }
+        assertEquals(0, callCounter.get());
+    }
+
+    private static class NoopChangeListener implements ConfigurationChangeListener
+    {
+        @Override
+        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+        {
+
+        }
+
+        @Override
+        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+
+        }
+
+        @Override
+        public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+
+        }
+
+        @Override
+        public void attributeSet(final ConfiguredObject<?> object,
+                                 final String attributeName,
+                                 final Object oldAttributeValue,
+                                 final Object newAttributeValue)
+        {
+
+        }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+
+        }
+    }
 }

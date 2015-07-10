@@ -1170,7 +1170,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected ListenableFuture<Void> attainState()
     {
-        State currentState = getState();
+        final State currentState = getState();
         State desiredState = getDesiredState();
         ListenableFuture<Void> returnVal;
 
@@ -1193,13 +1193,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         public void run()
                         {
                             _attainStateFuture.set(AbstractConfiguredObject.this);
+                            if(getState() != currentState)
+                            {
+                                notifyStateChanged(currentState, getState());
+                            }
                         }
                     });
-                    if(getState() != currentState)
-                    {
-                        // TODO - KW - shouldn't I be done after too???
-                        notifyStateChanged(currentState, getState());
-                    }
                 }
                 catch (IllegalAccessException e)
                 {
@@ -1347,30 +1346,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         attributeSet(ConfiguredObject.DESIRED_STATE,
                                      currentDesiredState,
                                      desiredState);
-
-                        return doAfter(attainStateIfOpenedOrReopenFailed(),new Runnable()
-                                       {
-                                           @Override
-                                           public void run()
-                                           {
-                                               if (getState() == desiredState)
-                                               {
-                                                   notifyStateChanged(state, desiredState);
-                                               }
-
-                                           }
-                                       }
-                            );
+                        return attainStateIfOpenedOrReopenFailed();
                     }
                     else
                     {
                         return Futures.immediateFuture(null);
                     }
                 }
-
             }
         });
-
     }
 
     @Override
