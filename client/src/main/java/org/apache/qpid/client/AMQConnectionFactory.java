@@ -25,7 +25,6 @@ import static org.apache.qpid.client.AMQConnection.JNDI_ADDRESS_CONNECTION_URL;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jndi.ObjectFactory;
-import org.apache.qpid.url.AMQBindingURL;
 import org.apache.qpid.url.URLSyntaxException;
 
 import javax.jms.ConnectionFactory;
@@ -43,7 +42,6 @@ import javax.jms.XATopicConnectionFactory;
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.NamingException;
-import javax.naming.RefAddr;
 import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;

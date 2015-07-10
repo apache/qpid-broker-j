@@ -52,6 +52,7 @@ import javax.jms.IllegalStateException;
 import javax.jms.Session;
 import javax.naming.NamingException;
 import javax.naming.Reference;
+import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 
 import org.apache.qpid.jndi.ObjectFactory;
@@ -63,7 +64,8 @@ import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.jms.*;
 import org.apache.qpid.url.URLSyntaxException;
 
-public class PooledConnectionFactory implements ConnectionFactory, QueueConnectionFactory, TopicConnectionFactory
+public class PooledConnectionFactory implements ConnectionFactory, QueueConnectionFactory, TopicConnectionFactory,
+                                                Referenceable
 {
 
     public static final String JNDI_ADDRESS_MAX_POOL_SIZE = "maxPoolSize";
@@ -393,6 +395,7 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
         }
     }
 
+    @Override
     public Reference getReference() throws NamingException
     {
         Reference reference = new Reference(
@@ -401,7 +404,7 @@ public class PooledConnectionFactory implements ConnectionFactory, QueueConnecti
                 ObjectFactory.class.getName(), null);          // factory location
 
         reference.add(new StringRefAddr(JNDI_ADDRESS_MAX_POOL_SIZE, String.valueOf(getMaxPoolSize())));
-        reference.add(new StringRefAddr(JNDI_ADDRESS_CONNECTION_TIMEOUT, String.valueOf(getMaxPoolSize())));
+        reference.add(new StringRefAddr(JNDI_ADDRESS_CONNECTION_TIMEOUT, String.valueOf(getConnectionTimeout())));
         return reference;
     }
 

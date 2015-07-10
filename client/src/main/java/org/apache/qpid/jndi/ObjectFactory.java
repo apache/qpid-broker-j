@@ -96,7 +96,7 @@ public class ObjectFactory implements javax.naming.spi.ObjectFactory
             Object connectionTimeout = getRefAddressContent(reference, JNDI_ADDRESS_CONNECTION_TIMEOUT);
             if (connectionTimeout != null)
             {
-                connectionFactory.setConnectionTimeout(connectionTimeout instanceof Number ? ((Number) connectionTimeout).longValue() : Long.parseLong(String.valueOf(connectionURL)));
+                connectionFactory.setConnectionTimeout(connectionTimeout instanceof Number ? ((Number) connectionTimeout).longValue() : Long.parseLong(String.valueOf(connectionTimeout)));
             }
 
             return connectionFactory;
@@ -187,7 +187,7 @@ public class ObjectFactory implements javax.naming.spi.ObjectFactory
             else if (addressString.startsWith(AMQDestination.DestSyntax.ADDR.asPrefix()))
             {
                 addressSyntax = AMQDestination.DestSyntax.ADDR;
-                addressString = addressString.substring(AMQDestination.DestSyntax.BURL.asPrefix().length());
+                addressString = addressString.substring(AMQDestination.DestSyntax.ADDR.asPrefix().length());
             }
 
             return createAMQDestination(destinationClass, addressSyntax, addressString);

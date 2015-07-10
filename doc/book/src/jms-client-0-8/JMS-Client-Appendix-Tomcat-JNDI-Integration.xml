@@ -34,7 +34,7 @@
   <para>
     <literal>org.apache.qpid.jndi.ObjectFactory</literal> implements
     <ulink url="&oracleJdkDocUrl;javax/naming/spi/ObjectFactory.html">javax.naming.spi.ObjectFactory</ulink>
-    allowing it to create instances of <literal>AMQConnectionFactory</literal>, <literal>PolledConnectionFactory</literal>,
+    allowing it to create instances of <literal>AMQConnectionFactory</literal>, <literal>PooledConnectionFactory</literal>,
     <literal>AMQConnection</literal>, <literal>AMQQueue</literal> and <literal>AMQTopic</literal> in external JNDI container from
     <ulink url="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</ulink>s.
   </para>
@@ -58,7 +58,7 @@
       </listitem>
       <listitem>
         <para>
-          an instance of <literal>PolledConnectionFactory</literal> from a <literal>Reference</literal> containing reference
+          an instance of <literal>PooledConnectionFactory</literal> from a <literal>Reference</literal> containing reference
           address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>)
           <literal>connectionURL</literal> with content set to a
           <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.
@@ -112,7 +112,7 @@
             factory="org.apache.qpid.jndi.ObjectFactory"
             connectionURL="amqp://guest:guest@clientid/?brokerlist='localhost:5672'"/>
 
-  <Resource name="jms/polledConnectionFactory" auth="Container"
+  <Resource name="jms/pooledConnectionFactory" auth="Container"
             type="org.apache.qpid.client.PooledConnectionFactory"
             factory="org.apache.qpid.jndi.ObjectFactory"
             connectionURL="amqp://guest:guest@clientid/?brokerlist='localhost:5672'"
@@ -131,7 +131,7 @@
 </Context>]]></programlisting>
   </example>
   <para>In the example above <literal>AMQConnectionFactory</literal> would be registered under JNDI name "jms/connectionFactory",
-    <literal>PooledConnectionFactory</literal> would be registered under JNDI name "jms/polledConnectionFactory",
+    <literal>PooledConnectionFactory</literal> would be registered under JNDI name "jms/pooledConnectionFactory",
     <literal>Queue</literal> "myQueue" would be registered under JNDI name "jms/queue" and JMS <literal>Topic</literal>
    destination "myTopic" would be registered under JNDI name "jms/topic". (All resources will be bound under "java:comp/env").
     On declaration of <literal>PooledConnectionFactory</literal> optional maxPoolSize and connectionTimeout are set to
