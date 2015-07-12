@@ -19,7 +19,7 @@
 #
 
 if  [ -z "$LOG_CONFIG" ]; then
-  echo "Please set the appropriate parameters for logging as it may affect performance. Ex log4j defaults to DEBUG if not configured properly"
+  echo "Please set the appropriate parameters for logging as it may affect performance. Ex logback defaults to DEBUG if not configured"
   exit -1
 fi
 

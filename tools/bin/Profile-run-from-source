@@ -44,7 +44,6 @@ fi
 
 export VENDOR_LIB=$QPID_CHECKOUT/java/build/lib
 export CLASSPATH=`find $VENDOR_LIB -name '*.jar' | tr '\n' ':'`
-export LOG_CONFIG="-Dlog4j.configuration=file:///$QPID_CHECKOUT/java/tools/etc/test.log4j"
 
 
 #------------- Required for qpid-python-testkit -----------------------------------------

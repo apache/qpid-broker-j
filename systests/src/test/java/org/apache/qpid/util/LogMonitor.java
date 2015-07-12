@@ -35,11 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Utility to simplify the monitoring of Log4j file output
- *
- * Monitoring of a given log file can be done alternatively the Monitor will
- * add a new log4j FileAppender to the root Logger to gather all the available
- * logging for monitoring
+ * Utility to simplify the monitoring of the output of a log file
  */
 public class LogMonitor
 {

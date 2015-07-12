@@ -235,8 +235,7 @@ public class AbstractTestLogging extends QpidBrokerTestCase
     }
 
     /**
-     * Extract the log entry from the raw log line which will contain other
-     * log4j formatting.
+     * Extract the log entry from the raw log.
      *
      * This formatting may impead our testing process so extract the log message
      * as we know it to be formatted.
@@ -245,7 +244,7 @@ public class AbstractTestLogging extends QpidBrokerTestCase
      *
      * @param rawLog the raw log
      *
-     * @return the log we are expecting to be printed without the log4j prefixes
+     * @return the log we are expecting to be printed without the log formating prefixes
      */
     protected String getLog(String rawLog)
     {
