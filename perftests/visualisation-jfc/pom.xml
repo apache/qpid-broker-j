@@ -142,9 +142,6 @@
           </arguments>
           <systemProperties>
             <systemProperty>
-              <key>log4j.configuration</key><value>file:log4j.properties</value>
-            </systemProperty>
-            <systemProperty>
               <key>java.awt.headless</key><value>true</value>
             </systemProperty>
             <systemProperty>

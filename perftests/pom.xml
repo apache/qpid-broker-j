@@ -160,9 +160,6 @@
           </arguments>
           <systemProperties>
             <systemProperty>
-              <key>log4j.configuration</key><value>file:log4j.properties</value>
-            </systemProperty>
-            <systemProperty>
               <key>qpid.amqp.version</key><value>0-91</value>
             </systemProperty>
             <systemProperty>

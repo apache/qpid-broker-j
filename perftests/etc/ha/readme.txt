@@ -29,5 +29,5 @@ perfetsts> java -cp './target/*:./target/dependency/*:./etc/' -Dqpid.amqp.versio
 Graphs can be built with:
 
 perfetsts> java -cp './visualisation-jfc/target/dependency/*:./visualisation-jfc/target/*' -Djava.awt.headless=true \
-          -Dlog4j.configuration=file://./etc/log4j.properties -DcsvCurrentDir=. -DcsvBaselineDir=. -DbaselineName=na \
+          -DcsvCurrentDir=. -DcsvBaselineDir=. -DbaselineName=na \
           org.apache.qpid.disttest.charting.ChartingUtil chart-defs=./etc/ha/1001-ScalingParticipants.chartdef
