@@ -70,14 +70,14 @@ define(["qpid/common/util",
       this.logFiles = this.addIdToFileObjects(params.data);
       this.logFileGrid = new UpdatableStore(this.logFiles, query(".logFilesGrid", params.containerNode)[0],
         [
-          { name: "Name", field: "name", width: "auto"},
-          { name: "Size", field: "size", width: "60px",
+          { name: "Name", field: "name", width: "40%"},
+          { name: "Size", field: "size", width: "20%",
             formatter: function(val)
             {
               return val > 1024 ? (val > 1048576? number.round(val/1048576) + "MB": number.round(val/1024) + "KB") : val + "bytes";
             }
           },
-          { name: "Last Modified", field: "lastModified", width: "250px",
+          { name: "Last Modified", field: "lastModified", width: "40%",
             formatter: function(val)
             {
               return that.management.userPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});

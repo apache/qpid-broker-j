@@ -582,13 +582,15 @@ define(["dojo/parser",
                              that.brokerLoggersGrid =
                                new UpdatableStore(brokerLoggerData, query(".broker-loggers")[0],
                                                [ { name: "Name",  field: "name",  width: "40%"},
-                                                 { name: "State", field: "state", width: "20%"},
-                                                 { name: "Type",  field: "type", width: "20%"},
+                                                 { name: "State", field: "state", width: "15%"},
+                                                 { name: "Type",  field: "type", width: "15%"},
                                                  { name: "Exclude Virtual Host Logs",  field: "virtualHostLogEventExcluded", width: "20%",
                                                      formatter: function(val){
                                                        return util.buildCheckboxMarkup(val);
                                                      }
-                                                 }
+                                                 },
+                                                 { name: "Errors", field: "errorCount", width: "5%"},
+                                                 { name: "Warnings", field: "warnCount", width: "5%"}
                                                ], function(obj) {
                                                        connect.connect(obj.grid, "onRowDblClick", obj.grid,
                                                        function(evt){

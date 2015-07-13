@@ -41,20 +41,20 @@
     "maxFileSize" : "200mb",
     "maxHistory" : 1,
     "brokerloggerfilters" : [ {
-      "name" : "1",
+      "name" : "acceptFilter1",
       "type" : "NameAndLevel",
       "level" : "INFO",
-      "loggerName" : "" 
+      "loggerName" : "ROOT"
     } ]
   }, {
     "name" : "memory",
     "type" : "Memory",
     "maxRecords" : 4096,
     "brokerloggerfilters" : [ {
-      "name" : "1",
+      "name" : "acceptFilter1",
       "type" : "NameAndLevel",
       "level" : "INFO",
-      "loggerName" : "" 
+      "loggerName" : "ROOT"
     } ]
   } ],
   "ports" : [  {

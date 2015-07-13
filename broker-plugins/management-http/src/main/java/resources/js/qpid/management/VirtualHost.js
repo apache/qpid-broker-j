@@ -328,11 +328,8 @@ define(["dojo/parser",
                                                                     [ { name: "Name",  field: "name",  width: "40%"},
                                                                       { name: "State", field: "state", width: "20%"},
                                                                       { name: "Type",  field: "type", width: "20%"},
-                                                                      { name: "Durable",  field: "durable", width: "20%",
-                                                                        formatter: function(val){
-                                                                          return util.buildCheckboxMarkup(val);
-                                                                        }
-                                                                      }
+                                                                      { name: "Errors", field: "errorCount", width: "10%"},
+                                                                      { name: "Warnings", field: "warnCount", width: "10%"}
                                                                     ],
                                                                     function(obj)
                                                                     {

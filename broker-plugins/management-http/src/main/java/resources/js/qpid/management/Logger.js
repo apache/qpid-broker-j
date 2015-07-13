@@ -104,10 +104,11 @@ define(["dojo/parser",
 
       this.filterGrid = new UpdatableStore([], query(".filterGrid", containerNode)[0],
         [
-          {name: "Name", field: "name", width: "40%"},
+          {name: "Filter Name", field: "name", width: "20%"},
           {name: "Type", field: "type", width: "20%"},
+          {name: "Logger Name", field: "loggerName", width: "30%"},
           {name: "Level", field: "level", width: "20%"},
-          {name: "Durable", field: "durable", width: "20%", formatter: util.buildCheckboxMarkup}
+          {name: "Durable", field: "durable", width: "10%", formatter: util.buildCheckboxMarkup}
         ], function (obj)
         {
           connect.connect(obj.grid, "onRowDblClick", obj.grid,
@@ -192,7 +193,7 @@ define(["dojo/parser",
         }
       }
 
-      storeNodes(["name", "state", "type", "loggerAttributes", "loggerTypeSpecificDetails", "filterWarning", "durable"]);
+      storeNodes(["name", "state", "type", "loggerAttributes", "loggerTypeSpecificDetails", "filterWarning", "durable", "errorCount", "warnCount"]);
     }
 
     Updater.prototype.update = function (callback)
@@ -227,6 +228,8 @@ define(["dojo/parser",
       this.state.innerHTML = entities.encode(String(data["state"]));
       this.type.innerHTML = entities.encode(String(data["type"]));
       this.durable.innerHTML = util.buildCheckboxMarkup(data["durable"]);
+      this.errorCount.innerHTML = String(data["statistics"]["errorCount"]);
+      this.warnCount.innerHTML = String(data["statistics"]["warnCount"]);
 
       if (!this.details)
       {

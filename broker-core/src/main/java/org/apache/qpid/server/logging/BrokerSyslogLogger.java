@@ -39,7 +39,7 @@ public interface BrokerSyslogLogger<X extends BrokerSyslogLogger<X>> extends Bro
     @ManagedAttribute( defaultValue = "Qpid \\(broker:${ancestor:broker:name}\\) %level [%thread] \\(%logger{2}\\) - %msg")
     String getSuffixPattern();
 
-    @ManagedAttribute( defaultValue = "\t")
+    @ManagedAttribute( defaultValue = "Qpid \\(broker:${ancestor:broker:name}\\) - ")
     String getStackTracePattern();
 
     @ManagedAttribute( defaultValue = "false")

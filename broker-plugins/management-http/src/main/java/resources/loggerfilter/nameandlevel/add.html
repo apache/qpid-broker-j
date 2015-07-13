@@ -25,8 +25,8 @@
                    data-dojo-type="dijit/form/ValidationTextBox"
                    data-dojo-props="
                               name: 'loggerName',
-                              placeHolder: 'xxx.yyy.zzz',
-                              promptMessage: 'Enter logger name. .* wildcard can be specified on the end of logger name to include the logger hierarchy. if not set a root logger will be used',
+                              placeHolder: 'ROOT',
+                              promptMessage: 'Enter logger name (usually the package name). To capture loggers from subpackages you must specify the &quot;.*&quot; wildcard at the end (e.g., org.apache.qpid.*)',
                               title: 'Enter logger name'"/>
         </div>
     </div>
