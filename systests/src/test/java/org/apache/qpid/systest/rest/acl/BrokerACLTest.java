@@ -842,8 +842,6 @@ public class BrokerACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        getRestTestHelper().submitRequest("brokerlogger/memory", "GET", HttpServletResponse.SC_OK);
-
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(BrokerLogger.NAME, "testLogger1");
         attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
@@ -859,13 +857,22 @@ public class BrokerACLTest extends QpidRestTestCase
 
     public void testDeleteBrokerLoggerAllowedDenied() throws Exception
     {
+        getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(BrokerLogger.NAME, "testLogger1");
+        attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+
+        getRestTestHelper().submitRequest("brokerlogger", "PUT", attributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest("brokerlogger/testLogger1", "GET", HttpServletResponse.SC_OK);
+
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
-        getRestTestHelper().submitRequest("brokerlogger/memory", "DELETE", null, HttpServletResponse.SC_FORBIDDEN);
-        getRestTestHelper().submitRequest("brokerlogger/memory", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerlogger/testLogger1", "DELETE", null, HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest("brokerlogger/testLogger1", "GET", HttpServletResponse.SC_OK);
 
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
-        getRestTestHelper().submitRequest("brokerlogger/memory", "DELETE", null, HttpServletResponse.SC_OK);
-        getRestTestHelper().submitRequest("brokerlogger/memory", "GET", HttpServletResponse.SC_NOT_FOUND);
+        getRestTestHelper().submitRequest("brokerlogger/testLogger1", "DELETE", null, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerlogger/testLogger1", "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testDownloadBrokerLoggerFileAllowedDenied() throws Exception
@@ -914,44 +921,55 @@ public class BrokerACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/1", "GET", HttpServletResponse.SC_OK);
+        Map<String, Object> loggerAttributes = new HashMap<>();
+        loggerAttributes.put(BrokerLogger.NAME, "testLogger1");
+        loggerAttributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+        getRestTestHelper().submitRequest("brokerlogger", "PUT", loggerAttributes, HttpServletResponse.SC_CREATED);
+
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(BrokerNameAndLevelFilter.NAME, "2");
+        attributes.put(BrokerNameAndLevelFilter.NAME, "filter1");
         attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
         attributes.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
 
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory", "PUT", attributes, HttpServletResponse.SC_CREATED);
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/2", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1", "PUT", attributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "GET", HttpServletResponse.SC_OK);
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
-        attributes.put(BrokerNameAndLevelFilter.NAME, "3");
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/3", "GET", HttpServletResponse.SC_NOT_FOUND);
+        attributes.put(BrokerNameAndLevelFilter.NAME, "filter2");
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter2", "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     public void testUpdateBrokerLoggerFilterAllowedDenied() throws Exception
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
-        Map<String,Object> result = getRestTestHelper().getJsonAsSingletonList("brokerloggerfilter/memory/1");
-        assertEquals("Log level was not as expected", "INFO", result.get(BrokerNameAndLevelFilter.LEVEL));
+        Map<String, Object> loggerAttributes = new HashMap<>();
+        loggerAttributes.put(BrokerLogger.NAME, "testLogger1");
+        loggerAttributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+        getRestTestHelper().submitRequest("brokerlogger", "PUT", loggerAttributes, HttpServletResponse.SC_CREATED);
+
+        Map<String, Object> filterAttributes = new HashMap<>();
+        filterAttributes.put(BrokerNameAndLevelFilter.NAME, "filter1");
+        filterAttributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
+        filterAttributes.put(BrokerNameAndLevelFilter.LEVEL, "INFO");
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1", "PUT", filterAttributes, HttpServletResponse.SC_CREATED);
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(BrokerNameAndLevelFilter.NAME, "1");
+        attributes.put(BrokerNameAndLevelFilter.NAME, "filter1");
         attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
         attributes.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
 
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/1", "PUT", attributes, HttpServletResponse.SC_OK);
-        Map<String,Object> resultAfterUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloggerfilter/memory/1");
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "PUT", attributes, HttpServletResponse.SC_OK);
+        Map<String,Object> resultAfterUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloggerfilter/testLogger1/filter1");
         assertEquals("Log level was not changed", "DEBUG", resultAfterUpdate.get(BrokerNameAndLevelFilter.LEVEL));
-
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
         attributes.put(BrokerNameAndLevelFilter.LEVEL, "INFO");
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/1", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
 
-        Map<String,Object> resultAfterDeniedUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloggerfilter/memory/1");
+        Map<String,Object> resultAfterDeniedUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloggerfilter/testLogger1/filter1");
         assertEquals("Log level was changed by not allowed user", "DEBUG", resultAfterDeniedUpdate.get(BrokerNameAndLevelFilter.LEVEL));
     }
 
@@ -959,21 +977,27 @@ public class BrokerACLTest extends QpidRestTestCase
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
+        Map<String, Object> loggerAttributes = new HashMap<>();
+        loggerAttributes.put(BrokerLogger.NAME, "testLogger1");
+        loggerAttributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+        getRestTestHelper().submitRequest("brokerlogger", "PUT", loggerAttributes, HttpServletResponse.SC_CREATED);
+
+
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(BrokerNameAndLevelFilter.NAME, "2");
+        attributes.put(BrokerNameAndLevelFilter.NAME, "filter1");
         attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
         attributes.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
 
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory", "PUT", attributes, HttpServletResponse.SC_CREATED);
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/2", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1", "PUT", attributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "GET", HttpServletResponse.SC_OK);
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/2", "DELETE", null, HttpServletResponse.SC_FORBIDDEN);
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/2", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "DELETE", null, HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "GET", HttpServletResponse.SC_OK);
 
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/2", "DELETE", null, HttpServletResponse.SC_OK);
-        getRestTestHelper().submitRequest("brokerloggerfilter/memory/2", "GET", HttpServletResponse.SC_NOT_FOUND);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "DELETE", null, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     /* === Utility Methods === */
