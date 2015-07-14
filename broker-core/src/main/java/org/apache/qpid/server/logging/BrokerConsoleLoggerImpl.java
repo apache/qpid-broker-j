@@ -20,9 +20,12 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
@@ -38,10 +41,19 @@ public class BrokerConsoleLoggerImpl extends AbstractBrokerLogger<BrokerConsoleL
     @ManagedAttributeField
     private String _layout;
 
+    @ManagedAttributeField
+    private ConsoleStreamTarget _consoleStreamTarget;
+
     @ManagedObjectFactoryConstructor
     protected BrokerConsoleLoggerImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
         super(attributes, broker);
+    }
+
+    @Override
+    public ConsoleStreamTarget getConsoleStreamTarget()
+    {
+        return _consoleStreamTarget;
     }
 
     @Override
@@ -60,9 +72,24 @@ public class BrokerConsoleLoggerImpl extends AbstractBrokerLogger<BrokerConsoleL
         encoder.setContext(context);
         encoder.start();
 
+        if (_consoleStreamTarget == ConsoleStreamTarget.STDERR)
+        {
+            consoleAppender.setTarget("System.err");
+        }
         consoleAppender.setEncoder(encoder);
 
         return consoleAppender;
+    }
+
+    @SuppressWarnings("unused")
+    public static Collection<String> getAllConsoleStreamTarget()
+    {
+        List<String> validValues = new ArrayList<>();
+        for (ConsoleStreamTarget level : EnumSet.allOf(ConsoleStreamTarget.class))
+        {
+            validValues.add(level.name());
+        }
+        return validValues;
     }
 
 }

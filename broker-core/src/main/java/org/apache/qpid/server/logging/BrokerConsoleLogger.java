@@ -31,4 +31,13 @@ public interface BrokerConsoleLogger<X extends BrokerConsoleLogger<X>> extends B
 
     @ManagedAttribute(defaultValue = "%date %-5level [%thread] \\(%logger{2}\\) - %msg%n")
     String getLayout();
+
+    @ManagedAttribute(defaultValue = "STDOUT", validValues = {"org.apache.qpid.server.logging.BrokerConsoleLoggerImpl#getAllConsoleStreamTarget()"})
+    ConsoleStreamTarget getConsoleStreamTarget();
+
+    enum ConsoleStreamTarget
+    {
+        STDOUT,
+        STDERR
+    }
 }

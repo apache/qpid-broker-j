@@ -28,7 +28,7 @@ define(["dojo/dom",
     "dojo/domReady!"],
   function (dom, query, array, registry, util, parser, template)
   {
-    var addFileLogger =
+    var addLoggerFilter =
     {
       show: function(data)
       {
@@ -46,6 +46,6 @@ define(["dojo/dom",
       }
     };
 
-    return addFileLogger;
+    return addLoggerFilter;
   }
 );

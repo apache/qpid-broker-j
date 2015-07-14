@@ -19,6 +19,19 @@
 
 <div>
     <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Console Stream Target:</div>
+        <div class="tableContainer-valueCell formLabel-controlCell">
+            <select id="addLogger.console.consoleStreamTarget" data-dojo-type="dijit/form/FilteringSelect"
+                    data-dojo-props="
+                                name: 'consoleStreamTarget',
+                                required: true,
+                                placeHolder: 'select console stream target',
+                                promptMessage: 'Where the console stream will go',
+                                title: 'Select target'">
+            </select>
+        </div>
+    </div>
+    <div class="clear">
         <div class="formLabel-labelCell tableContainer-labelCell">Log Message Format:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
             <input type="text" id="addLogger.console.layout"
@@ -26,8 +39,8 @@
                    data-dojo-props="
                               name: 'layout',
                               placeHolder: '%d %-5p [%t] \(%c{2}\) - %m%n',
-                              promptMessage: 'Enter the format of the log messages using logback formating',
-                              title: 'Enter the format of the log messages using logback formating'"/>
+                              promptMessage: 'Enter the format of the log messages using logback formatting',
+                              title: 'Enter the format of the log messages using logback formatting'"/>
         </div>
     </div>
 </div>

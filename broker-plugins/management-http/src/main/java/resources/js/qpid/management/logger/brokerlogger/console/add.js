@@ -31,8 +31,17 @@ define(["dojo/dom",
     return {
       show: function(data)
       {
+        var that = this;
+        this.metadata = data.metadata;
+        this.containerNode = data.containerNode;
         data.containerNode.innerHTML = template;
-        return parser.parse(data.containerNode);
+        return parser.parse(data.containerNode).then(function(instances)
+        {
+          var consoleStreamTargetWidget = registry.byId("addLogger.console.consoleStreamTarget");
+          var validValues = that.metadata.getMetaData(data.category, data.type).attributes.consoleStreamTarget.validValues;
+          var validValueStore = util.makeTypeStore(validValues);
+          consoleStreamTargetWidget.set("store", validValueStore);
+        });
       }
     };
   }

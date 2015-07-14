@@ -159,7 +159,11 @@ define(["dojo/_base/lang",
                      {
                          try
                          {
-                             var promise = typeUI.show({ containerNode:that.typeFieldsContainer, data: that.initialData });
+                             var promise = typeUI.show({ containerNode: that.typeFieldsContainer,
+                                                         data: that.initialData,
+                                                         metadata: that.management.metadata,
+                                                         category: that.category,
+                                                         type: type});
                              if (promise)
                              {
                                  promise.then(
