@@ -48,6 +48,7 @@
     <receiver class="ch.qos.logback.classic.net.server.ServerSocketReceiver">
         <port>${receiverPort}</port>
     </receiver>
+    <logger name="qpid.message" level="info" />
     <logger name="org.apache.qpid" level="debug" />
     <root level="warn">
         <appender-ref ref="RootSiftAppender"/>
