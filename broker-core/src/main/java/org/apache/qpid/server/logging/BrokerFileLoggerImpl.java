@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.security.AccessControlException;
@@ -41,6 +42,7 @@ import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 import org.apache.qpid.server.logging.logback.RolloverWatcher;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Content;
@@ -70,7 +72,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @ManagedAttributeField
     private int _maxHistory;
     @ManagedAttributeField
-    private String _maxFileSize;
+    private int _maxFileSize;
     private StatusManager _statusManager;
     private StatusListener _logbackStatusListener;
 
@@ -87,6 +89,21 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
         _rolledPolicyExecutor = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory("RolledFileScanner-" + getName()));
 
         super.postResolveChildren();
+    }
+
+    @Override
+    protected void validateChange(ConfiguredObject<?> proxyForValidation, Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        BrokerFileLogger brokerFileLogger = (BrokerFileLogger) proxyForValidation;
+        if (changedAttributes.contains(FILE_NAME) && (brokerFileLogger.getFileName() != null))
+        {
+            AppenderUtils.validateLogFilePermissions(new File(brokerFileLogger.getFileName()));
+        }
+        if (changedAttributes.contains(MAX_FILE_SIZE))
+        {
+            AppenderUtils.validateMaxFileSize(brokerFileLogger.getMaxFileSize());
+        }
     }
 
     @Override
@@ -120,7 +137,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     }
 
     @Override
-    public String getMaxFileSize()
+    public int getMaxFileSize()
     {
         return _maxFileSize;
     }

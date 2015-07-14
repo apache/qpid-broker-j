@@ -25,13 +25,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
@@ -51,6 +54,40 @@ public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLog
     public int getMaxRecords()
     {
         return _maxRecords;
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        // Validate early (i.e. rather than onValidate) as super.postResolveChildren() creates the buffer
+        int maxRecords = getMaxRecords();
+        validateLimits(maxRecords);
+
+        super.postResolveChildren();
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        BrokerMemoryLogger brokerMemoryLogger = (BrokerMemoryLogger) proxyForValidation;
+        if (changedAttributes.contains(MAX_RECORDS))
+        {
+            final int maxRecords = brokerMemoryLogger.getMaxRecords();
+            validateLimits(maxRecords);
+        }
+    }
+
+    private void validateLimits(int maxRecords)
+    {
+        if (maxRecords > MAX_RECORD_LIMIT)
+        {
+            throw new IllegalConfigurationException(String.format("Maximum number of records (%d) exceeds limit (%d)", maxRecords, MAX_RECORD_LIMIT));
+        }
+        else if (maxRecords < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Maximum number of records (%d) must be larger than zero", maxRecords));
+        }
     }
 
     @Override

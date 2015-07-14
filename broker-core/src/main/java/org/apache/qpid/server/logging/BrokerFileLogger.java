@@ -37,6 +37,7 @@ public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerL
 {
     String TYPE = "File";
     String FILE_NAME = "fileName";
+    String MAX_FILE_SIZE = "maxFileSize";
 
     String BROKER_FAIL_ON_LOGGER_IO_ERROR = "broker.failOnLoggerIOError";
     @ManagedContextDefault(name = BROKER_FAIL_ON_LOGGER_IO_ERROR)
@@ -57,8 +58,8 @@ public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerL
     @ManagedAttribute( defaultValue = "1")
     int getMaxHistory();
 
-    @ManagedAttribute( defaultValue = "100mb")
-    String getMaxFileSize();
+    @ManagedAttribute( defaultValue = "100")
+    int getMaxFileSize();
 
     @ManagedAttribute(defaultValue = "%date %-5level [%thread] \\(%logger{2}\\) - %msg%n")
     String getLayout();

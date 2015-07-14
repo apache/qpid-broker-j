@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.logging;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -29,19 +29,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import ch.qos.logback.core.Appender;
 import org.apache.qpid.server.BrokerOptions;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.logging.BrokerMemoryLogger;
-import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerLogger;
+import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.JsonSystemConfigImpl;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.GenericRecoverer;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BrokerTest extends QpidTestCase
+public class BrokerMemoryLoggerTest extends QpidTestCase
 {
     private TaskExecutor _taskExecutor;
     private SystemConfig<JsonSystemConfigImpl> _systemConfig;
@@ -60,7 +64,7 @@ public class BrokerTest extends QpidTestCase
 
         when(_brokerEntry.getId()).thenReturn(_brokerId);
         when(_brokerEntry.getType()).thenReturn(Broker.class.getSimpleName());
-        Map<String, Object> attributesMap = new HashMap<String, Object>();
+        Map<String, Object> attributesMap = new HashMap<>();
         attributesMap.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
         attributesMap.put(Broker.NAME, getName());
 
@@ -70,33 +74,70 @@ public class BrokerTest extends QpidTestCase
         recoverer.recover(Arrays.asList(_brokerEntry));
     }
 
-    public void testCreateBrokerLogger()
+    public void testCreateDeleteBrokerMemoryLogger()
     {
         final String brokerLoggerName = "TestBrokerLogger";
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        Broker broker = _systemConfig.getBroker();
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, brokerLoggerName);
+        attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+
+        BrokerLogger brokerLogger = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
+        assertEquals("Created BrokerLogger has unexpected name", brokerLoggerName, brokerLogger.getName());
+        assertTrue("BrokerLogger has unexpected type", brokerLogger instanceof BrokerMemoryLogger);
+
+        assertNotNull("Appender not attached to root logger after BrokerLogger creation",
+                      rootLogger.getAppender(brokerLoggerName));
+
+        brokerLogger.delete();
+
+        assertNull("Appender should be no longer attached to root logger after BrokerLogger deletion",
+                   rootLogger.getAppender(brokerLoggerName));
+    }
+
+    public void testBrokerMemoryLoggerRestrictsBufferSize()
+    {
+        doMemoryLoggerLimitsTest(BrokerMemoryLogger.MAX_RECORD_LIMIT + 1, BrokerMemoryLogger.MAX_RECORD_LIMIT);
+        doMemoryLoggerLimitsTest(0, 1);
+    }
+
+    private void doMemoryLoggerLimitsTest(final int illegalValue, final int legalValue)
+    {
+        final String brokerLoggerName = "TestBrokerLogger";
+
+        Broker broker = _systemConfig.getBroker();
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, brokerLoggerName);
+        attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+        attributes.put(BrokerMemoryLogger.MAX_RECORDS, illegalValue);
+
         try
         {
-            Broker broker = _systemConfig.getBroker();
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put(ConfiguredObject.NAME, brokerLoggerName);
-            attributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
+            broker.createChild(BrokerLogger.class, attributes);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
+            // PASS
+        }
 
-            BrokerLogger child = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
-            assertEquals("Created BrokerLoger has unexcpected name", brokerLoggerName, child.getName());
-            assertTrue("BrokerLogger has unexpected type", child instanceof BrokerMemoryLogger);
+        attributes.put(BrokerMemoryLogger.MAX_RECORDS, legalValue);
+        BrokerLogger brokerLogger = (BrokerLogger) broker.createChild(BrokerLogger.class, attributes);
 
-            Appender appender = rootLogger.getAppender(brokerLoggerName);
-            assertNotNull("Appender not attached to root logger after BrokerLogger creation", appender);
+        try
+        {
+            brokerLogger.setAttributes(Collections.singletonMap(BrokerMemoryLogger.MAX_RECORDS, illegalValue));
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
+            // PASS
         }
         finally
         {
-            Appender appender = rootLogger.getAppender(brokerLoggerName);
-            if (appender!= null)
-            {
-                appender.stop();
-                rootLogger.detachAppender(appender);
-            }
+            brokerLogger.delete();
         }
     }
 }

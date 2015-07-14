@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.logging;
 
+import java.io.File;
 import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Map;
@@ -27,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
@@ -35,6 +35,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
 
 import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 import org.apache.qpid.server.logging.logback.RolloverWatcher;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Content;
@@ -60,7 +61,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @ManagedAttributeField
     private int _maxHistory;
     @ManagedAttributeField
-    private String _maxFileSize;
+    private int _maxFileSize;
     @ManagedAttributeField
     private boolean _safeMode;
 
@@ -77,6 +78,21 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
         _rolledPolicyExecutor = Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory("RolledFileScanner-" + getName()));
 
         super.postResolveChildren();
+    }
+
+    @Override
+    protected void validateChange(ConfiguredObject<?> proxyForValidation, Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        VirtualHostFileLogger virtualHostFileLogger = (VirtualHostFileLogger) proxyForValidation;
+        if (changedAttributes.contains(FILE_NAME) && (virtualHostFileLogger.getFileName() != null))
+        {
+            AppenderUtils.validateLogFilePermissions(new File(virtualHostFileLogger.getFileName()));
+        }
+        if (changedAttributes.contains(MAX_FILE_SIZE))
+        {
+            AppenderUtils.validateMaxFileSize(virtualHostFileLogger.getMaxFileSize());
+        }
     }
 
     @Override
@@ -110,7 +126,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     }
 
     @Override
-    public String getMaxFileSize()
+    public int getMaxFileSize()
     {
         return _maxFileSize;
     }

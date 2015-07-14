@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedOperation;
 import org.apache.qpid.server.model.Param;
@@ -31,7 +32,14 @@ import org.apache.qpid.server.model.Param;
 @ManagedObject( category = false, type = BrokerMemoryLogger.TYPE)
 public interface BrokerMemoryLogger<X extends BrokerMemoryLogger<X>> extends BrokerLogger<X>
 {
+    String MAX_RECORDS = "maxRecords";
+
     String TYPE = "Memory";
+
+    String BROKERMEMORYLOGGER_MAX_RECORD_LIMIT_VAR  = "brokermemorylogger.max_record_limit";
+
+    @ManagedContextDefault(name = BROKERMEMORYLOGGER_MAX_RECORD_LIMIT_VAR)
+    int MAX_RECORD_LIMIT = 16384;
 
     @ManagedAttribute( defaultValue = "4096" )
     int getMaxRecords();

@@ -22,7 +22,6 @@ package org.apache.qpid.server.logging;
 
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.qpid.server.model.DerivedAttribute;
@@ -38,6 +37,7 @@ public interface VirtualHostFileLogger<X extends VirtualHostFileLogger<X>> exten
 {
     String TYPE = "File";
     String FILE_NAME = "fileName";
+    String MAX_FILE_SIZE = "maxFileSize";
 
     @ManagedAttribute( defaultValue = "${virtualhost.work_dir}${file.separator}log${file.separator}${this:name}.log")
     String getFileName();
@@ -54,8 +54,8 @@ public interface VirtualHostFileLogger<X extends VirtualHostFileLogger<X>> exten
     @ManagedAttribute( defaultValue = "1")
     int getMaxHistory();
 
-    @ManagedAttribute( defaultValue = "100mb")
-    String getMaxFileSize();
+    @ManagedAttribute( defaultValue = "100")
+    int getMaxFileSize();
 
     @ManagedAttribute(defaultValue = "%date %-5level [%thread] \\(%logger{2}\\) - %msg%n")
     String getLayout();

@@ -32,6 +32,7 @@ import ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP;
 import ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.rolling.TriggeringPolicy;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.logback.RollingPolicyDecorator;
 
 public class AppenderUtils
@@ -40,20 +41,30 @@ public class AppenderUtils
                                                     Context loggerContext,
                                                     RollingFileAppender<ILoggingEvent> appender)
     {
-        appender.setFile(fileLoggerSettings.getFileName());
+        String fileName = fileLoggerSettings.getFileName();
+        File file = new File(fileName);
+        if (file.getParentFile() != null)
+        {
+            file.getParentFile().mkdirs();
+        }
+        validateLogFilePermissions(file);
+        validateMaxFileSize(fileLoggerSettings.getMaxFileSize());
+
+        appender.setFile(fileName);
         appender.setAppend(true);
         appender.setContext(loggerContext);
 
         TriggeringPolicy triggeringPolicy;
         RollingPolicyBase rollingPolicy;
+        final String maxFileSizeAsString = String.valueOf(fileLoggerSettings.getMaxFileSize()) + "MB";
         if(fileLoggerSettings.isRollDaily())
         {
-            DailyTriggeringPolicy dailyTriggeringPolicy = new DailyTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), fileLoggerSettings.getMaxFileSize());
+            DailyTriggeringPolicy dailyTriggeringPolicy = new DailyTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), maxFileSizeAsString);
             dailyTriggeringPolicy.setContext(loggerContext);
             TimeBasedRollingPolicy<ILoggingEvent> timeBasedRollingPolicy = new TimeBasedRollingPolicy<>();
             timeBasedRollingPolicy.setMaxHistory(fileLoggerSettings.getMaxHistory());
             timeBasedRollingPolicy.setTimeBasedFileNamingAndTriggeringPolicy(dailyTriggeringPolicy);
-            timeBasedRollingPolicy.setFileNamePattern(fileLoggerSettings.getFileName() + ".%d{yyyy-MM-dd}.%i" + (fileLoggerSettings.isCompressOldFiles()
+            timeBasedRollingPolicy.setFileNamePattern(fileName + ".%d{yyyy-MM-dd}.%i" + (fileLoggerSettings.isCompressOldFiles()
                     ? ".gz"
                     : ""));
             rollingPolicy = timeBasedRollingPolicy;
@@ -61,10 +72,10 @@ public class AppenderUtils
         }
         else
         {
-            SizeTriggeringPolicy sizeTriggeringPolicy = new SizeTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), fileLoggerSettings.getMaxFileSize());
+            SizeTriggeringPolicy sizeTriggeringPolicy = new SizeTriggeringPolicy(fileLoggerSettings.isRollOnRestart(), maxFileSizeAsString);
             sizeTriggeringPolicy.setContext(loggerContext);
             SimpleRollingPolicy simpleRollingPolicy = new SimpleRollingPolicy(fileLoggerSettings.getMaxHistory());
-            simpleRollingPolicy.setFileNamePattern(fileLoggerSettings.getFileName() + ".%i" + (fileLoggerSettings.isCompressOldFiles() ? ".gz" : ""));
+            simpleRollingPolicy.setFileNamePattern(fileName + ".%i" + (fileLoggerSettings.isCompressOldFiles() ? ".gz" : ""));
             rollingPolicy = simpleRollingPolicy;
             triggeringPolicy = sizeTriggeringPolicy;
         }
@@ -84,6 +95,21 @@ public class AppenderUtils
         appender.setEncoder(encoder);
     }
 
+    static void validateLogFilePermissions(final File file)
+    {
+        if ((file.exists() && (!file.isFile() || !file.canWrite())) || !file.getParentFile().canWrite())
+        {
+            throw new IllegalConfigurationException(String.format("Do not have the permissions to log to file '%s'.", file.getAbsolutePath()));
+        }
+    }
+
+    static void validateMaxFileSize(final int maxFileSize)
+    {
+        if (maxFileSize < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Maximum file size must be at least 1. Cannot set to %d.", maxFileSize));
+        }
+    }
 
     static class DailyTriggeringPolicy extends SizeAndTimeBasedFNATP<ILoggingEvent>
     {

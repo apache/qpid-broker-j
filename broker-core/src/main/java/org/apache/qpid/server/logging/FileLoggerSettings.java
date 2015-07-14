@@ -36,7 +36,7 @@ public interface FileLoggerSettings
 
     int getMaxHistory();
 
-    String getMaxFileSize();
+    int getMaxFileSize();
 
     String getLayout();
 

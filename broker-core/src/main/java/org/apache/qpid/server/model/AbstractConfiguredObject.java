@@ -1016,6 +1016,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
+    /**
+     * Validation performed for configured object creation and opening.
+     *
+     * @throws IllegalConfigurationException indicates invalid configuration
+     */
     public void onValidate()
     {
         for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())

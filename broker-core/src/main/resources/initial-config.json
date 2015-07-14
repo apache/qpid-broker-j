@@ -35,11 +35,6 @@
     "name" : "logfile",
     "type" : "File",
     "fileName" : "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
-    "rollDaily" : false,
-    "rollOnRestart" : true,
-    "compressOldFiles" : false,
-    "maxFileSize" : "200mb",
-    "maxHistory" : 1,
     "brokerloggerfilters" : [ {
       "name" : "acceptFilter1",
       "type" : "NameAndLevel",
@@ -49,7 +44,6 @@
   }, {
     "name" : "memory",
     "type" : "Memory",
-    "maxRecords" : 4096,
     "brokerloggerfilters" : [ {
       "name" : "acceptFilter1",
       "type" : "NameAndLevel",
