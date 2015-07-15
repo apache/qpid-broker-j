@@ -69,6 +69,39 @@ public class RolloverWatcherTest extends QpidTestCase
                 new HashSet<>(_rolloverWatcher.getRolledFiles()));
     }
 
+    public void testGetLogFileDetailsIsOrdered() throws Exception
+    {
+
+        String[] files = {"test1", "test2"};
+        List<String> expectedOrder = new ArrayList<>();
+
+        _activeFile.createNewFile();
+        expectedOrder.add(_activeFile.toPath().getFileName().toString());
+
+        long lastModified = System.currentTimeMillis() - (1000 * 60 * 5);
+        for(String filename : files)
+        {
+            File file = new File(_baseFolder, filename);
+            file.createNewFile();
+            file.setLastModified(lastModified);
+            lastModified += 1000 * 30;
+            expectedOrder.add(1, filename);
+        }
+
+        _rolloverWatcher.onRollover(_baseFolder.toPath(), files);
+
+        List<LogFileDetails> orderedDetails = _rolloverWatcher.getLogFileDetails();
+
+        assertEquals("Unexpected number of log file details", expectedOrder.size(), orderedDetails.size());
+
+        for (int i = 0; i < expectedOrder.size(); i++)
+        {
+            String expectedFilename = expectedOrder.get(i);
+            String actualFilename = orderedDetails.get(i).getName();
+            assertEquals("Unexpected filename at position " + i, expectedFilename, actualFilename);
+        }
+    }
+
     public void testGetTypedContentForActiveFile() throws Exception
     {
         _rolloverWatcher.onRollover(_baseFolder.toPath(), new String[]{});

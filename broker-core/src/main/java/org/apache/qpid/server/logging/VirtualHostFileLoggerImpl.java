@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging;
 
 import java.io.File;
 import java.security.AccessControlException;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -138,7 +138,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     }
 
     @Override
-    public Collection<LogFileDetails> getLogFiles()
+    public List<LogFileDetails> getLogFiles()
     {
         return _rolloverWatcher.getLogFileDetails();
     }

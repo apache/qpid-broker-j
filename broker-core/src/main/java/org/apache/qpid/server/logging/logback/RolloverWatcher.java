@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,14 @@ import org.apache.qpid.server.logging.ZippedContent;
 public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(RolloverWatcher.class);
+    private static final Comparator<LogFileDetails> LAST_MODIFIED_COMPARATOR = new Comparator<LogFileDetails>()
+    {
+        @Override
+        public int compare(final LogFileDetails o1, final LogFileDetails o2)
+        {
+            return (int) (o2.getLastModified() - o1.getLastModified());
+        }
+    };
     private final Path _activeFilePath;
     private volatile Collection<String> _rolledFiles;
     private volatile Path _baseFolder;
@@ -111,6 +120,7 @@ public class RolloverWatcher implements RollingPolicyDecorator.RolloverListener
             LogFileDetails details = getFileDetails(file);
             results.add(details);
         }
+        Collections.sort(results, LAST_MODIFIED_COMPARATOR);
         return results;
     }
 

@@ -21,6 +21,7 @@
 package org.apache.qpid.server.logging;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.qpid.server.model.BrokerLogger;
@@ -65,7 +66,7 @@ public interface BrokerFileLogger<X extends BrokerFileLogger<X>> extends BrokerL
     String getLayout();
 
     @DerivedAttribute
-    Collection<LogFileDetails> getLogFiles();
+    List<LogFileDetails> getLogFiles();
 
     @ManagedOperation(nonModifying = true)
     Content getFile(@Param(name = "fileName") String fileName);

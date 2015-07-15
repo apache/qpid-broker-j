@@ -22,6 +22,7 @@ package org.apache.qpid.server.logging;
 
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.qpid.server.model.DerivedAttribute;
@@ -61,7 +62,7 @@ public interface VirtualHostFileLogger<X extends VirtualHostFileLogger<X>> exten
     String getLayout();
 
     @DerivedAttribute
-    Collection<LogFileDetails> getLogFiles();
+    List<LogFileDetails> getLogFiles();
 
     @ManagedOperation(nonModifying = true)
     Content getFile(@Param(name = "fileName") String fileName);
