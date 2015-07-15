@@ -110,10 +110,10 @@ define([
           // Fall back for IE8/9 which do not support FileReader
           this.virtualHostNodeFileCheck.set("disabled", "disabled");
           this.virtualHostNodeFileCheck.set("title", "Requires a more recent browser with HTML5 support");
-          this.virtualHostNodeFileFields.style.display = "none";
         }
 
         this.virtualHostNodeUploadFields.style.display = "none";
+        this.virtualHostNodeFileFields.style.display = "none";
       },
       show: function(management)
       {
