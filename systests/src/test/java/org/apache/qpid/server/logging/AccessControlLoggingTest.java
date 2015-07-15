@@ -82,7 +82,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         conn.start();
         ((AMQSession<?, ?>) sess).createQueue("allow", false, false, false);
 
-        List<String> matches = findMatches(ACL_LOG_PREFIX);
+        List<String> matches = findMatches(ACL_LOG_PREFIX + 1001);
 
         assertTrue("Should be no ACL log messages", matches.isEmpty());
     }
@@ -97,7 +97,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         conn.start();
         ((AMQSession<?, ?>) sess).createQueue("allow-log", false, false, false);
 
-        List<String> matches = findMatches(ACL_LOG_PREFIX);
+        List<String> matches = findMatches(ACL_LOG_PREFIX + 1001);
 
         assertEquals("Should only be one ACL log message", 1, matches.size());
 
@@ -123,7 +123,8 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         Connection conn = getConnection(USER, PASS);
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
         conn.start();
-        try {
+        try
+        {
             ((AMQSession<?, ?>) sess).createQueue("deny-log", false, false, false);
 	        fail("Should have denied queue creation");
         }
@@ -133,7 +134,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
             assertEquals("Expected ACCESS_REFUSED error code", AMQConstant.ACCESS_REFUSED, amqe.getErrorCode());
         }
 
-        List<String> matches = findMatches(ACL_LOG_PREFIX);
+        List<String> matches = findMatches(ACL_LOG_PREFIX + 1002);
 
         assertEquals("Should only be one ACL log message", 1, matches.size());
 
@@ -159,7 +160,8 @@ public class AccessControlLoggingTest extends AbstractTestLogging
         Connection conn = getConnection(USER, PASS);
         Session sess = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
         conn.start();
-        try {
+        try
+        {
             ((AMQSession<?, ?>) sess).createQueue("deny", false, false, false);
             fail("Should have denied queue creation");
         }
@@ -169,7 +171,7 @@ public class AccessControlLoggingTest extends AbstractTestLogging
             assertEquals("Expected ACCESS_REFUSED error code", AMQConstant.ACCESS_REFUSED, amqe.getErrorCode());
         }
 
-        List<String> matches = findMatches(ACL_LOG_PREFIX);
+        List<String> matches = findMatches(ACL_LOG_PREFIX + 1002);
 
         assertTrue("Should be no ACL log messages", matches.isEmpty());
     }

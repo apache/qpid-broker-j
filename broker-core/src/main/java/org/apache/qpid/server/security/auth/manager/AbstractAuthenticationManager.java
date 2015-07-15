@@ -30,6 +30,8 @@ import java.util.Set;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.AuthenticationProviderMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +58,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAuthenticationManager.class);
 
     private final Broker<?> _broker;
+    private final EventLogger _eventLogger;
     private PreferencesProvider<?> _preferencesProvider;
 
     @ManagedAttributeField
@@ -69,6 +72,8 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
     {
         super(parentsMap(broker), attributes);
         _broker = broker;
+        _eventLogger = _broker.getEventLogger();
+        _eventLogger.message(AuthenticationProviderMessages.CREATE(getName()));
     }
 
     @Override
@@ -233,6 +238,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
                             finally
                             {
                                 returnVal.set(null);
+                                _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
                             }
                         }
                     }, getTaskExecutor().getExecutor());
@@ -248,6 +254,7 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
                     finally
                     {
                         returnVal.set(null);
+                        _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
                     }
                 }
             }

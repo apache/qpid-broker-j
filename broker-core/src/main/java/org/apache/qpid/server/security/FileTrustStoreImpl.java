@@ -44,6 +44,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
@@ -64,6 +66,8 @@ import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreImpl> implements FileTrustStore<FileTrustStoreImpl>
 {
+    private final Broker<?> _broker;
+    private final EventLogger _eventLogger;
 
     @ManagedAttributeField
     private String _trustStoreType;
@@ -84,8 +88,6 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
     @ManagedAttributeField
     private List<VirtualHost> _excludedVirtualHostMessageSources;
 
-    private final Broker<?> _broker;
-
     static
     {
         Handler.register();
@@ -96,6 +98,8 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
     {
         super(parentsMap(broker), attributes);
         _broker = broker;
+        _eventLogger = _broker.getEventLogger();
+        _eventLogger.message(TrustStoreMessages.CREATE(getName()));
     }
 
     @Override
@@ -151,6 +155,7 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         }
         deleted();
         setState(State.DELETED);
+        _eventLogger.message(TrustStoreMessages.DELETE(getName()));
         return Futures.immediateFuture(null);
     }
 

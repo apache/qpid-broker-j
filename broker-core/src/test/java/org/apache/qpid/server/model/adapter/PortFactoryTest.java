@@ -35,6 +35,7 @@ import java.util.UUID;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -80,6 +81,7 @@ public class PortFactoryTest extends QpidTestCase
         when(_authProvider.getName()).thenReturn(_authProviderName);
         when(_broker.getChildren(eq(AuthenticationProvider.class))).thenReturn(Collections.singleton(_authProvider));
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
+        when(_broker.getEventLogger()).thenReturn(new EventLogger());
 
         ConfiguredObjectFactory objectFactory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(_broker.getObjectFactory()).thenReturn(objectFactory);

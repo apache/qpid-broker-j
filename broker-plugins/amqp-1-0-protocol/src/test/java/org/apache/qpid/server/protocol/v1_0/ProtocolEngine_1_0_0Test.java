@@ -40,6 +40,7 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
@@ -94,6 +95,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         when(_broker.getChildExecutor()).thenReturn(taskExecutor);
         when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
         when(_broker.getId()).thenReturn(UUID.randomUUID());
+        when(_broker.getEventLogger()).thenReturn(new EventLogger());
         _port = mock(AmqpPort.class);
         when(_port.getChildExecutor()).thenReturn(taskExecutor);
         when(_port.getCategoryClass()).thenReturn(Port.class);

@@ -43,6 +43,8 @@ import javax.security.auth.x500.X500Principal;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,6 +73,7 @@ public class NonJavaTrustStoreImpl
     private static final Logger LOGGER = LoggerFactory.getLogger(NonJavaTrustStoreImpl.class);
 
     private final Broker<?> _broker;
+    private final EventLogger _eventLogger;
 
     @ManagedAttributeField( afterSet = "updateTrustManagers" )
     private String _certificatesUrl;
@@ -97,6 +100,8 @@ public class NonJavaTrustStoreImpl
     {
         super(parentsMap(broker), attributes);
         _broker = broker;
+        _eventLogger = _broker.getEventLogger();
+        _eventLogger.message(TrustStoreMessages.CREATE(getName()));
     }
 
     @Override
@@ -233,6 +238,7 @@ public class NonJavaTrustStoreImpl
         }
         deleted();
         setState(State.DELETED);
+        _eventLogger.message(TrustStoreMessages.DELETE(getName()));
         return Futures.immediateFuture(null);
     }
 

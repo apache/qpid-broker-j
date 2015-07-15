@@ -35,39 +35,35 @@ import java.util.ResourceBundle;
  * DO NOT EDIT DIRECTLY, THIS FILE WAS GENERATED.
  *
  * Generated using GenerateLogMessages and LogMessages.vm
- * This file is based on the content of AccessControl_logmessages.properties
+ * This file is based on the content of TrustStore_logmessages.properties
  *
  * To regenerate, edit the templates/properties and run the build with -Dgenerate=true
  */
-public class AccessControlMessages
+public class TrustStoreMessages
 {
     private static ResourceBundle _messages;
     private static Locale _currentLocale = BrokerProperties.getLocale();
 
-    public static final String ACCESSCONTROL_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol";
-    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.open";
-    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.create";
-    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.delete";
-    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.close";
-    public static final String DENIED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.denied";
-    public static final String ALLOWED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "accesscontrol.allowed";
+    public static final String TRUSTSTORE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore";
+    public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.open";
+    public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.create";
+    public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.delete";
+    public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "truststore.close";
 
     static
     {
-        LoggerFactory.getLogger(ACCESSCONTROL_LOG_HIERARCHY);
+        LoggerFactory.getLogger(TRUSTSTORE_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
         LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
-        LoggerFactory.getLogger(DENIED_LOG_HIERARCHY);
-        LoggerFactory.getLogger(ALLOWED_LOG_HIERARCHY);
 
-        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.AccessControl_logmessages", _currentLocale);
+        _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.TrustStore_logmessages", _currentLocale);
     }
 
     /**
-     * Log a AccessControl message of the Format:
-     * <pre>ACL-1012 : Open</pre>
+     * Log a TrustStore message of the Format:
+     * <pre>TST-1002 : Open</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
@@ -119,8 +115,8 @@ public class AccessControlMessages
     }
 
     /**
-     * Log a AccessControl message of the Format:
-     * <pre>ACL-1011 : Create "{0}"</pre>
+     * Log a TrustStore message of the Format:
+     * <pre>TST-1001 : Create "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
@@ -177,8 +173,8 @@ public class AccessControlMessages
     }
 
     /**
-     * Log a AccessControl message of the Format:
-     * <pre>ACL-1014 : Delete "{0}"</pre>
+     * Log a TrustStore message of the Format:
+     * <pre>TST-1004 : Delete "{0}"</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
@@ -235,8 +231,8 @@ public class AccessControlMessages
     }
 
     /**
-     * Log a AccessControl message of the Format:
-     * <pre>ACL-1013 : Close</pre>
+     * Log a TrustStore message of the Format:
+     * <pre>TST-1003 : Close</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
@@ -287,124 +283,8 @@ public class AccessControlMessages
         };
     }
 
-    /**
-     * Log a AccessControl message of the Format:
-     * <pre>ACL-1002 : Denied : {0} {1} {2}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage DENIED(String param1, String param2, String param3)
-    {
-        String rawMessage = _messages.getString("DENIED");
 
-        final Object[] messageArguments = {param1, param2, param3};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return DENIED_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a AccessControl message of the Format:
-     * <pre>ACL-1001 : Allowed : {0} {1} {2}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage ALLOWED(String param1, String param2, String param3)
-    {
-        String rawMessage = _messages.getString("ALLOWED");
-
-        final Object[] messageArguments = {param1, param2, param3};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return ALLOWED_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-
-    private AccessControlMessages()
+    private TrustStoreMessages()
     {
     }
 

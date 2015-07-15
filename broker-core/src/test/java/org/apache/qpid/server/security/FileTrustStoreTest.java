@@ -33,6 +33,7 @@ import javax.net.ssl.TrustManager;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -66,6 +67,7 @@ public class FileTrustStoreTest extends QpidTestCase
         when(_broker.getModel()).thenReturn(_model);
         when(_broker.getSecurityManager()).thenReturn(_securityManager);
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
+        when(_broker.getEventLogger()).thenReturn(new EventLogger());
     }
 
     public void testCreateTrustStoreFromFile_Success() throws Exception

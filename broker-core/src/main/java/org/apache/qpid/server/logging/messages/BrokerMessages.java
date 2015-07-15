@@ -22,6 +22,7 @@ package org.apache.qpid.server.logging.messages;
 
 import static org.apache.qpid.server.logging.AbstractMessageLogger.DEFAULT_LOG_HIERARCHY_PREFIX;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.logging.LogMessage;
@@ -44,7 +45,6 @@ public class BrokerMessages
     private static Locale _currentLocale = BrokerProperties.getLocale();
 
     public static final String BROKER_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker";
-    public static final String LOG_CONFIG_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.log_config";
     public static final String CONFIG_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.config";
     public static final String STATS_DATA_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stats_data";
     public static final String STOPPED_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.stopped";
@@ -64,7 +64,6 @@ public class BrokerMessages
     static
     {
         LoggerFactory.getLogger(BROKER_LOG_HIERARCHY);
-        LoggerFactory.getLogger(LOG_CONFIG_LOG_HIERARCHY);
         LoggerFactory.getLogger(CONFIG_LOG_HIERARCHY);
         LoggerFactory.getLogger(STATS_DATA_LOG_HIERARCHY);
         LoggerFactory.getLogger(STOPPED_LOG_HIERARCHY);
@@ -82,64 +81,6 @@ public class BrokerMessages
         LoggerFactory.getLogger(READY_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Broker_logmessages", _currentLocale);
-    }
-
-    /**
-     * Log a Broker message of the Format:
-     * <pre>BRK-1007 : Using logging configuration : {0}</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage LOG_CONFIG(String param1)
-    {
-        String rawMessage = _messages.getString("LOG_CONFIG");
-
-        final Object[] messageArguments = {param1};
-        // Create a new MessageFormat to ensure thread safety.
-        // Sharing a MessageFormat and using applyPattern is not thread safe
-        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
-
-        final String message = formatter.format(messageArguments);
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return LOG_CONFIG_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
     }
 
     /**

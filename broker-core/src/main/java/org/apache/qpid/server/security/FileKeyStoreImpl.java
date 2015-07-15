@@ -41,6 +41,8 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.KeyStoreMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -60,6 +62,8 @@ import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 @ManagedObject( category = false )
 public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl> implements FileKeyStore<FileKeyStoreImpl>
 {
+    private final Broker<?> _broker;
+    private final EventLogger _eventLogger;
 
     @ManagedAttributeField
     private String _type;
@@ -72,11 +76,9 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
     @ManagedAttributeField(afterSet = "postSetStoreUrl")
     private String _storeUrl;
     private String _path;
+
     @ManagedAttributeField
     private String _password;
-
-
-    private final Broker<?> _broker;
 
     static
     {
@@ -89,6 +91,8 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
         super(parentsMap(broker), attributes);
 
         _broker = broker;
+        _eventLogger = _broker.getEventLogger();
+        _eventLogger.message(KeyStoreMessages.CREATE(getName()));
     }
 
     @Override
@@ -114,6 +118,7 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
         }
         deleted();
         setState(State.DELETED);
+        _eventLogger.message(KeyStoreMessages.DELETE(getName()));
         return Futures.immediateFuture(null);
     }
 

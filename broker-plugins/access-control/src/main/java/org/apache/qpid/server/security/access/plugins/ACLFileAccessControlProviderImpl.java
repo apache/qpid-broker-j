@@ -28,6 +28,8 @@ import java.util.Set;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.AccessControlMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,7 @@ public class ACLFileAccessControlProviderImpl
 
     protected DefaultAccessControl _accessControl;
     protected final Broker _broker;
+    private final EventLogger _eventLogger;
 
     @ManagedAttributeField( afterSet = "reloadAclFile")
     private String _path;
@@ -66,7 +69,8 @@ public class ACLFileAccessControlProviderImpl
 
 
         _broker = broker;
-
+        _eventLogger = _broker.getEventLogger();
+        _eventLogger.message(AccessControlMessages.CREATE(getName()));
     }
 
     @Override
@@ -220,6 +224,7 @@ public class ACLFileAccessControlProviderImpl
                         finally
                         {
                             returnVal.set(null);
+                            _eventLogger.message(AccessControlMessages.DELETE(getName()));
                         }
                     }
                 }, getTaskExecutor().getExecutor()

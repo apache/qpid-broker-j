@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -59,6 +60,7 @@ public class ACLFileAccessControlProviderFactoryTest extends QpidTestCase
         taskExecutor.start();
         when(_broker.getTaskExecutor()).thenReturn(taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(taskExecutor);
+        when(_broker.getEventLogger()).thenReturn(new EventLogger());
 
     }
 

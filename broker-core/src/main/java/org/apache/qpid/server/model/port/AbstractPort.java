@@ -30,6 +30,8 @@ import java.util.Set;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +55,7 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPort.class);
 
     private final Broker<?> _broker;
+    private final EventLogger _eventLogger;
 
     @ManagedAttributeField
     private int _port;
@@ -71,7 +74,6 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
     @ManagedAttributeField
     private Collection<String> _enabledCipherSuites;
-
     @ManagedAttributeField
     private Collection<String> _disabledCipherSuites;
 
@@ -81,7 +83,8 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         super(parentsMap(broker), attributes);
 
         _broker = broker;
-
+        _eventLogger = broker.getEventLogger();
+        _eventLogger.message(PortMessages.CREATE(getName()));
     }
 
     @Override
@@ -243,7 +246,7 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
             {
                 setState(State.DELETED);
                 returnVal.set(null);
-
+                _eventLogger.message(PortMessages.DELETE(getType(), getName()));
             }
         }, getTaskExecutor().getExecutor());
         return returnVal;

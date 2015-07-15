@@ -45,6 +45,8 @@ import javax.net.ssl.KeyManagerFactory;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.KeyStoreMessages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +70,7 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
     private static final Logger LOGGER = LoggerFactory.getLogger(NonJavaKeyStoreImpl.class);
 
     private final Broker<?> _broker;
+    private final EventLogger _eventLogger;
 
     @ManagedAttributeField( afterSet = "updateKeyManagers" )
     private String _privateKeyUrl;
@@ -92,6 +95,8 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
     {
         super(parentsMap(broker), attributes);
         _broker = broker;
+        _eventLogger = _broker.getEventLogger();
+        _eventLogger.message(KeyStoreMessages.CREATE(getName()));
     }
 
     @Override
@@ -190,6 +195,7 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         }
         deleted();
         setState(State.DELETED);
+        _eventLogger.message(KeyStoreMessages.DELETE(getName()));
         return Futures.immediateFuture(null);
     }
 
