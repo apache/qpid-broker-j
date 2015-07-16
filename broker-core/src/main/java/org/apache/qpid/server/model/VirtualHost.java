@@ -25,7 +25,6 @@ import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -133,25 +132,25 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     @ManagedAttribute( defaultValue = "[]")
     List<String> getGlobalAddressDomains();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Queues")
     long getQueueCount();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Exchanges")
     long getExchangeCount();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Connections")
     long getConnectionCount();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound")
     long getBytesIn();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound")
     long getBytesOut();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound")
     long getMessagesIn();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
     long getMessagesOut();
 
     Broker<?> getBroker();

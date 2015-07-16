@@ -25,9 +25,9 @@ public interface VirtualHostLogger <X extends VirtualHostLogger<X>> extends Conf
 {
     void stopLogging();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Errors")
     long getErrorCount();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Warnings")
     long getWarnCount();
 }

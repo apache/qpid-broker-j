@@ -42,7 +42,7 @@ public interface Binding<X extends Binding<X>> extends ConfiguredObject<X>
     @ManagedAttribute
     Map<String,Object> getArguments();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Matches")
     long getMatches();
 
 }

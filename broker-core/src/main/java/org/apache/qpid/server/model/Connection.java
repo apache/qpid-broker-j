@@ -87,22 +87,22 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     @DerivedAttribute
     Port<?> getPort();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Inbound")
     long getBytesIn();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound")
     long getBytesOut();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Inbound")
     long getMessagesIn();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
     long getMessagesOut();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last I/O time")
     long getLastIoTime();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Sessions")
     int getSessionCount();
 
     //children

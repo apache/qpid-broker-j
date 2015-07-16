@@ -30,6 +30,8 @@ import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedStatistic;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.StatisticType;
+import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostAlias;
@@ -118,7 +120,7 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedAttribute( defaultValue = "${" + PORT_MAX_OPEN_CONNECTIONS + "}" )
     int getMaxOpenConnections();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Connections")
     int getConnectionCount();
 
     VirtualHostImpl getVirtualHost(String name);

@@ -20,17 +20,8 @@
  */
 package org.apache.qpid.server.model;
 
-@ManagedObject
-public interface BrokerLogger<X extends BrokerLogger<X>> extends ConfiguredObject<X>
+public enum StatisticType
 {
-    @ManagedAttribute(defaultValue = "false")
-    boolean isVirtualHostLogEventExcluded();
-
-    void stopLogging();
-
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Errors")
-    long getErrorCount();
-
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Warnings")
-    long getWarnCount();
+    CUMULATIVE,
+    POINT_IN_TIME
 }

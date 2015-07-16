@@ -43,6 +43,7 @@ import org.apache.qpid.server.model.ConfiguredAutomatedAttribute;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.ConfiguredObjectStatistic;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
@@ -71,9 +72,9 @@ public class MetaDataServlet extends AbstractServlet
         response.setContentType("application/json");
         response.setStatus(HttpServletResponse.SC_OK);
 
-        Map<String,Map> classToDataMap = new TreeMap<>();
+        Map<String, Map> classToDataMap = new TreeMap<>();
 
-        for(Class<? extends ConfiguredObject> clazz : _instance.getSupportedCategories())
+        for (Class<? extends ConfiguredObject> clazz : _instance.getSupportedCategories())
         {
             classToDataMap.put(clazz.getSimpleName(), processCategory(clazz));
         }
@@ -88,32 +89,34 @@ public class MetaDataServlet extends AbstractServlet
 
     }
 
-    private Map<String,Map> processCategory(final Class<? extends ConfiguredObject> clazz)
+    private Map<String, Map> processCategory(final Class<? extends ConfiguredObject> clazz)
     {
         Map<String, Map> typeToDataMap = new TreeMap<>();
         ConfiguredObjectTypeRegistry typeRegistry = _instance.getTypeRegistry();
-        for(Class<? extends ConfiguredObject> type : typeRegistry.getTypeSpecialisations(clazz))
+        for (Class<? extends ConfiguredObject> type : typeRegistry.getTypeSpecialisations(clazz))
         {
             typeToDataMap.put(ConfiguredObjectTypeRegistry.getType(type), processType(type));
         }
         return typeToDataMap;
     }
 
-    private Map<String,Object> processType(final Class<? extends ConfiguredObject> type)
+    private Map<String, Object> processType(final Class<? extends ConfiguredObject> type)
     {
-        Map<String,Object> typeDetails = new LinkedHashMap<>();
+        Map<String, Object> typeDetails = new LinkedHashMap<>();
         typeDetails.put("attributes", processAttributes(type));
+        typeDetails.put("statistics", processStatistics(type));
+
         typeDetails.put("operations", processOperations(type));
         typeDetails.put("managedInterfaces", getManagedInterfaces(type));
         typeDetails.put("validChildTypes", getValidChildTypes(type));
         ManagedObject annotation = type.getAnnotation(ManagedObject.class);
-        if(annotation != null)
+        if (annotation != null)
         {
-            if(annotation.deprecated())
+            if (annotation.deprecated())
             {
-                typeDetails.put("deprecated",true);
+                typeDetails.put("deprecated", true);
             }
-            if(!"".equals(annotation.description() )  )
+            if (!"".equals(annotation.description()))
             {
                 typeDetails.put("description", annotation.description());
             }
@@ -124,10 +127,11 @@ public class MetaDataServlet extends AbstractServlet
     private Map<String, Collection<String>> getValidChildTypes(final Class<? extends ConfiguredObject> type)
     {
         Map<String, Collection<String>> validChildTypes = new HashMap<>();
-        for(Class<? extends ConfiguredObject> childType : _instance.getChildTypes(ConfiguredObjectTypeRegistry.getCategory(type)))
+        for (Class<? extends ConfiguredObject> childType : _instance.getChildTypes(ConfiguredObjectTypeRegistry.getCategory(
+                type)))
         {
             Collection<String> validValues = _instance.getTypeRegistry().getValidChildTypes(type, childType);
-            if(validValues != null)
+            if (validValues != null)
             {
                 validChildTypes.put(childType.getSimpleName(), validValues);
             }
@@ -138,64 +142,64 @@ public class MetaDataServlet extends AbstractServlet
     private Set<String> getManagedInterfaces(Class<? extends ConfiguredObject> type)
     {
         Set<String> interfaces = new HashSet<>();
-        for(Class<?> classObject: _instance.getTypeRegistry().getManagedInterfaces(type))
+        for (Class<?> classObject : _instance.getTypeRegistry().getManagedInterfaces(type))
         {
             interfaces.add(classObject.getSimpleName());
         }
         return interfaces;
     }
 
-    private Map<String,Map> processAttributes(final Class<? extends ConfiguredObject> type)
+    private Map<String, Map> processAttributes(final Class<? extends ConfiguredObject> type)
     {
         Collection<ConfiguredObjectAttribute<?, ?>> attributes =
-            _instance.getTypeRegistry().getAttributeTypes(type).values();
+                _instance.getTypeRegistry().getAttributeTypes(type).values();
 
-        Map<String,Map> attributeDetails = new LinkedHashMap<>();
-        for(ConfiguredObjectAttribute<?, ?> attribute : attributes)
+        Map<String, Map> attributeDetails = new LinkedHashMap<>();
+        for (ConfiguredObjectAttribute<?, ?> attribute : attributes)
         {
-            Map<String,Object> attrDetails = new LinkedHashMap<>();
-            attrDetails.put("type",attribute.getType().getSimpleName());
-            if(!"".equals(attribute.getDescription()))
+            Map<String, Object> attrDetails = new LinkedHashMap<>();
+            attrDetails.put("type", attribute.getType().getSimpleName());
+            if (!"".equals(attribute.getDescription()))
             {
-                attrDetails.put("description",attribute.getDescription());
+                attrDetails.put("description", attribute.getDescription());
             }
-            if(attribute.isDerived())
+            if (attribute.isDerived())
             {
-                attrDetails.put("derived",attribute.isDerived());
+                attrDetails.put("derived", attribute.isDerived());
             }
-            if(attribute.isAutomated())
+            if (attribute.isAutomated())
             {
                 ConfiguredAutomatedAttribute automatedAttribute = (ConfiguredAutomatedAttribute) attribute;
-                if(!"".equals(automatedAttribute.defaultValue()))
+                if (!"".equals(automatedAttribute.defaultValue()))
                 {
                     attrDetails.put("defaultValue", automatedAttribute.defaultValue());
                 }
-                if(automatedAttribute.isMandatory())
+                if (automatedAttribute.isMandatory())
                 {
                     attrDetails.put("mandatory", automatedAttribute.isMandatory());
                 }
-                if(automatedAttribute.isImmutable())
+                if (automatedAttribute.isImmutable())
                 {
                     attrDetails.put("immutable", automatedAttribute.isImmutable());
                 }
-                if(!(automatedAttribute.validValues()).isEmpty())
+                if (!(automatedAttribute.validValues()).isEmpty())
                 {
-                    Collection<String> validValues = ((ConfiguredAutomatedAttribute<?,?>) attribute).validValues();
+                    Collection<String> validValues = ((ConfiguredAutomatedAttribute<?, ?>) attribute).validValues();
 
                     Collection<Object> convertedValues = new ArrayList<>(validValues.size());
-                    for(String value : validValues)
+                    for (String value : validValues)
                     {
-                        convertedValues.add(attribute.convert(value,null));
+                        convertedValues.add(attribute.convert(value, null));
                     }
                     attrDetails.put("validValues", convertedValues);
                 }
 
             }
-            if(attribute.isSecure())
+            if (attribute.isSecure())
             {
-                attrDetails.put("secure",attribute.isSecure());
+                attrDetails.put("secure", attribute.isSecure());
             }
-            if(attribute.isOversized())
+            if (attribute.isOversized())
             {
                 attrDetails.put("oversize", attribute.isOversized());
             }
@@ -204,32 +208,32 @@ public class MetaDataServlet extends AbstractServlet
         return attributeDetails;
     }
 
-    private Map<String,Map> processOperations(final Class<? extends ConfiguredObject> type)
+    private Map<String, Map> processOperations(final Class<? extends ConfiguredObject> type)
     {
         Collection<ConfiguredObjectOperation<?>> operations =
                 _instance.getTypeRegistry().getOperations(type).values();
 
-        Map<String,Map> attributeDetails = new LinkedHashMap<>();
-        for(ConfiguredObjectOperation<?> operation : operations)
+        Map<String, Map> attributeDetails = new LinkedHashMap<>();
+        for (ConfiguredObjectOperation<?> operation : operations)
         {
-            Map<String,Object> attrDetails = new LinkedHashMap<>();
-            attrDetails.put("name",operation.getName());
-            attrDetails.put("returnType",operation.getReturnType().getSimpleName());
-            if(!"".equals(operation.getDescription()))
+            Map<String, Object> attrDetails = new LinkedHashMap<>();
+            attrDetails.put("name", operation.getName());
+            attrDetails.put("returnType", operation.getReturnType().getSimpleName());
+            if (!"".equals(operation.getDescription()))
             {
-                attrDetails.put("description",operation.getDescription());
+                attrDetails.put("description", operation.getDescription());
             }
 
             List<OperationParameter> parameters = operation.getParameters();
-            if(!parameters.isEmpty())
+            if (!parameters.isEmpty())
             {
-                Map<String,Map> paramDetails = new LinkedHashMap<>();
-                for(OperationParameter param : parameters)
+                Map<String, Map> paramDetails = new LinkedHashMap<>();
+                for (OperationParameter param : parameters)
                 {
-                    Map<String,Object> paramAttrs = new LinkedHashMap<>();
+                    Map<String, Object> paramAttrs = new LinkedHashMap<>();
 
                     paramAttrs.put("type", param.getType().getSimpleName());
-                    if(!"".equals(param.getDefaultValue()))
+                    if (!"".equals(param.getDefaultValue()))
                     {
                         paramAttrs.put("defaultValue", param.getDefaultValue());
                     }
@@ -242,5 +246,33 @@ public class MetaDataServlet extends AbstractServlet
             attributeDetails.put(operation.getName(), attrDetails);
         }
         return attributeDetails;
+    }
+
+
+    private Map<String, Map> processStatistics(final Class<? extends ConfiguredObject> type)
+    {
+        Collection<ConfiguredObjectStatistic> statistics =
+                _instance.getTypeRegistry().getStatistics(type);
+
+        Map<String, Map> allStatisticsDetails = new LinkedHashMap<>();
+        for (ConfiguredObjectStatistic<?, ?> statistic : statistics)
+        {
+            Map<String, Object> stat = new LinkedHashMap<>();
+            stat.put("name", statistic.getName());
+            stat.put("type", statistic.getType().getSimpleName());
+            if (!"".equals(statistic.getDescription()))
+            {
+                stat.put("description", statistic.getDescription());
+            }
+            if (!"".equals(statistic.getLabel()))
+            {
+                stat.put("label", statistic.getLabel());
+            }
+
+            stat.put("units", statistic.getUnits());
+            stat.put("statisticType", statistic.getStatisticType().toString());
+            allStatisticsDetails.put(statistic.getName(), stat);
+        }
+        return allStatisticsDetails;
     }
 }

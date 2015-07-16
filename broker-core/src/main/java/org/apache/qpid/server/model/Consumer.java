@@ -49,16 +49,16 @@ public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>
     @ManagedAttribute
     String getSelector();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.BYTES, label = "Outbound")
     long getBytesOut();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
     long getMessagesOut();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.BYTES, label = "Prefetch")
     long getUnacknowledgedBytes();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetch")
     long getUnacknowledgedMessages();
 
 }

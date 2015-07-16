@@ -22,12 +22,15 @@ package org.apache.qpid.server.model;
 
 import java.lang.reflect.Method;
 
-final class ConfiguredObjectStatistic<C extends ConfiguredObject, T extends Number> extends
+public final class ConfiguredObjectStatistic<C extends ConfiguredObject, T extends Number> extends
                                                                                    ConfiguredObjectAttributeOrStatistic<C,T>
 {
-    ConfiguredObjectStatistic(Class<C> clazz, final Method getter)
+    private final ManagedStatistic _annotation;
+
+    ConfiguredObjectStatistic(Class<C> clazz, final Method getter, final ManagedStatistic annotation)
     {
         super(getter);
+        _annotation = annotation;
         if(getter.getParameterTypes().length != 0)
         {
             throw new IllegalArgumentException("ManagedStatistic annotation should only be added to no-arg getters");
@@ -37,5 +40,25 @@ final class ConfiguredObjectStatistic<C extends ConfiguredObject, T extends Numb
         {
             throw new IllegalArgumentException("ManagedStatistic annotation should only be added to getters returning a Number type");
         }
+    }
+
+    public String getDescription()
+    {
+        return _annotation.description();
+    }
+
+    public StatisticUnit getUnits()
+    {
+        return _annotation.units();
+    }
+
+    public StatisticType getStatisticType()
+    {
+        return _annotation.statisticType();
+    }
+
+    public String getLabel()
+    {
+        return _annotation.label();
     }
 }

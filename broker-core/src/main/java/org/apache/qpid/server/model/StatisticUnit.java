@@ -20,17 +20,24 @@
  */
 package org.apache.qpid.server.model;
 
-@ManagedObject
-public interface BrokerLogger<X extends BrokerLogger<X>> extends ConfiguredObject<X>
+public enum StatisticUnit
 {
-    @ManagedAttribute(defaultValue = "false")
-    boolean isVirtualHostLogEventExcluded();
+    COUNT("count"),
+    BYTES("byte"),
+    MESSAGES("message"),
+    ABSOLUTE_TIME("time");
 
-    void stopLogging();
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Errors")
-    long getErrorCount();
+    private String _name;
 
-    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Warnings")
-    long getWarnCount();
+    StatisticUnit(final String name)
+    {
+        _name = name;
+    }
+
+    @Override
+    public String toString()
+    {
+        return _name;
+    }
 }

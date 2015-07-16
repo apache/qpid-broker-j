@@ -664,7 +664,7 @@ public class ConfiguredObjectTypeRegistry
         {
             throw new ServerScopedRuntimeException("Can only define ManagedStatistics on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
         }
-        ConfiguredObjectStatistic statistic = new ConfiguredObjectStatistic(clazz, m);
+        ConfiguredObjectStatistic statistic = new ConfiguredObjectStatistic(clazz, m, statAnnotation);
         if(statisticSet.contains(statistic))
         {
             statisticSet.remove(statistic);
@@ -1014,7 +1014,7 @@ public class ConfiguredObjectTypeRegistry
     }
 
 
-    protected Collection<ConfiguredObjectStatistic> getStatistics(final Class<? extends ConfiguredObject> clazz)
+    public Collection<ConfiguredObjectStatistic> getStatistics(final Class<? extends ConfiguredObject> clazz)
     {
         processClassIfNecessary(clazz);
         final Collection<ConfiguredObjectStatistic> statistics = (Collection) _allStatistics.get(clazz);

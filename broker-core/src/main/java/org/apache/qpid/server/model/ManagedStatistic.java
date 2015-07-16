@@ -29,4 +29,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface ManagedStatistic
 {
+    String description() default "";
+    String label() default "";
+    StatisticUnit units();
+    StatisticType statisticType();
 }

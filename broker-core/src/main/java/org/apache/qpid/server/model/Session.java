@@ -40,19 +40,19 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
     Collection<Consumer> getConsumers();
     Collection<Publisher> getPublishers();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Consumers")
     long getConsumerCount();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Transactions")
     long getLocalTransactionBegins();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Open Transactions")
     int getLocalTransactionOpen();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Rolled-back Transactions")
     long getLocalTransactionRollbacks();
 
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.MESSAGES, label = "Prefetched")
     long getUnacknowledgedMessages();
 
     /**
@@ -60,7 +60,7 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
      *
      * @return the time this transaction started or 0 if not in a transaction
      */
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Transaction Start")
     long getTransactionStartTime();
 
     /**
@@ -68,6 +68,6 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
      *
      * @return the time of the last activity or 0 if not in a transaction
      */
-    @ManagedStatistic
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Transaction Update")
     long getTransactionUpdateTime();
 }
