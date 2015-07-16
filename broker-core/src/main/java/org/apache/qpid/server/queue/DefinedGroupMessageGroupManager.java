@@ -46,9 +46,9 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
     private final class Group
     {
         private final Object _group;
+        private final SortedSet<QueueEntry> _skippedEntries = new TreeSet<>();
         private QueueConsumer<?> _consumer;
         private int _activeCount;
-        private final SortedSet<QueueEntry> _skippedEntries = new TreeSet<>();
 
         private Group(final Object key, final QueueConsumer<?> consumer)
         {
@@ -148,12 +148,12 @@ public class DefinedGroupMessageGroupManager implements MessageGroupManager
         Object groupId = getKey(entry);
 
         Group group = _groupMap.get(groupId);
-        final boolean possibleAssginment = group == null || !group.isValid() || group.getConsumer() == sub;
-        if(!possibleAssginment)
+        final boolean possibleAssignment = group == null || !group.isValid() || group.getConsumer() == sub;
+        if(!possibleAssignment)
         {
             group.addSkippedEntry(entry);
         }
-        return possibleAssginment;
+        return possibleAssignment;
     }
 
     public synchronized boolean acceptMessage(final QueueConsumer<?> sub, final QueueEntry entry)

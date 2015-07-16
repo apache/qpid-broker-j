@@ -22,7 +22,7 @@ package org.apache.qpid.server.queue;
 
 public interface MessageGroupManager
 {
-    public interface ConsumerResetHelper
+    interface ConsumerResetHelper
     {
         void resetSubPointersForGroups(QueueEntry entry);
 

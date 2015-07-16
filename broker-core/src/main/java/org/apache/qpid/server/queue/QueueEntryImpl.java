@@ -520,7 +520,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return false;
     }
 
-
+    @Override
     public int compareTo(final QueueEntry o)
     {
         QueueEntryImpl other = (QueueEntryImpl)o;
