@@ -3290,6 +3290,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         public void close()
         {
             _closed.set(true);
+            _queue.close();
             _dispatcherThread.interrupt();
 
             // fixme awaitTermination

@@ -54,9 +54,20 @@ public class FlowControllingBlockingQueue<T>
     
     private boolean disableFlowControl; 
 
+    private volatile boolean _closed;
+
     public boolean isEmpty()
     {
         return _queue.isEmpty();
+    }
+
+    public void close()
+    {
+        synchronized (this)
+        {
+            _closed = true;
+            notifyAll();
+        }
     }
 
 
@@ -90,7 +101,7 @@ public class FlowControllingBlockingQueue<T>
         {
             synchronized (this)
             {
-                while ((o = _queue.peek()) == null)
+                while (!_closed && (o = _queue.peek()) == null)
                 {
                     wait();
                 }
@@ -118,13 +129,13 @@ public class FlowControllingBlockingQueue<T>
         {
             synchronized(this)
             {
-                while((o = _queue.poll())==null)
+                while(!_closed && (o = _queue.poll())==null)
                 {
                     wait();
                 }
             }
         }
-        if (!disableFlowControl && _listener != null)
+        if (!_closed && !disableFlowControl && _listener != null)
         {
             reportBelowIfNecessary();
         }
