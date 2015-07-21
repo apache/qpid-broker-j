@@ -36,10 +36,20 @@
     "type" : "File",
     "fileName" : "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
     "brokerloggerfilters" : [ {
-      "name" : "acceptFilter1",
+      "name" : "Root",
+      "type" : "NameAndLevel",
+      "level" : "WARN",
+      "loggerName" : "ROOT"
+    }, {
+      "name" : "Qpid",
       "type" : "NameAndLevel",
       "level" : "INFO",
-      "loggerName" : "ROOT"
+      "loggerName" : "org.apache.qpid.*"
+    }, {
+      "name" : "Operational",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.message.*"
     } ]
   }, {
     "name" : "memory",
