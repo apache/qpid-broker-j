@@ -23,6 +23,7 @@ package org.apache.qpid.server.jmx;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NoSuchObjectException;
@@ -61,6 +62,7 @@ import org.apache.qpid.server.model.port.JmxPort;
 import org.apache.qpid.server.model.port.RmiPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.jmx.JMXPasswordAuthenticator;
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 /**
@@ -81,8 +83,13 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
     private final Broker _broker;
     private final RmiPort _registryPort;
     private final JmxPort _connectorPort;
+    private int _allocatedRmiPort;
+    private int _allocatedConnectorPort;
+    private DelegatingJMXServiceUrl _externalUrl;
+    private DelegatingJMXServiceUrl _internalUrl;
+    private String _localHostName;
 
-     public JMXManagedObjectRegistry(
+    public JMXManagedObjectRegistry(
             Broker broker,
             JmxPort connectorPort, RmiPort registryPort,
             JMXManagementPlugin jmxManagement)
@@ -90,6 +97,8 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
         _broker = broker;
         _registryPort = registryPort;
         _connectorPort = connectorPort;
+        _allocatedRmiPort = _registryPort.getPort();
+        _allocatedConnectorPort = _connectorPort.getPort();
 
         boolean usePlatformServer = (Boolean)jmxManagement.getAttribute(JMXManagementPlugin.USE_PLATFORM_MBEAN_SERVER);
 
@@ -129,6 +138,25 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
         //moment).
         boolean connectorSslEnabled = _connectorPort.getTransports().contains(Transport.SSL);
 
+        final Action<Integer> setAllocatedConnectorPort = new Action<Integer>()
+                                                            {
+                                                                @Override
+                                                                public void performAction(final Integer port)
+                                                                {
+                                                                    if(_allocatedConnectorPort != port)
+                                                                    {
+                                                                        _allocatedConnectorPort = port;
+                                                                        if (_externalUrl != null)
+                                                                        {
+                                                                            _externalUrl.setPort(port);
+                                                                        }
+                                                                        if (_internalUrl != null)
+                                                                        {
+                                                                            _internalUrl.setPort(port);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            };
         if (connectorSslEnabled)
         {
             KeyStore keyStore = _connectorPort.getKeyStore();
@@ -147,16 +175,17 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
 
             //create the SSL RMI socket factories
             csf = new SslRMIClientSocketFactory();
-            ssf = new QpidSslRMIServerSocketFactory(sslContext,_connectorPort.getEnabledCipherSuites(), _connectorPort.getDisabledCipherSuites());
+            ssf = new QpidSslRMIServerSocketFactory(sslContext,
+                                                    _connectorPort.getEnabledCipherSuites(),
+                                                    _connectorPort.getDisabledCipherSuites(),
+                                                    setAllocatedConnectorPort);
         }
         else
         {
             csf = null; // signifies the default
-            ssf = new QpidRMIServerSocketFactory();
+            ssf = new QpidRMIServerSocketFactory(setAllocatedConnectorPort);
         }
 
-        int jmxPortRegistryServer = _registryPort.getPort();
-        int jmxPortConnectorServer = _connectorPort.getPort();
 
         //add a JMXAuthenticator implementation the env map to authenticate the RMI based JMX connector server
         SubjectCreator subjectCreator =_connectorPort.getAuthenticationProvider().getSubjectCreator(connectorSslEnabled);
@@ -177,7 +206,7 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
          * Using custom socket factory to prevent anyone (including us unfortunately) binding to the registry using RMI.
          * As a result, only binds made using the object reference will succeed, thus securing it from external change.
          */
-        _rmiRegistry = createRmiRegistry(jmxPortRegistryServer, useCustomSocketFactory);
+        _rmiRegistry = createRmiRegistry(_allocatedRmiPort, useCustomSocketFactory);
 
         /*
          * We must now create the RMI ConnectorServer manually, as the JMX Factory methods use RMI calls
@@ -187,14 +216,15 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
          *
          * The registry is exported on the defined management port 'port'.
          */
-        final UsernameCachingRMIJRMPServer usernameCachingRmiServer = new UsernameCachingRMIJRMPServer(jmxPortConnectorServer, csf, ssf, connectorEnv);
+        final UsernameCachingRMIJRMPServer usernameCachingRmiServer = new UsernameCachingRMIJRMPServer(_allocatedConnectorPort, csf, ssf, connectorEnv);
+        _localHostName = getLocalhost();
 
-        final String localHostName = getLocalhost();
-        final JMXServiceURL externalUrl = new JMXServiceURL(
-                "service:jmx:rmi://"+localHostName+":"+(jmxPortConnectorServer)+"/jndi/rmi://"+localHostName+":"+jmxPortRegistryServer+"/jmxrmi");
+        _externalUrl = new DelegatingJMXServiceUrl(
+                new JMXServiceURL("service:jmx:rmi://"+_localHostName+":"+(_allocatedConnectorPort)+"/jndi/rmi://"+_localHostName+":"+_allocatedRmiPort+"/jmxrmi"));
 
-        final JMXServiceURL internalUrl = new JMXServiceURL("rmi", localHostName, jmxPortConnectorServer);
-        _cs = new RMIConnectorServer(internalUrl, connectorEnv, usernameCachingRmiServer, _mbeanServer)
+        _internalUrl = new DelegatingJMXServiceUrl(new JMXServiceURL("rmi", _localHostName, _allocatedConnectorPort));
+
+        _cs = new RMIConnectorServer(_internalUrl, connectorEnv, usernameCachingRmiServer, _mbeanServer)
         {
             @Override
             public synchronized void start() throws IOException
@@ -242,7 +272,7 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
             public JMXServiceURL getAddress()
             {
                 //must return our pre-crafted url that includes the full details, inc JNDI details
-                return externalUrl;
+                return _externalUrl;
             }
         };
 
@@ -262,7 +292,7 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
         Set<Transport> connectorTransports = _connectorPort.getTransports();
         for (Transport transport: connectorTransports)
         {
-            getEventLogger().message(ManagementConsoleMessages.LISTENING("JMX RMIConnectorServer", transport.name(), jmxPortConnectorServer));
+            getEventLogger().message(ManagementConsoleMessages.LISTENING("JMX RMIConnectorServer", transport.name(), _allocatedConnectorPort));
         }
 
         getEventLogger().message(ManagementConsoleMessages.READY(OPERATIONAL_LOGGING_NAME));
@@ -271,10 +301,17 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
     private Registry createRmiRegistry(int jmxPortRegistryServer, boolean useCustomRmiRegistry)
             throws RemoteException
     {
-        final RMIServerSocketFactory ssf = getRmiServerSocketFactory(useCustomRmiRegistry);
+        final RMIServerSocketFactory ssf = getRmiServerSocketFactory(useCustomRmiRegistry,
+                                                                     new Action<Integer>()
+                                                                    {
+                                                                        @Override
+                                                                        public void performAction(final Integer port)
+                                                                        {
+                                                                            _allocatedRmiPort = port;
+                                                                        }
+                                                                    });
         Registry rmiRegistry = LocateRegistry.createRegistry(jmxPortRegistryServer, null, ssf);
-
-        getEventLogger().message(ManagementConsoleMessages.LISTENING("RMI Registry", Transport.TCP.name(), jmxPortRegistryServer));
+        getEventLogger().message(ManagementConsoleMessages.LISTENING("RMI Registry", Transport.TCP.name(), _allocatedRmiPort));
         return rmiRegistry;
     }
 
@@ -411,20 +448,89 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
         }
     }
 
-    private RMIServerSocketFactory getRmiServerSocketFactory(final boolean useCustomRmiRegistry)
+    private RMIServerSocketFactory getRmiServerSocketFactory(final boolean useCustomRmiRegistry, Action<Integer> assignPortAction)
     {
+
         final RMIServerSocketFactory ssf;
         if(useCustomRmiRegistry)
         {
             _log.debug("Using registry-protecting RMIServerSocketFactory");
 
-            ssf = new RegistryProtectingRMIServerSocketFactory();
+            ssf = new RegistryProtectingRMIServerSocketFactory(assignPortAction);
         }
         else
         {
-            ssf = new QpidRMIServerSocketFactory();
+            ssf = new QpidRMIServerSocketFactory(assignPortAction);
         }
         return ssf;
+    }
+
+    private static class DelegatingJMXServiceUrl extends JMXServiceURL
+    {
+
+        private volatile JMXServiceURL _delegate;
+
+        public DelegatingJMXServiceUrl(JMXServiceURL delegate) throws MalformedURLException
+        {
+            super(delegate.getProtocol(), delegate.getHost(), delegate.getPort(), delegate.getURLPath());
+
+            _delegate = delegate;
+        }
+
+
+        void setPort(int port)
+        {
+            try
+            {
+                _delegate = new JMXServiceURL(_delegate.getProtocol(), _delegate.getHost(), port, _delegate.getURLPath());
+            }
+            catch (MalformedURLException e)
+            {
+                throw new ServerScopedRuntimeException("Unexpected exception when updating port", e);
+            }
+        }
+
+        @Override
+        public String getProtocol()
+        {
+            return _delegate.getProtocol();
+        }
+
+        @Override
+        public String getHost()
+        {
+            return _delegate.getHost();
+        }
+
+        @Override
+        public int getPort()
+        {
+            return _delegate.getPort();
+        }
+
+        @Override
+        public String getURLPath()
+        {
+            return _delegate.getURLPath();
+        }
+
+        @Override
+        public String toString()
+        {
+            return _delegate.toString();
+        }
+
+        @Override
+        public boolean equals(final Object obj)
+        {
+            return _delegate.equals(obj);
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return _delegate.hashCode();
+        }
     }
 
 }

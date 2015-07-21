@@ -22,6 +22,9 @@ package org.apache.qpid.server.transport;
 
 public interface AcceptingTransport
 {
-    public void start();
-    public void close();
+    void start();
+
+    void close();
+
+    int getAcceptingPort();
 }

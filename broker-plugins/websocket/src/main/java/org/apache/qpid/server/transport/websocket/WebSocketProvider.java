@@ -194,6 +194,12 @@ class WebSocketProvider implements AcceptingTransport
 
     }
 
+    @Override
+    public int getAcceptingPort()
+    {
+        return _server == null || _server.getConnectors() == null || _server.getConnectors().length == 0 ? _port.getPort() : _server.getConnectors()[0].getLocalPort();
+    }
+
     private class AmqpWebSocket implements WebSocket,WebSocket.OnBinaryMessage
     {
         private final SocketAddress _localAddress;

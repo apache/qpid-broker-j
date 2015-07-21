@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -146,11 +147,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         getBroker().getEventLogger().message(ManagementConsoleMessages.STARTUP(OPERATIONAL_LOGGING_NAME));
 
         Collection<Port<?>> httpPorts = getHttpPorts(getBroker().getPorts());
-        _server = createServer(httpPorts);
+        Map<Port<?>, Connector> connectors = new HashMap<>();
+        _server = createServer(httpPorts, connectors);
         try
         {
             _server.start();
-            logOperationalListenMessages(httpPorts);
+            logOperationalListenMessages(httpPorts, connectors);
         }
         catch (Exception e)
         {
@@ -186,7 +188,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return _sessionTimeout;
     }
 
-    private Server createServer(Collection<Port<?>> ports)
+    private Server createServer(Collection<Port<?>> ports, final Map<Port<?>, Connector> connectors)
     {
         if (_logger.isInfoEnabled())
         {
@@ -257,6 +259,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                 }
                 connector.setPort(port.getPort());
                 server.addConnector(connector);
+                connectors.put(port, connector);
             }
             else
             {
@@ -531,14 +534,14 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return "v"+String.valueOf(BrokerModel.MODEL_MAJOR_VERSION);
     }
 
-    private void logOperationalListenMessages(Collection<Port<?>> ports)
+    private void logOperationalListenMessages(Collection<Port<?>> ports, final Map<Port<?>, Connector> connectors)
     {
         for (Port port : ports)
         {
             Set<Transport> transports = port.getTransports();
             for (Transport transport: transports)
             {
-                getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(), transport.name(), port.getPort()));
+                getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(), transport.name(), connectors.get(port).getLocalPort()));
             }
         }
     }

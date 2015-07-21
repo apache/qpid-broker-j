@@ -23,14 +23,24 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.rmi.server.RMIServerSocketFactory;
 
+import org.apache.qpid.server.util.Action;
+
 class QpidRMIServerSocketFactory implements RMIServerSocketFactory
 {
+    private final Action<Integer> _portAllocationAction;
+
+    public QpidRMIServerSocketFactory(Action<Integer> portAllocationAction)
+    {
+        _portAllocationAction = portAllocationAction;
+    }
+
     @Override
     public ServerSocket createServerSocket(final int port) throws IOException
     {
         ServerSocket serverSocket = new ServerSocket();
         serverSocket.setReuseAddress(true);
         serverSocket.bind(new InetSocketAddress(port));
+        _portAllocationAction.performAction(serverSocket.getLocalPort());
         return serverSocket;
     }
 

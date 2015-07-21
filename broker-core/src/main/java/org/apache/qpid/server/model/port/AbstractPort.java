@@ -106,7 +106,7 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
 
         for (Port p : _broker.getPorts())
         {
-            if (p.getPort() == getPort() && p != this)
+            if (p.getPort() == getPort() && p.getPort() != 0 && p != this)
             {
                 throw new IllegalConfigurationException("Can't add port "
                                                         + getName()

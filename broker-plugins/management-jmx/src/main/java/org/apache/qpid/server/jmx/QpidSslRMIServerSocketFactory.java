@@ -31,6 +31,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.rmi.ssl.SslRMIServerSocketFactory;
 
+import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class QpidSslRMIServerSocketFactory extends SslRMIServerSocketFactory
@@ -38,20 +39,21 @@ public class QpidSslRMIServerSocketFactory extends SslRMIServerSocketFactory
     private final SSLContext _sslContext;
     private final Collection<String> _enabledCipherSuites;
     private final Collection<String> _disabledCipherSuites;
+    private final Action<Integer> _portAllocationAction;
 
     /**
      * SslRMIServerSocketFactory which creates the ServerSocket using the
      * supplied SSLContext rather than the system default context normally
      * used by the superclass, allowing us to use a configuration-specified
      * key store.
-     *
-     * @param sslContext previously created sslContext using the desired key store.
+     *  @param sslContext previously created sslContext using the desired key store.
      * @param enabledCipherSuites
-     *@param disabledCipherSuites @throws NullPointerException if the provided {@link SSLContext} is null.
+     * @param disabledCipherSuites @throws NullPointerException if the provided {@link SSLContext} is null.
+     * @param action
      */
     public QpidSslRMIServerSocketFactory(SSLContext sslContext,
                                          final Collection<String> enabledCipherSuites,
-                                         final Collection<String> disabledCipherSuites) throws NullPointerException
+                                         final Collection<String> disabledCipherSuites, final Action<Integer> action) throws NullPointerException
     {
         super();
 
@@ -63,6 +65,7 @@ public class QpidSslRMIServerSocketFactory extends SslRMIServerSocketFactory
         _sslContext = sslContext;
         _enabledCipherSuites = enabledCipherSuites;
         _disabledCipherSuites = disabledCipherSuites;
+        _portAllocationAction = action;
 
         //TODO: settings + implementation for SSL client auth, updating equals and hashCode appropriately.
     }
@@ -91,6 +94,7 @@ public class QpidSslRMIServerSocketFactory extends SslRMIServerSocketFactory
         };
         serverSocket.setReuseAddress(true);
         serverSocket.bind(new InetSocketAddress(port));
+        _portAllocationAction.performAction(serverSocket.getLocalPort());
         return serverSocket;
     }
 

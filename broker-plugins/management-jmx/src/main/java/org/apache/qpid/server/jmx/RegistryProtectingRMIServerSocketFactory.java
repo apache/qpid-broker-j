@@ -26,6 +26,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.rmi.server.RMIServerSocketFactory;
 
+import org.apache.qpid.server.util.Action;
+
 /**
  * A custom RMIServerSocketFactory class, used to prevent updates to the RMI registry.
  * Supplied to the registry at creation, this will prevent RMI-based operations on the
@@ -36,12 +38,21 @@ import java.rmi.server.RMIServerSocketFactory;
  */
 class RegistryProtectingRMIServerSocketFactory implements RMIServerSocketFactory
 {
+
+    private final Action<Integer> _portAllocationAction;
+
+    RegistryProtectingRMIServerSocketFactory(Action<Integer> portAllocationAction)
+    {
+        _portAllocationAction = portAllocationAction;
+    }
+
     @Override
     public ServerSocket createServerSocket(int port) throws IOException
     {
         NoLocalAddressServerSocket serverSocket = new NoLocalAddressServerSocket();
         serverSocket.setReuseAddress(true);
         serverSocket.bind(new InetSocketAddress(port));
+        _portAllocationAction.performAction(serverSocket.getLocalPort());
         return serverSocket;
     }
 

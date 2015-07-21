@@ -268,7 +268,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
             _transport.start();
             for (Transport transport : getTransports())
             {
-                _broker.getEventLogger().message(BrokerMessages.LISTENING(String.valueOf(transport), getPort()));
+                _broker.getEventLogger().message(BrokerMessages.LISTENING(String.valueOf(transport), _transport.getAcceptingPort()));
             }
 
             return State.ACTIVE;

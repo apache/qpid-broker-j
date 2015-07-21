@@ -273,7 +273,7 @@ public class QpidBrokerTestCase extends QpidTestCase
         {
             configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT, Port.PORT, actualPort);
             configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_RMI_PORT, Port.PORT, getManagementPort(actualPort));
-            configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_JMX_PORT, Port.PORT, getManagementPort(actualPort) + JMXPORT_CONNECTORSERVER_OFFSET);
+            configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_JMX_PORT, Port.PORT, getManagementPort(actualPort) + (actualPort == 0 ? 0 : JMXPORT_CONNECTORSERVER_OFFSET));
 
             String remotelogback = "remotelogback";
 
@@ -369,7 +369,7 @@ public class QpidBrokerTestCase extends QpidTestCase
      */
     protected int getManagementPort(int mainPort)
     {
-        return mainPort + (DEFAULT_MANAGEMENT_PORT - DEFAULT_PORT);
+        return mainPort == 0 ? 0 : mainPort + (DEFAULT_MANAGEMENT_PORT - DEFAULT_PORT);
     }
 
     /**
