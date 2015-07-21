@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.AccessControlException;
-import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -117,7 +116,6 @@ public class AMQPConnection_0_8
     private static final int CHANNEL_CACHE_SIZE = 0xff;
     private static final String BROKER_DEBUG_BINARY_DATA_LENGTH = "broker.debug.binaryDataLength";
     private static final int DEFAULT_DEBUG_BINARY_DATA_LENGTH = 80;
-    private static final long AWAIT_CLOSED_TIMEOUT = 60000;
 
     private static final long CLOSE_OK_TIMEOUT = 10000l;
 
@@ -145,8 +143,6 @@ public class AMQPConnection_0_8
 
     private SaslServer _saslServer;
 
-    private volatile boolean _closed;
-
     private long _maxNoOfChannels;
 
     private ProtocolVersion _protocolVersion = ProtocolVersion.getLatestSupportedVersion();
@@ -165,7 +161,7 @@ public class AMQPConnection_0_8
     private LogSubject _logSubject;
 
     private int _maxFrameSize;
-    private final AtomicBoolean _closing = new AtomicBoolean(false);
+    private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
     private final NetworkConnection _network;
     private final ByteBufferSender _sender;
@@ -260,11 +256,6 @@ public class AMQPConnection_0_8
         return Subject.doAs(getAuthorizedSubject(), action);
     }
 
-    private boolean runningAsSubject()
-    {
-        return getAuthorizedSubject().equals(Subject.getSubject(AccessController.getContext()));
-    }
-
     @Override
     public boolean isTransportBlockedForWriting()
     {
@@ -294,10 +285,8 @@ public class AMQPConnection_0_8
 
     public boolean isClosing()
     {
-        return _closing.get();
+        return _orderlyClose.get();
     }
-
-
 
     public ClientDeliveryMethod createDeliveryMethod(int channelId)
     {
@@ -328,7 +317,7 @@ public class AMQPConnection_0_8
                 try
                 {
                     _decoder.decodeBuffer(msg);
-                    receivedComplete();
+                    receivedCompleteAllChannels();
                 }
                 catch (ConnectionScopedRuntimeException e)
                 {
@@ -382,7 +371,7 @@ public class AMQPConnection_0_8
 
     }
 
-    private void receivedComplete()
+    private void receivedCompleteAllChannels()
     {
         RuntimeException exception = null;
 
@@ -700,127 +689,37 @@ public class AMQPConnection_0_8
         }
     }
 
-    private void closeConnectionInternal(final boolean connectionDropped)
+    private void completeAndCloseAllChannels()
     {
-
-        if(runningAsSubject())
+        try
         {
-            if(_closing.compareAndSet(false,true))
-            {
-                // force sync of outstanding async work
-                try
-                {
-                    receivedComplete();
-                }
-                finally
-                {
-
-                    finishClose(connectionDropped);
-                }
-
-            }
-            else
-            {
-                awaitClosed();
-            }
+            receivedCompleteAllChannels();
         }
-        else
+        finally
         {
-            runAsSubject(new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    closeConnectionInternal(connectionDropped);
-                    return null;
-                }
-            });
-
+            closeAllChannels();
         }
     }
 
-    private void finishClose(boolean connectionDropped)
-    {
-        if (!_closed)
-        {
-
-            try
-            {
-                if (_virtualHost != null)
-                {
-                    _virtualHost.deregisterConnection(this);
-                }
-                closeAllChannels();
-            }
-            finally
-            {
-                synchronized (this)
-                {
-                    _closed = true;
-                    notifyAll();
-                }
-                getEventLogger().message(_logSubject, connectionDropped ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
-
-            }
-        }
-    }
-
-    private void awaitClosed()
-    {
-        synchronized(this)
-        {
-            final long endTime = System.currentTimeMillis() + AWAIT_CLOSED_TIMEOUT;
-
-            while(!_closed && endTime > System.currentTimeMillis())
-            {
-                try
-                {
-                    wait(1000);
-                }
-                catch (InterruptedException e)
-                {
-                    Thread.currentThread().interrupt();
-                    break;
-                }
-            }
-
-            if (!_closed)
-            {
-                throw new ConnectionScopedRuntimeException("Connection " + this + " failed to become closed within " + AWAIT_CLOSED_TIMEOUT + "ms.");
-            }
-        }
-    }
-
-    private void closeConnection(int channelId, AMQConnectionException e)
-    {
-
-        if (_logger.isInfoEnabled())
-        {
-            _logger.info("Closing connection due to: " + e);
-        }
-        closeConnection(channelId, e.getCloseFrame());
-    }
-
-
-    void closeConnection(AMQConstant errorCode,
-                         String message, int channelId)
+    void sendConnectionClose(AMQConstant errorCode,
+                             String message, int channelId)
     {
 
         if (_logger.isInfoEnabled())
         {
             _logger.info("Closing connection due to: " + message);
         }
-        closeConnection(channelId, new AMQFrame(0, new ConnectionCloseBody(getProtocolVersion(), errorCode.getCode(), AMQShortString.validValueOf(message), _currentClassId, _currentMethodId)));
+        sendConnectionClose(channelId, new AMQFrame(0, new ConnectionCloseBody(getProtocolVersion(), errorCode.getCode(), AMQShortString.validValueOf(message), _currentClassId, _currentMethodId)));
     }
 
-    private void closeConnection(int channelId, AMQFrame frame)
+    private void sendConnectionClose(int channelId, AMQFrame frame)
     {
-        if(!_closing.get())
+        if (_orderlyClose.compareAndSet(false, true))
         {
             try
             {
                 markChannelAwaitingCloseOk(channelId);
-                closeConnectionInternal(false);
+                completeAndCloseAllChannels();
             }
             finally
             {
@@ -831,15 +730,9 @@ public class AMQPConnection_0_8
                 finally
                 {
                     final long timeoutTime = System.currentTimeMillis() + CLOSE_OK_TIMEOUT;
-                    final NetworkConnection network = _network;
-                    getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, network));
-
+                    getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, _network));
                 }
             }
-        }
-        else
-        {
-            awaitClosed();
         }
     }
 
@@ -1009,23 +902,29 @@ public class AMQPConnection_0_8
         {
             try
             {
-                closeConnectionInternal(true);
+                if (!_orderlyClose.get())
+                {
+                    completeAndCloseAllChannels();
+                }
             }
             finally
             {
-                try
+                if (_virtualHost != null)
                 {
-                    closeNetworkConnection();
+                    _virtualHost.deregisterConnection(this);
                 }
-                finally
-                {
-                    performDeleteTasks();
-                }
+
+                performDeleteTasks();
             }
         }
         catch (ConnectionScopedRuntimeException | TransportException e)
         {
             _logger.error("Could not close protocol engine", e);
+        }
+        finally
+        {
+            markTransportClosed();
+            getEventLogger().message(_logSubject, _orderlyClose.get() ? ConnectionMessages.CLOSE() : ConnectionMessages.DROPPED_CONNECTION());
         }
     }
 
@@ -1093,17 +992,23 @@ public class AMQPConnection_0_8
 
     }
 
-    public void closeAsync(final AMQConstant cause, final String message)
+    @Override
+    public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
         Action<AMQPConnection_0_8> action = new Action<AMQPConnection_0_8>()
         {
             @Override
             public void performAction(final AMQPConnection_0_8 object)
             {
-                closeConnection(0, new AMQConnectionException(cause, message, 0, 0,
-                                                              getMethodRegistry(),
-                                                              null));
+                AMQConnectionException e = new AMQConnectionException(cause, message, 0, 0,
+                        getMethodRegistry(),
+                        null);
 
+                if (_logger.isInfoEnabled())
+                {
+                    _logger.info("Closing connection due to: " + e);
+                }
+                sendConnectionClose(0, e.getCloseFrame());
             }
         };
         addAsyncTask(action);
@@ -1143,11 +1048,6 @@ public class AMQPConnection_0_8
                 }
             }
         }
-    }
-
-    public boolean isClosed()
-    {
-        return _closed;
     }
 
     public List<AMQChannel> getSessionModels()
@@ -1190,19 +1090,19 @@ public class AMQPConnection_0_8
         // Protect the broker against out of order frame request.
         if (_virtualHost == null)
         {
-            closeConnection(AMQConstant.COMMAND_INVALID,
-                            "Virtualhost has not yet been set. ConnectionOpen has not been called.", channelId);
+            sendConnectionClose(AMQConstant.COMMAND_INVALID,
+                    "Virtualhost has not yet been set. ConnectionOpen has not been called.", channelId);
         }
         else if(getChannel(channelId) != null || channelAwaitingClosure(channelId))
         {
-            closeConnection(AMQConstant.CHANNEL_ERROR, "Channel " + channelId + " already exists", channelId);
+            sendConnectionClose(AMQConstant.CHANNEL_ERROR, "Channel " + channelId + " already exists", channelId);
         }
         else if(channelId > getMaximumNumberOfChannels())
         {
-            closeConnection(AMQConstant.CHANNEL_ERROR,
-                            "Channel " + channelId + " cannot be created as the max allowed channel id is "
+            sendConnectionClose(AMQConstant.CHANNEL_ERROR,
+                    "Channel " + channelId + " cannot be created as the max allowed channel id is "
                             + getMaximumNumberOfChannels(),
-                            channelId);
+                    channelId);
         }
         else
         {
@@ -1226,7 +1126,7 @@ public class AMQPConnection_0_8
     {
         if(_state != requiredState)
         {
-            closeConnection(AMQConstant.COMMAND_INVALID, "Command Invalid", 0);
+            sendConnectionClose(AMQConstant.COMMAND_INVALID, "Command Invalid", 0);
 
         }
     }
@@ -1251,8 +1151,8 @@ public class AMQPConnection_0_8
 
         if (virtualHost == null)
         {
-            closeConnection(AMQConstant.NOT_FOUND,
-                            "Unknown virtual host: '" + virtualHostName + "'",0);
+            sendConnectionClose(AMQConstant.NOT_FOUND,
+                    "Unknown virtual host: '" + virtualHostName + "'", 0);
 
         }
         else
@@ -1263,12 +1163,12 @@ public class AMQPConnection_0_8
                 String redirectHost = virtualHost.getRedirectHost(getPort());
                 if(redirectHost != null)
                 {
-                    closeConnection(0, new AMQFrame(0,new ConnectionRedirectBody(getProtocolVersion(),AMQShortString.valueOf(redirectHost), null)));
+                    sendConnectionClose(0, new AMQFrame(0, new ConnectionRedirectBody(getProtocolVersion(), AMQShortString.valueOf(redirectHost), null)));
                 }
                 else
                 {
-                    closeConnection(AMQConstant.CONNECTION_FORCED,
-                                    "Virtual host '" + virtualHost.getName() + "' is not active", 0);
+                    sendConnectionClose(AMQConstant.CONNECTION_FORCED,
+                            "Virtual host '" + virtualHost.getName() + "' is not active", 0);
                 }
 
             }
@@ -1288,12 +1188,12 @@ public class AMQPConnection_0_8
                     }
                     else
                     {
-                        closeConnection(AMQConstant.ACCESS_REFUSED, "Connection refused",0);
+                        sendConnectionClose(AMQConstant.ACCESS_REFUSED, "Connection refused", 0);
                     }
                 }
                 catch (AccessControlException e)
                 {
-                    closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), 0);
+                    sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), 0);
                 }
             }
         }
@@ -1317,7 +1217,10 @@ public class AMQPConnection_0_8
         }
         try
         {
-            closeConnectionInternal(false);
+            if (_orderlyClose.compareAndSet(false, true))
+            {
+                completeAndCloseAllChannels();
+            }
 
             MethodRegistry methodRegistry = getMethodRegistry();
             ConnectionCloseOkBody responseBody = methodRegistry.createConnectionCloseOkBody();
@@ -1341,21 +1244,7 @@ public class AMQPConnection_0_8
             _logger.debug("RECV ConnectionCloseOk");
         }
 
-        _logger.info("Received Connection-close-ok");
-
-        try
-        {
-            closeConnectionInternal(false);
-        }
-        catch (Exception e)
-        {
-            _logger.error("Error closing connection: " + getRemoteAddressString(), e);
-        }
-        finally
-        {
-            closeNetworkConnection();
-        }
-
+        closeNetworkConnection();
     }
 
     @Override
@@ -1375,7 +1264,7 @@ public class AMQPConnection_0_8
         SaslServer ss = getSaslServer();
         if (ss == null)
         {
-            closeConnection(AMQConstant.INTERNAL_ERROR, "No SASL context set up in connection",0 );
+            sendConnectionClose(AMQConstant.INTERNAL_ERROR, "No SASL context set up in connection", 0);
         }
         MethodRegistry methodRegistry = getMethodRegistry();
         SubjectAuthenticationResult authResult = subjectCreator.authenticate(ss, response);
@@ -1386,7 +1275,7 @@ public class AMQPConnection_0_8
 
                 _logger.info("Authentication failed:" + (cause == null ? "" : cause.getMessage()));
 
-                closeConnection(AMQConstant.NOT_ALLOWED, "Authentication failed",0);
+                sendConnectionClose(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
 
                 disposeSaslServer();
                 break;
@@ -1474,7 +1363,7 @@ public class AMQPConnection_0_8
 
             if (ss == null)
             {
-                closeConnection(AMQConstant.RESOURCE_ERROR, "Unable to create SASL Server:" + mechanism, 0);
+                sendConnectionClose(AMQConstant.RESOURCE_ERROR, "Unable to create SASL Server:" + mechanism, 0);
 
             }
             else
@@ -1495,7 +1384,7 @@ public class AMQPConnection_0_8
 
                         _logger.info("Authentication failed:" + (cause == null ? "" : cause.getMessage()));
 
-                        closeConnection(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
+                        sendConnectionClose(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
 
                         disposeSaslServer();
                         break;
@@ -1534,7 +1423,7 @@ public class AMQPConnection_0_8
         catch (SaslException e)
         {
             disposeSaslServer();
-            closeConnection(AMQConstant.INTERNAL_ERROR, "SASL error: " + e, 0);
+            sendConnectionClose(AMQConstant.INTERNAL_ERROR, "SASL error: " + e, 0);
         }
     }
 
@@ -1558,15 +1447,15 @@ public class AMQPConnection_0_8
 
         if (frameMax > (long) brokerFrameMax)
         {
-            closeConnection(AMQConstant.SYNTAX_ERROR,
-                            "Attempt to set max frame size to " + frameMax
+            sendConnectionClose(AMQConstant.SYNTAX_ERROR,
+                    "Attempt to set max frame size to " + frameMax
                             + " greater than the broker will allow: "
                             + brokerFrameMax, 0);
         }
         else if (frameMax > 0 && frameMax < AMQConstant.FRAME_MIN_SIZE.getCode())
         {
-            closeConnection(AMQConstant.SYNTAX_ERROR,
-                            "Attempt to set max frame size to " + frameMax
+            sendConnectionClose(AMQConstant.SYNTAX_ERROR,
+                    "Attempt to set max frame size to " + frameMax
                             + " which is smaller than the specification defined minimum: "
                             + AMQConstant.FRAME_MIN_SIZE.getCode(), 0);
         }
@@ -1686,9 +1575,9 @@ public class AMQPConnection_0_8
                         {
                             if(method.getName().startsWith("receive"))
                             {
-                                closeConnection(AMQConstant.CHANNEL_ERROR,
-                                                "Unknown channel id: " + channelId,
-                                                channelId);
+                                sendConnectionClose(AMQConstant.CHANNEL_ERROR,
+                                        "Unknown channel id: " + channelId,
+                                        channelId);
                                 return null;
                             }
                             else if(method.getName().equals("ignoreAllButCloseOk"))
@@ -1735,7 +1624,7 @@ public class AMQPConnection_0_8
     @Override
     public boolean ignoreAllButCloseOk()
     {
-        return _closing.get();
+        return isClosing();
     }
 
     @Override

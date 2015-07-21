@@ -256,7 +256,14 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     @Override
     public void closed()
     {
-        _inputHandler.closed();
+        try
+        {
+            _inputHandler.closed();
+        }
+        finally
+        {
+            markTransportClosed();
+        }
     }
 
     @Override
@@ -317,9 +324,9 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return _connection.hasSessionWithName(name);
     }
 
-    public void closeAsync(final AMQConstant cause, final String message)
+    public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
-        _connection.closeAsync(cause, message);
+        _connection.sendConnectionCloseAsync(cause, message);
     }
 
     public Principal getAuthorizedPrincipal()

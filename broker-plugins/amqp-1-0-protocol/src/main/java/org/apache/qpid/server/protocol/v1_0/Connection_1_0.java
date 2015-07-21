@@ -241,13 +241,6 @@ public class Connection_1_0 implements ConnectionEventListener
         {
             session.remoteEnd(new End());
         }
-
-        if(_vhost != null)
-        {
-            _vhost.deregisterConnection(_amqpConnection);
-        }
-
-
     }
 
     void performCloseTasks()
@@ -257,12 +250,16 @@ public class Connection_1_0 implements ConnectionEventListener
 
     public void closed()
     {
+        if (_vhost != null)
+        {
+            _vhost.deregisterConnection(_amqpConnection);
+        }
         performCloseTasks();
         closeReceived();
     }
 
 
-    public void closeAsync(AMQConstant cause, String message)
+    public void sendConnectionCloseAsync(AMQConstant cause, String message)
     {
         Action<Connection_1_0> action = new Action<Connection_1_0>()
         {

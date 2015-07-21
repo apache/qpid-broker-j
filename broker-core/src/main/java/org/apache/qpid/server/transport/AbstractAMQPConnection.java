@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.auth.Subject;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -71,8 +70,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final List<Action<? super C>> _connectionCloseTaskList =
             new CopyOnWriteArrayList<>();
 
-    private final Action<? super AMQPConnection<C>> _underlyingConnectionDeleteTask;
-
     private String _clientProduct;
     private String _clientVersion;
     private String _remoteProcessPid;
@@ -80,8 +77,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     private volatile boolean _stopped;
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
-    private final AtomicBoolean _underlyingClosed = new AtomicBoolean();
-
+    private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
+    private final SettableFuture<Void> _modelClosedFuture = SettableFuture.create();
+    private final AtomicBoolean _modelClosing = new AtomicBoolean();
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   NetworkConnection network,
@@ -104,22 +102,25 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _messagesReceived = new StatisticsCounter("messages-received-" + getConnectionId());
         _dataReceived = new StatisticsCounter("data-received-" + getConnectionId());
 
-
-        // Used to allow the protocol layers to tell the model they have been deleted
-        _underlyingConnectionDeleteTask = new Action<AMQPConnection<?>>()
-        {
-            @Override
-            public void performAction(final AMQPConnection<?> object)
-            {
-                removeDeleteTask(this);
-                _underlyingClosed.set(true);
-                deleteAsync();
-            }
-        };
-        addDeleteTask(_underlyingConnectionDeleteTask);
+        _transportClosedFuture.addListener(
+                new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            deleted();
+                            setState(State.DELETED);
+                        }
+                        finally
+                        {
+                            _modelClosedFuture.set(null);
+                        }
+                    }
+                }, getTaskExecutor().getExecutor());
 
         setState(State.ACTIVE);
-
     }
 
     private static Map<String, Object> createAttributes(long connectionId, NetworkConnection network)
@@ -156,7 +157,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         return _aggregateTicker;
     }
-
 
     public long getLastIoTime()
     {
@@ -394,66 +394,22 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     @StateTransition( currentState = State.ACTIVE, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
-        if (_underlyingClosed.get())
-        {
-            deleted();
-            return Futures.immediateFuture(null);
-        }
-        else
-        {
-            final SettableFuture<Void> returnVal = SettableFuture.create();
-            asyncCloseUnderlying().addListener(
-                    new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                deleted();
-                                setState(State.DELETED);
-                            }
-                            finally
-                            {
-                                returnVal.set(null);
-                            }
-                        }
-                    }, getTaskExecutor().getExecutor()
-                                              );
-            return returnVal;
-        }
+        return closeAsyncIfNotAlreadyClosing();
     }
 
     @Override
     protected ListenableFuture<Void> beforeClose()
     {
-        if (_underlyingClosed.get())
-        {
-            return Futures.immediateFuture(null);
-        }
-        else
-        {
-
-            return asyncCloseUnderlying();
-        }
-
+        return closeAsyncIfNotAlreadyClosing();
     }
 
-    private ListenableFuture<Void> asyncCloseUnderlying()
+    private ListenableFuture<Void> closeAsyncIfNotAlreadyClosing()
     {
-        final SettableFuture<Void> closeFuture = SettableFuture.create();
-        addDeleteTask(new Action<AMQPConnection<?>>()
+        if (_modelClosing.compareAndSet(false, true))
         {
-            @Override
-            public void performAction(final AMQPConnection<?> object)
-            {
-                closeFuture.set(null);
-            }
-        });
-        removeDeleteTask(_underlyingConnectionDeleteTask);
-
-        closeAsync(AMQConstant.CONNECTION_FORCED, "Connection closed by external action");
-        return closeFuture;
+            sendConnectionCloseAsync(AMQConstant.CONNECTION_FORCED, "Connection closed by external action");
+        }
+        return _modelClosedFuture;
     }
 
     @Override
@@ -513,5 +469,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return this;
     }
 
-
+    protected void markTransportClosed()
+    {
+        _transportClosedFuture.set(null);
+    }
 }

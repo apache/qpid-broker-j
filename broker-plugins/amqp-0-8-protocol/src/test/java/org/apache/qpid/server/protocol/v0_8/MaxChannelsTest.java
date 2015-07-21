@@ -25,34 +25,34 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class MaxChannelsTest extends QpidTestCase
 {
-    private AMQPConnection_0_8 _session;
+    private AMQPConnection_0_8 _connection;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
         BrokerTestHelper.setUp();
-        _session = BrokerTestHelper_0_8.createProtocolSession();
+        _connection = BrokerTestHelper_0_8.createProtocolSession();
     }
 
     public void testChannels() throws Exception
     {
         // check the channel count is correct
-        int channelCount = _session.getChannels().size();
+        int channelCount = _connection.getChannels().size();
         assertEquals("Initial channel count wrong", 0, channelCount);
 
         long maxChannels = 10L;
-        _session.setMaximumNumberOfChannels(maxChannels);
-        assertEquals("Number of channels not correctly set.", maxChannels, _session.getMaximumNumberOfChannels());
+        _connection.setMaximumNumberOfChannels(maxChannels);
+        assertEquals("Number of channels not correctly set.", maxChannels, _connection.getMaximumNumberOfChannels());
 
         for (long currentChannel = 1L; currentChannel <= maxChannels; currentChannel++)
         {
-            _session.receiveChannelOpen( (int) currentChannel);
+            _connection.receiveChannelOpen((int) currentChannel);
         }
-        assertFalse("Connection should not be closed after opening " + maxChannels + " channels",_session.isClosed());
-        assertEquals("Maximum number of channels not set.", maxChannels, _session.getChannels().size());
-        _session.receiveChannelOpen((int) maxChannels+1);
-        assertTrue("Connection should be closed after opening " + (maxChannels + 1) + " channels",_session.isClosed());
+        assertFalse("Connection should not be closed after opening " + maxChannels + " channels", _connection.isClosing());
+        assertEquals("Maximum number of channels not set.", maxChannels, _connection.getChannels().size());
+        _connection.receiveChannelOpen((int) maxChannels + 1);
+        assertTrue("Connection should be closed after opening " + (maxChannels + 1) + " channels", _connection.isClosing());
     }
 
     @Override
@@ -60,7 +60,7 @@ public class MaxChannelsTest extends QpidTestCase
     {
         try
         {
-            _session.getVirtualHost().close();
+            _connection.getVirtualHost().close();
         }
         finally
         {

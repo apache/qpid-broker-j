@@ -55,7 +55,7 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
             }
             if (_connection != null)
             {
-                _connection.closeAsync(AMQConstant.CONNECTION_FORCED, "");
+                _connection.sendConnectionCloseAsync(AMQConstant.CONNECTION_FORCED, "");
             }
         }
         finally

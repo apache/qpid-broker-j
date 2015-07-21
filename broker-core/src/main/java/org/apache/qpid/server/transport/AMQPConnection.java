@@ -62,6 +62,6 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     boolean hasSessionWithName(byte[] name);
 
-    void closeAsync(AMQConstant connectionForced, String reason);
+    void sendConnectionCloseAsync(AMQConstant connectionForced, String reason);
 
 }

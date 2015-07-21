@@ -261,13 +261,24 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     private void shutdown()
     {
-        shutdownInput();
-
-        shutdownFinalWrite();
-        LOGGER.debug("Closing receiver");
-        _protocolEngine.closed();
-
-        shutdownOutput();
+        try
+        {
+            shutdownInput();
+            shutdownFinalWrite();
+            _protocolEngine.closed();
+            shutdownOutput();
+        }
+        finally
+        {
+            try
+            {
+                _socketChannel.close();
+            }
+            catch (IOException e)
+            {
+                LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
+            }
+        }
     }
 
     private void shutdownFinalWrite()
@@ -280,7 +291,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
         catch (IOException e)
         {
-            LOGGER.info("Exception performing final write/close for thread '" + _remoteSocketAddress + "': " + e);
+            LOGGER.info("Exception performing final write/close for '{}': {}", _remoteSocketAddress, e.getMessage());
         }
     }
 
@@ -292,12 +303,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             {
                 _socketChannel.shutdownOutput();
             }
-
-            _socketChannel.close();
         }
         catch (IOException e)
         {
-            LOGGER.info("Exception closing socket thread '" + _remoteSocketAddress + "': " + e);
+            LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
         }
     }
 
@@ -311,7 +320,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             }
             catch (IOException e)
             {
-                LOGGER.info("Exception shutting down input for thread '" + _remoteSocketAddress + "': " + e);
+                LOGGER.info("Exception shutting down input for '{}': {}", _remoteSocketAddress, e.getMessage());
             }
         }
     }

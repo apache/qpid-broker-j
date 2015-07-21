@@ -73,7 +73,6 @@ public class ServerConnection extends Connection implements //AMQConnectionModel
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
     public static final long CLOSE_OK_TIMEOUT = 10000l;
     private final Broker<?> _broker;
-    private AtomicBoolean _logClosed = new AtomicBoolean(false);
 
     private Principal _authorizedPrincipal = null;
     private final long _connectionId;
@@ -154,28 +153,9 @@ public class ServerConnection extends Connection implements //AMQConnectionModel
             _amqpConnection.virtualHostAssociated();
         }
 
-        if (state == State.CLOSE_RCVD || state == State.CLOSED || state == State.CLOSING)
-        {
-            if(_virtualHost != null)
-            {
-                _virtualHost.deregisterConnection(_amqpConnection);
-            }
-        }
         if(state == State.CLOSING)
         {
             getAmqpConnection().getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_OK_TIMEOUT, getNetworkConnection()));
-        }
-        if (state == State.CLOSED)
-        {
-            logClosed();
-        }
-    }
-
-    protected void logClosed()
-    {
-        if(_logClosed.compareAndSet(false, true))
-        {
-            getEventLogger().message(this, isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
         }
     }
 
@@ -351,7 +331,7 @@ public class ServerConnection extends Connection implements //AMQConnectionModel
         }
     }
 
-    public void closeAsync(final AMQConstant cause, final String message)
+    public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
         addAsyncTask(new Action<ServerConnection>()
         {
@@ -490,9 +470,15 @@ public class ServerConnection extends Connection implements //AMQConnectionModel
     @Override
     public void closed()
     {
+        if(_virtualHost != null)
+        {
+            _virtualHost.deregisterConnection(_amqpConnection);
+        }
         performDeleteTasks();
         closeSubscriptions();
         super.closed();
+
+        getEventLogger().message(this, isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
     }
 
     private void closeSubscriptions()

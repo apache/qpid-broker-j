@@ -423,7 +423,7 @@ public class VirtualHostTest extends QpidTestCase
                 }
                 return null;
             }
-        }).when(connection).closeAsync(any(AMQConstant.class),anyString());
+        }).when(connection).sendConnectionCloseAsync(any(AMQConstant.class), anyString());
         when(connection.getRemoteAddressString()).thenReturn("peer:1234");
         return connection;
     }

@@ -158,16 +158,9 @@ public class ServerConnectionDelegate extends ServerDelegate
     public void connectionClose(Connection conn, ConnectionClose close)
     {
         final ServerConnection sconn = (ServerConnection) conn;
-        try
-        {
-            sconn.logClosed();
-        }
-        finally
-        {
-            sconn.closeCode(close);
-            sconn.setState(CLOSE_RCVD);
-            sendConnectionCloseOkAndCloseSender(conn);
-        }
+        sconn.closeCode(close);
+        sconn.setState(CLOSE_RCVD);
+        sendConnectionCloseOkAndCloseSender(conn);
     }
 
     public void connectionOpen(Connection conn, ConnectionOpen open)

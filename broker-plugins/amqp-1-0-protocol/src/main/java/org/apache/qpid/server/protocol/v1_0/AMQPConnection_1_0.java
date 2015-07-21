@@ -481,9 +481,11 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         }
         catch(RuntimeException e)
         {
-
             LOGGER.error("Exception while closing", e);
-            getNetwork().close();
+        }
+        finally
+        {
+            markTransportClosed();
         }
     }
 
@@ -641,9 +643,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         return false;
     }
 
-    public void closeAsync(final AMQConstant cause, final String message)
+    public void sendConnectionCloseAsync(final AMQConstant cause, final String message)
     {
-        _connection.closeAsync(cause, message);
+        _connection.sendConnectionCloseAsync(cause, message);
     }
 
     public Principal getAuthorizedPrincipal()

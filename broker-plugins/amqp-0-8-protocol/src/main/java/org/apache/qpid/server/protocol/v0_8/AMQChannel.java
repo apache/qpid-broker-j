@@ -606,7 +606,7 @@ public class AMQChannel
                             @Override
                             public void run()
                             {
-                                _connection.closeConnection(AMQConstant.NO_ROUTE,
+                                _connection.sendConnectionClose(AMQConstant.NO_ROUTE,
                                         "No route for message " + description, _channelId);
 
                             }
@@ -646,9 +646,9 @@ public class AMQChannel
             long currentSize = _currentMessage.addContentBodyFrame(contentBody);
             if(currentSize > _currentMessage.getSize())
             {
-                _connection.closeConnection(AMQConstant.FRAME_ERROR,
-                                            "More message data received than content header defined",
-                                            _channelId);
+                _connection.sendConnectionClose(AMQConstant.FRAME_ERROR,
+                        "More message data received than content header defined",
+                        _channelId);
             }
             else
             {
@@ -1774,7 +1774,7 @@ public class AMQChannel
      */
     private void closeConnection(String reason) throws QpidException
     {
-        _connection.closeAsync(AMQConstant.RESOURCE_ERROR, reason);
+        _connection.sendConnectionCloseAsync(AMQConstant.RESOURCE_ERROR, reason);
     }
 
     public void deadLetter(long deliveryTag)
@@ -2040,9 +2040,9 @@ public class AMQChannel
 
         if (ProtocolVersion.v0_91.equals(_connection.getProtocolVersion()))
         {
-            _connection.closeConnection(AMQConstant.COMMAND_INVALID,
-                                                    "AccessRequest not present in AMQP versions other than 0-8, 0-9",
-                                                    _channelId);
+            _connection.sendConnectionClose(AMQConstant.COMMAND_INVALID,
+                    "AccessRequest not present in AMQP versions other than 0-8, 0-9",
+                    _channelId);
         }
         else
         {
@@ -2149,8 +2149,8 @@ public class AMQChannel
             }
             else
             {
-                _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                            "No queue name provided, no default queue defined.", _channelId);
+                _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                        "No queue name provided, no default queue defined.", _channelId);
             }
         }
         else
@@ -2174,45 +2174,45 @@ public class AMQChannel
             catch (ConsumerTagInUseException cte)
             {
 
-                _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                            "Non-unique consumer tag, '" + consumerTag1
-                                            + "'", _channelId);
+                _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                        "Non-unique consumer tag, '" + consumerTag1
+                                + "'", _channelId);
             }
             catch (AMQInvalidArgumentException ise)
             {
-                _connection.closeConnection(AMQConstant.ARGUMENT_INVALID, ise.getMessage(), _channelId);
+                _connection.sendConnectionClose(AMQConstant.ARGUMENT_INVALID, ise.getMessage(), _channelId);
 
 
             }
             catch (AMQQueue.ExistingExclusiveConsumer e)
             {
-                _connection.closeConnection(AMQConstant.ACCESS_REFUSED,
-                                            "Cannot subscribe to queue '"
-                                                                    + queue1.getName()
-                                                                    + "' as it already has an existing exclusive consumer", _channelId);
+                _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED,
+                        "Cannot subscribe to queue '"
+                                + queue1.getName()
+                                + "' as it already has an existing exclusive consumer", _channelId);
 
             }
             catch (AMQQueue.ExistingConsumerPreventsExclusive e)
             {
-                _connection.closeConnection(AMQConstant.ACCESS_REFUSED,
-                                            "Cannot subscribe to queue '"
-                                                                    + queue1.getName()
-                                                                    + "' exclusively as it already has a consumer", _channelId);
+                _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED,
+                        "Cannot subscribe to queue '"
+                                + queue1.getName()
+                                + "' exclusively as it already has a consumer", _channelId);
 
             }
             catch (AccessControlException e)
             {
-                _connection.closeConnection(AMQConstant.ACCESS_REFUSED, "Cannot subscribe to queue '"
-                                                                    + queue1.getName()
-                                                                    + "' permission denied", _channelId);
+                _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, "Cannot subscribe to queue '"
+                        + queue1.getName()
+                        + "' permission denied", _channelId);
 
             }
             catch (MessageSource.ConsumerAccessRefused consumerAccessRefused)
             {
-                _connection.closeConnection(AMQConstant.ACCESS_REFUSED,
-                                            "Cannot subscribe to queue '"
-                                                                    + queue1.getName()
-                                                                    + "' as it already has an incompatible exclusivity policy", _channelId);
+                _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED,
+                        "Cannot subscribe to queue '"
+                                + queue1.getName()
+                                + "' as it already has an incompatible exclusivity policy", _channelId);
 
             }
 
@@ -2238,13 +2238,13 @@ public class AMQChannel
             }
             if (queueName != null)
             {
-                _connection.closeConnection(AMQConstant.NOT_FOUND, "No such queue, '" + queueName + "'", _channelId);
+                _connection.sendConnectionClose(AMQConstant.NOT_FOUND, "No such queue, '" + queueName + "'", _channelId);
 
             }
             else
             {
-                _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                            "No queue name provided, no default queue defined.", _channelId);
+                _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                        "No queue name provided, no default queue defined.", _channelId);
 
             }
         }
@@ -2264,22 +2264,22 @@ public class AMQChannel
             }
             catch (AccessControlException e)
             {
-                _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), _channelId);
+                _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), _channelId);
             }
             catch (MessageSource.ExistingExclusiveConsumer e)
             {
-                _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Queue has an exclusive consumer", _channelId);
+                _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Queue has an exclusive consumer", _channelId);
             }
             catch (MessageSource.ExistingConsumerPreventsExclusive e)
             {
-                _connection.closeConnection(AMQConstant.INTERNAL_ERROR,
-                                            "The GET request has been evaluated as an exclusive consumer, " +
-                                        "this is likely due to a programming error in the Qpid broker", _channelId);
+                _connection.sendConnectionClose(AMQConstant.INTERNAL_ERROR,
+                        "The GET request has been evaluated as an exclusive consumer, " +
+                                "this is likely due to a programming error in the Qpid broker", _channelId);
             }
             catch (MessageSource.ConsumerAccessRefused consumerAccessRefused)
             {
-                _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                            "Queue has an incompatible exclusivity policy", _channelId);
+                _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                        "Queue has an incompatible exclusivity policy", _channelId);
             }
         }
     }
@@ -2340,7 +2340,7 @@ public class AMQChannel
                 }
                 catch (AccessControlException e)
                 {
-                    _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
 
                 }
             }
@@ -2520,9 +2520,9 @@ public class AMQChannel
         }
         else
         {
-            _connection.closeConnection(AMQConstant.COMMAND_INVALID,
-                                        "Attempt to send a content header without first sending a publish frame",
-                                        _channelId);
+            _connection.sendConnectionClose(AMQConstant.COMMAND_INVALID,
+                    "Attempt to send a content header without first sending a publish frame",
+                    _channelId);
         }
     }
 
@@ -2545,9 +2545,9 @@ public class AMQChannel
         }
         else
         {
-            _connection.closeConnection(AMQConstant.COMMAND_INVALID,
-                                        "Attempt to send a content header without first sending a publish frame",
-                                        _channelId);
+            _connection.sendConnectionClose(AMQConstant.COMMAND_INVALID,
+                    "Attempt to send a content header without first sending a publish frame",
+                    _channelId);
         }
     }
 
@@ -2877,10 +2877,10 @@ public class AMQChannel
         {
             if (!new AMQShortString(ExchangeDefaults.DIRECT_EXCHANGE_CLASS).equals(type))
             {
-                _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Attempt to redeclare default exchange: "
-                                                                 + " of type "
-                                                                 + ExchangeDefaults.DIRECT_EXCHANGE_CLASS
-                                                                 + " to " + type + ".", getChannelId());
+                _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Attempt to redeclare default exchange: "
+                        + " of type "
+                        + ExchangeDefaults.DIRECT_EXCHANGE_CLASS
+                        + " to " + type + ".", getChannelId());
             }
             else if (!nowait)
             {
@@ -2901,13 +2901,13 @@ public class AMQChannel
                 else if (!(type == null || type.length() == 0) && !exchange.getType().equals(type.toString()))
                 {
 
-                    _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Attempt to redeclare exchange: '"
-                                                                         + exchangeName
-                                                                         + "' of type "
-                                                                         + exchange.getType()
-                                                                         + " to "
-                                                                         + type
-                                                                         + ".", getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Attempt to redeclare exchange: '"
+                            + exchangeName
+                            + "' of type "
+                            + exchange.getType()
+                            + " to "
+                            + type
+                            + ".", getChannelId());
                 }
                 else if (!nowait)
                 {
@@ -2956,9 +2956,9 @@ public class AMQChannel
                     }
                     else
                     {
-                        _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                                    "Attempt to declare exchange: '" + exchangeName +
-                                                    "' which begins with reserved prefix.", getChannelId());
+                        _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                                "Attempt to declare exchange: '" + exchangeName +
+                                        "' which begins with reserved prefix.", getChannelId());
                     }
                 }
                 catch (ExchangeExistsException e)
@@ -2966,10 +2966,10 @@ public class AMQChannel
                     exchange = e.getExistingExchange();
                     if (!new AMQShortString(exchange.getType()).equals(type))
                     {
-                        _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Attempt to redeclare exchange: '"
-                                                                                 + exchangeName + "' of type "
-                                                                                 + exchange.getType()
-                                                                                 + " to " + type + ".", getChannelId());
+                        _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Attempt to redeclare exchange: '"
+                                + exchangeName + "' of type "
+                                + exchange.getType()
+                                + " to " + type + ".", getChannelId());
                     }
                     else
                     {
@@ -2982,16 +2982,16 @@ public class AMQChannel
                 }
                 catch (NoFactoryForTypeException e)
                 {
-                    _connection.closeConnection(AMQConstant.COMMAND_INVALID, "Unknown exchange type '"
-                                                                             + e.getType()
-                                                                             + "' for exchange '"
-                                                                             + exchangeName
-                                                                             + "'", getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.COMMAND_INVALID, "Unknown exchange type '"
+                            + e.getType()
+                            + "' for exchange '"
+                            + exchangeName
+                            + "'", getChannelId());
 
                 }
                 catch (AccessControlException e)
                 {
-                    _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
 
                 }
                 catch (UnknownConfiguredObjectException e)
@@ -3001,15 +3001,15 @@ public class AMQChannel
                                            + (e.getName() != null
                             ? "name: '" + e.getName() + "'"
                             : "id: " + e.getId());
-                    _connection.closeConnection(AMQConstant.NOT_FOUND, message, getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.NOT_FOUND, message, getChannelId());
 
                 }
                 catch (IllegalArgumentException e)
                 {
-                    _connection.closeConnection(AMQConstant.COMMAND_INVALID, "Error creating exchange '"
-                                                                             + exchangeName
-                                                                             + "': "
-                                                                             + e.getMessage(), getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.COMMAND_INVALID, "Error creating exchange '"
+                            + exchangeName
+                            + "': "
+                            + e.getMessage(), getChannelId());
 
                 }
             }
@@ -3033,8 +3033,8 @@ public class AMQChannel
 
             if (isDefaultExchange(exchangeStr))
             {
-                _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                            "Default Exchange cannot be deleted", getChannelId());
+                _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                        "Default Exchange cannot be deleted", getChannelId());
 
             }
 
@@ -3068,7 +3068,7 @@ public class AMQChannel
         }
         catch (AccessControlException e)
         {
-            _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+            _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
         }
     }
 
@@ -3121,8 +3121,8 @@ public class AMQChannel
         }
         else if (isDefaultExchange(exchange))
         {
-            _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                        "Cannot bind the queue '" + queueName + "' to the default exchange", getChannelId());
+            _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                    "Cannot bind the queue '" + queueName + "' to the default exchange", getChannelId());
 
         }
         else
@@ -3176,7 +3176,7 @@ public class AMQChannel
                 }
                 catch (AccessControlException e)
                 {
-                    _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
                 }
             }
         }
@@ -3235,9 +3235,9 @@ public class AMQChannel
             {
                 if (!queue.verifySessionAccess(this))
                 {
-                    _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Queue '"
-                                                + queue.getName()
-                                                + "' is exclusive, but not created on this Connection.", getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Queue '"
+                            + queue.getName()
+                            + "' is exclusive, but not created on this Connection.", getChannelId());
                 }
                 else
                 {
@@ -3319,9 +3319,9 @@ public class AMQChannel
 
                 if (!queue.verifySessionAccess(this))
                 {
-                    _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Queue '"
-                                                + queue.getName()
-                                                + "' is exclusive, but not created on this Connection.", getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Queue '"
+                            + queue.getName()
+                            + "' is exclusive, but not created on this Connection.", getChannelId());
 
                 }
                 else if (queue.isExclusive() != exclusive)
@@ -3374,7 +3374,7 @@ public class AMQChannel
             }
             catch (AccessControlException e)
             {
-                _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+                _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
             }
 
         }
@@ -3425,9 +3425,9 @@ public class AMQChannel
             {
                 if (!queue.verifySessionAccess(this))
                 {
-                    _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Queue '"
-                                                + queue.getName()
-                                                + "' is exclusive, but not created on this Connection.", getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Queue '"
+                            + queue.getName()
+                            + "' is exclusive, but not created on this Connection.", getChannelId());
 
                 }
                 else
@@ -3442,7 +3442,7 @@ public class AMQChannel
                     }
                     catch (AccessControlException e)
                     {
-                        _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+                        _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
 
                     }
                 }
@@ -3463,7 +3463,7 @@ public class AMQChannel
         if (queueName == null && (queue = getDefaultQueue()) == null)
         {
 
-            _connection.closeConnection(AMQConstant.NOT_ALLOWED, "No queue specified.", getChannelId());
+            _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "No queue specified.", getChannelId());
         }
         else if ((queueName != null) && (queue = virtualHost.getAttainedQueue(queueName.toString())) == null)
         {
@@ -3471,8 +3471,8 @@ public class AMQChannel
         }
         else if (!queue.verifySessionAccess(this))
         {
-            _connection.closeConnection(AMQConstant.NOT_ALLOWED,
-                                        "Queue is exclusive, but not created on this Connection.", getChannelId());
+            _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                    "Queue is exclusive, but not created on this Connection.", getChannelId());
         }
         else
         {
@@ -3490,7 +3490,7 @@ public class AMQChannel
             }
             catch (AccessControlException e)
             {
-                _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+                _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
 
             }
 
@@ -3529,9 +3529,9 @@ public class AMQChannel
         }
         else if (isDefaultExchange(exchange))
         {
-            _connection.closeConnection(AMQConstant.NOT_ALLOWED, "Cannot unbind the queue '"
-                                                         + queue.getName()
-                                                         + "' from the default exchange", getChannelId());
+            _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED, "Cannot unbind the queue '"
+                    + queue.getName()
+                    + "' from the default exchange", getChannelId());
 
         }
         else
@@ -3559,7 +3559,7 @@ public class AMQChannel
                 }
                 catch (AccessControlException e)
                 {
-                    _connection.closeConnection(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+                    _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
 
                 }
             }
