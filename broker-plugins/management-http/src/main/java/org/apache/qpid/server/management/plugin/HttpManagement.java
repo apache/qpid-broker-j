@@ -73,8 +73,6 @@ import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.JsonValueServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LoggedOnUserPreferencesServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogoutServlet;
-import org.apache.qpid.server.management.plugin.servlet.rest.MessageContentServlet;
-import org.apache.qpid.server.management.plugin.servlet.rest.MessageServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.MetaDataServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.QueueReportServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
@@ -318,8 +316,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addServlet(new ServletHolder(new UserPreferencesServlet()), "/service/userpreferences/*");
         root.addServlet(new ServletHolder(new LoggedOnUserPreferencesServlet()), "/service/preferences");
         root.addServlet(new ServletHolder(new StructureServlet()), "/service/structure");
-        root.addServlet(new ServletHolder(new MessageServlet()), "/service/message/*");
-        root.addServlet(new ServletHolder(new MessageContentServlet()), "/service/message-content/*");
         root.addServlet(new ServletHolder(new QueueReportServlet()), "/service/queuereport/*");
 
         root.addServlet(new ServletHolder(new MetaDataServlet(getModel())), "/service/metadata");

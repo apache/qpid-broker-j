@@ -254,5 +254,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedOperation(nonModifying = true)
     List<MessageInfo> getMessageInfo(@Param(name = "first", defaultValue = "-1") int first, @Param(name = "last", defaultValue = "-1") int last);
 
+    @ManagedOperation(nonModifying = true)
+    MessageInfo getMessageInfoById(@Param(name = "messageId") long messageId);
 
 }

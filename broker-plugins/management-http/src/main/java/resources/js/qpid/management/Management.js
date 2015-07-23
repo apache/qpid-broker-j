@@ -132,7 +132,8 @@ define(["dojo/_base/lang",
                    otherwise:     function(errback){return promise.otherwise(errback);},
                    trace:         function(){ return promise.trace();},
                    traceRejected: function(){return promise.traceRejected();},
-                   toString:      function(){return promise.toString();}
+                   toString:      function(){return promise.toString();},
+                   response:      promise.response
                });
     };
 
@@ -171,10 +172,16 @@ define(["dojo/_base/lang",
     //
     // returns: promise of type dojo.promise.Promise
     //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
-    Management.prototype.load = function(modelObj, parameters)
+    Management.prototype.load = function(modelObj, parameters, requestOptions)
     {
         var url = this.objectToURL(modelObj);
         var request = {url: url};
+
+        if (requestOptions)
+        {
+            lang.mixin(request,requestOptions);
+        }
+
         if (parameters)
         {
             request.query = parameters;

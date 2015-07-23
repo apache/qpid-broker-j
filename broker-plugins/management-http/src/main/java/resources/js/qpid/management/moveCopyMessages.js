@@ -56,25 +56,22 @@ define(["dojo/dom",
                             theForm.on("submit", function(e) {
 
                                 event.stop(e);
-                                if(theForm.validate()){
-
-                                    moveMessages.data.destinationQueue = theForm.getValues()["queue"];
-                                    var that = this;
-
-                                    moveMessages.management.post({url: "service/message/"+encodeURIComponent(encodeURIComponent(moveMessages.vhost))
-                                                      +"/"+encodeURIComponent(encodeURIComponent(moveMessages.queue)),
-                                             headers: { "Content-Type": "application/json"}},
-                                             moveMessages.data,
-                                             function(x) {
-                                                          registry.byId("moveMessages").hide();
-                                                          if(moveMessages.next) {
-                                                              moveMessages.next();
-                                                          }
-                                             },
-                                             util.xhrErrorHandler);
-                                    return false;
-
-
+                                if(theForm.validate())
+                                {
+                                   var destination = theForm.getValues()["queue"]
+                                   var messageIds = moveMessages.data.messages
+                                   var modelObj = { type: "queue", name: moveMessages.data.move ? "moveMessages" : "copyMessages", parent: moveMessages.modelObj };
+                                   var parameters = {destination: destination, messageIds: messageIds};
+                                   moveMessages.management.update(modelObj, parameters).then(
+                                     function(result)
+                                     {
+                                       registry.byId("moveMessages").hide();
+                                       if(moveMessages.next)
+                                       {
+                                         moveMessages.next();
+                                       }
+                                     });
+                                   return false;
                                 }else{
                                     alert('Form contains invalid data.  Please correct first');
                                     return false;
@@ -84,9 +81,8 @@ define(["dojo/dom",
 
         moveMessages.show = function(management, modelObj, data, next) {
             var that = this;
+            moveMessages.modelObj = modelObj;
             moveMessages.management = management;
-            moveMessages.vhost = modelObj.parent.name;
-            moveMessages.queue = modelObj.name;
             moveMessages.data = data;
             moveMessages.next = next;
             registry.byId("formMoveMessages").reset();
@@ -96,8 +92,12 @@ define(["dojo/dom",
             management.load({type: "queue", parent: modelObj.parent},  {depth:0}).then(
                 function(data) {
                     var queues =  [];
-                    for(var i=0; i < data.length; i++) {
-                      queues[i] = {id: data[i].name, name: data[i].name};
+                    for(var i=0; i < data.length; i++)
+                    {
+                      if (data[i].name != modelObj.name)
+                      {
+                        queues.push({id: data[i].name, name: data[i].name});
+                      }
                     }
                     var queueStore = new Memory({ data: queues });
 

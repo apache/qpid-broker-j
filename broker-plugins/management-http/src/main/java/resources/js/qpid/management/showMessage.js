@@ -46,20 +46,24 @@ define(["dojo/dom",
         };
 
         showMessage.loadViewMessage = function(data) {
-            var that = this;
+            var node = construct.create("div", null, win.body(), "last");
             node.innerHTML = data;
-            showMessage.dialogNode = dom.byId("showMessage");
-            parser.instantiate([showMessage.dialogNode]);
+            var that = this;
+            parser.parse(node).then(function(instances)
+            {
+                that.dialogNode = dom.byId("showMessage");
+                var closeButton = query(".closeViewMessage", that.dialogNode)[0];
+                registry.byNode(closeButton).on("click",
+                                function (evt) {
+                                    event.stop(evt);
+                                    that.hide();
+                                });
+            });
 
-            var closeButton = query(".closeViewMessage")[0];
-            connect.connect(closeButton, "onclick",
-                            function (evt) {
-                                event.stop(evt);
-                                showMessage.hide();
-                            });
+
         };
 
-        showMessage.populateShowMessage = function(data) {
+        showMessage.populateShowMessage = function(management, modelObj, data) {
 
             // clear fields set by previous invocation.
             if(populatedFields) {
@@ -89,7 +93,7 @@ define(["dojo/dom",
                                 }
                                 tableStr += "</table>";
                             } else if(domClass.contains(field,"datetime")) {
-                                field.innerHTML = showMessage.management.userPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
+                                field.innerHTML = management.userPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
                             } else {
                                 field.innerHTML = encode(val);
                             }
@@ -98,38 +102,45 @@ define(["dojo/dom",
                 }
             }
             var contentField = query(".message-content", this.dialogNode)[0];
-
-            if(data.mimeType && data.mimeType.match(/text\/.*/)) {
-                showMessage.management.get({url: "service/message-content/" + encodeURIComponent(encodeURIComponent(showMessage.virtualhost))
-                                            + "/" + encodeURIComponent(encodeURIComponent(showMessage.queue))
-                                            + "/" + encodeURIComponent(encodeURIComponent(showMessage.messageNumber)),
-                                            headers: { "Content-Type": "text/html"},
-                                            handleAs: "text"
-                                    }).then(function(obj) { contentField.innerHTML = encode(obj); }, util.xhrErrorHandler);
-            } else {
-                contentField.innerHTML = "<a href=\"" + showMessage.management.getFullUrl("service/message-content/"
-                                                            + encodeURIComponent(encodeURIComponent(showMessage.virtualhost))
-                                                            + "/" + encodeURIComponent(encodeURIComponent(showMessage.queue))
-                                                            + "/" + encodeURIComponent(encodeURIComponent(showMessage.messageNumber)))
-                                        + "\" target=\"_blank\">Download</a>";
-            }
             populatedFields.push(contentField);
 
-            registry.byId("showMessage").show();
+            var contentModelObj = {name: "getMessageContent", parent: modelObj, type: modelObj.type};
+            var parameters = {messageId: data.id};
+            if(data.mimeType && data.mimeType.match(/text\/.*/))
+            {
+                management.load(contentModelObj,
+                                parameters,
+                                {handleAs: "text", headers: { "Content-Type": data.mimeType}}).then(
+                                function(content)
+                                {
+                                    contentField.innerHTML = encode(content);
+                                    registry.byId("showMessage").show();
+                                });
+            }
+            else
+            {
+                var url = management.buildObjectURL(contentModelObj, parameters);
+                contentField.innerHTML = "<a href=\"#\" title=\"" + url + "\">Download</a>";
+
+                var href = query('a', contentField)[0]
+                connect.connect(href, 'onclick',
+                                 function()
+                                 {
+                                      management.download(contentModelObj, parameters);
+                                 });
+
+                registry.byId("showMessage").show();
+            }
         };
 
-        showMessage.show = function(management, obj) {
-            showMessage.management = management;
-            showMessage.virtualhost = obj.virtualhost;
-            showMessage.queue = obj.queue;
-            showMessage.messageNumber = obj.messageNumber;
-
-            showMessage.management.get({url: "service/message/" + encodeURIComponent(encodeURIComponent(obj.virtualhost))
-                            + "/" + encodeURIComponent(encodeURIComponent(obj.queue))
-                            + "/" + encodeURIComponent(encodeURIComponent(obj.messageNumber))}).then(showMessage.populateShowMessage);
+        showMessage.show = function(management, modelObj, message )
+        {
+            management.load({name: "getMessageInfoById", parent: modelObj, type: modelObj.type}, {messageId: message.id}).then(
+                function(data)
+                {
+                    showMessage.populateShowMessage(management, modelObj, data);
+                });
         };
-
-        var node = construct.create("div", null, win.body(), "last");
 
         showMessage.loadViewMessage(template);
 

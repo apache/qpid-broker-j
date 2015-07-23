@@ -18,7 +18,8 @@
  * under the License.
  *
  */
-define(["dojo/parser",
+define(["dojo/_base/declare",
+        "dojo/parser",
         "dojo/query",
         "dijit/registry",
         "dojo/_base/connect",
@@ -33,18 +34,17 @@ define(["dojo/parser",
         "qpid/management/moveCopyMessages",
         "qpid/management/showMessage",
         "qpid/management/editQueue",
-        "dojo/store/JsonRest",
+        "qpid/common/JsonRest",
         "dojox/grid/EnhancedGrid",
         "dojo/data/ObjectStore",
         "dojox/html/entities",
         "dojo/text!showQueue.html",
-        "dojox/data/JsonRestStore",
         "dojox/grid/enhanced/plugins/Pagination",
         "dojox/grid/enhanced/plugins/IndirectSelection",
         "dojo/domReady!"],
-       function (parser, query, registry, connect, event, json, properties, updater, util, formatter,
+       function (declare, parser, query, registry, connect, event, json, properties, updater, util, formatter,
                  UpdatableStore, addBinding, moveMessages, showMessage, editQueue, JsonRest,
-                 EnhancedGrid, ObjectStore, entities, template, JsonRestStore) {
+                 EnhancedGrid, ObjectStore, entities, template) {
 
            function Queue(name, parent, controller) {
                this.name = name;
@@ -81,13 +81,10 @@ define(["dojo/parser",
                 contentPane.containerNode.innerHTML = template;
                 parser.parse(contentPane.containerNode).then(function(instances)
                 {
-
                             that.queueUpdater = new QueueUpdater(that);
 
                             // double encode to allow slashes in object names.
-                            var myStore = new JsonRest({target: that.management.getFullUrl("service/message/" +
-                                                                                    encodeURIComponent(encodeURIComponent(that.getVirtualHostName())) +
-                                                                                   "/" + encodeURIComponent(encodeURIComponent(that.getQueueName())))});
+                            var myStore = new JsonRest({management: that.management, modelObject: that.modelObj, queryOperation: "getMessageInfo"});
                             var messageGridDiv = query(".messages",contentPane.containerNode)[0];
                             that.dataStore =  new ObjectStore({objectStore: myStore});
                             var userPreferences = this.management.userPreferences;
@@ -115,18 +112,15 @@ define(["dojo/parser",
                                               position: "bottom"
                                           },
                                           indirectSelection: true
-                                }
+                                },
+                                canSort: function(col) { return false; }
                             }, messageGridDiv);
 
                             connect.connect(that.grid, "onRowDblClick", that.grid,
                                              function(evt){
                                                  var idx = evt.rowIndex,
                                                      theItem = this.getItem(idx);
-                                                 var id = that.dataStore.getValue(theItem,"id");
-                                                 showMessage.show(that.management, { messageNumber: id,
-                                                                    queue: that.getQueueName(),
-                                                                    virtualhost: that.getVirtualHostName(),
-                                                                    virtualhostnode: that.getVirtualHostNodeName()});
+                                                 showMessage.show(that.management, that.modelObj, theItem);
                                              });
 
                             var deleteMessagesButton = query(".deleteMessagesButton", contentPane.containerNode)[0];
@@ -182,37 +176,56 @@ define(["dojo/parser",
                 });
            };
 
-           Queue.prototype.deleteMessages = function() {
+           Queue.prototype.deleteMessages = function()
+           {
                var data = this.grid.selection.getSelected();
-               if(data.length) {
-                   var that = this;
-                   if(confirm("Delete " + data.length + " messages?")) {
-                       var query = util.buildDeleteQuery(data, "service/message/" + encodeURIComponent(encodeURIComponent(this.getVirtualHostName())) + "/" + encodeURIComponent(encodeURIComponent(this.getQueueName())));
-                       management.del({url: query}).then(
-                           function(result)
+               if(data.length)
+               {
+                   if(confirm("Delete " + data.length + " messages?"))
+                   {
+                       var modelObj = { type: "queue", name: "deleteMessages", parent: this.modelObj };
+                       var parameters = {messageIds:[]};
+                       for(var i = 0; i<data.length; i++)
+                       {
+                         parameters.messageIds.push(data[i].id);
+                       }
+                       var that = this;
+                       this.management.update(modelObj, parameters).then(
+                         function(result)
+                         {
+                           that.grid.selection.deselectAll();
+                           if (result && result[0])
                            {
-                               that.grid.setQuery({id: "*"});
-                               that.grid.selection.deselectAll();
-                               that.queueUpdater.update();
-                           },
-                           util.xhrErrorHandler);
+                             that.reloadGridData();
+                           }
+                         });
                    }
                }
            };
-           Queue.prototype.clearQueue = function() {
-               var that = this;
-               if(confirm("Clear all messages from queue?")) {
-                   var query = "service/message/"+ encodeURIComponent(encodeURIComponent(that.getVirtualHostName()))
-                       + "/" + encodeURIComponent(encodeURIComponent(that.getQueueName())) + "?clear=true";
-                   that.success = true
-                   this.management.del({url: query}).then(
-                       function(data) {
-                           that.grid.setQuery({id: "*"});
-                           that.grid.selection.deselectAll();
-                           that.queueUpdater.update();
-                       },
-                       util.xhrErrorHandler);
+           Queue.prototype.clearQueue = function()
+           {
+               if(confirm("Clear all messages from queue?"))
+               {
+                   var modelObj = { type: "queue", name: "clearQueue", parent: this.modelObj };
+                   var that = this;
+                   this.management.update(modelObj, {}).then(
+                         function(result)
+                         {
+                           if (result)
+                           {
+                             that.reloadGridData();
+                           }
+                         });
                }
+           };
+           Queue.prototype.reloadGridData = function()
+           {
+             var currentPage = this.grid.pagination.currentPage;
+             var currentPageSize = this.grid.pagination.currentPageSize;
+             var first = (currentPage -1 ) * currentPageSize;
+             var last = currentPage * currentPageSize;
+             this.grid.setQuery({first: first, last: last});
+             this.queueUpdater.update();
            };
            Queue.prototype.moveOrCopyMessages = function(obj) {
                var that = this;
@@ -231,8 +244,7 @@ define(["dojo/parser",
                                        putData, function() {
                                          if(move)
                                          {
-                                            that.grid.setQuery({id: "*"});
-                                            that.grid.selection.deselectAll();
+                                            that.reloadGridData();
                                          }
                                      });
 

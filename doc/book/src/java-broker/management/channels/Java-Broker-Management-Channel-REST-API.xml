@@ -348,24 +348,6 @@
           </row>
           <row>
             <entry>
-              <para>/service/message/&lt;virtualhost name&gt;/&lt;queue name&gt;</para>
-            </entry>
-            <entry>Rest service to manage messages(s). Retrieves the details about the messages(s) with GET. Copies, moves messages with POST requests. Deletes messages with DELETE requests </entry>
-          </row>
-          <row>
-            <entry>
-              <para>/service/message-content/&lt;virtualhost name&gt;/&lt;queue name&gt;</para>
-            </entry>
-            <entry>Rest service to retrieve message content</entry>
-          </row>
-          <row>
-            <entry>
-              <para>/service/logrecords</para>
-            </entry>
-            <entry>Rest service to retrieve broker logs</entry>
-          </row>
-          <row>
-            <entry>
               <para>/service/sasl</para>
             </entry>
             <entry>Sasl authentication. Retrieves user current authentication status and broker supported SASL mechanisms (GET). Authenticates user using supported SASL mechanisms (PUT requests)</entry>

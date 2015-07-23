@@ -3282,7 +3282,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public Content getMessageContent(final long messageId)
     {
-        final MessageFinder messageFinder = new MessageFinder(messageId);
+        final MessageContentFinder messageFinder = new MessageContentFinder(messageId);
         visit(messageFinder);
         if(messageFinder.isFound())
         {
@@ -3294,12 +3294,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public List<MessageInfo> getMessageInfo(int first, int last)
     {
         final MessageCollector messageCollector = new MessageCollector(first, last, false);
         visit(messageCollector);
         return messageCollector.getMessages();
 
+    }
+
+    @Override
+    public MessageInfo getMessageInfoById(final long messageId)
+    {
+        final MessageFinder messageFinder = new MessageFinder(messageId);
+        visit(messageFinder);
+        return messageFinder.getMessageInfo();
     }
 
     private void authorizeMethod(String methodName)
@@ -3310,8 +3319,37 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                              getVirtualHost().getName());
     }
 
-
     private class MessageFinder implements QueueEntryVisitor
+    {
+        private final long _messageNumber;
+        private MessageInfo _messageInfo;
+
+        private MessageFinder(long messageNumber)
+        {
+            _messageNumber = messageNumber;
+        }
+
+        @Override
+        public boolean visit(QueueEntry entry)
+        {
+            ServerMessage message = entry.getMessage();
+            if(message != null)
+            {
+                if (_messageNumber == message.getMessageNumber())
+                {
+                    _messageInfo = new MessageInfoFacade(entry, true);
+                }
+            }
+            return false;
+        }
+
+        public MessageInfo getMessageInfo()
+        {
+            return _messageInfo;
+        }
+    }
+
+    private class MessageContentFinder implements QueueEntryVisitor
     {
         private final long _messageNumber;
         private String _mimeType;
@@ -3319,7 +3357,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         private byte[] _content;
         private boolean _found;
 
-        private MessageFinder(long messageNumber)
+        private MessageContentFinder(long messageNumber)
         {
             _messageNumber = messageNumber;
         }
