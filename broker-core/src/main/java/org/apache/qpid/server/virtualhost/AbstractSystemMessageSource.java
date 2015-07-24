@@ -57,7 +57,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     private final CopyOnWriteArrayList<ConsumerRegistrationListener<? super MessageSource>>
             _consumerRegistrationListeners =
             new CopyOnWriteArrayList<>();
-    private Map<String, Consumer> _consumers = new ConcurrentHashMap<>();
+    private List<Consumer> _consumers = new CopyOnWriteArrayList<>();
 
     public AbstractSystemMessageSource(
             String name, final VirtualHostImpl virtualHost)
@@ -97,7 +97,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     {
         final Consumer consumer = new Consumer(consumerName, target);
         target.consumerAdded(consumer);
-        _consumers.put(consumerName, consumer);
+        _consumers.add(consumer);
         for (ConsumerRegistrationListener<? super MessageSource> listener : _consumerRegistrationListeners)
         {
             listener.consumerAdded(this, consumer);
@@ -108,7 +108,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     @Override
     public Collection<Consumer> getConsumers()
     {
-        return new ArrayList<>(_consumers.values());
+        return new ArrayList<>(_consumers);
     }
 
     @Override
@@ -229,7 +229,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public void close()
         {
-
+            _consumers.remove(this);
         }
 
         @Override
