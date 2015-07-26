@@ -33,7 +33,6 @@ define(["dojo/dom",
       {
         var that = this;
         this.metadata = data.metadata;
-        this.containerNode = data.containerNode;
         data.containerNode.innerHTML = template;
         return parser.parse(data.containerNode).then(function(instances)
         {
