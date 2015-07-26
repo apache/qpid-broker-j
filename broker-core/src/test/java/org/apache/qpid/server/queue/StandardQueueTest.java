@@ -25,7 +25,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -46,8 +45,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
     {
         getQueue().close();
         getQueue().deleteAndReturnCount();
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
-        queueAttributes.put(Queue.ID, UUID.randomUUID());
+        Map<String,Object> queueAttributes = new HashMap<>();
         queueAttributes.put(Queue.NAME, getQname());
         queueAttributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
         final StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, getVirtualHost());
@@ -69,8 +67,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
     public void testActiveConsumerCount() throws Exception
     {
 
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
-        queueAttributes.put(Queue.ID, UUID.randomUUID());
+        Map<String,Object> queueAttributes = new HashMap<>();
         queueAttributes.put(Queue.NAME, "testActiveConsumerCount");
         queueAttributes.put(Queue.OWNER, "testOwner");
         final StandardQueueImpl queue = new StandardQueueImpl(queueAttributes, getVirtualHost());
@@ -177,8 +174,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         int messageNumber = 4;
         int dequeueMessageIndex = 1;
 
-        Map<String,Object> queueAttributes = new HashMap<String, Object>();
-        queueAttributes.put(Queue.ID, UUID.randomUUID());
+        Map<String,Object> queueAttributes = new HashMap<>();
         queueAttributes.put(Queue.NAME, "test");
         // create queue with overridden method deliverAsync
         StandardQueueImpl testQueue = new StandardQueueImpl(queueAttributes, getVirtualHost());
@@ -260,8 +256,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
         private static Map<String,Object> attributes()
         {
-            Map<String,Object> attributes = new HashMap<String, Object>();
-            attributes.put(Queue.ID, UUID.randomUUID());
+            Map<String,Object> attributes = new HashMap<>();
             attributes.put(Queue.NAME, "test");
             attributes.put(Queue.DURABLE, false);
             attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.PERMANENT);

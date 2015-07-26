@@ -61,7 +61,6 @@ import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
-import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
@@ -92,8 +91,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         _virtualHost = BrokerTestHelper.createVirtualHost(getClass().getName());
 
-        Map<String,Object> attributes = new HashMap<String, Object>(_arguments);
-        attributes.put(Queue.ID, UUIDGenerator.generateRandomUUID());
+        Map<String,Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.NAME, _qname);
         attributes.put(Queue.OWNER, _owner);
 
@@ -122,8 +120,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         _queue.close();
         try
         {
-            Map<String,Object> attributes = new HashMap<String, Object>(_arguments);
-            attributes.put(Queue.ID, UUIDGenerator.generateRandomUUID());
+            Map<String,Object> attributes = new HashMap<>(_arguments);
 
             _queue =  _virtualHost.createQueue(attributes);
             assertNull("Queue was created", _queue);
@@ -134,12 +131,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                             e.getMessage().contains("name"));
         }
 
-        Map<String,Object> attributes = new HashMap<String, Object>(_arguments);
-        attributes.put(Queue.ID, UUIDGenerator.generateRandomUUID());
+        Map<String,Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.NAME, "differentName");
         _queue =  _virtualHost.createQueue(attributes);
         assertNotNull("Queue was not created", _queue);
     }
+
 
 
     public void testGetVirtualHost()
@@ -842,15 +839,15 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         AMQQueue queue = _virtualHost.createQueue(attributes);
 
-        assertEquals("TTL has not been overriden", 60000l, getExpirationOnQueue(queue, 50000l, 0l));
+        assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 0l));
 
-        assertEquals("TTL has not been overriden", 60000l, getExpirationOnQueue(queue, 50000l, 65000l));
+        assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 65000l));
 
-        assertEquals("TTL has been incorrectly overriden", 55000l, getExpirationOnQueue(queue, 50000l, 55000l));
+        assertEquals("TTL has been incorrectly overridden", 55000l, getExpirationOnQueue(queue, 50000l, 55000l));
 
         long tooLateExpiration = System.currentTimeMillis() + 20000l;
 
-        assertTrue("TTL has not been overriden", tooLateExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
+        assertTrue("TTL has not been overridden", tooLateExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
 
         long acceptableExpiration = System.currentTimeMillis() + 5000l;
 
@@ -864,19 +861,19 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         queue = _virtualHost.createQueue(attributes);
 
-        assertEquals("TTL has been overriden incorrectly", 0l, getExpirationOnQueue(queue, 50000l, 0l));
+        assertEquals("TTL has been overridden incorrectly", 0l, getExpirationOnQueue(queue, 50000l, 0l));
 
-        assertEquals("TTL has been overriden incorrectly", 65000l, getExpirationOnQueue(queue, 50000l, 65000l));
+        assertEquals("TTL has been overridden incorrectly", 65000l, getExpirationOnQueue(queue, 50000l, 65000l));
 
         assertEquals("TTL has not been overriden", 60000l, getExpirationOnQueue(queue, 50000l, 55000l));
 
         long unacceptableExpiration = System.currentTimeMillis() + 5000l;
 
-        assertTrue("TTL has not been overriden", unacceptableExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
+        assertTrue("TTL has not been overridden", unacceptableExpiration != getExpirationOnQueue(queue, 0l, tooLateExpiration));
 
         acceptableExpiration = System.currentTimeMillis() + 20000l;
 
-        assertEquals("TTL has been incorrectly overriden", acceptableExpiration, getExpirationOnQueue(queue, 0l, acceptableExpiration));
+        assertEquals("TTL has been incorrectly overridden", acceptableExpiration, getExpirationOnQueue(queue, 0l, acceptableExpiration));
 
 
         // Test the scenarios where both the minimum and maximum TTL have been set
@@ -888,11 +885,11 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         queue = _virtualHost.createQueue(attributes);
 
-        assertEquals("TTL has not been overriden", 70000l, getExpirationOnQueue(queue, 50000l, 0l));
+        assertEquals("TTL has not been overridden", 70000l, getExpirationOnQueue(queue, 50000l, 0l));
 
-        assertEquals("TTL has been overriden incorrectly", 65000l, getExpirationOnQueue(queue, 50000l, 65000l));
+        assertEquals("TTL has been overridden incorrectly", 65000l, getExpirationOnQueue(queue, 50000l, 65000l));
 
-        assertEquals("TTL has not been overriden", 60000l, getExpirationOnQueue(queue, 50000l, 55000l));
+        assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 55000l));
 
 
 

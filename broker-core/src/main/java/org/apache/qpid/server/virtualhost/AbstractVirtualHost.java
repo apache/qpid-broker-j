@@ -217,6 +217,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dataReceived = new StatisticsCounter("bytes-received-" + getName());
         _principal = new VirtualHostPrincipal(this);
         _fileSystemSpaceChecker = new FileSystemSpaceChecker();
+
+        addChangeListener(new TargetSizeAssigningListener());
     }
 
     public void onValidate()
@@ -1130,6 +1132,53 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public String getRedirectHost(final AmqpPort<?> port)
     {
         return null;
+    }
+
+    private class TargetSizeAssigningListener implements ConfigurationChangeListener
+    {
+        @Override
+        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        {
+            if (child instanceof Queue)
+            {
+                allocateTargetSizeToQueues();
+            }
+        }
+
+        @Override
+        public void childRemoved(final ConfiguredObject<?> object,
+                                 final ConfiguredObject<?> child)
+        {
+            if (child instanceof Queue)
+            {
+                allocateTargetSizeToQueues();
+            }
+        }
+
+        @Override
+        public void stateChanged(final ConfiguredObject<?> object,
+                                 final State oldState,
+                                 final State newState)
+        {
+        }
+
+        @Override
+        public void attributeSet(final ConfiguredObject<?> object,
+                                 final String attributeName,
+                                 final Object oldAttributeValue,
+                                 final Object newAttributeValue)
+        {
+        }
+
+        @Override
+        public void bulkChangeStart(final ConfiguredObject<?> object)
+        {
+        }
+
+        @Override
+        public void bulkChangeEnd(final ConfiguredObject<?> object)
+        {
+        }
     }
 
     private class VirtualHostHouseKeepingTask extends HouseKeepingTask

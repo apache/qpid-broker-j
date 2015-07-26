@@ -1364,7 +1364,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @Override
     public void setTargetSize(final long targetSize)
     {
-        _targetQueueSize.set(targetSize);
+        if (_targetQueueSize.compareAndSet(_targetQueueSize.get(), targetSize))
+        {
+            _logger.debug("Queue '{}' target size : {}", getName(), targetSize);
+        }
     }
 
     public long getTotalDequeuedMessages()
