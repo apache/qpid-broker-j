@@ -252,7 +252,15 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     {
         try
         {
-            _inputHandler.closed();
+            Subject.doAs(_connection.getAuthorizedSubject(), new PrivilegedAction<Void>()
+            {
+                @Override
+                public Void run()
+                {
+                    _inputHandler.closed();
+                    return null;
+                }
+            });
         }
         finally
         {

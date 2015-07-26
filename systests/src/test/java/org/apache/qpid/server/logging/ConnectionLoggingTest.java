@@ -179,7 +179,7 @@ public class ConnectionLoggingTest extends AbstractTestLogging
         assertTrue("Message does not end with close:" + log, log.endsWith("Close"));
 
         // Extract connection ID to validate there is a CON-1001 messasge for it
-        final String logSubject = fromSubject(log);
+        final String logSubject = fromActor(log);
         int closeConnectionID = getConnectionID(logSubject);
         assertTrue("Could not get the connection id from CLOSE message: " + logSubject, closeConnectionID != -1);
 

@@ -937,10 +937,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                && !(consumer.isDurable() && _closing))
             {
 
-                if (_logger.isInfoEnabled())
-                {
-                    _logger.info("Auto-deleting queue:" + this);
-                }
+                _logger.debug("Auto-deleting queue: {}", this);
 
                 Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                              {

@@ -66,9 +66,7 @@ import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
-import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
@@ -151,8 +149,6 @@ public class AMQPConnection_0_8
 
     private final Object _reference = new Object();
 
-    private LogSubject _logSubject;
-
     private int _maxFrameSize;
     private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
@@ -181,7 +177,6 @@ public class AMQPConnection_0_8
         super(broker, network, port, transport, connectionId, aggregateTicker);
         _maxNoOfChannels = broker.getConnection_sessionCountLimit();
         _decoder = new BrokerDecoder(this);
-        _logSubject = new ConnectionLogSubject(this);
         _binaryDataLimit = getBroker().getContextKeys(false).contains(BROKER_DEBUG_BINARY_DATA_LENGTH)
                 ? getBroker().getContextValue(Integer.class, BROKER_DEBUG_BINARY_DATA_LENGTH)
                 : DEFAULT_DEBUG_BINARY_DATA_LENGTH;
@@ -417,7 +412,7 @@ public class AMQPConnection_0_8
         }
         catch (QpidException e)
         {
-            _logger.info("Received unsupported protocol initiation for protocol version: " + getProtocolVersion());
+            _logger.debug("Received unsupported protocol initiation for protocol version: {} ", getProtocolVersion());
 
             writeFrame(new ProtocolInitiation(ProtocolVersion.getLatestSupportedVersion()));
             _sender.flush();
@@ -648,11 +643,6 @@ public class AMQPConnection_0_8
     void sendConnectionClose(AMQConstant errorCode,
                              String message, int channelId)
     {
-
-        if (_logger.isInfoEnabled())
-        {
-            _logger.info("Closing connection due to: " + message);
-        }
         sendConnectionClose(channelId, new AMQFrame(0, new ConnectionCloseBody(getProtocolVersion(), errorCode.getCode(), AMQShortString.validValueOf(message), _currentClassId, _currentMethodId)));
     }
 
@@ -867,7 +857,18 @@ public class AMQPConnection_0_8
         finally
         {
             markTransportClosed();
-            getEventLogger().message(_logSubject, _orderlyClose.get() ? ConnectionMessages.CLOSE() : ConnectionMessages.DROPPED_CONNECTION());
+
+            runAsSubject(new PrivilegedAction<Void>()
+            {
+                @Override
+                public Void run()
+                {
+                    getEventLogger().message(_orderlyClose.get()
+                                                     ? ConnectionMessages.CLOSE()
+                                                     : ConnectionMessages.DROPPED_CONNECTION());
+                    return null;
+                }
+            });
         }
     }
 
@@ -941,11 +942,6 @@ public class AMQPConnection_0_8
                 AMQConnectionException e = new AMQConnectionException(cause, message, 0, 0,
                         getMethodRegistry(),
                         null);
-
-                if (_logger.isInfoEnabled())
-                {
-                    _logger.info("Closing connection due to: " + e);
-                }
                 sendConnectionClose(0, e.getCloseFrame());
             }
         };
@@ -991,11 +987,6 @@ public class AMQPConnection_0_8
     public List<AMQChannel> getSessionModels()
     {
 		return new ArrayList<>(getChannels());
-    }
-
-    public LogSubject getLogSubject()
-    {
-        return _logSubject;
     }
 
     @Override
@@ -1044,7 +1035,7 @@ public class AMQPConnection_0_8
         }
         else
         {
-            _logger.info("Connecting to: " + _virtualHost.getName());
+            _logger.debug("Connecting to: {}", _virtualHost.getName());
 
             final AMQChannel channel = new AMQChannel(this, channelId, _virtualHost.getMessageStore());
 
@@ -1148,11 +1139,6 @@ public class AMQPConnection_0_8
             _logger.debug("RECV ConnectionClose[" +" replyCode: " + replyCode + " replyText: " + replyText + " classId: " + classId + " methodId: " + methodId + " ]");
         }
 
-        if (_logger.isInfoEnabled())
-        {
-            _logger.info("ConnectionClose received with reply code/reply text " + replyCode + "/" +
-                         replyText + " for " + this);
-        }
         try
         {
             if (_orderlyClose.compareAndSet(false, true))
@@ -1211,17 +1197,14 @@ public class AMQPConnection_0_8
             case ERROR:
                 Exception cause = authResult.getCause();
 
-                _logger.info("Authentication failed:" + (cause == null ? "" : cause.getMessage()));
+                _logger.debug("Authentication failed: {}", (cause == null ? "" : cause.getMessage()));
 
                 sendConnectionClose(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
 
                 disposeSaslServer();
                 break;
             case SUCCESS:
-                if (_logger.isInfoEnabled())
-                {
-                    _logger.info("Connected as: " + authResult.getSubject());
-                }
+                _logger.debug("Connected as: {} ", authResult.getSubject());
 
                 int frameMax = broker.getContextValue(Integer.class, Broker.BROKER_FRAME_SIZE);
 
@@ -1288,8 +1271,7 @@ public class AMQPConnection_0_8
 
         Broker<?> broker = getBroker();
 
-        _logger.info("SASL Mechanism selected: " + mechanism);
-        _logger.info("Locale selected: " + locale);
+        _logger.debug("SASL Mechanism selected: {} Locale : {}", mechanism, locale);
 
         SubjectCreator subjectCreator = getSubjectCreator();
         SaslServer ss;
@@ -1320,7 +1302,7 @@ public class AMQPConnection_0_8
                     case ERROR:
                         Exception cause = authResult.getCause();
 
-                        _logger.info("Authentication failed:" + (cause == null ? "" : cause.getMessage()));
+                        _logger.debug("Authentication failed: {}", (cause == null ? "" : cause.getMessage()));
 
                         sendConnectionClose(AMQConstant.NOT_ALLOWED, "Authentication failed", 0);
 
@@ -1328,10 +1310,7 @@ public class AMQPConnection_0_8
                         break;
 
                     case SUCCESS:
-                        if (_logger.isInfoEnabled())
-                        {
-                            _logger.info("Connected as: " + authResult.getSubject());
-                        }
+                        _logger.debug("Connected as: {}", authResult.getSubject());
                         setAuthorizedSubject(authResult.getSubject());
 
                         int frameMax = broker.getContextValue(Integer.class, Broker.BROKER_FRAME_SIZE);

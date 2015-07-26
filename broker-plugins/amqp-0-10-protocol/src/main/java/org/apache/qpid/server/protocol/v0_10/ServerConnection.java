@@ -67,8 +67,7 @@ import org.apache.qpid.transport.Option;
 import org.apache.qpid.transport.ProtocolEvent;
 import org.apache.qpid.transport.Session;
 
-public class ServerConnection extends Connection implements //AMQConnectionModel<ServerConnection, ServerSession>,
-                                                            LogSubject, AuthorizationHolder
+public class ServerConnection extends Connection implements AuthorizationHolder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
     public static final long CLOSE_OK_TIMEOUT = 10000l;
@@ -233,11 +232,6 @@ public class ServerConnection extends Connection implements //AMQConnectionModel
             }
         });
 
-    }
-
-    public LogSubject getLogSubject()
-    {
-        return this;
     }
 
     @Override
@@ -478,7 +472,7 @@ public class ServerConnection extends Connection implements //AMQConnectionModel
         closeSubscriptions();
         super.closed();
 
-        getEventLogger().message(this, isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
+        getEventLogger().message(isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
     }
 
     private void closeSubscriptions()

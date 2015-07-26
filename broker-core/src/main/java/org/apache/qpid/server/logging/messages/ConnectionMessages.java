@@ -51,6 +51,7 @@ public class ConnectionMessages
     public static final String CLIENT_VERSION_LOG_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.client_version_log";
     public static final String IDLE_CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.idle_close";
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.close";
+    public static final String MODEL_DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "connection.model_delete";
 
     static
     {
@@ -61,6 +62,7 @@ public class ConnectionMessages
         LoggerFactory.getLogger(CLIENT_VERSION_LOG_LOG_HIERARCHY);
         LoggerFactory.getLogger(IDLE_CLOSE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
+        LoggerFactory.getLogger(MODEL_DELETE_LOG_HIERARCHY);
 
         _messages = ResourceBundle.getBundle("org.apache.qpid.server.logging.messages.Connection_logmessages", _currentLocale);
     }
@@ -421,6 +423,59 @@ public class ConnectionMessages
             public String getLogHierarchy()
             {
                 return CLOSE_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Connection message of the Format:
+     * <pre>CON-1007 : Connection close initiated by operator</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage MODEL_DELETE()
+    {
+        String rawMessage = _messages.getString("MODEL_DELETE");
+
+        final String message = rawMessage;
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return MODEL_DELETE_LOG_HIERARCHY;
             }
 
             @Override

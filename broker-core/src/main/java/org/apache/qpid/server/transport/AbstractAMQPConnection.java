@@ -42,7 +42,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
+import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -77,6 +79,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final Subject _subject = new Subject();
     private final List<Action<? super C>> _connectionCloseTaskList =
             new CopyOnWriteArrayList<>();
+    private final LogSubject _logSubject;
 
     private String _clientProduct;
     private String _clientVersion;
@@ -131,6 +134,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
                 }, getTaskExecutor().getExecutor());
 
         setState(State.ACTIVE);
+        _logSubject = new ConnectionLogSubject(this);
     }
 
     private static Map<String, Object> createAttributes(long connectionId, NetworkConnection network)
@@ -434,6 +438,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     @StateTransition( currentState = State.ACTIVE, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
+        getEventLogger().message(_logSubject, ConnectionMessages.MODEL_DELETE());
         return closeAsyncIfNotAlreadyClosing();
     }
 
@@ -507,6 +512,11 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     protected void markTransportClosed()
     {
         _transportClosedFuture.set(null);
+    }
+
+    public LogSubject getLogSubject()
+    {
+        return _logSubject;
     }
 
     protected abstract EventLogger getEventLogger();
