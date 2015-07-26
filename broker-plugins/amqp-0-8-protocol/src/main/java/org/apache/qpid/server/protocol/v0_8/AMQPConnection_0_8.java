@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -74,7 +73,6 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Consumer;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -88,8 +86,6 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.SenderClosedException;
-import org.apache.qpid.transport.SenderException;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
@@ -119,7 +115,6 @@ public class AMQPConnection_0_8
 
     private static final long CLOSE_OK_TIMEOUT = 10000l;
 
-    private final long _creationTime;
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
 
@@ -139,7 +134,7 @@ public class AMQPConnection_0_8
      */
     private final Set<AMQChannel> _channelsForCurrentMessage = new HashSet<>();
 
-    private AMQDecoder _decoder;
+    private final AMQDecoder _decoder;
 
     private SaslServer _saslServer;
 
@@ -147,16 +142,14 @@ public class AMQPConnection_0_8
 
     private ProtocolVersion _protocolVersion = ProtocolVersion.getLatestSupportedVersion();
     private final MethodRegistry _methodRegistry = new MethodRegistry(_protocolVersion);
-    private final List<Action<? super AMQPConnection_0_8>> _connectionCloseTaskList =
-            new CopyOnWriteArrayList<>();
 
     private final Queue<Action<? super AMQPConnection_0_8>> _asyncTaskList =
             new ConcurrentLinkedQueue<>();
 
-    private Map<Integer, Long> _closingChannelsList = new ConcurrentHashMap<>();
+    private final Map<Integer, Long> _closingChannelsList = new ConcurrentHashMap<>();
     private ProtocolOutputConverter _protocolOutputConverter;
 
-    private Object _reference = new Object();
+    private final Object _reference = new Object();
 
     private LogSubject _logSubject;
 
@@ -167,12 +160,9 @@ public class AMQPConnection_0_8
     private final ByteBufferSender _sender;
 
     private volatile boolean _deferFlush;
-    private volatile long _lastReceivedTime = System.currentTimeMillis();
-    private volatile long _lastWriteTime = System.currentTimeMillis();
     private boolean _blocking;
 
     private volatile boolean _closeWhenNoRoute;
-    private boolean _authenticated;
     private boolean _compressionSupported;
     private int _messageCompressionThreshold;
     private int _currentClassId;
@@ -215,9 +205,6 @@ public class AMQPConnection_0_8
             }
         });
         _closeWhenNoRoute = getBroker().getConnection_closeWhenNoRoute();
-
-        _creationTime = System.currentTimeMillis();
-
     }
 
     @Override
@@ -300,69 +287,27 @@ public class AMQPConnection_0_8
             @Override
             public Void run()
             {
-
-                final long arrivalTime = System.currentTimeMillis();
-                if (!_authenticated &&
-                    (arrivalTime - _creationTime) > getPort().getContextValue(Long.class,
-                                                                              Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY))
-                {
-                    _logger.warn("Connection has taken more than "
-                                 + getPort().getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)
-                                 + "ms to establish identity.  Closing as possible DoS.");
-                    getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
-                    closeNetworkConnection();
-                }
-                _lastReceivedTime = arrivalTime;
+                updateLastReadTime();
 
                 try
                 {
                     _decoder.decodeBuffer(msg);
                     receivedCompleteAllChannels();
                 }
-                catch (ConnectionScopedRuntimeException e)
+                catch (TransportException | AMQFrameDecodingException | IOException e)
                 {
                     _logger.error("Unexpected exception", e);
-                    closeNetworkConnection();
-                }
-                catch (AMQProtocolVersionException e)
-                {
-                    _logger.error("Unexpected protocol version", e);
-                    closeNetworkConnection();
-                }
-                catch (SenderClosedException e)
-                {
-                    _logger.debug("Sender was closed abruptly, closing network.", e);
-                    closeNetworkConnection();
-                }
-                catch (SenderException e)
-                {
-                    _logger.info("Unexpected exception on send, closing network.", e);
-                    closeNetworkConnection();
-                }
-                catch (TransportException e)
-                {
-                    _logger.error("Unexpected transport exception", e);
-                    closeNetworkConnection();
-                }
-                catch (AMQFrameDecodingException e)
-                {
-                    _logger.error("Frame decoding", e);
-                    closeNetworkConnection();
-                }
-                catch (IOException e)
-                {
-                    _logger.error("I/O Exception", e);
-                    closeNetworkConnection();
+                    throw new ConnectionScopedRuntimeException(e);
                 }
                 catch (StoreException e)
                 {
                     if (_virtualHost.getState() == State.ACTIVE)
                     {
-                        throw e;
+                        throw new ServerScopedRuntimeException(e);
                     }
                     else
                     {
-                        _logger.error("Store Exception ignored as virtual host no longer active", e);
+                        throw new ConnectionScopedRuntimeException(e);
                     }
                 }
                 return null;
@@ -496,8 +441,7 @@ public class AMQPConnection_0_8
         }
 
 
-        final long time = System.currentTimeMillis();
-        _lastWriteTime = time;
+        updateLastWriteTime();
 
         if(!_deferFlush)
         {
@@ -868,7 +812,6 @@ public class AMQPConnection_0_8
             throw new IllegalArgumentException("authorizedSubject cannot be null");
         }
 
-        _authenticated = true;
         getSubject().getPrincipals().addAll(authorizedSubject.getPrincipals());
         getSubject().getPrivateCredentials().addAll(authorizedSubject.getPrivateCredentials());
         getSubject().getPublicCredentials().addAll(authorizedSubject.getPublicCredentials());
@@ -951,11 +894,6 @@ public class AMQPConnection_0_8
     public synchronized void writerIdle()
     {
         writeFrame(HeartbeatBody.FRAME);
-    }
-
-    public long getLastReceivedTime()
-    {
-        return _lastReceivedTime;
     }
 
     public long getSessionCountLimit()
@@ -1512,18 +1450,6 @@ public class AMQPConnection_0_8
     public Object getReference()
     {
         return _reference;
-    }
-
-    @Override
-    public long getLastReadTime()
-    {
-        return _lastReceivedTime;
-    }
-
-    @Override
-    public long getLastWriteTime()
-    {
-        return _lastWriteTime;
     }
 
     public boolean isCloseWhenNoRoute()

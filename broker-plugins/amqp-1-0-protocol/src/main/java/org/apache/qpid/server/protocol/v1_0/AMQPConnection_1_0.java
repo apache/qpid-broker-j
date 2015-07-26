@@ -53,7 +53,7 @@ import org.apache.qpid.amqp_1_0.type.Symbol;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
@@ -72,6 +72,7 @@ import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManage
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
@@ -82,11 +83,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     public static Logger LOGGER = LoggerFactory.getLogger(AMQPConnection_1_0.class);
 
-    public static final long CLOSE_REPONSE_TIMEOUT = 10000l;
+    public static final long CLOSE_RESPONSE_TIMEOUT = 10000l;
+    private final Broker<?> _broker;
 
-    private volatile long _lastReadTime;
-    private volatile long _lastWriteTime;
-    private long _createTime = System.currentTimeMillis();
     private ConnectionEndpoint _endpoint;
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
@@ -154,6 +153,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                               final boolean useSASL)
     {
         super(broker, network, port, transport, id, aggregateTicker);
+        _broker = broker;
         _connection = createConnection(broker, network, port, transport, id, useSASL);
 
         _connection.setAmqpConnection(this);
@@ -346,7 +346,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     {
         try
         {
-            _lastReadTime = System.currentTimeMillis();
+            updateLastReadTime();
             if(RAW_LOGGER.isDebugEnabled())
             {
                 ByteBuffer dup = msg.duplicate();
@@ -495,12 +495,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     }
 
 
-    public long getCreateTime()
-    {
-        return _createTime;
-    }
-
-
     public boolean canSend()
     {
         return true;
@@ -519,7 +513,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
         synchronized (_sendLock)
         {
-            _lastWriteTime = System.currentTimeMillis();
+            updateLastWriteTime();
             if (FRAME_LOGGER.isDebugEnabled())
             {
                 FRAME_LOGGER.debug("SEND["
@@ -573,19 +567,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     public void close()
     {
-        getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis()+ CLOSE_REPONSE_TIMEOUT,
+        getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis()+ CLOSE_RESPONSE_TIMEOUT,
                                                                    getNetwork()));
 
-    }
-
-    public long getLastReadTime()
-    {
-        return _lastReadTime;
-    }
-
-    public long getLastWriteTime()
-    {
-        return _lastWriteTime;
     }
 
     @Override
@@ -684,14 +668,22 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         _connection.unblock();
     }
 
-    public LogSubject getLogSubject()
-    {
-        return _connection.getLogSubject();
-    }
-
     public long getSessionCountLimit()
     {
         return _connection.getSessionCountLimit();
     }
 
+    @Override
+    protected EventLogger getEventLogger()
+    {
+        final VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        if (virtualHost !=  null)
+        {
+            return virtualHost.getEventLogger();
+        }
+        else
+        {
+            return _broker.getEventLogger();
+        }
+    }
 }

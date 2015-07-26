@@ -61,6 +61,7 @@ public class AMQProtocolEngineTest extends QpidTestCase
         when(_port.getChildExecutor()).thenReturn(childExecutor);
         when(_port.getCategoryClass()).thenReturn(Port.class);
         when(_port.getModel()).thenReturn(BrokerModel.getInstance());
+        when(_port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)).thenReturn(2500l);
 
         _network = mock(NetworkConnection.class);
         _transport = Transport.TCP;

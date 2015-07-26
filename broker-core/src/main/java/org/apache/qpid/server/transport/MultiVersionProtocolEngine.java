@@ -421,11 +421,12 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                 //delegate. Also save most recent supported version and associated reply header bytes
                 for(int i = 0; newDelegate == null && i < _creators.length; i++)
                 {
-                    if(_supported.contains(_creators[i].getVersion()))
+                    final ProtocolEngineCreator creator = _creators[i];
+                    if(_supported.contains(creator.getVersion()))
                     {
-                        supportedReplyBytes = _creators[i].getHeaderIdentifier();
-                        supportedReplyVersion = _creators[i].getVersion();
-                        byte[] compareBytes = _creators[i].getHeaderIdentifier();
+                        supportedReplyBytes = creator.getHeaderIdentifier();
+                        supportedReplyVersion = creator.getVersion();
+                        byte[] compareBytes = creator.getHeaderIdentifier();
                         boolean equal = true;
                         for(int j = 0; equal && j<compareBytes.length; j++)
                         {
@@ -433,21 +434,21 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                         }
                         if(equal)
                         {
-                            newDelegate = _creators[i].newProtocolEngine(_broker,
-                                                                         _network, _port, _transport, _id,
-                                                                         _aggregateTicker);
-                            if(newDelegate == null && _creators[i].getSuggestedAlternativeHeader() != null)
+                            newDelegate = creator.newProtocolEngine(_broker,
+                                                                    _network, _port, _transport, _id,
+                                                                    _aggregateTicker);
+                            if(newDelegate == null && creator.getSuggestedAlternativeHeader() != null)
                             {
-                                defaultSupportedReplyBytes = _creators[i].getSuggestedAlternativeHeader();
+                                defaultSupportedReplyBytes = creator.getSuggestedAlternativeHeader();
                             }
                         }
                     }
 
                     //If there is a configured default reply to an unsupported version initiation,
                     //then save the associated reply header bytes when we encounter them
-                    if(defaultSupportedReplyBytes == null && _defaultSupportedReply != null && _creators[i].getVersion() == _defaultSupportedReply)
+                    if(defaultSupportedReplyBytes == null && _defaultSupportedReply != null && creator.getVersion() == _defaultSupportedReply)
                     {
-                        defaultSupportedReplyBytes = _creators[i].getHeaderIdentifier();
+                        defaultSupportedReplyBytes = creator.getHeaderIdentifier();
                     }
                 }
 

@@ -35,20 +35,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
+import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Consumer;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionDelegate;
 import org.apache.qpid.transport.Constant;
@@ -64,11 +67,8 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
 
     private final NetworkConnection _network;
-    private ServerConnection _connection;
+    private final ServerConnection _connection;
 
-    private long _createTime = System.currentTimeMillis();
-    private volatile long _lastReadTime = _createTime;
-    private volatile long _lastWriteTime = _createTime;
     private volatile boolean _transportBlockedForWriting;
 
     private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
@@ -164,7 +164,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
             @Override
             public void send(ByteBuffer msg)
             {
-                _lastWriteTime = System.currentTimeMillis();
+                updateLastWriteTime();
                 sender.send(msg);
             }
 
@@ -183,18 +183,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         };
     }
 
-    @Override
-    public long getLastReadTime()
-    {
-        return _lastReadTime;
-    }
-
-    @Override
-    public long getLastWriteTime()
-    {
-        return _lastWriteTime;
-    }
-
     public void received(final ByteBuffer buf)
     {
         Subject.doAs(_connection.getAuthorizedSubject(), new PrivilegedAction<Object>()
@@ -202,22 +190,28 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
             @Override
             public Object run()
             {
-                _lastReadTime = System.currentTimeMillis();
-                if (_connection.getAuthorizedPrincipal() == null &&
-                    (_lastReadTime - _createTime) > _connection.getPort().getContextValue(Long.class,
-                                                                                          Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY))
+                updateLastReadTime();
+                try
                 {
-
-                    _logger.warn("Connection has taken more than "
-                                 + _connection.getPort()
-                                         .getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)
-                                 + "ms to establish identity.  Closing as possible DoS.");
-                    _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
-                    _network.close();
-
+                    _inputHandler.received(buf);
+                    _connection.receivedComplete();
                 }
-                _inputHandler.received(buf);
-                _connection.receivedComplete();
+                catch (IllegalArgumentException | IllegalStateException e)
+                {
+                    throw new ConnectionScopedRuntimeException(e);
+                }
+                catch (StoreException e)
+                {
+                    if (getVirtualHost().getState() == State.ACTIVE)
+                    {
+                        throw new ServerScopedRuntimeException(e);
+                    }
+                    else
+                    {
+                        throw new ConnectionScopedRuntimeException(e);
+                    }
+                }
+
                 return null;
             }
         });
@@ -337,7 +331,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     public void closeSessionAsync(final AMQSessionModel<?> session,
                                   final AMQConstant cause, final String message)
     {
-        _connection.closeSessionAsync((ServerSession)session, cause, message);
+        _connection.closeSessionAsync((ServerSession) session, cause, message);
     }
 
     public void block()
@@ -365,14 +359,15 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         _connection.unblock();
     }
 
-    public LogSubject getLogSubject()
-    {
-        return _connection.getLogSubject();
-    }
-
     public long getSessionCountLimit()
     {
         return _connection.getSessionCountLimit();
+    }
+
+    @Override
+    protected EventLogger getEventLogger()
+    {
+        return _connection.getEventLogger();
     }
 
 }

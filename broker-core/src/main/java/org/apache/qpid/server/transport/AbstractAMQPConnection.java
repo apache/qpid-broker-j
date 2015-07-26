@@ -36,12 +36,17 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
+import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -54,12 +59,15 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
+import org.apache.qpid.transport.network.Ticker;
 
 public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>>
         extends AbstractConfiguredObject<C>
         implements ProtocolEngine, AMQPConnection<C>
 
 {
+    private static final Logger _logger = LoggerFactory.getLogger(AbstractAMQPConnection.class);
+
     private final Broker<?> _broker;
     private final NetworkConnection _network;
     private final AmqpPort<?> _port;
@@ -80,6 +88,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
     private final SettableFuture<Void> _modelClosedFuture = SettableFuture.create();
     private final AtomicBoolean _modelClosing = new AtomicBoolean();
+    private volatile long _lastReadTime;
+    private volatile long _lastWriteTime;
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   NetworkConnection network,
@@ -132,6 +142,16 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return attributes;
     }
 
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        long maxAuthDelay = _port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY);
+        _aggregateTicker.addTicker(new SlowConnectionOpenTicker(maxAuthDelay));
+        _lastReadTime = _lastWriteTime = getCreatedTime();
+
+    }
+
     public final Broker<?> getBroker()
     {
         return _broker;
@@ -158,9 +178,31 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _aggregateTicker;
     }
 
-    public long getLastIoTime()
+    public final long getLastIoTime()
     {
         return Math.max(getLastReadTime(), getLastWriteTime());
+    }
+
+    @Override
+    public final long getLastReadTime()
+    {
+        return _lastReadTime;
+    }
+
+    public final void updateLastReadTime()
+    {
+        _lastReadTime = System.currentTimeMillis();
+    }
+
+    @Override
+    public final long getLastWriteTime()
+    {
+        return _lastWriteTime;
+    }
+
+    public final void updateLastWriteTime()
+    {
+        _lastWriteTime = System.currentTimeMillis();
     }
 
     public final long getConnectionId()
@@ -352,8 +394,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         getVirtualHost().registerConnection(this);
     }
 
-
-
     @Override
     public boolean isIncoming()
     {
@@ -413,11 +453,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    protected void onClose()
-    {
-    }
-
-    @Override
     public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents)
     {
         if(childClass == Session.class)
@@ -473,4 +508,45 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         _transportClosedFuture.set(null);
     }
+
+    protected abstract EventLogger getEventLogger();
+
+    private class SlowConnectionOpenTicker implements Ticker
+    {
+        private final long _allowedTime;
+
+        public SlowConnectionOpenTicker(long timeoutTime)
+        {
+            _allowedTime = timeoutTime;
+        }
+
+        @Override
+        public int getTimeToNextTick(final long currentTime)
+        {
+            final int timeToNextTick = (int) (getCreatedTime() + _allowedTime - currentTime);
+            return timeToNextTick;
+        }
+
+        @Override
+        public int tick(final long currentTime)
+        {
+            int nextTick = getTimeToNextTick(currentTime);
+            if(nextTick <= 0)
+            {
+                if (getAuthorizedPrincipal() == null)
+                {
+                    _logger.warn("Connection has taken more than {} ms to establish identity.  Closing as possible DoS.",
+                                 _allowedTime);
+                    getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
+                    _network.close();
+                }
+                else
+                {
+                    _aggregateTicker.removeTicker(this);
+                }
+            }
+            return nextTick;
+        }
+    }
+
 }

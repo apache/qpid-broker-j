@@ -332,7 +332,7 @@ public class AMQChannel
             @Override
             public long getActivityTime()
             {
-                return _connection.getLastReceivedTime();
+                return _connection.getLastReadTime();
             }
         });
         _txnStarts.incrementAndGet();
@@ -441,7 +441,7 @@ public class AMQChannel
                 final MessageMetaData messageMetaData =
                         new MessageMetaData(messagePublishInfo,
                                             contentHeader,
-                                            getConnection().getLastReceivedTime());
+                                            getConnection().getLastReadTime());
 
                 final MessageHandle<MessageMetaData> handle = _messageStore.addMessage(messageMetaData);
                 int bodyCount = _currentMessage.getBodyCount();

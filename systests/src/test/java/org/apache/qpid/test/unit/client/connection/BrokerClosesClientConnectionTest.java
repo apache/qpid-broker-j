@@ -42,8 +42,6 @@ import javax.jms.Session;
 /**
  * Tests the behaviour of the client when the Broker terminates client connection
  * by the Broker being shutdown gracefully or otherwise.
- *
- * @see ManagedConnectionMBeanTest
  */
 public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
 {
