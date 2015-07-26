@@ -33,6 +33,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.BrokerTestHelper;
@@ -46,6 +47,7 @@ public class AMQProtocolEngineTest extends QpidTestCase
     private AmqpPort _port;
     private NetworkConnection _network;
     private Transport _transport;
+    private Protocol _protocol;
 
     public void setUp() throws Exception
     {
@@ -65,6 +67,7 @@ public class AMQProtocolEngineTest extends QpidTestCase
 
         _network = mock(NetworkConnection.class);
         _transport = Transport.TCP;
+        _protocol = Protocol.AMQP_0_8;
     }
 
     public void tearDown() throws Exception
@@ -82,11 +85,11 @@ public class AMQProtocolEngineTest extends QpidTestCase
     public void testSetClientPropertiesForNoRouteProvidedAsString()
     {
         AMQPConnection_0_8
-                engine = new AMQPConnection_0_8(_broker, _network, _port, _transport, 0, new AggregateTicker());
+                engine = new AMQPConnection_0_8(_broker, _network, _port, _transport, _protocol, 0, new AggregateTicker());
         engine.create();
         assertTrue("Unexpected closeWhenNoRoute before client properties set", engine.isCloseWhenNoRoute());
 
-        Map<String, Object> clientProperties = new HashMap<String, Object>();
+        Map<String, Object> clientProperties = new HashMap<>();
         clientProperties.put(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, Boolean.FALSE.toString());
         engine.setClientProperties(FieldTable.convertToFieldTable(clientProperties));
 
@@ -96,11 +99,11 @@ public class AMQProtocolEngineTest extends QpidTestCase
     public void testSetClientPropertiesForNoRouteProvidedAsBoolean()
     {
         AMQPConnection_0_8
-                engine = new AMQPConnection_0_8(_broker, _network, _port, _transport, 0, new AggregateTicker());
+                engine = new AMQPConnection_0_8(_broker, _network, _port, _transport, _protocol, 0, new AggregateTicker());
         engine.create();
         assertTrue("Unexpected closeWhenNoRoute before client properties set", engine.isCloseWhenNoRoute());
 
-        Map<String, Object> clientProperties = new HashMap<String, Object>();
+        Map<String, Object> clientProperties = new HashMap<>();
         clientProperties.put(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE, Boolean.FALSE);
         engine.setClientProperties(FieldTable.convertToFieldTable(clientProperties));
 

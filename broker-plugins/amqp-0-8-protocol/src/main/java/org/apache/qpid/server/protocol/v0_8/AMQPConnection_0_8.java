@@ -59,6 +59,7 @@ import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
@@ -170,11 +171,14 @@ public class AMQPConnection_0_8
     private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
 
     public AMQPConnection_0_8(Broker<?> broker,
-                              final NetworkConnection network,
-                              AmqpPort<?> port, Transport transport, final long connectionId,
-                              final AggregateTicker aggregateTicker)
+                              NetworkConnection network,
+                              AmqpPort<?> port,
+                              Transport transport,
+                              Protocol protocol,
+                              long connectionId,
+                              AggregateTicker aggregateTicker)
     {
-        super(broker, network, port, transport, connectionId, aggregateTicker);
+        super(broker, network, port, transport, protocol, connectionId, aggregateTicker);
         _maxNoOfChannels = broker.getConnection_sessionCountLimit();
         _decoder = new BrokerDecoder(this);
         _binaryDataLimit = getBroker().getContextKeys(false).contains(BROKER_DEBUG_BINARY_DATA_LENGTH)

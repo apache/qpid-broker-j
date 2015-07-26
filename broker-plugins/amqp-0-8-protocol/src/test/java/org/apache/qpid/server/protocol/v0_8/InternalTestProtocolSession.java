@@ -48,6 +48,7 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContentSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -67,7 +68,8 @@ public class InternalTestProtocolSession extends AMQPConnection_0_8 implements P
     public InternalTestProtocolSession(VirtualHostImpl virtualHost, Broker<?> broker, final AmqpPort<?> port) throws
                                                                                                               QpidException
     {
-        super(broker, new TestNetworkConnection(), port, null, ID_GENERATOR.getAndIncrement(), new AggregateTicker());
+        super(broker, new TestNetworkConnection(), port, null, null,
+              ID_GENERATOR.getAndIncrement(), new AggregateTicker());
 
         _channelDelivers = new HashMap<Integer, Map<String, LinkedList<DeliveryPair>>>();
 
@@ -104,7 +106,6 @@ public class InternalTestProtocolSession extends AMQPConnection_0_8 implements P
                             int replyCode,
                             AMQShortString replyText)
     {
-        //To change body of implemented methods use File | Settings | File Templates.
     }
 
     public byte getProtocolMinorVersion()
@@ -363,4 +364,6 @@ public class InternalTestProtocolSession extends AMQPConnection_0_8 implements P
         {
         }
     }
+
+
 }

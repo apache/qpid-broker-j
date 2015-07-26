@@ -54,6 +54,7 @@ import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
@@ -152,7 +153,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                               final AggregateTicker aggregateTicker,
                               final boolean useSASL)
     {
-        super(broker, network, port, transport, id, aggregateTicker);
+        super(broker, network, port, transport, Protocol.AMQP_1_0, id, aggregateTicker);
         _broker = broker;
         _connection = createConnection(broker, network, port, transport, id, useSASL);
 

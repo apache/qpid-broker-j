@@ -103,6 +103,7 @@ define(["dojo/parser",
                            "principal",
                            "port",
                            "transport",
+                           "protocol",
                            "remoteProcessPid",
                            "createdTime",
                            "lastIoTime",
@@ -161,6 +162,7 @@ define(["dojo/parser",
               this.principal.innerHTML = entities.encode(String(this.connectionData[ "principal" ]));
               this.port.innerHTML = entities.encode(String(this.connectionData[ "port" ]));
               this.transport.innerHTML = entities.encode(String(this.connectionData[ "transport" ]));
+              this.protocol.innerHTML = entities.encode(String(this.connectionData[ "protocol" ]));
               var remoteProcessPid = this.connectionData[ "remoteProcessPid" ];
               this.remoteProcessPid.innerHTML = entities.encode(String(remoteProcessPid ? remoteProcessPid : "N/A"));
               var userPreferences = this.management.userPreferences;

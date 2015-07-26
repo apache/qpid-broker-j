@@ -49,6 +49,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -74,18 +75,19 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final NetworkConnection _network;
     private final AmqpPort<?> _port;
     private final Transport _transport;
+    private final Protocol _protocol;
     private final long _connectionId;
     private final AggregateTicker _aggregateTicker;
     private final Subject _subject = new Subject();
     private final List<Action<? super C>> _connectionCloseTaskList =
             new CopyOnWriteArrayList<>();
-    private final LogSubject _logSubject;
 
+    private final LogSubject _logSubject;
     private String _clientProduct;
     private String _clientVersion;
     private String _remoteProcessPid;
-    private String _clientId;
 
+    private String _clientId;
     private volatile boolean _stopped;
     private final StatisticsCounter _messagesDelivered, _dataDelivered, _messagesReceived, _dataReceived;
     private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
@@ -98,8 +100,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
                                   NetworkConnection network,
                                   AmqpPort<?> port,
                                   Transport transport,
+                                  Protocol protocol,
                                   long connectionId,
-                                  final AggregateTicker aggregateTicker)
+                                  AggregateTicker aggregateTicker)
     {
         super(parentsMap(port),createAttributes(connectionId, network));
 
@@ -107,6 +110,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _network = network;
         _port = port;
         _transport = transport;
+        _protocol = protocol;
         _connectionId = connectionId;
         _aggregateTicker = aggregateTicker;
         _subject.getPrincipals().add(new ConnectionPrincipal(this));
@@ -174,6 +178,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     public final Transport getTransport()
     {
         return _transport;
+    }
+
+    @Override
+    public Protocol getProtocol()
+    {
+        return _protocol;
     }
 
     @Override

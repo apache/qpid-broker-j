@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
@@ -84,7 +85,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                                final long id,
                                final AggregateTicker aggregateTicker)
     {
-        super(broker, network, port, transport, id, aggregateTicker);
+        super(broker, network, port, transport, Protocol.AMQP_0_10, id, aggregateTicker);
 
         _connection = new ServerConnection(id, broker, port, transport);
         _connection.setAmqpConnection(this);
