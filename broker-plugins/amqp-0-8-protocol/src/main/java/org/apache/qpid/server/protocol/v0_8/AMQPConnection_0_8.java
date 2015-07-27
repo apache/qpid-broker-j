@@ -188,7 +188,6 @@ public class AMQPConnection_0_8
         int maxMessageSize = port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
         _maxMessageSize = (maxMessageSize > 0) ? (long) maxMessageSize : Long.MAX_VALUE;
 
-        getSubject().getPrincipals().add(new ConnectionPrincipal(this));
         _network = network;
         _sender = network.getSender();
         runAsSubject(new PrivilegedAction<Void>()
