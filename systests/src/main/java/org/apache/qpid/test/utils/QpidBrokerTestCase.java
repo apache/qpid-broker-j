@@ -291,14 +291,23 @@ public class QpidBrokerTestCase extends QpidTestCase
 
             configuration.addObjectConfiguration(BrokerLogger.class, loggerAttrs);
 
-            Map<String, Object> filterAttrs = new HashMap<>();
-            filterAttrs.put(BrokerLoggerFilter.NAME, "1");
-            filterAttrs.put(BrokerLoggerFilter.TYPE, BrokerNameAndLevelFilter.TYPE);
-            filterAttrs.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
-            filterAttrs.put(BrokerNameAndLevelFilter.LOGGER_NAME, "org.apache.qpid.*");
+            Map<String, Object> qpidFilterAttrs = new HashMap<>();
+            qpidFilterAttrs.put(BrokerLoggerFilter.NAME, "Qpid");
+            qpidFilterAttrs.put(BrokerLoggerFilter.TYPE, BrokerNameAndLevelFilter.TYPE);
+            qpidFilterAttrs.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
+            qpidFilterAttrs.put(BrokerNameAndLevelFilter.LOGGER_NAME, "org.apache.qpid.*");
 
             configuration.addObjectConfiguration(BrokerLogger.class,
-                                                 remotelogback, BrokerLoggerFilter.class, filterAttrs);
+                                                 remotelogback, BrokerLoggerFilter.class, qpidFilterAttrs);
+
+            Map<String, Object> operationalLoggingFilterAttrs = new HashMap<>();
+            operationalLoggingFilterAttrs.put(BrokerLoggerFilter.NAME, "Operational");
+            operationalLoggingFilterAttrs.put(BrokerLoggerFilter.TYPE, BrokerNameAndLevelFilter.TYPE);
+            operationalLoggingFilterAttrs.put(BrokerNameAndLevelFilter.LEVEL, "INFO");
+            operationalLoggingFilterAttrs.put(BrokerNameAndLevelFilter.LOGGER_NAME, "qpid.message.*");
+
+            configuration.addObjectConfiguration(BrokerLogger.class,
+                                                 remotelogback, BrokerLoggerFilter.class, operationalLoggingFilterAttrs);
 
             String workDir = System.getProperty("QPID_WORK") + File.separator + TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST + File.separator + actualPort;
             configuration.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, JsonVirtualHostNode.STORE_PATH, workDir);
