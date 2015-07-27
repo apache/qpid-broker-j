@@ -47,9 +47,6 @@
     }, {
         "name" : "defaultAlias",
         "type" : "defaultAlias"
-    }, {
-        "name" : "hostnameAlias",
-        "type" : "hostnameAlias"
     } ]
   }, {
     "name" : "http",
