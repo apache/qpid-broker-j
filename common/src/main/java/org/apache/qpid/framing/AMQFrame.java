@@ -62,21 +62,27 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
     }
 
     private static final byte[] FRAME_END_BYTE_ARRAY = new byte[] { FRAME_END_BYTE };
+    private static final ByteBuffer FRAME_END_BYTE_BUFFER = ByteBuffer.allocateDirect(1);
+    static
+    {
+        FRAME_END_BYTE_BUFFER.put(FRAME_END_BYTE);
+        FRAME_END_BYTE_BUFFER.flip();
+    }
 
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
-        byte[] frameHeader = new byte[7];
-        BytesDataOutput buffer = new BytesDataOutput(frameHeader);
+        ByteBuffer frameHeader = ByteBuffer.allocateDirect(7);
 
-        buffer.writeByte(_bodyFrame.getFrameType());
-        EncodingUtils.writeUnsignedShort(buffer, _channel);
-        EncodingUtils.writeUnsignedInteger(buffer, _bodyFrame.getSize());
-        sender.send(ByteBuffer.wrap(frameHeader));
+        frameHeader.put(_bodyFrame.getFrameType());
+        EncodingUtils.writeUnsignedShort(frameHeader, _channel);
+        EncodingUtils.writeUnsignedInteger(frameHeader, _bodyFrame.getSize());
+        frameHeader.flip();
+        sender.send(frameHeader);
 
         long size = 8 + _bodyFrame.writePayload(sender);
 
-        sender.send(ByteBuffer.wrap(FRAME_END_BYTE_ARRAY));
+        sender.send(FRAME_END_BYTE_BUFFER.duplicate());
         return size;
     }
 

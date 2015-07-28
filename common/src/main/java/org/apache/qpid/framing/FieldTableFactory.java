@@ -34,10 +34,5 @@ public class FieldTableFactory
         return new FieldTable();
     }
 
-    public static FieldTable newFieldTable(DataInput byteBuffer, long length) throws AMQFrameDecodingException, IOException
-    {
-        return new FieldTable(byteBuffer, length);
-    }
-
 
 }

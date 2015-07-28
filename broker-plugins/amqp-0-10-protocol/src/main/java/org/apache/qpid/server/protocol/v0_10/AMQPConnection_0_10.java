@@ -103,7 +103,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         _connection.setRemoteAddress(network.getRemoteAddress());
         _connection.setLocalAddress(network.getLocalAddress());
 
-        _inputHandler = new InputHandler(new ServerAssembler(_connection));
+        _inputHandler = new InputHandler(new ServerAssembler(_connection), true);
         _network = network;
 
         Subject.doAs(getSubject(), new PrivilegedAction<Object>()

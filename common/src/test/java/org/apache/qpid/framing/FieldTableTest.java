@@ -25,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -477,7 +478,7 @@ public class FieldTableTest extends QpidTestCase
         // Extract the table back from the buffer again.
         try
         {
-            FieldTable extractedOuterTable = EncodingUtils.readFieldTable(new DataInputStream(new ByteArrayInputStream(data)));
+            FieldTable extractedOuterTable = EncodingUtils.readFieldTable(new ByteArrayDataInput(data));
 
             FieldTable extractedTable = extractedOuterTable.getFieldTable("innerTable");
 
@@ -600,13 +601,14 @@ public class FieldTableTest extends QpidTestCase
         ByteArrayOutputStream baos = new ByteArrayOutputStream((int) table.getEncodedSize() + 4);
         table.writeToBuffer(new DataOutputStream(baos));
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-        DataInputStream dis = new DataInputStream(bais);
+        ByteBuffer buf = ByteBuffer.wrap(baos.toByteArray());
+
+        long length = buf.getInt() & 0xFFFFFFFFL;
+        buf = buf.slice();
+        buf.limit((int)length);
 
 
-        long length = dis.readInt() & 0xFFFFFFFFL;
-
-        FieldTable table2 = new FieldTable(dis, length);
+        FieldTable table2 = new FieldTable(buf);
 
         Assert.assertEquals((Boolean) true, table2.getBoolean("bool"));
         Assert.assertEquals((Byte) Byte.MAX_VALUE, table2.getByte("byte"));
@@ -918,7 +920,7 @@ public class FieldTableTest extends QpidTestCase
         assertEquals("unexpected data length", 24, length);
 
         //Create a second FieldTable from the encoded bytes
-        FieldTable tableFromBytes = new FieldTable(new DataInputStream(new ByteArrayInputStream(data)), length);
+        FieldTable tableFromBytes = new FieldTable(ByteBuffer.wrap(data));
 
         //Create a final FieldTable and addAll() from the table created with encoded bytes
         FieldTable destinationTable = new FieldTable();

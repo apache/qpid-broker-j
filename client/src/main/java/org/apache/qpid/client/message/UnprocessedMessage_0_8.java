@@ -89,7 +89,7 @@ public class UnprocessedMessage_0_8 extends UnprocessedMessage
 
         if (body.getPayload() != null)
         {
-            final long payloadSize = body.getPayload().length;
+            final long payloadSize = body.getPayload().remaining();
 
             if (_bodies == null)
             {

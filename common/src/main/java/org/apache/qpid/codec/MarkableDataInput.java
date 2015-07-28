@@ -24,6 +24,7 @@ import org.apache.qpid.framing.AMQShortString;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public interface MarkableDataInput extends DataInput
 {
@@ -35,6 +36,8 @@ public interface MarkableDataInput extends DataInput
     long skip(long i) throws IOException;
 
     int read(byte[] b) throws IOException;
+
+    ByteBuffer readAsByteBuffer(int len) throws IOException;
 
     public AMQShortString readAMQShortString() throws IOException;
 

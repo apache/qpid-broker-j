@@ -87,7 +87,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
 
     public void testPopulatePropertiesFromBuffer() throws Exception
     {
-        DataInputStream buf = new DataInputStream(new ByteArrayInputStream(new byte[300]));
+        ByteArrayDataInput buf = new ByteArrayDataInput(new byte[300]);
         _testProperties.populatePropertiesFromBuffer(buf, 99, 99);
     }
 

@@ -24,6 +24,7 @@ package org.apache.qpid.framing;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
@@ -113,6 +114,33 @@ public final class AMQShortString implements Comparable<AMQShortString>
         _offset = 0;
         _length = length;
 
+    }
+
+    public static AMQShortString readAMQShortString(ByteBuffer buffer)
+    {
+        int length = ((int) buffer.get()) & 0xff;
+        if(length == 0)
+        {
+            return null;
+        }
+        else
+        {
+            if (length > MAX_LENGTH)
+            {
+                throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
+            }
+            if(length > buffer.remaining())
+            {
+                throw new IllegalArgumentException("Cannot create AMQShortString with length "
+                                                   + length + " from a ByteBuffer with only "
+                                                   + buffer.remaining()
+                                                   + " bytes.");
+
+            }
+            byte[] data = new byte[length];
+            buffer.get(data);
+            return new AMQShortString(data, 0, length);
+        }
     }
 
     public AMQShortString(byte[] data, final int offset, final int length)

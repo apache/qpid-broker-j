@@ -159,7 +159,7 @@ public final class Disassembler implements ProtocolEventSender, ProtocolDelegate
     {
         synchronized (sendlock)
         {
-            sender.send(header.toByteBuffer());
+            sender.send(header.toByteBuffer(false));
             sender.flush();
         }
     }

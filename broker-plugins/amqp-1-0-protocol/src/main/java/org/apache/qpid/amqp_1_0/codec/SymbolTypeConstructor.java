@@ -61,7 +61,17 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor
             size = in.getInt();
         }
 
-        BinaryString binaryStr = new BinaryString(in.array(), in.arrayOffset()+in.position(), size);
+        BinaryString binaryStr;
+        if (in.hasArray())
+        {
+            binaryStr = new BinaryString(in.array(), in.arrayOffset()+in.position(), size);
+        }
+        else
+        {
+            byte[] b = new byte[in.remaining()];
+            in.duplicate().get(b);
+            binaryStr = new BinaryString(b, 0, b.length);
+        }
 
         Symbol symbolVal = SYMBOL_MAP.get(binaryStr);
         if(symbolVal == null)

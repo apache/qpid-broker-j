@@ -61,7 +61,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
                         : contentSize;
                 ByteBuffer oldContent = _content;
                 oldContent.flip();
-                _content = ByteBuffer.allocate(size);
+                _content = ByteBuffer.allocateDirect(size);
                 _content.put(oldContent);
                 _content.put(src.duplicate());
             }

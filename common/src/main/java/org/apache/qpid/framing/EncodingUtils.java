@@ -30,6 +30,8 @@ import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.codec.MarkableDataInput;
+
 public class EncodingUtils
 {
     private static final Logger _logger = LoggerFactory.getLogger(EncodingUtils.class);
@@ -278,6 +280,22 @@ public class EncodingUtils
         }
     }
 
+    public static void writeUnsignedShort(ByteBuffer buffer, int s) throws IOException
+    {
+        // TODO: Is this comparison safe? Do I need to cast RHS to long?
+        if (s < Short.MAX_VALUE)
+        {
+            buffer.putShort((short) s);
+        }
+        else
+        {
+            short sv = (short) s;
+            buffer.put((byte) (0xFF & (sv >> 8)));
+            buffer.put((byte) (0xFF & sv));
+        }
+    }
+
+
     public static int unsignedIntegerLength()
     {
         return 4;
@@ -302,6 +320,27 @@ public class EncodingUtils
             buffer.write((byte) (0xFF & iv));
         }
     }
+
+    public static void writeUnsignedInteger(ByteBuffer buffer, long l) throws IOException
+    {
+        // TODO: Is this comparison safe? Do I need to cast RHS to long?
+        if (l < Integer.MAX_VALUE)
+        {
+            buffer.putInt((int) l);
+        }
+        else
+        {
+            int iv = (int) l;
+
+            // FIXME: This *may* go faster if we build this into a local 4-byte array and then
+            // put the array in a single call.
+            buffer.put((byte) (0xFF & (iv >> 24)));
+            buffer.put((byte) (0xFF & (iv >> 16)));
+            buffer.put((byte) (0xFF & (iv >> 8)));
+            buffer.put((byte) (0xFF & iv));
+        }
+    }
+
 
     public static void writeFieldTableBytes(DataOutput buffer, FieldTable table) throws IOException
     {
@@ -579,7 +618,7 @@ public class EncodingUtils
         return result;
     }
 
-    public static FieldTable readFieldTable(DataInput buffer) throws AMQFrameDecodingException, IOException
+    public static FieldTable readFieldTable(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
     {
         long length = ((long)(buffer.readInt())) & 0xFFFFFFFFL;
         if (length == 0)
@@ -588,9 +627,10 @@ public class EncodingUtils
         }
         else
         {
-            return FieldTableFactory.newFieldTable(buffer, length);
+            return new FieldTable(buffer.readAsByteBuffer((int)length));
         }
     }
+
 
     public static AMQShortString readAMQShortString(DataInput buffer) throws IOException
     {

@@ -29,6 +29,9 @@ import static org.apache.qpid.transport.network.Frame.LAST_SEG;
 
 import java.nio.ByteBuffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.FrameSizeObserver;
 import org.apache.qpid.transport.Header;
@@ -48,6 +51,7 @@ import org.apache.qpid.transport.network.Frame;
  */
 public final class ServerDisassembler implements ProtocolEventSender, ProtocolDelegate<Void>, FrameSizeObserver
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServerDisassembler.class);
     private final ByteBufferSender _sender;
     private int _maxPayload;
     private final Object _sendLock = new Object();
@@ -89,7 +93,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
 
     private void frame(byte flags, byte type, byte track, int channel, int size, ByteBuffer buf)
     {
-        ByteBuffer data = ByteBuffer.wrap(new byte[HEADER_SIZE]);
+        ByteBuffer data = ByteBuffer.allocateDirect(HEADER_SIZE);
 
         data.put(0, flags);
         data.put(1, type);
@@ -141,7 +145,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
 
     public void init(Void v, ProtocolHeader header)
     {
-        _sender.send(header.toByteBuffer());
+        _sender.send(header.toByteBuffer(true));
         _sender.flush();
 }
 

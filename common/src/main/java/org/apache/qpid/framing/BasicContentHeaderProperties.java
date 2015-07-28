@@ -28,7 +28,9 @@ import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.util.ByteBufferDataOutput;
 import org.apache.qpid.util.BytesDataOutput;
 
 public class BasicContentHeaderProperties
@@ -84,7 +86,7 @@ public class BasicContentHeaderProperties
     private static final int USER_ID_MASK = 1 << 4;
     private static final int APPLICATION_ID_MASK = 1 << 3;
     private static final int CLUSTER_ID_MASK = 1 << 2;
-    private byte[] _encodedForm;
+    private ByteBuffer _encodedForm;
 
 
     public BasicContentHeaderProperties(BasicContentHeaderProperties other)
@@ -134,7 +136,7 @@ public class BasicContentHeaderProperties
     {
         if(useEncodedForm())
         {
-            return _encodedForm.length;
+            return _encodedForm.remaining();
         }
         else
         {
@@ -235,7 +237,21 @@ public class BasicContentHeaderProperties
     {
         if(useEncodedForm())
         {
-            buffer.write(_encodedForm);
+            int offset;
+            int length = _encodedForm.remaining();;
+            byte[] array;
+            if(_encodedForm.hasArray())
+            {
+                array = _encodedForm.array();
+                offset = _encodedForm.arrayOffset() + _encodedForm.position();
+            }
+            else
+            {
+                array = new byte[length];
+                _encodedForm.duplicate().get(array);
+                offset = 0;
+            }
+            buffer.write(array, offset, length);
         }
         else
         {
@@ -318,7 +334,7 @@ public class BasicContentHeaderProperties
         }
     }
 
-    public int read(DataInput input) throws IOException
+    public int read(MarkableDataInput input) throws IOException
     {
 
         _propertyFlags = input.readUnsignedShort();
@@ -347,7 +363,7 @@ public class BasicContentHeaderProperties
         {
             int fieldTableLength = input.readInt();
 
-            _headers = new FieldTable(input, fieldTableLength);
+            _headers = new FieldTable(input.readAsByteBuffer(fieldTableLength));
 
             length += 4;
             length += fieldTableLength;
@@ -460,22 +476,23 @@ public class BasicContentHeaderProperties
     {
         if(useEncodedForm())
         {
-            sender.send(ByteBuffer.wrap(_encodedForm));
-            return _encodedForm.length;
+            sender.send(_encodedForm.duplicate());
+            return _encodedForm.remaining();
         }
         else
         {
             int propertyListSize = getPropertyListSize();
-            byte[] data = new byte[propertyListSize];
-            BytesDataOutput out = new BytesDataOutput(data);
+            ByteBuffer buf = ByteBuffer.allocateDirect(propertyListSize);
+            ByteBufferDataOutput out = new ByteBufferDataOutput(buf);
             writePropertyListPayload(out);
-            sender.send(ByteBuffer.wrap(data));
+            buf.flip();
+            sender.send(buf);
             return propertyListSize;
         }
 
     }
 
-    public void populatePropertiesFromBuffer(DataInput buffer, int propertyFlags, int size) throws AMQFrameDecodingException, IOException
+    public void populatePropertiesFromBuffer(MarkableDataInput buffer, int propertyFlags, int size) throws AMQFrameDecodingException, IOException
     {
         _propertyFlags = propertyFlags;
 
@@ -484,16 +501,15 @@ public class BasicContentHeaderProperties
             _logger.debug("Property flags: " + _propertyFlags);
         }
 
-        _encodedForm = new byte[size];
-        buffer.readFully(_encodedForm);
+        _encodedForm = buffer.readAsByteBuffer(size);
 
-        ByteArrayDataInput input = new ByteArrayDataInput(_encodedForm);
+        ByteBufferDataInput input = new ByteBufferDataInput(_encodedForm);
 
         decode(input);
 
     }
 
-    private void decode(ByteArrayDataInput buffer) throws IOException, AMQFrameDecodingException
+    private void decode(MarkableDataInput buffer) throws IOException, AMQFrameDecodingException
     {
         int headersOffset = 0;
 
@@ -513,7 +529,11 @@ public class BasicContentHeaderProperties
         {
             long length = EncodingUtils.readUnsignedInteger(buffer);
 
-            _headers = new FieldTable(_encodedForm, headersOffset+4, (int)length);
+            ByteBuffer buf = _encodedForm.slice();
+            buf.position(headersOffset+4);
+            buf = buf.slice();
+            buf.limit((int)length);
+            _headers = new FieldTable(buf);
 
             buffer.skipBytes((int)length);
         }

@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
+import org.apache.qpid.framing.ByteArrayDataInput;
 
 public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
 {
@@ -143,11 +144,10 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
 
                 BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
                 int payloadOffset;
-                try (ByteArrayInputStream bis = new ByteArrayInputStream(unencryptedBytes);
-                     DataInputStream dis = new DataInputStream(bis))
-                {
-                    payloadOffset = properties.read(dis);
-                }
+                ByteArrayDataInput dataInput = new ByteArrayDataInput(unencryptedBytes);
+
+                payloadOffset = properties.read(dataInput);
+
 
                 final ByteBuffer unencryptedData =
                         ByteBuffer.wrap(unencryptedBytes, payloadOffset, unencryptedBytes.length - payloadOffset);

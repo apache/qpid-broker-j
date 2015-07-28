@@ -83,7 +83,7 @@ public abstract class ConnectionBinding
 
     public ExceptionHandlingByteBufferReceiver receiver(Connection conn)
     {
-        final InputHandler inputHandler = new InputHandler(new Assembler(conn));
+        final InputHandler inputHandler = new InputHandler(new Assembler(conn), false);
         conn.addFrameSizeObserver(inputHandler);
         if (conn.getConnectionSettings() != null &&
             conn.getConnectionSettings().isUseSASLEncryption())

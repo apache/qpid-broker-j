@@ -282,7 +282,16 @@ class WebSocketProvider implements AcceptingTransport
         {
             try
             {
-                _connection.sendMessage(msg.array(),msg.arrayOffset()+msg.position(),msg.remaining());
+                if (msg.hasArray())
+                {
+                    _connection.sendMessage(msg.array(), msg.arrayOffset() + msg.position(), msg.remaining());
+                }
+                else
+                {
+                    byte[] copy = new byte[msg.remaining()];
+                    msg.duplicate().get(copy);
+                    _connection.sendMessage(copy, 0, copy.length);
+                }
             }
             catch (IOException e)
             {

@@ -451,7 +451,7 @@ public class AMQChannel
                     for(int i = 0 ; i < bodyCount ; i++)
                     {
                         ContentBody contentChunk = _currentMessage.getContentChunk(i);
-                        handle.addContent(ByteBuffer.wrap(contentChunk.getPayload()));
+                        handle.addContent(contentChunk.getPayload().duplicate());
                         bodyLengthReceived += contentChunk.getSize();
                     }
                 }
@@ -2507,7 +2507,7 @@ public class AMQChannel
     }
 
     @Override
-    public void receiveMessageContent(final byte[] data)
+    public void receiveMessageContent(final ByteBuffer data)
     {
         if(_logger.isDebugEnabled())
         {

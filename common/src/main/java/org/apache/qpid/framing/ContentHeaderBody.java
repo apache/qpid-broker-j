@@ -43,7 +43,7 @@ public class ContentHeaderBody implements AMQBody
     /** must never be null */
     private BasicContentHeaderProperties _properties;
 
-    public ContentHeaderBody(DataInput buffer, long size) throws AMQFrameDecodingException, IOException
+    public ContentHeaderBody(MarkableDataInput buffer, long size) throws AMQFrameDecodingException, IOException
     {
         buffer.readUnsignedShort();
         buffer.readUnsignedShort();
@@ -80,7 +80,7 @@ public class ContentHeaderBody implements AMQBody
      * @throws AMQProtocolVersionException if there is a version issue
      * @throws IOException if there is an IO issue
      */
-    public static ContentHeaderBody createFromBuffer(DataInputStream buffer, long size)
+    public static ContentHeaderBody createFromBuffer(MarkableDataInput buffer, long size)
         throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
     {
         ContentHeaderBody body = new ContentHeaderBody(buffer, size);
@@ -105,13 +105,13 @@ public class ContentHeaderBody implements AMQBody
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
-        byte[] data = new byte[14];
-        BytesDataOutput buffer = new BytesDataOutput(data);
-        EncodingUtils.writeUnsignedShort(buffer, CLASS_ID);
-        EncodingUtils.writeUnsignedShort(buffer, 0);
-        buffer.writeLong(_bodySize);
-        EncodingUtils.writeUnsignedShort(buffer, _properties.getPropertyFlags());
-        sender.send(ByteBuffer.wrap(data));
+        ByteBuffer data = ByteBuffer.allocateDirect(14);
+        EncodingUtils.writeUnsignedShort(data, CLASS_ID);
+        EncodingUtils.writeUnsignedShort(data, 0);
+        data.putLong(_bodySize);
+        EncodingUtils.writeUnsignedShort(data, _properties.getPropertyFlags());
+        data.flip();
+        sender.send(data);
         return 14 + _properties.writePropertyListPayload(sender);
     }
 

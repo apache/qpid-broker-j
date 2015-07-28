@@ -471,7 +471,10 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     {
                         _logger.debug("Unsupported protocol version requested, replying with: " + supportedReplyVersion);
                     }
-                    _sender.send(ByteBuffer.wrap(supportedReplyBytes));
+                    final ByteBuffer supportedReplyBuf = ByteBuffer.allocateDirect(supportedReplyBytes.length);
+                    supportedReplyBuf.put(supportedReplyBytes);
+                    supportedReplyBuf.flip();
+                    _sender.send(supportedReplyBuf);
                     _sender.flush();
 
                     _delegate = new ClosedDelegateProtocolEngine();

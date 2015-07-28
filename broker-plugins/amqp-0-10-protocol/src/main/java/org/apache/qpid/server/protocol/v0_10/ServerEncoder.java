@@ -44,7 +44,7 @@ public final class ServerEncoder extends AbstractEncoder
     {
         _initialCapacity = capacity;
         _threshold = capacity/16;
-        _out = ByteBuffer.allocate(capacity);
+        _out = ByteBuffer.allocateDirect(capacity);
         _segment = 0;
     }
 
@@ -55,7 +55,7 @@ public final class ServerEncoder extends AbstractEncoder
         _out = _out.slice();
         if(_out.remaining() < _threshold)
         {
-            _out = ByteBuffer.allocate(_initialCapacity);
+            _out = ByteBuffer.allocateDirect(_initialCapacity);
         }
         _segment = 0;
     }
@@ -84,7 +84,7 @@ public final class ServerEncoder extends AbstractEncoder
     {
         ByteBuffer old = _out;
         int capacity = old.capacity();
-        _out = ByteBuffer.allocate(Math.max(Math.max(capacity + size, 2*capacity), _initialCapacity));
+        _out = ByteBuffer.allocateDirect(Math.max(Math.max(capacity + size, 2*capacity), _initialCapacity));
         old.flip();
         _out.put(old);
     }

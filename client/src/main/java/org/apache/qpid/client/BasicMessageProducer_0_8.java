@@ -392,9 +392,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
 
         if (frames.length == (offset + 1))
         {
-            byte[] data = new byte[payload.remaining()];
-            payload.get(data);
-            frames[offset] = ContentBody.createAMQFrame(channelId, new ContentBody(data));
+            frames[offset] = ContentBody.createAMQFrame(channelId, new ContentBody(payload.slice()));
         }
         else
         {
@@ -406,10 +404,8 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
                 payload.position((int) framePayloadMax * (i - offset));
                 int length = (remaining >= framePayloadMax) ? (int) framePayloadMax : (int) remaining;
                 payload.limit(payload.position() + length);
-                byte[] data = new byte[payload.remaining()];
-                payload.get(data);
 
-                frames[i] = ContentBody.createAMQFrame(channelId, new ContentBody(data));
+                frames[i] = ContentBody.createAMQFrame(channelId, new ContentBody(payload.slice()));
 
                 remaining -= length;
             }

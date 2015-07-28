@@ -29,6 +29,9 @@ import static org.apache.qpid.transport.util.Functions.str;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.transport.Constant;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.FrameSizeObserver;
@@ -46,18 +49,21 @@ import org.apache.qpid.transport.SegmentType;
 
 public class InputHandler implements ExceptionHandlingByteBufferReceiver, FrameSizeObserver
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(InputHandler.class);
 
     private int _maxFrameSize = Constant.MIN_MAX_FRAME_SIZE;
+
 
     public enum State
     {
         PROTO_HDR,
         FRAME_HDR,
         FRAME_BODY,
-        ERROR
+        ERROR;
     }
-
     private final NetworkEventReceiver receiver;
+
+    private final boolean _useDirect;
     private State state;
     private ByteBuffer input = null;
     private int needed;
@@ -67,25 +73,22 @@ public class InputHandler implements ExceptionHandlingByteBufferReceiver, FrameS
     private byte track;
     private int channel;
 
-    public InputHandler(NetworkEventReceiver receiver, State state)
+
+    public InputHandler(NetworkEventReceiver receiver, final boolean useDirect)
     {
         this.receiver = receiver;
-        this.state = state;
+        this.state = PROTO_HDR;
+        _useDirect = useDirect;
 
         switch (state)
         {
-        case PROTO_HDR:
-            needed = 8;
-            break;
-        case FRAME_HDR:
-            needed = Frame.HEADER_SIZE;
-            break;
+            case PROTO_HDR:
+                needed = 8;
+                break;
+            case FRAME_HDR:
+                needed = Frame.HEADER_SIZE;
+                break;
         }
-    }
-
-    public InputHandler(NetworkEventReceiver receiver)
-    {
-        this(receiver, PROTO_HDR);
     }
 
     public void setMaxFrameSize(final int maxFrameSize)
@@ -98,6 +101,7 @@ public class InputHandler implements ExceptionHandlingByteBufferReceiver, FrameS
         receiver.received(new ProtocolError(Frame.L1, fmt, args));
     }
 
+    @Override
     public void received(ByteBuffer buf)
     {
         int limit = buf.limit();
@@ -132,7 +136,7 @@ public class InputHandler implements ExceptionHandlingByteBufferReceiver, FrameS
             {
                 if (input == null)
                 {
-                    input = ByteBuffer.allocate(needed);
+                    input = _useDirect ? ByteBuffer.allocateDirect(needed) : ByteBuffer.allocate(needed);
                 }
                 input.put(buf);
                 needed -= remaining;
@@ -185,7 +189,7 @@ public class InputHandler implements ExceptionHandlingByteBufferReceiver, FrameS
             channel = (0xFFFF & input.getShort(pos + 6));
             if (size == 0)
             {
-                Frame frame = new Frame(flags, type, track, channel, ByteBuffer.allocate(0));
+                Frame frame = new Frame(flags, type, track, channel, _useDirect ? ByteBuffer.allocateDirect(0) : ByteBuffer.allocate(0));
                 receiver.received(frame);
                 needed = Frame.HEADER_SIZE;
                 return FRAME_HDR;

@@ -21,11 +21,12 @@
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
-import org.apache.qpid.server.store.berkeleydb.tuple.ContentBinding;
+import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
 
 import com.sleepycat.bind.tuple.IntegerBinding;
 import com.sleepycat.bind.tuple.LongBinding;
@@ -127,7 +128,7 @@ public class UpgraderTest extends AbstractUpgradeTestCase
 
     private void assertContent()
     {
-        final ContentBinding contentBinding = ContentBinding.getInstance();
+        final ByteBufferBinding contentBinding = ByteBufferBinding.getInstance();
         CursorOperation contentCursorOperation = new CursorOperation()
         {
 
@@ -137,8 +138,9 @@ public class UpgraderTest extends AbstractUpgradeTestCase
             {
                 long id = LongBinding.entryToLong(key);
                 assertTrue("Unexpected id", id > 0);
-                byte[] content = contentBinding.entryToObject(value);
+                ByteBuffer content = contentBinding.entryToObject(value);
                 assertNotNull("Unexpected content", content);
+                assertTrue("Expected content", content.hasRemaining());
             }
         };
         new DatabaseTemplate(_environment, "MESSAGE_CONTENT", null).run(contentCursorOperation);

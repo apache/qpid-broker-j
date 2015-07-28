@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -34,20 +33,14 @@ public class ContentBody implements AMQBody
 {
     public static final byte TYPE = 3;
 
-    private byte[] _payload;
+    private ByteBuffer _payload;
 
     public ContentBody()
     {
     }
 
-    public ContentBody(DataInput buffer, long size) throws AMQFrameDecodingException, IOException
-    {
-        _payload = new byte[(int)size];
-        buffer.readFully(getPayload());
-    }
 
-
-    public ContentBody(byte[] payload)
+    public ContentBody(ByteBuffer payload)
     {
         _payload = payload;
     }
@@ -59,12 +52,14 @@ public class ContentBody implements AMQBody
 
     public int getSize()
     {
-        return getPayload() == null ? 0 : getPayload().length;
+        return _payload == null ? 0 : _payload.remaining();
     }
 
     public void writePayload(DataOutput buffer) throws IOException
     {
-        buffer.write(getPayload());
+        byte[] data = new byte[_payload.remaining()];
+        _payload.duplicate().get(data);
+        buffer.write(data);
     }
 
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
@@ -78,8 +73,8 @@ public class ContentBody implements AMQBody
     {
         if(_payload != null)
         {
-            sender.send(ByteBuffer.wrap(_payload));
-            return _payload.length;
+            sender.send(_payload.duplicate());
+            return _payload.remaining();
         }
         else
         {
@@ -87,7 +82,7 @@ public class ContentBody implements AMQBody
         }
     }
 
-    public byte[] getPayload()
+    public ByteBuffer getPayload()
     {
         return _payload;
     }
@@ -97,84 +92,12 @@ public class ContentBody implements AMQBody
             throws IOException
     {
 
-        byte[] payload = new byte[(int)bodySize];
-        in.readFully(payload);
+        ByteBuffer payload = in.readAsByteBuffer((int)bodySize);
 
         if(!methodProcessor.ignoreAllButCloseOk())
         {
             methodProcessor.receiveMessageContent(payload);
         }
-    }
-
-    private static class BufferContentBody implements AMQBody
-    {
-        private final int _length;
-        private final int _offset;
-        private final ByteBuffer _buf;
-
-        private BufferContentBody( ByteBuffer buf, int offset, int length)
-        {
-            _length = length;
-            _offset = offset;
-            _buf = buf;
-        }
-
-        public byte getFrameType()
-        {
-            return TYPE;
-        }
-
-
-        public int getSize()
-        {
-            return _length;
-        }
-
-        public void writePayload(DataOutput buffer) throws IOException
-        {
-            if(_buf.hasArray())
-            {
-                buffer.write(_buf.array(), _buf.arrayOffset() +  _offset, _length);
-            }
-            else
-            {
-                byte[] data = new byte[_length];
-                ByteBuffer buf = _buf.duplicate();
-
-                buf.position(_offset);
-                buf.limit(_offset+_length);
-                buf.get(data);
-                buffer.write(data);
-            }
-        }
-
-        @Override
-        public long writePayload(final ByteBufferSender sender) throws IOException
-        {
-            if(_buf.hasArray())
-            {
-                sender.send(ByteBuffer.wrap(_buf.array(), _buf.arrayOffset() + _offset, _length));
-            }
-            else
-            {
-                ByteBuffer buf = _buf.duplicate();
-
-                buf.position(_offset);
-                buf.limit(_offset+_length);
-                sender.send(buf);
-            }
-            return _length;
-        }
-
-        public void handle(int channelId, AMQVersionAwareProtocolSession amqProtocolSession) throws QpidException
-        {
-            throw new RuntimeException("Buffered Body only to be used for outgoing data");
-        }
-    }
-
-    public static AMQFrame createAMQFrame(int channelId, ByteBuffer buf, int offset, int length)
-    {
-        return new AMQFrame(channelId, new BufferContentBody(buf, offset, length));
     }
 
     public static AMQFrame createAMQFrame(int channelId, ContentBody body)

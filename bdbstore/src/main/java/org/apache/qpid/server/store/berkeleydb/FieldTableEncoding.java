@@ -25,11 +25,9 @@ import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.DatabaseException;
 
 import org.apache.qpid.framing.FieldTable;
-import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class FieldTableEncoding
 {
@@ -39,6 +37,7 @@ public class FieldTableEncoding
 
     public static FieldTable readFieldTable(TupleInput tupleInput) throws DatabaseException
     {
+
         long length = tupleInput.readLong();
         if (length <= 0)
         {
@@ -47,17 +46,9 @@ public class FieldTableEncoding
         else
         {
 
-            byte[] data = new byte[(int)length];
-            tupleInput.readFast(data);
+            ByteBuffer buf = ByteBufferBinding.getInstance().readByteBuffer(tupleInput, (int) length);
 
-            try
-            {
-                return new FieldTable(new DataInputStream(new ByteArrayInputStream(data)),length);
-            }
-            catch (IOException e)
-            {
-                throw new StoreException(e);
-            }
+            return new FieldTable(buf);
 
         }
 

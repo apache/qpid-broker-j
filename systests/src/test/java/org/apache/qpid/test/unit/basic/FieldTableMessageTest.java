@@ -41,6 +41,7 @@ import javax.jms.MessageProducer;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -132,7 +133,7 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
             final long bodyLength = bytesMessage.getBodyLength();
             byte[] data = new byte[(int) bodyLength];
             bytesMessage.readBytes(data);
-            FieldTable actual = FieldTableFactory.newFieldTable(new DataInputStream(new ByteArrayInputStream(data)), bodyLength);
+            FieldTable actual = new FieldTable(ByteBuffer.wrap(data));
             for (String key : _expected.keys())
             {
                 assertEquals("Values for " + key + " did not match", _expected.getObject(key), actual.getObject(key));

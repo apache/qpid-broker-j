@@ -83,7 +83,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
         _receiveBufferSize = receiveBufferSize;
 
-        _netInputBuffer = ByteBuffer.allocate(receiveBufferSize);
+        _netInputBuffer = ByteBuffer.allocateDirect(receiveBufferSize);
         _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
         _port = port;
 
@@ -359,7 +359,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         else
         {
             // compact into new buffer
-            _netInputBuffer = ByteBuffer.allocate(_receiveBufferSize);
+            _netInputBuffer = ByteBuffer.allocateDirect(_receiveBufferSize);
             _netInputBuffer.put(duplicate);
         }
         return readData;

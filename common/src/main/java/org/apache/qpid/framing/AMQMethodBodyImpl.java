@@ -26,16 +26,21 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.AMQChannelException;
 import org.apache.qpid.AMQConnectionException;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.util.ByteBufferDataOutput;
 import org.apache.qpid.util.BytesDataOutput;
 
 public abstract class AMQMethodBodyImpl implements AMQMethodBody
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQMethodBodyImpl.class);
     public static final byte TYPE = 1;
 
     public AMQMethodBodyImpl()
@@ -111,11 +116,13 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
+
         final int size = getSize();
-        byte[] bytes = new byte[size];
-        BytesDataOutput buffer = new BytesDataOutput(bytes);
-        writePayload(buffer);
-        sender.send(ByteBuffer.wrap(bytes));
+        ByteBuffer buf = ByteBuffer.allocateDirect(size);
+        ByteBufferDataOutput dataOutput = new ByteBufferDataOutput(buf);
+        writePayload(dataOutput);
+        buf.flip();
+        sender.send(buf);
         return size;
     }
 

@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
+import org.apache.qpid.codec.MarkableDataInput;
+
 /**
  * AMQTypedValue combines together a native Java Object value, and an {@link AMQType}, as a fully typed AMQP parameter
  * value. It provides the ability to read and write fully typed parameters to and from byte buffers. It also provides
@@ -65,7 +67,7 @@ public abstract class AMQTypedValue
             _value = type.toNativeValue(value);
         }
 
-        private GenericTypedValue(AMQType type, DataInput buffer) throws IOException
+        private GenericTypedValue(AMQType type, MarkableDataInput buffer) throws IOException
         {
             _type = type;
             _value = type.readValueFromBuffer(buffer);
@@ -198,7 +200,7 @@ public abstract class AMQTypedValue
     }
 
 
-    public static AMQTypedValue readFromBuffer(DataInput buffer) throws IOException
+    public static AMQTypedValue readFromBuffer(MarkableDataInput buffer) throws IOException
     {
         AMQType type = AMQTypeMap.getType(buffer.readByte());
 

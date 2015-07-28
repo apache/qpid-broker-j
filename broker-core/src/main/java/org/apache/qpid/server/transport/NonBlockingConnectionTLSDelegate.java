@@ -105,7 +105,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         do
         {
             ByteBuffer appInputBuffer =
-                    ByteBuffer.allocate(_sslEngine.getSession().getApplicationBufferSize() + 50);
+                    ByteBuffer.allocateDirect(_sslEngine.getSession().getApplicationBufferSize() + 50);
             _status = _sslEngine.unwrap(wrappedDataBuffer, appInputBuffer);
             if (_status.getStatus() == SSLEngineResult.Status.CLOSED)
             {
@@ -135,7 +135,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         {
             if(_sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP)
             {
-                final ByteBuffer netBuffer = ByteBuffer.allocate(_sslEngine.getSession().getPacketBufferSize());
+                final ByteBuffer netBuffer = ByteBuffer.allocateDirect(_sslEngine.getSession().getPacketBufferSize());
                 _status = _sslEngine.wrap(bufferArray, netBuffer);
                 runSSLEngineTasks(_status);
 

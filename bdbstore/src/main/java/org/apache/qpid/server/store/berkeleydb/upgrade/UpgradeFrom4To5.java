@@ -48,6 +48,7 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQProtocolVersionException;
 import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.framing.ByteArrayDataInput;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.MessagePublishInfo;
@@ -677,7 +678,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
 
             try
             {
-                return ContentHeaderBody.createFromBuffer(new DataInputStream(new ByteArrayInputStream(underlying)),
+                return ContentHeaderBody.createFromBuffer(new ByteArrayDataInput(underlying),
                         bodySize);
             }
             catch (IOException e)

@@ -21,6 +21,8 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 
+import java.nio.ByteBuffer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +53,12 @@ public class ServerAssembler extends Assembler
         {
             LOGGER.debug("Ignored network event " + event + " as connection is ignoring further input ");
         }
+    }
+
+    @Override
+    protected ByteBuffer allocateByteBuffer(int size)
+    {
+        return ByteBuffer.allocateDirect(size);
     }
 
 

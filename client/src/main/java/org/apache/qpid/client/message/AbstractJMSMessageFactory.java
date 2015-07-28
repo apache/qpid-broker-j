@@ -76,7 +76,7 @@ public abstract class AbstractJMSMessageFactory
                     _logger.debug("Non-fragmented message body (bodySize=" + contentHeader.getBodySize() + ")");
                 }
 
-                data = ByteBuffer.wrap(((ContentBody) bodies.get(0)).getPayload());
+                data = ((ContentBody) bodies.get(0)).getPayload().duplicate();
             }
             else if (bodies != null)
             {
@@ -91,7 +91,7 @@ public abstract class AbstractJMSMessageFactory
                 while (it.hasNext())
                 {
                     ContentBody cb = (ContentBody) it.next();
-                    final ByteBuffer payload = ByteBuffer.wrap(cb.getPayload());
+                    final ByteBuffer payload = cb.getPayload().duplicate();
                     if (payload.isDirect() || payload.isReadOnly())
                     {
                         data.put(payload);
@@ -193,13 +193,11 @@ public abstract class AbstractJMSMessageFactory
     private class BodyInputStream extends InputStream
     {
         private final Iterator<ContentBody> _bodiesIter;
-        private byte[] _currentBuffer;
-        private int _currentPos;
+        private ByteBuffer _currentBuffer;
         public BodyInputStream(final List<ContentBody> bodies)
         {
             _bodiesIter = bodies.iterator();
-            _currentBuffer = _bodiesIter.next().getPayload();
-            _currentPos = 0;
+            _currentBuffer = _bodiesIter.next().getPayload().duplicate();
         }
 
         @Override
@@ -220,7 +218,7 @@ public abstract class AbstractJMSMessageFactory
         @Override
         public int read(final byte[] dst, final int off, final int len)
         {
-            while(_currentPos == _currentBuffer.length)
+            while(!_currentBuffer.hasRemaining())
             {
                 if(!_bodiesIter.hasNext())
                 {
@@ -228,13 +226,11 @@ public abstract class AbstractJMSMessageFactory
                 }
                 else
                 {
-                    _currentBuffer = _bodiesIter.next().getPayload();
-                    _currentPos = 0;
+                    _currentBuffer = _bodiesIter.next().getPayload().duplicate();
                 }
             }
-            int size = Math.min(len, _currentBuffer.length - _currentPos);
-            System.arraycopy(_currentBuffer,_currentPos, dst,off,size);
-            _currentPos+=size;
+            int size = Math.min(len, _currentBuffer.remaining());
+            _currentBuffer.get(dst,off,size);
             return size;
         }
 

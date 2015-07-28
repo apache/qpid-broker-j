@@ -1181,7 +1181,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     }
 
 
-    private byte[] getAllContent(long messageId)
+    private ByteBuffer getAllContent(long messageId)
     {
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -1200,7 +1200,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
 
                 byte[] dataAsBytes = getBlobAsBytes(rs, 1);
-                return dataAsBytes;
+                ByteBuffer buf = ByteBuffer.allocateDirect(dataAsBytes.length);
+                buf.put(dataAsBytes);
+                buf.flip();
+                return buf;
             }
 
             throw new StoreException("No such message, id: " + messageId);
@@ -1426,15 +1429,15 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     static interface MessageDataRef<T extends StorableMessageMetaData>
     {
         T getMetaData();
-        byte[] getData();
-        void setData(byte[] data);
+        ByteBuffer getData();
+        void setData(ByteBuffer data);
         boolean isHardRef();
     }
 
     private static final class MessageDataHardRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
     {
         private final T _metaData;
-        private byte[] _data;
+        private ByteBuffer _data;
 
         private MessageDataHardRef(final T metaData)
         {
@@ -1448,13 +1451,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public byte[] getData()
+        public ByteBuffer getData()
         {
             return _data;
         }
 
         @Override
-        public void setData(final byte[] data)
+        public void setData(final ByteBuffer data)
         {
             _data = data;
         }
@@ -1469,9 +1472,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private static final class MessageData<T extends StorableMessageMetaData>
     {
         private T _metaData;
-        private SoftReference<byte[]> _data;
+        private SoftReference<ByteBuffer> _data;
 
-        private MessageData(final T metaData, final byte[] data)
+        private MessageData(final T metaData, final ByteBuffer data)
         {
             _metaData = metaData;
 
@@ -1486,12 +1489,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             return _metaData;
         }
 
-        public byte[] getData()
+        public ByteBuffer getData()
         {
             return _data == null ? null : _data.get();
         }
 
-        public void setData(final byte[] data)
+        public void setData(final ByteBuffer data)
         {
             _data = new SoftReference<>(data);
         }
@@ -1501,7 +1504,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private static final class MessageDataSoftRef<T extends StorableMessageMetaData> extends SoftReference<MessageData<T>> implements MessageDataRef<T>
     {
 
-        public MessageDataSoftRef(final T metadata, byte[] data)
+        public MessageDataSoftRef(final T metadata, ByteBuffer data)
         {
             super(new MessageData<T>(metadata, data));
         }
@@ -1514,7 +1517,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public byte[] getData()
+        public ByteBuffer getData()
         {
             MessageData<T> ref = get();
 
@@ -1522,7 +1525,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public void setData(final byte[] data)
+        public void setData(final ByteBuffer data)
         {
             MessageData<T> ref = get();
             if(ref != null)
@@ -1598,25 +1601,20 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         public void addContent(ByteBuffer src)
         {
             src = src.slice();
-            byte[] data = _messageDataRef.getData();
-
+            ByteBuffer data = _messageDataRef.getData();
             if(data == null)
             {
-                data = new byte[src.remaining()];
-                src.duplicate().get(data);
-                _messageDataRef.setData(data);
+                _messageDataRef.setData(src);
             }
             else
             {
-                byte[] oldData = data;
-                data = new byte[oldData.length + src.remaining()];
-
-                System.arraycopy(oldData,0,data,0,oldData.length);
-                src.duplicate().get(data, oldData.length, src.remaining());
-
-                _messageDataRef.setData(data);
+                int size = data.remaining() + src.remaining();
+                ByteBuffer buf = data.isDirect() ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+                buf.put(data.duplicate());
+                buf.put(src.duplicate());
+                buf.flip();
+                _messageDataRef.setData(buf);
             }
-
         }
 
         @Override
@@ -1628,8 +1626,17 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         @Override
         public int getContent(int offsetInMessage, ByteBuffer dst)
         {
-            byte[] data = _messageDataRef.getData();
+            ByteBuffer data = getContentAsByteBuffer();
+            data = data.slice();
+            int length = Math.min(dst.remaining(), data.remaining());
+            data.limit(length);
+            dst.put(data);
+            return length;
+        }
 
+        private ByteBuffer getContentAsByteBuffer()
+        {
+            ByteBuffer data = _messageDataRef.getData();
             if(data == null)
             {
                 if(stored())
@@ -1656,56 +1663,22 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
                 else
                 {
-                    data = new byte[0];
+                    data = ByteBuffer.wrap(new byte[0]);
                 }
-            }
-
-            int length = Math.min(dst.remaining(), data.length - offsetInMessage);
-            dst.put(data, offsetInMessage, length);
-            return length;
-
+            } return data;
         }
-
 
         @Override
         public ByteBuffer getContent(int offsetInMessage, int size)
         {
-            byte[] data = _messageDataRef.getData();
-
-            if(data == null)
-            {
-
-                if(stored())
-                {
-                    checkMessageStoreOpen();
-
-                    data = AbstractJDBCMessageStore.this.getAllContent(_messageId);
-                    T metaData = _messageDataRef.getMetaData();
-                    if (metaData == null)
-                    {
-                        try
-                        {
-                            metaData = (T) AbstractJDBCMessageStore.this.getMetaData(_messageId);
-                            _messageDataRef = new MessageDataSoftRef<>(metaData, data);
-                        }
-                        catch (SQLException e)
-                        {
-                            throw new StoreException("Failed to get content for message id: " + _messageId, e);
-                        }
-                    }
-                    else
-                    {
-                        _messageDataRef.setData(data);
-                    }
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            return ByteBuffer.wrap(data,offsetInMessage,Math.min(size,data.length-offsetInMessage));
-
+            ByteBuffer data = getContentAsByteBuffer();
+            data = data.duplicate();
+            data.position(offsetInMessage);
+            data = data.slice();
+            data.limit(size);
+            return data;
         }
+
 
         @Override
         public void remove()
@@ -1746,8 +1719,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 storeMetaData(conn, _messageId, _messageDataRef.getMetaData());
                 AbstractJDBCMessageStore.this.addContent(conn, _messageId,
                                                                _messageDataRef.getData() == null
-                                                                       ? ByteBuffer.allocate(0)
-                                                                       : ByteBuffer.wrap(_messageDataRef.getData()));
+                                                                       ? ByteBuffer.allocateDirect(0)
+                                                                       : _messageDataRef.getData());
 
 
                 getLogger().debug("Storing message {} to store", _messageId);

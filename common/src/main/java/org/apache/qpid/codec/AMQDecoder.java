@@ -63,6 +63,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
     private List<ByteArrayInputStream> _remainingBufs = new ArrayList<ByteArrayInputStream>();
 
+    private List<ByteBuffer> _incompleteBuffers = new ArrayList<ByteBuffer>();
+
     /**
      * Creates a new AMQP decoder.
      *
@@ -98,144 +100,13 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         return _methodProcessor;
     }
 
-    private class RemainingByteArrayInputStream extends InputStream
-    {
-        private int _currentListPos;
-        private int _markPos;
-
-
-        @Override
-        public int read() throws IOException
-        {
-            ByteArrayInputStream currentStream = _remainingBufs.get(_currentListPos);
-            if(currentStream.available() > 0)
-            {
-                return currentStream.read();
-            }
-            else if((_currentListPos == _remainingBufs.size())
-                    || (++_currentListPos == _remainingBufs.size()))
-            {
-                return -1;
-            }
-            else
-            {
-
-                ByteArrayInputStream stream = _remainingBufs.get(_currentListPos);
-                stream.mark(0);
-                return stream.read();
-            }
-        }
-
-        @Override
-        public int read(final byte[] b, final int off, final int len) throws IOException
-        {
-
-            if(_currentListPos == _remainingBufs.size())
-            {
-                return -1;
-            }
-            else
-            {
-                ByteArrayInputStream currentStream = _remainingBufs.get(_currentListPos);
-                final int available = currentStream.available();
-                int read = currentStream.read(b, off, len > available ? available : len);
-                if(read < len)
-                {
-                    if(_currentListPos++ != _remainingBufs.size())
-                    {
-                        _remainingBufs.get(_currentListPos).mark(0);
-                    }
-                    int correctRead = read == -1 ? 0 : read;
-                    int subRead = read(b, off+correctRead, len-correctRead);
-                    if(subRead == -1)
-                    {
-                        return read;
-                    }
-                    else
-                    {
-                        return correctRead+subRead;
-                    }
-                }
-                else
-                {
-                    return len;
-                }
-            }
-        }
-
-        @Override
-        public int available() throws IOException
-        {
-            int total = 0;
-            for(int i = _currentListPos; i < _remainingBufs.size(); i++)
-            {
-                total += _remainingBufs.get(i).available();
-            }
-            return total;
-        }
-
-        @Override
-        public void mark(final int readlimit)
-        {
-            _markPos = _currentListPos;
-            final ByteArrayInputStream stream = _remainingBufs.get(_currentListPos);
-            if(stream != null)
-            {
-                stream.mark(readlimit);
-            }
-        }
-
-        @Override
-        public void reset() throws IOException
-        {
-            _currentListPos = _markPos;
-            final int size = _remainingBufs.size();
-            if(_currentListPos < size)
-            {
-                _remainingBufs.get(_currentListPos).reset();
-            }
-            for(int i = _currentListPos+1; i<size; i++)
-            {
-                _remainingBufs.get(i).reset();
-            }
-        }
-    }
-
-    private static class SimpleDataInputStream extends DataInputStream implements MarkableDataInput
-    {
-        public SimpleDataInputStream(InputStream in)
-        {
-            super(in);
-        }
-
-        public AMQShortString readAMQShortString() throws IOException
-        {
-            return EncodingUtils.readAMQShortString(this);
-        }
-
-    }
-
 
     public void decodeBuffer(ByteBuffer buf) throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
     {
 
-        MarkableDataInput msg;
-
-
-        // get prior remaining data from accumulator
-        ByteArrayInputStream bais;
-        DataInput di;
-        if(!_remainingBufs.isEmpty())
-        {
-             bais = new ByteArrayInputStream(buf.array(),buf.arrayOffset()+buf.position(), buf.remaining());
-            _remainingBufs.add(bais);
-            msg = new SimpleDataInputStream(new RemainingByteArrayInputStream());
-        }
-        else
-        {
-            bais = null;
-            msg = new ByteArrayDataInput(buf.array(),buf.arrayOffset()+buf.position(), buf.remaining());
-        }
+        buf = buf.slice();
+        _incompleteBuffers.add(buf);
+        ByteBufferListDataInput msg = new ByteBufferListDataInput(_incompleteBuffers);
 
         // If this is the first read then we may be getting a protocol initiation back if we tried to negotiate
         // an unsupported version
@@ -268,59 +139,27 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                 }
 
             }
+        }
 
-            if(!enoughData)
+        ListIterator<ByteBuffer> iter = _incompleteBuffers.listIterator();
+        while(iter.hasNext())
+        {
+            ByteBuffer next = iter.next();
+            if(next.hasRemaining())
             {
-                if(!_remainingBufs.isEmpty())
+                if(next.position() != 0)
                 {
-                    _remainingBufs.remove(_remainingBufs.size()-1);
-                    ListIterator<ByteArrayInputStream> iterator = _remainingBufs.listIterator();
-                    while(iterator.hasNext() && iterator.next().available() == 0)
-                    {
-                        iterator.remove();
-                    }
+                    iter.set(next.slice());
                 }
-
-                if(bais == null)
-                {
-                    if(msg.available()!=0)
-                    {
-                        byte[] remaining = new byte[msg.available()];
-                        msg.read(remaining);
-                        _remainingBufs.add(new ByteArrayInputStream(remaining));
-                    }
-                }
-                else
-                {
-                    if(bais.available()!=0)
-                    {
-                        byte[] remaining = new byte[bais.available()];
-                        bais.read(remaining);
-                        _remainingBufs.add(new ByteArrayInputStream(remaining));
-                    }
-                }
-
-                if(_remainingBufs.size() > MAX_BUFFERS_LIMIT)
-                {
-                    int totalSize = 0;
-                    for(ByteArrayInputStream stream : _remainingBufs)
-                    {
-                        totalSize += stream.available();
-                    }
-
-                    byte[] completeBuffer = new byte[totalSize];
-                    int pos = 0;
-                    for(ByteArrayInputStream stream : _remainingBufs)
-                    {
-                        pos += stream.read(completeBuffer, pos, stream.available());
-                    }
-
-                    _remainingBufs.clear();
-                    _remainingBufs.add(new ByteArrayInputStream(completeBuffer));
-                }
+                break;
+            }
+            else
+            {
+                iter.remove();
             }
         }
     }
+
 
     private boolean decodable(final MarkableDataInput in) throws AMQFrameDecodingException, IOException
     {

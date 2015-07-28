@@ -31,6 +31,7 @@ import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQProtocolVersionException;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
+import org.apache.qpid.framing.ByteBufferDataInput;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.EncodingUtils;
 import org.apache.qpid.framing.FieldTable;
@@ -158,15 +159,14 @@ public class MessageMetaData implements StorableMessageMetaData
         {
             try
             {
-                ByteBufferInputStream bbis = new ByteBufferInputStream(buf);
-                DataInputStream dais = new DataInputStream(bbis);
-                int size = EncodingUtils.readInteger(dais);
-                ContentHeaderBody chb = ContentHeaderBody.createFromBuffer(dais, size);
-                final AMQShortString exchange = EncodingUtils.readAMQShortString(dais);
-                final AMQShortString routingKey = EncodingUtils.readAMQShortString(dais);
+                ByteBufferDataInput dataInput = new ByteBufferDataInput(buf);
+                int size = EncodingUtils.readInteger(dataInput);
+                ContentHeaderBody chb = ContentHeaderBody.createFromBuffer(dataInput, size);
+                final AMQShortString exchange = EncodingUtils.readAMQShortString(dataInput);
+                final AMQShortString routingKey = EncodingUtils.readAMQShortString(dataInput);
 
-                final byte flags = EncodingUtils.readByte(dais);
-                long arrivalTime = EncodingUtils.readLong(dais);
+                final byte flags = EncodingUtils.readByte(dataInput);
+                long arrivalTime = EncodingUtils.readLong(dataInput);
 
                 MessagePublishInfo publishBody =
                         new MessagePublishInfo(exchange,

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.framing;
 
+import java.nio.ByteBuffer;
+
 import org.apache.qpid.codec.MarkableDataInput;
 
 public class ByteArrayDataInput implements ExtendedDataInput, MarkableDataInput
@@ -162,6 +164,14 @@ public class ByteArrayDataInput implements ExtendedDataInput, MarkableDataInput
     {
         readFully(b);
         return b.length;
+    }
+
+    @Override
+    public ByteBuffer readAsByteBuffer(final int len)
+    {
+        byte[] data = new byte[len];
+        readFully(data);
+        return ByteBuffer.wrap(data);
     }
 
     public int position()

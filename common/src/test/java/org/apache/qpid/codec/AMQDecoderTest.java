@@ -83,7 +83,7 @@ public class AMQDecoderTest extends QpidTestCase
         Random random = new Random();
         final byte[] payload = new byte[2048];
         random.nextBytes(payload);
-        final AMQBody body = new ContentBody(payload);
+        final AMQBody body = new ContentBody(ByteBuffer.wrap(payload));
         AMQFrame frame = new AMQFrame(1, body);
         byte[] outputBuf = new byte[4096];
         BytesDataOutput dataOutput = new BytesDataOutput(outputBuf);
@@ -91,14 +91,16 @@ public class AMQDecoderTest extends QpidTestCase
         for(int i = 0 ; i < dataOutput.length(); i++)
         {
             _decoder.decodeBuffer(ByteBuffer.wrap(outputBuf, i, 1));
-
         }
         List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
         if (frames.get(0) instanceof AMQFrame)
         {
             assertEquals(ContentBody.TYPE, ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
             ContentBody decodedBody = (ContentBody) ((AMQFrame) frames.get(0)).getBodyFrame();
-            assertTrue("Body was corrupted", Arrays.equals(payload, decodedBody.getPayload()));
+            final ByteBuffer byteBuffer = decodedBody.getPayload().duplicate();
+            byte[] bodyBytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get(bodyBytes);
+            assertTrue("Body was corrupted", Arrays.equals(payload, bodyBytes));
         }
         else
         {

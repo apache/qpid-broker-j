@@ -155,7 +155,7 @@ public class Assembler implements NetworkEventReceiver, NetworkDelegate
                 {
                     size += f.getSize();
                 }
-                segment = ByteBuffer.allocate(size);
+                segment = allocateByteBuffer(size);
                 for (Frame f : frames)
                 {
                     segment.put(f.getBody());
@@ -165,6 +165,11 @@ public class Assembler implements NetworkEventReceiver, NetworkDelegate
             }
         }
 
+    }
+
+    protected ByteBuffer allocateByteBuffer(final int size)
+    {
+        return ByteBuffer.allocate(size);
     }
 
     private void assemble(Frame frame, ByteBuffer segment)

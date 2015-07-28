@@ -21,11 +21,11 @@
 package org.apache.qpid.framing;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -49,8 +49,7 @@ public class FieldTable
     private static final String STRICT_AMQP_NAME = "STRICT_AMQP";
     private static final boolean STRICT_AMQP = Boolean.valueOf(System.getProperty(STRICT_AMQP_NAME, "false"));
 
-    private byte[] _encodedForm;
-    private int _encodedFormOffset;
+    private ByteBuffer _encodedForm;
     private LinkedHashMap<AMQShortString, AMQTypedValue> _properties = null;
     private long _encodedSize;
     private static final int INITIAL_HASHMAP_CAPACITY = 16;
@@ -69,29 +68,17 @@ public class FieldTable
         _strictAMQP = strictAMQP;
     }
 
-    /**
-     * Construct a new field table.
-     *
-     * @param buffer the buffer from which to read data. The length byte must be read already
-     * @param length the length of the field table. Must be great than 0.
-     * @throws IOException if there is an issue reading the buffer
-     */
-    public FieldTable(DataInput buffer, long length) throws IOException
-    {
-        this();
-        _encodedForm = new byte[(int) length];
-        buffer.readFully(_encodedForm);
-        _encodedSize = length;
-    }
-
     public FieldTable(byte[] encodedForm, int offset, int length)
     {
-        this();
-        _encodedForm = encodedForm;
-        _encodedFormOffset = offset;
-        _encodedSize = length;
+        this(ByteBuffer.wrap(encodedForm,offset,length));
     }
 
+    public FieldTable(ByteBuffer buffer)
+    {
+        this();
+        _encodedForm = buffer;
+        _encodedSize = buffer.remaining();
+    }
 
     public boolean isClean()
     {
@@ -858,14 +845,10 @@ public class FieldTable
             }
 
         }
-        else if(_encodedFormOffset == 0 && _encodedSize == _encodedForm.length)
-        {
-            return _encodedForm.clone();
-        }
         else
         {
-            byte[] encodedCopy = new byte[(int) _encodedSize];
-            System.arraycopy(_encodedForm,_encodedFormOffset,encodedCopy,0,(int)_encodedSize);
+            byte[] encodedCopy = new byte[_encodedForm.remaining()];
+            _encodedForm.duplicate().get(encodedCopy);
             return encodedCopy;
         }
 
@@ -1077,10 +1060,12 @@ public class FieldTable
 
     private void putDataInBuffer(DataOutput buffer) throws IOException
     {
-
         if (_encodedForm != null)
         {
-            buffer.write(_encodedForm,_encodedFormOffset,(int)_encodedSize);
+            byte[] encodedCopy = new byte[_encodedForm.remaining()];
+            _encodedForm.duplicate().get(encodedCopy);
+
+            buffer.write(encodedCopy);
         }
         else if (_properties != null)
         {
@@ -1109,7 +1094,7 @@ public class FieldTable
     private void setFromBuffer() throws AMQFrameDecodingException, IOException
     {
 
-        ByteArrayDataInput baid = new ByteArrayDataInput(_encodedForm, _encodedFormOffset, (int)_encodedSize);
+        ByteBufferDataInput dataInput = new ByteBufferDataInput(_encodedForm.duplicate());
 
         if (_encodedSize > 0)
         {
@@ -1120,12 +1105,12 @@ public class FieldTable
             do
             {
 
-                final AMQShortString key = baid.readAMQShortString();
-                AMQTypedValue value = AMQTypedValue.readFromBuffer(baid);
+                final AMQShortString key = dataInput.readAMQShortString();
+                AMQTypedValue value = AMQTypedValue.readFromBuffer(dataInput);
                 _properties.put(key, value);
 
             }
-            while (baid.available() > 0);
+            while (dataInput.available() > 0);
 
         }
 

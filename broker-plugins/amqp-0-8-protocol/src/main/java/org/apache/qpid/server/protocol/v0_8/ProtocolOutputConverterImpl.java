@@ -48,7 +48,6 @@ import org.apache.qpid.util.GZIPUtils;
 public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 {
     private static final int BASIC_CLASS_ID = 60;
-
     private final AMQPConnection_0_8 _connection;
     private static final AMQShortString GZIP_ENCODING = AMQShortString.valueOf(GZIPUtils.GZIP_CONTENT_ENCODING);
 

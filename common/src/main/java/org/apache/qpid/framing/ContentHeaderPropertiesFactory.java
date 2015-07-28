@@ -23,6 +23,7 @@ package org.apache.qpid.framing;
 import java.io.DataInput;
 import java.io.IOException;
 
+import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.protocol.AMQConstant;
 
 public class ContentHeaderPropertiesFactory
@@ -39,7 +40,7 @@ public class ContentHeaderPropertiesFactory
     }
 
     public BasicContentHeaderProperties createContentHeaderProperties(int classId, int propertyFlags,
-                                                                 DataInput buffer, int size)
+                                                                 MarkableDataInput buffer, int size)
              throws AMQFrameDecodingException, IOException
     {
         BasicContentHeaderProperties properties;

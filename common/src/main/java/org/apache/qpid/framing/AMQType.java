@@ -20,11 +20,12 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collection;
+
+import org.apache.qpid.codec.MarkableDataInput;
 
 /**
  * AMQType is a type that represents the different possible AMQP field table types. It provides operations for each
@@ -57,7 +58,7 @@ public enum AMQType
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readLongString(buffer);
         }
@@ -103,7 +104,7 @@ public enum AMQType
             EncodingUtils.writeUnsignedInteger(buffer, (Long) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readUnsignedInteger(buffer);
         }
@@ -142,7 +143,7 @@ public enum AMQType
             EncodingUtils.writeInteger(buffer, unscaled);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             byte places = EncodingUtils.readByte(buffer);
 
@@ -179,7 +180,7 @@ public enum AMQType
             EncodingUtils.writeLong(buffer, (Long) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readLong(buffer);
         }
@@ -259,7 +260,7 @@ public enum AMQType
          *
          * @return An instance of the type.
          */
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             try
             {
@@ -322,7 +323,7 @@ public enum AMQType
                  *
                  * @return An instance of the type.
                  */
-                public Object readValueFromBuffer(DataInput buffer) throws IOException
+                public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
                 {
                     // Read size of field table then all name/value pairs.
                     return FieldArray.readFromBuffer(buffer);
@@ -352,7 +353,7 @@ public enum AMQType
         public void writeValueImpl(Object value, DataOutput buffer)
         { }
 
-        public Object readValueFromBuffer(DataInput buffer)
+        public Object readValueFromBuffer(MarkableDataInput buffer)
         {
             return null;
         }
@@ -383,7 +384,7 @@ public enum AMQType
             EncodingUtils.writeLongstr(buffer, (byte[]) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readLongstr(buffer);
         }
@@ -413,7 +414,7 @@ public enum AMQType
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readLongString(buffer);
         }
@@ -444,7 +445,7 @@ public enum AMQType
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readLongString(buffer);
         }
@@ -479,7 +480,7 @@ public enum AMQType
             EncodingUtils.writeBoolean(buffer, (Boolean) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readBoolean(buffer);
         }
@@ -514,7 +515,7 @@ public enum AMQType
             EncodingUtils.writeChar(buffer, (Character) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readChar(buffer);
         }
@@ -549,7 +550,7 @@ public enum AMQType
             EncodingUtils.writeByte(buffer, (Byte) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readByte(buffer);
         }
@@ -588,7 +589,7 @@ public enum AMQType
             EncodingUtils.writeShort(buffer, (Short) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readShort(buffer);
         }
@@ -630,7 +631,7 @@ public enum AMQType
             EncodingUtils.writeInteger(buffer, (Integer) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readInteger(buffer);
         }
@@ -677,7 +678,7 @@ public enum AMQType
             EncodingUtils.writeLong(buffer, (Long) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readLong(buffer);
         }
@@ -712,7 +713,7 @@ public enum AMQType
             EncodingUtils.writeFloat(buffer, (Float) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readFloat(buffer);
         }
@@ -751,7 +752,7 @@ public enum AMQType
             EncodingUtils.writeDouble(buffer, (Double) value);
         }
 
-        public Object readValueFromBuffer(DataInput buffer) throws IOException
+        public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readDouble(buffer);
         }
@@ -840,5 +841,5 @@ public enum AMQType
      *
      * @return An instance of the type.
      */
-    abstract Object readValueFromBuffer(DataInput buffer) throws IOException;
+    abstract Object readValueFromBuffer(MarkableDataInput buffer) throws IOException;
 }
