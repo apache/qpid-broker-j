@@ -503,7 +503,7 @@ public class BasicContentHeaderProperties
 
         _encodedForm = buffer.readAsByteBuffer(size);
 
-        ByteBufferDataInput input = new ByteBufferDataInput(_encodedForm);
+        ByteBufferDataInput input = new ByteBufferDataInput(_encodedForm.slice());
 
         decode(input);
 

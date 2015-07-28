@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
 
 public interface MarkableDataInput extends DataInput
 {
-    public void mark(int pos);
+    public void mark(int readAhead);
     public void reset() throws IOException;
 
     int available() throws IOException;

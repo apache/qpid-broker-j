@@ -461,6 +461,10 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             LOGGER.error("Exception while processing incoming data", e);
             getNetwork().close();
         }
+        finally
+        {
+            msg.position(msg.limit());
+        }
      }
 
 

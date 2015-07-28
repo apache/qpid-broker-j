@@ -21,11 +21,16 @@
 package org.apache.qpid.codec;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 
 import org.apache.qpid.framing.*;
 
 public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends ClientChannelMethodProcessor>>
 {
+    private List<ByteBuffer> _incompleteBuffers = new ArrayList<ByteBuffer>();
 
     /**
      * Creates a new AMQP decoder.
@@ -37,6 +42,36 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
         super(false, methodProcessor);
     }
 
+    @Override
+    public void decodeBuffer(ByteBuffer buf)
+            throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
+    {
+        buf = buf.slice();
+        _incompleteBuffers.add(buf);
+        MarkableDataInput msg = new ByteBufferListDataInput(_incompleteBuffers);
+
+        decode(msg);
+
+
+        ListIterator<ByteBuffer> iter = _incompleteBuffers.listIterator();
+        while (iter.hasNext())
+        {
+            ByteBuffer next = iter.next();
+            if (next.hasRemaining())
+            {
+                if (next.position() != 0)
+                {
+                    iter.set(next.slice());
+                }
+                break;
+            }
+            else
+            {
+                iter.remove();
+            }
+        }
+
+    }
 
     void processMethod(int channelId,
                        MarkableDataInput in)

@@ -21,6 +21,7 @@
 package org.apache.qpid.codec;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.apache.qpid.framing.*;
 
@@ -36,6 +37,12 @@ public class ServerDecoder extends AMQDecoder<ServerMethodProcessor<? extends Se
     {
         super(true, methodProcessor);
     }
+
+    public void decodeBuffer(ByteBuffer buf) throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
+    {
+        decode(new ByteBufferDataInput(buf));
+    }
+
 
     void processMethod(int channelId,
                        MarkableDataInput in)

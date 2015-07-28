@@ -212,7 +212,10 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                         throw new ConnectionScopedRuntimeException(e);
                     }
                 }
-
+                finally
+                {
+                    buf.position(buf.limit());
+                }
                 return null;
             }
         });

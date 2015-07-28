@@ -275,6 +275,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         public void received(ByteBuffer msg)
         {
             _logger.error("Error processing incoming data, could not negotiate a common protocol");
+            msg.position(msg.limit());
         }
 
         public void closed()
@@ -395,7 +396,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
             if(_header.remaining() > msgheader.limit())
             {
-                msg.position(msg.limit());
+                return;
             }
             else
             {

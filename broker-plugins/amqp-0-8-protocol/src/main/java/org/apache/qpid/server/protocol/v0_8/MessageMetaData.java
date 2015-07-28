@@ -159,7 +159,7 @@ public class MessageMetaData implements StorableMessageMetaData
         {
             try
             {
-                ByteBufferDataInput dataInput = new ByteBufferDataInput(buf);
+                ByteBufferDataInput dataInput = new ByteBufferDataInput(buf.slice());
                 int size = EncodingUtils.readInteger(dataInput);
                 ContentHeaderBody chb = ContentHeaderBody.createFromBuffer(dataInput, size);
                 final AMQShortString exchange = EncodingUtils.readAMQShortString(dataInput);

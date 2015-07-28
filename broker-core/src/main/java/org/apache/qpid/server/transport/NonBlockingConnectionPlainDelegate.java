@@ -43,7 +43,7 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     public boolean processData(ByteBuffer buffer)
     {
         _parent.processAmqpData(buffer);
-        buffer.position(buffer.limit());
+
         return false;
     }
 

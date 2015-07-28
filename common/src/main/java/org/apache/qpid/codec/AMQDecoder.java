@@ -61,13 +61,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
     private int _maxFrameSize = AMQConstant.FRAME_MIN_SIZE.getCode();
 
-    private List<ByteArrayInputStream> _remainingBufs = new ArrayList<ByteArrayInputStream>();
-
-    private List<ByteBuffer> _incompleteBuffers = new ArrayList<ByteBuffer>();
-
     /**
      * Creates a new AMQP decoder.
-     *
      * @param expectProtocolInitiation <tt>true</tt> if this decoder needs to handle protocol initiation.
      * @param methodProcessor method processor
      */
@@ -101,22 +96,21 @@ public abstract class AMQDecoder<T extends MethodProcessor>
     }
 
 
-    public void decodeBuffer(ByteBuffer buf) throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
+    public abstract void decodeBuffer(ByteBuffer buf) throws AMQFrameDecodingException, AMQProtocolVersionException, IOException;
+
+    protected void decode(final MarkableDataInput msg) throws IOException, AMQFrameDecodingException
     {
-
-        buf = buf.slice();
-        _incompleteBuffers.add(buf);
-        ByteBufferListDataInput msg = new ByteBufferListDataInput(_incompleteBuffers);
-
         // If this is the first read then we may be getting a protocol initiation back if we tried to negotiate
         // an unsupported version
-        if(_firstRead && buf.hasRemaining())
+        if(_firstRead && msg.available()>0)
         {
+            msg.mark(1);
             _firstRead = false;
-            if(!_expectProtocolInitiation && buf.get(buf.position()) > 8)
+            if(!_expectProtocolInitiation && (((int)msg.readByte()) &0xff) > 8)
             {
                 _expectProtocolInitiation = true;
             }
+            msg.reset();
         }
 
         boolean enoughData = true;
@@ -138,24 +132,6 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                     _methodProcessor.receiveProtocolHeader(new ProtocolInitiation(msg));
                 }
 
-            }
-        }
-
-        ListIterator<ByteBuffer> iter = _incompleteBuffers.listIterator();
-        while(iter.hasNext())
-        {
-            ByteBuffer next = iter.next();
-            if(next.hasRemaining())
-            {
-                if(next.position() != 0)
-                {
-                    iter.set(next.slice());
-                }
-                break;
-            }
-            else
-            {
-                iter.remove();
             }
         }
     }

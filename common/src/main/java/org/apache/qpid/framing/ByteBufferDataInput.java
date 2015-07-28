@@ -28,10 +28,12 @@ public class ByteBufferDataInput implements ExtendedDataInput, MarkableDataInput
 {
     private final ByteBuffer _underlying;
     private int _mark;
+    private final int _offset;
 
     public ByteBufferDataInput(ByteBuffer underlying)
     {
-        _underlying = underlying.slice();
+        _underlying = underlying;
+        _offset = underlying.position();
     }
 
     public void readFully(byte[] b)
@@ -55,7 +57,7 @@ public class ByteBufferDataInput implements ExtendedDataInput, MarkableDataInput
     public int skipBytes(int n)
     {
         _underlying.position(_underlying.position()+n);
-        return _underlying.position();
+        return _underlying.position()-_offset;
     }
 
     public boolean readBoolean()
@@ -143,12 +145,12 @@ public class ByteBufferDataInput implements ExtendedDataInput, MarkableDataInput
 
     public int position()
     {
-        return _underlying.position();
+        return _underlying.position()-_offset;
     }
 
     public void position(int position)
     {
-        _underlying.position(position);
+        _underlying.position(position+_offset);
     }
 
     public int length()
