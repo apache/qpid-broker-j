@@ -21,7 +21,6 @@
 package org.apache.qpid.client;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -133,7 +132,6 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
     private final boolean _autoClose;
 
     private final boolean _browseOnly;
-    private List<StackTraceElement> _closedStack = null;
 
     private boolean _isDurableSubscriber = false;
     private int _addressType = AMQDestination.UNKNOWN_TYPE;
@@ -585,18 +583,6 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         if (!setClosed())
         {
             setClosing(true);
-            if (_logger.isDebugEnabled())
-            {
-                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                if (_closedStack != null)
-                {
-                    _logger.debug(_consumerTag + " previously:" + _closedStack.toString());
-                }
-                else
-                {
-                    _closedStack = Arrays.asList(stackTrace).subList(3, stackTrace.length - 1);
-                }
-            }
 
             if (sendClose)
             {
@@ -673,27 +659,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
      */
     void markClosed()
     {
-        // synchronized (_closed)
-        {
-            setClosed();
-
-            if (_logger.isDebugEnabled())
-            {
-                if (_closedStack != null)
-                {
-                    StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                    _logger.debug(_consumerTag + " markClosed():"
-                                  + Arrays.asList(stackTrace).subList(3, stackTrace.length - 1));
-                    _logger.debug(_consumerTag + " previously:" + _closedStack.toString());
-                }
-                else
-                {
-                	StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                    _closedStack = Arrays.asList(stackTrace).subList(3, stackTrace.length - 1);
-                }
-            }
-        }
-
+        setClosed();
         deregisterConsumer();
     }
 
@@ -850,24 +816,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
 
     void notifyError(Throwable cause)
     {
-        // synchronized (_closed)
-        {
-            setClosed();
-            if (_logger.isDebugEnabled())
-            {
-                StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                if (_closedStack != null)
-                {
-                    _logger.debug(_consumerTag + " notifyError():"
-                                  + Arrays.asList(stackTrace).subList(3, stackTrace.length - 1));
-                    _logger.debug(_consumerTag + " previously" + _closedStack.toString());
-                }
-                else
-                {
-                    _closedStack = Arrays.asList(stackTrace).subList(3, stackTrace.length - 1);
-                }
-            }
-        }
+        setClosed();
         // QPID-293 can "request redelivery of this error through dispatcher"
 
         // we have no way of propagating the exception to a message listener - a JMS limitation - so we

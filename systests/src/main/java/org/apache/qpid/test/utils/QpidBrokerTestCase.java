@@ -1289,8 +1289,6 @@ public class QpidBrokerTestCase extends QpidTestCase
         {
             jvmOptions.putAll(_propertiesSetForBroker);
 
-            copySystemProperty("amqj.protocol.logging.level", jvmOptions);
-
             copySystemProperty("test.port", jvmOptions);
             copySystemProperty("test.mport", jvmOptions);
             copySystemProperty("test.cport", jvmOptions);

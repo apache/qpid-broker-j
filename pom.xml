@@ -220,7 +220,6 @@
             <broker.config>${qpid.home}${file.separator}etc${file.separator}config-systests.json</broker.config>
             <max_prefetch>1000</max_prefetch>
             <qpid.dest_syntax>BURL</qpid.dest_syntax>
-            <amqj.protocol.logging.level>debug</amqj.protocol.logging.level>
             <test.port>15672</test.port>
             <test.mport>18999</test.mport>
             <test.cport>19099</test.cport>
