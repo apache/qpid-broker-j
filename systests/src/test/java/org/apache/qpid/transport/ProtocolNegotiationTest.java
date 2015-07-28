@@ -202,7 +202,16 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
                 {
                     try
                     {
-                        dataOutputStream.write(msg.array(), msg.position(), msg.remaining());
+                        if(msg.hasArray())
+                        {
+                            dataOutputStream.write(msg.array(), msg.arrayOffset() + msg.position(), msg.remaining());
+                        }
+                        else
+                        {
+                            byte[] data = new byte[msg.remaining()];
+                            msg.duplicate().get(data);
+                            dataOutputStream.write(data, 0, data.length);
+                        }
                     }
                     catch (SocketException se)
                     {
