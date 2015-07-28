@@ -85,6 +85,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private static final String BRIDGEDB_NAME = "BRIDGES";
     private static final String LINKDB_NAME = "LINKS";
     private static final String XID_DB_NAME = "XIDS";
+    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocateDirect(0);
 
     private final EventManager _eventManager = new EventManager();
 
@@ -1127,7 +1128,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 AbstractBDBMessageStore.this.storeMetaData(txn, _messageId, _messageDataRef.getMetaData());
                 AbstractBDBMessageStore.this.addContent(txn, _messageId, 0,
                                                         _messageDataRef.getData() == null
-                                                                ? ByteBuffer.allocate(0)
+                                                                ? EMPTY_BYTE_BUFFER
                                                                 : _messageDataRef.getData());
 
 

@@ -120,10 +120,6 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
         MessageProperties messageProps = new MessageProperties();
 
         int size = (int) serverMsg.getSize();
-        ByteBuffer body = ByteBuffer.allocate(size);
-        serverMsg.getContent(body, 0);
-        body.flip();
-
 
         deliveryProps.setExpiration(serverMsg.getExpiration());
         deliveryProps.setPriority(MessageDeliveryPriority.get(serverMsg.getMessageHeader().getPriority()));

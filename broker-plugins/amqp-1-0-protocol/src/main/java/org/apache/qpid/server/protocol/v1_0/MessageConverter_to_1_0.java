@@ -295,7 +295,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         sectionEncoder.encodeObject(bodySection);
         Binary dataEncoding = sectionEncoder.getEncoding();
 
-        final ByteBuffer allData = ByteBuffer.allocate(headerSize + dataEncoding.getLength());
+        final ByteBuffer allData = ByteBuffer.allocateDirect(headerSize + dataEncoding.getLength());
         metaData.writeToBuffer(allData);
         allData.put(dataEncoding.getArray(),dataEncoding.getArrayOffset(),dataEncoding.getLength());
         return allData;

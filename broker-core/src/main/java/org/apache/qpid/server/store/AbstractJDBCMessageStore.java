@@ -74,6 +74,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                                                                                                   XID_TABLE_NAME, XID_ACTIONS_TABLE_NAME));
 
     private static final int DB_VERSION = 8;
+    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocateDirect(0);
 
     private final AtomicLong _messageId = new AtomicLong(0);
 
@@ -1718,9 +1719,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
                 storeMetaData(conn, _messageId, _messageDataRef.getMetaData());
                 AbstractJDBCMessageStore.this.addContent(conn, _messageId,
-                                                               _messageDataRef.getData() == null
-                                                                       ? ByteBuffer.allocateDirect(0)
-                                                                       : _messageDataRef.getData());
+                                                         _messageDataRef.getData() == null
+                                                                 ? EMPTY_BYTE_BUFFER
+                                                                 : _messageDataRef.getData());
 
 
                 getLogger().debug("Storing message {} to store", _messageId);

@@ -531,7 +531,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
             _frameWriter.setValue(amqFrame);
 
-            ByteBuffer dup = ByteBuffer.allocate(_endpoint.getMaxFrameSize());
+            ByteBuffer dup = ByteBuffer.allocateDirect(_endpoint.getMaxFrameSize());
 
             int size = _frameWriter.writeToBuffer(dup);
             if (size > _endpoint.getMaxFrameSize())

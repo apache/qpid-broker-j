@@ -133,7 +133,7 @@ public class SASLFrameHandler implements ProtocolHandler
 
                     if(in.remaining() < size-4)
                     {
-                        _buffer = ByteBuffer.allocate(size-4);
+                        _buffer = ByteBuffer.allocateDirect(size-4);
                         _buffer.put(in);
                         state = State.BUFFERING;
                         break;

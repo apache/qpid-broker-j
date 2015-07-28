@@ -100,7 +100,7 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
             {
                 size += t.getPayload().limit();
             }
-            payload = ByteBuffer.allocate(size);
+            payload = ByteBuffer.allocateDirect(size);
             for(Transfer t : _incompleteMessage)
             {
                 payload.put(t.getPayload().duplicate());

@@ -118,9 +118,6 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
         MessageProperties messageProps = new MessageProperties();
 
         int size = (int) message_0_8.getSize();
-        ByteBuffer body = ByteBuffer.allocate(size);
-        message_0_8.getContent(body, 0);
-        body.flip();
 
         BasicContentHeaderProperties properties =
                   message_0_8.getContentHeaderBody().getProperties();

@@ -153,7 +153,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 size += fragment.remaining();
             }
 
-            payload = ByteBuffer.allocate(size);
+            payload = ByteBuffer.allocateDirect(size);
 
             for(ByteBuffer fragment : fragments)
             {
@@ -201,7 +201,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
             Binary encodedHeader = _sectionEncoder.getEncoding();
 
             ByteBuffer oldPayload = payload;
-            payload = ByteBuffer.allocate(oldPayload.remaining() + encodedHeader.getLength());
+            payload = ByteBuffer.allocateDirect(oldPayload.remaining() + encodedHeader.getLength());
             payload.put(encodedHeader.getArray(),encodedHeader.getArrayOffset(),encodedHeader.getLength());
             payload.put(oldPayload);
             payload.flip();

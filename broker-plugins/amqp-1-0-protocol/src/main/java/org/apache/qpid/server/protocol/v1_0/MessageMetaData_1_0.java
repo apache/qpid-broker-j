@@ -177,7 +177,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             {
                 size += buf.remaining();
             }
-            src = ByteBuffer.allocate(size);
+            src = ByteBuffer.allocateDirect(size);
             for(ByteBuffer buf : fragments)
             {
                 src.put(buf.duplicate());
@@ -325,7 +325,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
     private ByteBuffer encodeAsBuffer()
     {
-        ByteBuffer buf = ByteBuffer.allocate(getStorableSize());
+        ByteBuffer buf = ByteBuffer.allocateDirect(getStorableSize());
 
         for(ByteBuffer bin : _encodedSections)
         {

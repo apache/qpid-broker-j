@@ -135,7 +135,7 @@ public class FrameHandler implements ProtocolHandler
 
                     if(in.remaining() < size-4)
                     {
-                        _buffer = ByteBuffer.allocate(size-4);
+                        _buffer = ByteBuffer.allocateDirect(size-4);
                         _buffer.put(in);
                         state = State.BUFFERING;
                         break;
@@ -231,7 +231,7 @@ public class FrameHandler implements ProtocolHandler
                         {
                             if(val instanceof Transfer)
                             {
-                                ByteBuffer buf = ByteBuffer.allocate(in.remaining());
+                                ByteBuffer buf = ByteBuffer.allocateDirect(in.remaining());
                                 buf.put(in);
                                 buf.flip();
                                 ((Transfer)val).setPayload(buf);
