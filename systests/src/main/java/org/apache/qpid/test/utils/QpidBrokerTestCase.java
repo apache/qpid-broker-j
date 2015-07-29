@@ -1278,7 +1278,6 @@ public class QpidBrokerTestCase extends QpidTestCase
             options.setManagementModePassword(MANAGEMENT_MODE_PASSWORD);
         }
         options.setStartupLoggedToSystemOut(false);
-        options.setConfigProperty("test.name", getClass().getSimpleName() + "-" + getName());
         return options;
     }
 
@@ -1336,7 +1335,7 @@ public class QpidBrokerTestCase extends QpidTestCase
             if (brokerType.equals(BrokerHolder.BrokerType.INTERNAL) && !testCase.existingInternalBroker())
             {
                 testCase.setSystemProperty(BrokerProperties.PROPERTY_USE_CUSTOM_RMI_SOCKET_FACTORY, "false");
-                holder = new InternalBrokerHolder(portsUsedByBroker);
+                holder = new InternalBrokerHolder(portsUsedByBroker, testCase);
             }
             else if (!brokerType.equals(BrokerHolder.BrokerType.EXTERNAL))
             {

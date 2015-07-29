@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.Connection;
-import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -34,7 +33,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.util.LogMonitor;
 
 /**
  * Tests the behaviour of JMS asynchronous message listeners as provided by
@@ -230,80 +228,6 @@ public class AsynchMessageListenerTest extends QpidBrokerTestCase
 
         countingMessageListener.awaitMessages(AWAIT_MESSAGE_TIMEOUT);
         assertEquals("Unexpected number of messages received", MSG_COUNT, countingMessageListener.getReceivedCount());
-    }
-
-    /**
-     * Tests the case where the message listener throws an java.lang.Error.
-     * TODO - a useful test?.
-     */
-    public void testMessageListenerThrowsError() throws Exception
-    {
-        int expectedMessages = 1;  // The error will kill the dispatcher so only one message will be delivered.
-        final CountDownLatch awaitMessages = new CountDownLatch(expectedMessages);
-        final AtomicInteger receivedCount = new AtomicInteger(0);
-        final String javaLangErrorMessageText = "MessageListener failed with java.lang.Error";
-        CountingExceptionListener countingExceptionListener = new CountingExceptionListener();
-        _consumerConnection.setExceptionListener(countingExceptionListener);
-
-        _consumer.setMessageListener(new MessageListener()
-        {
-            @Override
-            public void onMessage(Message message)
-            {
-                try
-                {
-                    throw new Error(javaLangErrorMessageText);
-                }
-                finally
-                {
-                    receivedCount.incrementAndGet();
-                    awaitMessages.countDown();
-                }
-            }
-        });
-
-        awaitMessages.await(AWAIT_MESSAGE_TIMEOUT, TimeUnit.MILLISECONDS);
-
-        assertEquals("Unexpected number of messages received", expectedMessages, receivedCount.get());
-        assertEquals("onException should NOT have been called", 0, countingExceptionListener.getErrorCount());
-
-        // Check that Error has been written to the application log.
-
-        LogMonitor _monitor = new LogMonitor(getOutputFile());
-        assertTrue("The expected message not written to log file.",
-                _monitor.waitForMessage(javaLangErrorMessageText, LOGMONITOR_TIMEOUT));
-
-        if (_consumerConnection != null)
-        {
-            try
-            {
-                _consumerConnection.close();
-            }
-            catch (JMSException e)
-            {
-                // Ignore connection close errors for this test.
-            }
-            finally
-            {
-                _consumerConnection = null;
-            }
-        }
-    }
-
-    private final class CountingExceptionListener implements ExceptionListener
-    {
-        private final AtomicInteger _errorCount = new AtomicInteger();
-
-        @Override
-        public void onException(JMSException arg0)
-        {
-            _errorCount.incrementAndGet();
-        }
-
-        public int getErrorCount()
-        {
-            return _errorCount.intValue();
-        }
     }
 
     private final class CountingMessageListener implements MessageListener

@@ -22,6 +22,7 @@ package org.apache.qpid.test.utils;
 
 import java.security.PrivilegedAction;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
 
@@ -35,15 +36,17 @@ import org.apache.qpid.server.util.Action;
 
 public class InternalBrokerHolder implements BrokerHolder
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(InternalBrokerHolder.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(InternalBrokerHolder.class);
+    private final static UncaughtExceptionHandler UNCAUGHT_EXCEPTION_HANDLER = new UncaughtExceptionHandler();
+    private final QpidBrokerTestCase _testCase;
+    private final Set<Integer> _portsUsedByBroker;
 
-    private Broker _broker;
+    private volatile Broker _broker;
 
-    private Set<Integer> _portsUsedByBroker;
-
-    public InternalBrokerHolder(Set<Integer> portsUsedByBroker)
+    public InternalBrokerHolder(Set<Integer> portsUsedByBroker, final QpidBrokerTestCase testCase)
     {
         _portsUsedByBroker = portsUsedByBroker;
+        _testCase = testCase;
     }
 
     @Override
@@ -51,17 +54,7 @@ public class InternalBrokerHolder implements BrokerHolder
     {
         if (Thread.getDefaultUncaughtExceptionHandler() == null)
         {
-            Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
-            {
-                @Override
-                public void uncaughtException(final Thread t, final Throwable e)
-                {
-                    System.err.print("Thread terminated due to uncaught exception");
-                    e.printStackTrace();
-
-                    LOGGER.error("Uncaught exception from thread " + t.getName(), e);
-                }
-            });
+            Thread.setDefaultUncaughtExceptionHandler(UNCAUGHT_EXCEPTION_HANDLER);
         }
 
         LOGGER.info("Starting internal broker (same JVM)");
@@ -84,7 +77,7 @@ public class InternalBrokerHolder implements BrokerHolder
                 }
                 catch(IllegalStateException e)
                 {
-                    System.out.println("IllegalStateException occurred on broker shutdown in test " + options.getConfigProperties().get("test.name"));
+                    System.out.println("IllegalStateException occurred on broker shutdown in test " + _testCase.getName());
                     throw e;
                 }
             }
@@ -111,6 +104,11 @@ public class InternalBrokerHolder implements BrokerHolder
 
         });
         waitUntilPortsAreFree();
+
+        _testCase.assertEquals(
+                "One or more uncaught exceptions occurred prior to end of this test. Check test logs.",
+                0,
+                UNCAUGHT_EXCEPTION_HANDLER.getAndResetCount());
 
         LOGGER.info("Broker instance shutdown");
     }
@@ -139,4 +137,29 @@ public class InternalBrokerHolder implements BrokerHolder
         return "InternalBrokerHolder [_portsUsedByBroker=" + _portsUsedByBroker + "]";
     }
 
+    private static class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
+    {
+        private final AtomicInteger _count = new AtomicInteger(0);
+
+        @Override
+        public void uncaughtException(final Thread t, final Throwable e)
+        {
+            System.err.print("Thread terminated due to uncaught exception");
+            e.printStackTrace();
+
+            LOGGER.error("Uncaught exception from thread {}", t.getName(), e);
+            _count.getAndIncrement();
+        }
+
+        public int getAndResetCount()
+        {
+            int count;
+            do
+            {
+                count = _count.get();
+            }
+            while(!_count.compareAndSet(count, 0));
+            return count;
+        }
+    }
 }
