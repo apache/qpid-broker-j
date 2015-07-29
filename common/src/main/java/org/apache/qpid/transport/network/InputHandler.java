@@ -50,6 +50,8 @@ import org.apache.qpid.transport.SegmentType;
 public class InputHandler implements ExceptionHandlingByteBufferReceiver, FrameSizeObserver
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(InputHandler.class);
+    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer
+            .allocate(0);
 
     private int _maxFrameSize = Constant.MIN_MAX_FRAME_SIZE;
 
@@ -189,7 +191,7 @@ public class InputHandler implements ExceptionHandlingByteBufferReceiver, FrameS
             channel = (0xFFFF & input.getShort(pos + 6));
             if (size == 0)
             {
-                Frame frame = new Frame(flags, type, track, channel, _useDirect ? ByteBuffer.allocateDirect(0) : ByteBuffer.allocate(0));
+                Frame frame = new Frame(flags, type, track, channel, EMPTY_BYTE_BUFFER);
                 receiver.received(frame);
                 needed = Frame.HEADER_SIZE;
                 return FRAME_HDR;

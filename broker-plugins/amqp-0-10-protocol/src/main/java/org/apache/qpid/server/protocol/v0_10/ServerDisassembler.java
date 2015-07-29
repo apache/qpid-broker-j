@@ -93,7 +93,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
 
     private void frame(byte flags, byte type, byte track, int channel, int size, ByteBuffer buf)
     {
-        ByteBuffer data = ByteBuffer.allocateDirect(HEADER_SIZE);
+        ByteBuffer data = ByteBuffer.allocate(HEADER_SIZE);
 
         data.put(0, flags);
         data.put(1, type);

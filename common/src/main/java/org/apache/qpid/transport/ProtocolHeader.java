@@ -95,7 +95,7 @@ public final class ProtocolHeader implements NetworkEvent, ProtocolEvent
 
     public ByteBuffer toByteBuffer(final boolean useDirect)
     {
-        ByteBuffer buf = useDirect ? ByteBuffer.allocateDirect(8) : ByteBuffer.allocate(8);
+        ByteBuffer buf = ByteBuffer.allocate(8);
         buf.put(AMQP);
         buf.put(protoClass);
         buf.put(instance);

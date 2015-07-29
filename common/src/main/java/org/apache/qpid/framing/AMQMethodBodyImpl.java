@@ -118,7 +118,7 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
     {
 
         final int size = getSize();
-        ByteBuffer buf = ByteBuffer.allocateDirect(size);
+        ByteBuffer buf = ByteBuffer.allocate(size);
         ByteBufferDataOutput dataOutput = new ByteBufferDataOutput(buf);
         writePayload(dataOutput);
         buf.flip();

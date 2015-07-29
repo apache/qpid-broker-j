@@ -72,7 +72,7 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
-        ByteBuffer frameHeader = ByteBuffer.allocateDirect(7);
+        ByteBuffer frameHeader = ByteBuffer.allocate(7);
 
         frameHeader.put(_bodyFrame.getFrameType());
         EncodingUtils.writeUnsignedShort(frameHeader, _channel);
