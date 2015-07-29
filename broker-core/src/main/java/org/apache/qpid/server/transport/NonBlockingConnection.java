@@ -358,9 +358,18 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
         else
         {
-            // compact into new buffer
-            _netInputBuffer = ByteBuffer.allocateDirect(_receiveBufferSize);
-            _netInputBuffer.put(duplicate);
+            if(duplicate.remaining() < _receiveBufferSize)
+            {
+                // compact into new buffer
+                _netInputBuffer = ByteBuffer.allocateDirect(_receiveBufferSize);
+                _netInputBuffer.put(duplicate);
+            }
+            else
+            {
+                // grow the buffer
+                _netInputBuffer = ByteBuffer.allocateDirect(_receiveBufferSize+_netInputBuffer.capacity());
+                _netInputBuffer.put(duplicate);
+            }
         }
         return readData;
     }
