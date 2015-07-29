@@ -27,12 +27,16 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
 import com.sleepycat.bind.tuple.ByteBinding;
 import com.sleepycat.bind.tuple.LongBinding;
+import com.sleepycat.bind.tuple.TupleBinding;
+import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
@@ -69,6 +73,7 @@ import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
+import org.apache.qpid.util.ByteBufferUtils;
 
 
 public abstract class AbstractBDBMessageStore implements MessageStore
@@ -508,13 +513,25 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      * @throws org.apache.qpid.server.store.StoreException If the operation fails for any reason, or if the specified message does not exist.
      */
     private void addContent(final Transaction tx, long messageId, int offset,
-                            ByteBuffer contentBody) throws StoreException
+                            Collection<ByteBuffer> contentBody) throws StoreException
     {
         DatabaseEntry key = new DatabaseEntry();
         LongBinding.longToEntry(messageId, key);
         DatabaseEntry value = new DatabaseEntry();
-        ByteBufferBinding messageBinding = ByteBufferBinding.getInstance();
-        messageBinding.objectToEntry(contentBody, value);
+
+        int size = 0;
+
+        for(ByteBuffer buf : contentBody)
+        {
+            size += buf.remaining();
+        }
+        byte[] data = new byte[size];
+        ByteBuffer dst = ByteBuffer.wrap(data);
+        for(ByteBuffer buf : contentBody)
+        {
+            dst.put(buf.duplicate());
+        }
+        value.setData(data);
         try
         {
             OperationStatus status = getMessageContentDb().put(tx, key, value);
@@ -886,15 +903,15 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     static interface MessageDataRef<T extends StorableMessageMetaData>
     {
         T getMetaData();
-        ByteBuffer getData();
-        void setData(ByteBuffer data);
+        Collection<ByteBuffer> getData();
+        void setData(Collection<ByteBuffer> data);
         boolean isHardRef();
     }
 
     private static final class MessageDataHardRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
     {
         private final T _metaData;
-        private volatile ByteBuffer _data;
+        private volatile Collection<ByteBuffer> _data;
 
         private MessageDataHardRef(final T metaData)
         {
@@ -908,13 +925,13 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public ByteBuffer getData()
+        public Collection<ByteBuffer> getData()
         {
             return _data;
         }
 
         @Override
-        public void setData(final ByteBuffer data)
+        public void setData(final Collection<ByteBuffer> data)
         {
             _data = data;
         }
@@ -929,9 +946,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private static final class MessageData<T extends StorableMessageMetaData>
     {
         private T _metaData;
-        private SoftReference<ByteBuffer> _data;
+        private SoftReference<Collection<ByteBuffer>> _data;
 
-        private MessageData(final T metaData, final ByteBuffer data)
+        private MessageData(final T metaData, final Collection<ByteBuffer> data)
         {
             _metaData = metaData;
 
@@ -946,12 +963,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return _metaData;
         }
 
-        public ByteBuffer getData()
+        public Collection<ByteBuffer> getData()
         {
             return _data == null ? null : _data.get();
         }
 
-        public void setData(final ByteBuffer data)
+        public void setData(final Collection<ByteBuffer> data)
         {
             _data = new SoftReference<>(data);
         }
@@ -961,7 +978,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     private static final class MessageDataSoftRef<T extends StorableMessageMetaData> extends SoftReference<MessageData<T>> implements MessageDataRef<T>
     {
 
-        public MessageDataSoftRef(final T metadata, ByteBuffer data)
+        public MessageDataSoftRef(final T metadata, Collection<ByteBuffer> data)
         {
             super(new MessageData<T>(metadata, data));
         }
@@ -974,7 +991,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public ByteBuffer getData()
+        public Collection<ByteBuffer> getData()
         {
             MessageData<T> ref = get();
 
@@ -982,7 +999,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public void setData(final ByteBuffer data)
+        public void setData(final Collection<ByteBuffer> data)
         {
             MessageData<T> ref = get();
             if(ref != null)
@@ -1048,19 +1065,17 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         public void addContent(ByteBuffer src)
         {
             src = src.slice();
-            ByteBuffer data = _messageDataRef.getData();
+            Collection<ByteBuffer> data = _messageDataRef.getData();
             if(data == null)
             {
-                _messageDataRef.setData(src);
+                _messageDataRef.setData(Collections.singleton(src));
             }
             else
             {
-                int size = data.remaining() + src.remaining();
-                ByteBuffer buf = data.isDirect() ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
-                buf.put(data.duplicate());
-                buf.put(src.duplicate());
-                buf.flip();
-                _messageDataRef.setData(buf);
+                List<ByteBuffer> newCollection = new ArrayList<>(data.size()+1);
+                newCollection.addAll(data);
+                newCollection.add(src);
+                _messageDataRef.setData(Collections.unmodifiableCollection(newCollection));
             }
 
         }
@@ -1074,7 +1089,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         @Override
         public int getContent(int offsetInMessage, ByteBuffer dst)
         {
-            ByteBuffer data = getContentAsByteBuffer();
+            ByteBuffer data = ByteBufferUtils.combine(getContentAsByteBuffer());
             data = data.slice();
             int length = Math.min(dst.remaining(), data.remaining());
             data.limit(length);
@@ -1082,15 +1097,15 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return length;
         }
 
-        private ByteBuffer getContentAsByteBuffer()
+        private Collection<ByteBuffer> getContentAsByteBuffer()
         {
-            ByteBuffer data = _messageDataRef.getData();
+            Collection<ByteBuffer> data = _messageDataRef.getData();
             if(data == null)
             {
                 if(stored())
                 {
                     checkMessageStoreOpen();
-                    data = AbstractBDBMessageStore.this.getAllContent(_messageId);
+                    data = Collections.singleton(AbstractBDBMessageStore.this.getAllContent(_messageId));
                     T metaData = _messageDataRef.getMetaData();
                     if (metaData == null)
                     {
@@ -1104,20 +1119,57 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 }
                 else
                 {
-                    data = ByteBuffer.wrap(new byte[0]);
+                    data = Collections.emptyList();
                 }
             } return data;
         }
 
         @Override
-        public ByteBuffer getContent(int offsetInMessage, int size)
+        public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
         {
-            ByteBuffer data = getContentAsByteBuffer();
-            data = data.duplicate();
-            data.position(offsetInMessage);
-            data = data.slice();
-            data.limit(size);
-            return data;
+            int pos = 0;
+            int added = 0;
+
+            Collection<ByteBuffer> bufs = getContentAsByteBuffer();
+            List<ByteBuffer> content = new ArrayList<>(bufs.size());
+            for(ByteBuffer buf : bufs)
+            {
+                if(pos < offsetInMessage)
+                {
+                    final int remaining = buf.remaining();
+                    if(pos+ remaining >=offsetInMessage)
+                    {
+                        buf = buf.slice();
+                        buf.position(offsetInMessage-pos);
+                        buf = buf.slice();
+                        if(buf.remaining()>size)
+                        {
+                            buf.limit(size);
+                        }
+
+                        content.add(buf);
+                        added += buf.remaining();
+                    }
+                    pos+= remaining;
+
+                }
+                else
+                {
+                    buf = buf.slice();
+                    if(buf.remaining() > (size-added))
+                    {
+                        buf.limit(size-added);
+                    }
+                    content.add(buf.slice());
+                    added += buf.remaining();
+                }
+                if(added >= size)
+                {
+                    break;
+                }
+            }
+
+            return content;
         }
 
         synchronized Runnable store(Transaction txn)
@@ -1128,7 +1180,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 AbstractBDBMessageStore.this.storeMetaData(txn, _messageId, _messageDataRef.getMetaData());
                 AbstractBDBMessageStore.this.addContent(txn, _messageId, 0,
                                                         _messageDataRef.getData() == null
-                                                                ? EMPTY_BYTE_BUFFER
+                                                                ? Collections.<ByteBuffer>emptySet()
                                                                 : _messageDataRef.getData());
 
 

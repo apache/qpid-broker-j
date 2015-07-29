@@ -21,6 +21,7 @@
 package org.apache.qpid.server.store;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
@@ -104,7 +105,7 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
-        public ByteBuffer getContent(int offset, int size)
+        public Collection<ByteBuffer> getContent(int offset, int size)
         {
             return null;
         }

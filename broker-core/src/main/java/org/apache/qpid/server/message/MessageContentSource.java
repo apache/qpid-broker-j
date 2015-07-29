@@ -22,11 +22,12 @@
 package org.apache.qpid.server.message;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 
 public interface MessageContentSource
 {
     int getContent(ByteBuffer buf, int offset);
-    ByteBuffer getContent(int offset, int size);
+    Collection<ByteBuffer> getContent(int offset, int size);
 
     long getSize();
 }

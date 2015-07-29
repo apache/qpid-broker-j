@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.StoredMessage;
+import org.apache.qpid.util.ByteBufferUtils;
 
 public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageMetaData_1_0>
 {
@@ -68,7 +69,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         do
         {
 
-            b = storedMessage.getContent(offset,FRAGMENT_SIZE);
+            b = ByteBufferUtils.combine(storedMessage.getContent(offset,FRAGMENT_SIZE));
             if(b.hasRemaining())
             {
                 fragments.add(b);

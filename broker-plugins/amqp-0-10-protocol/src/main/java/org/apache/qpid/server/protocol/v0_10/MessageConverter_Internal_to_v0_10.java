@@ -21,6 +21,8 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
@@ -89,9 +91,9 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                     }
 
                     @Override
-                    public ByteBuffer getContent(int offsetInMessage, int size)
+                    public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
                     {
-                        return ByteBuffer.wrap(messageContent, offsetInMessage, size);
+                        return Collections.singleton(ByteBuffer.wrap(messageContent, offsetInMessage, size));
                     }
 
                     @Override

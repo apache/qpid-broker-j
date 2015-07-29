@@ -21,6 +21,8 @@
 package org.apache.qpid.server.protocol.converter.v0_8_v1_0;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -102,9 +104,9 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
             }
 
             @Override
-            public ByteBuffer getContent(int offsetInMessage, int size)
+            public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
             {
-                return ByteBuffer.wrap(messageContent, offsetInMessage, size);
+                return Collections.singleton(ByteBuffer.wrap(messageContent, offsetInMessage, size));
             }
 
             @Override

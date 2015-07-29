@@ -21,6 +21,8 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
@@ -101,12 +103,12 @@ public class MockStoredMessage implements StoredMessage<MessageMetaData>, Messag
 
 
 
-    public ByteBuffer getContent(int offsetInMessage, int size)
+    public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
     {
         ByteBuffer buf = ByteBuffer.allocate(size);
         getContent(offsetInMessage, buf);
         buf.position(0);
-        return  buf;
+        return Collections.singleton(buf);
     }
 
     public void remove()

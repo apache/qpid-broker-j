@@ -21,6 +21,7 @@
 package org.apache.qpid.server.txn;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 
 
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -106,7 +107,7 @@ class MockServerMessage implements ServerMessage
     }
 
 
-    public ByteBuffer getContent(int offset, int size)
+    public Collection<ByteBuffer> getContent(int offset, int size)
     {
         throw new UnsupportedOperationException();
     }

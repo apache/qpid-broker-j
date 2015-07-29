@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +66,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
         return new MessageTransferMessage(convertToStoredMessage(serverMsg), null);
     }
 
-    private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final ServerMessage serverMsg)
+    private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final ServerMessage<?> serverMsg)
     {
         final MessageMetaData_0_10 messageMetaData_0_10 = convertMetaData(serverMsg);
 
@@ -89,7 +91,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
-                    public ByteBuffer getContent(int offsetInMessage, int size)
+                    public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
                     {
                         return serverMsg.getContent(offsetInMessage, size);
                     }

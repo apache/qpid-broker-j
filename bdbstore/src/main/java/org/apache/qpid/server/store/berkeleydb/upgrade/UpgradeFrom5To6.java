@@ -266,7 +266,6 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
         NewDataBinding dataBinding = new NewDataBinding();
         DatabaseEntry value = new DatabaseEntry();
         dataBinding.objectToEntry(consolidatedData, value);
-
         put(newDatabase, txn, key, value);
     }
 

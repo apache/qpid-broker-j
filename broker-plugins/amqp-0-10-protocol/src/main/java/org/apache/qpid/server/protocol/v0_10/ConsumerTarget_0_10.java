@@ -55,6 +55,7 @@ import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.MessageTransfer;
 import org.apache.qpid.transport.Method;
 import org.apache.qpid.transport.Option;
+import org.apache.qpid.util.ByteBufferUtils;
 import org.apache.qpid.util.GZIPUtils;
 
 public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowCreditManager.FlowCreditManagerListener
@@ -265,7 +266,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         boolean msgCompressed = messageProps != null && GZIPUtils.GZIP_CONTENT_ENCODING.equals(messageProps.getContentEncoding());
 
 
-        ByteBuffer body = msg.getBody();
+        ByteBuffer body = ByteBufferUtils.combine(msg.getBody());
 
         boolean compressionSupported = _session.getConnection().getConnectionDelegate().isCompressionSupported();
 
@@ -295,7 +296,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                 body = ByteBuffer.wrap(compressed);
             }
         }
-        long size = body == null ? 0 : body.remaining();
 
         Header header = new Header(deliveryProps, messageProps, msg.getHeader() == null ? null : msg.getHeader().getNonStandardProperties());
 

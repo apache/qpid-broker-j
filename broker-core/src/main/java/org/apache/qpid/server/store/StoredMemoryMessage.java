@@ -22,6 +22,8 @@
 package org.apache.qpid.server.store;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
 
 public class StoredMemoryMessage<T extends StorableMessageMetaData> implements StoredMessage<T>, MessageHandle<T>
 {
@@ -101,7 +103,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
     }
 
 
-    public ByteBuffer getContent(int offsetInMessage, int size)
+    public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
     {
         if(_content == null)
         {
@@ -116,7 +118,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         }
 
         buf.limit(size);
-        return buf;
+        return Collections.singleton(buf);
     }
 
     public T getMetaData()

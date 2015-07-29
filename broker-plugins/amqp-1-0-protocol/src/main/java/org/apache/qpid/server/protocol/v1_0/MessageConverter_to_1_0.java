@@ -23,6 +23,8 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -255,7 +257,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         }
 
                         @Override
-                        public ByteBuffer getContent(int offsetInMessage, int size)
+                        public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
                         {
                             ByteBuffer buf = allData.duplicate();
                             buf.position(offsetInMessage);
@@ -264,7 +266,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                             {
                                 buf.limit(size);
                             }
-                            return buf;
+                            return Collections.singleton(buf);
                         }
 
                         @Override

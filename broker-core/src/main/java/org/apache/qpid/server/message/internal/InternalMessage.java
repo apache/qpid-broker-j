@@ -27,6 +27,8 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +40,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.util.ByteBufferInputStream;
+import org.apache.qpid.util.ByteBufferUtils;
 
 public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, InternalMessageMetaData>
 {
@@ -61,9 +64,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     {
         super(msg, null);
         _contentSize = msg.getMetaData().getContentSize();
-        ByteBuffer buf = msg.getContent(0, _contentSize);
+        Collection<ByteBuffer> bufs = msg.getContent(0, _contentSize);
 
-        try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(buf)))
+        try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
         {
             _messageBody = is.readObject();
 
@@ -235,9 +238,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     }
 
                     @Override
-                    public ByteBuffer getContent(final int offsetInMessage, final int size)
+                    public Collection<ByteBuffer> getContent(final int offsetInMessage, final int size)
                     {
-                        return ByteBuffer.wrap(bytes, offsetInMessage, size);
+                        return Collections.singleton(ByteBuffer.wrap(bytes, offsetInMessage, size));
                     }
 
                     @Override

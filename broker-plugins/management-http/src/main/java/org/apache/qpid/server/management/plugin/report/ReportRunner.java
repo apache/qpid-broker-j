@@ -44,6 +44,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
+import org.apache.qpid.util.ByteBufferUtils;
 
 public class ReportRunner<T>
 {
@@ -211,7 +212,7 @@ public class ReportRunner<T>
     }
 
 
-    private static ReportableMessage convertMessage(final ServerMessage message)
+    private static ReportableMessage convertMessage(final ServerMessage<?> message)
     {
         return new ReportableMessage()
         {
@@ -230,7 +231,7 @@ public class ReportRunner<T>
             @Override
             public ByteBuffer getContent()
             {
-                ByteBuffer content = message.getContent(0, (int) getSize());
+                ByteBuffer content = ByteBufferUtils.combine(message.getContent(0, (int) getSize()));
 
                 return content.asReadOnlyBuffer();
             }

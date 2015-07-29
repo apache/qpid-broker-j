@@ -21,6 +21,7 @@
 package org.apache.qpid.server.message;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
@@ -54,7 +55,7 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
 
     public int getContent(ByteBuffer buf, int offset);
 
-    ByteBuffer getContent(int offset, int size);
+    Collection<ByteBuffer> getContent(int offset, int size);
 
     Object getConnectionReference();
 }

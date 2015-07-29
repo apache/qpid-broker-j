@@ -23,6 +23,11 @@ package org.apache.qpid.server.protocol.v0_8;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.framing.AMQBody;
@@ -43,6 +48,7 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.util.ByteBufferUtils;
 import org.apache.qpid.util.GZIPUtils;
 
 public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
@@ -50,6 +56,8 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
     private static final int BASIC_CLASS_ID = 60;
     private final AMQPConnection_0_8 _connection;
     private static final AMQShortString GZIP_ENCODING = AMQShortString.valueOf(GZIPUtils.GZIP_CONTENT_ENCODING);
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolOutputConverterImpl.class);
 
     public ProtocolOutputConverterImpl(AMQPConnection_0_8 connection)
     {
@@ -102,7 +110,8 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         boolean compressionSupported = _connection.isCompressionSupported();
 
         if(msgCompressed && !compressionSupported &&
-                (modifiedContent = GZIPUtils.uncompressBufferToArray(message.getContent(0,bodySize))) != null)
+                (modifiedContent = GZIPUtils.uncompressBufferToArray(
+                        ByteBufferUtils.combine(message.getContent(0, bodySize)))) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
@@ -116,7 +125,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
                 && compressionSupported
                 && contentHeaderBody.getProperties().getEncoding()==null
                 && bodySize > _connection.getMessageCompressionThreshold()
-                && (modifiedContent = GZIPUtils.compressBufferToArray(message.getContent(0, bodySize))) != null)
+                && (modifiedContent = GZIPUtils.compressBufferToArray(ByteBufferUtils.combine(message.getContent(0, bodySize)))) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
@@ -154,9 +163,9 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             }
 
             @Override
-            public ByteBuffer getContent(final int offset, final int size)
+            public Collection<ByteBuffer> getContent(final int offset, final int size)
             {
-                return ByteBuffer.wrap(content, offset, size);
+                return Collections.singleton(ByteBuffer.wrap(content, offset, size));
             }
 
             @Override
@@ -238,29 +247,37 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
         public void writePayload(DataOutput buffer) throws IOException
         {
-            ByteBuffer buf = _message.getContent(_offset, _length);
+            Collection<ByteBuffer> bufs = _message.getContent(_offset, _length);
 
-            if(buf.hasArray())
+            for(ByteBuffer buf : bufs)
             {
-                buffer.write(buf.array(), buf.arrayOffset()+buf.position(), buf.remaining());
-            }
-            else
-            {
+                if (buf.hasArray())
+                {
+                    buffer.write(buf.array(), buf.arrayOffset() + buf.position(), buf.remaining());
+                }
+                else
+                {
 
-                byte[] data = new byte[_length];
+                    byte[] data = new byte[_length];
 
-                buf.get(data);
+                    buf.get(data);
 
-                buffer.write(data);
+                    buffer.write(data);
+                }
             }
         }
 
         @Override
         public long writePayload(final ByteBufferSender sender) throws IOException
         {
-            ByteBuffer buf = _message.getContent(_offset, _length);
-            long size = buf.remaining();
-            sender.send(buf.duplicate());
+
+            Collection<ByteBuffer> bufs = _message.getContent(_offset, _length);
+            long size = 0l;
+            for(ByteBuffer buf : bufs)
+            {
+                size += buf.remaining();
+                sender.send(buf.duplicate());
+            }
             return size;
         }
 

@@ -166,7 +166,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     }
 
     @Override
-    final public ByteBuffer getContent(int offset, int size)
+    final public Collection<ByteBuffer> getContent(int offset, int size)
     {
         return getStoredMessage().getContent(offset, size);
     }

@@ -21,6 +21,7 @@
 package org.apache.qpid.server.store;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 
 public interface StoredMessage<M extends StorableMessageMetaData>
 {
@@ -30,7 +31,7 @@ public interface StoredMessage<M extends StorableMessageMetaData>
 
     int getContent(int offsetInMessage, ByteBuffer dst);
 
-    ByteBuffer getContent(int offsetInMessage, int size);
+    Collection<ByteBuffer> getContent(int offsetInMessage, int size);
 
     void remove();
 

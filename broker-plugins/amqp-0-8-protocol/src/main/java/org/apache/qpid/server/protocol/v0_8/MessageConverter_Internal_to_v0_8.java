@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,9 +103,9 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
             }
 
             @Override
-            public ByteBuffer getContent(int offsetInMessage, int size)
+            public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
             {
-                return ByteBuffer.wrap(messageContent, offsetInMessage, size);
+                return Collections.singleton(ByteBuffer.wrap(messageContent, offsetInMessage, size));
             }
 
             @Override
