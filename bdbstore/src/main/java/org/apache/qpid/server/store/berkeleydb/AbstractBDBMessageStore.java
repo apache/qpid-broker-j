@@ -1263,7 +1263,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         @Override
         public boolean isInMemory()
         {
-            return _messageDataRef.isHardRef();
+            return _messageDataRef.isHardRef() || _messageDataRef.getData() != null;
         }
 
         private boolean stored()
@@ -1274,7 +1274,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         @Override
         public boolean flowToDisk()
         {
+
             flushToStore();
+            if(!_messageDataRef.isHardRef())
+            {
+                ((MessageDataSoftRef)_messageDataRef).clear();
+            }
             return true;
         }
 

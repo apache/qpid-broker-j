@@ -1697,20 +1697,27 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         @Override
         public boolean isInMemory()
         {
-            return _messageDataRef.isHardRef();
+            return _messageDataRef.isHardRef() || _messageDataRef.getData() != null;
         }
 
         @Override
         public boolean flowToDisk()
         {
-            try(Connection conn = newConnection())
+            if(!stored())
             {
-                store(conn);
-                conn.commit();
+                try (Connection conn = newConnection())
+                {
+                    store(conn);
+                    conn.commit();
+                }
+                catch (SQLException e)
+                {
+                    throw new StoreException("Failed to flow to disk", e);
+                }
             }
-            catch (SQLException e)
+            if(!_messageDataRef.isHardRef())
             {
-                throw new StoreException("Failed to flow to disk", e);
+                ((MessageDataSoftRef)_messageDataRef).clear();
             }
             return true;
         }
