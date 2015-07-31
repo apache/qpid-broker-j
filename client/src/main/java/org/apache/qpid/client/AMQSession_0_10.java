@@ -1278,17 +1278,11 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
     @Override
     void resubscribe() throws QpidException
     {
-        // Also reset the delivery tag tracker, to insure we dont
-        // return the first <total number of msgs received on session>
-        // messages sent by the brokers following the first rollback
-        // after failover
-        getHighestDeliveryTag().set(-1);
         // Clear txRangeSet/unacknowledgedMessageTags so we don't complete commands corresponding to
         //messages that came from the old broker.
         _txRangeSet.clear();
         _txSize = 0;
-        getUnacknowledgedMessageTags().clear();
-        getPrefetchedMessageTags().clear();
+
         super.resubscribe();
         getQpidSession().sync();
     }
@@ -1296,10 +1290,10 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
     @Override
     void stop() throws QpidException
     {
-        super.stop();
-        setUsingDispatcherForCleanup(true);
-        drainDispatchQueue();
-        setUsingDispatcherForCleanup(false);
+        // Stop the server delivering messages to this session.
+        suspendChannelIfNotClosing();
+        drainDispatchQueueWithDispatcher();
+        stopExistingDispatcher();
 
         for (BasicMessageConsumer consumer : getConsumers())
         {

@@ -27,7 +27,15 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jms.FailoverPolicy;
+import org.apache.qpid.server.management.plugin.HttpManagement;
+import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.Plugin;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.server.model.VirtualHostNode;
+import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.FailoverBaseCase;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.test.utils.TestUtils;
 import org.apache.qpid.url.URLSyntaxException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +56,7 @@ import javax.jms.TextMessage;
 import javax.jms.TransactionRolledBackException;
 import javax.naming.NamingException;
 
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1021,6 +1030,184 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
             {
                 connection.close();
             }
+        }
+    }
+
+    public void testFailoverWhenConnectionStopped() throws Exception
+    {
+        // not needed
+        _connection.close();
+
+        // not needed
+        stopBroker(getFailingPort());
+
+        // stop broker and add http management
+        stopBroker();
+        configureHttpManagement();
+        startBroker();
+
+        _connection  = createConnectionWithFailover();
+        init(Session.SESSION_TRANSACTED, true);
+
+        // populate broker with initial messages
+        final int testMessageNumber = 10;
+        produceMessages(TEST_MESSAGE_FORMAT, testMessageNumber, false);
+        _producerSession.commit();
+
+        final CountDownLatch stopFlag = new CountDownLatch(1);
+        final CountDownLatch consumerBlocker = new CountDownLatch(1);
+        final AtomicReference<Exception> exception = new AtomicReference<>();
+        final CountDownLatch messageCounter = new CountDownLatch(testMessageNumber);
+        _consumer.setMessageListener(new MessageListener()
+        {
+            @Override
+            public void onMessage(Message message)
+            {
+                if (consumerBlocker.getCount() == 1)
+                {
+                    try
+                    {
+                        consumerBlocker.await();
+
+                        _LOGGER.debug("Stopping connection from dispatcher thread");
+                        _connection.stop();
+                        _LOGGER.debug("Connection stopped from dispatcher thread");
+                        stopFlag.countDown();
+                    }
+                    catch (Exception e)
+                    {
+                        exception.set(e);
+                    }
+                }
+
+                try
+                {
+                    _consumerSession.commit();
+                    messageCounter.countDown();
+                }
+                catch (Exception e)
+                {
+                    exception.set(e);
+                }
+            }
+        });
+
+        int unacknowledgedMessageNumber = getUnacknowledgedMessageNumber(testMessageNumber);
+
+        assertEquals("Unexpected number of unacknowledged messages", testMessageNumber, unacknowledgedMessageNumber);
+
+        // stop blocking dispatcher thread
+        consumerBlocker.countDown();
+
+        boolean stopResult = stopFlag.await(2000, TimeUnit.MILLISECONDS);
+        _LOGGER.debug("Thread dump:" + TestUtils.dumpThreads());
+        assertTrue("Connection was not stopped" + (exception.get() == null ? "." : ":" + exception.get().getMessage()),
+                stopResult);
+        assertNull("Unexpected exception on stop :" + exception.get(), exception.get());
+        closeConnectionViaManagement();
+
+        // wait for failover to complete
+        awaitForFailoverCompletion(DEFAULT_FAILOVER_TIME);
+        assertFailoverException();
+
+        // publish more messages when connection stopped
+        produceMessages(TEST_MESSAGE_FORMAT, 2, false);
+        _producerSession.commit();
+
+        _connection.start();
+
+        assertTrue("Not all messages were delivered. Remaining message number " + messageCounter.getCount(), messageCounter.await(11000, TimeUnit.MILLISECONDS));
+        _connection.close();
+    }
+
+    private int getUnacknowledgedMessageNumber(int testMessageNumber) throws IOException, InterruptedException
+    {
+        int unacknowledgedMessageNumber = 0;
+        int i =0;
+        do
+        {
+            unacknowledgedMessageNumber = getUnacknowledgedMessageNumber();
+            if (unacknowledgedMessageNumber != testMessageNumber)
+            {
+                Thread.sleep(50);
+            }
+            else
+            {
+                break;
+            }
+        }
+        while (i++ < 20);
+        return unacknowledgedMessageNumber;
+    }
+
+    private void configureHttpManagement()
+    {
+        TestBrokerConfiguration config = getBrokerConfiguration();
+        config.addHttpManagementConfiguration();
+        String initialConfiguration = System.getProperty("virtualhostnode.context.blueprint");
+        if (initialConfiguration != null)
+        {
+            config.setObjectAttribute(VirtualHostNode.class, "test", VirtualHostNode.VIRTUALHOST_INITIAL_CONFIGURATION, initialConfiguration);
+        }
+        config.setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
+                "secureOnlyMechanisms",
+                "{}");
+
+
+        // set password authentication provider on http port for the tests
+        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
+                TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+        config.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
+        config.setSaved(false);
+    }
+
+    private void closeConnectionViaManagement() throws IOException
+    {
+        RestTestHelper restTestHelper = new RestTestHelper(getHttpManagementPort(getPort(0)));
+        try
+        {
+            restTestHelper.setUsernameAndPassword("webadmin", "webadmin");
+            List<Map<String, Object>> connections = restTestHelper.getJsonAsList("virtualhost/test/test/getConnections");
+            assertEquals("Unexpected number of connections", 1, connections.size());
+            Map<String, Object> connection = connections.get(0);
+            String connectionName = (String) connection.get(org.apache.qpid.server.model.Connection.NAME);
+            restTestHelper.submitRequest("connection/" + TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT + "/" + restTestHelper.encodeAsUTF( connectionName ), "DELETE", 200);
+        }
+        finally
+        {
+            restTestHelper.tearDown();
+        }
+    }
+
+    private int getUnacknowledgedMessageNumber() throws IOException
+    {
+        RestTestHelper restTestHelper = new RestTestHelper(getHttpManagementPort(getPort(0)));
+        try
+        {
+            restTestHelper.setUsernameAndPassword("webadmin", "webadmin");
+            List<Map<String, Object>> sessions = restTestHelper.getJsonAsList("session");
+            for(Map<String, Object> session: sessions )
+            {
+                List<Map<String, Object>> consumers =  (List<Map<String, Object>>)session.get("consumers");
+                if (consumers != null)
+                {
+                    Map<String, Object> consumer = consumers.get(0);
+                    Map<String, Object> stat = (Map<String, Object>)consumer.get("statistics");
+                    if (stat != null)
+                    {
+                        Number unacknowledgedMessages = (Number)stat.get("unacknowledgedMessages");
+                        if (unacknowledgedMessages != null)
+                        {
+                            return unacknowledgedMessages.intValue();
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+        finally
+        {
+            restTestHelper.tearDown();
         }
     }
 

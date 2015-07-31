@@ -179,6 +179,16 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         getUnacknowledgedMessageTags().remove(deliveryTag);
     }
 
+    @Override
+    void resubscribe() throws QpidException
+    {
+        // drain dispatch queue
+        drainDispatchQueueWithDispatcher();
+
+        getDeliveredMessageTags().clear();
+        super.resubscribe();
+    }
+
     public void sendQueueBind(final String queueName, final String routingKey, final Map<String,Object> arguments,
                               final String exchangeName, final AMQDestination destination,
                               final boolean nowait) throws QpidException, FailoverException

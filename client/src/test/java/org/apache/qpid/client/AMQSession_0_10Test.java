@@ -18,7 +18,14 @@
  */
 package org.apache.qpid.client;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import javax.jms.JMSException;
@@ -28,10 +35,12 @@ import javax.jms.MessageProducer;
 import javax.jms.StreamMessage;
 
 import org.apache.qpid.client.message.AMQPEncodedListMessage;
+import org.apache.qpid.client.message.UnprocessedMessage;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.*;
 import org.apache.qpid.transport.Connection.SessionFactory;
 import org.apache.qpid.transport.Connection.State;
+import org.apache.qpid.url.AMQBindingURL;
 
 /**
  * Tests AMQSession_0_10 methods.
@@ -455,6 +464,91 @@ public class AMQSession_0_10Test extends QpidTestCase
         command = findSentProtocolEventOfClass(session, QueueQuery.class, false);
         assertNotNull("QueueQuery command was not sent", command);
     }
+
+    public void testResubscribe() throws Exception
+    {
+        AMQSession_0_10 session = createAMQSession_0_10(AMQSession_0_10.AUTO_ACKNOWLEDGE);
+
+        AMQQueue queue1 = new AMQQueue(new AMQBindingURL("direct://amq.direct//test1?routingkey='test1'&durable='true'"));
+        session.createProducer(queue1);
+        BasicMessageConsumer_0_10 consumer1 = (BasicMessageConsumer_0_10)session.createConsumer(queue1);
+
+        AMQQueue queue2 = new AMQQueue(new AMQBindingURL("direct://amq.direct//test2?routingkey='test2'"));
+        session.createProducer(queue2);
+        BasicMessageConsumer_0_10 consumer2 = (BasicMessageConsumer_0_10)session.createConsumer(queue2);
+
+        UnprocessedMessage[] messages = new UnprocessedMessage[4];
+        for (int i =0; i< messages.length;i++ )
+        {
+            int consumerTag = i % 2 == 0 ? consumer1.getConsumerTag() : consumer2.getConsumerTag();
+            int deliveryTag = i + 1;
+            messages[i]= createMockMessage(deliveryTag, consumerTag);
+            session.messageReceived(messages[i]);
+            if (deliveryTag % 2 == 0)
+            {
+                session.addUnacknowledgedMessage(deliveryTag);
+            }
+        }
+
+        assertEquals("Unexpected highest delivery tag", 4, session.getHighestDeliveryTag().get());
+        assertFalse("Unexpected unacknowledged message tags", session.getUnacknowledgedMessageTags().isEmpty());
+        assertEquals("Unexpected consumers", new HashSet<>(Arrays.asList(consumer1, consumer2)), new HashSet<>(session.getConsumers()));
+
+        // verify test messages were not dispatched
+        for (UnprocessedMessage message: messages )
+        {
+            verify(message, never()).dispatch(session);
+        }
+
+        session.resubscribe();
+
+        assertEquals("Unexpected highest delivery tag", -1, session.getHighestDeliveryTag().get());
+        assertTrue("Unexpected unacknowledged message tags", session.getUnacknowledgedMessageTags().isEmpty());
+        assertTrue("Unexpected pre-fetched message tags", session.getPrefetchedMessageTags().isEmpty());
+        assertEquals("Unexpected consumers", new HashSet<>(Arrays.asList(consumer1, consumer2)), new HashSet<>(session.getConsumers()));
+    }
+
+    public void testFailoverPrep() throws Exception
+    {
+        AMQSession_0_10 session = createAMQSession_0_10(AMQSession_0_10.AUTO_ACKNOWLEDGE);
+
+        UnprocessedMessage[] messages = new UnprocessedMessage[4];
+        for (int i =0; i< messages.length;i++ )
+        {
+            int consumerTag = i % 2;
+            int deliveryTag = i + 1;
+            messages[i]= createMockMessage(deliveryTag, consumerTag);
+            session.messageReceived(messages[i]);
+            if (deliveryTag % 2 == 0)
+            {
+                session.addUnacknowledgedMessage(deliveryTag);
+            }
+        }
+
+        // verify test messages were not dispatched
+        for (UnprocessedMessage message: messages )
+        {
+            verify(message, never()).dispatch(session);
+        }
+
+        session.failoverPrep();
+
+        // verify dispatcher queue is drained
+        for (UnprocessedMessage message: messages )
+        {
+            verify(message).dispatch(session);
+        }
+    }
+
+    private UnprocessedMessage createMockMessage(long deliveryTag, int consumerTag)
+    {
+        UnprocessedMessage message = mock(UnprocessedMessage.class);
+        when(message.getConsumerTag()).thenReturn(consumerTag);
+        when(message.getDeliveryTag()).thenReturn(deliveryTag);
+        return message;
+    }
+
+
 
     private AMQAnyDestination createDestination()
     {

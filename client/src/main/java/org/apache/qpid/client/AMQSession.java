@@ -2324,6 +2324,15 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             _failedOverDirty = true;
         }
 
+        // Also reset the delivery tag tracker, to insure we dont
+        // return the first <total number of msgs received on session>
+        // messages sent by the brokers following the first rollback
+        // after failover
+        _highestDeliveryTag.set(-1);
+
+        _unacknowledgedMessageTags.clear();
+        _prefetchedMessageTags.clear();
+
         _rollbackMark.set(-1);
         resubscribeProducers();
         resubscribeConsumers();
@@ -2431,15 +2440,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     void stop() throws QpidException
     {
         // Stop the server delivering messages to this session.
-        if (!(isClosed() || isClosing()))
-        {
-            suspendChannel(true);
-        }
-
-        if (_dispatcher != null)
-        {
-            _dispatcher.setConnectionStopped(true);
-        }
+        suspendChannelIfNotClosing();
+        stopExistingDispatcher();
     }
 
     private void checkNotTransacted() throws JMSException
@@ -3685,6 +3687,32 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     public MessageEncryptionHelper getMessageEncryptionHelper()
     {
         return _messageEncryptionHelper;
+    }
+
+    protected void drainDispatchQueueWithDispatcher()
+    {
+        if (!_queue.isEmpty())
+        {
+            setUsingDispatcherForCleanup(true);
+            drainDispatchQueue();
+            setUsingDispatcherForCleanup(false);
+        }
+    }
+
+    protected void stopExistingDispatcher()
+    {
+        if (_dispatcher != null)
+        {
+            _dispatcher.setConnectionStopped(true);
+        }
+    }
+
+    protected void suspendChannelIfNotClosing() throws QpidException
+    {
+        if (!(isClosed() || isClosing()))
+        {
+            suspendChannel(true);
+        }
     }
 }
 
