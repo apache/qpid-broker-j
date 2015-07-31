@@ -1058,49 +1058,53 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         final CountDownLatch consumerBlocker = new CountDownLatch(1);
         final AtomicReference<Exception> exception = new AtomicReference<>();
         final CountDownLatch messageCounter = new CountDownLatch(testMessageNumber);
-        _consumer.setMessageListener(new MessageListener()
+        try
         {
-            @Override
-            public void onMessage(Message message)
+            _consumer.setMessageListener(new MessageListener()
             {
-                if (consumerBlocker.getCount() == 1)
+                @Override
+                public void onMessage(Message message)
                 {
+                    if (consumerBlocker.getCount() == 1)
+                    {
+                        try
+                        {
+                            consumerBlocker.await();
+
+                            _LOGGER.debug("Stopping connection from dispatcher thread");
+                            _connection.stop();
+                            _LOGGER.debug("Connection stopped from dispatcher thread");
+                            stopFlag.countDown();
+                        }
+                        catch (Exception e)
+                        {
+                            exception.set(e);
+                        }
+                    }
+
                     try
                     {
-                        consumerBlocker.await();
-
-                        _LOGGER.debug("Stopping connection from dispatcher thread");
-                        _connection.stop();
-                        _LOGGER.debug("Connection stopped from dispatcher thread");
-                        stopFlag.countDown();
+                        _consumerSession.commit();
+                        messageCounter.countDown();
                     }
                     catch (Exception e)
                     {
                         exception.set(e);
                     }
                 }
+            });
 
-                try
-                {
-                    _consumerSession.commit();
-                    messageCounter.countDown();
-                }
-                catch (Exception e)
-                {
-                    exception.set(e);
-                }
-            }
-        });
+            int unacknowledgedMessageNumber = getUnacknowledgedMessageNumber(testMessageNumber);
 
-        int unacknowledgedMessageNumber = getUnacknowledgedMessageNumber(testMessageNumber);
-
-        assertEquals("Unexpected number of unacknowledged messages", testMessageNumber, unacknowledgedMessageNumber);
-
-        // stop blocking dispatcher thread
-        consumerBlocker.countDown();
+            assertEquals("Unexpected number of unacknowledged messages", testMessageNumber, unacknowledgedMessageNumber);
+        }
+        finally
+        {
+            // stop blocking dispatcher thread
+            consumerBlocker.countDown();
+        }
 
         boolean stopResult = stopFlag.await(2000, TimeUnit.MILLISECONDS);
-        _LOGGER.debug("Thread dump:" + TestUtils.dumpThreads());
         assertTrue("Connection was not stopped" + (exception.get() == null ? "." : ":" + exception.get().getMessage()),
                 stopResult);
         assertNull("Unexpected exception on stop :" + exception.get(), exception.get());
