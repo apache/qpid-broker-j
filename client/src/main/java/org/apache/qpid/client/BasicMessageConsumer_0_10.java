@@ -154,8 +154,8 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
         }
         catch (QpidException e)
         {
-            _logger.error("Receivecd an Exception when receiving message",e);
-            getSession().getAMQConnection().exceptionReceived(e);
+            _logger.error("Received an Exception when receiving message", e);
+            getSession().getAMQConnection().closed(e);
         }
     }
 

@@ -20,14 +20,19 @@
  */
 package org.apache.qpid.client;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 
+import org.apache.qpid.AMQDisconnectedException;
 import org.apache.qpid.AMQInvalidArgumentException;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.jms.ConnectionURL;
+import org.apache.qpid.jms.Session;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AMQConnectionUnitTest extends QpidTestCase
@@ -93,7 +98,7 @@ public class AMQConnectionUnitTest extends QpidTestCase
         assertNotNull("Expected JMSException but got null", exception);
         assertEquals("JMSException error code is incorrect", Integer.toString(expectedException.getErrorCode().getCode()), exception.getErrorCode());
         assertNotNull("Expected not null message for JMSException", exception.getMessage());
-        assertTrue("JMSException error message is incorrect",  exception.getMessage().contains(expectedException.getMessage()));
+        assertTrue("JMSException error message is incorrect", exception.getMessage().contains(expectedException.getMessage()));
         assertEquals("JMSException linked exception is incorrect", expectedException, exception.getLinkedException());
     }
 
@@ -103,7 +108,7 @@ public class AMQConnectionUnitTest extends QpidTestCase
     public void testDefaultStreamMessageEncoding() throws Exception
     {
         MockAMQConnection connection = new MockAMQConnection(_url);
-        assertTrue("Legacy Stream message encoding should be the default",connection.isUseLegacyStreamMessageFormat());
+        assertTrue("Legacy Stream message encoding should be the default", connection.isUseLegacyStreamMessageFormat());
     }
 
     /**
@@ -112,7 +117,33 @@ public class AMQConnectionUnitTest extends QpidTestCase
     public void testStreamMessageEncodingProperty() throws Exception
     {
         MockAMQConnection connection = new MockAMQConnection(_url + "&use_legacy_stream_msg_format='false'");
-        assertFalse("Stream message encoding should be amqp/list",connection.isUseLegacyStreamMessageFormat());
+        assertFalse("Stream message encoding should be amqp/list", connection.isUseLegacyStreamMessageFormat());
     }
 
+    public void testClosed() throws Exception
+    {
+        final AtomicReference<Exception> exceptionCatcher = new AtomicReference<>();
+        MockAMQConnection connection = new MockAMQConnection(_url);
+
+        AMQSession session = mock(AMQSession.class);
+        connection.registerSession(1, session);
+        connection.setExceptionListener(new ExceptionListener()
+        {
+
+            @Override
+            public void onException(JMSException jmsException)
+            {
+                exceptionCatcher.set(jmsException);
+            }
+        });
+
+        AMQDisconnectedException exception = new AMQDisconnectedException("test", new Exception("chained"));
+        connection.closed(exception);
+        assertTrue("Connection shall be marked as closed", connection.isClosed());
+
+        Exception caughtException =  exceptionCatcher.get();
+        assertTrue("Unexpected exception was sent into exception listener", caughtException instanceof JMSException);
+        assertEquals("Unexpected exception cause was set in exception sent to exception listener", exception, caughtException.getCause());
+        verify(session).closed(exception);
+    }
 }

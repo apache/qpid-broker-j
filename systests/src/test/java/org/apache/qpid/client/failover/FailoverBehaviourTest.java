@@ -66,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -1123,6 +1124,61 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         assertTrue("Not all messages were delivered. Remaining message number " + messageCounter.getCount(), messageCounter.await(11000, TimeUnit.MILLISECONDS));
         _connection.close();
     }
+
+    public void testConnectionCloseInterruptsFailover() throws Exception
+    {
+        _connection.close();
+
+        final AtomicBoolean failoverCompleted = new AtomicBoolean(false);
+        final CountDownLatch failoverBegun = new CountDownLatch(1);
+
+        AMQConnection connection = createConnectionWithFailover();
+        connection.setConnectionListener(new ConnectionListener()
+        {
+            @Override
+            public void bytesSent(final long count)
+            {
+            }
+
+            @Override
+            public void bytesReceived(final long count)
+            {
+            }
+
+            @Override
+            public boolean preFailover(final boolean redirect)
+            {
+                failoverBegun.countDown();
+                _LOGGER.info("Failover started");
+                return true;
+            }
+
+            @Override
+            public boolean preResubscribe()
+            {
+                return true;
+            }
+
+            @Override
+            public void failoverComplete()
+            {
+                failoverCompleted.set(true);
+            }
+        });
+
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        assertNotNull("Session should be created", session);
+        killBroker();
+
+        boolean failingOver = failoverBegun.await(5000, TimeUnit.MILLISECONDS);
+        assertTrue("Failover did not begin with a reasonable time", failingOver);
+
+        // Failover will now be in flight
+        connection.close();
+        assertTrue("Failover policy is unexpectedly exhausted", connection.getFailoverPolicy().failoverAllowed());
+    }
+
+
 
     private int getUnacknowledgedMessageNumber(int testMessageNumber) throws IOException, InterruptedException
     {

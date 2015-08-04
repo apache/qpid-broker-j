@@ -1325,6 +1325,11 @@ public class QpidBrokerTestCase extends QpidTestCase
         return _brokerCommandTemplate;
     }
 
+    protected boolean isBrokerCleanBetweenTests()
+    {
+        return _brokerCleanBetweenTests;
+    }
+
     public static class BrokerHolderFactory
     {
 

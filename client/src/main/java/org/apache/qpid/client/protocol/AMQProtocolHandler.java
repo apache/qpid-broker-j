@@ -234,7 +234,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
             if (failoverNotAllowed)
             {
-                _connection.exceptionReceived(new AMQDisconnectedException(
+                _connection.closed(new AMQDisconnectedException(
                         "Server closed connection and reconnection not permitted.", _stateManager.getLastException()));
             }
             else if(failedWithoutConnecting)
@@ -244,7 +244,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
                     initialConnectionException = _stateManager.getLastException();
                 }
                 String message = initialConnectionException == null ? "" : initialConnectionException.getMessage();
-                _connection.exceptionReceived(new AMQDisconnectedException(
+                _connection.exceptionReceived(new QpidException(
                         "Connection could not be established: " + message, initialConnectionException));
             }
         }
@@ -341,9 +341,9 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
             // we notify the state manager of the error in case we have any clients waiting on a state
             // change. Those "waiters" will be interrupted and can handle the exception
-            QpidException amqe = new QpidException("Protocol handler error: " + cause, cause);
+            AMQDisconnectedException amqe = new AMQDisconnectedException("Failover could not re-establish connectivity: " + cause, cause);
             propagateExceptionToAllWaiters(amqe);
-            _connection.exceptionReceived(cause);
+            _connection.closed(amqe);
         }
         else
         {
@@ -697,7 +697,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
      */
     public void closeConnection(long timeout) throws QpidException
     {
-        if (!getStateManager().getCurrentState().equals(AMQState.CONNECTION_CLOSED))
+        if (getStateManager().getCurrentState().equals(AMQState.CONNECTION_OPEN))
         {
             // Connection is already closed then don't do a syncWrite
             try

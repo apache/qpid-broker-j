@@ -1075,8 +1075,12 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
             {
                 _logger.warn("Error closing session", e);
             }
+            getAMQConnection().exceptionReceived(_currentException);
         }
-        getAMQConnection().exceptionReceived(_currentException);
+        else
+        {
+            getAMQConnection().closed(_currentException);
+        }
     }
 
     public AMQMessageDelegateFactory getMessageDelegateFactory()

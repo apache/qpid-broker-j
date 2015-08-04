@@ -83,11 +83,6 @@ public abstract class Closeable
         return _closing.get();
     }
 
-    public void resetClosedFlag()
-    {
-        _closed.set(false);
-    }
-
     protected boolean setClosed()
     {
         return _closed.getAndSet(true);

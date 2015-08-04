@@ -682,8 +682,8 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
 
     public boolean attemptReconnection()
     {
-        BrokerDetails broker = null;
-        while (_failoverPolicy.failoverAllowed() && (broker = _failoverPolicy.getNextBrokerDetails()) != null)
+        BrokerDetails broker;
+        while (!isClosed() && !isClosing() && _failoverPolicy.failoverAllowed() && (broker = _failoverPolicy.getNextBrokerDetails()) != null)
         {
             if (attemptConnection(broker))
             {
@@ -725,7 +725,6 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
 
     public ProtocolVersion makeBrokerConnection(BrokerDetails brokerDetail) throws IOException, QpidException
     {
-        resetClosedFlag();
         return _delegate.makeBrokerConnection(brokerDetail);
     }
 
@@ -1414,6 +1413,23 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             _logger.debug("exceptionReceived done by:" + Thread.currentThread().getName(), cause);
         }
 
+        final JMSException je = convertToJMSException(cause);
+
+        try
+        {
+            if (hardError(cause))
+            {
+                closeSessions(cause);
+            }
+        }
+        finally
+        {
+            deliverJMSExceptionToExceptionListenerOrLog(je, cause);
+        }
+    }
+
+    private JMSException convertToJMSException(Throwable cause)
+    {
         final JMSException je;
         if (cause instanceof JMSException)
         {
@@ -1456,57 +1472,44 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
                                                                            + cause), cause);
             }
         }
+        return je;
+    }
 
-        boolean closer = false;
+    public void closed(Throwable cause)
+    {
+        _logger.debug("Closing closed connection {} ", this.toString());
 
-        // in the case of an IOException, MINA has closed the protocol session so we set _closed to true
-        // so that any generic client code that tries to close the connection will not mess up this error
-        // handling sequence
-        if (cause instanceof IOException || cause instanceof AMQDisconnectedException)
-        {
-            // If we have an IOE/AMQDisconnect there is no connection to close on.
-            setClosing(false);
-            closer = !setClosed();
-
-            _protocolHandler.getProtocolSession().notifyError(je);
-        }
-
+        final JMSException je = convertToJMSException(cause);
         try
         {
-            // decide if we are going to close the session
-            if (hardError(cause))
-            {
-                closer = (!setClosed()) || closer;
-                {
-                    _logger.info("Closing AMQConnection due to :" + cause);
-                }
-            }
-            else
-            {
-                _logger.info("Not a hard-error connection not closing: " + cause);
-            }
-
+            _protocolHandler.getProtocolSession().notifyError(je);
+            boolean performClose = !setClosed();
 
             // if we are closing the connection, close sessions first
-            if (closer)
+            if (performClose)
             {
-                // get the failover mutex before trying to close
-                synchronized (getFailoverMutex())
-                {
-                    try
-                    {
-                        closeAllSessions(cause, -1);
-                    }
-                    catch (JMSException e)
-                    {
-                        _logger.error("Error closing all sessions: " + e, e);
-                    }
-                }
+                closeSessions(cause);
             }
         }
         finally
         {
             deliverJMSExceptionToExceptionListenerOrLog(je, cause);
+        }
+    }
+
+    private void closeSessions(Throwable cause)
+    {
+        // get the failover mutex before trying to close
+        synchronized (getFailoverMutex())
+        {
+            try
+            {
+                closeAllSessions(cause, -1);
+            }
+            catch (JMSException e)
+            {
+                _logger.error("Error closing all sessions: " + e, e);
+            }
         }
     }
 
@@ -1808,12 +1811,6 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
     public boolean validateQueueOnSend()
     {
         return _validateQueueOnSend;
-    }
-
-    @Override
-    protected boolean setClosed()
-    {
-        return super.setClosed();
     }
 
     public int getMessageCompressionThresholdSize()

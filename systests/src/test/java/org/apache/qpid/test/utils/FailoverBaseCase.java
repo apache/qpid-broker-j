@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.test.utils;
 
+import java.io.File;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +77,11 @@ public class FailoverBaseCase extends QpidBrokerTestCase
             // Ensure we shutdown any secondary brokers, even if we are unable
             // to cleanly tearDown the QTC.
             stopBroker(getFailingPort());
-            FileUtils.deleteDirectory(System.getProperty("QPID_WORK") + "/" + getFailingPort());
+
+            if (isBrokerCleanBetweenTests())
+            {
+                FileUtils.deleteDirectory(System.getProperty("QPID_WORK") + File.separator + getFailingPort());
+            }
         }
     }
 

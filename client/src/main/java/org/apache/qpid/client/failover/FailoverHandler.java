@@ -22,6 +22,7 @@ package org.apache.qpid.client.failover;
 
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,10 +116,12 @@ public class FailoverHandler implements Runnable
         // has completed before retrying the operation.
         _amqProtocolHandler.notifyFailoverStarting();
 
+        final AMQConnection connection = _amqProtocolHandler.getConnection();
+
         // Since failover impacts several structures we protect them all with a single mutex. These structures
         // are also in child objects of the connection. This allows us to manipulate them without affecting
         // client code which runs in a separate thread.
-        synchronized (_amqProtocolHandler.getConnection().getFailoverMutex())
+        synchronized (connection.getFailoverMutex())
         {
             //Clear the exception now that we have the failover mutex there can be no one else waiting for a frame so
             // we can clear the exception.
@@ -135,7 +138,7 @@ public class FailoverHandler implements Runnable
             _amqProtocolHandler.setStateManager(new AMQStateManager());
 
 
-            if (!_amqProtocolHandler.getConnection().firePreFailover(_host != null))
+            if (!connection.firePreFailover(_host != null))
             {
                 _logger.info("Failover process veto-ed by client");
 
@@ -144,14 +147,18 @@ public class FailoverHandler implements Runnable
 
                 //todo: ritchiem these exceptions are useless... Would be better to attempt to propogate exception that
                 // prompted the failover event.
+
+                AMQDisconnectedException cause;
                 if (_host != null)
                 {
-                    _amqProtocolHandler.getConnection().exceptionReceived(new AMQDisconnectedException("Redirect was vetoed by client", null));
+                    cause = new AMQDisconnectedException("Redirect was vetoed by client", null);
                 }
                 else
                 {
-                    _amqProtocolHandler.getConnection().exceptionReceived(new AMQDisconnectedException("Failover was vetoed by client", null));
+                    cause = new AMQDisconnectedException("Failover was vetoed by client", null);
                 }
+
+                connection.closed(cause);
 
                 _amqProtocolHandler.getFailoverLatch().countDown();
                 _amqProtocolHandler.setFailoverLatch(null);
@@ -168,21 +175,19 @@ public class FailoverHandler implements Runnable
             // if _host has value then we are performing a redirect.
             if (_host != null)
             {
-                failoverSucceeded = _amqProtocolHandler.getConnection().attemptReconnection(_host, _port, true);
+                failoverSucceeded = connection.attemptReconnection(_host, _port, true);
             }
             else
             {
-                failoverSucceeded = _amqProtocolHandler.getConnection().attemptReconnection();
+                failoverSucceeded = connection.attemptReconnection();
             }
 
             if (!failoverSucceeded)
             {
                 //Restore Existing State Manager
                 _amqProtocolHandler.setStateManager(existingStateManager);
-
-                _amqProtocolHandler.getConnection().exceptionReceived(
-                        new AMQDisconnectedException("Server closed connection and no failover " +
-                                "was successful", null));
+                connection.closed(new AMQDisconnectedException("Server closed connection and no failover " +
+                        "was successful", null));
             }
             else
             {
@@ -209,17 +214,17 @@ public class FailoverHandler implements Runnable
                 _amqProtocolHandler.setStateManager(existingStateManager);
                 try
                 {
-                    if (_amqProtocolHandler.getConnection().firePreResubscribe())
+                    if (connection.firePreResubscribe())
                     {
                         _logger.info("Resubscribing on new connection");
-                        _amqProtocolHandler.getConnection().resubscribeSessions();
+                        connection.resubscribeSessions();
                     }
                     else
                     {
                         _logger.info("Client vetoed automatic resubscription");
                     }
 
-                    _amqProtocolHandler.getConnection().fireFailoverComplete();
+                    connection.fireFailoverComplete();
                     _amqProtocolHandler.setFailoverState(FailoverState.NOT_STARTED);
                     _logger.info("Connection failover completed successfully");
                 }

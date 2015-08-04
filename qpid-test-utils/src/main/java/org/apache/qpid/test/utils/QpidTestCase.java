@@ -164,6 +164,13 @@ public class QpidTestCase extends TestCase
         }
     }
 
+    @Override
+    protected void runTest() throws Throwable
+    {
+        _logger.info("========== run " + getTestName() + " ==========");
+        super.runTest();
+    }
+
     public String getTestProfileVirtualHostNodeType()
     {
         final String storeType = System.getProperty(VIRTUAL_HOST_NODE_TYPE);
@@ -273,6 +280,7 @@ public class QpidTestCase extends TestCase
     protected void setUp() throws Exception
     {
         _logger.info("========== start " + getTestName() + " ==========");
+        super.setUp();
     }
 
     protected void tearDown() throws Exception
