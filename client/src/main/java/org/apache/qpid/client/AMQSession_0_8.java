@@ -182,8 +182,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     @Override
     void resubscribe() throws QpidException
     {
-        // drain dispatch queue
-        drainDispatchQueueWithDispatcher();
+        clearDispatchQueue();
 
         getDeliveredMessageTags().clear();
         super.resubscribe();

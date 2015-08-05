@@ -313,7 +313,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
 
             final AtomicBoolean failoverDone = new AtomicBoolean();
 
-            _conn.doWithAllLocks(new Runnable()
+            ConnectionHelper.doWithAllConnectionAndSessionLocks(_conn, new Runnable()
             {
                 @Override
                 public void run()

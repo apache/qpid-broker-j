@@ -172,6 +172,26 @@ public class FlowControllingBlockingQueue<T>
         return _queue.iterator();
     }
 
+    public void clear()
+    {
+        _queue.clear();
+
+        if (!disableFlowControl && _listener != null)
+        {
+            synchronized (_listener)
+            {
+                int count = _count;
+                _count = 0;
+
+                if (count >= _flowControlLowThreshold)
+                {
+                    _listener.underThreshold(0);
+                }
+            }
+
+        }
+    }
+
     private void reportAboveIfNecessary()
     {
         synchronized (_listener)

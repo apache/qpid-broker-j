@@ -3693,17 +3693,24 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     {
         if (!_queue.isEmpty())
         {
-            setUsingDispatcherForCleanup(true);
-            drainDispatchQueue();
-            setUsingDispatcherForCleanup(false);
+            try
+            {
+                setUsingDispatcherForCleanup(true);
+                drainDispatchQueue();
+            }
+            finally
+            {
+                setUsingDispatcherForCleanup(false);
+            }
         }
     }
 
     protected void stopExistingDispatcher()
     {
-        if (_dispatcher != null)
+        Dispatcher dispatcher = _dispatcher;
+        if (dispatcher != null)
         {
-            _dispatcher.setConnectionStopped(true);
+            dispatcher.setConnectionStopped(true);
         }
     }
 
@@ -3713,6 +3720,11 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         {
             suspendChannel(true);
         }
+    }
+
+    protected void clearDispatchQueue()
+    {
+        _queue.clear();
     }
 }
 

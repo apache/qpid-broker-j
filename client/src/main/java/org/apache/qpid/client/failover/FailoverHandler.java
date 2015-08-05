@@ -23,6 +23,7 @@ package org.apache.qpid.client.failover;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.client.ConnectionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,10 +119,23 @@ public class FailoverHandler implements Runnable
 
         final AMQConnection connection = _amqProtocolHandler.getConnection();
 
-        // Since failover impacts several structures we protect them all with a single mutex. These structures
-        // are also in child objects of the connection. This allows us to manipulate them without affecting
-        // client code which runs in a separate thread.
-        synchronized (connection.getFailoverMutex())
+        ConnectionHelper.doWithAllConnectionAndSessionLocks(connection, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                performFailover();
+            }
+        });
+
+        _amqProtocolHandler.getFailoverLatch().countDown();
+    }
+
+    private void performFailover()
+    {
+        AMQConnection connection = _amqProtocolHandler.getConnection();
+
+        // brace to keep indentation
         {
             //Clear the exception now that we have the failover mutex there can be no one else waiting for a frame so
             // we can clear the exception.
@@ -236,8 +250,6 @@ public class FailoverHandler implements Runnable
                 }
             }
         }
-
-        _amqProtocolHandler.getFailoverLatch().countDown();
     }
 
     /**

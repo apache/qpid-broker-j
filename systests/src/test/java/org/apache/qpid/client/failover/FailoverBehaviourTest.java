@@ -1036,92 +1036,78 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
 
     public void testFailoverWhenConnectionStopped() throws Exception
     {
-        // not needed
-        _connection.close();
-
-        // not needed
-        stopBroker(getFailingPort());
-
-        // stop broker and add http management
-        stopBroker();
-        configureHttpManagement();
-        startBroker();
-
-        _connection  = createConnectionWithFailover();
         init(Session.SESSION_TRANSACTED, true);
 
-        // populate broker with initial messages
-        final int testMessageNumber = 10;
-        produceMessages(TEST_MESSAGE_FORMAT, testMessageNumber, false);
+        produceMessages();
         _producerSession.commit();
 
         final CountDownLatch stopFlag = new CountDownLatch(1);
-        final CountDownLatch consumerBlocker = new CountDownLatch(1);
         final AtomicReference<Exception> exception = new AtomicReference<>();
-        final CountDownLatch messageCounter = new CountDownLatch(testMessageNumber);
-        try
-        {
-            _consumer.setMessageListener(new MessageListener()
-            {
-                @Override
-                public void onMessage(Message message)
-                {
-                    if (consumerBlocker.getCount() == 1)
-                    {
-                        try
-                        {
-                            consumerBlocker.await();
+        final CountDownLatch expectedMessageLatch = new CountDownLatch(_messageNumber);
+        final AtomicInteger counter = new AtomicInteger();
 
-                            _LOGGER.debug("Stopping connection from dispatcher thread");
-                            _connection.stop();
-                            _LOGGER.debug("Connection stopped from dispatcher thread");
-                            stopFlag.countDown();
-                        }
-                        catch (Exception e)
-                        {
-                            exception.set(e);
-                        }
+        _consumer.setMessageListener(new MessageListener()
+        {
+            @Override
+            public void onMessage(Message message)
+            {
+                if (stopFlag.getCount() == 1)
+                {
+                    try
+                    {
+                        _LOGGER.debug("Stopping connection from dispatcher thread");
+                        _connection.stop();
+                        _LOGGER.debug("Connection stopped from dispatcher thread");
+
+                    }
+                    catch (Exception e)
+                    {
+                        exception.set(e);
+                    }
+                    finally
+                    {
+                        stopFlag.countDown();
+
+                        failBroker(getFailingPort());
                     }
 
+                }
+                else
+                {
                     try
                     {
                         _consumerSession.commit();
-                        messageCounter.countDown();
+                        counter.incrementAndGet();
+                        expectedMessageLatch.countDown();
                     }
                     catch (Exception e)
                     {
                         exception.set(e);
                     }
                 }
-            });
+            }
+        });
 
-            int unacknowledgedMessageNumber = getUnacknowledgedMessageNumber(testMessageNumber);
-
-            assertEquals("Unexpected number of unacknowledged messages", testMessageNumber, unacknowledgedMessageNumber);
-        }
-        finally
-        {
-            // stop blocking dispatcher thread
-            consumerBlocker.countDown();
-        }
 
         boolean stopResult = stopFlag.await(2000, TimeUnit.MILLISECONDS);
         assertTrue("Connection was not stopped" + (exception.get() == null ? "." : ":" + exception.get().getMessage()),
                 stopResult);
         assertNull("Unexpected exception on stop :" + exception.get(), exception.get());
-        closeConnectionViaManagement();
 
         // wait for failover to complete
         awaitForFailoverCompletion(DEFAULT_FAILOVER_TIME);
         assertFailoverException();
 
-        // publish more messages when connection stopped
-        produceMessages(TEST_MESSAGE_FORMAT, 2, false);
+        resendMessagesIfNecessary();
         _producerSession.commit();
 
         _connection.start();
 
-        assertTrue("Not all messages were delivered. Remaining message number " + messageCounter.getCount(), messageCounter.await(11000, TimeUnit.MILLISECONDS));
+        assertTrue("Not all messages were delivered. Remaining message number " + expectedMessageLatch.getCount(), expectedMessageLatch.await(11000, TimeUnit.MILLISECONDS));
+
+        Thread.sleep(500l);
+        assertEquals("Unexpected messages recieved ", _messageNumber, counter.get());
+
         _connection.close();
     }
 
