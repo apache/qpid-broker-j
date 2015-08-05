@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.store.MessageDurability;
@@ -181,7 +183,7 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
 
     void visit(QueueEntryVisitor visitor);
 
-    int deleteAndReturnCount();
+    ListenableFuture<Integer> deleteAndReturnCount();
 
     void setNotificationListener(QueueNotificationListener listener);
 

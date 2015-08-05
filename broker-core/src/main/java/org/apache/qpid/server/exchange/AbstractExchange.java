@@ -70,7 +70,6 @@ import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
@@ -89,7 +88,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private VirtualHostImpl _virtualHost;
 
-    private final List<Action<ExchangeImpl>> _closeTaskList = new CopyOnWriteArrayList<Action<ExchangeImpl>>();
+    private final List<Action<ExchangeImpl>> _closeTaskList = new CopyOnWriteArrayList<>();
 
     /**
      * Whether the exchange is automatically deleted once all queues have detached from it
@@ -113,8 +112,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
     private final ConcurrentMap<BindingIdentifier, BindingImpl> _bindingsMap = new ConcurrentHashMap<BindingIdentifier, BindingImpl>();
 
-    private StateChangeListener<BindingImpl, State> _bindingListener;
-
     public AbstractExchange(Map<String, Object> attributes, VirtualHostImpl vhost)
     {
         super(parentsMap(vhost), attributes);
@@ -127,18 +124,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         _virtualHost = vhost;
 
         _logSubject = new ExchangeLogSubject(this, this.getVirtualHost());
-
-        _bindingListener = new StateChangeListener<BindingImpl, State>()
-        {
-            @Override
-            public void stateChanged(final BindingImpl binding, final State oldState, final State newState)
-            {
-                if(newState == State.DELETED)
-                {
-                    removeBinding(binding);
-                }
-            }
-        };
     }
 
     @Override
@@ -187,7 +172,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     }
 
     @Override
-    public void deleteWithChecks()
+    public ListenableFuture<Void> deleteWithChecks()
     {
         if(hasReferrers())
         {
@@ -201,28 +186,44 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
         if(_closed.compareAndSet(false,true))
         {
-            List<BindingImpl> bindings = new ArrayList<BindingImpl>(_bindings);
+            List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>();
+            ListenableFuture<Void> atLeastOne = Futures.immediateFuture(null);
+            removeBindingFutures.add(atLeastOne);
+
+            List<BindingImpl> bindings = new ArrayList<>(_bindings);
             for(BindingImpl binding : bindings)
             {
-                binding.removeStateChangeListener(_bindingListener);
-                removeBinding(binding);
+                ListenableFuture<Void> deleteFuture = binding.deleteAsync();
+                removeBindingFutures.add(deleteFuture);
             }
 
-            if(_alternateExchange != null)
+            ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
+            return doAfter(combinedFuture, new Runnable()
             {
-                ((ExchangeImpl)_alternateExchange).removeReference(this);
-            }
+                @Override
+                public void run()
+                {
+                    if (_alternateExchange != null)
+                    {
+                        ((ExchangeImpl) _alternateExchange).removeReference(AbstractExchange.this);
+                    }
 
-            getEventLogger().message(_logSubject, ExchangeMessages.DELETED());
+                    getEventLogger().message(_logSubject, ExchangeMessages.DELETED());
 
-            for(Action<ExchangeImpl> task : _closeTaskList)
-            {
-                task.performAction(this);
-            }
-            _closeTaskList.clear();
-
+                    for (Action<ExchangeImpl> task : _closeTaskList)
+                    {
+                        task.performAction(AbstractExchange.this);
+                    }
+                    _closeTaskList.clear();
+                    deleted();
+                }
+            });
         }
-        deleted();
+        else
+        {
+            deleted();
+            return Futures.immediateFuture(null);
+        }
     }
 
     @Override
@@ -633,8 +634,8 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         }));
     }
 
-
-    private void removeBinding(final BindingImpl binding)
+    @Override
+    public ListenableFuture<Void> removeBindingAsync(final BindingImpl binding)
     {
         String bindingKey = binding.getBindingKey();
         AMQQueue queue = binding.getAMQQueue();
@@ -657,37 +658,41 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
             queue.removeBinding(b);
 
             // TODO - RG - Fix bindings!
-            if(getTaskExecutor().isTaskExecutorThread())
-            {
-                b.deleteAsync();
-            }
-            else
-            {
-                b.delete();
-            }
-
-            autoDeleteIfNeccessary();
-
+            return autoDeleteIfNecessaryAsync();
+        }
+        else
+        {
+            return Futures.immediateFuture(null);
         }
 
     }
 
-    private void autoDeleteIfNeccessary()
+    private ListenableFuture<Void> autoDeleteIfNecessaryAsync()
     {
-        if ((getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS || getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_LINKS )
-            && getBindingCount() == 0)
+        if (isAutoDeletePending())
         {
             _logger.debug("Auto-deleting exchange: {}", this);
 
-            if(getTaskExecutor().isTaskExecutorThread())
-            {
-                deleteAsync();
-            }
-            else
-            {
-                delete();
-            }
+            return deleteAsync();
         }
+
+        return Futures.immediateFuture(null);
+    }
+
+    private void autoDeleteIfNecessary()
+    {
+        if (isAutoDeletePending())
+        {
+            _logger.debug("Auto-deleting exchange: {}", this);
+
+            delete();
+        }
+    }
+
+    private boolean isAutoDeletePending()
+    {
+        return (getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS || getLifetimePolicy() == LifetimePolicy.DELETE_ON_NO_LINKS )
+            && getBindingCount() == 0;
     }
 
     public BindingImpl getBinding(String bindingKey, AMQQueue queue)
@@ -782,8 +787,6 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     @Override
     public void addBinding(final BindingImpl b)
     {
-        b.addStateChangeListener(_bindingListener);
-
         BindingIdentifier identifier = new BindingIdentifier(b.getName(), b.getAMQQueue());
 
         _bindingsMap.put(identifier, b);
@@ -818,9 +821,16 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         try
         {
-            _virtualHost.removeExchange(this,true);
-            preSetAlternateExchange();
-            setState(State.DELETED);
+            ListenableFuture<Void> removeExchangeFuture = _virtualHost.removeExchangeAsync(this, true);
+            return doAfter(removeExchangeFuture, new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    preSetAlternateExchange();
+                    setState(State.DELETED);
+                }
+            });
         }
         catch (ExchangeIsAlternateException e)
         {
@@ -917,7 +927,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         else
         {
             binding.delete();
-            autoDeleteIfNeccessary();
+            autoDeleteIfNecessary();
             return true;
         }
     }

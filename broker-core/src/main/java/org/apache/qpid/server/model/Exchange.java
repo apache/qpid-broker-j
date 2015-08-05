@@ -23,6 +23,8 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.Map;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.message.MessageDestination;
 
 @ManagedObject( description = Exchange.CLASS_DESCRIPTION )
@@ -69,5 +71,5 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
 
 
 
-    void deleteWithChecks();
+    ListenableFuture<Void> deleteWithChecks();
 }

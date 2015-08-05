@@ -79,7 +79,7 @@ public class TaskExecutorImpl implements TaskExecutor
     {
         if (_running.compareAndSet(false, true))
         {
-            LOGGER.debug("Starting task executor");
+            LOGGER.debug("Starting task executor {}", _name);
             _executor = Executors.newFixedThreadPool(1, new ThreadFactory()
             {
                 @Override
@@ -101,7 +101,7 @@ public class TaskExecutorImpl implements TaskExecutor
             ExecutorService executor = _executor;
             if (executor != null)
             {
-                LOGGER.debug("Stopping task executor immediately");
+                LOGGER.debug("Stopping task executor {} immediately", _name);
                 List<Runnable> cancelledTasks = executor.shutdownNow();
                 for (Runnable runnable : cancelledTasks)
                 {
@@ -126,7 +126,7 @@ public class TaskExecutorImpl implements TaskExecutor
             ExecutorService executor = _executor;
             if (executor != null)
             {
-                LOGGER.debug("Stopping task executor");
+                LOGGER.debug("Stopping task executor {}", _name);
                 executor.shutdown();
                 _executor = null;
                 _taskThread = null;
@@ -138,19 +138,18 @@ public class TaskExecutorImpl implements TaskExecutor
     @Override
     public <T> Future<T> submit(Task<T> task)
     {
-        checkState();
-        LOGGER.debug("Submitting task: {}", task);
-        Future<T> future = null;
+        checkState(task);
         if (isTaskExecutorThread())
         {
+            LOGGER.debug("Running task {} immediately", task);
             T result = executeTask(task);
             return new ImmediateFuture(result);
         }
         else
         {
-            future = _executor.submit(new CallableWrapper(task));
+            LOGGER.debug("Submitting task {} to executor {}", task, _name);
+            return _executor.submit(new CallableWrapper(task));
         }
-        return future;
     }
 
     @Override
@@ -303,11 +302,12 @@ public class TaskExecutorImpl implements TaskExecutor
         return Thread.currentThread() == _taskThread;
     }
 
-    private void checkState()
+    private <T> void checkState(Task<T> task)
     {
         if (!_running.get())
         {
-            throw new IllegalStateException("Task executor is not in ACTIVE state");
+            LOGGER.error("Task executor {} is not in ACTIVE state, unable to execute : {} ", _name, task);
+            throw new IllegalStateException("Task executor " + _name + " is not in ACTIVE state");
         }
     }
 

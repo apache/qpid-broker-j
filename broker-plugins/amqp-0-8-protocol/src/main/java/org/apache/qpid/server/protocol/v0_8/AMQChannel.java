@@ -889,6 +889,10 @@ public class AMQChannel
         {
             unsubscribeAllConsumers();
             setDefaultQueue(null);
+            if(_modelObject != null)
+            {
+                _modelObject.delete();
+            }
             for (Action<? super AMQChannel> task : _taskList)
             {
                 task.performAction(this);

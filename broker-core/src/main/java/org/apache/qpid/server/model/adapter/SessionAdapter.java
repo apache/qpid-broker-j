@@ -46,6 +46,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
 {
     // Attributes
     private final AMQSessionModel _session;
+    private final Action _deleteModelTask;
 
     public SessionAdapter(final AbstractAMQPConnection<?> connectionAdapter,
                           final AMQSessionModel session)
@@ -68,7 +69,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
             }
         });
         session.setModelObject(this);
-        session.addDeleteTask(new Action()
+        _deleteModelTask = new Action()
         {
             @Override
             public void performAction(final Object object)
@@ -76,7 +77,8 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
                 session.removeDeleteTask(this);
                 deleteAsync();
             }
-        });
+        };
+        session.addDeleteTask(_deleteModelTask);
         setState(State.ACTIVE);
     }
 
@@ -177,6 +179,7 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     {
         deleted();
         setState(State.DELETED);
+        _session.removeDeleteTask(_deleteModelTask);
         return Futures.immediateFuture(null);
     }
 

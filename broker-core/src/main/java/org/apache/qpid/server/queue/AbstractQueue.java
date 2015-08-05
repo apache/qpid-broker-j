@@ -38,7 +38,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -52,6 +56,7 @@ import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageInfoFacade;
 import org.apache.qpid.server.model.CustomRestHeaders;
 import org.apache.qpid.server.model.RestContentHeader;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1866,88 +1871,131 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _deleteTaskList.remove(task);
     }
 
-    // TODO list all thrown exceptions
-    public int deleteAndReturnCount()
+    public ListenableFuture<Integer> deleteAndReturnCount()
     {
         // Check access
         _virtualHost.getSecurityManager().authoriseDelete(this);
 
+        final ListenableFuture<Integer> returnCountFuture = Futures.immediateFuture(getQueueDepthMessages());
         if (!_deleted.getAndSet(true))
         {
+            final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>();
+            final ListenableFuture<Void> atLeastOne = Futures.immediateFuture(null);
+            removeBindingFutures.add(atLeastOne);
+            final ArrayList<BindingImpl> bindingCopy = new ArrayList<>(_bindings);
 
-            final ArrayList<BindingImpl> bindingCopy = new ArrayList<BindingImpl>(_bindings);
-
+            // TODO - RG - Need to sort out bindings!
             for (BindingImpl b : bindingCopy)
             {
-                // TODO - RG - Need to sort out bindings!
-                if(getTaskExecutor().isTaskExecutorThread())
-                {
-                    b.deleteAsync();
-                }
-                else
-                {
-                    b.delete();
-                }
+                final ListenableFuture<Void> removeFuture = b.deleteAsync();
+                removeBindingFutures.add(removeFuture);
             }
 
-            QueueConsumerList.ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
-
-            while (consumerNodeIterator.advance())
+            ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
+            final ListenableFuture<Void> result = doAfter(combinedFuture, new Runnable()
             {
-                QueueConsumer s = consumerNodeIterator.getNode().getConsumer();
-                if (s != null)
+                @Override
+                public void run()
                 {
-                    s.queueDeleted();
-                }
-            }
+                    QueueConsumerList.ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
 
+                    while (consumerNodeIterator.advance())
+                    {
+                        QueueConsumer s = consumerNodeIterator.getNode().getConsumer();
+                        if (s != null)
+                        {
+                            s.queueDeleted();
+                        }
+                    }
 
-            List<QueueEntry> entries = getMessagesOnTheQueue(new QueueEntryFilter()
-            {
+                    List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
 
-                public boolean accept(QueueEntry entry)
-                {
-                    return entry.acquire();
-                }
+                    routeToAlternate(entries);
 
-                public boolean filterComplete()
-                {
-                    return false;
+                    preSetAlternateExchange();
+
+                    performQueueDeleteTasks();
+                    deleted();
+
+                    //Log Queue Deletion
+                    getEventLogger().message(_logSubject, QueueMessages.DELETED());
                 }
             });
 
-            ServerTransaction txn = new LocalTransaction(getVirtualHost().getMessageStore());
-
-
-            for(final QueueEntry entry : entries)
+            return new ListenableFuture<Integer>()
             {
-                // TODO log requeues with a post enqueue action
-                int requeues = entry.routeToAlternate(null, txn);
-
-                if(requeues == 0)
+                @Override
+                public void addListener(final Runnable listener, final Executor executor)
                 {
-                    // TODO log discard
+                    result.addListener(listener, executor);
                 }
-            }
 
-            txn.commit();
+                @Override
+                public boolean cancel(final boolean mayInterruptIfRunning)
+                {
+                    return result.cancel(mayInterruptIfRunning);
+                }
 
-            preSetAlternateExchange();
+                @Override
+                public boolean isCancelled()
+                {
+                    return result.isCancelled();
+                }
 
-            for (Action<? super AMQQueue> task : _deleteTaskList)
-            {
-                task.performAction(this);
-            }
+                @Override
+                public boolean isDone()
+                {
+                    return result.isDone();
+                }
 
-            _deleteTaskList.clear();
-            closeAsync();
-            deleted();
-            //Log Queue Deletion
-            getEventLogger().message(_logSubject, QueueMessages.DELETED());
+                @Override
+                public Integer get() throws InterruptedException, ExecutionException
+                {
+                    result.get();
+                    return returnCountFuture.get();
+                }
 
+                @Override
+                public Integer get(final long timeout, final TimeUnit unit)
+                        throws InterruptedException, ExecutionException, TimeoutException
+                {
+                    result.get(timeout, unit);
+                    return returnCountFuture.get();
+                }
+            };
         }
-        return getQueueDepthMessages();
+        else
+        {
+           return returnCountFuture;
+        }
+    }
 
+    protected void routeToAlternate(List<QueueEntry> entries)
+    {
+        ServerTransaction txn = new LocalTransaction(getVirtualHost().getMessageStore());
+
+        for(final QueueEntry entry : entries)
+        {
+            // TODO log requeues with a post enqueue action
+            int requeues = entry.routeToAlternate(null, txn);
+
+            if(requeues == 0)
+            {
+                // TODO log discard
+            }
+        }
+
+        txn.commit();
+    }
+
+    protected void performQueueDeleteTasks()
+    {
+        for (Action<? super AMQQueue> task : _deleteTaskList)
+        {
+            task.performAction(this);
+        }
+
+        _deleteTaskList.clear();
     }
 
     @Override
@@ -2551,6 +2599,19 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
+    private static class AcquireAllQueueEntryFilter implements QueueEntryFilter
+    {
+        public boolean accept(QueueEntry entry)
+        {
+            return entry.acquire();
+        }
+
+        public boolean filterComplete()
+        {
+            return false;
+        }
+    }
+
     private final class QueueEntryListener implements StateChangeListener<MessageInstance, QueueEntry.State>
     {
 
@@ -2994,10 +3055,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
-        _virtualHost.removeQueue(this);
-        preSetAlternateExchange();
-        setState(State.DELETED);
-        return Futures.immediateFuture(null);
+        ListenableFuture<Integer> removeFuture = _virtualHost.removeQueueAsync(this);
+        return doAfter(removeFuture, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                preSetAlternateExchange();
+                setState(State.DELETED);
+            }
+        });
+
     }
 
 

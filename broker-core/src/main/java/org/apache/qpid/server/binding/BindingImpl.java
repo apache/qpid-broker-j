@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -49,13 +48,12 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.util.StateChangeListener;
 
 public class BindingImpl
         extends AbstractConfiguredObject<BindingImpl>
         implements org.apache.qpid.server.model.Binding<BindingImpl>
 {
-    private String _bindingKey;
+    private final String _bindingKey;
     private final AMQQueue _queue;
     private final ExchangeImpl _exchange;
     @ManagedAttributeField
@@ -64,8 +62,6 @@ public class BindingImpl
     private BindingLogSubject _logSubject;
 
     final AtomicBoolean _deleted = new AtomicBoolean();
-    final CopyOnWriteArrayList<StateChangeListener<BindingImpl,State>> _stateChangeListeners =
-            new CopyOnWriteArrayList<StateChangeListener<BindingImpl, State>>();
 
     public BindingImpl(Map<String, Object> attributes, AMQQueue queue, ExchangeImpl exchange)
     {
@@ -115,7 +111,7 @@ public class BindingImpl
     {
         if(!attributes.containsKey(DURABLE))
         {
-            attributes = new HashMap(attributes);
+            attributes = new HashMap<>(attributes);
             attributes.put(DURABLE, queue.isDurable() && exchange.isDurable());
         }
         return attributes;
@@ -193,6 +189,7 @@ public class BindingImpl
         return result;
     }
 
+    @Override
     public String toString()
     {
         return "Binding{bindingKey="+_bindingKey+", exchange="+_exchange+", queue="+_queue+", id= " + getId() + " }";
@@ -201,18 +198,27 @@ public class BindingImpl
     @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
-        if(_deleted.compareAndSet(false,true))
+        if (_deleted.compareAndSet(false, true))
         {
-            for(StateChangeListener<BindingImpl,State> listener : _stateChangeListeners)
+            ListenableFuture<Void> removeBinding = _exchange.removeBindingAsync(this);
+            return doAfter(removeBinding, new Runnable()
             {
-                listener.stateChanged(this, State.ACTIVE, State.DELETED);
-            }
-            getEventLogger().message(_logSubject, BindingMessages.DELETED());
+                @Override
+                public void run()
+                {
+                    getEventLogger().message(_logSubject, BindingMessages.DELETED());
+                    deleted();
+                    setState(State.DELETED);
+                }
+            });
         }
-
-        deleted();
-        setState(State.DELETED);
-        return Futures.immediateFuture(null);
+        else
+        {
+            getEventLogger().message(_logSubject, BindingMessages.DELETED());
+            deleted();
+            setState(State.DELETED);
+            return Futures.immediateFuture(null);
+        }
     }
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.ACTIVE)
@@ -220,16 +226,6 @@ public class BindingImpl
     {
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
-    }
-
-    public void addStateChangeListener(StateChangeListener<BindingImpl,State> listener)
-    {
-        _stateChangeListeners.add(listener);
-    }
-
-    public void removeStateChangeListener(StateChangeListener<BindingImpl,State> listener)
-    {
-        _stateChangeListeners.remove(listener);
     }
 
     private EventLogger getEventLogger()

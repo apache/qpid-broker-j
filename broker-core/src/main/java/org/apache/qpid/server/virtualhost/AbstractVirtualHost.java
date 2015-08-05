@@ -706,10 +706,14 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public int removeQueue(AMQQueue<?> queue)
     {
-        int purged = queue.deleteAndReturnCount();
+        return doSync(removeQueueAsync(queue));
+    }
 
-        return purged;
-}
+    @Override
+    public ListenableFuture<Integer> removeQueueAsync(final AMQQueue<?> queue)
+    {
+        return queue.deleteAndReturnCount();
+    }
 
     public AMQQueue<?> createQueue(Map<String, Object> attributes) throws QueueExistsException
     {
@@ -856,12 +860,18 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     }
 
-
     @Override
-    public void removeExchange(ExchangeImpl exchange, boolean force)
+    public void removeExchange(final ExchangeImpl<?> exchange, final boolean force)
             throws ExchangeIsAlternateException, RequiredExchangeException
     {
-        exchange.deleteWithChecks();
+        doSync(removeExchangeAsync(exchange, force));
+    }
+
+    @Override
+    public ListenableFuture<Void> removeExchangeAsync(ExchangeImpl exchange, boolean force)
+            throws ExchangeIsAlternateException, RequiredExchangeException
+    {
+        return exchange.deleteWithChecks();
     }
 
     @Override

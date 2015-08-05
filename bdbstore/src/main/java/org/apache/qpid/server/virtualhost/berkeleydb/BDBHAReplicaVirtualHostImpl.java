@@ -164,6 +164,14 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
+    public ListenableFuture<Void> removeExchangeAsync(final ExchangeImpl<?> exchange, final boolean force)
+            throws ExchangeIsAlternateException, RequiredExchangeException
+    {
+        throwUnsupportedForReplica();
+        return null;
+    }
+
+    @Override
     public MessageDestination getAttainedMessageDestination(final String name)
     {
         return null;
@@ -330,6 +338,13 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public Collection<AMQQueue<?>> getQueues()
     {
         return Collections.emptyList();
+    }
+
+    @Override
+    public ListenableFuture<Integer> removeQueueAsync(final AMQQueue<?> queue)
+    {
+        throwUnsupportedForReplica();
+        return null;
     }
 
     @Override

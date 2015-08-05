@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -60,6 +62,8 @@ public interface VirtualHostImpl< X extends VirtualHostImpl<X,Q,E>, Q extends AM
 
     int removeQueue(Q queue);
 
+    ListenableFuture<Integer> removeQueueAsync(Q queue);
+
     Q createQueue(Map<String, Object> arguments) throws QueueExistsException;
 
     E createExchange(Map<String,Object> attributes)
@@ -67,6 +71,9 @@ public interface VirtualHostImpl< X extends VirtualHostImpl<X,Q,E>, Q extends AM
                    NoFactoryForTypeException;
 
     void removeExchange(E exchange, boolean force) throws ExchangeIsAlternateException,
+                                                                                 RequiredExchangeException;
+
+    ListenableFuture<Void> removeExchangeAsync(E exchange, boolean force) throws ExchangeIsAlternateException,
                                                                  RequiredExchangeException;
 
     E getAttainedExchange(String name);

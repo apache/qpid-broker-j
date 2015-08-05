@@ -22,6 +22,8 @@ package org.apache.qpid.server.exchange;
 
 import java.util.Map;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
@@ -46,7 +48,7 @@ public interface ExchangeImpl<T extends ExchangeImpl<T>> extends Exchange<T>, Ex
                            AMQQueue queue,
                            Map<String, Object> arguments);
 
-    void deleteWithChecks();
+    ListenableFuture<Void> deleteWithChecks();
 
     /**
      * Determines whether a message would be isBound to a particular queue using a specific routing key and arguments
@@ -93,6 +95,8 @@ public interface ExchangeImpl<T extends ExchangeImpl<T>> extends Exchange<T>, Ex
     void addReference(ExchangeReferrer exchange);
 
     boolean hasReferrers();
+
+    ListenableFuture<Void> removeBindingAsync(BindingImpl binding);
 
     BindingImpl getBinding(String bindingName, AMQQueue queue);
 

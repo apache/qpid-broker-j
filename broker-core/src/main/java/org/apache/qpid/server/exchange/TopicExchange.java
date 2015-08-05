@@ -255,7 +255,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
         {
             Map<String,Object> bindingArgs = _bindings.remove(binding);
 
-            _logger.debug("deregisterQueue {}", bindingArgs);
+            _logger.debug("deregisterQueue args: {}", bindingArgs);
 
             String bindingKey = TopicNormalizer.normalize(binding.getBindingKey());
             TopicExchangeResult result = _topicExchangeResults.get(bindingKey);
