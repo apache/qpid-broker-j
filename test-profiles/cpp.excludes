@@ -30,5 +30,3 @@ org.apache.qpid.test.client.message.JMSDestinationTest#testReceiveResend
 //BDB System Tests
 org.apache.qpid.server.store.berkeleydb.*
 
-// test relies on Java Broker REST interfaces
-org.apache.qpid.client.failover.FailoverBehaviourTest.testFailoverWhenConnectionStopped

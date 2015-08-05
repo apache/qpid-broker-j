@@ -21,8 +21,6 @@
 package org.apache.qpid.client;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -136,12 +134,6 @@ public class AMQSession_0_8Test extends QpidTestCase
         assertFalse("Unexpected unacknowledged message tags", session.getUnacknowledgedMessageTags().isEmpty());
         assertEquals("Unexpected consumers", new HashSet<>(Arrays.asList(consumer1, consumer2)), new HashSet<>(session.getConsumers()));
 
-        // verify messages were not dispatched
-        for (UnprocessedMessage message: messages )
-        {
-            verify(message, never()).dispatch(session);
-        }
-
         listener = new MockReceiveConnectionListener(_connection, 1,
                 new ExchangeDeclareOkBody(), // first producer resubscribe
                 new ExchangeDeclareOkBody(), // second producer resubscribe
@@ -158,12 +150,6 @@ public class AMQSession_0_8Test extends QpidTestCase
         assertTrue("Unexpected delivered message tags", session.getDeliveredMessageTags().isEmpty());
         assertTrue("Unexpected pre-fetched message tags", session.getPrefetchedMessageTags().isEmpty());
         assertEquals("Unexpected consumers", new HashSet<>(Arrays.asList(consumer1, consumer2)), new HashSet<>(session.getConsumers()));
-
-        // verify dispatcher queue is drained
-        for (UnprocessedMessage message: messages )
-        {
-            verify(message).dispatch(session);
-        }
     }
 
     private UnprocessedMessage createMockMessage(long deliveryTag, int consumerTag)
