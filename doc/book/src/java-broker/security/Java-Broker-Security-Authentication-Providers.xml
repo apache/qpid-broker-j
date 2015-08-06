@@ -38,6 +38,23 @@
     </para>
   </important>
 
+  <note>
+    <para>
+      Authentication Providers may choose to selectively disable certain authentication mechanisms
+      depending on whether an encrypted transport is being used or not. This is to avoid insecure
+      configurations. Notably, by default the PLAIN mechanism will be disabled on non-SSL
+      connections. This security feature can be overwritten by setting
+      <programlisting>secureOnlyMechanisms = []</programlisting> in the authentication provider
+      section of the config.json.
+      <warning>
+        <para>
+          Changing the secureOnlyMechanism is a breach of security and might cause passwords to be
+          transfered in the clear. Use at your own risk!
+        </para>
+      </warning>
+    </para>
+  </note>
+
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-LDAP.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-Kerberos.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="Java-Broker-Security-Authentication-Providers-External.xml"/>
