@@ -2310,11 +2310,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
-        if(!getId().equals(proxyForValidation.getId()))
-        {
-            throw new IllegalConfigurationException("Cannot change existing configured object id");
-        }
-
         for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())
         {
             if (attr.isAutomated() && changedAttributes.contains(attr.getName()))

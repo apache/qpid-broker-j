@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
@@ -495,24 +496,22 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                              return null;
                          }
                      });
-
-
     }
 
     public void testImmutableAttribute()
     {
-        final String value = "myvalue";
+        final String originalValue = "myvalue";
 
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, "myName");
-        attributes.put(TestSingleton.IMMUTABLE_VALUE, value);
+        attributes.put(TestSingleton.IMMUTABLE_VALUE, originalValue);
 
         final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
 
-        assertEquals(value, object.getImmutableValue());
+        assertEquals("Immutable value unexpectedly changed", originalValue, object.getImmutableValue());
 
-        // Update to the same value is allowed
-        object.setAttributes(Collections.singletonMap(TestSingleton.IMMUTABLE_VALUE, value));
+                     // Update to the same value is allowed
+                     object.setAttributes(Collections.singletonMap(TestSingleton.IMMUTABLE_VALUE, originalValue));
 
         try
         {
@@ -523,7 +522,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         {
             // PASS
         }
-        assertEquals(value, object.getImmutableValue());
+        assertEquals(originalValue, object.getImmutableValue());
 
         try
         {
@@ -535,12 +534,11 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
             // PASS
         }
 
-        assertEquals(value, object.getImmutableValue());
+        assertEquals("Immutable value unexpectedly changed", originalValue, object.getImmutableValue());
     }
 
     public void testImmutableAttributeNullValue()
     {
-
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(ConfiguredObject.NAME, "myName");
         attributes.put(TestSingleton.IMMUTABLE_VALUE, null);
@@ -561,7 +559,42 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         {
             // PASS
         }
-        assertNull(object.getImmutableValue());
+        assertNull("Immutable value unexpectedly changed", object.getImmutableValue());
+    }
+
+    /** Id and Type are key attributes in the model and are thus worthy of test of their own */
+    public void testIdAndTypeAreImmutableAttribute()
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, "myName");
+
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+        UUID originalUuid = object.getId();
+        String originalType = object.getType();
+
+        try
+        {
+            object.setAttributes(Collections.singletonMap(TestSingleton.ID, UUID.randomUUID()));
+            fail("Exception not thrown");
+        }
+        catch(IllegalConfigurationException e)
+        {
+            // PASS
+        }
+
+        assertEquals(originalUuid, object.getId());
+
+        try
+        {
+            object.setAttributes(Collections.singletonMap(TestSingleton.TYPE, "newtype"));
+            fail("Exception not thrown");
+        }
+        catch(IllegalConfigurationException e)
+        {
+            // PASS
+        }
+
+        assertEquals(originalType, object.getType());
     }
 
     public void testAttributeSetListenerFiring()

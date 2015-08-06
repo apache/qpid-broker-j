@@ -61,7 +61,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
      *
      * @return the objects id
      */
-    @ManagedAttribute( mandatory = true )
+    @ManagedAttribute( mandatory = true, immutable = true )
     UUID getId();
 
     /**
@@ -69,14 +69,14 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
      *
      * @return the name of the object
      */
-    @ManagedAttribute( mandatory = true)
+    @ManagedAttribute( mandatory = true )
     String getName();
 
 
     @ManagedAttribute
     String getDescription();
 
-    @ManagedAttribute
+    @ManagedAttribute ( immutable = true )
     String getType();
 
     @ManagedAttribute
