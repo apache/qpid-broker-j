@@ -186,15 +186,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
 
         if(_closed.compareAndSet(false,true))
         {
-            List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>();
-            ListenableFuture<Void> atLeastOne = Futures.immediateFuture(null);
-            removeBindingFutures.add(atLeastOne);
+            List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
 
             List<BindingImpl> bindings = new ArrayList<>(_bindings);
             for(BindingImpl binding : bindings)
             {
-                ListenableFuture<Void> deleteFuture = binding.deleteAsync();
-                removeBindingFutures.add(deleteFuture);
+                removeBindingFutures.add(binding.deleteAsync());
             }
 
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);

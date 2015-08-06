@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.util.concurrent.Futures;
@@ -60,8 +59,6 @@ public class BindingImpl
     private Map<String, Object> _arguments;
     private final AtomicLong _matches = new AtomicLong();
     private BindingLogSubject _logSubject;
-
-    final AtomicBoolean _deleted = new AtomicBoolean();
 
     public BindingImpl(Map<String, Object> attributes, AMQQueue queue, ExchangeImpl exchange)
     {
@@ -198,27 +195,17 @@ public class BindingImpl
     @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
-        if (_deleted.compareAndSet(false, true))
+        ListenableFuture<Void> removeBinding = _exchange.removeBindingAsync(this);
+        return doAfter(removeBinding, new Runnable()
         {
-            ListenableFuture<Void> removeBinding = _exchange.removeBindingAsync(this);
-            return doAfter(removeBinding, new Runnable()
+            @Override
+            public void run()
             {
-                @Override
-                public void run()
-                {
-                    getEventLogger().message(_logSubject, BindingMessages.DELETED());
-                    deleted();
-                    setState(State.DELETED);
-                }
-            });
-        }
-        else
-        {
-            getEventLogger().message(_logSubject, BindingMessages.DELETED());
-            deleted();
-            setState(State.DELETED);
-            return Futures.immediateFuture(null);
-        }
+                getEventLogger().message(_logSubject, BindingMessages.DELETED());
+                deleted();
+                setState(State.DELETED);
+            }
+        });
     }
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.ACTIVE)

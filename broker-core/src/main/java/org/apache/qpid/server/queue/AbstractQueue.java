@@ -38,11 +38,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,6 +53,7 @@ import org.apache.qpid.server.message.MessageInfoFacade;
 import org.apache.qpid.server.model.CustomRestHeaders;
 import org.apache.qpid.server.model.RestContentHeader;
 
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -229,6 +226,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final Set<AMQSessionModel> _blockedChannels = new ConcurrentSkipListSet<AMQSessionModel>();
 
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
+    private final SettableFuture<Integer> _deleteFuture = SettableFuture.create();
+
     private final List<Action<? super AMQQueue>> _deleteTaskList =
             new CopyOnWriteArrayList<Action<? super AMQQueue>>();
 
@@ -1876,23 +1875,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         // Check access
         _virtualHost.getSecurityManager().authoriseDelete(this);
 
-        final ListenableFuture<Integer> returnCountFuture = Futures.immediateFuture(getQueueDepthMessages());
-        if (!_deleted.getAndSet(true))
+        if (_deleted.compareAndSet(false, true))
         {
-            final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>();
-            final ListenableFuture<Void> atLeastOne = Futures.immediateFuture(null);
-            removeBindingFutures.add(atLeastOne);
+            final int queueDepthMessages = getQueueDepthMessages();
+            final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
             final ArrayList<BindingImpl> bindingCopy = new ArrayList<>(_bindings);
 
             // TODO - RG - Need to sort out bindings!
             for (BindingImpl b : bindingCopy)
             {
-                final ListenableFuture<Void> removeFuture = b.deleteAsync();
-                removeBindingFutures.add(removeFuture);
+                removeBindingFutures.add(b.deleteAsync());
             }
 
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
-            final ListenableFuture<Void> result = doAfter(combinedFuture, new Runnable()
+
+            doAfter(combinedFuture, new Runnable()
             {
                 @Override
                 public void run()
@@ -1919,55 +1916,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                     //Log Queue Deletion
                     getEventLogger().message(_logSubject, QueueMessages.DELETED());
+
+                    _deleteFuture.set(queueDepthMessages);
                 }
             });
-
-            return new ListenableFuture<Integer>()
-            {
-                @Override
-                public void addListener(final Runnable listener, final Executor executor)
-                {
-                    result.addListener(listener, executor);
-                }
-
-                @Override
-                public boolean cancel(final boolean mayInterruptIfRunning)
-                {
-                    return result.cancel(mayInterruptIfRunning);
-                }
-
-                @Override
-                public boolean isCancelled()
-                {
-                    return result.isCancelled();
-                }
-
-                @Override
-                public boolean isDone()
-                {
-                    return result.isDone();
-                }
-
-                @Override
-                public Integer get() throws InterruptedException, ExecutionException
-                {
-                    result.get();
-                    return returnCountFuture.get();
-                }
-
-                @Override
-                public Integer get(final long timeout, final TimeUnit unit)
-                        throws InterruptedException, ExecutionException, TimeoutException
-                {
-                    result.get(timeout, unit);
-                    return returnCountFuture.get();
-                }
-            };
         }
-        else
-        {
-           return returnCountFuture;
-        }
+        return _deleteFuture;
     }
 
     protected void routeToAlternate(List<QueueEntry> entries)

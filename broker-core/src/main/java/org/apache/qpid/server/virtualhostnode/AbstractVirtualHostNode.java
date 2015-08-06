@@ -207,7 +207,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     @Override
     public VirtualHost<?,?,?> getVirtualHost()
     {
-        Collection<VirtualHost> children = getChildren(VirtualHost.class);
+        Collection<VirtualHost> children = new ArrayList<>(getChildren(VirtualHost.class));
         if (children.size() == 0)
         {
             return null;

@@ -48,8 +48,6 @@ public interface ExchangeImpl<T extends ExchangeImpl<T>> extends Exchange<T>, Ex
                            AMQQueue queue,
                            Map<String, Object> arguments);
 
-    ListenableFuture<Void> deleteWithChecks();
-
     /**
      * Determines whether a message would be isBound to a particular queue using a specific routing key and arguments
      * @param bindingKey
