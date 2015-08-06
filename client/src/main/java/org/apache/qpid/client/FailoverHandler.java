@@ -61,126 +61,120 @@ public class FailoverHandler implements Runnable
     }
 
     /**
-     * Performs the failover procedure. See the class level comment, {@link FailoverHandler}, for a description of the
-     * failover procedure.
+     * Performs the failover procedure.
      */
     public void run()
     {
         AMQConnection connection = _amqProtocolHandler.getConnection();
 
-        // brace to keep indentation
+
+        //Clear the exception now that we have the failover mutex there can be no one else waiting for a frame so
+        // we can clear the exception.
+        _amqProtocolHandler.failoverInProgress();
+
+        // We switch in a new state manager temporarily so that the interaction to get to the "connection open"
+        // state works, without us having to terminate any existing "state waiters". We could theoretically
+        // have a state waiter waiting until the connection is closed for some reason. Or in future we may have
+        // a slightly more complex state model therefore I felt it was worthwhile doing this.
+        AMQStateManager existingStateManager = _amqProtocolHandler.getStateManager();
+
+
+        // Use a fresh new StateManager for the reconnection attempts
+        _amqProtocolHandler.setStateManager(new AMQStateManager());
+
+
+        if (!connection.firePreFailover(_host != null))
         {
-            //Clear the exception now that we have the failover mutex there can be no one else waiting for a frame so
-            // we can clear the exception.
-            _amqProtocolHandler.failoverInProgress();
+            _logger.info("Failover process veto-ed by client");
 
-            // We switch in a new state manager temporarily so that the interaction to get to the "connection open"
-            // state works, without us having to terminate any existing "state waiters". We could theoretically
-            // have a state waiter waiting until the connection is closed for some reason. Or in future we may have
-            // a slightly more complex state model therefore I felt it was worthwhile doing this.
-            AMQStateManager existingStateManager = _amqProtocolHandler.getStateManager();
+            //Restore Existing State Manager
+            _amqProtocolHandler.setStateManager(existingStateManager);
 
-
-            // Use a fresh new StateManager for the reconnection attempts
-            _amqProtocolHandler.setStateManager(new AMQStateManager());
-
-
-            if (!connection.firePreFailover(_host != null))
+            AMQDisconnectedException cause;
+            if (_host != null)
             {
-                _logger.info("Failover process veto-ed by client");
+                cause = new AMQDisconnectedException("Redirect was vetoed by client", null);
+            }
+            else
+            {
+                cause = new AMQDisconnectedException("Failover was vetoed by client", null);
+            }
 
-                //Restore Existing State Manager
-                _amqProtocolHandler.setStateManager(existingStateManager);
+            connection.closed(cause);
 
-                //todo: ritchiem these exceptions are useless... Would be better to attempt to propogate exception that
-                // prompted the failover event.
+            _amqProtocolHandler.getFailoverLatch().countDown();
+            _amqProtocolHandler.setFailoverLatch(null);
 
-                AMQDisconnectedException cause;
-                if (_host != null)
+            return;
+        }
+
+        _logger.info("Starting failover process");
+
+        boolean failoverSucceeded;
+        // when host is non null we have a specified failover host otherwise we all the client to cycle through
+        // all specified hosts
+
+        // if _host has value then we are performing a redirect.
+        if (_host != null)
+        {
+            failoverSucceeded = connection.attemptReconnection(_host, _port, true);
+        }
+        else
+        {
+            failoverSucceeded = connection.attemptReconnection();
+        }
+
+        if (!failoverSucceeded)
+        {
+            //Restore Existing State Manager
+            _amqProtocolHandler.setStateManager(existingStateManager);
+            connection.closed(new AMQDisconnectedException("Server closed connection and no failover " +
+                    "was successful", null));
+        }
+        else
+        {
+            // Set the new Protocol Session in the StateManager.
+            existingStateManager.setProtocolSession(_amqProtocolHandler.getProtocolSession());
+
+            // Now that the ProtocolHandler has been reconnected clean up
+            // the state of the old state manager. As if we simply reinstate
+            // it any old exception that had occured prior to failover may
+            // prohibit reconnection.
+            // e.g. During testing when the broker is shutdown gracefully.
+            // The broker
+            // Clear any exceptions we gathered
+            if (existingStateManager.getCurrentState() != AMQState.CONNECTION_OPEN)
+            {
+                // Clear the state of the previous state manager as it may
+                // have received an exception
+                existingStateManager.clearLastException();
+                existingStateManager.changeState(AMQState.CONNECTION_OPEN);
+            }
+
+
+            //Restore Existing State Manager
+            _amqProtocolHandler.setStateManager(existingStateManager);
+            try
+            {
+                if (connection.firePreResubscribe())
                 {
-                    cause = new AMQDisconnectedException("Redirect was vetoed by client", null);
+                    _logger.info("Resubscribing on new connection");
+                    connection.resubscribeSessions();
                 }
                 else
                 {
-                    cause = new AMQDisconnectedException("Failover was vetoed by client", null);
+                    _logger.info("Client vetoed automatic resubscription");
                 }
 
-                connection.closed(cause);
-
-                _amqProtocolHandler.getFailoverLatch().countDown();
-                _amqProtocolHandler.setFailoverLatch(null);
-
-                return;
+                connection.fireFailoverComplete();
+                _amqProtocolHandler.setFailoverState(FailoverState.NOT_STARTED);
+                _logger.info("Connection failover completed successfully");
             }
-
-            _logger.info("Starting failover process");
-
-            boolean failoverSucceeded;
-            // when host is non null we have a specified failover host otherwise we all the client to cycle through
-            // all specified hosts
-
-            // if _host has value then we are performing a redirect.
-            if (_host != null)
+            catch (Exception e)
             {
-                failoverSucceeded = connection.attemptReconnection(_host, _port, true);
-            }
-            else
-            {
-                failoverSucceeded = connection.attemptReconnection();
-            }
-
-            if (!failoverSucceeded)
-            {
-                //Restore Existing State Manager
-                _amqProtocolHandler.setStateManager(existingStateManager);
-                connection.closed(new AMQDisconnectedException("Server closed connection and no failover " +
-                        "was successful", null));
-            }
-            else
-            {
-                // Set the new Protocol Session in the StateManager.
-                existingStateManager.setProtocolSession(_amqProtocolHandler.getProtocolSession());
-
-                // Now that the ProtocolHandler has been reconnected clean up
-                // the state of the old state manager. As if we simply reinstate
-                // it any old exception that had occured prior to failover may
-                // prohibit reconnection.
-                // e.g. During testing when the broker is shutdown gracefully.
-                // The broker
-                // Clear any exceptions we gathered
-                if (existingStateManager.getCurrentState() != AMQState.CONNECTION_OPEN)
-                {
-                    // Clear the state of the previous state manager as it may
-                    // have received an exception
-                    existingStateManager.clearLastException();
-                    existingStateManager.changeState(AMQState.CONNECTION_OPEN);
-                }
-
-
-                //Restore Existing State Manager
-                _amqProtocolHandler.setStateManager(existingStateManager);
-                try
-                {
-                    if (connection.firePreResubscribe())
-                    {
-                        _logger.info("Resubscribing on new connection");
-                        connection.resubscribeSessions();
-                    }
-                    else
-                    {
-                        _logger.info("Client vetoed automatic resubscription");
-                    }
-
-                    connection.fireFailoverComplete();
-                    _amqProtocolHandler.setFailoverState(FailoverState.NOT_STARTED);
-                    _logger.info("Connection failover completed successfully");
-                }
-                catch (Exception e)
-                {
-                    _logger.info("Failover process failed - exception being propagated by protocol handler");
-                    _amqProtocolHandler.setFailoverState(FailoverState.FAILED);
-                    _amqProtocolHandler.exception(e);
-                }
+                _logger.info("Failover process failed - exception being propagated by protocol handler");
+                _amqProtocolHandler.setFailoverState(FailoverState.FAILED);
+                _amqProtocolHandler.exception(e);
             }
         }
     }
