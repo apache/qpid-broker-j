@@ -552,6 +552,7 @@ public class SSLTest extends QpidBrokerTestCase
             sslPortAttributes.put(Port.NAME, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT);
             sslPortAttributes.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
             sslPortAttributes.put(Port.TRUST_STORES, Collections.singleton(TestBrokerConfiguration.ENTRY_NAME_SSL_TRUSTSTORE));
+            sslPortAttributes.put(Port.PROTOCOLS, System.getProperty(TEST_AMQP_PORT_PROTOCOLS_PROPERTY));
             getBrokerConfiguration().addObjectConfiguration(Port.class,sslPortAttributes);
 
             Map<String, Object> aliasAttributes = new HashMap<>();
