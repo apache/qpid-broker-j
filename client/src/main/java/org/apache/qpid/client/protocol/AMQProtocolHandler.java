@@ -146,6 +146,9 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     private final ByteBuffer _reusableByteBuffer = ByteBuffer.wrap(_reusableBytes);
     private final BytesDataOutput _reusableDataOutput = new BytesDataOutput(_reusableBytes);
 
+    private int _queueId = 1;
+    private final Object _queueIdLock = new Object();
+
     /**
      * Creates a new protocol handler, associated with the specified client connection instance.
      *
@@ -263,7 +266,32 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
             final Thread failoverThread;
             try
             {
-                failoverThread = Threading.getThreadFactory().createThread(_failoverHandler);
+                failoverThread = Threading.getThreadFactory().createThread(
+                        new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+
+                                if (Thread.currentThread().isDaemon())
+                                {
+                                    throw new IllegalStateException("FailoverHandler must run on a non-daemon thread.");
+                                }
+
+                                // Create a latch, upon which tasks that must not run in parallel with a failover can wait for completion of
+                                // the fail over.
+                                setFailoverLatch(new CountDownLatch(1));
+
+                                // We wake up listeners. If they can handle failover, they will extend the
+                                // FailoverRetrySupport class and will in turn block on the latch until failover
+                                // has completed before retrying the operation.
+                                notifyFailoverStarting();
+
+                                getConnection().doWithAllLocks(_failoverHandler);
+
+                                getFailoverLatch().countDown();
+                            }
+                        });
             }
             catch (Exception e)
             {
@@ -753,7 +781,15 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
     public String generateQueueName()
     {
-        return _protocolSession.generateQueueName();
+        int id;
+        synchronized (_queueIdLock)
+        {
+            id = _queueId++;
+        }
+        // convert '.', '/', ':' and ';' to single '_', for spec compliance and readability
+        String localAddress = getLocalAddress().toString().replaceAll("[./:;]", "_");
+        String queueName = "tmp_" + localAddress + "_" + id;
+        return queueName.replaceAll("_+", "_");
     }
 
     public CountDownLatch getFailoverLatch()
@@ -829,6 +865,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     {
         _network = network;
         _sender = sender;
+        _protocolSession.setSender(sender);
     }
 
     @Override
@@ -846,16 +883,6 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     protected ByteBufferSender getSender()
     {
         return _sender;
-    }
-
-    void initHeartbeats(int delay, float timeoutFactor)
-    {
-        if (delay > 0)
-        {
-            _network.setMaxWriteIdle(delay);
-            int readerIdle = (int)(delay * timeoutFactor);
-            _network.setMaxReadIdle(readerIdle);
-        }
     }
 
     public NetworkConnection getNetworkConnection()

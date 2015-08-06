@@ -55,6 +55,7 @@ import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.transport.TransportException;
+import org.apache.qpid.transport.network.NetworkConnection;
 
 /**
  * Wrapper for protocol session that provides type-safe access to session attributes.
@@ -81,9 +82,6 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
     private final ConcurrentMap<Integer, UnprocessedMessage> _channelId2UnprocessedMsgMap = new ConcurrentHashMap<>();
     private final UnprocessedMessage[] _channelId2UnprocessedMsgArray = new UnprocessedMessage[16];
 
-    private int _queueId = 1;
-    private final Object _queueIdLock = new Object();
-
     private ProtocolVersion _protocolVersion;
 
     private final MethodRegistry _methodRegistry =
@@ -102,6 +100,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
     private SaslClient _saslClient;
 
     private static final int FAST_CHANNEL_ACCESS_MASK = 0xFFFFFFF0;
+    private volatile ByteBufferSender _sender;
 
     public AMQProtocolSession(AMQProtocolHandler protocolHandler, AMQConnection connection)
     {
@@ -109,7 +108,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         _protocolVersion = connection.getProtocolVersion();
         if (_logger.isDebugEnabled())
         {
-        	_logger.debug("Using ProtocolVersion for Session:" + _protocolVersion);
+            _logger.debug("Using ProtocolVersion for Session:" + _protocolVersion);
         }
         _methodDispatcher = ClientMethodDispatcherImpl.newMethodDispatcher(ProtocolVersion.getLatestSupportedVersion(),
                                                                            this);
@@ -145,7 +144,19 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         con.setMaximumChannelCount(params.getChannelMax());
         con.setMaximumFrameSize(params.getFrameMax());
 
-        _protocolHandler.initHeartbeats(params.getHeartbeat(), params.getHeartbeatTimeoutFactor());
+
+        initHeartbeats(params.getHeartbeat(), params.getHeartbeatTimeoutFactor());
+    }
+
+    void initHeartbeats(int delay, float timeoutFactor)
+    {
+        if (delay > 0)
+        {
+            NetworkConnection network = getProtocolHandler().getNetworkConnection();
+            network.setMaxWriteIdle(delay);
+            int readerIdle = (int)(delay * timeoutFactor);
+            network.setMaxReadIdle(readerIdle);
+        }
     }
 
     public String getClientID()
@@ -313,7 +324,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
     {
         if (_logger.isDebugEnabled())
         {
-        	_logger.debug("closeSession called on protocol session for session " + session.getChannelId());
+            _logger.debug("closeSession called on protocol session for session " + session.getChannelId());
         }
         final int channelId = session.getChannelId();
         if (channelId <= 0)
@@ -380,20 +391,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
 
     public ByteBufferSender getSender()
     {
-        return _protocolHandler.getSender();
-    }
-
-    protected String generateQueueName()
-    {
-        int id;
-        synchronized (_queueIdLock)
-        {
-            id = _queueId++;
-        }
-        // convert '.', '/', ':' and ';' to single '_', for spec compliance and readability
-        String localAddress = _protocolHandler.getLocalAddress().toString().replaceAll("[./:;]", "_");
-        String queueName = "tmp_" + localAddress + "_" + id;
-        return queueName.replaceAll("_+", "_");
+        return _sender;
     }
 
     public void confirmConsumerCancelled(int channelId, AMQShortString consumerTag)
@@ -454,7 +452,7 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
 
     public void setSender(ByteBufferSender sender)
     {
-        // No-op, interface munging
+        _sender = sender;
     }
 
 

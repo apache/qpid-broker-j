@@ -20,10 +20,7 @@
  */
 package org.apache.qpid.client.failover;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.ConnectionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,40 +35,7 @@ import org.apache.qpid.client.state.AMQStateManager;
  * connections, failing over to a new connection if the transport connection fails. The procedure to establish a new
  * connection is expressed as a continuation, in order that it may be run in a seperate thread to the i/o thread that
  * detected the failure and is used to handle the communication to establish a new connection.
- * <p>
- * The reason this needs to be a separate thread is because this work cannot be done inside the i/o processor
- * thread. The significant task is the connection setup which involves a protocol exchange until a particular state
- * is achieved. This procedure waits until the state is achieved which would prevent the i/o thread doing the work
- * it needs to do to achieve the new state.
- * <p>
- * The failover procedure does the following:
  *
- * <ol>
- * <li>Sets the failing over condition to true.</li>
- * <li>Creates a {@link FailoverException} and gets the protocol connection handler to propagate this event to all
- *     interested parties.</li>
- * <li>Takes the failover mutex on the protocol connection handler.</li>
- * <li>Abandons the fail over if any of the interested parties vetoes it. The mutex is released and the condition
- *     reset.</li>
- * <li>Creates a new {@link AMQStateManager} and re-established the connection through it.</li>
- * <li>Informs the AMQConnection if the connection cannot be re-established.</li>
- * <li>Recreates all sessions from the old connection to the new.</li>
- * <li>Resets the failing over condition and releases the mutex.</li>
- * </ol>
- *
- * <p>
- * TODO  The failover latch and mutex are used like a lock and condition. If the retrotranlator supports lock/condition
- *       then could change over to using them. 1.4 support still needed.
- * <p>
- * TODO  If the condition is set to null on a vetoes fail-over and there are already other threads waiting on the
- *       condition, they will never be released. It might be an idea to reset the condition in a finally block.
- * <p>
- * TODO  Creates a {@link AMQDisconnectedException} and passes it to the AMQConnection. No need to use an
- *       exception-as-argument here, could just as easily call a specific method for this purpose on AMQConnection.
- * <p>
- * TODO  Creates a {@link FailoverException} and propagates it to the MethodHandlers. No need to use an
- *       exception-as-argument here, could just as easily call a specific method for this purpose on
- *       {@link org.apache.qpid.protocol.AMQMethodListener}.
  */
 public class FailoverHandler implements Runnable
 {
@@ -102,36 +66,6 @@ public class FailoverHandler implements Runnable
      * failover procedure.
      */
     public void run()
-    {
-        if (Thread.currentThread().isDaemon())
-        {
-            throw new IllegalStateException("FailoverHandler must run on a non-daemon thread.");
-        }
-
-        // Create a latch, upon which tasks that must not run in parallel with a failover can wait for completion of
-        // the fail over.
-        _amqProtocolHandler.setFailoverLatch(new CountDownLatch(1));
-
-        // We wake up listeners. If they can handle failover, they will extend the
-        // FailoverRetrySupport class and will in turn block on the latch until failover
-        // has completed before retrying the operation.
-        _amqProtocolHandler.notifyFailoverStarting();
-
-        final AMQConnection connection = _amqProtocolHandler.getConnection();
-
-        ConnectionHelper.doWithAllConnectionAndSessionLocks(connection, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                performFailover();
-            }
-        });
-
-        _amqProtocolHandler.getFailoverLatch().countDown();
-    }
-
-    private void performFailover()
     {
         AMQConnection connection = _amqProtocolHandler.getConnection();
 

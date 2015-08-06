@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.client.protocol;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -127,6 +131,40 @@ public class AMQProtocolHandlerTest extends QpidTestCase
 
         assertEquals("The _Listener did not receive the correct error code",
                      AMQConstant.INTERNAL_ERROR,  ((AMQException)_listener.getReceivedException()).getErrorCode());
+    }
+
+
+    public void testTemporaryQueueWildcard() throws UnknownHostException
+    {
+        checkTempQueueName(new InetSocketAddress(1234), "tmp_0_0_0_0_0_0_0_0_1234_1");
+    }
+
+    public void testTemporaryQueueLocalhostAddr() throws UnknownHostException
+    {
+        checkTempQueueName(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 1234), "tmp_127_0_0_1_1234_1");
+    }
+
+    public void testTemporaryQueueLocalhostName() throws UnknownHostException
+    {
+        checkTempQueueName(new InetSocketAddress(InetAddress.getByName("localhost"), 1234), "tmp_localhost_127_0_0_1_1234_1");
+    }
+
+    public void testTemporaryQueueInet4() throws UnknownHostException
+    {
+        checkTempQueueName(new InetSocketAddress(InetAddress.getByName("192.168.1.2"), 1234), "tmp_192_168_1_2_1234_1");
+    }
+
+    public void testTemporaryQueueInet6() throws UnknownHostException
+    {
+        checkTempQueueName(new InetSocketAddress(InetAddress.getByName("1080:0:0:0:8:800:200C:417A"), 1234), "tmp_1080_0_0_0_8_800_200c_417a_1234_1");
+    }
+
+    private void checkTempQueueName(SocketAddress address, String queueName)
+    {
+        TestNetworkConnection networkConnection = new TestNetworkConnection();
+        networkConnection.setLocalAddress(address);
+        _handler.setNetworkConnection(networkConnection);
+        assertEquals("Wrong queue name", queueName, _handler.generateQueueName());
     }
 
     /**
@@ -288,5 +326,4 @@ public class AMQProtocolHandlerTest extends QpidTestCase
             return _receivedException;
         }
     }
-
 }
