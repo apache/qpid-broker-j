@@ -18,14 +18,13 @@
  * under the License.
  *
  */
-package org.apache.qpid.client.failover;
+package org.apache.qpid.client;
 
-import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.client.failover.FailoverState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQDisconnectedException;
-import org.apache.qpid.client.AMQProtocolHandler;
 import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.client.state.AMQStateManager;
 

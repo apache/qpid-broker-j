@@ -1474,7 +1474,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         return je;
     }
 
-    public void closed(Throwable cause)
+    void closed(Throwable cause)
     {
         _logger.debug("Closing closed connection {} ", this.toString());
 
