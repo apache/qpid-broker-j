@@ -44,7 +44,6 @@ import org.apache.qpid.client.message.AbstractJMSMessage;
 import org.apache.qpid.client.message.Encrypted091MessageFactory;
 import org.apache.qpid.client.message.MessageEncryptionHelper;
 import org.apache.qpid.client.message.QpidMessageProperties;
-import org.apache.qpid.client.protocol.AMQProtocolHandler;
 import org.apache.qpid.client.protocol.BlockingMethodFrameListener;
 import org.apache.qpid.client.util.JMSExceptionHelper;
 import org.apache.qpid.configuration.ClientProperties;

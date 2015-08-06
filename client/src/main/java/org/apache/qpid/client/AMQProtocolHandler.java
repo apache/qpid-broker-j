@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.client.protocol;
+package org.apache.qpid.client;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -30,6 +30,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.qpid.client.protocol.AMQProtocolSession;
+import org.apache.qpid.client.protocol.BlockingMethodFrameListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,9 +40,6 @@ import org.apache.qpid.AMQDisconnectedException;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.AMQTimeoutException;
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.client.HeartbeatListener;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverHandler;
 import org.apache.qpid.client.failover.FailoverState;

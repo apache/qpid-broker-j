@@ -28,7 +28,7 @@ import org.apache.qpid.client.BasicMessageConsumer_0_8;
 import org.apache.qpid.client.BasicMessageProducer_0_8;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.message.AMQMessageDelegateFactory;
-import org.apache.qpid.client.protocol.AMQProtocolHandler;
+import org.apache.qpid.client.AMQProtocolHandler;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.FieldTable;
 

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.qpid.client.AMQProtocolHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +38,9 @@ import org.apache.qpid.protocol.AMQMethodListener;
 /**
  * The state manager is responsible for managing the state of the protocol session.
  * <p>
- * For each {@link org.apache.qpid.client.protocol.AMQProtocolHandler} there is a separate state manager.
+ * For each {@link AMQProtocolHandler} there is a separate state manager.
  * <p>
- * The AMQStateManager is now attached to the {@link org.apache.qpid.client.protocol.AMQProtocolHandler} and that is the sole point of reference so that
+ * The AMQStateManager is now attached to the {@link AMQProtocolHandler} and that is the sole point of reference so that
  * As the {@link AMQProtocolSession} changes due to failover the AMQStateManager need not be copied around.
  * <p>
  * The StateManager works by any component can wait for a state change to occur by using the following sequence.

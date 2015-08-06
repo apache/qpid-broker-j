@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentMap;
 import javax.jms.JMSException;
 import javax.security.sasl.SaslClient;
 
+import org.apache.qpid.client.AMQProtocolHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

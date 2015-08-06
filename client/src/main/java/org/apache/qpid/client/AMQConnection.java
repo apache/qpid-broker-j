@@ -70,7 +70,6 @@ import org.apache.qpid.AMQUnresolvedAddressException;
 import org.apache.qpid.client.failover.ConnectionRedirectException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.failover.FailoverProtectedOperation;
-import org.apache.qpid.client.protocol.AMQProtocolHandler;
 import org.apache.qpid.client.security.CallbackHandlerRegistry;
 import org.apache.qpid.client.state.AMQStateManager;
 import org.apache.qpid.client.util.JMSExceptionHelper;
@@ -1818,7 +1817,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         return _messageCompressionThresholdSize;
     }
 
-    public void doWithAllLocks(Runnable r)
+    void doWithAllLocks(Runnable r)
     {
         doWithAllLocks(r, _sessions.values());
 
