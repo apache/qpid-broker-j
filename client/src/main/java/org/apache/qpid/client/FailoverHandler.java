@@ -42,19 +42,8 @@ public class FailoverHandler implements Runnable
     private static final Logger _logger = LoggerFactory.getLogger(FailoverHandler.class);
 
     /** Holds the protocol handler for the failed connection, upon which the new connection is to be set up. */
-    private AMQProtocolHandler _amqProtocolHandler;
+    private final AMQProtocolHandler _amqProtocolHandler;
 
-    /** Used to hold the host to fail over to. This is optional and if not set a reconnect to the previous host is tried. */
-    private String _host;
-
-    /** Used to hold the port to fail over to. */
-    private int _port;
-
-    /**
-     * Creates a failover handler on a protocol session, for a particular MINA session (network connection).
-     *
-     * @param amqProtocolHandler The protocol handler that spans the failover.
-     */
     public FailoverHandler(AMQProtocolHandler amqProtocolHandler)
     {
         _amqProtocolHandler = amqProtocolHandler;
@@ -83,22 +72,14 @@ public class FailoverHandler implements Runnable
         _amqProtocolHandler.setStateManager(new AMQStateManager());
 
 
-        if (!connection.firePreFailover(_host != null))
+        if (!connection.firePreFailover(false))
         {
             _logger.info("Failover process veto-ed by client");
 
             //Restore Existing State Manager
             _amqProtocolHandler.setStateManager(existingStateManager);
 
-            AMQDisconnectedException cause;
-            if (_host != null)
-            {
-                cause = new AMQDisconnectedException("Redirect was vetoed by client", null);
-            }
-            else
-            {
-                cause = new AMQDisconnectedException("Failover was vetoed by client", null);
-            }
+            AMQDisconnectedException cause = new AMQDisconnectedException("Failover was vetoed by client", null);
 
             connection.closed(cause);
 
@@ -110,19 +91,7 @@ public class FailoverHandler implements Runnable
 
         _logger.info("Starting failover process");
 
-        boolean failoverSucceeded;
-        // when host is non null we have a specified failover host otherwise we all the client to cycle through
-        // all specified hosts
-
-        // if _host has value then we are performing a redirect.
-        if (_host != null)
-        {
-            failoverSucceeded = connection.attemptReconnection(_host, _port, true);
-        }
-        else
-        {
-            failoverSucceeded = connection.attemptReconnection();
-        }
+        boolean failoverSucceeded = connection.attemptReconnection();
 
         if (!failoverSucceeded)
         {
@@ -177,25 +146,5 @@ public class FailoverHandler implements Runnable
                 _amqProtocolHandler.exception(e);
             }
         }
-    }
-
-    /**
-     * Sets the host name to fail over to. This is optional and if not set a reconnect to the previous host is tried.
-     *
-     * @param host The host name to fail over to.
-     */
-    public void setHost(String host)
-    {
-        _host = host;
-    }
-
-    /**
-     * Sets the port to fail over to.
-     *
-     * @param port The port to fail over to.
-     */
-    public void setPort(int port)
-    {
-        _port = port;
     }
 }
