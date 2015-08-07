@@ -18,17 +18,26 @@
  * under the License.
  *
  */
-package org.apache.qpid.framing;
+package org.apache.qpid.server.transport;
 
-import java.io.DataInput;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-public interface ExtendedDataInput extends DataInput
+abstract class AbstractNonBlockingConnectionDelegate implements NonBlockingConnectionDelegate
 {
-    AMQShortString readAMQShortString();
+    private QpidByteBuffer _applicationInputBuffer;
 
-    int available();
+    private final NonBlockingConnection _connection;
 
-    int position();
+    protected AbstractNonBlockingConnectionDelegate(final NonBlockingConnection connection)
+    {
+        _connection = connection;
+    }
 
-    void position(int position);
+
+    abstract public QpidByteBuffer getNetworkInputBuffer();
+
+    public QpidByteBuffer getApplicationInputBuffer()
+    {
+        return _applicationInputBuffer;
+    }
 }

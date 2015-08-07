@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +61,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private volatile int _maxReadIdle;
     private volatile int _maxWriteIdle;
 
-    private ByteBuffer _netInputBuffer;
-
     private volatile boolean _fullyWritten = true;
 
     private boolean _partialRead = false;
@@ -83,7 +82,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
         _receiveBufferSize = receiveBufferSize;
 
-        _netInputBuffer = ByteBuffer.allocateDirect(receiveBufferSize);
         _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
         _port = port;
 
@@ -110,6 +108,11 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     public boolean isPartialRead()
     {
         return _partialRead;
+    }
+
+    int getReceiveBufferSize()
+    {
+        return _receiveBufferSize;
     }
 
     Ticker getTicker()
@@ -230,7 +233,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 _fullyWritten = doWrite();
                 _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
 
-                if (dataRead || (_delegate.needsWork() && _netInputBuffer.position() != 0))
+                if (dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0))
                 {
                     _protocolEngine.notifyWork();
                 }
@@ -330,48 +333,17 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
      */
     boolean doRead() throws IOException
     {
-        boolean readData = false;
         _partialRead = false;
-        if (!_closed.get())
+        if(!_closed.get() && _delegate.readyForRead())
         {
-            readData = _delegate.doRead();
-        }
-        return readData;
-    }
+            int readData = readFromNetwork();
 
-    boolean readAndProcessData() throws IOException
-    {
-        boolean readData = readIntoBuffer(_netInputBuffer);
-
-        ByteBuffer duplicate = _netInputBuffer.duplicate();
-        duplicate.flip();
-
-        readData |= processData(duplicate);
-
-        if (_netInputBuffer.hasRemaining())
-        {
-            // slice but keep unprocessed data
-            int amountOfUnprocessedData = duplicate.remaining();
-            _netInputBuffer.position(_netInputBuffer.position() - amountOfUnprocessedData);
-            _netInputBuffer = _netInputBuffer.slice();
-            _netInputBuffer.position(amountOfUnprocessedData);
+            return (readData > 0) || _delegate.processData();
         }
         else
         {
-            if(duplicate.remaining() < _receiveBufferSize)
-            {
-                // compact into new buffer
-                _netInputBuffer = ByteBuffer.allocateDirect(_receiveBufferSize);
-                _netInputBuffer.put(duplicate);
-            }
-            else
-            {
-                // grow the buffer
-                _netInputBuffer = ByteBuffer.allocateDirect(_receiveBufferSize+_netInputBuffer.capacity());
-                _netInputBuffer.put(duplicate);
-            }
+            return false;
         }
-        return readData;
     }
 
     void writeToTransport(ByteBuffer[] buffers) throws IOException
@@ -402,20 +374,12 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
     }
 
-    boolean processData(ByteBuffer data) throws IOException
+    protected int readFromNetwork() throws IOException
     {
-        return _delegate.processData(data);
-    }
+        QpidByteBuffer buffer = _delegate.getNetInputBuffer();
 
-    protected boolean readIntoBuffer(final ByteBuffer buffer) throws IOException
-    {
-        boolean readData = false;
-        int read = _socketChannel.read(buffer);
-        if (read > 0)
-        {
-            readData = true;
-        }
-        else if (read == -1)
+        int read = _socketChannel.read(buffer.getNativeBuffer());
+        if (read == -1)
         {
             _closed.set(true);
         }
@@ -426,11 +390,11 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         {
             LOGGER.debug("Read " + read + " byte(s)");
         }
-        return readData;
+        return read;
     }
 
     @Override
-    public void send(final ByteBuffer msg)
+    public void send(final QpidByteBuffer msg)
     {
 
         if (_closed.get())
@@ -439,9 +403,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
         else if (msg.remaining() > 0)
         {
-            _buffers.add(msg);
+            _buffers.add(msg.getNativeBuffer());
         }
     }
+
 
     public void writeBufferProcessed()
     {
@@ -469,13 +434,14 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         return _scheduler;
     }
 
-    public void processAmqpData(ByteBuffer data)
+    public void processAmqpData(QpidByteBuffer applicationData)
     {
-        _protocolEngine.received(data);
+        _protocolEngine.received(applicationData);
     }
 
     public void setTransportEncryption(TransportEncryption transportEncryption)
     {
+        NonBlockingConnectionDelegate oldDelegate = _delegate;
         switch (transportEncryption)
         {
             case TLS:
@@ -488,6 +454,13 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             default:
                 throw new IllegalArgumentException("unknown TransportEncryption " + transportEncryption);
         }
+        if(oldDelegate != null)
+        {
+            QpidByteBuffer src = oldDelegate.getNetInputBuffer().duplicate();
+            src.flip();
+            _delegate.getNetInputBuffer().put(src);
+        }
         LOGGER.debug("Identified transport encryption as " + transportEncryption);
     }
+
 }

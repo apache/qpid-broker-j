@@ -22,10 +22,12 @@ package org.apache.qpid.transport.network;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.Header;
 import org.apache.qpid.transport.MessageProperties;
@@ -241,7 +243,7 @@ public class Assembler implements NetworkEventReceiver, NetworkDelegate
             break;
         case BODY:
             command = getIncompleteCommand(channel);
-            command.setBody(segment);
+            command.setBody(Collections.singletonList(QpidByteBuffer.wrap(segment)));
             setIncompleteCommand(channel, null);
             emit(channel, command);
             break;

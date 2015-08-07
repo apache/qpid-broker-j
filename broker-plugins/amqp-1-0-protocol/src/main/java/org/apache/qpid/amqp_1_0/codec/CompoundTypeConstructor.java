@@ -23,6 +23,7 @@ package org.apache.qpid.amqp_1_0.codec;
 import org.apache.qpid.amqp_1_0.type.*;
 import org.apache.qpid.amqp_1_0.type.transport.*;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -154,7 +155,7 @@ public class CompoundTypeConstructor extends VariableWidthTypeConstructor
     }
 
     @Override
-    public Object construct(final ByteBuffer in, boolean isCopy, ValueHandler delegate) throws AmqpErrorException
+    public Object construct(final QpidByteBuffer in, boolean isCopy, ValueHandler delegate) throws AmqpErrorException
     {
         int size;
         int count;
@@ -170,8 +171,7 @@ public class CompoundTypeConstructor extends VariableWidthTypeConstructor
             count = in.getInt();
         }
 
-        ByteBuffer data;
-        ByteBuffer inDup = in.slice();
+        QpidByteBuffer inDup = in.slice();
 
         inDup.limit(size-getSize());
 

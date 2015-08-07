@@ -38,6 +38,7 @@ import org.apache.qpid.amqp_1_0.type.Symbol;
 import org.apache.qpid.amqp_1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.amqp_1_0.type.messaging.AmqpValue;
 import org.apache.qpid.amqp_1_0.type.messaging.Data;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.store.StoredMessage;
@@ -257,7 +258,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         }
 
                         @Override
-                        public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
+                        public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
                         {
                             ByteBuffer buf = allData.duplicate();
                             buf.position(offsetInMessage);
@@ -266,7 +267,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                             {
                                 buf.limit(size);
                             }
-                            return Collections.singleton(buf);
+                            return Collections.singleton(QpidByteBuffer.wrap(buf));
                         }
 
                         @Override

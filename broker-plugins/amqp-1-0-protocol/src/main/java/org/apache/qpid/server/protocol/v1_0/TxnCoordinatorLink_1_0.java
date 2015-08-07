@@ -47,6 +47,7 @@ import org.apache.qpid.amqp_1_0.type.transport.AmqpError;
 import org.apache.qpid.amqp_1_0.type.transport.Detach;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
@@ -78,7 +79,7 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
     {
         // TODO - cope with fragmented messages
 
-        ByteBuffer payload = null;
+        QpidByteBuffer payload = null;
 
 
         if(Boolean.TRUE.equals(xfr.getMore()) && _incompleteMessage == null)
@@ -100,7 +101,7 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
             {
                 size += t.getPayload().limit();
             }
-            payload = ByteBuffer.allocateDirect(size);
+            payload = QpidByteBuffer.allocateDirect(size);
             for(Transfer t : _incompleteMessage)
             {
                 payload.put(t.getPayload().duplicate());

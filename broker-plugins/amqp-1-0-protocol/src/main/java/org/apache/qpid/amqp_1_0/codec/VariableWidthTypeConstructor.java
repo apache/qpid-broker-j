@@ -21,6 +21,7 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -33,7 +34,7 @@ public abstract class VariableWidthTypeConstructor implements TypeConstructor
         _size = size;
     }
 
-    public Object construct(final ByteBuffer in, ValueHandler handler) throws AmqpErrorException
+    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
     {
         return construct(in, false, handler);
     }
@@ -43,6 +44,6 @@ public abstract class VariableWidthTypeConstructor implements TypeConstructor
         return _size;
     }
 
-    public abstract Object construct(ByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException;
+    public abstract Object construct(QpidByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException;
 
 }

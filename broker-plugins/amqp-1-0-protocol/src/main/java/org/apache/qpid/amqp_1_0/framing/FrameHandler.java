@@ -31,6 +31,7 @@ import org.apache.qpid.amqp_1_0.type.ErrorCondition;
 import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class FrameHandler implements ProtocolHandler
 {
@@ -51,7 +52,7 @@ public class FrameHandler implements ProtocolHandler
     private State _state = State.SIZE_0;
     private int _size;
 
-    private ByteBuffer _buffer;
+    private QpidByteBuffer _buffer;
 
 
 
@@ -62,14 +63,14 @@ public class FrameHandler implements ProtocolHandler
 
     }
 
-    public ProtocolHandler parse(ByteBuffer in)
+    public ProtocolHandler parse(QpidByteBuffer in)
     {
         try
         {
         Error frameParsingError = null;
         int size = _size;
         State state = _state;
-        ByteBuffer oldIn = null;
+        QpidByteBuffer oldIn = null;
 
         while(in.hasRemaining() && state != State.ERROR)
         {
@@ -135,7 +136,7 @@ public class FrameHandler implements ProtocolHandler
 
                     if(in.remaining() < size-4)
                     {
-                        _buffer = ByteBuffer.allocateDirect(size-4);
+                        _buffer = QpidByteBuffer.allocateDirect(size-4);
                         _buffer.put(in);
                         state = State.BUFFERING;
                         break;
@@ -150,7 +151,7 @@ public class FrameHandler implements ProtocolHandler
                         }
                         else
                         {
-                            ByteBuffer dup = in.duplicate();
+                            QpidByteBuffer dup = in.duplicate();
                             dup.limit(dup.position()+_buffer.remaining());
                             int i = _buffer.remaining();
                             int d = dup.remaining();
@@ -231,7 +232,7 @@ public class FrameHandler implements ProtocolHandler
                         {
                             if(val instanceof Transfer)
                             {
-                                ByteBuffer buf = ByteBuffer.allocateDirect(in.remaining());
+                                QpidByteBuffer buf = QpidByteBuffer.allocateDirect(in.remaining());
                                 buf.put(in);
                                 buf.flip();
                                 ((Transfer)val).setPayload(buf);
@@ -257,7 +258,6 @@ public class FrameHandler implements ProtocolHandler
                     {
                         in.position(inPos);
                         in.limit(inLimit);
-                        System.err.println(toHex(in));
                         throw e;
                     }
             }

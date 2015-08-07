@@ -21,8 +21,9 @@
 
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
 import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class ListWriter implements ValueWriter<List>
 {
@@ -92,7 +93,7 @@ public class ListWriter implements ValueWriter<List>
     }
 
 
-    public int writeToBuffer(ByteBuffer buffer)
+    public int writeToBuffer(QpidByteBuffer buffer)
     {
         return _delegate.writeToBuffer(buffer);
     }
@@ -141,7 +142,7 @@ public class ListWriter implements ValueWriter<List>
         private boolean _complete;
 
 
-        public int writeToBuffer(ByteBuffer buffer)
+        public int writeToBuffer(QpidByteBuffer buffer)
         {
 
             if(!_complete && buffer.hasRemaining())

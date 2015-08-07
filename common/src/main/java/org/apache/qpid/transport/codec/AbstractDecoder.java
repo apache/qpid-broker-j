@@ -42,7 +42,7 @@ import java.util.UUID;
  * @author Rafael H. Schloming
  */
 
-abstract class AbstractDecoder implements Decoder
+public abstract class AbstractDecoder implements Decoder
 {
 
     private final Map<Binary,String> str8cache = new LinkedHashMap<Binary,String>()

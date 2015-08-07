@@ -22,9 +22,10 @@ package org.apache.qpid.framing;
 
 import java.nio.ByteBuffer;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
-public class ByteArrayDataInput implements ExtendedDataInput, MarkableDataInput
+public class ByteArrayDataInput implements MarkableDataInput
 {
     private byte[] _data;
     private int _offset;
@@ -167,11 +168,11 @@ public class ByteArrayDataInput implements ExtendedDataInput, MarkableDataInput
     }
 
     @Override
-    public ByteBuffer readAsByteBuffer(final int len)
+    public QpidByteBuffer readAsByteBuffer(final int len)
     {
         byte[] data = new byte[len];
         readFully(data);
-        return ByteBuffer.wrap(data);
+        return QpidByteBuffer.wrap(ByteBuffer.wrap(data));
     }
 
     public int position()

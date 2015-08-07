@@ -22,26 +22,27 @@
 package org.apache.qpid.amqp_1_0.framing;
 
 import org.apache.qpid.amqp_1_0.type.FrameBody;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 
 public abstract class AMQFrame<T>
 {
     private T _frameBody;
-    private ByteBuffer _payload;
+    private QpidByteBuffer _payload;
 
     AMQFrame(T frameBody)
     {
         _frameBody = frameBody;
     }
 
-    protected AMQFrame(T frameBody, ByteBuffer payload)
+    protected AMQFrame(T frameBody, QpidByteBuffer payload)
     {
         _frameBody = frameBody;
         _payload = payload;
     }
 
-    public ByteBuffer getPayload()
+    public QpidByteBuffer getPayload()
     {
         return _payload;
     }
@@ -51,7 +52,7 @@ public abstract class AMQFrame<T>
         return createAMQFrame(channel, frameBody, null);
     }
 
-    public static TransportFrame createAMQFrame(short channel, FrameBody frameBody, ByteBuffer payload)
+    public static TransportFrame createAMQFrame(short channel, FrameBody frameBody, QpidByteBuffer payload)
     {
         return new TransportFrame(channel, frameBody, payload);
     }

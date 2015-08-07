@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
@@ -166,7 +167,7 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     }
 
     @Override
-    final public Collection<ByteBuffer> getContent(int offset, int size)
+    final public Collection<QpidByteBuffer> getContent(int offset, int size)
     {
         return getStoredMessage().getContent(offset, size);
     }

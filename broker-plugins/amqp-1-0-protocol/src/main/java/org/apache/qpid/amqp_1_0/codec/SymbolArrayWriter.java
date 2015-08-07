@@ -20,6 +20,7 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.Symbol;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -54,7 +55,7 @@ public class SymbolArrayWriter extends VariableWidthWriter<Symbol[]>
         return _length;
     }
 
-    @Override protected void writeBytes(final ByteBuffer buf, final int offset, final int length)
+    @Override protected void writeBytes(final QpidByteBuffer buf, final int offset, final int length)
     {
         buf.put(_encodedVal,offset,length);
     }

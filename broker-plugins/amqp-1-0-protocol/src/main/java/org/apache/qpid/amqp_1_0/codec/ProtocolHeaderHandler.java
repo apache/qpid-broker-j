@@ -24,6 +24,7 @@ import org.apache.qpid.amqp_1_0.framing.AMQPProtocolHeaderHandler;
 import org.apache.qpid.amqp_1_0.framing.SASLProtocolHeaderHandler;
 
 import org.apache.qpid.amqp_1_0.transport.ConnectionEndpoint;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -55,7 +56,7 @@ public class ProtocolHeaderHandler implements ProtocolHandler
 
     }
 
-    public ProtocolHandler parse(final ByteBuffer in)
+    public ProtocolHandler parse(final QpidByteBuffer in)
     {
         if(!in.hasRemaining())
         {
@@ -116,7 +117,7 @@ public class ProtocolHeaderHandler implements ProtocolHandler
 
     }
 
-    boolean transition(ByteBuffer in, byte expected, State next)
+    boolean transition(QpidByteBuffer in, byte expected, State next)
     {
         byte b = in.get();
         if(b == expected)

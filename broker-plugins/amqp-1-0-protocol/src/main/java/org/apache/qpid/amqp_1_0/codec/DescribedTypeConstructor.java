@@ -21,8 +21,7 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
-
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class DescribedTypeConstructor<T extends Object>
 {
@@ -30,7 +29,7 @@ public abstract class DescribedTypeConstructor<T extends Object>
     {
         return new TypeConstructor<T>()
         {
-            public T construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+            public T construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
             {
                 return DescribedTypeConstructor.this.construct(describedConstructor.construct(in, handler));
             }

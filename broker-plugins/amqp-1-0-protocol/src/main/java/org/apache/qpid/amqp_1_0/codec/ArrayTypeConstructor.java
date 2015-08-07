@@ -20,9 +20,9 @@ package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.transport.AmqpError;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.lang.reflect.Array;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +31,7 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
 
 
 
-    public Object[] construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+    public Object[] construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
         int size = read(in);
         if(in.remaining() < size)
@@ -40,7 +40,7 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
                                          "Insufficient data to decode array - requires %d octects, only %d remaining.",
                                          size, in.remaining());
         }
-        ByteBuffer dup = in.slice();
+        QpidByteBuffer dup = in.slice();
         dup.limit(size);
         in.position(in.position()+size);
         int count = read(dup);
@@ -69,13 +69,13 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
     }
 
 
-    abstract int read(ByteBuffer in) throws AmqpErrorException;
+    abstract int read(QpidByteBuffer in) throws AmqpErrorException;
 
 
     private static final ArrayTypeConstructor ONE_BYTE_SIZE_ARRAY = new ArrayTypeConstructor()
     {
 
-        @Override int read(final ByteBuffer in) throws AmqpErrorException
+        @Override int read(final QpidByteBuffer in) throws AmqpErrorException
         {
             if(!in.hasRemaining())
             {
@@ -89,7 +89,7 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
     private static final ArrayTypeConstructor FOUR_BYTE_SIZE_ARRAY = new ArrayTypeConstructor()
     {
 
-        @Override int read(final ByteBuffer in) throws AmqpErrorException
+        @Override int read(final QpidByteBuffer in) throws AmqpErrorException
         {
             if(in.remaining()<4)
             {

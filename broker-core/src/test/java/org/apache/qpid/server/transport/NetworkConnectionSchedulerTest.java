@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.transport;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -112,7 +113,7 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         Thread.sleep(500l);
         timidSender.start();
         Thread.sleep(1000l);
-        verify(timidEngine, atLeast(6)).received(any(ByteBuffer.class));
+        verify(timidEngine, atLeast(6)).received(any(QpidByteBuffer.class));
         _keepRunningThreads = false;
         transport.close();
         scheduler.close();

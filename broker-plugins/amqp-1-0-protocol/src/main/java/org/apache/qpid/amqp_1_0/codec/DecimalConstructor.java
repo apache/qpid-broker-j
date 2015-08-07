@@ -21,9 +21,9 @@ package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
 
 public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
 {
@@ -31,7 +31,7 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
     private static final DecimalConstructor DECIMAL_32 = new DecimalConstructor()
     {
 
-        public BigDecimal construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
 
 
@@ -54,7 +54,7 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
     private static final DecimalConstructor DECIMAL_64 = new DecimalConstructor()
     {
 
-        public BigDecimal construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             long val;
 
@@ -77,7 +77,7 @@ public abstract class DecimalConstructor implements TypeConstructor<BigDecimal>
     private static final DecimalConstructor DECIMAL_128 = new DecimalConstructor()
     {
 
-        public BigDecimal construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        public BigDecimal construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             long high;
             long low;

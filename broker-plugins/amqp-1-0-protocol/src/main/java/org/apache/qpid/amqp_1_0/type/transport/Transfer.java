@@ -31,13 +31,14 @@ import java.nio.ByteBuffer;
 
 
 import org.apache.qpid.amqp_1_0.type.*;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class Transfer
   implements FrameBody
   {
 
 
-    private ByteBuffer _payload;
+    private QpidByteBuffer _payload;
 
     private UnsignedInteger _handle;
 
@@ -285,12 +286,12 @@ public class Transfer
         conn.receiveTransfer(channel, this);
     }
 
-    public void setPayload(ByteBuffer payload)
+    public void setPayload(QpidByteBuffer payload)
     {
         _payload = payload;
     }
 
-    public ByteBuffer getPayload()
+    public QpidByteBuffer getPayload()
     {
         return _payload;
     }

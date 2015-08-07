@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.util.BytesDataOutput;
@@ -97,7 +98,7 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
         byte[] data = new byte[8];
         BytesDataOutput out = new BytesDataOutput(data);
         writePayload(out);
-        sender.send(ByteBuffer.wrap(data));
+        sender.send(QpidByteBuffer.wrap(data));
         return 8l;
     }
 

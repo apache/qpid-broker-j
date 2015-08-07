@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.MessageHandle;
@@ -64,7 +65,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     {
         super(msg, null);
         _contentSize = msg.getMetaData().getContentSize();
-        Collection<ByteBuffer> bufs = msg.getContent(0, _contentSize);
+        Collection<QpidByteBuffer> bufs = msg.getContent(0, _contentSize);
 
         try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
         {
@@ -140,7 +141,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
 
             final InternalMessageMetaData metaData = InternalMessageMetaData.create(persistent, internalHeader, bytes.length);
             MessageHandle<InternalMessageMetaData> handle = store.addMessage(metaData);
-            handle.addContent(ByteBuffer.wrap(bytes));
+            handle.addContent(QpidByteBuffer.wrap(bytes));
             StoredMessage<InternalMessageMetaData> storedMessage = handle.allContentAdded();
             return new InternalMessage(storedMessage, internalHeader, bodyObject);
         }
@@ -238,9 +239,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     }
 
                     @Override
-                    public Collection<ByteBuffer> getContent(final int offsetInMessage, final int size)
+                    public Collection<QpidByteBuffer> getContent(final int offsetInMessage, final int size)
                     {
-                        return Collections.singleton(ByteBuffer.wrap(bytes, offsetInMessage, size));
+                        return Collections.singleton(QpidByteBuffer.wrap(bytes, offsetInMessage, size));
                     }
 
                     @Override

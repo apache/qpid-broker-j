@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.ssl.SSLSocket;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.thread.Threading;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.SenderClosedException;
@@ -115,7 +116,7 @@ public final class IoSender implements Runnable, ByteBufferSender
         return result;
     }
 
-    public void send(ByteBuffer buf)
+    public void send(QpidByteBuffer buf)
     {
         checkNotAlreadyClosed();
 

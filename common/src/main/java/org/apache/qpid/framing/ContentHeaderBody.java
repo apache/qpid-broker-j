@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
@@ -105,7 +106,7 @@ public class ContentHeaderBody implements AMQBody
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
-        ByteBuffer data = ByteBuffer.allocate(14);
+        QpidByteBuffer data = QpidByteBuffer.allocate(14);
         EncodingUtils.writeUnsignedShort(data, CLASS_ID);
         EncodingUtils.writeUnsignedShort(data, 0);
         data.putLong(_bodySize);

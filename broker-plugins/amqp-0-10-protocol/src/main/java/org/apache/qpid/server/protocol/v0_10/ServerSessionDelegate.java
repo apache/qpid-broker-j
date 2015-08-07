@@ -34,6 +34,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.protocol.AMQConstant;
@@ -500,10 +501,13 @@ public class ServerSessionDelegate extends SessionDelegate
                                                                    final MessageMetaData_0_10 messageMetaData, final MessageStore store)
     {
         final MessageHandle<MessageMetaData_0_10> addedMessage = store.addMessage(messageMetaData);
-        ByteBuffer body = xfr.getBody();
+        Collection<QpidByteBuffer> body = xfr.getBody();
         if(body != null)
         {
-            addedMessage.addContent(body);
+            for(QpidByteBuffer b : body)
+            {
+                addedMessage.addContent(b);
+            }
         }
         final StoredMessage<MessageMetaData_0_10> storedMessage = addedMessage.allContentAdded();
         return storedMessage;

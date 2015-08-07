@@ -23,6 +23,7 @@ import org.apache.qpid.amqp_1_0.codec.ValueWriter;
 
 import org.apache.qpid.amqp_1_0.type.Binary;
 import org.apache.qpid.amqp_1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -30,14 +31,14 @@ import java.util.List;
 
 public class SectionEncoderImpl implements SectionEncoder
 {
-    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.wrap(new byte[0]);
+    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.wrap(new byte[0]);
     private ValueWriter.Registry _registry;
 
     private int _totalSize = 0;
 
     private List<byte[]> _output = new ArrayList<byte[]>();
     private static final int DEFAULT_BUFFER_SIZE = 64 * 1024;
-    private ByteBuffer _current;
+    private QpidByteBuffer _current;
 
     public SectionEncoderImpl(final AMQPDescribedTypeRegistry describedTypeRegistry)
     {
@@ -73,7 +74,7 @@ public class SectionEncoderImpl implements SectionEncoder
         int size = valueWriter.writeToBuffer(EMPTY_BYTE_BUFFER);
 
         byte[] data = new byte[size];
-        _current = ByteBuffer.wrap(data);
+        _current = QpidByteBuffer.wrap(data);
         valueWriter.writeToBuffer(_current);
         _output.add(data);
 
@@ -88,7 +89,7 @@ public class SectionEncoderImpl implements SectionEncoder
         if(_current == null)
         {
             byte[] buf = new byte[data.length];
-            _current = ByteBuffer.wrap(buf);
+            _current = QpidByteBuffer.wrap(buf);
             _output.add(buf);
         }
         int remaining = _current.remaining();
@@ -99,7 +100,7 @@ public class SectionEncoderImpl implements SectionEncoder
             _current.put(data,0,remaining);
             byte[] dst = new byte[length-remaining];
             _output.add(dst);
-            _current = ByteBuffer.wrap(dst).put(data,remaining,length-remaining);
+            _current = QpidByteBuffer.wrap(dst).put(data,remaining,length-remaining);
         }
         else
         {

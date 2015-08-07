@@ -24,6 +24,8 @@ package org.apache.qpid.amqp_1_0.codec;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 public interface ValueWriter<T extends Object>
 {
 
@@ -48,7 +50,7 @@ public interface ValueWriter<T extends Object>
     }
 
 
-    int writeToBuffer(ByteBuffer buffer);
+    int writeToBuffer(QpidByteBuffer buffer);
 
     void setValue(T frameBody);
 

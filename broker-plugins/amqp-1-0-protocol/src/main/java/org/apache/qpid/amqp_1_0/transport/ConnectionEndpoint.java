@@ -75,6 +75,7 @@ import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.amqp_1_0.type.transport.Flow;
 import org.apache.qpid.amqp_1_0.type.transport.Open;
 import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 
 public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Source, ValueWriter.Registry.Source,
@@ -82,7 +83,7 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
 
 {
     private static final short CONNECTION_CONTROL_CHANNEL = (short) 0;
-    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.wrap(new byte[0]);
+    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.wrap(new byte[0]);
     private static final Symbol SASL_PLAIN = Symbol.valueOf("PLAIN");
     private static final Symbol SASL_ANONYMOUS = Symbol.valueOf("ANONYMOUS");
     private static final Symbol SASL_EXTERNAL = Symbol.valueOf("EXTERNAL");
@@ -686,13 +687,13 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
     }
 
 
-    public synchronized int send(short channel, FrameBody body, ByteBuffer payload)
+    public synchronized int send(short channel, FrameBody body, QpidByteBuffer payload)
     {
         if (!_closedForOutput)
         {
             ValueWriter<FrameBody> writer = _describedTypeRegistry.getValueWriter(body);
             int size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
-            ByteBuffer payloadDup = payload == null ? null : payload.duplicate();
+            QpidByteBuffer payloadDup = payload == null ? null : payload.duplicate();
             int payloadSent = getMaxFrameSize() - (size + 9);
             if (payloadSent < (payload == null ? 0 : payload.remaining()))
             {

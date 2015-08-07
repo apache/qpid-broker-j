@@ -22,9 +22,10 @@ package org.apache.qpid.framing;
 
 import java.nio.ByteBuffer;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
-public class ByteBufferDataInput implements ExtendedDataInput, MarkableDataInput
+public class ByteBufferDataInput implements MarkableDataInput
 {
     private final ByteBuffer _underlying;
     private int _mark;
@@ -46,12 +47,12 @@ public class ByteBufferDataInput implements ExtendedDataInput, MarkableDataInput
         _underlying.get(b,0, len);
     }
 
-    public ByteBuffer readAsByteBuffer(int len)
+    public QpidByteBuffer readAsByteBuffer(int len)
     {
         ByteBuffer buf = _underlying.slice();
         buf.limit(len);
         skipBytes(len);
-        return buf;
+        return QpidByteBuffer.wrap(buf);
     }
 
     public int skipBytes(int n)

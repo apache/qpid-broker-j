@@ -21,14 +21,14 @@
 
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class BooleanWriter implements ValueWriter<Boolean>
 {
     private boolean _complete = true;
     private boolean _value;
 
-    public int writeToBuffer(ByteBuffer buffer)
+    public int writeToBuffer(QpidByteBuffer buffer)
     {
         if(!_complete & buffer.hasRemaining())
         {

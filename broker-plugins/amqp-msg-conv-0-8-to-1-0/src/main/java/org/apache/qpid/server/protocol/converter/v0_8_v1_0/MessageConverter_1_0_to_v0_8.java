@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
@@ -104,9 +105,9 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
             }
 
             @Override
-            public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
+            public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
             {
-                return Collections.singleton(ByteBuffer.wrap(messageContent, offsetInMessage, size));
+                return Collections.singleton(QpidByteBuffer.wrap(messageContent, offsetInMessage, size));
             }
 
             @Override

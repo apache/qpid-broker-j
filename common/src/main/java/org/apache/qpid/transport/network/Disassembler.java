@@ -30,6 +30,7 @@ import static org.apache.qpid.transport.network.Frame.LAST_SEG;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.FrameSizeObserver;
 import org.apache.qpid.transport.Header;
@@ -43,6 +44,7 @@ import org.apache.qpid.transport.SegmentType;
 import org.apache.qpid.transport.Struct;
 import org.apache.qpid.transport.codec.BBEncoder;
 import org.apache.qpid.transport.codec.Encoder;
+import org.apache.qpid.util.ByteBufferUtils;
 
 /**
  * Disassembler
@@ -116,8 +118,8 @@ public final class Disassembler implements ProtocolEventSender, ProtocolDelegate
             buf.limit(buf.position() + size);
 
             data.rewind();
-            sender.send(data);
-            sender.send(buf);
+            sender.send(QpidByteBuffer.wrap(data));
+            sender.send(QpidByteBuffer.wrap(buf));
             buf.limit(limit);
 
         }
@@ -159,7 +161,7 @@ public final class Disassembler implements ProtocolEventSender, ProtocolDelegate
     {
         synchronized (sendlock)
         {
-            sender.send(header.toByteBuffer(false));
+            sender.send(header.toByteBuffer());
             sender.flush();
         }
     }
@@ -235,7 +237,7 @@ public final class Disassembler implements ProtocolEventSender, ProtocolDelegate
             fragment(flags, type, method, buf);
             if (payload)
             {
-                ByteBuffer body = method.getBody();
+                ByteBuffer body = ByteBufferUtils.combine(method.getBody());
                 buf.limit(headerLimit);
                 buf.position(methodLimit);
                 fragment(body == null ? LAST_SEG : 0x0, SegmentType.HEADER, method, buf);

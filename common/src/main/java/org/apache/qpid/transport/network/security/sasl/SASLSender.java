@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.sasl.SaslException;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.SenderException;
 import org.apache.qpid.transport.util.Logger;
@@ -69,13 +70,13 @@ public class SASLSender extends SASLEncryptor implements ByteBufferSender
        delegate.flush();
     }
 
-    public void send(ByteBuffer buf) 
-    {        
+    public void send(QpidByteBuffer buf)
+    {
         if (closed.get())
         {
             throw new SenderException("SSL Sender is closed");
         }
-        
+
         if (isSecurityLayerEstablished())
         {
             while (buf.hasRemaining())
@@ -83,27 +84,28 @@ public class SASLSender extends SASLEncryptor implements ByteBufferSender
                 int length = Math.min(buf.remaining(), getSendBuffSize());
                 log.debug("sendBuffSize %s", getSendBuffSize());
                 log.debug("buf.remaining() %s", buf.remaining());
-                
+
                 buf.get(appData, 0, length);
                 try
                 {
                     byte[] out = getSaslClient().wrap(appData, 0, length);
                     log.debug("out.length %s", out.length);
-                    
-                    delegate.send(ByteBuffer.wrap(out));
-                } 
+
+                    delegate.send(QpidByteBuffer.wrap(out));
+                }
                 catch (SaslException e)
                 {
                     log.error("Exception while encrypting data.",e);
                     throw new SenderException("SASL Sender, Error occurred while encrypting data",e);
                 }
-            }            
+            }
         }
         else
         {
             delegate.send(buf);
-        }        
+        }
     }
+
 
     public void securityLayerEstablished()
     {

@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.AMQBody;
 import org.apache.qpid.framing.AMQDataBlock;
 import org.apache.qpid.framing.AMQFrame;
@@ -125,7 +126,8 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
                 && compressionSupported
                 && contentHeaderBody.getProperties().getEncoding()==null
                 && bodySize > _connection.getMessageCompressionThreshold()
-                && (modifiedContent = GZIPUtils.compressBufferToArray(ByteBufferUtils.combine(message.getContent(0, bodySize)))) != null)
+                && (modifiedContent = GZIPUtils.compressBufferToArray(ByteBufferUtils.combine(message.getContent(0,
+                                                                                                                 bodySize)))) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
@@ -163,9 +165,9 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             }
 
             @Override
-            public Collection<ByteBuffer> getContent(final int offset, final int size)
+            public Collection<QpidByteBuffer> getContent(final int offset, final int size)
             {
-                return Collections.singleton(ByteBuffer.wrap(content, offset, size));
+                return Collections.singleton(QpidByteBuffer.wrap(content, offset, size));
             }
 
             @Override
@@ -247,9 +249,9 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
         public void writePayload(DataOutput buffer) throws IOException
         {
-            Collection<ByteBuffer> bufs = _message.getContent(_offset, _length);
+            Collection<QpidByteBuffer> bufs = _message.getContent(_offset, _length);
 
-            for(ByteBuffer buf : bufs)
+            for(QpidByteBuffer buf : bufs)
             {
                 if (buf.hasArray())
                 {
@@ -271,9 +273,9 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         public long writePayload(final ByteBufferSender sender) throws IOException
         {
 
-            Collection<ByteBuffer> bufs = _message.getContent(_offset, _length);
+            Collection<QpidByteBuffer> bufs = _message.getContent(_offset, _length);
             long size = 0l;
-            for(ByteBuffer buf : bufs)
+            for(QpidByteBuffer buf : bufs)
             {
                 size += buf.remaining();
                 sender.send(buf.duplicate());

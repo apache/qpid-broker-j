@@ -21,6 +21,7 @@ package org.apache.qpid.amqp_1_0.messaging;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.Section;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.List;
 public interface SectionDecoder
 {
 
-    public List<Section> parseAll(ByteBuffer buf) throws AmqpErrorException;
-    public Section readSection(ByteBuffer buf) throws AmqpErrorException;
+    List<Section> parseAll(QpidByteBuffer buf) throws AmqpErrorException;
+    Section readSection(QpidByteBuffer buf) throws AmqpErrorException;
     
 }

@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class DelegatingValueWriter<V> implements ValueWriter<V>
 {
@@ -33,7 +33,7 @@ public abstract class DelegatingValueWriter<V> implements ValueWriter<V>
         _registry = registry;
     }
 
-    public int writeToBuffer(final ByteBuffer buffer)
+    public int writeToBuffer(final QpidByteBuffer buffer)
     {
         return _delegate.writeToBuffer(buffer);
     }

@@ -20,9 +20,10 @@
  */
 package org.apache.qpid.framing;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class FrameCreatingMethodProcessor implements MethodProcessor<FrameCreatingMethodProcessor.ClientAndServerChannelMethodProcessor>,
                                                      ClientMethodProcessor<FrameCreatingMethodProcessor.ClientAndServerChannelMethodProcessor>,
@@ -604,7 +605,7 @@ public class FrameCreatingMethodProcessor implements MethodProcessor<FrameCreati
         }
 
         @Override
-        public void receiveMessageContent(ByteBuffer data)
+        public void receiveMessageContent(QpidByteBuffer data)
         {
             _processedMethods.add(new AMQFrame(_channelId, new ContentBody(data)));
         }

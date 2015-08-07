@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.transport;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.slf4j.Logger;
@@ -42,33 +43,77 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
     private final SSLEngine _sslEngine;
     private final NonBlockingConnection _parent;
+    private final int _initialApplicationBufferSize;
     private SSLEngineResult _status;
     private final List<ByteBuffer> _encryptedOutput = new ArrayList<>();
     private Principal _principal;
     private Certificate _peerCertificate;
     private boolean _principalChecked;
+    private QpidByteBuffer _netInputBuffer;
+    private QpidByteBuffer _applicationBuffer;
+
 
     public NonBlockingConnectionTLSDelegate(NonBlockingConnection parent, AmqpPort port)
     {
         _parent = parent;
         _sslEngine = createSSLEngine(port);
+        _netInputBuffer = QpidByteBuffer.allocateDirect(Math.max(parent.getReceiveBufferSize(),
+                                                                 _sslEngine.getSession().getPacketBufferSize()));
+
+        _initialApplicationBufferSize =
+                Math.max(_sslEngine.getSession().getApplicationBufferSize() + 50, _parent.getReceiveBufferSize());
+        _applicationBuffer = QpidByteBuffer.allocateDirect(_initialApplicationBufferSize);
+
     }
 
     @Override
-    public boolean doRead() throws IOException
+    public boolean readyForRead()
     {
+        return _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_WRAP && (_status == null || _status.getStatus() != SSLEngineResult.Status.CLOSED);
+    }
+
+    @Override
+    public boolean processData() throws IOException
+    {
+        _netInputBuffer.flip();
         boolean readData = false;
-        if (_sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_WRAP && (_status == null || _status.getStatus() != SSLEngineResult.Status.CLOSED))
+        boolean tasksRun;
+        int oldNetBufferPos;
+        do
         {
-            readData = _parent.readAndProcessData();
+            int oldAppBufPos = _applicationBuffer.position();
+            oldNetBufferPos = _netInputBuffer.position();
+
+            _status = _sslEngine.unwrap(_netInputBuffer.getNativeBuffer(), _applicationBuffer.getNativeBuffer());
+            if (_status.getStatus() == SSLEngineResult.Status.CLOSED)
+            {
+                // KW If SSLEngine changes state to CLOSED, what will ever set _closed to true?
+                LOGGER.debug("SSLEngine closed");
+            }
+
+            tasksRun = runSSLEngineTasks(_status);
+            _applicationBuffer.flip();
+            if(_applicationBuffer.position() > oldAppBufPos)
+            {
+                readData = true;
+            }
+
+            _parent.processAmqpData(_applicationBuffer);
+
+            restoreApplicationBufferForWrite();
+
+        }
+        while((_netInputBuffer.hasRemaining() && (_netInputBuffer.position()>oldNetBufferPos)) || tasksRun);
+
+        if(_netInputBuffer.hasRemaining())
+        {
+            _netInputBuffer.compact();
+        }
+        else
+        {
+            _netInputBuffer.clear();
         }
         return readData;
-    }
-
-    @Override
-    public boolean processData(ByteBuffer buffer) throws IOException
-    {
-        return unwrapAndProcessBuffer(buffer);
     }
 
     @Override
@@ -97,34 +142,25 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         return (bufferArray.length == byteBuffersWritten) && _encryptedOutput.isEmpty();
     }
 
-    private boolean unwrapAndProcessBuffer(final ByteBuffer wrappedDataBuffer) throws SSLException
+    protected void restoreApplicationBufferForWrite()
     {
-        boolean readData = false;
-        int unwrapped;
-        boolean tasksRun;
-        do
+        _applicationBuffer = _applicationBuffer.slice();
+        if (_applicationBuffer.limit() != _applicationBuffer.capacity())
         {
-            ByteBuffer appInputBuffer =
-                    ByteBuffer.allocateDirect(_sslEngine.getSession().getApplicationBufferSize() + 50);
-            _status = _sslEngine.unwrap(wrappedDataBuffer, appInputBuffer);
-            if (_status.getStatus() == SSLEngineResult.Status.CLOSED)
-            {
-                // KW If SSLEngine changes state to CLOSED, what will ever set _closed to true?
-                LOGGER.debug("SSLEngine closed");
-            }
-
-            tasksRun = runSSLEngineTasks(_status);
-
-            appInputBuffer.flip();
-            unwrapped = appInputBuffer.remaining();
-            if(unwrapped > 0)
-            {
-                readData = true;
-            }
-            _parent.processAmqpData(appInputBuffer);
+            _applicationBuffer.position(_applicationBuffer.limit());
+            _applicationBuffer.limit(_applicationBuffer.capacity());
         }
-        while(unwrapped > 0 || tasksRun);
-        return readData;
+        else
+        {
+            QpidByteBuffer currentBuffer = _applicationBuffer;
+            int newBufSize = (currentBuffer.capacity() < _initialApplicationBufferSize)
+                    ? _initialApplicationBufferSize
+                    : currentBuffer.capacity() + _initialApplicationBufferSize;
+
+            _applicationBuffer = QpidByteBuffer.allocateDirect(newBufSize);
+            _applicationBuffer.put(currentBuffer);
+        }
+
     }
 
     private int wrapBufferArray(final ByteBuffer[] bufferArray) throws SSLException
@@ -173,8 +209,10 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             {
                 task.run();
             }
+
             return true;
         }
+
         return false;
     }
 
@@ -240,4 +278,15 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         return sslEngine;
     }
 
+    @Override
+    public QpidByteBuffer getNetInputBuffer()
+    {
+        return _netInputBuffer;
+    }
+
+    @Override
+    public void setNetInputBuffer(final QpidByteBuffer netInputBuffer)
+    {
+        _netInputBuffer = netInputBuffer;
+    }
 }

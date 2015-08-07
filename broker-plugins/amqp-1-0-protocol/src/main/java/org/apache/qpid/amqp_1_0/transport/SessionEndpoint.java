@@ -53,6 +53,7 @@ import org.apache.qpid.amqp_1_0.type.transport.Flow;
 import org.apache.qpid.amqp_1_0.type.transport.LinkError;
 import org.apache.qpid.amqp_1_0.type.transport.Role;
 import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class SessionEndpoint
 {
@@ -323,7 +324,7 @@ public class SessionEndpoint
     }
 
 
-    private int send(final FrameBody frameBody, ByteBuffer payload)
+    private int send(final FrameBody frameBody, QpidByteBuffer payload)
     {
         return _connection.send(this.getSendingChannel(), frameBody, payload);
     }
@@ -637,7 +638,7 @@ public class SessionEndpoint
 
         try
         {
-            ByteBuffer payload = xfr.getPayload();
+            QpidByteBuffer payload = xfr.getPayload();
             int payloadSent = send(xfr, payload);
 
             if(payload != null && payloadSent < payload.remaining() && payloadSent >= 0)

@@ -23,6 +23,7 @@ package org.apache.qpid.amqp_1_0.codec;
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.transport.AmqpError;
 import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -85,14 +86,14 @@ public class ValueHandler implements DescribedTypeConstructorRegistry.Source
         _describedTypeConstructorRegistry = registry;
     }
 
-    public Object parse(final ByteBuffer in) throws AmqpErrorException
+    public Object parse(final QpidByteBuffer in) throws AmqpErrorException
     {
         TypeConstructor constructor = readConstructor(in);
         return constructor.construct(in, this);
     }
 
 
-    public TypeConstructor readConstructor(ByteBuffer in) throws AmqpErrorException
+    public TypeConstructor readConstructor(QpidByteBuffer in) throws AmqpErrorException
     {
         if(!in.hasRemaining())
         {

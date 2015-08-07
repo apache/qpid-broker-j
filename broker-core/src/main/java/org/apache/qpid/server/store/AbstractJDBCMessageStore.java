@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
@@ -76,7 +77,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                                                                                                   XID_TABLE_NAME, XID_ACTIONS_TABLE_NAME));
 
     private static final int DB_VERSION = 8;
-    private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocateDirect(0);
+    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.allocateDirect(0);
 
     private final AtomicLong _messageId = new AtomicLong(0);
 
@@ -1098,7 +1099,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
     protected abstract byte[] getBlobAsBytes(ResultSet rs, int col) throws SQLException;
 
-    private void addContent(Connection conn, long messageId, ByteBuffer src)
+    private void addContent(Connection conn, long messageId, QpidByteBuffer src)
     {
         getLogger().debug("Adding content for message {}", messageId);
 
@@ -1106,16 +1107,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
 
         try
         {
-            src = src.slice();
-
-            byte[] chunkData = new byte[src.limit()];
-            src.duplicate().get(chunkData);
 
             stmt = conn.prepareStatement(INSERT_INTO_MESSAGE_CONTENT);
             stmt.setLong(1,messageId);
-
-            ByteArrayInputStream bis = new ByteArrayInputStream(chunkData);
-            stmt.setBinaryStream(2, bis, chunkData.length);
+            stmt.setBinaryStream(2, src.duplicate().asInputStream(), src.remaining());
             stmt.executeUpdate();
         }
         catch (SQLException e)
@@ -1184,7 +1179,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     }
 
 
-    private ByteBuffer getAllContent(long messageId)
+    private QpidByteBuffer getAllContent(long messageId)
     {
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -1203,7 +1198,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
 
                 byte[] dataAsBytes = getBlobAsBytes(rs, 1);
-                ByteBuffer buf = ByteBuffer.allocateDirect(dataAsBytes.length);
+                QpidByteBuffer buf = QpidByteBuffer.allocateDirect(dataAsBytes.length);
                 buf.put(dataAsBytes);
                 buf.flip();
                 return buf;
@@ -1432,15 +1427,15 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     static interface MessageDataRef<T extends StorableMessageMetaData>
     {
         T getMetaData();
-        ByteBuffer getData();
-        void setData(ByteBuffer data);
+        QpidByteBuffer getData();
+        void setData(QpidByteBuffer data);
         boolean isHardRef();
     }
 
     private static final class MessageDataHardRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
     {
         private final T _metaData;
-        private ByteBuffer _data;
+        private QpidByteBuffer _data;
 
         private MessageDataHardRef(final T metaData)
         {
@@ -1454,13 +1449,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public ByteBuffer getData()
+        public QpidByteBuffer getData()
         {
             return _data;
         }
 
         @Override
-        public void setData(final ByteBuffer data)
+        public void setData(final QpidByteBuffer data)
         {
             _data = data;
         }
@@ -1475,9 +1470,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private static final class MessageData<T extends StorableMessageMetaData>
     {
         private T _metaData;
-        private SoftReference<ByteBuffer> _data;
+        private SoftReference<QpidByteBuffer> _data;
 
-        private MessageData(final T metaData, final ByteBuffer data)
+        private MessageData(final T metaData, final QpidByteBuffer data)
         {
             _metaData = metaData;
 
@@ -1492,12 +1487,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             return _metaData;
         }
 
-        public ByteBuffer getData()
+        public QpidByteBuffer getData()
         {
             return _data == null ? null : _data.get();
         }
 
-        public void setData(final ByteBuffer data)
+        public void setData(final QpidByteBuffer data)
         {
             _data = new SoftReference<>(data);
         }
@@ -1507,7 +1502,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
     private static final class MessageDataSoftRef<T extends StorableMessageMetaData> extends SoftReference<MessageData<T>> implements MessageDataRef<T>
     {
 
-        public MessageDataSoftRef(final T metadata, ByteBuffer data)
+        public MessageDataSoftRef(final T metadata, QpidByteBuffer data)
         {
             super(new MessageData<T>(metadata, data));
         }
@@ -1520,7 +1515,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public ByteBuffer getData()
+        public QpidByteBuffer getData()
         {
             MessageData<T> ref = get();
 
@@ -1528,7 +1523,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public void setData(final ByteBuffer data)
+        public void setData(final QpidByteBuffer data)
         {
             MessageData<T> ref = get();
             if(ref != null)
@@ -1601,10 +1596,10 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public void addContent(ByteBuffer src)
+        public void addContent(QpidByteBuffer src)
         {
             src = src.slice();
-            ByteBuffer data = _messageDataRef.getData();
+            QpidByteBuffer data = _messageDataRef.getData();
             if(data == null)
             {
                 _messageDataRef.setData(src);
@@ -1612,7 +1607,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             else
             {
                 int size = data.remaining() + src.remaining();
-                ByteBuffer buf = data.isDirect() ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
+                QpidByteBuffer buf = data.isDirect() ? QpidByteBuffer.allocateDirect(size) : QpidByteBuffer.allocate(size);
                 buf.put(data.duplicate());
                 buf.put(src.duplicate());
                 buf.flip();
@@ -1629,17 +1624,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         @Override
         public int getContent(int offsetInMessage, ByteBuffer dst)
         {
-            ByteBuffer data = getContentAsByteBuffer();
-            data = data.slice();
+            QpidByteBuffer data = getContentAsByteBuffer();
             int length = Math.min(dst.remaining(), data.remaining());
-            data.limit(length);
-            dst.put(data);
+            data = data.view(offsetInMessage, length);
+            data.get(dst);
             return length;
         }
 
-        private ByteBuffer getContentAsByteBuffer()
+        private QpidByteBuffer getContentAsByteBuffer()
         {
-            ByteBuffer data = _messageDataRef.getData();
+            QpidByteBuffer data = _messageDataRef.getData();
             if(data == null)
             {
                 if(stored())
@@ -1666,19 +1660,16 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
                 else
                 {
-                    data = ByteBuffer.wrap(new byte[0]);
+                    data = QpidByteBuffer.wrap(new byte[0]);
                 }
             } return data;
         }
 
         @Override
-        public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
+        public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
         {
-            ByteBuffer data = getContentAsByteBuffer();
-            data = data.duplicate();
-            data.position(offsetInMessage);
-            data = data.slice();
-            data.limit(size);
+            QpidByteBuffer data = getContentAsByteBuffer();
+            data = data.view(offsetInMessage, Math.min(size,data.remaining()-offsetInMessage));
             return Collections.singleton(data);
         }
 

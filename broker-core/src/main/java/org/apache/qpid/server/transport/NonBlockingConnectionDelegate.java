@@ -24,15 +24,23 @@ import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
 
-public interface NonBlockingConnectionDelegate
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
+interface NonBlockingConnectionDelegate
 {
-    boolean doRead() throws IOException;
     boolean doWrite(ByteBuffer[] bufferArray) throws IOException;
-    boolean processData(ByteBuffer data) throws IOException;
+
+    boolean readyForRead();
+
+    boolean processData() throws IOException;
 
     Principal getPeerPrincipal();
 
     Certificate getPeerCertificate();
 
     boolean needsWork();
+
+    QpidByteBuffer getNetInputBuffer();
+
+    void setNetInputBuffer(QpidByteBuffer buffer);
 }

@@ -21,8 +21,7 @@ package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.UnsignedInteger;
-
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 class ZeroUIntConstructor implements TypeConstructor<UnsignedInteger>
 {
@@ -32,7 +31,7 @@ class ZeroUIntConstructor implements TypeConstructor<UnsignedInteger>
     {
     }
 
-    public UnsignedInteger construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+    public UnsignedInteger construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
         return UnsignedInteger.ZERO;
     }

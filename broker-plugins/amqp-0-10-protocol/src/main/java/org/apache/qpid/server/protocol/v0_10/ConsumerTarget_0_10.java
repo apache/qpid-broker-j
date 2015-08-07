@@ -21,13 +21,18 @@
 package org.apache.qpid.server.protocol.v0_10;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.flow.FlowCreditManager;
@@ -266,26 +271,26 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         boolean msgCompressed = messageProps != null && GZIPUtils.GZIP_CONTENT_ENCODING.equals(messageProps.getContentEncoding());
 
 
-        ByteBuffer body = ByteBufferUtils.combine(msg.getBody());
+        Collection<QpidByteBuffer> body = msg.getBody();
 
         boolean compressionSupported = _session.getConnection().getConnectionDelegate().isCompressionSupported();
 
         if(msgCompressed && !compressionSupported)
         {
-            byte[] uncompressed = GZIPUtils.uncompressBufferToArray(body);
+            byte[] uncompressed = GZIPUtils.uncompressBufferToArray(ByteBufferUtils.combine(body));
             if(uncompressed != null)
             {
                 messageProps.setContentEncoding(null);
-                body = ByteBuffer.wrap(uncompressed);
+                body = Collections.singleton(QpidByteBuffer.wrap(uncompressed));
             }
         }
         else if(!msgCompressed
                 && compressionSupported
                 && (messageProps == null || messageProps.getContentEncoding()==null)
                 && body != null
-                && body.remaining() > _session.getConnection().getMessageCompressionThreshold())
+                && ByteBufferUtils.remaining(body) > _session.getConnection().getMessageCompressionThreshold())
         {
-            byte[] compressed = GZIPUtils.compressBufferToArray(body);
+            byte[] compressed = GZIPUtils.compressBufferToArray(ByteBufferUtils.combine(body));
             if(compressed != null)
             {
                 if(messageProps == null)
@@ -293,7 +298,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                     messageProps = new MessageProperties();
                 }
                 messageProps.setContentEncoding(GZIPUtils.GZIP_CONTENT_ENCODING);
-                body = ByteBuffer.wrap(compressed);
+                body = Collections.singleton(QpidByteBuffer.wrap(compressed));
             }
         }
 

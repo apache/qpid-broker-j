@@ -22,14 +22,13 @@ package org.apache.qpid.amqp_1_0.codec;
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.transport.*;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
-
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class BooleanConstructor
 {
     private static final TypeConstructor<Boolean> TRUE_INSTANCE = new TypeConstructor<Boolean>()
     {
-        public Boolean construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        public Boolean construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             return Boolean.TRUE;
         }
@@ -37,14 +36,14 @@ public class BooleanConstructor
 
     private static final TypeConstructor<Boolean> FALSE_INSTANCE = new TypeConstructor<Boolean>()
         {
-            public Boolean construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+            public Boolean construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
             {
                 return Boolean.FALSE;
             }
         };
     private static final TypeConstructor<Boolean> BYTE_INSTANCE = new TypeConstructor<Boolean>()
     {
-        public Boolean construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+        public Boolean construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
         {
             if(in.hasRemaining())
             {

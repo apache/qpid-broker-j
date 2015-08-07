@@ -23,6 +23,8 @@ package org.apache.qpid.server.store;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 public interface StoredMessage<M extends StorableMessageMetaData>
 {
     M getMetaData();
@@ -31,7 +33,7 @@ public interface StoredMessage<M extends StorableMessageMetaData>
 
     int getContent(int offsetInMessage, ByteBuffer dst);
 
-    Collection<ByteBuffer> getContent(int offsetInMessage, int size);
+    Collection<QpidByteBuffer> getContent(int offsetInMessage, int size);
 
     void remove();
 

@@ -21,9 +21,13 @@ package org.apache.qpid.transport;
  */
 
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.codec.Decoder;
 import org.apache.qpid.transport.codec.Encoder;
 
@@ -66,13 +70,17 @@ public final class MessageTransfer extends Method {
     private MessageAcceptMode acceptMode;
     private MessageAcquireMode acquireMode;
     private Header header;
-    private ByteBuffer body;
+    private Collection<QpidByteBuffer> _body;
 
 
     public MessageTransfer() {}
 
+    public MessageTransfer(String destination, MessageAcceptMode acceptMode, MessageAcquireMode acquireMode, Header header, java.nio.ByteBuffer body, Option ... options)
+    {
+        this(destination, acceptMode, acquireMode, header, Collections.singletonList(QpidByteBuffer.wrap(body)), options);
+    }
 
-    public MessageTransfer(String destination, MessageAcceptMode acceptMode, MessageAcquireMode acquireMode, Header header, java.nio.ByteBuffer body, Option ... _options) {
+    public MessageTransfer(String destination, MessageAcceptMode acceptMode, MessageAcquireMode acquireMode, Header header, Collection<QpidByteBuffer> body, Option ... _options) {
         if(destination != null) {
             setDestination(destination);
         }
@@ -194,42 +202,42 @@ public final class MessageTransfer extends Method {
         return this;
     }
 
-    public int getBodySize()
-    {
-        return this.body == null ? 0 : this.body.remaining();
-    }
-
-    public final ByteBuffer getBody() {
-        if (this.body == null)
+    @Override
+    public final Collection<QpidByteBuffer> getBody() {
+        if (this._body == null)
         {
             return null;
         }
         else
         {
-            return this.body.slice();
+            return Collections.unmodifiableCollection(_body);
         }
     }
 
-    public final void setBody(ByteBuffer body) {
-        this.body = body;
+    @Override
+    public final void setBody(Collection<QpidByteBuffer> body) {
+        this._body = body;
     }
 
-    public final MessageTransfer body(ByteBuffer body)
+    public final MessageTransfer body(List<QpidByteBuffer> body)
     {
         setBody(body);
         return this;
     }
 
     public final byte[] getBodyBytes() {
-        ByteBuffer buf = getBody();
-        byte[] bytes = new byte[buf.remaining()];
-        buf.get(bytes);
+        Collection<QpidByteBuffer> body = getBody();
+        byte[] bytes = new byte[getBodySize()];
+        for(QpidByteBuffer buf : body)
+        {
+            buf.duplicate().get(bytes);
+        }
         return bytes;
     }
 
     public final void setBody(byte[] body)
     {
-        setBody(ByteBuffer.wrap(body));
+        setBody(Collections.singletonList(QpidByteBuffer.wrap(body)));
     }
 
     public final String getBodyString() {

@@ -23,6 +23,8 @@ package org.apache.qpid.amqp_1_0.codec;
 
 import java.nio.ByteBuffer;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 public abstract class CompoundWriter<V> implements ValueWriter<V>
 {
     private int _length;
@@ -51,12 +53,12 @@ public abstract class CompoundWriter<V> implements ValueWriter<V>
 
     private State _state = State.FORMAT_CODE;
 
-    public int writeToBuffer(ByteBuffer buffer)
+    public int writeToBuffer(QpidByteBuffer buffer)
     {
         return writeToBuffer(buffer, false);
     }
 
-    public int writeToBuffer(ByteBuffer buffer, boolean large)
+    public int writeToBuffer(QpidByteBuffer buffer, boolean large)
     {
         final int length = _length;
 
@@ -209,7 +211,7 @@ public abstract class CompoundWriter<V> implements ValueWriter<V>
         return _length;
     }
 
-    private void writeFirstPass(ByteBuffer buffer, int size)
+    private void writeFirstPass(QpidByteBuffer buffer, int size)
     {
 
         State state = State.FORMAT_CODE;

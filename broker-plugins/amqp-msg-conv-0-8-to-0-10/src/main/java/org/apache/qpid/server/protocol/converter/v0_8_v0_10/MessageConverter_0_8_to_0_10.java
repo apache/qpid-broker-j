@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.FieldTable;
@@ -88,7 +89,7 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
             }
 
             @Override
-            public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
+            public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
             {
                 return message_0_8.getContent(offsetInMessage, size);
             }

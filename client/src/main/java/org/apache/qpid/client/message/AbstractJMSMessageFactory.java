@@ -24,6 +24,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -33,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.client.AMQTopic;
@@ -76,7 +78,7 @@ public abstract class AbstractJMSMessageFactory
                     _logger.debug("Non-fragmented message body (bodySize=" + contentHeader.getBodySize() + ")");
                 }
 
-                data = ((ContentBody) bodies.get(0)).getPayload().duplicate();
+                data = ((ContentBody) bodies.get(0)).getPayload().getNativeBuffer().duplicate();
             }
             else if (bodies != null)
             {
@@ -91,7 +93,7 @@ public abstract class AbstractJMSMessageFactory
                 while (it.hasNext())
                 {
                     ContentBody cb = (ContentBody) it.next();
-                    final ByteBuffer payload = cb.getPayload().duplicate();
+                    final ByteBuffer payload = cb.getPayload().getNativeBuffer().duplicate();
                     if (payload.isDirect() || payload.isReadOnly())
                     {
                         data.put(payload);
@@ -131,15 +133,25 @@ public abstract class AbstractJMSMessageFactory
 
     protected AbstractJMSMessage create010MessageWithBody(long messageNbr, MessageProperties msgProps,
                                                           DeliveryProperties deliveryProps,
-                                                          java.nio.ByteBuffer body) throws QpidException
+                                                          Collection<QpidByteBuffer> body) throws QpidException
     {
         ByteBuffer data;
         final boolean debug = _logger.isDebugEnabled();
 
 
-        if (body != null)
+        if (body != null && body.size() != 0)
         {
-            data = body;
+            int size = 0;
+            for(QpidByteBuffer b : body)
+            {
+                size += b.remaining();
+            }
+            data = ByteBuffer.allocate(size);
+            for(QpidByteBuffer b : body)
+            {
+                b.get(data);
+            }
+            data.flip();
         }
         else // body == null
         {
@@ -180,7 +192,7 @@ public abstract class AbstractJMSMessageFactory
     }
 
     public AbstractJMSMessage createMessage(long messageNbr, boolean redelivered, MessageProperties msgProps,
-                                            DeliveryProperties deliveryProps, java.nio.ByteBuffer body)
+                                            DeliveryProperties deliveryProps, Collection<QpidByteBuffer> body)
             throws JMSException, QpidException
     {
         final AbstractJMSMessage msg =
@@ -193,7 +205,7 @@ public abstract class AbstractJMSMessageFactory
     private class BodyInputStream extends InputStream
     {
         private final Iterator<ContentBody> _bodiesIter;
-        private ByteBuffer _currentBuffer;
+        private QpidByteBuffer _currentBuffer;
         public BodyInputStream(final List<ContentBody> bodies)
         {
             _bodiesIter = bodies.iterator();

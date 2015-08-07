@@ -22,9 +22,11 @@ package org.apache.qpid.amqp_1_0.codec;
 
 import java.nio.ByteBuffer;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 public interface ProtocolHandler
 {
-    ProtocolHandler parse(ByteBuffer in);
+    ProtocolHandler parse(QpidByteBuffer in);
 
     boolean isDone();
 }

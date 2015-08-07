@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ import org.apache.qpid.amqp_1_0.type.messaging.Released;
 import org.apache.qpid.amqp_1_0.type.transaction.TransactionalState;
 import org.apache.qpid.amqp_1_0.type.transport.SenderSettleMode;
 import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
 import org.apache.qpid.server.consumer.ConsumerImpl;
@@ -138,24 +140,23 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         Transfer transfer = new Transfer();
         //TODO
 
-
-        List<ByteBuffer> fragments = message.getFragments();
-        ByteBuffer payload;
+        Collection<QpidByteBuffer> fragments = message.getFragments();
+        QpidByteBuffer payload;
         if(fragments.size() == 1)
         {
-            payload = fragments.get(0);
+            payload = fragments.iterator().next();
         }
         else
         {
             int size = 0;
-            for(ByteBuffer fragment : fragments)
+            for(QpidByteBuffer fragment : fragments)
             {
                 size += fragment.remaining();
             }
 
-            payload = ByteBuffer.allocateDirect(size);
+            payload = QpidByteBuffer.allocateDirect(size);
 
-            for(ByteBuffer fragment : fragments)
+            for(QpidByteBuffer fragment : fragments)
             {
                 payload.put(fragment.duplicate());
             }
@@ -171,7 +172,6 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
             Header oldHeader = null;
             try
             {
-                ByteBuffer encodedBuf = payload.duplicate();
                 Object value = valueHandler.parse(payload);
                 if(value instanceof Header)
                 {
@@ -200,8 +200,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
             _sectionEncoder.encodeObject(header);
             Binary encodedHeader = _sectionEncoder.getEncoding();
 
-            ByteBuffer oldPayload = payload;
-            payload = ByteBuffer.allocateDirect(oldPayload.remaining() + encodedHeader.getLength());
+            QpidByteBuffer oldPayload = payload;
+            payload = QpidByteBuffer.allocateDirect(oldPayload.remaining() + encodedHeader.getLength());
             payload.put(encodedHeader.getArray(),encodedHeader.getArrayOffset(),encodedHeader.getLength());
             payload.put(oldPayload);
             payload.flip();

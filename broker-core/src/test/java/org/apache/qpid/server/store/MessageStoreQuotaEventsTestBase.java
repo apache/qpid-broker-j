@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.VirtualHost;
@@ -115,7 +116,7 @@ public abstract class MessageStoreQuotaEventsTestBase extends QpidTestCase imple
     {
         StorableMessageMetaData metaData = createMetaData(id, MESSAGE_DATA.length);
         MessageHandle<?> handle = _store.addMessage(metaData);
-        handle.addContent(ByteBuffer.wrap(MESSAGE_DATA));
+        handle.addContent(QpidByteBuffer.wrap(MESSAGE_DATA));
         StoredMessage<? extends StorableMessageMetaData> storedMessage = handle.allContentAdded();
         TestMessage message = new TestMessage(id, storedMessage);
         return message;

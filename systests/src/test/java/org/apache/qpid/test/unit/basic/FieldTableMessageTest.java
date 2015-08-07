@@ -23,6 +23,7 @@ package org.apache.qpid.test.unit.basic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
@@ -133,7 +134,7 @@ public class FieldTableMessageTest extends QpidBrokerTestCase implements Message
             final long bodyLength = bytesMessage.getBodyLength();
             byte[] data = new byte[(int) bodyLength];
             bytesMessage.readBytes(data);
-            FieldTable actual = new FieldTable(ByteBuffer.wrap(data));
+            FieldTable actual = new FieldTable(QpidByteBuffer.wrap(data));
             for (String key : _expected.keys())
             {
                 assertEquals("Values for " + key + " did not match", _expected.getObject(key), actual.getObject(key));

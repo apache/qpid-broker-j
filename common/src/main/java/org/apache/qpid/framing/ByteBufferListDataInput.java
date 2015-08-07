@@ -23,9 +23,10 @@ package org.apache.qpid.framing;
 import java.nio.ByteBuffer;
 import java.util.List;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
-public class ByteBufferListDataInput implements ExtendedDataInput, MarkableDataInput
+public class ByteBufferListDataInput implements MarkableDataInput
 {
     private final List<ByteBuffer> _underlying;
     private int _bufferIndex;
@@ -45,7 +46,7 @@ public class ByteBufferListDataInput implements ExtendedDataInput, MarkableDataI
         }
         else
         {
-            ByteBuffer buf = readAsByteBuffer(b.length);
+            ByteBuffer buf = readAsNativeByteBuffer(b.length);
             buf.get(b);
         }
     }
@@ -59,13 +60,18 @@ public class ByteBufferListDataInput implements ExtendedDataInput, MarkableDataI
         }
         else
         {
-            ByteBuffer buf = readAsByteBuffer(len);
+            ByteBuffer buf = readAsNativeByteBuffer(len);
             buf.get(b, off, len);
         }
     }
 
     @Override
-    public ByteBuffer readAsByteBuffer(int len)
+    public QpidByteBuffer readAsByteBuffer(int len)
+    {
+        return QpidByteBuffer.wrap(readAsNativeByteBuffer(len));
+    }
+
+    private ByteBuffer readAsNativeByteBuffer(int len)
     {
         ByteBuffer currentBuffer = getCurrentBuffer();
         if(currentBuffer.remaining()>=len)
@@ -167,7 +173,7 @@ public class ByteBufferListDataInput implements ExtendedDataInput, MarkableDataI
         }
         else
         {
-            return readAsByteBuffer(size);
+            return readAsNativeByteBuffer(size);
         }
     }
 

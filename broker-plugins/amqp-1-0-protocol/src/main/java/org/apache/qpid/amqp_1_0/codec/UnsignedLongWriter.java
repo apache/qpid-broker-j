@@ -22,8 +22,7 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.UnsignedLong;
-
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class UnsignedLongWriter implements ValueWriter<UnsignedLong>
 {
@@ -71,7 +70,7 @@ public class UnsignedLongWriter implements ValueWriter<UnsignedLong>
         private boolean _complete;
 
 
-        public int writeToBuffer(ByteBuffer buffer)
+        public int writeToBuffer(QpidByteBuffer buffer)
         {
 
             if(!_complete && buffer.hasRemaining())
@@ -116,7 +115,7 @@ public class UnsignedLongWriter implements ValueWriter<UnsignedLong>
         registry.register(UnsignedLong.class, FACTORY);
     }
 
-    public int writeToBuffer(final ByteBuffer buffer)
+    public int writeToBuffer(final QpidByteBuffer buffer)
     {
         return _delegate.writeToBuffer(buffer);
     }

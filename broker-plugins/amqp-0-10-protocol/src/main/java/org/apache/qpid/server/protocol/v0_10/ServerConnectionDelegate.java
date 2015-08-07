@@ -294,7 +294,6 @@ public class ServerConnectionDelegate extends ServerDelegate
         }
 
         setConnectionTuneOkChannelMax(sconn, okChannelMax);
-
         conn.setMaxFrameSize(okMaxFrameSize);
     }
 

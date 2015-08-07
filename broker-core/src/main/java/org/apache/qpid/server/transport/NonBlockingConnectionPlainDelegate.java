@@ -24,28 +24,62 @@ import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 public class NonBlockingConnectionPlainDelegate implements NonBlockingConnectionDelegate
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingConnectionPlainDelegate.class);
+
     private final NonBlockingConnection _parent;
+    private QpidByteBuffer _netInputBuffer;
 
     public NonBlockingConnectionPlainDelegate(NonBlockingConnection parent)
     {
         _parent = parent;
+        _netInputBuffer = QpidByteBuffer.allocateDirect(parent.getReceiveBufferSize());
     }
 
     @Override
-    public boolean doRead() throws IOException
+    public boolean readyForRead()
     {
-        return _parent.readAndProcessData();
+        return true;
     }
 
     @Override
-    public boolean processData(ByteBuffer buffer)
+    public boolean processData()
     {
-        _parent.processAmqpData(buffer);
+        _netInputBuffer.flip();
+        _parent.processAmqpData(_netInputBuffer);
+
+        restoreApplicationBufferForWrite();
 
         return false;
     }
+
+    protected void restoreApplicationBufferForWrite()
+    {
+        _netInputBuffer = _netInputBuffer.slice();
+        if (_netInputBuffer.limit() != _netInputBuffer.capacity())
+        {
+            _netInputBuffer.position(_netInputBuffer.limit());
+            _netInputBuffer.limit(_netInputBuffer.capacity());
+        }
+        else
+        {
+            QpidByteBuffer currentBuffer = _netInputBuffer;
+            int newBufSize = (currentBuffer.capacity() < _parent.getReceiveBufferSize())
+                    ? _parent.getReceiveBufferSize()
+                    : currentBuffer.capacity() + _parent.getReceiveBufferSize();
+
+            _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
+            _netInputBuffer.put(currentBuffer);
+        }
+
+    }
+
 
     @Override
     public boolean doWrite(ByteBuffer[] bufferArray) throws IOException
@@ -86,5 +120,17 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     public boolean needsWork()
     {
         return false;
+    }
+
+    @Override
+    public QpidByteBuffer getNetInputBuffer()
+    {
+        return _netInputBuffer;
+    }
+
+    @Override
+    public void setNetInputBuffer(final QpidByteBuffer netInputBuffer)
+    {
+        _netInputBuffer = netInputBuffer;
     }
 }

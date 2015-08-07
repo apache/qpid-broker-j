@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.transport;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.network.TransportEncryption;
 
 import java.io.IOException;
@@ -29,25 +30,32 @@ import java.security.cert.Certificate;
 public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnectionDelegate
 {
     private static final int NUMBER_OF_BYTES_FOR_TLS_CHECK = 6;
+    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.allocate(0);
     public final NonBlockingConnection _parent;
+
+    private QpidByteBuffer _netInputBuffer;
 
     public NonBlockingConnectionUndecidedDelegate(NonBlockingConnection parent)
     {
         _parent = parent;
+        _netInputBuffer = QpidByteBuffer.allocateDirect(NUMBER_OF_BYTES_FOR_TLS_CHECK);
+
     }
 
     @Override
-    public boolean doRead() throws IOException
+    public boolean readyForRead()
     {
-        return _parent.readAndProcessData();
+        return true;
     }
 
-    public boolean processData(ByteBuffer buffer) throws IOException
+    public boolean processData() throws IOException
     {
+        QpidByteBuffer buffer = _netInputBuffer.duplicate();
+        buffer.flip();
         if (buffer.remaining() >= NUMBER_OF_BYTES_FOR_TLS_CHECK)
         {
             final byte[] headerBytes = new byte[NUMBER_OF_BYTES_FOR_TLS_CHECK];
-            ByteBuffer dup = buffer.duplicate();
+            QpidByteBuffer dup = buffer.duplicate();
             dup.get(headerBytes);
 
             if (looksLikeSSL(headerBytes))
@@ -58,7 +66,8 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
             {
                 _parent.setTransportEncryption(TransportEncryption.NONE);
             }
-            _parent.processData(buffer);
+
+            return true;
         }
         return false;
     }
@@ -111,5 +120,17 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
                         headerBytes[4] == 1 || // TLS 1.0
                         headerBytes[4] == 2 || // TLS 1.1
                         headerBytes[4] == 3);
+    }
+
+    @Override
+    public QpidByteBuffer getNetInputBuffer()
+    {
+        return _netInputBuffer;
+    }
+
+    @Override
+    public void setNetInputBuffer(final QpidByteBuffer netInputBuffer)
+    {
+        _netInputBuffer = netInputBuffer;
     }
 }

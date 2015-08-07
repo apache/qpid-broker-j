@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.Symbol;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class SymbolTypeConstructor extends VariableWidthTypeConstructor
 {
@@ -48,7 +49,7 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor
     }
 
     @Override
-    public Object construct(final ByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
+    public Object construct(final QpidByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
     {
         int size;
 
@@ -76,9 +77,9 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor
         Symbol symbolVal = SYMBOL_MAP.get(binaryStr);
         if(symbolVal == null)
         {
-            ByteBuffer dup = in.duplicate();
+            QpidByteBuffer dup = in.duplicate();
             dup.limit(in.position()+size);
-            CharBuffer charBuf = ASCII.decode(dup);
+            CharBuffer charBuf = dup.decode(ASCII);
 
 
             symbolVal = Symbol.getSymbol(charBuf.toString());

@@ -21,7 +21,7 @@
 
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class SimpleVariableWidthWriter<V> extends VariableWidthWriter<V>
 {
@@ -39,7 +39,7 @@ public abstract class SimpleVariableWidthWriter<V> extends VariableWidthWriter<V
         return _buf.length;
     }
 
-    protected void writeBytes(ByteBuffer buf, int offset, int length)
+    protected void writeBytes(QpidByteBuffer buf, int offset, int length)
     {
         buf.put(_buf, getOffset()+offset, length);
     }

@@ -26,6 +26,7 @@ import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.ErrorCondition;
 import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Formatter;
@@ -49,7 +50,7 @@ public class SASLFrameHandler implements ProtocolHandler
     private State _state = State.SIZE_0;
     private int _size;
 
-    private ByteBuffer _buffer;
+    private QpidByteBuffer _buffer;
 
 
 
@@ -60,14 +61,14 @@ public class SASLFrameHandler implements ProtocolHandler
 
     }
 
-    public ProtocolHandler parse(ByteBuffer in)
+    public ProtocolHandler parse(QpidByteBuffer in)
     {
         try
         {
         Error frameParsingError = null;
         int size = _size;
         State state = _state;
-        ByteBuffer oldIn = null;
+        QpidByteBuffer oldIn = null;
 
         while(in.hasRemaining() && !_connection.isSASLComplete() && state != State.ERROR)
         {
@@ -133,7 +134,7 @@ public class SASLFrameHandler implements ProtocolHandler
 
                     if(in.remaining() < size-4)
                     {
-                        _buffer = ByteBuffer.allocateDirect(size-4);
+                        _buffer = QpidByteBuffer.allocateDirect(size-4);
                         _buffer.put(in);
                         state = State.BUFFERING;
                         break;
@@ -148,7 +149,7 @@ public class SASLFrameHandler implements ProtocolHandler
                         }
                         else
                         {
-                            ByteBuffer dup = in.duplicate();
+                            QpidByteBuffer dup = in.duplicate();
                             dup.limit(dup.position()+_buffer.remaining());
                             int i = _buffer.remaining();
                             int d = dup.remaining();

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.qpid.AMQPInvalidClassException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
@@ -199,7 +200,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             }
 
             @Override
-            public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
+            public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
             {
                 return message.getContent(offsetInMessage, size);
             }

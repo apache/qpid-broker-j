@@ -28,6 +28,7 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.SenderException;
 import org.apache.qpid.transport.network.security.SSLStatus;
@@ -126,7 +127,7 @@ public class SSLSender implements ByteBufferSender
                 netData.limit(limit);
                 netData.position(netData.position() + read);
 
-                delegate.send(data);
+                delegate.send(QpidByteBuffer.wrap(data));
                 flush();
             }
             result = engine.wrap(ByteBuffer.allocate(0), netData);
@@ -140,7 +141,7 @@ public class SSLSender implements ByteBufferSender
         delegate.flush();
     }
 
-    public void send(ByteBuffer appData)
+    public void send(QpidByteBuffer appData)
     {
         if (closed.get() && !_sslStatus.getSslErrorFlag())
         {
@@ -155,7 +156,7 @@ public class SSLSender implements ByteBufferSender
             int read = 0;
             try
             {
-                SSLEngineResult result = engine.wrap(appData, netData);
+                SSLEngineResult result = engine.wrap(appData.getNativeBuffer(), netData);
                 read   = result.bytesProduced();
                 status = result.getStatus();
                 handshakeStatus = result.getHandshakeStatus();
@@ -177,7 +178,7 @@ public class SSLSender implements ByteBufferSender
                 netData.limit(limit);
                 netData.position(netData.position() + read);
 
-                delegate.send(data);
+                delegate.send(QpidByteBuffer.wrap(data));
             }
 
             switch(status)
@@ -219,24 +220,24 @@ public class SSLSender implements ByteBufferSender
 
                         switch (engine.getHandshakeStatus())
                         {
-                        case NEED_UNWRAP:
-                            final long start = System.currentTimeMillis();
-                            try
-                            {
-                                _sslStatus.getSslLock().wait(timeout);
-                            }
-                            catch(InterruptedException e)
-                            {
-                                // pass
-                            }
+                            case NEED_UNWRAP:
+                                final long start = System.currentTimeMillis();
+                                try
+                                {
+                                    _sslStatus.getSslLock().wait(timeout);
+                                }
+                                catch(InterruptedException e)
+                                {
+                                    // pass
+                                }
 
-                            if (!_sslStatus.getSslErrorFlag() && System.currentTimeMillis() - start >= timeout)
-                            {                                
-                                throw new SenderException(
-                                                          "SSL Engine timed out after waiting " + timeout + "ms. for a response." +
-                                                          "To get more info,run with -Djavax.net.debug=ssl");
-                            }
-                            break;
+                                if (!_sslStatus.getSslErrorFlag() && System.currentTimeMillis() - start >= timeout)
+                                {
+                                    throw new SenderException(
+                                            "SSL Engine timed out after waiting " + timeout + "ms. for a response." +
+                                            "To get more info,run with -Djavax.net.debug=ssl");
+                                }
+                                break;
                         }
                     }
                     break;
@@ -246,7 +247,7 @@ public class SSLSender implements ByteBufferSender
                     {
                         SSLUtil.verifyHostname(engine, _hostname);
                     }
-                    
+
                 case NOT_HANDSHAKING:
                     break; //do  nothing
 
@@ -256,6 +257,8 @@ public class SSLSender implements ByteBufferSender
 
         }
     }
+
+
 
     private void doTasks()
     {

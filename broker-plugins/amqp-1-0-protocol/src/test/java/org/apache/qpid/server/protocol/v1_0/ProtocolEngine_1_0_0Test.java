@@ -40,6 +40,7 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -135,14 +136,14 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         final ByteBufferSender sender = mock(ByteBufferSender.class);
         when(_networkConnection.getSender()).thenReturn(sender);
 
-        final ArgumentCaptor<ByteBuffer> byteBufferCaptor = ArgumentCaptor.forClass(ByteBuffer.class);
+        final ArgumentCaptor<QpidByteBuffer> byteBufferCaptor = ArgumentCaptor.forClass(QpidByteBuffer.class);
 
         doAnswer(new Answer()
         {
             @Override
             public Object answer(final InvocationOnMock invocation) throws Throwable
             {
-                _sentBuffers.add(byteBufferCaptor.getValue());
+                _sentBuffers.add(byteBufferCaptor.getValue().getNativeBuffer());
                 return null;
             }
         }).when(sender).send(byteBufferCaptor.capture());
@@ -163,11 +164,12 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
         createEngine(useSASL, Transport.TCP);
 
-        _protocolEngine_1_0_0.received(ByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
+        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance()
+                                                                   .getHeaderIdentifier()));
 
         Open open = new Open();
         _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));
-        ByteBuffer buf = ByteBuffer.allocate(64*1024);
+        QpidByteBuffer buf = QpidByteBuffer.allocate(64*1024);
         _frameWriter.writeToBuffer(buf);
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
@@ -186,11 +188,11 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
         createEngine(useSASL, Transport.TCP);
 
-        _protocolEngine_1_0_0.received(ByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
+        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
         Open open = new Open();
         _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));
-        ByteBuffer buf = ByteBuffer.allocate(64*1024);
+        QpidByteBuffer buf = QpidByteBuffer.allocate(64*1024);
         _frameWriter.writeToBuffer(buf);
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
@@ -216,11 +218,11 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         final boolean useSASL = false;
 
         createEngine(useSASL, Transport.SSL);
-        _protocolEngine_1_0_0.received(ByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
+        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
         Open open = new Open();
         _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));
-        ByteBuffer buf = ByteBuffer.allocate(64*1024);
+        QpidByteBuffer buf = QpidByteBuffer.allocate(64*1024);
         _frameWriter.writeToBuffer(buf);
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
@@ -247,22 +249,22 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
         createEngine(useSASL, Transport.TCP);
 
-        _protocolEngine_1_0_0.received(ByteBuffer.wrap(ProtocolEngineCreator_1_0_0_SASL.getInstance().getHeaderIdentifier()));
+        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0_SASL.getInstance().getHeaderIdentifier()));
 
         SaslInit init = new SaslInit();
         init.setMechanism(Symbol.valueOf("ANONYMOUS"));
         _frameWriter.setValue(new SASLFrame(init));
-        ByteBuffer buf = ByteBuffer.allocate(64*1024);
+        QpidByteBuffer buf = QpidByteBuffer.allocate(64*1024);
         _frameWriter.writeToBuffer(buf);
 
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        _protocolEngine_1_0_0.received(ByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
+        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
 
         Open open = new Open();
         _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));
-        buf = ByteBuffer.allocate(64*1024);
+        buf = QpidByteBuffer.allocate(64*1024);
         _frameWriter.writeToBuffer(buf);
         buf.flip();
         _protocolEngine_1_0_0.received(buf);

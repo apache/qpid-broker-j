@@ -29,6 +29,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.ByteArrayDataInput;
 import org.apache.qpid.framing.HeartbeatBody;
 import org.apache.qpid.framing.ProtocolInitiation;
@@ -197,8 +198,34 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             ConnectionHeartbeat heartbeat = new ConnectionHeartbeat();
             ServerDisassembler serverDisassembler = new ServerDisassembler(new ByteBufferSender()
             {
+                private void send(final ByteBuffer msg)
+                {
+                    try
+                    {
+                        if(msg.hasArray())
+                        {
+                            dataOutputStream.write(msg.array(), msg.arrayOffset() + msg.position(), msg.remaining());
+                        }
+                        else
+                        {
+                            byte[] data = new byte[msg.remaining()];
+                            msg.duplicate().get(data);
+                            dataOutputStream.write(data, 0, data.length);
+                        }
+                    }
+                    catch (SocketException se)
+                    {
+
+                        success.set(false);
+                    }
+                    catch(IOException e)
+                    {
+                        throw new RuntimeException("Unexpected IOException", e);
+                    }
+                }
+
                 @Override
-                public void send(final ByteBuffer msg)
+                public void send(final QpidByteBuffer msg)
                 {
                     try
                     {

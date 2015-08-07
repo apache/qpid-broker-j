@@ -50,6 +50,7 @@ import org.apache.qpid.amqp_1_0.transport.SaslServerProvider;
 import org.apache.qpid.amqp_1_0.type.Binary;
 import org.apache.qpid.amqp_1_0.type.FrameBody;
 import org.apache.qpid.amqp_1_0.type.Symbol;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.protocol.AMQConstant;
@@ -166,7 +167,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
         _frameWriter =  new FrameWriter(_endpoint.getDescribedTypeRegistry());
 
-        getSender().send(headerResponse.duplicate());
+        getSender().send(QpidByteBuffer.wrap(headerResponse.duplicate()));
         getSender().flush();
 
         if(useSASL)
@@ -254,7 +255,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             {
                 if (_endpoint.isAuthenticated())
                 {
-                    getSender().send(AMQP_LAYER_HEADER.duplicate());
+                    getSender().send(QpidByteBuffer.wrap(AMQP_LAYER_HEADER.duplicate()));
                     getSender().flush();
                 }
                 else
@@ -343,14 +344,14 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     private final Logger RAW_LOGGER = LoggerFactory.getLogger("RAW");
 
 
-    public synchronized void received(final ByteBuffer msg)
+    public synchronized void received(final QpidByteBuffer msg)
     {
         try
         {
             updateLastReadTime();
             if(RAW_LOGGER.isDebugEnabled())
             {
-                ByteBuffer dup = msg.duplicate();
+                QpidByteBuffer dup = msg.duplicate();
                 byte[] data = new byte[dup.remaining()];
                 dup.get(data);
                 Binary bin = new Binary(data);
@@ -531,7 +532,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
             _frameWriter.setValue(amqFrame);
 
-            ByteBuffer dup = ByteBuffer.allocateDirect(_endpoint.getMaxFrameSize());
+            QpidByteBuffer dup = QpidByteBuffer.allocateDirect(_endpoint.getMaxFrameSize());
 
             int size = _frameWriter.writeToBuffer(dup);
             if (size > _endpoint.getMaxFrameSize())
@@ -543,7 +544,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
             if (RAW_LOGGER.isDebugEnabled())
             {
-                ByteBuffer dup2 = dup.duplicate();
+                QpidByteBuffer dup2 = dup.duplicate();
                 byte[] data = new byte[dup2.remaining()];
                 dup2.get(data);
                 Binary bin = new Binary(data);

@@ -22,6 +22,7 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.framing.AMQFrame;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -33,7 +34,7 @@ public class FrameWriter implements ValueWriter<AMQFrame>
     private ValueWriter _typeWriter;
     private int _size = -1;
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[] {};
-    private ByteBuffer _payload;
+    private QpidByteBuffer _payload;
 
     enum State
     {
@@ -65,7 +66,7 @@ public class FrameWriter implements ValueWriter<AMQFrame>
         return false;
     }
 
-    public int writeToBuffer(ByteBuffer buffer)
+    public int writeToBuffer(QpidByteBuffer buffer)
     {
         int remaining;
 
@@ -85,8 +86,8 @@ public class FrameWriter implements ValueWriter<AMQFrame>
 
 
                         _size = _typeWriter.writeToBuffer(remaining > 8
-                                                          ? (ByteBuffer)buffer.duplicate().position(buffer.position()+8)
-                                                          : ByteBuffer.wrap(EMPTY_BYTE_ARRAY)) + 8 + payloadLength;
+                                                          ? buffer.duplicate().position(buffer.position()+8)
+                                                          : QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY)) + 8 + payloadLength;
                     }
                     else
                     {
@@ -113,7 +114,7 @@ public class FrameWriter implements ValueWriter<AMQFrame>
                                 if(payloadLength > 0)
                                 {
 
-                                    ByteBuffer dup = _payload.slice();
+                                    QpidByteBuffer dup = _payload.slice();
                                     int payloadUsed = buffer.remaining();
                                     dup.limit(payloadUsed);
                                     buffer.put(dup);
@@ -235,7 +236,7 @@ public class FrameWriter implements ValueWriter<AMQFrame>
         }
         if(_size == -1)
         {
-            _size =  _typeWriter.writeToBuffer(ByteBuffer.wrap(EMPTY_BYTE_ARRAY)) + 8 + (_payload == null ? 0 : _payload.remaining());
+            _size =  _typeWriter.writeToBuffer(QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY)) + 8 + (_payload == null ? 0 : _payload.remaining());
         }
         return _size;
     }

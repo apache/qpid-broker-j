@@ -20,8 +20,11 @@
  */
 package org.apache.qpid.server.transport;
 
+import java.nio.ByteBuffer;
+
 import javax.security.auth.Subject;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -31,7 +34,7 @@ import org.apache.qpid.transport.network.TransportActivity;
  * A ProtocolEngine is a Receiver for java.nio.ByteBuffers. It takes the data passed to it in the received
  * decodes it and then process the result.
  */
-public interface ProtocolEngine extends ByteBufferReceiver, TransportActivity
+public interface ProtocolEngine extends TransportActivity
 {
 
    // Called by the NetworkDriver when the socket has been closed for reading
@@ -67,5 +70,7 @@ public interface ProtocolEngine extends ByteBufferReceiver, TransportActivity
    AggregateTicker getAggregateTicker();
 
    void encryptedTransport();
+
+   void received(QpidByteBuffer msg);
 
 }

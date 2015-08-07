@@ -26,7 +26,9 @@ import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
 
-public class ByteBufferBinding extends TupleBinding<ByteBuffer>
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
+public class ByteBufferBinding extends TupleBinding<QpidByteBuffer>
 {
     private static final int COPY_BUFFER_SIZE = 8192;
 
@@ -51,10 +53,10 @@ public class ByteBufferBinding extends TupleBinding<ByteBuffer>
     private ByteBufferBinding() { }
 
     @Override
-    public ByteBuffer entryToObject(final TupleInput input)
+    public QpidByteBuffer entryToObject(final TupleInput input)
     {
         int available = input.available();
-        ByteBuffer buf = ByteBuffer.allocateDirect(available);
+        QpidByteBuffer buf = QpidByteBuffer.allocateDirect(available);
         byte[] copyBuf = COPY_BUFFER.get();
         while(available > 0)
         {
@@ -67,7 +69,7 @@ public class ByteBufferBinding extends TupleBinding<ByteBuffer>
     }
 
     @Override
-    public void objectToEntry(ByteBuffer data, final TupleOutput output)
+    public void objectToEntry(QpidByteBuffer data, final TupleOutput output)
     {
         data = data.duplicate();
         byte[] copyBuf = COPY_BUFFER.get();

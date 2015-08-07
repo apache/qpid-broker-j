@@ -34,6 +34,7 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
@@ -64,7 +65,7 @@ import org.apache.qpid.transport.network.NetworkConnection;
 public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0_10>
 {
     private static final Logger _logger = LoggerFactory.getLogger(AMQPConnection_0_10.class);
-    private final InputHandler _inputHandler;
+    private final ServerInputHandler _inputHandler;
 
 
     private final NetworkConnection _network;
@@ -103,7 +104,8 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         _connection.setRemoteAddress(network.getRemoteAddress());
         _connection.setLocalAddress(network.getLocalAddress());
 
-        _inputHandler = new InputHandler(new ServerAssembler(_connection), true);
+        _inputHandler = new ServerInputHandler(new ServerAssembler(_connection));
+        _connection.addFrameSizeObserver(_inputHandler);
         _network = network;
 
         Subject.doAs(getSubject(), new PrivilegedAction<Object>()
@@ -163,7 +165,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return new ByteBufferSender()
         {
             @Override
-            public void send(ByteBuffer msg)
+            public void send(final QpidByteBuffer msg)
             {
                 updateLastWriteTime();
                 sender.send(msg);
@@ -184,7 +186,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         };
     }
 
-    public void received(final ByteBuffer buf)
+    public void received(final QpidByteBuffer buf)
     {
         Subject.doAs(_connection.getAuthorizedSubject(), new PrivilegedAction<Object>()
         {
@@ -211,10 +213,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                     {
                         throw new ConnectionScopedRuntimeException(e);
                     }
-                }
-                finally
-                {
-                    buf.position(buf.limit());
                 }
                 return null;
             }

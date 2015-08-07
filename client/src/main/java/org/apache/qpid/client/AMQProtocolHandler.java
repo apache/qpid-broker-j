@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.protocol.BlockingMethodFrameListener;
 import org.slf4j.Logger;
@@ -121,7 +122,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
     /** Object to lock on when changing the latch */
     private Object _failoverLatchChange = new Object();
-    private AMQDecoder _decoder;
+    private ClientDecoder _decoder;
 
     private ProtocolVersion _suggestedProtocolVersion;
 
@@ -559,7 +560,7 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
         final ByteBuffer buf = asByteBuffer(frame);
         _lastWriteTime = System.currentTimeMillis();
         _writtenBytes += buf.remaining();
-        _sender.send(buf);
+        _sender.send(QpidByteBuffer.wrap(buf));
         if(flush)
         {
             _sender.flush();

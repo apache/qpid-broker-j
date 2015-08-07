@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -91,7 +92,7 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
-                    public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
+                    public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
                     {
                         return serverMsg.getContent(offsetInMessage, size);
                     }

@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import static org.apache.qpid.transport.util.Functions.hex;
 
-import java.nio.ByteBuffer;
 import java.security.AccessControlException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -49,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionException;
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.*;
@@ -2511,7 +2511,7 @@ public class AMQChannel
     }
 
     @Override
-    public void receiveMessageContent(final ByteBuffer data)
+    public void receiveMessageContent(final QpidByteBuffer data)
     {
         if(_logger.isDebugEnabled())
         {

@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -33,7 +34,7 @@ public class ContentBody implements AMQBody
 {
     public static final byte TYPE = 3;
 
-    private ByteBuffer _payload;
+    private QpidByteBuffer _payload;
 
     public ContentBody()
     {
@@ -42,8 +43,14 @@ public class ContentBody implements AMQBody
 
     public ContentBody(ByteBuffer payload)
     {
+        _payload = QpidByteBuffer.wrap(payload);
+    }
+
+    public ContentBody(QpidByteBuffer payload)
+    {
         _payload = payload;
     }
+
 
     public byte getFrameType()
     {
@@ -82,7 +89,7 @@ public class ContentBody implements AMQBody
         }
     }
 
-    public ByteBuffer getPayload()
+    public QpidByteBuffer getPayload()
     {
         return _payload;
     }
@@ -92,7 +99,7 @@ public class ContentBody implements AMQBody
             throws IOException
     {
 
-        ByteBuffer payload = in.readAsByteBuffer((int)bodySize);
+        QpidByteBuffer payload = in.readAsByteBuffer((int) bodySize);
 
         if(!methodProcessor.ignoreAllButCloseOk())
         {

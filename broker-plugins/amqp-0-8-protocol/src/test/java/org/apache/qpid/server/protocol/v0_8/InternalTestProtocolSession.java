@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.MessagePublishInfo;
@@ -48,7 +49,6 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContentSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
@@ -288,8 +288,14 @@ public class InternalTestProtocolSession extends AMQPConnection_0_8 implements P
         {
             _sender = new ByteBufferSender()
             {
-                public void send(ByteBuffer msg)
+                private void send(ByteBuffer msg)
                 {
+                }
+
+                @Override
+                public void send(final QpidByteBuffer msg)
+                {
+
                 }
 
                 public void flush()

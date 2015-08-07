@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.tuple.ByteBufferBinding;
 
@@ -138,7 +139,7 @@ public class UpgraderTest extends AbstractUpgradeTestCase
             {
                 long id = LongBinding.entryToLong(key);
                 assertTrue("Unexpected id", id > 0);
-                ByteBuffer content = contentBinding.entryToObject(value);
+                QpidByteBuffer content = contentBinding.entryToObject(value);
                 assertNotNull("Unexpected content", content);
                 assertTrue("Expected content", content.hasRemaining());
             }

@@ -22,15 +22,14 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.UnsignedByte;
-
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class UnsignedByteWriter implements ValueWriter<UnsignedByte>
 {
     private int _written;
     private byte _value;
 
-    public int writeToBuffer(ByteBuffer buffer)
+    public int writeToBuffer(QpidByteBuffer buffer)
     {
 
         switch(_written)

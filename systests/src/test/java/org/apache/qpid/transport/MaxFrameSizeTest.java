@@ -264,7 +264,7 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         }
 
         final FrameCreatingMethodProcessor methodProcessor = new FrameCreatingMethodProcessor(ProtocolVersion.v0_91);
-        AMQDecoder decoder = new ClientDecoder(methodProcessor);
+        ClientDecoder decoder = new ClientDecoder(methodProcessor);
 
 
         byte[] buffer = new byte[1024];

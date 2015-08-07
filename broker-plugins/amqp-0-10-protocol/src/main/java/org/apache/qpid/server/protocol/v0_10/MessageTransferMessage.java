@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v0_10;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.StoredMessage;
@@ -77,7 +78,7 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
         return getMetaData().getHeader();
     }
 
-    public Collection<ByteBuffer> getBody()
+    public Collection<QpidByteBuffer> getBody()
     {
         return  getContent(0, (int)getSize());
     }

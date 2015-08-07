@@ -42,7 +42,6 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
         super(false, methodProcessor);
     }
 
-    @Override
     public void decodeBuffer(ByteBuffer buf)
             throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
     {

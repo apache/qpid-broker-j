@@ -26,7 +26,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -35,6 +34,7 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
@@ -133,7 +133,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     }
 
 
-    public void received(ByteBuffer msg)
+    public void received(QpidByteBuffer msg)
     {
         _delegate.received(msg);
     }
@@ -272,7 +272,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
         }
 
-        public void received(ByteBuffer msg)
+        public void received(QpidByteBuffer msg)
         {
             _logger.error("Error processing incoming data, could not negotiate a common protocol");
             msg.position(msg.limit());
@@ -338,7 +338,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
     private class SelfDelegateProtocolEngine implements ProtocolEngine
     {
-        private final ByteBuffer _header = ByteBuffer.allocate(MINIMUM_REQUIRED_HEADER_BYTES);
+        private final QpidByteBuffer _header = QpidByteBuffer.allocate(MINIMUM_REQUIRED_HEADER_BYTES);
         private long _lastReadTime = System.currentTimeMillis();
         private final AtomicBoolean _hasWork = new AtomicBoolean();
 
@@ -389,10 +389,10 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
             _hasWork.set(false);
         }
 
-        public void received(ByteBuffer msg)
+        public void received(QpidByteBuffer msg)
         {
             _lastReadTime = System.currentTimeMillis();
-            ByteBuffer msgheader = msg.duplicate().slice();
+            QpidByteBuffer msgheader = msg.duplicate().slice();
 
             if(_header.remaining() > msgheader.limit())
             {
@@ -472,7 +472,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     {
                         _logger.debug("Unsupported protocol version requested, replying with: " + supportedReplyVersion);
                     }
-                    final ByteBuffer supportedReplyBuf = ByteBuffer.allocateDirect(supportedReplyBytes.length);
+                    final QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length);
                     supportedReplyBuf.put(supportedReplyBytes);
                     supportedReplyBuf.flip();
                     _sender.send(supportedReplyBuf);

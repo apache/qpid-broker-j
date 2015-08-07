@@ -33,7 +33,7 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
 
     AMQMessageHeader getMessageHeader();
 
-    public StoredMessage<T> getStoredMessage();
+    StoredMessage<T> getStoredMessage();
 
     boolean isPersistent();
 
@@ -49,13 +49,7 @@ public interface ServerMessage<T extends StorableMessageMetaData> extends Enqueu
 
     boolean isReferenced();
 
-    long getMessageNumber();
-
     long getArrivalTime();
-
-    public int getContent(ByteBuffer buf, int offset);
-
-    Collection<ByteBuffer> getContent(int offset, int size);
 
     Object getConnectionReference();
 }

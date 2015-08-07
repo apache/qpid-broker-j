@@ -19,6 +19,7 @@
 package org.apache.qpid.amqp_1_0.framing;
 
 import org.apache.qpid.amqp_1_0.type.FrameBody;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -33,7 +34,7 @@ public final class TransportFrame extends AMQFrame<FrameBody>
         _channel = channel;
     }
 
-    public TransportFrame(short channel, FrameBody frameBody, ByteBuffer payload)
+    public TransportFrame(short channel, FrameBody frameBody, QpidByteBuffer payload)
     {
         super(frameBody, payload);
         _channel = channel;

@@ -28,15 +28,15 @@ import org.apache.qpid.server.store.StoredMessage;
 public interface MessageMetaDataType<M extends StorableMessageMetaData> extends Pluggable
 {
 
-    public static interface Factory<M extends StorableMessageMetaData>
+    interface Factory<M extends StorableMessageMetaData>
     {
         M createMetaData(ByteBuffer buf);
     }
 
-    public int ordinal();
+    int ordinal();
 
-    public M createMetaData(ByteBuffer buf);
+    M createMetaData(ByteBuffer buf);
 
-    public ServerMessage<M> createMessage(StoredMessage<M> msg);
+    ServerMessage<M> createMessage(StoredMessage<M> msg);
 
 }

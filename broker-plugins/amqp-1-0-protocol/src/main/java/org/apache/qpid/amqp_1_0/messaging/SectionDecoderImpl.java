@@ -24,8 +24,8 @@ import org.apache.qpid.amqp_1_0.codec.ValueHandler;
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.Section;
 import org.apache.qpid.amqp_1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +40,7 @@ public class SectionDecoderImpl implements SectionDecoder
         _valueHandler = new ValueHandler(describedTypeRegistry);
     }
 
-    public List<Section> parseAll(ByteBuffer buf) throws AmqpErrorException
+    public List<Section> parseAll(QpidByteBuffer buf) throws AmqpErrorException
     {
 
         List<Section> obj = new ArrayList<Section>();
@@ -53,7 +53,7 @@ public class SectionDecoderImpl implements SectionDecoder
         return obj;
     }
 
-    public Section readSection(ByteBuffer buf) throws AmqpErrorException
+    public Section readSection(QpidByteBuffer buf) throws AmqpErrorException
     {
         return (Section) _valueHandler.parse(buf);
     }

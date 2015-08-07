@@ -21,14 +21,14 @@
 
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class FixedEightWriter<T extends Object> implements ValueWriter<T>
 {
     private int _written = 9;
     private long _value;
 
-    public final int writeToBuffer(ByteBuffer buffer)
+    public final int writeToBuffer(QpidByteBuffer buffer)
     {
         int remaining = buffer.remaining();
         int written = _written;

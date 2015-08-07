@@ -49,6 +49,7 @@ import org.apache.qpid.amqp_1_0.type.UnsignedShort;
 import org.apache.qpid.amqp_1_0.type.messaging.AmqpSequence;
 import org.apache.qpid.amqp_1_0.type.messaging.AmqpValue;
 import org.apache.qpid.amqp_1_0.type.messaging.Data;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.codec.BBEncoder;
 import org.apache.qpid.typedmessage.TypedBytesContentWriter;
@@ -68,7 +69,7 @@ public class MessageConverter_from_1_0
         Object bodyObject;
         try
         {
-            List<Section> sections = sectionDecoder.parseAll(ByteBuffer.wrap(data));
+            List<Section> sections = sectionDecoder.parseAll(QpidByteBuffer.wrap(data));
             ListIterator<Section> iterator = sections.listIterator();
             Section previousSection = null;
             while(iterator.hasNext())

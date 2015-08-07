@@ -27,6 +27,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
@@ -90,10 +91,10 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
         // Use a single chunk for the 0-10 message as per broker behaviour.
         String bodyText = "jfhdjsflsdhfjdshfjdslhfjdslhfsjlhfsjkhfdsjkhfdsjkfhdslkjf";
 
-        ByteBuffer firstContentBytes_0_8 = ByteBuffer.wrap(bodyText.substring(0, 10).getBytes());
-        ByteBuffer secondContentBytes_0_8 = ByteBuffer.wrap(bodyText.substring(10).getBytes());
+        QpidByteBuffer firstContentBytes_0_8 = QpidByteBuffer.wrap(bodyText.substring(0, 10).getBytes());
+        QpidByteBuffer secondContentBytes_0_8 = QpidByteBuffer.wrap(bodyText.substring(10).getBytes());
 
-        ByteBuffer completeContentBody_0_10 = ByteBuffer.wrap(bodyText.getBytes());
+        QpidByteBuffer completeContentBody_0_10 = QpidByteBuffer.wrap(bodyText.getBytes());
         int bodySize = completeContentBody_0_10.limit();
 
         /*
@@ -123,7 +124,7 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
         Header header_0_10 = new Header(delProps_0_10, msgProps_0_10);
 
         MessageTransfer xfr_0_10 = new MessageTransfer("destination", MessageAcceptMode.EXPLICIT,
-                MessageAcquireMode.PRE_ACQUIRED, header_0_10, completeContentBody_0_10);
+                MessageAcquireMode.PRE_ACQUIRED, header_0_10, completeContentBody_0_10.getNativeBuffer());
 
         MessageMetaData_0_10 messageMetaData_0_10 = new MessageMetaData_0_10(xfr_0_10);
         MessageHandle<MessageMetaData_0_10> messageHandle_0_10 = bdbStore.addMessage(messageMetaData_0_10);
@@ -344,7 +345,7 @@ public class BDBMessageStoreTest extends MessageStoreTestCase
 
     private StoredMessage<MessageMetaData> createAndStoreSingleChunkMessage_0_8(MessageStore store)
     {
-        ByteBuffer chunk1 = ByteBuffer.wrap(CONTENT_BYTES);
+        QpidByteBuffer chunk1 = QpidByteBuffer.wrap(CONTENT_BYTES);
 
         int bodySize = CONTENT_BYTES.length;
 

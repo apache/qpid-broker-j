@@ -45,6 +45,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketHandler;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
@@ -223,7 +224,7 @@ class WebSocketProvider implements AcceptingTransport
         @Override
         public void onMessage(final byte[] data, final int offset, final int length)
         {
-            _engine.received(ByteBuffer.wrap(data, offset, length).slice());
+            _engine.received(QpidByteBuffer.wrap(data, offset, length).slice());
         }
 
         @Override
@@ -277,8 +278,7 @@ class WebSocketProvider implements AcceptingTransport
 
         }
 
-        @Override
-        public void send(final ByteBuffer msg)
+        private void send(final ByteBuffer msg)
         {
             try
             {
@@ -298,6 +298,29 @@ class WebSocketProvider implements AcceptingTransport
                 close();
             }
         }
+
+        @Override
+        public void send(final QpidByteBuffer msg)
+        {
+            try
+            {
+                if (msg.hasArray())
+                {
+                    _connection.sendMessage(msg.array(), msg.arrayOffset() + msg.position(), msg.remaining());
+                }
+                else
+                {
+                    byte[] copy = new byte[msg.remaining()];
+                    msg.duplicate().get(copy);
+                    _connection.sendMessage(copy, 0, copy.length);
+                }
+            }
+            catch (IOException e)
+            {
+                close();
+            }
+        }
+
 
         @Override
         public void flush()

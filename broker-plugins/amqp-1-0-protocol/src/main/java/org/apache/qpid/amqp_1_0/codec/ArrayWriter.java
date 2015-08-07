@@ -19,7 +19,7 @@
 
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class ArrayWriter  implements ValueWriter<Object[]>
 {
@@ -60,7 +60,7 @@ public class ArrayWriter  implements ValueWriter<Object[]>
         //registry.register(List.class, FACTORY);
     }
 
-    public int writeToBuffer(final ByteBuffer buffer)
+    public int writeToBuffer(final QpidByteBuffer buffer)
     {
         return 0;  //TODO change body of implemented methods use File | Settings | File Templates.
     }

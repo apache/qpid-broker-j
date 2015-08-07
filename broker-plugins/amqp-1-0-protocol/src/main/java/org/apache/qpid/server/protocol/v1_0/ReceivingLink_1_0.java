@@ -41,6 +41,7 @@ import org.apache.qpid.amqp_1_0.type.transaction.TransactionalState;
 import org.apache.qpid.amqp_1_0.type.transport.Detach;
 import org.apache.qpid.amqp_1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.StoredMessage;
@@ -87,7 +88,7 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
     {
         // TODO - cope with fragmented messages
 
-        List<ByteBuffer> fragments = null;
+        List<QpidByteBuffer> fragments = null;
 
 
 
@@ -108,7 +109,7 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
                 return;
             }
 
-            fragments = new ArrayList<ByteBuffer>(_incompleteMessage.size());
+            fragments = new ArrayList<QpidByteBuffer>(_incompleteMessage.size());
             for(Transfer t : _incompleteMessage)
             {
                 fragments.add(t.getPayload());
@@ -146,20 +147,16 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
         else
         {
             MessageMetaData_1_0 mmd = null;
-            List<ByteBuffer> immutableSections = new ArrayList<ByteBuffer>(3);
-            mmd = new MessageMetaData_1_0(fragments.toArray(new ByteBuffer[fragments.size()]),
+            List<QpidByteBuffer> immutableSections = new ArrayList<>(3);
+            mmd = new MessageMetaData_1_0(fragments.toArray(new QpidByteBuffer[fragments.size()]),
                     _sectionDecoder,
                     immutableSections);
 
             MessageHandle<MessageMetaData_1_0> handle = _vhost.getMessageStore().addMessage(mmd);
 
-            boolean skipping = true;
-            int offset = 0;
-
-            for(ByteBuffer bareMessageBuf : immutableSections)
+            for(QpidByteBuffer bareMessageBuf : immutableSections)
             {
                 handle.addContent(bareMessageBuf.duplicate());
-                offset += bareMessageBuf.remaining();
             }
             final StoredMessage<MessageMetaData_1_0> storedMessage = handle.allContentAdded();
             Message_1_0 message = new Message_1_0(storedMessage, fragments, getSession().getConnection().getReference());

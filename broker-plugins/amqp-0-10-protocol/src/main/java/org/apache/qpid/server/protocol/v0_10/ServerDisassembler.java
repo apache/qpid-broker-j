@@ -28,10 +28,14 @@ import static org.apache.qpid.transport.network.Frame.LAST_FRAME;
 import static org.apache.qpid.transport.network.Frame.LAST_SEG;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.FrameSizeObserver;
 import org.apache.qpid.transport.Header;
@@ -91,9 +95,9 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
     }
 
-    private void frame(byte flags, byte type, byte track, int channel, int size, ByteBuffer buf)
+    private void frame(byte flags, byte type, byte track, int channel, int size, Collection<QpidByteBuffer> buf)
     {
-        ByteBuffer data = ByteBuffer.allocate(HEADER_SIZE);
+        QpidByteBuffer data = QpidByteBuffer.allocate(HEADER_SIZE);
 
         data.put(0, flags);
         data.put(1, type);
@@ -102,21 +106,43 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         data.putShort(6, (short) channel);
 
 
-        ByteBuffer dup = buf.duplicate();
-        dup.limit(dup.position() + size);
-        buf.position(buf.position() + size);
         _sender.send(data);
-        _sender.send(dup);
-
+        if(size > 0)
+        {
+            int residual = size;
+            for(QpidByteBuffer b : buf)
+            {
+                final int remaining = b.remaining();
+                if(remaining > 0 )
+                {
+                    if(remaining >= residual)
+                    {
+                        _sender.send(b.view(0,residual));
+                        b.position(b.position()+residual);
+                        break;
+                    }
+                    else
+                    {
+                        _sender.send(b.duplicate());
+                        b.position(b.limit());
+                        residual-=remaining;
+                    }
+                }
+            }
+        }
 
     }
 
-    private void fragment(byte flags, SegmentType type, ProtocolEvent event, ByteBuffer buf)
+    private void fragment(byte flags, SegmentType type, ProtocolEvent event, Collection<QpidByteBuffer> buf)
     {
         byte typeb = (byte) type.getValue();
         byte track = event.getEncodedTrack() == Frame.L4 ? (byte) 1 : (byte) 0;
 
-        int remaining = buf.remaining();
+        int remaining = 0;
+        for(QpidByteBuffer b : buf)
+        {
+            remaining += b.remaining();
+        }
         boolean first = true;
         while (true)
         {
@@ -145,7 +171,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
 
     public void init(Void v, ProtocolHeader header)
     {
-        _sender.send(header.toByteBuffer(true));
+        _sender.send(header.toByteBuffer());
         _sender.flush();
 }
 
@@ -217,17 +243,22 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
             buf.position(0);
             buf.limit(methodLimit);
 
-            fragment(flags, type, method, buf.duplicate());
+            fragment(flags, type, method, Collections.singletonList(QpidByteBuffer.wrap(buf.duplicate())));
             if (payload)
             {
-                ByteBuffer body = method.getBody();
+                Collection<QpidByteBuffer> body = method.getBody();
                 buf.limit(headerLimit);
                 buf.position(methodLimit);
 
-                fragment(body == null ? LAST_SEG : 0x0, SegmentType.HEADER, method, buf.duplicate());
+                fragment(body == null ? LAST_SEG : 0x0, SegmentType.HEADER, method, Collections.singletonList(QpidByteBuffer.wrap(buf.duplicate())));
                 if (body != null)
                 {
-                    fragment(LAST_SEG, SegmentType.BODY, method, body.duplicate());
+                    Collection<QpidByteBuffer> dup = new ArrayList<>();
+                    for(QpidByteBuffer b : body)
+                    {
+                        dup.add(b.duplicate());
+                    }
+                    fragment(LAST_SEG, SegmentType.BODY, method, dup);
                 }
 
             }

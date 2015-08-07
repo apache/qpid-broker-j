@@ -22,9 +22,12 @@ package org.apache.qpid.transport;
 
 import java.nio.ByteBuffer;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 public interface ByteBufferSender
 {
-    void send(ByteBuffer msg);
+
+    void send(QpidByteBuffer msg);
 
     void flush();
 

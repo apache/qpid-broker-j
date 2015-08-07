@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.transport;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.network.Frame;
 import org.apache.qpid.transport.network.NetworkDelegate;
 import org.apache.qpid.transport.network.NetworkEvent;
@@ -93,9 +94,9 @@ public final class ProtocolHeader implements NetworkEvent, ProtocolEvent
         return false;
     }
 
-    public ByteBuffer toByteBuffer(final boolean useDirect)
+    public QpidByteBuffer toByteBuffer()
     {
-        ByteBuffer buf = ByteBuffer.allocate(8);
+        QpidByteBuffer buf = QpidByteBuffer.allocate(8);
         buf.put(AMQP);
         buf.put(protoClass);
         buf.put(instance);

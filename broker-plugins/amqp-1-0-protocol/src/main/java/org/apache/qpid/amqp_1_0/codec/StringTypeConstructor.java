@@ -21,6 +21,7 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -44,7 +45,7 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor
     }
 
     @Override
-    public Object construct(final ByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
+    public Object construct(final QpidByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
     {
         int size;
 
@@ -59,7 +60,7 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor
 
         int origPosition = in.position();
 
-        ByteBuffer dup = in.duplicate();
+        QpidByteBuffer dup = in.duplicate();
         try
         {
             dup.limit(dup.position()+size);
@@ -68,7 +69,7 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor
         {
             throw new IllegalArgumentException("position: " + dup.position() + "size: " + size + " capacity: " + dup.capacity());
         }
-        CharBuffer charBuf = _charSet.decode(dup);
+        CharBuffer charBuf = dup.decode(_charSet);
 
         String str = charBuf.toString();
 

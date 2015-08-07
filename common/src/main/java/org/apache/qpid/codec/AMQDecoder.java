@@ -95,9 +95,6 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         return _methodProcessor;
     }
 
-
-    public abstract void decodeBuffer(ByteBuffer buf) throws AMQFrameDecodingException, AMQProtocolVersionException, IOException;
-
     protected void decode(final MarkableDataInput msg) throws IOException, AMQFrameDecodingException
     {
         // If this is the first read then we may be getting a protocol initiation back if we tried to negotiate

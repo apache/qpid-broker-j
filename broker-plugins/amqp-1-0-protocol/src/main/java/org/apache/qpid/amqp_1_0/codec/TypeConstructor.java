@@ -23,10 +23,11 @@ package org.apache.qpid.amqp_1_0.codec;
 import java.nio.ByteBuffer;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public interface TypeConstructor<T>
 {
 
-    public T construct(final ByteBuffer in, ValueHandler handler) throws AmqpErrorException;
+    public T construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException;
 
 }

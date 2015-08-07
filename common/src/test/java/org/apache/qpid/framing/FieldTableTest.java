@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.junit.Assert;
 
@@ -601,7 +602,7 @@ public class FieldTableTest extends QpidTestCase
         ByteArrayOutputStream baos = new ByteArrayOutputStream((int) table.getEncodedSize() + 4);
         table.writeToBuffer(new DataOutputStream(baos));
 
-        ByteBuffer buf = ByteBuffer.wrap(baos.toByteArray());
+        QpidByteBuffer buf = QpidByteBuffer.wrap(baos.toByteArray());
 
         long length = buf.getInt() & 0xFFFFFFFFL;
         buf = buf.slice();
@@ -920,7 +921,7 @@ public class FieldTableTest extends QpidTestCase
         assertEquals("unexpected data length", 24, length);
 
         //Create a second FieldTable from the encoded bytes
-        FieldTable tableFromBytes = new FieldTable(ByteBuffer.wrap(data));
+        FieldTable tableFromBytes = new FieldTable(QpidByteBuffer.wrap(data));
 
         //Create a final FieldTable and addAll() from the table created with encoded bytes
         FieldTable destinationTable = new FieldTable();

@@ -19,7 +19,7 @@
 
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 
 public abstract class FixedOneWriter<T> implements ValueWriter<T>
@@ -27,7 +27,7 @@ public abstract class FixedOneWriter<T> implements ValueWriter<T>
     protected int _written = 2;
     protected byte _value;
 
-    public int writeToBuffer(ByteBuffer buffer)
+    public int writeToBuffer(QpidByteBuffer buffer)
     {
 
         switch(_written)

@@ -24,8 +24,10 @@ package org.apache.qpid.server.protocol.v1_0;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.util.ByteBufferUtils;
@@ -33,7 +35,7 @@ import org.apache.qpid.util.ByteBufferUtils;
 public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageMetaData_1_0>
 {
 
-    private volatile SoftReference<List<ByteBuffer>> _fragmentsRef;
+    private volatile SoftReference<Collection<QpidByteBuffer>> _fragmentsRef;
     private long _arrivalTime;
     private final long _size;
 
@@ -41,18 +43,18 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {
         super(storedMessage, null);
-        final List<ByteBuffer> fragments = restoreFragments(getStoredMessage());
+        final Collection<QpidByteBuffer> fragments = restoreFragments(getStoredMessage());
         _fragmentsRef = new SoftReference<>(fragments);
         _size = calculateSize(fragments);
     }
 
-    private long calculateSize(final List<ByteBuffer> fragments)
+    private long calculateSize(final Collection<QpidByteBuffer> fragments)
     {
 
         long size = 0l;
         if(fragments != null)
         {
-            for(ByteBuffer buf : fragments)
+            for(QpidByteBuffer buf : fragments)
             {
                 size += buf.remaining();
             }
@@ -60,28 +62,14 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         return size;
     }
 
-    private static List<ByteBuffer> restoreFragments(StoredMessage<MessageMetaData_1_0> storedMessage)
+    private static Collection<QpidByteBuffer> restoreFragments(StoredMessage<MessageMetaData_1_0> storedMessage)
     {
-        ArrayList<ByteBuffer> fragments = new ArrayList<ByteBuffer>();
-        final int FRAGMENT_SIZE = 2048;
-        int offset = 0;
-        ByteBuffer b;
-        do
-        {
+        return storedMessage.getContent(0, Integer.MAX_VALUE);
 
-            b = ByteBufferUtils.combine(storedMessage.getContent(offset,FRAGMENT_SIZE));
-            if(b.hasRemaining())
-            {
-                fragments.add(b);
-                offset+= b.remaining();
-            }
-        }
-        while(b.hasRemaining());
-        return fragments;
     }
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage,
-                       final List<ByteBuffer> fragments,
+                       final Collection<QpidByteBuffer> fragments,
                        final Object connectionReference)
     {
         super(storedMessage, connectionReference);
@@ -128,10 +116,10 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
         return _arrivalTime;
     }
 
-    public List<ByteBuffer> getFragments()
+    public Collection<QpidByteBuffer> getFragments()
     {
 
-        List<ByteBuffer> fragments = _fragmentsRef.get();
+        Collection<QpidByteBuffer> fragments = _fragmentsRef.get();
         if(fragments == null)
         {
             fragments = restoreFragments(getStoredMessage());

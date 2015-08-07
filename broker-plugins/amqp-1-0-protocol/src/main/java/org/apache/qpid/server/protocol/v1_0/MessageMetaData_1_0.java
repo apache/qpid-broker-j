@@ -49,6 +49,7 @@ import org.apache.qpid.amqp_1_0.type.messaging.Footer;
 import org.apache.qpid.amqp_1_0.type.messaging.Header;
 import org.apache.qpid.amqp_1_0.type.messaging.MessageAnnotations;
 import org.apache.qpid.amqp_1_0.type.messaging.Properties;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -70,9 +71,9 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     private Map _appProperties;
     private Map _footer;
 
-    private List<ByteBuffer> _encodedSections = new ArrayList<ByteBuffer>(3);
+    private List<QpidByteBuffer> _encodedSections = new ArrayList<>(3);
 
-    private volatile ByteBuffer _encoded;
+    private volatile QpidByteBuffer _encoded;
     private MessageHeader_1_0 _messageHeader;
 
 
@@ -92,29 +93,29 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         return _header;
     }
 
-    private static ArrayList<ByteBuffer> encodeSections(final List<Section> sections, final SectionEncoder encoder)
+    private static ArrayList<QpidByteBuffer> encodeSections(final List<Section> sections, final SectionEncoder encoder)
     {
-        ArrayList<ByteBuffer> encodedSections = new ArrayList<ByteBuffer>(sections.size());
+        ArrayList<QpidByteBuffer> encodedSections = new ArrayList<QpidByteBuffer>(sections.size());
         for(Section section : sections)
         {
             encoder.encodeObject(section);
-            encodedSections.add(encoder.getEncoding().asByteBuffer());
+            encodedSections.add(QpidByteBuffer.wrap(encoder.getEncoding().asByteBuffer()));
             encoder.reset();
         }
         return encodedSections;
     }
 
-    public MessageMetaData_1_0(ByteBuffer[] fragments, SectionDecoder decoder)
+    public MessageMetaData_1_0(QpidByteBuffer[] fragments, SectionDecoder decoder)
     {
-        this(fragments, decoder, new ArrayList<ByteBuffer>(3));
+        this(fragments, decoder, new ArrayList<QpidByteBuffer>(3));
     }
 
-    public MessageMetaData_1_0(ByteBuffer[] fragments, SectionDecoder decoder, List<ByteBuffer> immutableSections)
+    public MessageMetaData_1_0(QpidByteBuffer[] fragments, SectionDecoder decoder, List<QpidByteBuffer> immutableSections)
     {
         this(constructSections(fragments, decoder,immutableSections), immutableSections);
     }
 
-    private MessageMetaData_1_0(List<Section> sections, List<ByteBuffer> encodedSections)
+    private MessageMetaData_1_0(List<Section> sections, List<QpidByteBuffer> encodedSections)
     {
         _encodedSections = encodedSections;
 
@@ -161,11 +162,11 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
     }
 
-    private static List<Section> constructSections(final ByteBuffer[] fragments, final SectionDecoder decoder, List<ByteBuffer> encodedSections)
+    private static List<Section> constructSections(final QpidByteBuffer[] fragments, final SectionDecoder decoder, List<QpidByteBuffer> encodedSections)
     {
         List<Section> sections = new ArrayList<Section>(3);
 
-        ByteBuffer src;
+        QpidByteBuffer src;
         if(fragments.length == 1)
         {
             src = fragments[0].duplicate();
@@ -173,12 +174,12 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         else
         {
             int size = 0;
-            for(ByteBuffer buf : fragments)
+            for(QpidByteBuffer buf : fragments)
             {
                 size += buf.remaining();
             }
-            src = ByteBuffer.allocateDirect(size);
-            for(ByteBuffer buf : fragments)
+            src = QpidByteBuffer.allocateDirect(size);
+            for(QpidByteBuffer buf : fragments)
             {
                 src.put(buf.duplicate());
             }
@@ -274,7 +275,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
 
             int pos = 0;
-            for(ByteBuffer buf : fragments)
+            for(QpidByteBuffer buf : fragments)
             {
 /*
                 if(pos < startBarePos)
@@ -315,7 +316,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     {
         int size = 0;
 
-        for(ByteBuffer bin : _encodedSections)
+        for(QpidByteBuffer bin : _encodedSections)
         {
             size += bin.limit();
         }
@@ -323,11 +324,11 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         return size;
     }
 
-    private ByteBuffer encodeAsBuffer()
+    private QpidByteBuffer encodeAsBuffer()
     {
-        ByteBuffer buf = ByteBuffer.allocateDirect(getStorableSize());
+        QpidByteBuffer buf = QpidByteBuffer.allocateDirect(getStorableSize());
 
-        for(ByteBuffer bin : _encodedSections)
+        for(QpidByteBuffer bin : _encodedSections)
         {
             buf.put(bin.duplicate());
         }
@@ -337,7 +338,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
     public int writeToBuffer(ByteBuffer dest)
     {
-        ByteBuffer buf = _encoded;
+        QpidByteBuffer buf = _encoded;
 
         if(buf == null)
         {
@@ -353,13 +354,13 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         {
             buf.limit(dest.remaining());
         }
-        dest.put(buf);
+        buf.get(dest);
         return buf.limit();
     }
 
     public int getContentSize()
     {
-        ByteBuffer buf = _encoded;
+        QpidByteBuffer buf = _encoded;
 
         if(buf == null)
         {
@@ -399,17 +400,18 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             ValueHandler valueHandler = new ValueHandler(_typeRegistry);
 
             ArrayList<Section> sections = new ArrayList<Section>(3);
-            ArrayList<ByteBuffer> encodedSections = new ArrayList<ByteBuffer>(3);
+            ArrayList<QpidByteBuffer> encodedSections = new ArrayList<>(3);
 
             while(buf.hasRemaining())
             {
                 try
                 {
                     ByteBuffer encodedBuf = buf.duplicate();
-                    Object parse = valueHandler.parse(buf);
+                    final QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(buf);
+                    Object parse = valueHandler.parse(qpidByteBuffer);
                     sections.add((Section) parse);
                     encodedBuf.limit(buf.position());
-                    encodedSections.add(encodedBuf);
+                    encodedSections.add(QpidByteBuffer.wrap(encodedBuf));
 
                 }
                 catch (AmqpErrorException e)

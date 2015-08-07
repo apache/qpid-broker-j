@@ -21,7 +21,7 @@
 
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public abstract class FixedSixteenWriter<T extends Object> implements ValueWriter<T>
 {
@@ -29,7 +29,7 @@ public abstract class FixedSixteenWriter<T extends Object> implements ValueWrite
     private long _msb;
     private long _lsb;
 
-    public final int writeToBuffer(ByteBuffer buffer)
+    public final int writeToBuffer(QpidByteBuffer buffer)
     {
         int remaining = buffer.remaining();
         int written = _written;

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
@@ -107,7 +108,7 @@ class MockServerMessage implements ServerMessage
     }
 
 
-    public Collection<ByteBuffer> getContent(int offset, int size)
+    public Collection<QpidByteBuffer> getContent(int offset, int size)
     {
         throw new UnsupportedOperationException();
     }

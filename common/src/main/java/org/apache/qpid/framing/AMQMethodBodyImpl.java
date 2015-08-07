@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.AMQChannelException;
 import org.apache.qpid.AMQConnectionException;
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -118,8 +120,8 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
     {
 
         final int size = getSize();
-        ByteBuffer buf = ByteBuffer.allocate(size);
-        ByteBufferDataOutput dataOutput = new ByteBufferDataOutput(buf);
+        QpidByteBuffer buf = QpidByteBuffer.allocate(size);
+        DataOutput dataOutput = buf.asDataOutput();
         writePayload(dataOutput);
         buf.flip();
         sender.send(buf);

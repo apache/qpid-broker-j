@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.FieldTable;
@@ -35,7 +36,7 @@ public class MockStoredMessage implements StoredMessage<MessageMetaData>, Messag
 {
     private long _messageId;
     private MessageMetaData _metaData;
-    private final ByteBuffer _content;
+    private final QpidByteBuffer _content;
 
     public MockStoredMessage(long messageId)
     {
@@ -62,7 +63,7 @@ public class MockStoredMessage implements StoredMessage<MessageMetaData>, Messag
             ( chb.getProperties()).setHeaders(headers);
         }
         _metaData = new MessageMetaData(info, chb);
-        _content = ByteBuffer.allocate(_metaData.getContentSize());
+        _content = QpidByteBuffer.allocate(_metaData.getContentSize());
     }
 
     public MessageMetaData getMetaData()
@@ -75,7 +76,7 @@ public class MockStoredMessage implements StoredMessage<MessageMetaData>, Messag
         return _messageId;
     }
 
-    public void addContent(ByteBuffer src)
+    public void addContent(QpidByteBuffer src)
     {
         src = src.duplicate();
         _content.put(src);
@@ -90,24 +91,17 @@ public class MockStoredMessage implements StoredMessage<MessageMetaData>, Messag
 
     public int getContent(int offset, ByteBuffer dst)
     {
-        ByteBuffer src = _content.duplicate();
-        src.position(offset);
-        src = src.slice();
-        if(dst.remaining() < src.limit())
-        {
-            src.limit(dst.remaining());
-        }
-        dst.put(src);
-        return src.limit();
+        final int length = Math.min(dst.remaining(), _content.remaining() - offset);
+        QpidByteBuffer src = _content.view(offset, length);
+        src.get(dst);
+        return length;
     }
 
 
 
-    public Collection<ByteBuffer> getContent(int offsetInMessage, int size)
+    public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
     {
-        ByteBuffer buf = ByteBuffer.allocate(size);
-        getContent(offsetInMessage, buf);
-        buf.position(0);
+        QpidByteBuffer buf = _content.view(offsetInMessage,size);
         return Collections.singleton(buf);
     }
 

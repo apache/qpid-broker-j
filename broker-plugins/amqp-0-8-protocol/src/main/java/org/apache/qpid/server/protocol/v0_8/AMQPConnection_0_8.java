@@ -26,7 +26,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.security.AccessControlException;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -53,7 +52,9 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQConnectionException;
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.AMQDecoder;
+import org.apache.qpid.codec.ServerDecoder;
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.framing.*;
@@ -126,13 +127,13 @@ public class AMQPConnection_0_8
     private ConnectionState _state = ConnectionState.INIT;
 
     /**
-     * The channels that the latest call to {@link #received(ByteBuffer)} applied to.
+     * The channels that the latest call to {@link ProtocolEngine#received(QpidByteBuffer)} applied to.
      * Used so we know which channels we need to call {@link AMQChannel#receivedComplete()}
      * on after handling the frames.
      */
     private final Set<AMQChannel> _channelsForCurrentMessage = new HashSet<>();
 
-    private final AMQDecoder _decoder;
+    private final ServerDecoder _decoder;
 
     private SaslServer _saslServer;
 
@@ -277,7 +278,7 @@ public class AMQPConnection_0_8
         return new WriteDeliverMethod(channelId);
     }
 
-    public void received(final ByteBuffer msg)
+    public void received(final QpidByteBuffer msg)
     {
         Subject.doAs(getSubject(), new PrivilegedAction<Void>()
         {

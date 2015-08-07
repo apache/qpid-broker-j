@@ -44,7 +44,7 @@ import org.apache.qpid.util.BytesDataOutput;
 public class AMQDecoderTest extends QpidTestCase
 {
 
-    private AMQDecoder _decoder;
+    private ClientDecoder _decoder;
     private FrameCreatingMethodProcessor _methodProcessor;
 
 
@@ -97,7 +97,7 @@ public class AMQDecoderTest extends QpidTestCase
         {
             assertEquals(ContentBody.TYPE, ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
             ContentBody decodedBody = (ContentBody) ((AMQFrame) frames.get(0)).getBodyFrame();
-            final ByteBuffer byteBuffer = decodedBody.getPayload().duplicate();
+            final ByteBuffer byteBuffer = decodedBody.getPayload().getNativeBuffer().duplicate();
             byte[] bodyBytes = new byte[byteBuffer.remaining()];
             byteBuffer.get(bodyBytes);
             assertTrue("Body was corrupted", Arrays.equals(payload, bodyBytes));

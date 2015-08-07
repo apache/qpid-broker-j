@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.util.ByteBufferDataOutput;
@@ -86,7 +87,8 @@ public class BasicContentHeaderProperties
     private static final int USER_ID_MASK = 1 << 4;
     private static final int APPLICATION_ID_MASK = 1 << 3;
     private static final int CLUSTER_ID_MASK = 1 << 2;
-    private ByteBuffer _encodedForm;
+
+    private QpidByteBuffer _encodedForm;
 
 
     public BasicContentHeaderProperties(BasicContentHeaderProperties other)
@@ -482,9 +484,8 @@ public class BasicContentHeaderProperties
         else
         {
             int propertyListSize = getPropertyListSize();
-            ByteBuffer buf = ByteBuffer.allocateDirect(propertyListSize);
-            ByteBufferDataOutput out = new ByteBufferDataOutput(buf);
-            writePropertyListPayload(out);
+            QpidByteBuffer buf = QpidByteBuffer.allocateDirect(propertyListSize);
+            writePropertyListPayload(buf.asDataOutput());
             buf.flip();
             sender.send(buf);
             return propertyListSize;
@@ -503,9 +504,7 @@ public class BasicContentHeaderProperties
 
         _encodedForm = buffer.readAsByteBuffer(size);
 
-        ByteBufferDataInput input = new ByteBufferDataInput(_encodedForm.slice());
-
-        decode(input);
+        decode(_encodedForm.slice().asDataInput());
 
     }
 
@@ -529,7 +528,7 @@ public class BasicContentHeaderProperties
         {
             long length = EncodingUtils.readUnsignedInteger(buffer);
 
-            ByteBuffer buf = _encodedForm.slice();
+            QpidByteBuffer buf = _encodedForm.slice();
             buf.position(headersOffset+4);
             buf = buf.slice();
             buf.limit((int)length);

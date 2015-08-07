@@ -23,8 +23,7 @@ package org.apache.qpid.amqp_1_0.codec;
 import org.apache.qpid.amqp_1_0.type.*;
 import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
-
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class ByteTypeConstructor implements TypeConstructor
 {
@@ -39,7 +38,7 @@ public class ByteTypeConstructor implements TypeConstructor
     {
     }
 
-    public Object construct(final ByteBuffer in, ValueHandler handler) throws AmqpErrorException
+    public Object construct(final QpidByteBuffer in, ValueHandler handler) throws AmqpErrorException
     {
         if(in.hasRemaining())
         {

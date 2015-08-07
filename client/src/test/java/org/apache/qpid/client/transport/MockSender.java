@@ -22,12 +22,19 @@ package org.apache.qpid.client.transport;
 
 import java.nio.ByteBuffer;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 
 public class MockSender implements ByteBufferSender
 {
 
-    public void send(ByteBuffer msg)
+    private void send(ByteBuffer msg)
+    {
+
+    }
+
+    @Override
+    public void send(final QpidByteBuffer msg)
     {
 
     }

@@ -30,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
 public class EncodingUtils
@@ -280,7 +281,7 @@ public class EncodingUtils
         }
     }
 
-    public static void writeUnsignedShort(ByteBuffer buffer, int s) throws IOException
+    public static void writeUnsignedShort(QpidByteBuffer buffer, int s) throws IOException
     {
         // TODO: Is this comparison safe? Do I need to cast RHS to long?
         if (s < Short.MAX_VALUE)
@@ -321,7 +322,7 @@ public class EncodingUtils
         }
     }
 
-    public static void writeUnsignedInteger(ByteBuffer buffer, long l) throws IOException
+    public static void writeUnsignedInteger(QpidByteBuffer buffer, long l) throws IOException
     {
         // TODO: Is this comparison safe? Do I need to cast RHS to long?
         if (l < Integer.MAX_VALUE)
@@ -627,7 +628,7 @@ public class EncodingUtils
         }
         else
         {
-            return new FieldTable(buffer.readAsByteBuffer((int)length));
+            return new FieldTable(buffer.readAsByteBuffer((int) length));
         }
     }
 

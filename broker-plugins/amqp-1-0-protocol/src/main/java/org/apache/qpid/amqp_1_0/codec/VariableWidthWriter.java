@@ -23,12 +23,14 @@ package org.apache.qpid.amqp_1_0.codec;
 
 import java.nio.ByteBuffer;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 public abstract class VariableWidthWriter<V> implements ValueWriter<V>
 {
     private int _written;
     private int _size;
 
-    public int writeToBuffer(ByteBuffer buffer)
+    public int writeToBuffer(QpidByteBuffer buffer)
     {
 
         int written = _written;
@@ -157,7 +159,7 @@ public abstract class VariableWidthWriter<V> implements ValueWriter<V>
 
     protected abstract int getLength();
 
-    protected abstract void writeBytes(ByteBuffer buf, int offset, int length);
+    protected abstract void writeBytes(QpidByteBuffer buf, int offset, int length);
 
 
     public boolean isComplete()

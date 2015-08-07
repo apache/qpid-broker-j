@@ -21,7 +21,7 @@
 
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class IntegerWriter implements ValueWriter<Integer>
 {
@@ -61,7 +61,7 @@ public class IntegerWriter implements ValueWriter<Integer>
     };
 
 
-    public int writeToBuffer(final ByteBuffer buffer)
+    public int writeToBuffer(final QpidByteBuffer buffer)
     {
         return _delegate.writeToBuffer(buffer);
     }

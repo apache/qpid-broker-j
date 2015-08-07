@@ -23,37 +23,49 @@ package org.apache.qpid.util;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 public class ByteBufferUtils
 {
     private static final ByteBuffer EMPTY_BYTE_BUFFER = ByteBuffer.allocate(0);
 
-    public static ByteBuffer combine(Collection<ByteBuffer> bufs)
+    public static ByteBuffer combine(Collection<QpidByteBuffer> bufs)
     {
         if(bufs == null || bufs.isEmpty())
         {
             return EMPTY_BYTE_BUFFER;
         }
-        else if(bufs.size() == 1)
-        {
-            return bufs.iterator().next();
-        }
         else
         {
             int size = 0;
             boolean isDirect = false;
-            for(ByteBuffer buf : bufs)
+            for(QpidByteBuffer buf : bufs)
             {
                 size += buf.remaining();
                 isDirect = isDirect || buf.isDirect();
             }
             ByteBuffer combined = isDirect ? ByteBuffer.allocateDirect(size) : ByteBuffer.allocate(size);
 
-            for(ByteBuffer buf : bufs)
+            for(QpidByteBuffer buf : bufs)
             {
-                combined.put(buf.duplicate());
+                buf.duplicate().get(combined);
             }
             combined.flip();
             return combined;
         }
+    }
+
+    public static int remaining(Collection<QpidByteBuffer> bufs)
+    {
+        int size = 0;
+        if (bufs != null && !bufs.isEmpty())
+        {
+            for (QpidByteBuffer buf : bufs)
+            {
+                size += buf.remaining();
+            }
+
+        }
+        return size;
     }
 }

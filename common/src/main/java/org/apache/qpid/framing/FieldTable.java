@@ -41,6 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQPInvalidClassException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.codec.MarkableDataInput;
 
 // extends FieldTable
 public class FieldTable
@@ -49,7 +51,7 @@ public class FieldTable
     private static final String STRICT_AMQP_NAME = "STRICT_AMQP";
     private static final boolean STRICT_AMQP = Boolean.valueOf(System.getProperty(STRICT_AMQP_NAME, "false"));
 
-    private ByteBuffer _encodedForm;
+    private QpidByteBuffer _encodedForm;
     private LinkedHashMap<AMQShortString, AMQTypedValue> _properties = null;
     private long _encodedSize;
     private static final int INITIAL_HASHMAP_CAPACITY = 16;
@@ -70,10 +72,10 @@ public class FieldTable
 
     public FieldTable(byte[] encodedForm, int offset, int length)
     {
-        this(ByteBuffer.wrap(encodedForm,offset,length));
+        this(QpidByteBuffer.wrap(encodedForm,offset,length));
     }
 
-    public FieldTable(ByteBuffer buffer)
+    public FieldTable(QpidByteBuffer buffer)
     {
         this();
         _encodedForm = buffer;
@@ -1094,13 +1096,13 @@ public class FieldTable
     private void setFromBuffer() throws AMQFrameDecodingException, IOException
     {
 
-        ByteBufferDataInput dataInput = new ByteBufferDataInput(_encodedForm.duplicate());
+        MarkableDataInput dataInput = _encodedForm.slice().asDataInput();
 
         if (_encodedSize > 0)
         {
 
 
-            _properties = new LinkedHashMap<AMQShortString, AMQTypedValue>(INITIAL_HASHMAP_CAPACITY);
+            _properties = new LinkedHashMap<>(INITIAL_HASHMAP_CAPACITY);
 
             do
             {

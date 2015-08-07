@@ -22,6 +22,7 @@ package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
 import org.apache.qpid.amqp_1_0.type.Binary;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -42,7 +43,7 @@ public class BinaryTypeConstructor extends VariableWidthTypeConstructor
     }
 
     @Override
-    public Object construct(final ByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
+    public Object construct(final QpidByteBuffer in, boolean isCopy, ValueHandler handler) throws AmqpErrorException
     {
         int size;
 
@@ -55,7 +56,7 @@ public class BinaryTypeConstructor extends VariableWidthTypeConstructor
             size = in.getInt();
         }
 
-        ByteBuffer inDup = in.slice();
+        QpidByteBuffer inDup = in.slice();
         inDup.limit(inDup.position()+size);
 
         Binary binary;

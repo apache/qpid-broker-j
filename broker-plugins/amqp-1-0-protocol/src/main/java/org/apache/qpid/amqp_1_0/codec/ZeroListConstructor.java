@@ -20,8 +20,8 @@
 package org.apache.qpid.amqp_1_0.codec;
 
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,7 +33,7 @@ class ZeroListConstructor implements TypeConstructor<List>
     {
     }
 
-    public List construct(final ByteBuffer in, final ValueHandler handler) throws AmqpErrorException
+    public List construct(final QpidByteBuffer in, final ValueHandler handler) throws AmqpErrorException
     {
         return Collections.EMPTY_LIST;
     }

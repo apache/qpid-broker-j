@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 
 import org.apache.qpid.amqp_1_0.codec.ProtocolHandler;
 import org.apache.qpid.amqp_1_0.transport.ConnectionEndpoint;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class SASLProtocolHeaderHandler implements ProtocolHandler
 {
@@ -47,7 +48,7 @@ public class SASLProtocolHeaderHandler implements ProtocolHandler
         _connection = connection;
     }
 
-    public ProtocolHandler parse(final ByteBuffer in)
+    public ProtocolHandler parse(final QpidByteBuffer in)
     {
         while(in.hasRemaining() && _state != State.ERROR)
         {
