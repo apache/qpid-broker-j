@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -1889,42 +1890,56 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
             ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(removeBindingFutures);
 
-            doAfter(combinedFuture, new Runnable()
+            Futures.addCallback(combinedFuture, new FutureCallback<List<Void>>()
             {
                 @Override
-                public void run()
+                public void onSuccess(final List<Void> result)
                 {
-                    QueueConsumerList.ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
-
-                    while (consumerNodeIterator.advance())
+                    try
                     {
-                        QueueConsumer s = consumerNodeIterator.getNode().getConsumer();
-                        if (s != null)
+                        final QueueConsumerList.ConsumerNodeIterator consumerNodeIterator = _consumerList.iterator();
+
+                        while (consumerNodeIterator.advance())
                         {
-                            s.queueDeleted();
+                            final QueueConsumer s = consumerNodeIterator.getNode().getConsumer();
+                            if (s != null)
+                            {
+                                s.queueDeleted();
+                            }
                         }
+
+                        final List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
+
+                        routeToAlternate(entries);
+
+                        preSetAlternateExchange();
+
+                        performQueueDeleteTasks();
+                        deleted();
+
+                        //Log Queue Deletion
+                        getEventLogger().message(_logSubject, QueueMessages.DELETED());
+
+                        _deleteFuture.set(queueDepthMessages);
                     }
-
-                    List<QueueEntry> entries = getMessagesOnTheQueue(new AcquireAllQueueEntryFilter());
-
-                    routeToAlternate(entries);
-
-                    preSetAlternateExchange();
-
-                    performQueueDeleteTasks();
-                    deleted();
-
-                    //Log Queue Deletion
-                    getEventLogger().message(_logSubject, QueueMessages.DELETED());
-
-                    _deleteFuture.set(queueDepthMessages);
+                    catch(Throwable e)
+                    {
+                        _deleteFuture.setException(e);
+                    }
                 }
-            });
+
+                @Override
+                public void onFailure(final Throwable t)
+                {
+                    _deleteFuture.setException(t);
+                }
+            }, getTaskExecutor().getExecutor());
+
         }
         return _deleteFuture;
     }
 
-    protected void routeToAlternate(List<QueueEntry> entries)
+    private void routeToAlternate(List<QueueEntry> entries)
     {
         ServerTransaction txn = new LocalTransaction(getVirtualHost().getMessageStore());
 
@@ -1942,7 +1957,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         txn.commit();
     }
 
-    protected void performQueueDeleteTasks()
+    private void performQueueDeleteTasks()
     {
         for (Action<? super AMQQueue> task : _deleteTaskList)
         {
