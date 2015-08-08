@@ -143,7 +143,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
             @Override
             public Object answer(final InvocationOnMock invocation) throws Throwable
             {
-                _sentBuffers.add(byteBufferCaptor.getValue().getNativeBuffer());
+                _sentBuffers.add(byteBufferCaptor.getValue().asByteBuffer());
                 return null;
             }
         }).when(sender).send(byteBufferCaptor.capture());
@@ -249,7 +249,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
 
         createEngine(useSASL, Transport.TCP);
 
-        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0_SASL.getInstance().getHeaderIdentifier()));
+        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0_SASL.getInstance()
+                                                                   .getHeaderIdentifier()));
 
         SaslInit init = new SaslInit();
         init.setMechanism(Symbol.valueOf("ANONYMOUS"));
@@ -260,7 +261,8 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         buf.flip();
         _protocolEngine_1_0_0.received(buf);
 
-        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance().getHeaderIdentifier()));
+        _protocolEngine_1_0_0.received(QpidByteBuffer.wrap(ProtocolEngineCreator_1_0_0.getInstance()
+                                                                   .getHeaderIdentifier()));
 
         Open open = new Open();
         _frameWriter.setValue(AMQFrame.createAMQFrame((short)0,open));

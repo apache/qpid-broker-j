@@ -23,12 +23,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
+import java.util.Collection;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 interface NonBlockingConnectionDelegate
 {
-    boolean doWrite(ByteBuffer[] bufferArray) throws IOException;
+    boolean doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException;
 
     boolean readyForRead();
 
@@ -42,5 +43,4 @@ interface NonBlockingConnectionDelegate
 
     QpidByteBuffer getNetInputBuffer();
 
-    void setNetInputBuffer(QpidByteBuffer buffer);
 }

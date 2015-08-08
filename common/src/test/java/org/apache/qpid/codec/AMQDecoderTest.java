@@ -97,7 +97,7 @@ public class AMQDecoderTest extends QpidTestCase
         {
             assertEquals(ContentBody.TYPE, ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
             ContentBody decodedBody = (ContentBody) ((AMQFrame) frames.get(0)).getBodyFrame();
-            final ByteBuffer byteBuffer = decodedBody.getPayload().getNativeBuffer().duplicate();
+            final ByteBuffer byteBuffer = decodedBody.getPayload().asByteBuffer().duplicate();
             byte[] bodyBytes = new byte[byteBuffer.remaining()];
             byteBuffer.get(bodyBytes);
             assertTrue("Body was corrupted", Arrays.equals(payload, bodyBytes));

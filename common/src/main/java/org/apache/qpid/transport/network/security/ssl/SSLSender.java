@@ -156,7 +156,7 @@ public class SSLSender implements ByteBufferSender
             int read = 0;
             try
             {
-                SSLEngineResult result = engine.wrap(appData.getNativeBuffer(), netData);
+                SSLEngineResult result = engine.wrap(appData.asByteBuffer(), netData);
                 read   = result.bytesProduced();
                 status = result.getStatus();
                 handshakeStatus = result.getHandshakeStatus();

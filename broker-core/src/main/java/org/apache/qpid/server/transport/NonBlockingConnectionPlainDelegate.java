@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
+import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,26 +83,17 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
 
 
     @Override
-    public boolean doWrite(ByteBuffer[] bufferArray) throws IOException
+    public boolean doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
     {
-        int byteBuffersWritten = 0;
+        long bytesToWrite = 0l;
 
-        _parent.writeToTransport(bufferArray);
-
-        for (ByteBuffer buf : bufferArray)
+        for(QpidByteBuffer buf : bufferArray)
         {
-            if (buf.remaining() == 0)
-            {
-                byteBuffersWritten++;
-                _parent.writeBufferProcessed();
-            }
-            else
-            {
-                break;
-            }
+            bytesToWrite += buf.remaining();
         }
+        final long actualWritten = _parent.writeToTransport(bufferArray);
+        return actualWritten >= bytesToWrite;
 
-        return bufferArray.length == byteBuffersWritten;
     }
 
     @Override
@@ -128,9 +120,4 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
         return _netInputBuffer;
     }
 
-    @Override
-    public void setNetInputBuffer(final QpidByteBuffer netInputBuffer)
-    {
-        _netInputBuffer = netInputBuffer;
-    }
 }

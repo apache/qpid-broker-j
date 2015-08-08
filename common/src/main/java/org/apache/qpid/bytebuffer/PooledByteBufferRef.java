@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 class PooledByteBufferRef implements ByteBufferRef
 {
-    private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> UPDATER = AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_refCount");
+    private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> REF_COUNT = AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_refCount");
 
     private final ByteBuffer _buffer;
     private volatile int _refCount;
@@ -38,13 +38,17 @@ class PooledByteBufferRef implements ByteBufferRef
     @Override
     public void incrementRef()
     {
-        UPDATER.incrementAndGet(this);
+
+        if(REF_COUNT.get(this) >= 0)
+        {
+            REF_COUNT.incrementAndGet(this);
+        }
     }
 
     @Override
     public void decrementRef()
     {
-        if(UPDATER.decrementAndGet(this) == 0)
+        if(REF_COUNT.get(this) > 0 && REF_COUNT.decrementAndGet(this) == 0)
         {
             returnToPool(this);
         }
@@ -56,9 +60,14 @@ class PooledByteBufferRef implements ByteBufferRef
         return _buffer.duplicate();
     }
 
+    @Override
+    public void removeFromPool()
+    {
+        REF_COUNT.set(this, Integer.MIN_VALUE/2);
+    }
+
     private void returnToPool(final PooledByteBufferRef byteBufferRef)
     {
-
     }
 
 }

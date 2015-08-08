@@ -30,10 +30,11 @@ import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -45,7 +46,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private final NonBlockingConnection _parent;
     private final int _initialApplicationBufferSize;
     private SSLEngineResult _status;
-    private final List<ByteBuffer> _encryptedOutput = new ArrayList<>();
+    private final List<QpidByteBuffer> _encryptedOutput = new ArrayList<>();
     private Principal _principal;
     private Certificate _peerCertificate;
     private boolean _principalChecked;
@@ -84,7 +85,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             int oldAppBufPos = _applicationBuffer.position();
             oldNetBufferPos = _netInputBuffer.position();
 
-            _status = _sslEngine.unwrap(_netInputBuffer.getNativeBuffer(), _applicationBuffer.getNativeBuffer());
+            _status = _netInputBuffer.decryptSSL(_sslEngine, _applicationBuffer);
             if (_status.getStatus() == SSLEngineResult.Status.CLOSED)
             {
                 // KW If SSLEngine changes state to CLOSED, what will ever set _closed to true?
@@ -117,18 +118,17 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     }
 
     @Override
-    public boolean doWrite(ByteBuffer[] bufferArray) throws IOException
+    public boolean doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
     {
+        final int bufCount = bufferArray.size();
         int byteBuffersWritten = wrapBufferArray(bufferArray);
 
-        ByteBuffer[] encryptedBuffers = _encryptedOutput.toArray(new ByteBuffer[_encryptedOutput.size()]);
+        _parent.writeToTransport(_encryptedOutput);
 
-        _parent.writeToTransport(encryptedBuffers);
-
-        ListIterator<ByteBuffer> iter = _encryptedOutput.listIterator();
+        ListIterator<QpidByteBuffer> iter = _encryptedOutput.listIterator();
         while(iter.hasNext())
         {
-            ByteBuffer buf = iter.next();
+            QpidByteBuffer buf = iter.next();
             if(buf.remaining() == 0)
             {
                 iter.remove();
@@ -139,7 +139,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             }
         }
 
-        return (bufferArray.length == byteBuffersWritten) && _encryptedOutput.isEmpty();
+        return (bufCount <= byteBuffersWritten) && _encryptedOutput.isEmpty();
     }
 
     protected void restoreApplicationBufferForWrite()
@@ -163,7 +163,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
     }
 
-    private int wrapBufferArray(final ByteBuffer[] bufferArray) throws SSLException
+    private int wrapBufferArray(Collection<QpidByteBuffer> bufferArray) throws SSLException
     {
         int byteBuffersWritten = 0;
         int remaining = 0;
@@ -171,8 +171,8 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         {
             if(_sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP)
             {
-                final ByteBuffer netBuffer = ByteBuffer.allocateDirect(_sslEngine.getSession().getPacketBufferSize());
-                _status = _sslEngine.wrap(bufferArray, netBuffer);
+                final QpidByteBuffer netBuffer = QpidByteBuffer.allocateDirect(_sslEngine.getSession().getPacketBufferSize());
+                _status = QpidByteBuffer.encryptSSL(_sslEngine,bufferArray, netBuffer);
                 runSSLEngineTasks(_status);
 
                 netBuffer.flip();
@@ -181,12 +181,14 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 {
                     _encryptedOutput.add(netBuffer);
                 }
-                for (ByteBuffer buf : bufferArray)
+                Iterator<QpidByteBuffer> iter = bufferArray.iterator();
+                while (iter.hasNext())
                 {
+                    QpidByteBuffer buf = iter.next();
                     if (buf.remaining() == 0)
                     {
                         byteBuffersWritten++;
-                        _parent.writeBufferProcessed();
+                        iter.remove();
                     }
                     else
                     {
@@ -284,9 +286,4 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         return _netInputBuffer;
     }
 
-    @Override
-    public void setNetInputBuffer(final QpidByteBuffer netInputBuffer)
-    {
-        _netInputBuffer = netInputBuffer;
-    }
 }

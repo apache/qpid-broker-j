@@ -78,7 +78,7 @@ public abstract class AbstractJMSMessageFactory
                     _logger.debug("Non-fragmented message body (bodySize=" + contentHeader.getBodySize() + ")");
                 }
 
-                data = ((ContentBody) bodies.get(0)).getPayload().getNativeBuffer().duplicate();
+                data = ((ContentBody) bodies.get(0)).getPayload().asByteBuffer().duplicate();
             }
             else if (bodies != null)
             {
@@ -93,7 +93,7 @@ public abstract class AbstractJMSMessageFactory
                 while (it.hasNext())
                 {
                     ContentBody cb = (ContentBody) it.next();
-                    final ByteBuffer payload = cb.getPayload().getNativeBuffer().duplicate();
+                    final ByteBuffer payload = cb.getPayload().asByteBuffer().duplicate();
                     if (payload.isDirect() || payload.isReadOnly())
                     {
                         data.put(payload);

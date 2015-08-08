@@ -25,8 +25,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.channels.GatheringByteChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLEngineResult;
+import javax.net.ssl.SSLException;
 
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.framing.AMQShortString;
@@ -417,14 +425,52 @@ public final class QpidByteBuffer
     }
 
 
-    public ByteBuffer getNativeBuffer()
+    public ByteBuffer asByteBuffer()
     {
+        _ref.removeFromPool();
         return _buffer;
     }
 
     public CharBuffer decode(Charset charset)
     {
         return charset.decode(_buffer);
+    }
+
+    public int read(ReadableByteChannel channel) throws IOException
+    {
+        return channel.read(_buffer);
+    }
+
+
+    public SSLEngineResult decryptSSL(SSLEngine engine, QpidByteBuffer dest) throws SSLException
+    {
+        return engine.unwrap(_buffer, dest._buffer);
+    }
+
+
+    public static SSLEngineResult encryptSSL(SSLEngine engine,
+                                             final Collection<QpidByteBuffer> buffers,
+                                             QpidByteBuffer dest) throws SSLException
+    {
+        final ByteBuffer[] src = new ByteBuffer[buffers.size()];
+        Iterator<QpidByteBuffer> iter = buffers.iterator();
+        for(int i = 0; i<src.length; i++)
+        {
+            src[i] = iter.next()._buffer;
+        }
+        return engine.wrap(src, dest._buffer);
+    }
+
+
+    public static long write(GatheringByteChannel channel, Collection<QpidByteBuffer> buffers) throws IOException
+    {
+        ByteBuffer[] bufs = new ByteBuffer[buffers.size()];
+        Iterator<QpidByteBuffer> bufIter = buffers.iterator();
+        for(int i = 0; i < bufs.length; i++)
+        {
+            bufs[i] = bufIter.next()._buffer;
+        }
+        return channel.write(bufs);
     }
 
     public static QpidByteBuffer wrap(final ByteBuffer wrap)

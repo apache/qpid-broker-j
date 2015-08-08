@@ -48,4 +48,10 @@ class NonPooledByteBufferRef implements ByteBufferRef
     {
         return _buffer;
     }
+
+    @Override
+    public void removeFromPool()
+    {
+
+    }
 }

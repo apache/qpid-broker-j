@@ -50,7 +50,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private final SocketChannel _socketChannel;
     private NonBlockingConnectionDelegate _delegate;
     private NetworkConnectionScheduler _scheduler;
-    private final ConcurrentLinkedQueue<ByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<QpidByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
 
     private final String _remoteSocketAddress;
     private final AtomicBoolean _closed = new AtomicBoolean(false);
@@ -346,39 +346,37 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
     }
 
-    void writeToTransport(ByteBuffer[] buffers) throws IOException
+    long writeToTransport(Collection<QpidByteBuffer> buffers) throws IOException
     {
-        long written  = _socketChannel.write(buffers);
+        long written  = QpidByteBuffer.write(_socketChannel, buffers);
         if (LOGGER.isDebugEnabled())
         {
             LOGGER.debug("Written " + written + " bytes");
         }
+        return written;
     }
 
     private boolean doWrite() throws IOException
     {
-        ByteBuffer[] bufArray = new ByteBuffer[_buffers.size()];
-        Iterator<ByteBuffer> bufferIterator = _buffers.iterator();
-        for (int i = 0; i < bufArray.length; i++)
+        final boolean result = _delegate.doWrite(_buffers);
+        while(!_buffers.isEmpty())
         {
-            bufArray[i] = bufferIterator.next();
+            QpidByteBuffer buf = _buffers.peek();
+            if(buf.hasRemaining())
+            {
+                break;
+            }
+            _buffers.poll();
         }
+        return result;
 
-        if (_delegate != null)
-        {
-            return _delegate.doWrite(bufArray);
-        }
-        else
-        {
-            return true;
-        }
     }
 
     protected int readFromNetwork() throws IOException
     {
         QpidByteBuffer buffer = _delegate.getNetInputBuffer();
 
-        int read = _socketChannel.read(buffer.getNativeBuffer());
+        int read = buffer.read(_socketChannel);
         if (read == -1)
         {
             _closed.set(true);
@@ -403,14 +401,8 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
         else if (msg.remaining() > 0)
         {
-            _buffers.add(msg.getNativeBuffer());
+            _buffers.add(msg);
         }
-    }
-
-
-    public void writeBufferProcessed()
-    {
-        _buffers.poll();
     }
 
     @Override

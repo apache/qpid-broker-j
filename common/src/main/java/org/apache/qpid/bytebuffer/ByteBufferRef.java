@@ -29,4 +29,6 @@ public interface ByteBufferRef
     void decrementRef();
 
     ByteBuffer getBuffer();
+
+    void removeFromPool();
 }

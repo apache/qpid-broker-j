@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
+import java.util.Collection;
 
 public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnectionDelegate
 {
@@ -73,7 +74,7 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
     }
 
     @Override
-    public boolean doWrite(ByteBuffer[] bufferArray) throws IOException
+    public boolean doWrite(Collection<QpidByteBuffer> buffers) throws IOException
     {
         return true;
     }
@@ -128,9 +129,4 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
         return _netInputBuffer;
     }
 
-    @Override
-    public void setNetInputBuffer(final QpidByteBuffer netInputBuffer)
-    {
-        _netInputBuffer = netInputBuffer;
-    }
 }
