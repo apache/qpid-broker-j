@@ -22,13 +22,16 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
 @ManagedObject( category = false, type = TestPetrolEngineImpl.TEST_PETROL_ENGINE_TYPE)
 public class TestPetrolEngineImpl
-        extends AbstractConfiguredObject<TestPetrolEngineImpl> implements TestPetrolEngine<TestPetrolEngineImpl>
+        extends TestAbstractEngineImpl<TestPetrolEngineImpl> implements TestPetrolEngine<TestPetrolEngineImpl>
 {
     public static final String TEST_PETROL_ENGINE_TYPE = "PETROL";
 
@@ -37,4 +40,5 @@ public class TestPetrolEngineImpl
     {
         super(parentsMap(parent), attributes);
     }
+
 }

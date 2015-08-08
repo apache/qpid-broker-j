@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -185,9 +186,35 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         assertTrue("Engine should have now attained state", attainedChild.isDone());
         assertEquals(engine, attainedChild.get());
+    }
 
+    public void testCloseAwaitsChildCloseCompletion()
+    {
+        final String carName = "myCar";
+        Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
 
+        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
 
+        SettableFuture<Void> engineCloseControllingFuture = SettableFuture.create();
+
+        String engineName = "myEngine";
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, engineName);
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+
+        TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
+        engine.setBeforeCloseFuture(engineCloseControllingFuture);
+
+        ListenableFuture carListenableFuture = car.closeAsync();
+        assertFalse("car close future has completed before engine closed", carListenableFuture.isDone());
+        assertSame("engine deregistered from car too early", engine, car.getChildById(TestEngine.class, engine.getId()));
+
+        engineCloseControllingFuture.set(null);
+
+        assertTrue("car close future has not completed", carListenableFuture.isDone());
+        assertNull("engine not deregistered", car.getChildById(TestEngine.class, engine.getId()));
     }
 
     public void testDefaultContextVariableWhichRefersToAncestor()

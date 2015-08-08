@@ -18,37 +18,36 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.ConfiguredObject;
 
-@ManagedObject( category = false, type = TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE)
-public class TestElecEngineImpl
-        extends TestAbstractEngineImpl<TestElecEngineImpl> implements TestElecEngine<TestElecEngineImpl>
+public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends AbstractConfiguredObject<X> implements TestEngine<X>
 {
-    public static final String TEST_ELEC_ENGINE_TYPE = "ELEC";
+    private ListenableFuture<Void> _beforeCloseFuture = Futures.immediateFuture(null);
 
-    @ManagedObjectFactoryConstructor
-    public TestElecEngineImpl(final Map<String, Object> attributes, TestCar<?> parent)
+    public TestAbstractEngineImpl(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+                                  final Map<String, Object> attributes)
     {
-        super(parentsMap(parent), attributes);
+        super(parents, attributes);
     }
 
-    @SuppressWarnings("unused")
-    public static Map<String, Collection<String>> getSupportedChildTypes()
+    @Override
+    public void setBeforeCloseFuture(final ListenableFuture listenableFuture)
     {
-        Collection<String> types = Arrays.asList(TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-        return Collections.singletonMap(TestEngine.class.getSimpleName(), types);
+        _beforeCloseFuture = listenableFuture;
     }
 
+    @Override
+    protected ListenableFuture<Void> beforeClose()
+    {
+        return _beforeCloseFuture;
+    }
 }

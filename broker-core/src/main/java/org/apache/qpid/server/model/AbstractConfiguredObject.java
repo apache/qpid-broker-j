@@ -61,7 +61,6 @@ import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -569,69 +568,63 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final ListenableFuture<Void> closeChildren()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        final ChildCounter counter = new ChildCounter(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                returnVal.set(null);
-                LOGGER.debug("All children closed " + AbstractConfiguredObject.this.getClass().getSimpleName() + " : " + getName() );
-
-            }
-        });
-        counter.incrementCount();
-
+        final List<ListenableFuture<Void>> childCloseFutures = new ArrayList<>();
 
         applyToChildren(new Action<ConfiguredObject<?>>()
         {
             @Override
             public void performAction(final ConfiguredObject<?> child)
             {
-                counter.incrementCount();
-                ListenableFuture<Void> close = child.closeAsync();
-                Futures.addCallback(close, new FutureCallback<Void>()
+                ListenableFuture<Void> childCloseFuture = child.closeAsync();
+                Futures.addCallback(childCloseFuture, new FutureCallback<Void>()
                 {
                     @Override
                     public void onSuccess(final Void result)
                     {
-                        counter.decrementCount();
                     }
 
                     @Override
                     public void onFailure(final Throwable t)
                     {
-                        LOGGER.error("Exception occurred while closing "
-                                     + child.getClass().getSimpleName()
-                                     + " : '"
-                                     + child.getName()
-                                     + "'", t);
-                        // No need to decrement counter as setting the exception will complete the future
-                        returnVal.setException(t);
+                        LOGGER.error("Exception occurred while closing {} : {}",
+                                     new Object[] {child.getClass().getSimpleName(),
+                                     child.getName(),
+                                     t});
                     }
-                }, MoreExecutors.directExecutor());
+                });
+                childCloseFutures.add(childCloseFuture);
             }
         });
 
-        counter.decrementCount();
-
-        for(Collection<ConfiguredObject<?>> childList : _children.values())
+        ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childCloseFutures);
+        return doAfter(combinedFuture, new Runnable()
         {
-            childList.clear();
-        }
+            @Override
+            public void run()
+            {
+                // TODO consider removing each child from the parent as each child close completes, rather
+                // than awaiting the completion of the combined future.  This would make it easy to give
+                // clearer debug that would highlight the children that have failed to closed.
+                for(Collection<ConfiguredObject<?>> childList : _children.values())
+                {
+                    childList.clear();
+                }
 
-        for(Map<UUID,ConfiguredObject<?>> childIdMap : _childrenById.values())
-        {
-            childIdMap.clear();
-        }
+                for(Map<UUID,ConfiguredObject<?>> childIdMap : _childrenById.values())
+                {
+                    childIdMap.clear();
+                }
 
-        for(Map<String,ConfiguredObject<?>> childNameMap : _childrenByName.values())
-        {
-            childNameMap.clear();
-        }
+                for(Map<String,ConfiguredObject<?>> childNameMap : _childrenByName.values())
+                {
+                    childNameMap.clear();
+                }
 
-        return returnVal;
+                LOGGER.debug("All children closed {} : {}", AbstractConfiguredObject.this.getClass().getSimpleName(), getName());
+            }
+        });
     }
+
 
     @Override
     public void close()

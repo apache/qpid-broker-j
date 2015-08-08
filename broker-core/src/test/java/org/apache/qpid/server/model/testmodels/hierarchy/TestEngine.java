@@ -20,10 +20,14 @@
  */
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 
 @ManagedObject(category = true)
 public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
 {
+    /** Injectable close future, used to control when/how close occurs during test */
+    void setBeforeCloseFuture(ListenableFuture listenableFuture);
 }

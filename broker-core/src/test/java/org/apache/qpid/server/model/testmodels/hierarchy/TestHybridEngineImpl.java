@@ -21,12 +21,16 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.util.Map;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import org.apache.qpid.configuration.Validator;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 
 @ManagedObject( category = false, type = TestHybridEngineImpl.TEST_HYBRID_ENGINE_TYPE)
-public class TestHybridEngineImpl extends AbstractConfiguredObject<TestHybridEngineImpl> implements TestHybridEngine<TestHybridEngineImpl>
+public class TestHybridEngineImpl extends TestAbstractEngineImpl<TestHybridEngineImpl> implements TestHybridEngine<TestHybridEngineImpl>
 {
     public static final String TEST_HYBRID_ENGINE_TYPE = "HYBRID";
 
