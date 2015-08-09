@@ -31,6 +31,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -46,6 +48,7 @@ import org.apache.qpid.server.store.BrokerStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.ConfiguredObjectRecordConverter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         extends AbstractConfiguredObject<X> implements SystemConfig<X>
@@ -205,28 +208,31 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
 
         broker.setEventLogger(startupLogger);
         final SettableFuture<Void> returnVal = SettableFuture.create();
-        broker.openAsync().addListener(
-                new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        try
-                        {
-
-                            if (broker.getState() == State.ACTIVE)
+        Futures.addCallback(broker.openAsync(), new FutureCallback()
                             {
-                                startupLogger.message(BrokerMessages.READY());
-                                broker.setEventLogger(eventLogger);
-                            }
-                        }
-                        finally
-                        {
-                            returnVal.set(null);
-                        }
-                    }
-                }, getTaskExecutor().getExecutor()
-                                      );
+                                @Override
+                                public void onSuccess(final Object result)
+                                {
+                                    State state = broker.getState();
+                                    if (state == State.ACTIVE)
+                                    {
+                                        startupLogger.message(BrokerMessages.READY());
+                                        broker.setEventLogger(eventLogger);
+                                        returnVal.set(null);
+                                    }
+                                    else
+                                    {
+                                        returnVal.setException(new ServerScopedRuntimeException("Broker failed reach ACTIVE state (state is " + state + ")"));
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(final Throwable t)
+                                {
+                                    returnVal.setException(t);
+                                }
+                            }, getTaskExecutor().getExecutor()
+                           );
 
         return returnVal;
     }
