@@ -19,10 +19,14 @@
 
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -31,6 +35,8 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -102,18 +108,11 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
     public void testGetChildren_NewChild()
     {
-        final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
-
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"));
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
 
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
 
@@ -130,51 +129,12 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
     public void testGetChildren_RecoveredChild() throws Exception
     {
-        final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-
-        final TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
-
-        String engineName = "myEngine";
-        final Map<String, Object> engineAttributes = new HashMap<>();
-        engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
-
-        ConfiguredObjectRecord engineCor = new ConfiguredObjectRecord()
-        {
-            @Override
-            public UUID getId()
-            {
-                return UUID.randomUUID();
-            }
-
-            @Override
-            public String getType()
-            {
-                return TestEngine.class.getSimpleName();
-            }
-
-            @Override
-            public Map<String, Object> getAttributes()
-            {
-                return engineAttributes;
-            }
-
-            @Override
-            public Map<String, UUID> getParents()
-            {
-                return Collections.singletonMap(TestCar.class.getSimpleName(), car.getId());
-            }
-        };
-
-        // Recover and resolve the child.  Resolving the child registers the child with its parent (car),
-        // but the child is not open, so won't have attained state
-        TestEngine engine = (TestEngine) _model.getObjectFactory().recover(engineCor, car).resolve();
+        final TestCar car = recoverParentAndChild();
 
         // Check we can observe the recovered child from the parent
         assertEquals(1, car.getChildren(TestEngine.class).size());
+        TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
+
         assertEquals(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertEquals(engine, car.getChildByName(TestEngine.class, engine.getName()));
 
@@ -182,30 +142,156 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertNotNull(attainedChild);
         assertFalse("Engine should not have yet attained state", attainedChild.isDone());
 
-        engine.open();
+        car.open();
 
         assertTrue("Engine should have now attained state", attainedChild.isDone());
         assertEquals(engine, attainedChild.get());
     }
 
+    public void testOpenAwaitsChildToAttainState() throws Exception
+    {
+        SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
+
+        final TestCar car = recoverParentAndChild();
+
+        // Check we can observe the recovered child from the parent
+        assertEquals(1, car.getChildren(TestEngine.class).size());
+        TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
+        engine.setStateChangeFuture(engineStateChangeControllingFuture);
+
+        ListenableFuture carFuture = car.openAsync();
+        assertFalse("car open future has completed before engine has attained state", carFuture.isDone());
+
+        engineStateChangeControllingFuture.set(null);
+
+        assertTrue("car open future has not completed", carFuture.isDone());
+        carFuture.get();
+    }
+
+    public void testOpenAwaitsChildToAttainState_ChildStateChangeAsyncErrors() throws Exception
+    {
+        SettableFuture<Void> engineStateChangeControllingFuture = SettableFuture.create();
+
+        final TestCar car = recoverParentAndChild();
+
+        // Check we can observe the recovered child from the parent
+        assertEquals(1, car.getChildren(TestEngine.class).size());
+        TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
+        engine.setStateChangeFuture(engineStateChangeControllingFuture);
+
+        ListenableFuture carFuture = car.openAsync();
+        assertFalse("car open future has completed before engine has attained state", carFuture.isDone());
+
+        engineStateChangeControllingFuture.setException(new RuntimeException("child attain state exception"));
+
+        assertTrue("car open future has not completed", carFuture.isDone());
+        carFuture.get();
+
+        assertEquals(State.ERRORED, engine.getState());
+    }
+
+    public void testOpenAwaitsChildToAttainState_ChildStateChangeSyncErrors() throws Exception
+    {
+        final TestCar car = recoverParentAndChild();
+
+        // Check we can observe the recovered child from the parent
+        assertEquals(1, car.getChildren(TestEngine.class).size());
+        TestEngine engine = (TestEngine) car.getChildren(TestEngine.class).iterator().next();
+
+        engine.setStateChangeException(new RuntimeException("child attain state exception"));
+
+        ListenableFuture carFuture = car.openAsync();
+
+        assertTrue("car open future has not completed", carFuture.isDone());
+        carFuture.get();
+
+        assertEquals(State.ERRORED, engine.getState());
+    }
+
+    public void testCreateAwaitsAttainState()
+    {
+        SettableFuture stateChangeFuture = SettableFuture.create();
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"));
+
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
+        engineAttributes.put(TestEngine.STATE_CHANGE_FUTURE, stateChangeFuture);
+
+        ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        assertFalse("create child has completed before state change completes", engine.isDone());
+
+        stateChangeFuture.set(null);
+
+        assertTrue("create child has not completed", engine.isDone());
+    }
+
+    public void testCreateAwaitsAttainState_StateChangeAsyncErrors() throws Exception
+    {
+        SettableFuture stateChangeFuture = SettableFuture.create();
+        RuntimeException stateChangeException = new RuntimeException("state change error");
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"));
+
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
+        engineAttributes.put(TestEngine.STATE_CHANGE_FUTURE, stateChangeFuture);
+
+        ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        assertFalse("create child has completed before state change completes", engine.isDone());
+
+        stateChangeFuture.setException(stateChangeException);
+
+        assertTrue("create child has not completed", engine.isDone());
+        try
+        {
+            engine.get();
+            fail("Exception not thrown");
+        }
+        catch (ExecutionException ee)
+        {
+            assertSame(stateChangeException, ee.getCause());
+        }
+    }
+
+    public void testCreateAwaitsAttainState_StateChangeSyncErrors() throws Exception
+    {
+        RuntimeException stateChangeException = new RuntimeException("state change error");
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class, Collections.<String, Object>singletonMap(ConfiguredObject.NAME, "myCar"));
+
+        Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, "myEngine");
+        engineAttributes.put(TestEngine.STATE_CHANGE_EXCEPTION, stateChangeException);
+
+        ListenableFuture engine = car.createChildAsync(TestEngine.class, engineAttributes);
+        assertTrue("create child has not completed", engine.isDone());
+
+        try
+        {
+            engine.get();
+            fail("Exception not thrown");
+        }
+        catch (ExecutionException ee)
+        {
+            assertSame(stateChangeException, ee.getCause());
+        }
+    }
+
     public void testCloseAwaitsChildCloseCompletion()
     {
-        final String carName = "myCar";
-        Map<String, Object> carAttributes = new HashMap<>();
-        carAttributes.put(ConfiguredObject.NAME, carName);
-        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
-
-        TestCar car = _model.getObjectFactory().create(TestCar.class, carAttributes);
-
         SettableFuture<Void> engineCloseControllingFuture = SettableFuture.create();
+
+        TestCar car = _model.getObjectFactory().create(TestCar.class,
+                                                       Collections.<String, Object>singletonMap(ConfiguredObject.NAME,
+                                                                                                "myCar"));
 
         String engineName = "myEngine";
         Map<String, Object> engineAttributes = new HashMap<>();
         engineAttributes.put(ConfiguredObject.NAME, engineName);
-        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+        engineAttributes.put(TestEngine.BEFORE_CLOSE_FUTURE, engineCloseControllingFuture);
 
         TestEngine engine = (TestEngine) car.createChild(TestEngine.class, engineAttributes);
-        engine.setBeforeCloseFuture(engineCloseControllingFuture);
 
         ListenableFuture carListenableFuture = car.closeAsync();
         assertFalse("car close future has completed before engine closed", carListenableFuture.isDone());
@@ -316,6 +402,83 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals("Unexpected number of children after rejected duplicate", 1, car.getChildren(TestEngine.class).size());
         assertSame(engine, car.getChildById(TestEngine.class, engine.getId()));
         assertSame(engine, car.getChildByName(TestEngine.class, engine.getName()));
+    }
+
+    /** Simulates recovery of a parent/child from a store.  Neither will be open yet. */
+    private TestCar recoverParentAndChild()
+    {
+        final SystemConfig mockSystemConfig = mock(SystemConfig.class);
+        when(mockSystemConfig.getId()).thenReturn(UUID.randomUUID());
+        when(mockSystemConfig.getModel()).thenReturn(TestModel.getInstance());
+
+        final String carName = "myCar";
+        final Map<String, Object> carAttributes = new HashMap<>();
+        carAttributes.put(ConfiguredObject.NAME, carName);
+        carAttributes.put(ConfiguredObject.TYPE, TestKitCarImpl.TEST_KITCAR_TYPE);
+
+        ConfiguredObjectRecord carCor = new ConfiguredObjectRecord()
+        {
+            @Override
+            public UUID getId()
+            {
+                return UUID.randomUUID();
+            }
+
+            @Override
+            public String getType()
+            {
+                return TestCar.class.getSimpleName();
+            }
+
+            @Override
+            public Map<String, Object> getAttributes()
+            {
+                return carAttributes;
+            }
+
+            @Override
+            public Map<String, UUID> getParents()
+            {
+                return Collections.singletonMap(SystemConfig.class.getSimpleName(), mockSystemConfig.getId());
+            }
+        };
+
+        final TestCar car = (TestCar) _model.getObjectFactory().recover(carCor, mockSystemConfig).resolve();
+
+        String engineName = "myEngine";
+        final Map<String, Object> engineAttributes = new HashMap<>();
+        engineAttributes.put(ConfiguredObject.NAME, engineName);
+        engineAttributes.put(ConfiguredObject.TYPE, TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE);
+
+        ConfiguredObjectRecord engineCor = new ConfiguredObjectRecord()
+        {
+            @Override
+            public UUID getId()
+            {
+                return UUID.randomUUID();
+            }
+
+            @Override
+            public String getType()
+            {
+                return TestEngine.class.getSimpleName();
+            }
+
+            @Override
+            public Map<String, Object> getAttributes()
+            {
+                return engineAttributes;
+            }
+
+            @Override
+            public Map<String, UUID> getParents()
+            {
+                return Collections.singletonMap(TestCar.class.getSimpleName(), car.getId());
+            }
+        };
+
+        _model.getObjectFactory().recover(engineCor, car).resolve();
+        return car;
     }
 
 

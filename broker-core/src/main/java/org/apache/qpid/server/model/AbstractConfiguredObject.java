@@ -542,30 +542,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    private class ChildCounter
-    {
-        private final AtomicInteger _count = new AtomicInteger();
-        private final Runnable _task;
-
-        private ChildCounter(final Runnable task)
-        {
-            _task = task;
-        }
-
-        public void incrementCount()
-        {
-            _count.incrementAndGet();
-        }
-
-        public void decrementCount()
-        {
-            if(_count.decrementAndGet() == 0)
-            {
-                _task.run();
-            }
-        }
-    }
-
     protected final ListenableFuture<Void> closeChildren()
     {
         final List<ListenableFuture<Void>> childCloseFutures = new ArrayList<>();
@@ -587,9 +563,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     public void onFailure(final Throwable t)
                     {
                         LOGGER.error("Exception occurred while closing {} : {}",
-                                     new Object[] {child.getClass().getSimpleName(),
-                                     child.getName(),
-                                     t});
+                                     new Object[]{child.getClass().getSimpleName(),
+                                             child.getName(),
+                                             t});
                     }
                 });
                 childCloseFutures.add(childCloseFuture);
@@ -795,22 +771,63 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     private ListenableFuture<Void> doAttainState(final AbstractConfiguredObjectExceptionHandler exceptionHandler)
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        final ChildCounter counter = new ChildCounter(new Runnable()
+        final List<ListenableFuture<Void>> childStateFutures = new ArrayList<>();
+
+        applyToChildren(new Action<ConfiguredObject<?>>()
         {
             @Override
-            public void run()
+            public void performAction(final ConfiguredObject<?> child)
+            {
+                if (child instanceof AbstractConfiguredObject
+                    && ((AbstractConfiguredObject)child)._dynamicState.get() == DynamicState.OPENED)
+                {
+                    final AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
+                    childStateFutures.add(configuredObject.doAttainState(exceptionHandler));
+
+                }
+            }
+        });
+
+        ListenableFuture<List<Void>> combinedChildStateFuture = Futures.allAsList(childStateFutures);
+
+        final SettableFuture<Void> returnVal = SettableFuture.create();
+        Futures.addCallback(combinedChildStateFuture, new FutureCallback<List<Void>>()
+        {
+            @Override
+            public void onSuccess(final List<Void> result)
             {
                 try
                 {
-                    attainState().addListener(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            returnVal.set(null);
-                        }
-                    }, getTaskExecutor().getExecutor());
+                    Futures.addCallback(attainState(),
+                                        new FutureCallback<Void>()
+                                        {
+                                            @Override
+                                            public void onSuccess(final Void result1)
+                                            {
+                                                returnVal.set(null);
+                                            }
+
+                                            @Override
+                                            public void onFailure(final Throwable t)
+                                            {
+                                                try
+                                                {
+                                                    if (t instanceof RuntimeException)
+                                                    {
+                                                        exceptionHandler.handleException((RuntimeException) t,
+                                                                                         AbstractConfiguredObject.this);
+                                                        returnVal.set(null);
+                                                    }
+                                                }
+                                                finally
+                                                {
+                                                    if (!returnVal.isDone())
+                                                    {
+                                                        returnVal.setException(t);
+                                                    }
+                                                }
+                                            }
+                                        },  getTaskExecutor().getExecutor());
                 }
                 catch(RuntimeException e)
                 {
@@ -825,51 +842,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     }
                 }
             }
-        });
-        counter.incrementCount();
-        applyToChildren(new Action<ConfiguredObject<?>>()
-        {
+
             @Override
-            public void performAction(final ConfiguredObject<?> child)
+            public void onFailure(final Throwable t)
             {
-                if (child instanceof AbstractConfiguredObject)
-                {
-                    final AbstractConfiguredObject configuredObject = (AbstractConfiguredObject) child;
-                    if (configuredObject._dynamicState.get() == DynamicState.OPENED)
-                    {
-                        counter.incrementCount();
-                        Futures.addCallback(configuredObject.doAttainState(exceptionHandler),
-                                            new FutureCallback()
-                                            {
-                                                @Override
-                                                public void onSuccess(final Object result)
-                                                {
-                                                    counter.decrementCount();
-                                                }
-
-                                                @Override
-                                                public void onFailure(final Throwable t)
-                                                {
-                                                    try
-                                                    {
-                                                        if (t instanceof RuntimeException)
-                                                        {
-                                                            exceptionHandler.handleException((RuntimeException) t,
-                                                                                             configuredObject);
-                                                        }
-                                                    }
-                                                    finally
-                                                    {
-                                                        counter.decrementCount();
-                                                    }
-                                                }
-                                            },getTaskExecutor().getExecutor());
-
-                    }
-                }
+                // One or more children failed to attain state but the error could not be handled by the handler
+                returnVal.setException(t);
             }
         });
-        counter.decrementCount();
+
         return returnVal;
     }
 

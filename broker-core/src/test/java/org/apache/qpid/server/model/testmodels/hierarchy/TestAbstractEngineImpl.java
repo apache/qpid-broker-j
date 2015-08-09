@@ -28,10 +28,20 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
 
 public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends AbstractConfiguredObject<X> implements TestEngine<X>
 {
+    @ManagedAttributeField
     private ListenableFuture<Void> _beforeCloseFuture = Futures.immediateFuture(null);
+
+    @ManagedAttributeField
+    private Object _stateChangeFuture = Futures.immediateFuture(null);
+
+    @ManagedAttributeField
+    private RuntimeException _stateChangeException;
 
     public TestAbstractEngineImpl(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
                                   final Map<String, Object> attributes)
@@ -40,14 +50,56 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
     }
 
     @Override
-    public void setBeforeCloseFuture(final ListenableFuture listenableFuture)
+    public Object getBeforeCloseFuture()
+    {
+        return _beforeCloseFuture;
+    }
+
+    @Override
+    public void setBeforeCloseFuture(final ListenableFuture<Void> listenableFuture)
     {
         _beforeCloseFuture = listenableFuture;
+    }
+
+    @Override
+    public Object getStateChangeFuture()
+    {
+        return _stateChangeFuture;
+    }
+
+    @Override
+    public void setStateChangeFuture(final ListenableFuture<Void> listenableFuture)
+    {
+        _stateChangeFuture = listenableFuture;
+    }
+
+
+    @Override
+    public Object getStateChangeException()
+    {
+        return _stateChangeException;
+    }
+
+    @Override
+    public void setStateChangeException(final RuntimeException exception)
+    {
+        _stateChangeException = exception;
     }
 
     @Override
     protected ListenableFuture<Void> beforeClose()
     {
         return _beforeCloseFuture;
+    }
+
+    @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
+    private ListenableFuture<Void> onActivate()
+    {
+        RuntimeException stateChangeException = _stateChangeException;
+        if (stateChangeException != null)
+        {
+            throw stateChangeException;
+        }
+        return (ListenableFuture<Void>) _stateChangeFuture;
     }
 }

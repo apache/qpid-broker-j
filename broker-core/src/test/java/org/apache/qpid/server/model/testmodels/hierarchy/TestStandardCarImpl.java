@@ -25,8 +25,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.testmodels.TestSecurityManager;
@@ -53,6 +56,14 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
         CurrentThreadTaskExecutor currentThreadTaskExecutor = new CurrentThreadTaskExecutor();
         currentThreadTaskExecutor.start();
         return currentThreadTaskExecutor;
+    }
+
+    @Override
+    protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
+                                                                             final Map<String, Object> attributes,
+                                                                             final ConfiguredObject... otherParents)
+    {
+        return getObjectFactory().createAsync(childClass, attributes, this);
     }
 
     @SuppressWarnings("unused")

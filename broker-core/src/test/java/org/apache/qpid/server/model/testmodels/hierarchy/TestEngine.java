@@ -21,13 +21,36 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 
-@ManagedObject(category = true)
+@ManagedObject(category = true, defaultType = TestElecEngineImpl.TEST_ELEC_ENGINE_TYPE)
 public interface TestEngine<X extends TestEngine<X>> extends ConfiguredObject<X>
 {
-    /** Injectable close future, used to control when/how close occurs during test */
-    void setBeforeCloseFuture(ListenableFuture listenableFuture);
+    String BEFORE_CLOSE_FUTURE = "beforeCloseFuture";
+    String STATE_CHANGE_FUTURE = "stateChangeFuture";
+    String STATE_CHANGE_EXCEPTION = "stateChangeException";
+
+    /* Injectable close future, used to control when/how close completes during the test */
+    @ManagedAttribute
+    Object getBeforeCloseFuture();
+
+    void setBeforeCloseFuture(ListenableFuture<Void> listenableFuture);
+
+    /* Injectable state change future, used to control when/how asynch state transition completes during the test */
+
+    @ManagedAttribute
+    Object getStateChangeFuture();
+
+    void setStateChangeFuture(ListenableFuture<Void> listenableFuture);
+
+    /* Injectable exception, used to introduce an exception into a state change transition */
+
+    @ManagedAttribute
+    Object getStateChangeException();
+    void setStateChangeException(RuntimeException exception);
+
 }
