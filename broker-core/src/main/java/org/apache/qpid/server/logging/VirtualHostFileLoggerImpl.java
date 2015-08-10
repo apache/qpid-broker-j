@@ -22,6 +22,7 @@ package org.apache.qpid.server.logging;
 
 import java.io.File;
 import java.security.AccessControlException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -140,7 +141,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     @Override
     public List<LogFileDetails> getLogFiles()
     {
-        return _rolloverWatcher.getLogFileDetails();
+        return _rolloverWatcher == null ? Collections.<LogFileDetails>emptyList() : _rolloverWatcher.getLogFileDetails();
     }
 
     @Override
@@ -151,7 +152,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
             throw new AccessControlException("Permission denied to access log content");
         }
 
-        return _rolloverWatcher.getFileContent(fileName);
+        return _rolloverWatcher == null ? null : _rolloverWatcher.getFileContent(fileName);
     }
 
     @Override
@@ -162,7 +163,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
             throw new AccessControlException("Permission denied to access log content");
         }
 
-        return _rolloverWatcher.getFilesAsZippedContent(fileName);
+        return _rolloverWatcher == null ? null : _rolloverWatcher.getFilesAsZippedContent(fileName);
     }
 
 
@@ -174,7 +175,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
             throw new AccessControlException("Permission denied to access log content");
         }
 
-        return _rolloverWatcher.getAllFilesAsZippedContent();
+        return _rolloverWatcher == null ? null : _rolloverWatcher.getAllFilesAsZippedContent();
     }
 
     @Override

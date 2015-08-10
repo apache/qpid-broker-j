@@ -21,7 +21,6 @@
 package org.apache.qpid.server.logging;
 
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
