@@ -119,7 +119,7 @@ public class JMXManagementPluginImpl
         Collection<Port<?>> ports = broker.getPorts();
         for (Port<?> port : ports)
         {
-            if (port.getDesiredState() != State.ACTIVE)
+            if (port.getDesiredState() != State.ACTIVE || port.getState() == State.ERRORED)
             {
                 continue;
             }
