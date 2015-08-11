@@ -182,7 +182,10 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     public void stopLogging()
     {
         super.stopLogging();
-        _rolledPolicyExecutor.shutdown();
+        if (_rolledPolicyExecutor != null)
+        {
+            _rolledPolicyExecutor.shutdown();
+        }
     }
 
     @Override

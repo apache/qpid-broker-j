@@ -192,7 +192,10 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     public void stopLogging()
     {
         super.stopLogging();
-        _rolledPolicyExecutor.shutdown();
+        if (_rolledPolicyExecutor != null)
+        {
+            _rolledPolicyExecutor.shutdown();
+        }
     }
 
     @Override

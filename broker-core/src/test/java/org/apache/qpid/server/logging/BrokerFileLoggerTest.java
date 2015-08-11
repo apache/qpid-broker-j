@@ -25,8 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -48,6 +48,7 @@ public class BrokerFileLoggerTest extends QpidTestCase
     private File _baseFolder;
     private File _logFile;
     private Broker _broker;
+    private BrokerFileLogger<?> _logger;
 
     @Override
     public void setUp() throws Exception
@@ -87,7 +88,11 @@ public class BrokerFileLoggerTest extends QpidTestCase
     {
         try
         {
-            _broker.close();
+            if (_logger != null)
+            {
+                _logger.close();
+                _logger.stopLogging();
+            }
             _taskExecutor.stopImmediately();
             if (_baseFolder != null && _baseFolder.exists())
             {
@@ -102,6 +107,14 @@ public class BrokerFileLoggerTest extends QpidTestCase
 
     public void testGetLogFilesOnResolutionErrors()
     {
+        _logger = createLoggerInErroredState();
+
+        List<LogFileDetails> logFileDetails = _logger.getLogFiles();
+        assertTrue("File details should be empty", logFileDetails.isEmpty());
+    }
+
+    private BrokerFileLogger createLoggerInErroredState()
+    {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(BrokerLogger.NAME, getTestName());
         attributes.put(ConfiguredObject.TYPE, BrokerFileLogger.TYPE);
@@ -112,9 +125,7 @@ public class BrokerFileLoggerTest extends QpidTestCase
         logger.open();
 
         assertEquals("Unexpected state", State.ERRORED, logger.getState());
-
-        Collection<LogFileDetails> logFileDetails = logger.getLogFiles();
-        assertTrue("File details should be empty", logFileDetails.isEmpty());
+        return logger;
     }
 
 }

@@ -205,6 +205,20 @@ public class VirtualHostLoggerTest  extends QpidTestCase
 
     public void testGetLogFilesOnResolutionErrors()
     {
+        VirtualHostFileLogger logger = createErrorredLogger();
+
+        Collection<LogFileDetails> logFileDetails = logger.getLogFiles();
+        assertTrue("File details should be empty", logFileDetails.isEmpty());
+    }
+
+    public void testStopLoggingLoggerInErroredState()
+    {
+        VirtualHostFileLogger logger = createErrorredLogger();
+        logger.stopLogging();
+    }
+
+    private VirtualHostFileLogger createErrorredLogger()
+    {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(VirtualHostLogger.NAME, getTestName());
         attributes.put(ConfiguredObject.TYPE, VirtualHostFileLogger.TYPE);
@@ -215,9 +229,7 @@ public class VirtualHostLoggerTest  extends QpidTestCase
         logger.open();
 
         assertEquals("Unexpected state", State.ERRORED, logger.getState());
-
-        Collection<LogFileDetails> logFileDetails = logger.getLogFiles();
-        assertTrue("File details should be empty", logFileDetails.isEmpty());
+        return logger;
     }
 
     private VirtualHostLogger createVirtualHostLogger()
