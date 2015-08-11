@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +56,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -144,13 +144,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     {
         getBroker().getEventLogger().message(ManagementConsoleMessages.STARTUP(OPERATIONAL_LOGGING_NAME));
 
-        Collection<Port<?>> httpPorts = getHttpPorts(getBroker().getPorts());
-        Map<Port<?>, Connector> connectors = new HashMap<>();
-        _server = createServer(httpPorts, connectors);
+        Collection<HttpPort<?>> httpPorts = getHttpPorts(getBroker().getPorts());
+        _server = createServer(httpPorts);
         try
         {
             _server.start();
-            logOperationalListenMessages(httpPorts, connectors);
+            logOperationalListenMessages(httpPorts);
         }
         catch (Exception e)
         {
@@ -186,7 +185,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return _sessionTimeout;
     }
 
-    private Server createServer(Collection<Port<?>> ports, final Map<Port<?>, Connector> connectors)
+    private Server createServer(Collection<HttpPort<?>> ports)
     {
         if (_logger.isInfoEnabled())
         {
@@ -195,75 +194,20 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         _allowPortActivation = true;
 
         Server server = new Server();
-
-        QueuedThreadPool threadPool = new QueuedThreadPool();
-        threadPool.setName("HttpManagement");
-        threadPool.setMaxQueued(getContextValue(Integer.class, JETTY_THREAD_POOL_MAX_QUEUED));
-        threadPool.setMaxThreads(getContextValue(Integer.class, JETTY_THREAD_POOL_MAX_THREADS));
-        threadPool.setMinThreads(getContextValue(Integer.class, JETTY_THREAD_POOL_MIN_THREADS));
-
-        server.setThreadPool(threadPool);
+        // All connectors will have their own thread pool, so we expect the server to need none.
+        server.setThreadPool(new ZeroSizedThreadPool());
 
         int lastPort = -1;
-        for (Port<?> port : ports)
+        for (HttpPort<?> port : ports)
         {
-            if(port instanceof HttpPort)
+            if (!State.ACTIVE.equals(port.getDesiredState()))
             {
-
-                if (!State.ACTIVE.equals(port.getDesiredState()))
-                {
-                    continue;
-                }
-                ((HttpPort<?>)port).setPortManager(this);
-
-                if(port.getState() != State.ACTIVE)
-                {
-
-                    // TODO - RG - probably does nothing
-                    port.startAsync();
-                }
-                Connector connector = null;
-
-                Collection<Transport> transports = port.getTransports();
-                if (!transports.contains(Transport.SSL))
-                {
-                    final Port thePort = port;
-                    connector = new SelectChannelConnector()
-                                {
-                                    @Override
-                                    public void customize(final EndPoint endpoint, final Request request) throws IOException
-                                    {
-                                        super.customize(endpoint, request);
-                                        request.setAttribute(PORT_SERVLET_ATTRIBUTE, thePort);
-                                    }
-                                };
-                }
-                else if (transports.contains(Transport.SSL))
-                {
-                    connector = createSslConnector((HttpPort<?>) port);
-                }
-                else
-                {
-                    throw new IllegalArgumentException("Unexpected transport on port "
-                                                       + port.getName()
-                                                       + ":"
-                                                       + transports);
-                }
-                lastPort = port.getPort();
-                String bindingAddress = ((HttpPort)port).getBindingAddress();
-                if (bindingAddress != null && !bindingAddress.trim().equals("") && !bindingAddress.trim().equals("*"))
-                {
-                    connector.setHost(bindingAddress.trim());
-                }
-                connector.setPort(port.getPort());
-                server.addConnector(connector);
-                connectors.put(port, connector);
-            }
-            else
-            {
-                throw new IllegalArgumentException("Http management can only be added to an Http port");
+                continue;
             }
 
+            SelectChannelConnector connector = createConnector(port);
+            server.addConnector(connector);
+            lastPort = port.getPort();
         }
 
         _allowPortActivation = false;
@@ -344,9 +288,72 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return server;
     }
 
-    private Connector createSslConnector(final HttpPort<?> port)
+    private SelectChannelConnector createConnector(final HttpPort<?> port)
     {
-        final Connector connector;
+        port.setPortManager(this);
+
+        if(port.getState() != State.ACTIVE)
+        {
+            // TODO - RG - probably does nothing
+            port.startAsync();
+        }
+        SelectChannelConnector connector = null;
+
+        Collection<Transport> transports = port.getTransports();
+        if (!transports.contains(Transport.SSL))
+        {
+            final Port thePort = port;
+            connector = new SelectChannelConnector()
+                        {
+                            @Override
+                            public void customize(final EndPoint endpoint, final Request request) throws IOException
+                            {
+                                super.customize(endpoint, request);
+                                request.setAttribute(PORT_SERVLET_ATTRIBUTE, thePort);
+                            }
+                        };
+        }
+        else if (transports.contains(Transport.SSL))
+        {
+            connector = createSslConnector(port);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unexpected transport on port "
+                                               + port.getName()
+                                               + ":"
+                                               + transports);
+        }
+        String bindingAddress = port.getBindingAddress();
+        if (bindingAddress != null && !bindingAddress.trim().equals("") && !bindingAddress.trim().equals("*"))
+        {
+            connector.setHost(bindingAddress.trim());
+        }
+        connector.setPort(port.getPort());
+
+
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setName("HttpManagement-" + port.getName());
+
+        int additionalInternalThreads = port.getContextValue(Integer.class,
+                                                             HttpPort.PORT_HTTP_ADDITIONAL_INTERNAL_THREADS);
+        int maximumQueueRequests = port.getContextValue(Integer.class, HttpPort.PORT_HTTP_MAXIMUM_QUEUED_REQUESTS);
+
+        int threadPoolMaximum = port.getThreadPoolMaximum();
+        int threadPoolMinimum = port.getThreadPoolMinimum();
+
+        threadPool.setMaxQueued(maximumQueueRequests);
+        threadPool.setMaxThreads(threadPoolMaximum + additionalInternalThreads);
+        threadPool.setMinThreads(threadPoolMinimum + additionalInternalThreads);
+
+        connector.setAcceptors(Math.max(1, threadPoolMaximum / 2));
+        connector.setThreadPool(threadPool);
+        return connector;
+    }
+
+    private SelectChannelConnector createSslConnector(final HttpPort<?> port)
+    {
+        final SelectChannelConnector connector;
         KeyStore keyStore = port.getKeyStore();
         Collection<TrustStore> trustStores = port.getTrustStores();
         if (keyStore == null)
@@ -530,14 +537,14 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return "v"+String.valueOf(BrokerModel.MODEL_MAJOR_VERSION);
     }
 
-    private void logOperationalListenMessages(Collection<Port<?>> ports, final Map<Port<?>, Connector> connectors)
+    private void logOperationalListenMessages(Collection<HttpPort<?>> ports)
     {
         for (Port port : ports)
         {
             Set<Transport> transports = port.getTransports();
             for (Transport transport: transports)
             {
-                getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(), transport.name(), connectors.get(port).getLocalPort()));
+                getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(), transport.name(), port.getPort()));
             }
         }
     }
@@ -552,14 +559,14 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     }
 
 
-    private Collection<Port<?>> getHttpPorts(Collection<Port<?>> ports)
+    private Collection<HttpPort<?>> getHttpPorts(Collection<Port<?>> ports)
     {
-        Collection<Port<?>> httpPorts = new HashSet<>();
+        Collection<HttpPort<?>> httpPorts = new HashSet<>();
         for (Port<?> port : ports)
         {
             if (port.getState() != State.ERRORED && port.getProtocols().contains(Protocol.HTTP))
             {
-                httpPorts.add(port);
+                httpPorts.add((HttpPort<?>) port);
             }
         }
         return httpPorts;
@@ -631,4 +638,35 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         }
     }
 
+    private static class ZeroSizedThreadPool implements ThreadPool
+    {
+        @Override
+        public boolean dispatch(final Runnable job)
+        {
+            throw new IllegalStateException("Job unexpectedly dispatched to server thread pool. Cannot dispatch");
+        }
+
+        @Override
+        public void join() throws InterruptedException
+        {
+        }
+
+        @Override
+        public int getThreads()
+        {
+            return 0;
+        }
+
+        @Override
+        public int getIdleThreads()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean isLowOnThreads()
+        {
+            return false;
+        }
+    }
 }

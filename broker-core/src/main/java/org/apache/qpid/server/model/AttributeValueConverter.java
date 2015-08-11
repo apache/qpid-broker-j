@@ -286,6 +286,44 @@ abstract class AttributeValueConverter<T>
             }
         }
     };
+
+    static final AttributeValueConverter<Double> DOUBLE_CONVERTER = new AttributeValueConverter<Double>()
+    {
+
+        @Override
+        public Double convert(final Object value, final ConfiguredObject object)
+        {
+            if(value instanceof Double)
+            {
+                return (Double) value;
+            }
+            else if(value instanceof Number)
+            {
+                return ((Number) value).doubleValue();
+            }
+            else if(value instanceof String)
+            {
+                String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
+                try
+                {
+                    return Double.valueOf(interpolated);
+                }
+                catch(NumberFormatException e)
+                {
+                    throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a Double",e);
+                }
+            }
+            else if(value == null)
+            {
+                return null;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a Double");
+            }
+        }
+    };
+
     static final AttributeValueConverter<Boolean> BOOLEAN_CONVERTER = new AttributeValueConverter<Boolean>()
     {
 
@@ -464,6 +502,10 @@ abstract class AttributeValueConverter<T>
         else if(type == Long.class)
         {
             return (AttributeValueConverter<X>) LONG_CONVERTER;
+        }
+        else if(type == Double.class)
+        {
+            return (AttributeValueConverter<X>) DOUBLE_CONVERTER;
         }
         else if(type == Boolean.class)
         {

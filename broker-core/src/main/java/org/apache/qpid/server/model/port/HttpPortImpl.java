@@ -21,9 +21,11 @@
 package org.apache.qpid.server.model.port;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
@@ -35,6 +37,12 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
     @ManagedAttributeField
     private String _bindingAddress;
+
+    @ManagedAttributeField
+    private int _threadPoolMaximum;
+
+    @ManagedAttributeField
+    private int _threadPoolMinimum;
 
     @ManagedObjectFactoryConstructor
     public HttpPortImpl(final Map<String, Object> attributes,
@@ -53,6 +61,18 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public String getBindingAddress()
     {
         return _bindingAddress;
+    }
+
+    @Override
+    public int getThreadPoolMaximum()
+    {
+        return _threadPoolMaximum;
+    }
+
+    @Override
+    public int getThreadPoolMinimum()
+    {
+        return _threadPoolMinimum;
     }
 
     @Override
@@ -77,6 +97,59 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         {
             throw new IllegalConfigurationException(String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
                     getPort(), bindingAddress == null || "".equals(bindingAddress) ? "*" : bindingAddress));
+        }
+
+        if (_threadPoolMaximum < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool maximum %d is too small. Must be greater than zero.", _threadPoolMaximum));
+        }
+        if (_threadPoolMinimum < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool minimum %d is too small. Must be greater than zero.", _threadPoolMinimum));
+        }
+        if (_threadPoolMinimum > _threadPoolMaximum)
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool minimum %d cannot be greater than thread pool maximum %d.", _threadPoolMinimum, _threadPoolMaximum));
+        }
+
+        final double additionalInternalThreads = getContextValue(Integer.class, HttpPort.PORT_HTTP_ADDITIONAL_INTERNAL_THREADS);
+        if (additionalInternalThreads < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Number of additional internal threads %d is too small. Must be greater than zero.", additionalInternalThreads));
+        }
+
+        final double maximumQueuedRequests = getContextValue(Integer.class, HttpPort.PORT_HTTP_MAXIMUM_QUEUED_REQUESTS);
+        if (maximumQueuedRequests < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Number of additional internal threads %d is too small. Must be greater than zero.", maximumQueuedRequests));
+        }
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        HttpPort changed = (HttpPort) proxyForValidation;
+        if (changedAttributes.contains(HttpPort.THREAD_POOL_MAXIMUM))
+        {
+            if (changed.getThreadPoolMaximum() < 1)
+            {
+                throw new IllegalConfigurationException(String.format("Thread pool maximum %d is too small. Must be greater than zero.", getThreadPoolMaximum()));
+            }
+        }
+        if (changedAttributes.contains(HttpPort.THREAD_POOL_MINIMUM))
+        {
+            if (changed.getThreadPoolMaximum() < 1)
+            {
+                throw new IllegalConfigurationException(String.format("Thread pool minimum %d is too small. Must be greater than zero.", getThreadPoolMinimum()));
+            }
+        }
+        if (changedAttributes.contains(HttpPort.THREAD_POOL_MAXIMUM) || changedAttributes.contains(HttpPort.THREAD_POOL_MINIMUM))
+        {
+            if (changed.getThreadPoolMinimum() > changed.getThreadPoolMaximum())
+            {
+                throw new IllegalConfigurationException(String.format("Thread pool minimum %d cannot be greater than thread pool maximum %d.", changed.getThreadPoolMinimum(), changed.getThreadPoolMaximum()));
+            }
         }
     }
 }
