@@ -57,7 +57,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerFileLoggerImpl.class);
 
-    private RolloverWatcher _rolloverWatcher;
+    private volatile RolloverWatcher _rolloverWatcher;
     private ScheduledExecutorService _rolledPolicyExecutor;
 
     @ManagedAttributeField

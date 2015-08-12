@@ -46,7 +46,7 @@ import org.apache.qpid.server.util.DaemonThreadFactory;
 
 public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<VirtualHostFileLoggerImpl> implements VirtualHostFileLogger<VirtualHostFileLoggerImpl>, FileLoggerSettings
 {
-    private RolloverWatcher _rolloverWatcher;
+    private volatile RolloverWatcher _rolloverWatcher;
     private ScheduledExecutorService _rolledPolicyExecutor;
 
     @ManagedAttributeField
