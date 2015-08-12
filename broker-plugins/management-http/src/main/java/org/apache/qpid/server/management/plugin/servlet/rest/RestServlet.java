@@ -533,7 +533,7 @@ public class RestServlet extends AbstractServlet
                 doOperation(request, response);
             }
         }
-        catch (RuntimeException e)
+        catch (RuntimeException | NoClassDefFoundError e)
         {
             setResponseStatus(request, response, e);
         }
@@ -901,7 +901,7 @@ public class RestServlet extends AbstractServlet
         return true;
     }
 
-    private void setResponseStatus(HttpServletRequest request, HttpServletResponse response, RuntimeException e) throws IOException
+    private void setResponseStatus(HttpServletRequest request, HttpServletResponse response, Throwable e) throws IOException
     {
         if (e instanceof AccessControlException)
         {
@@ -937,6 +937,10 @@ public class RestServlet extends AbstractServlet
             }
             else
             {
+                if (e instanceof NoClassDefFoundError)
+                {
+                    message = "Not found: " + message;
+                }
                 LOGGER.warn("Unexpected exception processing request ", e);
             }
 

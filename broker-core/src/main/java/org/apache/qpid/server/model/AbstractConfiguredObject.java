@@ -522,6 +522,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     returnVal.setException(e);
                 }
+                catch(Throwable t)
+                {
+                    returnVal.setException(t);
+                    throw t;
+                }
                 return null;
             }
         });
