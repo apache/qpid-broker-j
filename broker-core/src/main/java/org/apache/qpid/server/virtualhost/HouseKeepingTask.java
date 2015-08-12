@@ -24,24 +24,30 @@ import java.security.PrivilegedAction;
 
 import javax.security.auth.Subject;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.SecurityManager;
 
 public abstract class HouseKeepingTask implements Runnable
 {
-    private Logger _logger = LoggerFactory.getLogger(this.getClass());
-
-    private String _name;
-
+    private final String _name;
     private final Subject _subject;
 
     public HouseKeepingTask(VirtualHost vhost)
     {
+        this(vhost, null);
+    }
+
+    public HouseKeepingTask(VirtualHost vhost, Subject subject)
+    {
         _name = vhost.getName() + ":" + this.getClass().getSimpleName();
-        _subject = SecurityManager.getSystemTaskSubject(_name, vhost.getPrincipal());
+        if (subject == null)
+        {
+            _subject = SecurityManager.getSystemTaskSubject(_name, vhost.getPrincipal());
+        }
+        else
+        {
+            _subject = subject;
+        }
     }
 
     final public void run()
@@ -56,14 +62,7 @@ public abstract class HouseKeepingTask implements Runnable
                 @Override
                 public Object run()
                 {
-                    try
-                    {
-                        execute();
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.warn(this.getClass().getSimpleName() + " throw exception: " + e, e);
-                    }
+                    execute();
                     return null;
                 }
             });

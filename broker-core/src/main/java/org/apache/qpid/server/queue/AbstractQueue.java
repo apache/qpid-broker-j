@@ -278,7 +278,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final ConcurrentLinkedQueue<EnqueueRequest> _postRecoveryQueue = new ConcurrentLinkedQueue<>();
 
-    private final QueueRunner _queueRunner = new QueueRunner(this);
+    private final QueueRunner _queueRunner;
     private boolean _closing;
     private final ConcurrentMap<String,Task<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
 
@@ -287,6 +287,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         super(parentsMap(virtualHost), attributes);
 
         _virtualHost = virtualHost;
+        _queueRunner = new QueueRunner(this, _virtualHost.getPrincipal());
     }
 
     @Override
@@ -557,26 +558,23 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     // ------ Getters and Setters
 
-    public void execute(Runnable runnable)
+    public void execute(Runnable runnable, Subject subject)
     {
         try
         {
-
             if (_virtualHost.getState() != State.UNAVAILABLE)
             {
-                _virtualHost.executeTask(runnable);
+                _virtualHost.executeTask(runnable, subject);
             }
         }
         catch (RejectedExecutionException ree)
         {
-            // Ignore - SubFlusherRunner or QueueRunner submitted execution as queue was being stopped.
+            // Ignore - QueueRunner submitted execution as queue was being stopped.
             if(!_stopped.get())
             {
                 _logger.error("Unexpected rejected execution", ree);
                 throw ree;
-
             }
-
         }
     }
 

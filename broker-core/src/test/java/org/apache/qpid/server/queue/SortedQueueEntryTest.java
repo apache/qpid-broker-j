@@ -24,6 +24,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,6 +67,7 @@ public class SortedQueueEntryTest extends QueueEntryImplTestBase
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(virtualHost.getObjectFactory()).thenReturn(factory);
         when(virtualHost.getModel()).thenReturn(factory.getModel());
+        when(virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(virtualHost.getTaskExecutor()).thenReturn(taskExecutor);
         when(virtualHost.getChildExecutor()).thenReturn(taskExecutor);

@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -245,6 +246,7 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
         when(virtualHost.getObjectFactory()).thenReturn(factory);
         when(virtualHost.getModel()).thenReturn(factory.getModel());
+        when(virtualHost.getPrincipal()).thenReturn(mock(Principal.class));
         TaskExecutor taskExecutor = CurrentThreadTaskExecutor.newStartedInstance();
         when(virtualHost.getTaskExecutor()).thenReturn(taskExecutor);
         when(virtualHost.getChildExecutor()).thenReturn(taskExecutor);

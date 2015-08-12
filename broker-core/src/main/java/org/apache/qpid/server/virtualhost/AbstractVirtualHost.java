@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,6 +50,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.model.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,7 +122,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
 
-    private ScheduledThreadPoolExecutor _houseKeepingTasks;
+    private ScheduledThreadPoolExecutor _houseKeepingTaskExecutor;
 
     private final Broker<?> _broker;
 
@@ -561,15 +564,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     protected void shutdownHouseKeeping()
     {
-        if(_houseKeepingTasks != null)
+        if(_houseKeepingTaskExecutor != null)
         {
-            _houseKeepingTasks.shutdown();
+            _houseKeepingTaskExecutor.shutdown();
 
             try
             {
-                if (!_houseKeepingTasks.awaitTermination(HOUSEKEEPING_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS))
+                if (!_houseKeepingTaskExecutor.awaitTermination(HOUSEKEEPING_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS))
                 {
-                    _houseKeepingTasks.shutdownNow();
+                    _houseKeepingTaskExecutor.shutdownNow();
                 }
             }
             catch (InterruptedException e)
@@ -582,10 +585,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     protected void removeHouseKeepingTasks()
     {
-        BlockingQueue<Runnable> taskQueue = _houseKeepingTasks.getQueue();
+        BlockingQueue<Runnable> taskQueue = _houseKeepingTaskExecutor.getQueue();
         for (final Runnable runnable : taskQueue)
         {
-            _houseKeepingTasks.remove(runnable);
+            _houseKeepingTaskExecutor.remove(runnable);
         }
     }
 
@@ -597,45 +600,51 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
      */
     public void scheduleHouseKeepingTask(long period, HouseKeepingTask task)
     {
-        _houseKeepingTasks.scheduleAtFixedRate(task, period / 2, period,
-                                               TimeUnit.MILLISECONDS);
+        _houseKeepingTaskExecutor.scheduleAtFixedRate(task, period / 2, period, TimeUnit.MILLISECONDS);
     }
 
     public ScheduledFuture<?> scheduleTask(long delay, Runnable task)
     {
-        return _houseKeepingTasks.schedule(task, delay, TimeUnit.MILLISECONDS);
+        return _houseKeepingTaskExecutor.schedule(task, delay, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public void executeTask(Runnable task)
+    public void executeTask(final Runnable task, Subject subject)
     {
-        _houseKeepingTasks.execute(task);
+        _houseKeepingTaskExecutor.execute(new HouseKeepingTask(this, subject)
+        {
+            @Override
+            public void execute()
+            {
+                task.run();
+            }
+        });
     }
 
     public long getHouseKeepingTaskCount()
     {
-        return _houseKeepingTasks.getTaskCount();
+        return _houseKeepingTaskExecutor.getTaskCount();
     }
 
     public long getHouseKeepingCompletedTaskCount()
     {
-        return _houseKeepingTasks.getCompletedTaskCount();
+        return _houseKeepingTaskExecutor.getCompletedTaskCount();
     }
 
     public int getHouseKeepingPoolSize()
     {
-        return _houseKeepingTasks.getCorePoolSize();
+        return _houseKeepingTaskExecutor.getCorePoolSize();
     }
 
     public void setHouseKeepingPoolSize(int newSize)
     {
-        _houseKeepingTasks.setCorePoolSize(newSize);
+        _houseKeepingTaskExecutor.setCorePoolSize(newSize);
     }
 
 
     public int getHouseKeepingActiveCount()
     {
-        return _houseKeepingTasks.getActiveCount();
+        return _houseKeepingTaskExecutor.getActiveCount();
     }
 
     @Override
@@ -1208,45 +1217,20 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             {
                 if (q.getState() == State.ACTIVE)
                 {
-                    if (_logger.isDebugEnabled())
-                    {
-                        _logger.debug("Checking message status for queue: "
-                                      + q.getName());
-                    }
-                    try
-                    {
-                        q.checkMessageStatus();
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.error("Exception in housekeeping for queue: " + q.getName(), e);
-                        //Don't throw exceptions as this will stop the
-                        // house keeping task from running.
-                    }
+                    _logger.debug("Checking message status for queue: {}", q.getName());
+                    q.checkMessageStatus();
                 }
             }
             for (Connection<?> connection : _connections)
             {
-                if (_logger.isDebugEnabled())
-                {
-                    _logger.debug("Checking for long running open transactions on connection " + connection);
-                }
+                _logger.debug("Checking for long running open transactions on connection {}", connection);
                 for (AMQSessionModel<?> session : connection.getUnderlyingConnection().getSessionModels())
                 {
-                    if (_logger.isDebugEnabled())
-                    {
-                        _logger.debug("Checking for long running open transactions on session " + session);
-                    }
-                    try
-                    {
-                        session.checkTransactionStatus(getStoreTransactionOpenTimeoutWarn(),
-                                                       getStoreTransactionOpenTimeoutClose(),
-                                                       getStoreTransactionIdleTimeoutWarn(),
-                                                       getStoreTransactionIdleTimeoutClose());
-                    } catch (Exception e)
-                    {
-                        _logger.error("Exception in housekeeping for connection: " + connection.toString(), e);
-                    }
+                    _logger.debug("Checking for long running open transactions on session {}", session);
+                    session.checkTransactionStatus(getStoreTransactionOpenTimeoutWarn(),
+                                                   getStoreTransactionOpenTimeoutClose(),
+                                                   getStoreTransactionIdleTimeoutWarn(),
+                                                   getStoreTransactionIdleTimeoutClose());
                 }
             }
         }
@@ -1843,8 +1827,51 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         final SuppressingInheritedAccessControlContextThreadFactory housekeepingThreadFactory =
                 new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-pool",
                                                                           SecurityManager.getSystemTaskSubject("Housekeeping", getPrincipal()));
-        _houseKeepingTasks = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(),
-                                                             housekeepingThreadFactory);
+        _houseKeepingTaskExecutor = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(), housekeepingThreadFactory){
+            @Override
+            protected void afterExecute(Runnable r, Throwable t)
+            {
+                super.afterExecute(r, t);
+                if (t == null && r instanceof Future<?>)
+                {
+                    Future future = (Future<?>) r;
+                    try
+                    {
+                        if (future.isDone())
+                        {
+                            Object result = future.get();
+                        }
+                    }
+                    catch (CancellationException ce)
+                    {
+                        _logger.debug("Housekeeping task got cancelled");
+                        // Ignore cancellation of task
+                    }
+                    catch (ExecutionException ee)
+                    {
+                        t = ee.getCause();
+                    }
+                    catch (InterruptedException ie)
+                    {
+                        Thread.currentThread().interrupt(); // ignore/reset
+                    }
+                }
+                if (t != null)
+                {
+                    _logger.error("Houskeeping task threw an exception:", t);
+
+                    final Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+                    if (uncaughtExceptionHandler != null)
+                    {
+                        uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
+                    }
+                    else
+                    {
+                        Runtime.getRuntime().halt(1);
+                    }
+                }
+            }
+        };
 
         final SuppressingInheritedAccessControlContextThreadFactory connectionThreadFactory =
                 new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-iopool",

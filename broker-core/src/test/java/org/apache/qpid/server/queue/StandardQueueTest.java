@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -37,6 +38,8 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+
+import static org.mockito.Mockito.mock;
 
 public class StandardQueueTest extends AbstractQueueTestBase
 {
@@ -216,7 +219,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
                                          ConsumerImpl.Option.SEES_REQUEUES));
 
         // process queue
-        testQueue.processQueue(new QueueRunner(testQueue)
+        testQueue.processQueue(new QueueRunner(testQueue, mock(Principal.class))
         {
             public void run()
             {

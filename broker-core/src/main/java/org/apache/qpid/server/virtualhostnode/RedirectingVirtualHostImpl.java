@@ -58,6 +58,8 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
 
+import javax.security.auth.Subject;
+
 @ManagedObject( category = false, type = RedirectingVirtualHostImpl.TYPE, register = false )
 class RedirectingVirtualHostImpl
     extends AbstractConfiguredObject<RedirectingVirtualHostImpl>
@@ -130,7 +132,7 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public void executeTask(Runnable task)
+    public void executeTask(Runnable task, Subject subject)
     {
         throwUnsupportedForRedirector();
     }

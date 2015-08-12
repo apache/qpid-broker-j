@@ -63,7 +63,6 @@ public class HouseKeepingTaskTest extends QpidTestCase
         public void execute()
         {
             _threadNameDuringExecution = Thread.currentThread().getName(); // store current thread name so we can assert it later
-            throw new RuntimeException("deliberate exception to check that thread name still gets reverted");
         }
 
         public String getThreadNameDuringExecution()

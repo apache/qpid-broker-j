@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.security.PrivilegedAction;
+import java.security.Principal;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -56,60 +56,55 @@ public class QueueRunner implements Runnable
 
     private final AtomicLong _lastRunAgain = new AtomicLong();
     private final AtomicLong _lastRunTime = new AtomicLong();
+    private final Subject _subject;
 
-    public QueueRunner(AbstractQueue queue)
+    public QueueRunner(AbstractQueue queue, Principal principal)
     {
         _queue = queue;
+        _subject = SecurityManager.getSystemTaskSubject("Queue Delivery", principal);
     }
 
+    @Override
     public void run()
     {
         if(_scheduled.compareAndSet(SCHEDULED,RUNNING))
         {
-            Subject.doAs(SecurityManager.getSystemTaskSubject("Queue Delivery", _queue.getVirtualHost().getPrincipal()), new PrivilegedAction<Object>()
+            long runAgain = Long.MIN_VALUE;
+            _stateChange.set(false);
+            try
             {
-                @Override
-                public Object run()
+                runAgain = _queue.processQueue(QueueRunner.this);
+            }
+            catch (ConnectionScopedRuntimeException | TransportException  e)
+            {
+                final String errorMessage = "Problem during asynchronous delivery by " + toString();
+                if(_logger.isDebugEnabled())
                 {
-                    long runAgain = Long.MIN_VALUE;
-                    _stateChange.set(false);
-                    try
-                    {
-                        runAgain = _queue.processQueue(QueueRunner.this);
-                    }
-                    catch (ConnectionScopedRuntimeException | TransportException  e)
-                    {
-                        final String errorMessage = "Problem during asynchronous delivery by " + toString();
-                        if(_logger.isDebugEnabled())
-                        {
-                            _logger.debug(errorMessage, e);
-                        }
-                        else
-                        {
-                            _logger.info(errorMessage + ' ' + e.getMessage());
-                        }
-                    }
-                    finally
-                    {
-                        _scheduled.compareAndSet(RUNNING, IDLE);
-                        final long stateChangeCount = _queue.getStateChangeCount();
-                        _lastRunAgain.set(runAgain);
-                        _lastRunTime.set(System.nanoTime());
-                        if(runAgain == 0L || runAgain != stateChangeCount || _stateChange.compareAndSet(true,false))
-                        {
-                            if(_scheduled.compareAndSet(IDLE, SCHEDULED))
-                            {
-                                _queue.execute(QueueRunner.this);
-                            }
-                        }
-                    }
-                    return null;
+                    _logger.debug(errorMessage, e);
                 }
-
-            });
+                else
+                {
+                    _logger.info(errorMessage + ' ' + e.getMessage());
+                }
+            }
+            finally
+            {
+                _scheduled.compareAndSet(RUNNING, IDLE);
+                final long stateChangeCount = _queue.getStateChangeCount();
+                _lastRunAgain.set(runAgain);
+                _lastRunTime.set(System.nanoTime());
+                if(runAgain == 0L || runAgain != stateChangeCount || _stateChange.compareAndSet(true,false))
+                {
+                    if(_scheduled.compareAndSet(IDLE, SCHEDULED))
+                    {
+                        _queue.execute(QueueRunner.this, _subject);
+                    }
+                }
+            }
         }
     }
 
+    @Override
     public String toString()
     {
         return "QueueRunner-" + _queue.getLogSubject().toLogString();
@@ -120,7 +115,7 @@ public class QueueRunner implements Runnable
         _stateChange.set(true);
         if(_scheduled.compareAndSet(IDLE, SCHEDULED))
         {
-            _queue.execute(this);
+            _queue.execute(this, _subject);
         }
     }
 

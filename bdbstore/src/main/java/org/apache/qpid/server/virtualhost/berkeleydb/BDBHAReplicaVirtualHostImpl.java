@@ -57,6 +57,8 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
 
+import javax.security.auth.Subject;
+
 /**
   Object that represents the VirtualHost whilst the VirtualHostNode is in the replica role.  The
   real virtualhost will be elsewhere in the group.
@@ -129,7 +131,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public void executeTask(Runnable task)
+    public void executeTask(Runnable task, Subject subject)
     {
         throwUnsupportedForReplica();
     }

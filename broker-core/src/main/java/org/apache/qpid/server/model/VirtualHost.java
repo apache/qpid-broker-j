@@ -32,6 +32,8 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostConnectionListener;
 
+import javax.security.auth.Subject;
+
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
 public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>, E extends Exchange<?> > extends ConfiguredObject<X>
 {
@@ -118,7 +120,7 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     @ManagedContextDefault( name = "virtualhost.enabledConnectionValidators")
     String DEFAULT_ENABLED_VALIDATORS = "[]";
 
-    void executeTask(Runnable task);
+    void executeTask(Runnable task, Subject subject);
 
     @ManagedAttribute( defaultValue = "${virtualhost.enabledConnectionValidators}")
     List<String> getEnabledConnectionValidators();
