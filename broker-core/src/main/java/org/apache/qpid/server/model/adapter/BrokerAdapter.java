@@ -37,6 +37,7 @@ import javax.security.auth.Subject;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -598,9 +599,17 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         _eventLogger.message(BrokerMessages.STOPPED());
 
-        for (BrokerLogger<?> logger: _brokerLoggersToClose)
+        try
         {
-            logger.stopLogging();
+            for (BrokerLogger<?> logger : _brokerLoggersToClose)
+            {
+                logger.stopLogging();
+            }
+        }
+        finally
+        {
+            // uninstall Qpid turbo filter
+            QpidLoggerTurboFilter.uninstallFromRootContext();
         }
     }
 

@@ -37,7 +37,13 @@ public class QpidLoggerTurboFilterTest extends QpidTestCase
         super.setUp();
         _loggerContext = new LoggerContext();
         _turboFilter = QpidLoggerTurboFilter.installIfNecessary(_loggerContext);
+    }
 
+    @Override
+    public  void tearDown() throws Exception
+    {
+        QpidLoggerTurboFilter.uninstall(_loggerContext);
+        super.tearDown();
     }
 
     public void testDebugOffByDefault()
@@ -96,7 +102,14 @@ public class QpidLoggerTurboFilterTest extends QpidTestCase
         {
             fail("info should not still be enabled fo foo.baz");
         }
+    }
 
-
+    public void testUninstall()
+    {
+        Logger fooBarLogger = _loggerContext.getLogger("foo.bar");
+        assertFalse("Debug should not be enabled when QpidLoggerTurboFilter is installed but no regular filter is set",
+                fooBarLogger.isDebugEnabled());
+        QpidLoggerTurboFilter.uninstall(_loggerContext);
+        assertTrue("Debug should be enabled as per test logback configuration", fooBarLogger.isDebugEnabled());
     }
 }

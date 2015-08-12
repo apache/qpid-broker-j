@@ -131,6 +131,16 @@ public final class QpidLoggerTurboFilter extends TurboFilter
         return installIfNecessary(getRootContext());
     }
 
+    public static void uninstallFromRootContext()
+    {
+        uninstall(getRootContext());
+    }
+
+    public static void uninstall(LoggerContext context)
+    {
+        context.getTurboFilterList().remove(new QpidLoggerTurboFilter());
+    }
+
     private static LoggerContext getRootContext()
     {
         final Logger rootLogger = (Logger) (LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME));
