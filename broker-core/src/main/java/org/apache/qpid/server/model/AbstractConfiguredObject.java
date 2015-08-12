@@ -51,7 +51,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
@@ -518,14 +517,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         }
                     });
                 }
-                catch (Exception e)
-                {
-                    returnVal.setException(e);
-                }
                 catch(Throwable t)
                 {
                     returnVal.setException(t);
-                    throw t;
                 }
                 return null;
             }
