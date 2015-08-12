@@ -158,10 +158,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getFile(final String fileName)
     {
-        if (!getSecurityManager().authoriseLogsAccess(this))
-        {
-            throw new AccessControlException("Permission denied to access log content");
-        }
+        getSecurityManager().authoriseLogsAccess(this);
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getFileContent(fileName);
     }
@@ -169,10 +166,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getFiles(@Param(name = "fileName") Set<String> fileName)
     {
-        if (!getSecurityManager().authoriseLogsAccess(this))
-        {
-            throw new AccessControlException("Permission denied to access log content");
-        }
+        getSecurityManager().authoriseLogsAccess(this);
 
         return _rolloverWatcher == null ? null :_rolloverWatcher.getFilesAsZippedContent(fileName);
     }
@@ -180,10 +174,7 @@ public class BrokerFileLoggerImpl extends AbstractBrokerLogger<BrokerFileLoggerI
     @Override
     public Content getAllFiles()
     {
-        if (!getSecurityManager().authoriseLogsAccess(this))
-        {
-            throw new AccessControlException("Permission denied to access log content");
-        }
+        getSecurityManager().authoriseLogsAccess(this);
 
         return _rolloverWatcher == null ? null : _rolloverWatcher.getAllFilesAsZippedContent();
     }

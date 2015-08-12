@@ -207,6 +207,11 @@ public class SecurityManager
                     return false;
                 }
             }
+            else
+            {
+                // Default to DENY when the accessControlProvider is in unhealthy state.
+                return false;
+            }
         }
         // getting here means either allowed or abstained from all plugins
         return true;
@@ -633,18 +638,21 @@ public class SecurityManager
         }
     }
 
-    public boolean authoriseLogsAccess(ConfiguredObject configuredObject)
+    public void authoriseLogsAccess(ConfiguredObject configuredObject)
     {
         Class<? extends ConfiguredObject> categoryClass = configuredObject.getCategoryClass();
         final ObjectType objectType = getACLObjectTypeManagingConfiguredObjectOfCategory(categoryClass);
         final ObjectProperties objectProperties = objectType == BROKER ? ObjectProperties.EMPTY : new ObjectProperties((String)configuredObject.getAttribute(ConfiguredObject.NAME));
-        return checkAllPlugins(new AccessCheck()
+        if(!checkAllPlugins(new AccessCheck()
         {
             Result allowed(AccessControl plugin)
             {
                 return plugin.authorise(ACCESS_LOGS, objectType, objectProperties);
             }
-        });
+        }))
+        {
+           throw new AccessControlException("Permission denied to access log content");
+        };
     }
 
     public static class PublishAccessCheckCacheEntry

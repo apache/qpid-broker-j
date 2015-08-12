@@ -105,10 +105,7 @@ public class BrokerMemoryLoggerImpl extends AbstractBrokerLogger<BrokerMemoryLog
     @Override
     public Collection<LogRecord> getLogEntries(long lastLogId)
     {
-        if (!getSecurityManager().authoriseLogsAccess(this))
-        {
-            throw new AccessControlException("Access to log entries is denied");
-        }
+        getSecurityManager().authoriseLogsAccess(this);
 
         List<LogRecord> logRecords = new ArrayList<>();
         for(LogRecord record : _logRecorder)

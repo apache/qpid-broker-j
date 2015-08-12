@@ -897,6 +897,28 @@ public class SecurityManagerTest extends QpidTestCase
         assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, vhl);
     }
 
+    public void testDenyWhenAccessControlProviderIsErrored()
+    {
+        AccessControlProvider erroredACLProvider = mock(AccessControlProvider.class);
+        when(erroredACLProvider.getState()).thenReturn(State.ERRORED);
+        when(erroredACLProvider.getAccessControl()).thenReturn(_accessControl);
+        when(_broker.getAccessControlProviders()).thenReturn(Collections.singleton(erroredACLProvider));
+        when(_broker.getChildren(AccessControlProvider.class)).thenReturn(Collections.singleton(erroredACLProvider));
+
+        assertAuthorisationDenied();
+    }
+
+    public void testDenyWhenAccessControlProviderHasNoAccessControl()
+    {
+        AccessControlProvider erroredACLProvider = mock(AccessControlProvider.class);
+        when(erroredACLProvider.getState()).thenReturn(State.ACTIVE);
+        when(erroredACLProvider.getAccessControl()).thenReturn(null);
+        when(_broker.getAccessControlProviders()).thenReturn(Collections.singleton(erroredACLProvider));
+        when(_broker.getChildren(AccessControlProvider.class)).thenReturn(Collections.singleton(erroredACLProvider));
+
+        assertAuthorisationDenied();
+    }
+
     private VirtualHost getMockVirtualHost()
     {
         VirtualHost vh = mock(VirtualHost.class);
@@ -1046,27 +1068,152 @@ public class SecurityManagerTest extends QpidTestCase
         verify(_accessControl, times(2)).authorise(eq(aclOperation), eq(aclObjectType), eq(expectedProperties));
     }
 
+    private void assertAuthorisationDenied()
+    {
+        ConfiguredObject mockConfiguredObject = mock(BrokerLogger.class);
+        when(mockConfiguredObject.getCategoryClass()).thenReturn(BrokerLogger.class);
+
+        try
+        {
+            _securityManager.authorise(Operation.UPDATE, mockConfiguredObject);
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            _securityManager.authoriseCreate(mockConfiguredObject);
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            _securityManager.authoriseDelete(mockConfiguredObject);
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            _securityManager.authoriseLogsAccess(mockConfiguredObject);
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            _securityManager.authoriseUserUpdate("guest");
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            _securityManager.authoriseCreateConnection(mock(AMQPConnection.class));
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            _securityManager.authorisePublish(true, TEST_QUEUE, TEST_EXCHANGE, TEST_VIRTUAL_HOST);
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            Queue mockQueue = mock(Queue.class);
+            when(mockQueue.getParent(VirtualHost.class)).thenReturn(_virtualHost);
+            _securityManager.authorisePurge(mockQueue);
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            _securityManager.accessManagement();
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+        try
+        {
+            _securityManager.authoriseMethod(Operation.UPDATE, "testComponent", "testMethod", TEST_VIRTUAL_HOST);
+            fail("AccessControlException is expected");
+        }
+        catch(AccessControlException e)
+        {
+            // pass
+        }
+
+    }
+
     public void testAuthoriseLogsAccessOnBroker()
     {
         configureAccessPlugin(Result.ALLOWED);
-        assertTrue(_securityManager.authoriseLogsAccess(_broker));
+        _securityManager.authoriseLogsAccess(_broker);
 
         verify(_accessControl).authorise(ACCESS_LOGS, BROKER, ObjectProperties.EMPTY);
 
         configureAccessPlugin(Result.DENIED);
-        assertFalse(_securityManager.authoriseLogsAccess(_broker));
+        try
+        {
+            _securityManager.authoriseLogsAccess(_broker);
+            fail("AccessControlException is expected");
+        }
+        catch (AccessControlException e)
+        {
+            // pass
+        }
         verify(_accessControl, times(2)).authorise(ACCESS_LOGS, BROKER, ObjectProperties.EMPTY);
     }
 
     public void testAuthoriseLogsAccessOnVirtualHost()
     {
         configureAccessPlugin(Result.ALLOWED);
-        assertTrue(_securityManager.authoriseLogsAccess(_virtualHost));
+        _securityManager.authoriseLogsAccess(_virtualHost);
         ObjectProperties expectedObjectProperties = new ObjectProperties((String)_virtualHost.getAttribute(ConfiguredObject.NAME));
         verify(_accessControl).authorise(ACCESS_LOGS, VIRTUALHOST, expectedObjectProperties);
 
         configureAccessPlugin(Result.DENIED);
-        assertFalse(_securityManager.authoriseLogsAccess(_virtualHost));
+        try
+        {
+            _securityManager.authoriseLogsAccess(_virtualHost);
+            fail("AccessControlException is expected");
+        }
+        catch (AccessControlException e)
+        {
+            // pass
+        }
         verify(_accessControl, times(2)).authorise(ACCESS_LOGS, VIRTUALHOST, expectedObjectProperties);
     }
 
@@ -1098,7 +1245,5 @@ public class SecurityManagerTest extends QpidTestCase
         properties.put(Property.EXCLUSIVE, false);
         return properties;
     }
-
-
 
 }

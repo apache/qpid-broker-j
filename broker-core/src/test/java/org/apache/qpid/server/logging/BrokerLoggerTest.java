@@ -72,7 +72,6 @@ public class BrokerLoggerTest extends QpidTestCase
         Model model = BrokerModel.getInstance();
 
         SecurityManager securityManager = mock(SecurityManager.class);
-        when(securityManager.authoriseLogsAccess(any(ConfiguredObject.class))).thenReturn(true);
 
         _broker = mock(Broker.class);
         when(_broker.getSecurityManager()).thenReturn(securityManager);
