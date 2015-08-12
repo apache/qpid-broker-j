@@ -22,7 +22,7 @@ package org.apache.qpid.server.jmx;
 
 import org.apache.qpid.server.model.*;
 
-@org.apache.qpid.server.model.ManagedObject( category = false , type = "MANAGEMENT-JMX" )
+@org.apache.qpid.server.model.ManagedObject( category = false , type = JMXManagementPlugin.PLUGIN_TYPE )
 public interface JMXManagementPlugin<X extends JMXManagementPlugin<X>> extends Plugin<X>
 {
     String PLUGIN_TYPE = "MANAGEMENT-JMX";

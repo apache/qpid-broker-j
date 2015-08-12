@@ -44,7 +44,6 @@ import javax.servlet.http.HttpServletRequest;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
@@ -88,7 +87,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
-@ManagedObject( category = false, type = "MANAGEMENT-HTTP" )
+@ManagedObject( category = false, type = HttpManagement.PLUGIN_TYPE )
 public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implements HttpManagementConfiguration<HttpManagement>, PortManager
 {
     private static final String PORT_SERVLET_ATTRIBUTE = "org.apache.qpid.server.model.Port";
@@ -132,6 +131,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private boolean _compressResponses;
 
     private boolean _allowPortActivation;
+    private Collection<HttpPort<?>> _httpPorts;
 
     @ManagedObjectFactoryConstructor
     public HttpManagement(Map<String, Object> attributes, Broker broker)
@@ -140,23 +140,32 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings("unused")
     private ListenableFuture<Void> doStart()
     {
-        getBroker().getEventLogger().message(ManagementConsoleMessages.STARTUP(OPERATIONAL_LOGGING_NAME));
 
-        Collection<HttpPort<?>> httpPorts = getHttpPorts(getBroker().getPorts());
-        _server = createServer(httpPorts);
-        try
+        _httpPorts = getEligibleHttpPorts(getBroker().getPorts());
+        if (_httpPorts.isEmpty())
         {
-            _server.start();
-            logOperationalListenMessages(httpPorts);
+            _logger.warn("HttpManagement plugin is configured but no suitable HTTP ports are available.");
         }
-        catch (Exception e)
+        else
         {
-            throw new ServerScopedRuntimeException("Failed to start HTTP management on ports : " + httpPorts, e);
-        }
+            getBroker().getEventLogger().message(ManagementConsoleMessages.STARTUP(OPERATIONAL_LOGGING_NAME));
 
-        getBroker().getEventLogger().message(ManagementConsoleMessages.READY(OPERATIONAL_LOGGING_NAME));
+            _server = createServer(_httpPorts);
+            try
+            {
+                _server.start();
+                logOperationalListenMessages();
+            }
+            catch (Exception e)
+            {
+                throw new ServerScopedRuntimeException("Failed to start HTTP management on ports : " + _httpPorts, e);
+            }
+
+            getBroker().getEventLogger().message(ManagementConsoleMessages.READY(OPERATIONAL_LOGGING_NAME));
+        }
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
@@ -169,11 +178,11 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             try
             {
                 _server.stop();
-                logOperationalShutdownMessage(_server);
+                logOperationalShutdownMessage();
             }
             catch (Exception e)
             {
-                throw new ServerScopedRuntimeException("Failed to stop HTTP management on ports : " + getHttpPorts(getBroker().getPorts()), e);
+                throw new ServerScopedRuntimeException("Failed to stop HTTP management on ports : " + _httpPorts, e);
             }
         }
 
@@ -187,10 +196,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private Server createServer(Collection<HttpPort<?>> ports)
     {
-        if (_logger.isInfoEnabled())
-        {
-            _logger.info("Starting up web server on " + ports);
-        }
+        _logger.debug("Starting up web server on {}", ports);
         _allowPortActivation = true;
 
         Server server = new Server();
@@ -200,11 +206,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         int lastPort = -1;
         for (HttpPort<?> port : ports)
         {
-            if (!State.ACTIVE.equals(port.getDesiredState()))
-            {
-                continue;
-            }
-
             SelectChannelConnector connector = createConnector(port);
             server.addConnector(connector);
             lastPort = port.getPort();
@@ -537,39 +538,41 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         return "v"+String.valueOf(BrokerModel.MODEL_MAJOR_VERSION);
     }
 
-    private void logOperationalListenMessages(Collection<HttpPort<?>> ports)
+    private void logOperationalListenMessages()
     {
-        for (Port port : ports)
+        for (Port port : _httpPorts)
         {
             Set<Transport> transports = port.getTransports();
             for (Transport transport: transports)
             {
-                getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(), transport.name(), port.getPort()));
+                getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(),
+                                                                                         transport.name(),
+                                                                                         port.getPort()));
             }
         }
     }
 
-    private void logOperationalShutdownMessage(Server server)
+    private void logOperationalShutdownMessage()
     {
-        Connector[] connectors = server.getConnectors();
-        for (Connector connector : connectors)
+        for (Port port : _httpPorts)
         {
-            getBroker().getEventLogger().message(ManagementConsoleMessages.SHUTTING_DOWN(Protocol.HTTP.name(), connector.getPort()));
+            getBroker().getEventLogger().message(ManagementConsoleMessages.SHUTTING_DOWN(Protocol.HTTP.name(), port.getPort()));
         }
     }
 
-
-    private Collection<HttpPort<?>> getHttpPorts(Collection<Port<?>> ports)
+    private Collection<HttpPort<?>> getEligibleHttpPorts(Collection<Port<?>> ports)
     {
         Collection<HttpPort<?>> httpPorts = new HashSet<>();
         for (Port<?> port : ports)
         {
-            if (port.getState() != State.ERRORED && port.getProtocols().contains(Protocol.HTTP))
+            if (State.ACTIVE == port.getDesiredState() &&
+                State.ERRORED != port.getState() &&
+                port.getProtocols().contains(Protocol.HTTP))
             {
                 httpPorts.add((HttpPort<?>) port);
             }
         }
-        return httpPorts;
+        return Collections.unmodifiableCollection(httpPorts);
     }
 
     @Override

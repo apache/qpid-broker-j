@@ -77,7 +77,7 @@ public class JMXManagementPluginImpl
     private JMXManagedObjectRegistry _objectRegistry;
 
     private final Object _childrenLock = new Object();
-    private final Map<ConfiguredObject<?>, Map<MBeanProvider, ManagedObject>> _children = new HashMap<ConfiguredObject<?>, Map<MBeanProvider,ManagedObject>>();
+    private final Map<ConfiguredObject<?>, Map<MBeanProvider, ManagedObject>> _children = new HashMap<>();
 
     @ManagedAttributeField
     private boolean _usePlatformMBeanServer;
@@ -95,7 +95,7 @@ public class JMXManagementPluginImpl
         super(attributes, broker);
         _changeListener = new ChangeListener();
         _pluginMBeanProvider = new PluginMBeansProvider();
-        _mBeanProviders = new HashSet<MBeanProvider>();
+        _mBeanProviders = new HashSet<>();
         QpidServiceLoader qpidServiceLoader = new QpidServiceLoader();
         for (MBeanProvider provider : qpidServiceLoader.instancesOf(MBeanProvider.class))
         {
@@ -110,80 +110,79 @@ public class JMXManagementPluginImpl
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)
+    @SuppressWarnings("unused")
     private ListenableFuture<Void> doStart() throws JMException, IOException
     {
         _allowPortActivation = true;
         Broker<?> broker = getBroker();
-        JmxPort<?> connectorPort = null;
-        RmiPort registryPort = null;
-        Collection<Port<?>> ports = broker.getPorts();
+
+        RmiPort registryPort = getEligibleJmxPort(RmiPort.class, broker.getPorts(), Protocol.RMI);
+        JmxPort connectorPort = getEligibleJmxPort(JmxPort.class, broker.getPorts(), Protocol.JMX_RMI);
+        if (registryPort == null || connectorPort == null)
+        {
+            LOGGER.warn("JmxManagement plugin is configured but no suitable JMX ports are available.");
+        }
+        else
+        {
+            registryPort.setPortManager(this);
+            if (registryPort.getState() != State.ACTIVE)
+            {
+                // TODO - RG
+                registryPort.startAsync();
+            }
+
+            connectorPort.setPortManager(this);
+            if (connectorPort.getState() != State.ACTIVE)
+            {
+                connectorPort.startAsync();
+            }
+
+            _objectRegistry = new JMXManagedObjectRegistry(broker, connectorPort, registryPort, this);
+
+            broker.addChangeListener(_changeListener);
+
+            synchronized (_childrenLock)
+            {
+                for (VirtualHostNode<?> virtualHostNode : broker.getVirtualHostNodes())
+                {
+                    createObjectMBeans(virtualHostNode);
+                }
+
+                Collection<AuthenticationProvider<?>> authenticationProviders = broker.getAuthenticationProviders();
+                for (AuthenticationProvider<?> authenticationProvider : authenticationProviders)
+                {
+                    createObjectMBeans(authenticationProvider);
+                }
+                Collection<BrokerLogger> brokerLoggers = broker.getChildren(BrokerLogger.class);
+                for (BrokerLogger brokerLogger : brokerLoggers)
+                {
+                    createObjectMBeans(brokerLogger);
+                }
+            }
+            new Shutdown(_objectRegistry);
+            new ServerInformationMBean(_objectRegistry, broker);
+
+            _objectRegistry.start();
+            _allowPortActivation = false;
+        }
+        setState(State.ACTIVE);
+        return Futures.immediateFuture(null);
+    }
+
+
+
+    private <P extends Port<?>> P getEligibleJmxPort(Class<P> type, Collection<Port<?>> ports, Protocol protocol)
+    {
         for (Port<?> port : ports)
         {
-            if (port.getDesiredState() != State.ACTIVE || port.getState() == State.ERRORED)
+            if (State.ACTIVE == port.getDesiredState() &&
+                State.ERRORED != port.getState() &&
+                port.getProtocols().contains(protocol))
             {
-                continue;
-            }
-
-            if(isRegistryPort(port))
-            {
-                registryPort = (RmiPort) port;
-                registryPort.setPortManager(this);
-                if(port.getState() != State.ACTIVE)
-                {
-                    // TODO - RG
-                    port.startAsync();
-                }
-
-            }
-            else if(isConnectorPort(port))
-            {
-                connectorPort = (JmxPort<?>) port;
-                connectorPort.setPortManager(this);
-                if(port.getState() != State.ACTIVE)
-                {
-                    port.startAsync();
-                }
-
+                return type.cast(port);
             }
         }
-        if(connectorPort == null)
-        {
-            throw new IllegalStateException("No JMX connector port found supporting protocol " + Protocol.JMX_RMI);
-        }
-        if(registryPort == null)
-        {
-            throw new IllegalStateException("No JMX RMI port found supporting protocol " + Protocol.RMI);
-        }
-
-        _objectRegistry = new JMXManagedObjectRegistry(broker, connectorPort, registryPort, this);
-
-        broker.addChangeListener(_changeListener);
-
-        synchronized (_childrenLock)
-        {
-            for(VirtualHostNode<?> virtualHostNode : broker.getVirtualHostNodes())
-            {
-                createObjectMBeans(virtualHostNode);
-            }
-
-            Collection<AuthenticationProvider<?>> authenticationProviders = broker.getAuthenticationProviders();
-            for (AuthenticationProvider<?> authenticationProvider : authenticationProviders)
-            {
-                createObjectMBeans(authenticationProvider);
-            }
-            Collection<BrokerLogger> brokerLoggers = broker.getChildren(BrokerLogger.class);
-            for (BrokerLogger brokerLogger : brokerLoggers)
-            {
-                createObjectMBeans(brokerLogger);
-            }
-        }
-        new Shutdown(_objectRegistry);
-        new ServerInformationMBean(_objectRegistry, broker);
-
-        _objectRegistry.start();
-        setState(State.ACTIVE);
-        _allowPortActivation = false;
-        return Futures.immediateFuture(null);
+        return null;
     }
 
     @Override
@@ -191,17 +190,6 @@ public class JMXManagementPluginImpl
     {
         return _allowPortActivation;
     }
-
-    private boolean isConnectorPort(Port<?> port)
-    {
-        return port.getProtocols().contains(Protocol.JMX_RMI);
-    }
-
-    private boolean isRegistryPort(Port<?> port)
-    {
-        return port.getProtocols().contains(Protocol.RMI);
-    }
-
     @Override
     protected void onClose()
     {
@@ -399,7 +387,7 @@ public class JMXManagementPluginImpl
         Map<MBeanProvider, ManagedObject> mbeans = _children.get(configuredObject);
         if (mbeans == null)
         {
-            mbeans = new HashMap<MBeanProvider, ManagedObject>();
+            mbeans = new HashMap<>();
             _children.put(configuredObject, mbeans);
         }
         mbeans.put(mBeanProvider, mbean);
