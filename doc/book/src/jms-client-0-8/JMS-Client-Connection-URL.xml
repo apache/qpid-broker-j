@@ -31,7 +31,7 @@
 	<para> In JNDI properties, a Connection URL specifies options for a connection. The format for a
 		Connection URL is: </para>
 
-	<programlisting><![CDATA[amqp://[<user>:<pass>@][<clientid>]<virtualhost>[?<option>='<value>'[&<option>=&'<value>']]]]></programlisting>
+	<programlisting><![CDATA[amqp://[<user>:<pass>@][<clientid>]/[<virtualhost>][?<option>='<value>'[&<option>='<value>']*]]]></programlisting>
 	<para> For instance, the following Connection URL specifies a user name, a password, a client
 		ID, a virtual host ("test"), a broker list with a single broker: a TCP host with the host
 		name <quote>localhost</quote> using port 5672: </para>
@@ -163,12 +163,12 @@
 	</table>
 	<para> Broker lists are specified using a URL in this format: </para>
 
-	<programlisting><![CDATA[brokerlist=<transport>://<host>[:<;port>](?<param>='<value>')(&<param>='<value>')*]]></programlisting>
+	<programlisting><![CDATA[brokerlist='<transport>://<host>[:<port>][?<param>='<value>'[&<param>='<value>']*]']]></programlisting>
 	<para> For instance, this is a typical broker list: </para>
 
 	<programlisting><![CDATA[brokerlist='tcp://localhost:5672']]></programlisting>
 
-	<para> A broker list can contain more than one broker address; if so, the connection is made to
+	<para> A broker list can contain more than one broker address separated by semicolons (;). If so, the connection is made to
 		the first broker in the list that is available.
 		<!--In general, it is better to use the failover
 		exchange when using multiple brokers, since it allows applications to fail over if a broker

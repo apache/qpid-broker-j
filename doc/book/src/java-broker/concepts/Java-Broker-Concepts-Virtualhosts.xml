@@ -23,7 +23,7 @@
 <section id="Java-Broker-Concepts-Virtualhosts">
   <title>Virtualhosts</title>
   <para>A virtualhost is a namespace in which messaging is performed. Virtualhosts are independent;
-    the messaging goes on a within a virtualhost is independent of any messaging that goes on in
+    the messaging that goes on within one virtualhost is independent of any messaging that goes on in
     another virtualhost. For instance, a queue named <emphasis>foo</emphasis> defined in one
     virtualhost is completely independent of a queue named <emphasis>foo</emphasis> in another
     virtualhost.</para>
@@ -42,7 +42,7 @@
   <para><emphasis>Connections</emphasis> represent a live connection to the virtualhost from a
     messaging client.</para>
   <para>A <emphasis>Session</emphasis> represents a context for the production or consumption of
-    messages. Connection support many Sessions.</para>
+    messages. A Connection can have many Sessions.</para>
   <para>A <emphasis>Consumer</emphasis> represents a live consumer that is attached to queue.</para>
   <para> The following diagram depicts the Virtualhost model: <figure>
       <title>Virtualhost Model</title>

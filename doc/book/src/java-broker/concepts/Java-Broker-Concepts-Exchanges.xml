@@ -28,12 +28,12 @@
   these exchanges types work see <xref linkend="Java-Broker-Concepts-Exchanges-Types"/> below.</para>
  <para>The server predeclares a number of exchange instances with names starting with &quot;<literal>amq.</literal>&quot;. These are defined in
   <xref linkend="Java-Broker-Concepts-Exchanges-Predeclared"/>.</para>
- <para>Applications can make use the pre-declared exchanges, or they may declare their own. The number of exchanges within a virtual host is
+ <para>Applications can make use of the pre-declared exchanges, or they may declare their own. The number of exchanges within a <emphasis>Virtualhost</emphasis> is
   limited only by resource constraints.</para>
- <para>The behaviour when an exchange is unable to route a message to any queue is defined in <xref linkend="Java-Broker-Concepts-Exchanges-UnroutableMessage"/></para>
+ <para>The behaviour when an <emphasis>Exchange</emphasis> is unable to route a message to any queue is defined in <xref linkend="Java-Broker-Concepts-Exchanges-UnroutableMessage"/></para>
  <section id="Java-Broker-Concepts-Exchanges-Predeclared">
   <title>Predeclared Exchanges</title>
-  <para>Each virtual host pre-declares the following exchanges:
+  <para>Each <emphasis>Virtualhost</emphasis> pre-declares the following exchanges:
    <itemizedlist>
     <listitem><para>amq.direct (an instance of a direct exchange)</para></listitem>
     <listitem><para>amq.topic (an instance of a topic exchange)</para></listitem>

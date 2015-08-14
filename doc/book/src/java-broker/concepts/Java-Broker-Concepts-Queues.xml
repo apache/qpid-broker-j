@@ -233,7 +233,7 @@
       behaviour of the queue. </para>
     <para>For example, if using a priority queue and a prefetch of 100, and 100 messages arrive with
       priority 2, the broker will send these messages to the client. If then a new message arrives
-      will priority 1, the broker cannot leap frog messages of lower priority. The priority 1 will
+      with priority 1, the broker cannot leap frog messages of lower priority. The priority 1 will
       be delivered at the front of the next batch of messages to be sent to the client.</para>
     <para> So, you need to set the prefetch values for your client (consumer) to make this sensible.
       To do this set the Java system property <varname>max_prefetch</varname> on the client
@@ -333,7 +333,7 @@ amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://loc
             <tbody>
               <row>
                 <entry>Addressing</entry>
-                <entry>myqueue ; { link : { x-subscribe: { arguments : { x-qpid-replay-period : '3600' } } } }</entry>
+                <entry>myqueue : { link : { x-subscribe: { arguments : { x-qpid-replay-period : '3600' } } } }</entry>
               </row>
               <row>
                 <entry>Binding URL</entry>
