@@ -74,24 +74,10 @@ public class CurrentThreadTaskExecutor implements TaskExecutor
     }
 
     @Override
-    public void run(final VoidTask task) throws CancellationException
-    {
-        checkThread();
-        task.execute();
-    }
-
-    @Override
     public <T, E extends Exception> T run(final TaskWithException<T, E> task) throws CancellationException, E
     {
         checkThread();
         return task.execute();
-    }
-
-    @Override
-    public <E extends Exception> void run(final VoidTaskWithException<E> task) throws CancellationException, E
-    {
-        checkThread();
-        task.execute();
     }
 
     @Override

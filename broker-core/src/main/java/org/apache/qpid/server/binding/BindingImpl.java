@@ -30,7 +30,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.VoidTask;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.exchange.AbstractExchange;
 import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
@@ -222,13 +222,14 @@ public class BindingImpl
 
     public void setArguments(final Map<String, Object> arguments)
     {
-        runTask(new VoidTask()
+        runTask(new Task<Void>()
                 {
                     @Override
-                    public void execute()
+                    public Void execute()
                     {
                         _arguments = arguments;
                         BindingImpl.super.setAttribute(ARGUMENTS, getActualAttributes().get(ARGUMENTS), arguments);
+                        return null;
                     }
                 }
                );

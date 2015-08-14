@@ -36,7 +36,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.updater.Task;
-import org.apache.qpid.server.configuration.updater.VoidTaskWithException;
+import org.apache.qpid.server.configuration.updater.TaskWithException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
@@ -139,16 +139,17 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     @Override
     public void setPassword(final String username, final String password) throws AccountNotFoundException
     {
-        runTask(new VoidTaskWithException<AccountNotFoundException>()
+        runTask(new TaskWithException<Void, AccountNotFoundException>()
         {
             @Override
-            public void execute() throws AccountNotFoundException
+            public Void execute() throws AccountNotFoundException
             {
 
                 final ManagedUser authUser = getUser(username);
                 if (authUser != null)
                 {
                     authUser.setPassword(password);
+                    return null;
                 }
                 else
                 {

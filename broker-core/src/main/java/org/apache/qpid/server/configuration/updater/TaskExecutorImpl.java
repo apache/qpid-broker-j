@@ -152,20 +152,6 @@ public class TaskExecutorImpl implements TaskExecutor
         }
     }
 
-    @Override
-    public void run(final VoidTask task) throws CancellationException
-    {
-        run(new Task<Void>()
-        {
-            @Override
-            public Void execute()
-            {
-                task.execute();
-                return null;
-            }
-        });
-    }
-
     private static class ExceptionTaskWrapper<T, E extends Exception> implements Task<T>
     {
         private final TaskWithException<T,E> _underlying;
@@ -197,39 +183,6 @@ public class TaskExecutorImpl implements TaskExecutor
         }
     }
 
-
-    private static class ExceptionVoidTaskWrapper<E extends Exception> implements Task<Void>
-    {
-        private final VoidTaskWithException<E> _underlying;
-        private E _exception;
-
-        private ExceptionVoidTaskWrapper(final VoidTaskWithException<E> underlying)
-        {
-            _underlying = underlying;
-        }
-
-
-        @Override
-        public Void execute()
-        {
-            try
-            {
-                _underlying.execute();
-
-            }
-            catch (Exception e)
-            {
-                _exception = (E) e;
-            }
-            return null;
-        }
-
-        E getException()
-        {
-            return _exception;
-        }
-    }
-
     @Override
     public <T, E extends Exception> T run(TaskWithException<T, E> task) throws CancellationException, E
     {
@@ -245,17 +198,6 @@ public class TaskExecutorImpl implements TaskExecutor
         }
     }
 
-
-    @Override
-    public <E extends Exception> void run(VoidTaskWithException<E> task) throws CancellationException, E
-    {
-        ExceptionVoidTaskWrapper<E> wrapper = new ExceptionVoidTaskWrapper<E>(task);
-        run(wrapper);
-        if(wrapper.getException() != null)
-        {
-            throw wrapper.getException();
-        }
-    }
 
     @Override
     public <T> T run(Task<T> task) throws CancellationException

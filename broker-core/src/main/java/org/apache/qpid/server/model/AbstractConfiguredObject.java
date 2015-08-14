@@ -68,8 +68,6 @@ import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskWithException;
-import org.apache.qpid.server.configuration.updater.VoidTask;
-import org.apache.qpid.server.configuration.updater.VoidTaskWithException;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
@@ -1930,19 +1928,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return _taskExecutor.run(task);
     }
 
-    protected void runTask(VoidTask task)
-    {
-        _taskExecutor.run(task);
-    }
-
     protected final <T, E extends Exception> T runTask(TaskWithException<T,E> task) throws E
     {
         return _taskExecutor.run(task);
-    }
-
-    protected final <E extends Exception> void runTask(VoidTaskWithException<E> task) throws E
-    {
-        _taskExecutor.run(task);
     }
 
     @Override
@@ -2184,15 +2172,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         final Map<String,Object> updateAttributes = new HashMap<>(attributes);
         Object desiredState = updateAttributes.remove(ConfiguredObject.DESIRED_STATE);
-        runTask(new VoidTask()
+        runTask(new Task<Void>()
         {
             @Override
-            public void execute()
+            public Void execute()
             {
                 authoriseSetAttributes(createProxyForValidation(attributes), attributes.keySet());
                 validateChange(createProxyForValidation(attributes), attributes.keySet());
 
                 changeAttributes(updateAttributes);
+                return null;
             }
         });
         if(desiredState != null)
