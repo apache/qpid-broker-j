@@ -208,28 +208,17 @@ public class ACLFileAccessControlProviderImpl
     @StateTransition(currentState = {State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        closeAsync().addListener(
+        return doAfterAlways(closeAsync(),
                 new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        try
-                        {
-
-                            setState(State.DELETED);
-                            deleted();
-                        }
-                        finally
-                        {
-                            returnVal.set(null);
-                            _eventLogger.message(AccessControlMessages.DELETE(getName()));
-                        }
+                        setState(State.DELETED);
+                        deleted();
+                        _eventLogger.message(AccessControlMessages.DELETE(getName()));
                     }
-                }, getTaskExecutor().getExecutor()
-                           );
-        return returnVal;
+                });
     }
 
     public AccessControl getAccessControl()

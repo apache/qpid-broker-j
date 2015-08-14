@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -205,8 +206,8 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         String providerName = getName();
 
         // verify that provider is not in use
-        Collection<Port> ports = new ArrayList<Port>(_broker.getPorts());
-        for (Port port : ports)
+        Collection<Port<?>> ports = new ArrayList<>(_broker.getPorts());
+        for (Port<?> port : ports)
         {
             if(port instanceof AbstractPortWithAuthProvider
                && ((AbstractPortWithAuthProvider<?>)port).getAuthenticationProvider() == this)
@@ -215,52 +216,80 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
             }
         }
 
-        final SettableFuture<Void> returnVal = SettableFuture.create();
+        return performDelete();
+    }
 
-        final ListenableFuture<Void> future = closeAsync();
-        future.addListener(new Runnable()
+    private ListenableFuture<Void> performDelete()
+    {
+        final SettableFuture<Void> futureResult = SettableFuture.create();
+        final ListenableFuture<Void> preferenceDeleteFuture;
+        if (_preferencesProvider != null)
         {
+            preferenceDeleteFuture = _preferencesProvider.deleteAsync();
+        }
+        else
+        {
+            preferenceDeleteFuture = Futures.immediateFuture(null);
+        }
+
+        Futures.addCallback(preferenceDeleteFuture, new FutureCallback<Void>()
+        {
+
             @Override
-            public void run()
+            public void onSuccess(final Void result)
             {
-                if (_preferencesProvider != null)
+                closeAndDelete();
+            }
+
+            @Override
+            public void onFailure(final Throwable t)
+            {
+                LOGGER.warn("Failed to delete preference provider : {}", _preferencesProvider.getName(), t);
+                closeAndDelete();
+            }
+
+            private void closeAndDelete()
+            {
+                Futures.addCallback(closeAsync(), new FutureCallback<Void>()
                 {
-                    _preferencesProvider.deleteAsync().addListener(new Runnable()
+                    @Override
+                    public void onSuccess(final Void result)
                     {
-                        @Override
-                        public void run()
+                        try
                         {
-                            try
-                            {
-                                deleted();
-                                setState(State.DELETED);
-                            }
-                            finally
-                            {
-                                returnVal.set(null);
-                                _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
-                            }
+                            tidyUp();
+                            futureResult.set(null);
                         }
-                    }, getTaskExecutor().getExecutor());
-                }
-                else
-                {
-                    try
+                        catch (Exception e)
+                        {
+                            futureResult.setException(e);
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(final Throwable t)
+                    {
+                        try
+                        {
+                            tidyUp();
+                        }
+                        finally
+                        {
+                            futureResult.setException(t);
+                        }
+                    }
+
+                    private void tidyUp()
                     {
                         deleted();
-
                         setState(State.DELETED);
-                    }
-                    finally
-                    {
-                        returnVal.set(null);
                         _eventLogger.message(AuthenticationProviderMessages.DELETE(getName()));
                     }
-                }
+                });
             }
-        }, getTaskExecutor().getExecutor());
+        });
 
-        return  returnVal;
+        return futureResult;
     }
 
     @Override

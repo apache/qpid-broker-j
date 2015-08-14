@@ -2134,6 +2134,49 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         return returnVal;
     }
+    protected <V> ChainedListenableFuture<Void> doAfterAlways(ListenableFuture<V> future,
+                                                              Runnable after)
+    {
+        return doAfterAlways(getTaskExecutor().getExecutor(), future, after);
+    }
+
+    protected static <V> ChainedListenableFuture<Void> doAfterAlways(Executor executor,
+                                                                     ListenableFuture<V> future,
+                                                                     final Runnable after)
+    {
+        final ChainedSettableFuture<Void> returnVal = new ChainedSettableFuture<Void>(executor);
+        Futures.addCallback(future, new FutureCallback<V>()
+        {
+            @Override
+            public void onSuccess(final V result)
+            {
+                try
+                {
+                    after.run();
+                    returnVal.set(null);
+                }
+                catch (Throwable e)
+                {
+                    returnVal.setException(e);
+                }
+            }
+
+            @Override
+            public void onFailure(final Throwable t)
+            {
+                try
+                {
+                    after.run();
+                }
+                finally
+                {
+                    returnVal.setException(t);
+                }
+            }
+        }, executor);
+
+        return returnVal;
+    }
 
 
     @Override

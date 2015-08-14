@@ -64,8 +64,7 @@ public abstract class AbstractNameAndLevelFilter<X extends AbstractNameAndLevelF
     @StateTransition( currentState = { State.ACTIVE, State.ERRORED, State.UNINITIALIZED }, desiredState = State.DELETED )
     private ListenableFuture<Void> doDelete()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        closeAsync().addListener(new Runnable()
+        return doAfterAlways(closeAsync(), new Runnable()
         {
             @Override
             public void run()
@@ -73,11 +72,9 @@ public abstract class AbstractNameAndLevelFilter<X extends AbstractNameAndLevelF
                 deleted();
                 QpidLoggerTurboFilter.filterRemovedFromRootContext(_filter);
                 setState(State.DELETED);
-                returnVal.set(null);
 
             }
-        }, getTaskExecutor().getExecutor());
-        return returnVal;
+        });
     }
 
     @StateTransition( currentState = { State.ERRORED, State.UNINITIALIZED }, desiredState = State.ACTIVE )

@@ -40,12 +40,12 @@ import java.util.concurrent.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
 import com.google.common.base.Function;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -144,7 +144,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final EventLogger _eventLogger;
 
     private final List<VirtualHostAlias> _aliases = new ArrayList<VirtualHostAlias>();
-    private final AtomicBoolean _deleted = new AtomicBoolean();
     private final VirtualHostNode<?> _virtualHostNode;
 
     private final AtomicLong _targetSize = new AtomicLong(1024*1024);
@@ -397,30 +396,20 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return isStoreEmptyHandler.isEmpty();
     }
 
-    protected ListenableFuture<Void> createDefaultExchanges()
+    private ListenableFuture<List<Void>> createDefaultExchanges()
     {
-        return Subject.doAs(getSecurityManager().getSubjectWithAddedSystemRights(), new PrivilegedAction<ListenableFuture<Void>>()
+        return Subject.doAs(getSecurityManager().getSubjectWithAddedSystemRights(), new PrivilegedAction<ListenableFuture<List<Void>>>()
         {
-            private static final int TOTAL_STANDARD_EXCHANGES = 4;
-            private final AtomicInteger _createdExchangeCount = new AtomicInteger();
-            private SettableFuture<Void> _future = SettableFuture.create();
 
             @Override
-            public ListenableFuture<Void> run()
+            public ListenableFuture<List<Void>> run()
             {
-                addStandardExchange(ExchangeDefaults.DIRECT_EXCHANGE_NAME, ExchangeDefaults.DIRECT_EXCHANGE_CLASS);
-                addStandardExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME, ExchangeDefaults.TOPIC_EXCHANGE_CLASS);
-                addStandardExchange(ExchangeDefaults.HEADERS_EXCHANGE_NAME, ExchangeDefaults.HEADERS_EXCHANGE_CLASS);
-                addStandardExchange(ExchangeDefaults.FANOUT_EXCHANGE_NAME, ExchangeDefaults.FANOUT_EXCHANGE_CLASS);
-                return _future;
-            }
-
-            private void standardExchangeCreated()
-            {
-                if (_createdExchangeCount.incrementAndGet() == TOTAL_STANDARD_EXCHANGES)
-                {
-                    _future.set(null);
-                }
+                List<ListenableFuture<Void>> standardExchangeFutures = new ArrayList<>();
+                standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.DIRECT_EXCHANGE_NAME, ExchangeDefaults.DIRECT_EXCHANGE_CLASS));
+                standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.TOPIC_EXCHANGE_NAME, ExchangeDefaults.TOPIC_EXCHANGE_CLASS));
+                standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.HEADERS_EXCHANGE_NAME, ExchangeDefaults.HEADERS_EXCHANGE_CLASS));
+                standardExchangeFutures.add(addStandardExchange(ExchangeDefaults.FANOUT_EXCHANGE_NAME, ExchangeDefaults.FANOUT_EXCHANGE_CLASS));
+                return Futures.allAsList(standardExchangeFutures);
             }
 
             ListenableFuture<Void> addStandardExchange(String name, String type)
@@ -440,18 +429,18 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         try
                         {
                             childAdded(result);
+                            returnVal.set(null);
                         }
-                        finally
+                        catch (Throwable t)
                         {
-                            standardExchangeCreated();
+                            returnVal.setException(t);
                         }
-
                     }
 
                     @Override
                     public void onFailure(final Throwable t)
                     {
-                        standardExchangeCreated();
+                        returnVal.setException(t);
                     }
                 }, getTaskExecutor().getExecutor());
 
@@ -1494,22 +1483,22 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                     return closeChildren();
                                                 }
                                             }).then(new Runnable()
-                                            {
-                                                @Override
-                                                public void run()
-                                                {
-                                                    shutdownHouseKeeping();
-                                                    if (_networkConnectionScheduler != null)
-                                                    {
-                                                        _networkConnectionScheduler.close();
-                                                        _networkConnectionScheduler = null;
-                                                    }
-                                                    closeMessageStore();
-                                                    setState(State.STOPPED);
+        {
+            @Override
+            public void run()
+            {
+                shutdownHouseKeeping();
+                if (_networkConnectionScheduler != null)
+                {
+                    _networkConnectionScheduler.close();
+                    _networkConnectionScheduler = null;
+                }
+                closeMessageStore();
+                setState(State.STOPPED);
 
-                                                    stopLogging(loggers);
-                                                }
-                                            });
+                stopLogging(loggers);
+            }
+        });
     }
 
     private void stopLogging(Collection<VirtualHostLogger> loggers)
@@ -1523,48 +1512,28 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @StateTransition( currentState = { State.ACTIVE, State.ERRORED }, desiredState = State.DELETED )
     private ListenableFuture<Void> doDelete()
     {
-        if(_deleted.compareAndSet(false,true))
-        {
-            final SettableFuture<Void> returnVal = SettableFuture.create();
-            String hostName = getName();
-
-            closeAsync().addListener(
-                    new Runnable()
+        return doAfterAlways(closeAsync(),
+                new Runnable()
+                {
+                    @Override
+                    public void run()
                     {
-                        @Override
-                        public void run()
+                        MessageStore ms = getMessageStore();
+                        if (ms != null)
                         {
                             try
                             {
-                                MessageStore ms = getMessageStore();
-                                if (ms != null)
-                                {
-                                    try
-                                    {
-                                        ms.onDelete(AbstractVirtualHost.this);
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        _logger.warn("Exception occurred on message store deletion", e);
-                                    }
-                                }
-                                deleted();
-                                setState(State.DELETED);
+                                ms.onDelete(AbstractVirtualHost.this);
                             }
-                            finally
+                            catch (Exception e)
                             {
-                                returnVal.set(null);
+                                _logger.warn("Exception occurred on message store deletion", e);
                             }
                         }
-                    }, getTaskExecutor().getExecutor()
-                               );
-
-            return returnVal;
-        }
-        else
-        {
-            return Futures.immediateFuture(null);
-        }
+                        deleted();
+                        setState(State.DELETED);
+                    }
+                });
     }
 
     public Collection<VirtualHostAlias> getAliases()
@@ -1897,22 +1866,18 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         if (isStoreEmpty())
         {
-            final SettableFuture<Void> returnVal = SettableFuture.create();
-            createDefaultExchanges().addListener(new Runnable()
+            return doAfter(createDefaultExchanges(), new Runnable()
             {
                 @Override
                 public void run()
                 {
                     postCreateDefaultExchangeTasks();
-                    returnVal.set(null);
                 }
-            }, getTaskExecutor().getExecutor());
-            return returnVal;
+            });
         }
         else
         {
             postCreateDefaultExchangeTasks();
-
             return Futures.immediateFuture(null);
         }
     }
@@ -1966,30 +1931,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _connectionAssociationListeners.remove(listener);
     }
 
-    private static class ChildCounter
-    {
-        private final AtomicInteger _count = new AtomicInteger();
-        private final Runnable _task;
-
-        private ChildCounter(final Runnable task)
-        {
-            _task = task;
-        }
-
-        public void incrementCount()
-        {
-            _count.incrementAndGet();
-        }
-
-        public void decrementCount()
-        {
-            if(_count.decrementAndGet() == 0)
-            {
-                _task.run();
-            }
-        }
-    }
-
     @StateTransition( currentState = { State.STOPPED, State.ERRORED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> onRestart()
     {
@@ -2022,25 +1963,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         new GenericRecoverer(this).recover(records);
 
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        final ChildCounter counter = new ChildCounter(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                onActivate().addListener(
-                        new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                returnVal.set(null);
-                            }
-                        }, getTaskExecutor().getExecutor()
-                                        );
-            }
-        });
-        counter.incrementCount();
+        final List<ListenableFuture<Void>> childOpenFutures = new ArrayList<>();
+
         Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
         {
             @Override
@@ -2049,24 +1973,41 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 applyToChildren(new Action<ConfiguredObject<?>>()
                 {
                     @Override
-                    public void performAction(final ConfiguredObject<?> object)
+                    public void performAction(final ConfiguredObject<?> child)
                     {
-                        counter.incrementCount();
-                        object.openAsync().addListener(new Runnable()
+                        final ListenableFuture<Void> childOpenFuture = child.openAsync();
+                        childOpenFutures.add(childOpenFuture);
+
+                        Futures.addCallback(childOpenFuture, new FutureCallback<Void>()
                         {
                             @Override
-                            public void run()
+                            public void onSuccess(final Void result)
                             {
-                                counter.decrementCount();
                             }
-                        }, getTaskExecutor().getExecutor());
+
+                            @Override
+                            public void onFailure(final Throwable t)
+                            {
+                                _logger.error("Exception occurred while opening {} : {}",
+                                              new Object[]{child.getClass().getSimpleName(), child.getName(), t});
+                            }
+
+                        });
                     }
                 });
                 return null;
             }
         });
-        counter.decrementCount();
-        return returnVal;
+
+        ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(childOpenFutures);
+        return Futures.transform(combinedFuture, new AsyncFunction<List<Void>, Void>()
+        {
+            @Override
+            public ListenableFuture<Void> apply(final List<Void> input) throws Exception
+            {
+                return onActivate();
+            }
+        });
     }
 
     private class FileSystemSpaceChecker extends HouseKeepingTask

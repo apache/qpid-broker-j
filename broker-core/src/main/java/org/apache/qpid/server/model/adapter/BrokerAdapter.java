@@ -36,7 +36,6 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
 import org.slf4j.Logger;
@@ -264,35 +263,24 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     {
         if(_parent.isManagementMode())
         {
-            final SettableFuture<Void> returnVal = SettableFuture.create();
-
-            _managementModeAuthenticationProvider.openAsync().addListener(
+            return doAfter(_managementModeAuthenticationProvider.openAsync(),
                     new Runnable()
                     {
                         @Override
                         public void run()
                         {
-                            try
-                            {
-                                activateWithoutManagementMode();
-                            }
-                            finally
-                            {
-                                returnVal.set(null);
-                            }
+                            performActivation();
                         }
-                    }, getTaskExecutor().getExecutor()
-                                                                         );
-            return returnVal;
+                    });
         }
         else
         {
-            activateWithoutManagementMode();
+            performActivation();
             return Futures.immediateFuture(null);
         }
     }
 
-    private void activateWithoutManagementMode()
+    private void performActivation()
     {
         boolean hasBrokerAnyErroredChildren = false;
 
@@ -305,8 +293,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                     if (child.getState() == State.ERRORED )
                     {
                         hasBrokerAnyErroredChildren = true;
-                        LOGGER.warn(String.format("Broker child object '%s' of type '%s' is %s",
-                                                    child.getName(), childClass.getSimpleName(), State.ERRORED ));
+                        LOGGER.warn("Broker child object '{}' of type '{}' is {}",
+                                new Object[]{ child.getName(), childClass.getSimpleName(), State.ERRORED });
                     }
                 }
             }

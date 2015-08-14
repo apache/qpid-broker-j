@@ -29,7 +29,6 @@ import java.util.Set;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.IntegrityViolationException;
@@ -238,18 +237,16 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     @StateTransition(currentState = { State.ACTIVE, State.QUIESCED, State.ERRORED}, desiredState = State.DELETED )
     private ListenableFuture<Void> doDelete()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        closeAsync().addListener(new Runnable()
+        return doAfterAlways(closeAsync(), new Runnable()
         {
             @Override
             public void run()
             {
+                deleted();
                 setState(State.DELETED);
-                returnVal.set(null);
                 _eventLogger.message(PortMessages.DELETE(getType(), getName()));
             }
-        }, getTaskExecutor().getExecutor());
-        return returnVal;
+        });
     }
 
     @StateTransition( currentState = {State.UNINITIALIZED, State.QUIESCED, State.ERRORED}, desiredState = State.ACTIVE )

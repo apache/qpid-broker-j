@@ -1219,23 +1219,32 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         LOGGER.info("Intruder detected (" + intruderHostAndPort + "), stopping and setting state to ERRORED");
 
         final State initialState = getState();
-        try
+
+
+        ListenableFuture<Void> future = doAfterAlways(stopAndSetStateTo(State.ERRORED), new Runnable()
         {
-            stopAndSetStateTo(State.ERRORED).addListener(new Runnable()
+            @Override
+            public void run()
             {
-                @Override
-                public void run()
-                {
-                    _lastRole.set(NodeRole.DETACHED);
-                    attributeSet(ROLE, _role, NodeRole.DETACHED);
-                    notifyStateChanged(initialState, State.ERRORED);
-                }
-            }, getTaskExecutor().getExecutor());
-        }
-        catch (Exception e)
+                _lastRole.set(NodeRole.DETACHED);
+                attributeSet(ROLE, _role, NodeRole.DETACHED);
+                notifyStateChanged(initialState, State.ERRORED);
+            }
+        });
+
+        Futures.addCallback(future, new FutureCallback<Void>()
         {
-            LOGGER.error("Unexpected exception on closing the node when intruder is detected ", e);
-        }
+            @Override
+            public void onSuccess(final Void result)
+            {
+            }
+
+            @Override
+            public void onFailure(final Throwable t)
+            {
+                LOGGER.error("Failed to close children when handling intruder", t);
+            }
+        });
     }
 
     private abstract class VirtualHostNodeGroupTask implements Task<Void>

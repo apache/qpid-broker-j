@@ -177,12 +177,15 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
                                     @Override
                                     public void onFailure(final Throwable t)
                                     {
-
                                         setState(State.ERRORED);
-                                        returnVal.set(null);
                                         if (_broker.isManagementMode())
                                         {
                                             LOGGER.warn("Failed to make " + this + " active.", t);
+                                            returnVal.set(null);
+                                        }
+                                        else
+                                        {
+                                            returnVal.setException(t);
                                         }
                                     }
                                 }, getTaskExecutor().getExecutor()
@@ -282,33 +285,64 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     @StateTransition( currentState = { State.ACTIVE, State.STOPPED, State.ERRORED}, desiredState = State.DELETED )
     protected ListenableFuture<Void> doDelete()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        setState(State.DELETED);
-        deleteVirtualHostIfExists();
-        final ListenableFuture<Void> closeFuture = closeAsync();
-        closeFuture.addListener(new Runnable()
+        final SettableFuture<Void> futureResult = SettableFuture.create();
+
+        // Delete the node only if deletion of the virtualhost succeeds.
+        Futures.addCallback(deleteVirtualHostIfExists(), new FutureCallback<Void>()
         {
             @Override
-            public void run()
+            public void onSuccess(final Void result)
             {
-                try
+                Futures.addCallback(closeAsync(), new FutureCallback<Void>()
                 {
-                    deleted();
-                    DurableConfigurationStore configurationStore = getConfigurationStore();
-                    if (configurationStore != null)
+                    @Override
+                    public void onSuccess(final Void result)
                     {
-                        configurationStore.onDelete(AbstractVirtualHostNode.this);
+                        try
+                        {
+                            delete();
+                            futureResult.set(null);
+                        }
+                        catch (Throwable t)
+                        {
+                            futureResult.setException(t);
+                        }
                     }
-                }
-                finally
-                {
-                    returnVal.set(null);
-                }
+
+                    @Override
+                    public void onFailure(final Throwable t)
+                    {
+                        try
+                        {
+                            delete();
+                        }
+                        finally
+                        {
+                            futureResult.setException(t);
+                        }
+                    }
+
+                    private void delete()
+                    {
+                        deleted();
+                        setState(State.DELETED);
+                        DurableConfigurationStore configurationStore = getConfigurationStore();
+                        if (configurationStore != null)
+                        {
+                            configurationStore.onDelete(AbstractVirtualHostNode.this);
+                        }
+                    }
+                });
             }
-        }, getTaskExecutor().getExecutor());
 
-        return returnVal;
+            @Override
+            public void onFailure(final Throwable t)
+            {
+                futureResult.setException(t);
+            }
+        });
 
+        return futureResult;
     }
 
     protected ListenableFuture<Void> deleteVirtualHostIfExists()
@@ -332,21 +366,16 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
     protected ListenableFuture<Void> stopAndSetStateTo(final State stoppedState)
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-
         ListenableFuture<Void> childCloseFuture = closeChildren();
-        childCloseFuture.addListener(new Runnable()
+        return doAfterAlways(childCloseFuture, new Runnable()
         {
             @Override
             public void run()
             {
                 closeConfigurationStoreSafely();
                 setState(stoppedState);
-                returnVal.set(null);
             }
-        }, getTaskExecutor().getExecutor());
-
-        return returnVal;
+        });
     }
 
     @Override

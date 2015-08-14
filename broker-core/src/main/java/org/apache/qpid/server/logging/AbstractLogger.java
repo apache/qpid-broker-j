@@ -102,8 +102,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
     @StateTransition(currentState = {State.ACTIVE, State.UNINITIALIZED, State.ERRORED, State.STOPPED}, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        closeAsync().addListener(new Runnable()
+        return doAfterAlways(closeAsync(), new Runnable()
         {
             @Override
             public void run()
@@ -111,10 +110,8 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
                 deleted();
                 setState(State.DELETED);
                 stopLogging();
-                returnVal.set(null);
             }
-        }, getTaskExecutor().getExecutor());
-        return returnVal;
+        });
     }
 
     @Override

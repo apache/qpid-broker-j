@@ -264,6 +264,7 @@ public class VirtualHostTest extends QpidTestCase
 
         AMQPConnection modelConnection = mock(AMQPConnection.class);
         when(modelConnection.getUnderlyingConnection()).thenReturn(connection);
+        when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         virtualHost.registerConnection(modelConnection);
 
         assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getConnectionCount());

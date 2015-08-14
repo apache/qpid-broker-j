@@ -289,35 +289,25 @@ public class FileBasedGroupProviderImpl
     @StateTransition( currentState = { State.QUIESCED, State.ACTIVE, State.ERRORED}, desiredState = State.DELETED )
     private ListenableFuture<Void> doDelete()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        closeAsync().addListener(
+        return doAfterAlways(closeAsync(),
                 new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        try
+                        File file = new File(getPath());
+                        if (file.exists())
                         {
-                            File file = new File(getPath());
-                            if (file.exists())
+                            if (!file.delete())
                             {
-                                if (!file.delete())
-                                {
-                                    throw new IllegalConfigurationException("Cannot delete group file");
-                                }
+                                throw new IllegalConfigurationException("Cannot delete group file");
                             }
+                        }
 
-                            deleted();
-                            setState(State.DELETED);
-                        }
-                        finally
-                        {
-                            returnVal.set(null);
-                        }
+                        deleted();
+                        setState(State.DELETED);
                     }
-                }, getTaskExecutor().getExecutor()
-                           );
-        return returnVal;
+                });
     }
 
     @StateTransition( currentState = State.UNINITIALIZED, desiredState = State.QUIESCED)

@@ -191,34 +191,22 @@ public class FileSystemPreferencesProviderImpl
     @StateTransition(currentState = { State.ACTIVE, State.QUIESCED, State.ERRORED }, desiredState = State.DELETED )
     private ListenableFuture<Void> doDelete()
     {
-        final SettableFuture<Void> returnVal = SettableFuture.create();
-        closeAsync().addListener(
+        return doAfterAlways(closeAsync(),
                 new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        try
+                        if(_store != null)
                         {
-                            if(_store != null)
-                            {
-                                _store.close();
-                                _store.delete();
-                                deleted();
-                                _authenticationProvider.setPreferencesProvider(null);
-
-                            }
-                            setState(State.DELETED);
+                            _store.close();
+                            _store.delete();
+                            deleted();
+                            _authenticationProvider.setPreferencesProvider(null);
                         }
-                        finally
-                        {
-                            returnVal.set(null);
-                        }
+                        setState(State.DELETED);
                     }
-                }, getTaskExecutor().getExecutor()
-                           );
-
-        return returnVal;
+                });
 
     }
 
