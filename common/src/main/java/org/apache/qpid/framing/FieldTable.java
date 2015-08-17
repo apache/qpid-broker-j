@@ -70,10 +70,17 @@ public class FieldTable
         _strictAMQP = strictAMQP;
     }
 
-    public FieldTable(byte[] encodedForm, int offset, int length)
+    public FieldTable(FieldTable other)
     {
-        this(QpidByteBuffer.wrap(encodedForm,offset,length));
+        _encodedForm = other._encodedForm;
+        _encodedSize = other._encodedSize;
+        _strictAMQP = other._strictAMQP;
+        if(other._properties != null)
+        {
+            _properties = new LinkedHashMap<>(other._properties);
+        }
     }
+
 
     public FieldTable(QpidByteBuffer buffer)
     {

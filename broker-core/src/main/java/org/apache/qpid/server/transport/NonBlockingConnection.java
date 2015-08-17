@@ -64,6 +64,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private volatile boolean _fullyWritten = true;
 
     private boolean _partialRead = false;
+
     private final AmqpPort _port;
 
     public NonBlockingConnection(SocketChannel socketChannel,
@@ -123,6 +124,11 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     SocketChannel getSocketChannel()
     {
         return _socketChannel;
+    }
+
+    public AmqpPort getPort()
+    {
+        return _port;
     }
 
     @Override

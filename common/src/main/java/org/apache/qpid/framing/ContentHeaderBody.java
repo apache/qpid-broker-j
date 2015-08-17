@@ -38,6 +38,7 @@ public class ContentHeaderBody implements AMQBody
 {
     public static final byte TYPE = 2;
     public static final int CLASS_ID =  60;
+    private static final int HEADER_SIZE = 14;
 
     private long _bodySize;
 
@@ -106,14 +107,14 @@ public class ContentHeaderBody implements AMQBody
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
-        QpidByteBuffer data = QpidByteBuffer.allocate(14);
+        QpidByteBuffer data = QpidByteBuffer.allocate(HEADER_SIZE);
         EncodingUtils.writeUnsignedShort(data, CLASS_ID);
         EncodingUtils.writeUnsignedShort(data, 0);
         data.putLong(_bodySize);
         EncodingUtils.writeUnsignedShort(data, _properties.getPropertyFlags());
         data.flip();
         sender.send(data);
-        return 14 + _properties.writePropertyListPayload(sender);
+        return HEADER_SIZE + _properties.writePropertyListPayload(sender);
     }
 
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)

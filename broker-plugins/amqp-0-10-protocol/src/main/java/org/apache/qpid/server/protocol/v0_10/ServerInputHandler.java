@@ -37,7 +37,7 @@ import org.apache.qpid.transport.SegmentType;
 public class ServerInputHandler implements FrameSizeObserver
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerInputHandler.class);
-    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.allocate(0);
+    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.allocateDirect(0);
 
     private int _maxFrameSize = Constant.MIN_MAX_FRAME_SIZE;
 

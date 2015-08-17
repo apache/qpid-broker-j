@@ -27,7 +27,6 @@ import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.RuntimeDefault;
 
 @ManagedObject( category = false, type = "FileKeyStore" )
 public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
@@ -39,25 +38,10 @@ public interface FileKeyStore<X extends FileKeyStore<X>> extends KeyStore<X>
     String STORE_URL = "storeUrl";
 
     @ManagedContextDefault(name = "keyStoreFile.keyStoreType")
-    RuntimeDefault<String> DEFAULT_KEYSTORE_TYPE =
-            new RuntimeDefault<String>()
-            {
-                @Override
-                public String value()
-                {
-                    return java.security.KeyStore.getDefaultType();
-                }
-            };
+    String DEFAULT_KEYSTORE_TYPE = java.security.KeyStore.getDefaultType();
+
     @ManagedContextDefault(name = "keyStoreFile.keyManagerFactoryAlgorithm")
-    RuntimeDefault<String> DEFAULT_KEY_MANAGER_FACTORY_ALGORITHM =
-            new RuntimeDefault<String>()
-            {
-                @Override
-                public String value()
-                {
-                    return KeyManagerFactory.getDefaultAlgorithm();
-                }
-            };
+    String DEFAULT_KEY_MANAGER_FACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
 
     @ManagedAttribute(defaultValue = "${this:path}")
     String getDescription();

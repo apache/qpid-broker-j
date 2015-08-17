@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.util.QpidByteBufferUtils;
 
 public class NonBlockingConnectionPlainDelegate implements NonBlockingConnectionDelegate
 {
@@ -40,7 +41,9 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     public NonBlockingConnectionPlainDelegate(NonBlockingConnection parent)
     {
         _parent = parent;
-        _netInputBuffer = QpidByteBuffer.allocateDirect(parent.getReceiveBufferSize());
+        final int receiveBufferSize = parent.getReceiveBufferSize();
+        QpidByteBufferUtils.createPool(parent.getPort(), receiveBufferSize);
+        _netInputBuffer = QpidByteBuffer.allocateDirect(receiveBufferSize);
     }
 
     @Override

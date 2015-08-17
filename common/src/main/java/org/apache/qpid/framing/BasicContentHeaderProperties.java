@@ -95,10 +95,7 @@ public class BasicContentHeaderProperties
     {
         if(other._headers != null)
         {
-            byte[] encodedHeaders = other._headers.getDataAsBytes();
-
-            _headers = new FieldTable(encodedHeaders,0,encodedHeaders.length);
-
+            _headers = new FieldTable(other._headers);
         }
 
         _contentType = other._contentType;

@@ -26,7 +26,6 @@ import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
-import org.apache.qpid.server.model.RuntimeDefault;
 import org.apache.qpid.server.model.TrustStore;
 
 @ManagedObject( category = false, type = "FileTrustStore" )
@@ -38,26 +37,10 @@ public interface FileTrustStore<X extends FileTrustStore<X>> extends TrustStore<
     String PASSWORD = "password";
     String STORE_URL = "storeUrl";
     @ManagedContextDefault(name = "trustStoreFile.trustStoreType")
-    RuntimeDefault<String> DEFAULT_TRUSTSTORE_TYPE =
-            new RuntimeDefault<String>()
-            {
-                @Override
-                public String value()
-                {
-                    return java.security.KeyStore.getDefaultType();
-                }
-            };
-    @ManagedContextDefault(name = "trustStoreFile.trustManagerFactoryAlgorithm")
-    RuntimeDefault<String> DEFAULT_TRUST_MANAGER_FACTORY_ALGORITHM =
-            new RuntimeDefault<String>()
-            {
-                @Override
-                public String value()
-                {
-                    return KeyManagerFactory.getDefaultAlgorithm();
-                }
-            };
+    String DEFAULT_TRUSTSTORE_TYPE = java.security.KeyStore.getDefaultType();
 
+    @ManagedContextDefault(name = "trustStoreFile.trustManagerFactoryAlgorithm")
+    String DEFAULT_TRUST_MANAGER_FACTORY_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
 
     @ManagedAttribute(defaultValue = "${this:storeUrl}")
     String getDescription();

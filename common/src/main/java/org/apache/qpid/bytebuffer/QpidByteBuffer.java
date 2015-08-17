@@ -30,22 +30,33 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.framing.AMQShortString;
 
 public final class QpidByteBuffer
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(QpidByteBuffer.class);
+
     private static final AtomicIntegerFieldUpdater<QpidByteBuffer> DISPOSED_UPDATER = AtomicIntegerFieldUpdater.newUpdater(QpidByteBuffer.class, "_disposed");
 
     private final ByteBuffer _buffer;
     private final ByteBufferRef _ref;
+    @SuppressWarnings("unused")
     private volatile int _disposed;
+
+    private static final ConcurrentMap<Integer, BufferPool> _pools = new ConcurrentHashMap<>();
 
     QpidByteBuffer(ByteBufferRef ref)
     {
@@ -421,7 +432,22 @@ public final class QpidByteBuffer
 
     public static QpidByteBuffer allocateDirect(int size)
     {
-        return new QpidByteBuffer(new NonPooledByteBufferRef(ByteBuffer.allocateDirect(size)));
+        final ByteBufferRef ref;
+        BufferPool pool = _pools.get(size);
+        if(pool != null)
+        {
+            ByteBuffer buf = pool.getBuffer();
+            if(buf == null)
+            {
+                buf = ByteBuffer.allocateDirect(size);
+            }
+            ref = new PooledByteBufferRef(buf);
+        }
+        else
+        {
+            ref = new NonPooledByteBufferRef(ByteBuffer.allocateDirect(size));
+        }
+        return new QpidByteBuffer(ref);
     }
 
 
@@ -486,6 +512,31 @@ public final class QpidByteBuffer
     public static QpidByteBuffer wrap(final byte[] data, int offset, int length)
     {
         return wrap(ByteBuffer.wrap(data, offset, length));
+    }
+
+    static void returnToPool(final ByteBuffer buffer)
+    {
+        final BufferPool pool = _pools.get(buffer.capacity());
+        pool.returnBuffer(buffer);
+    }
+
+    public static void createPool(int bufferSize, int maxPoolSize)
+    {
+        final BufferPool pool = _pools.putIfAbsent(bufferSize, new BufferPool(maxPoolSize));
+        if(pool != null)
+        {
+            int currentPoolSize = pool.getSize();
+            if (maxPoolSize != currentPoolSize)
+            {
+                LOGGER.debug("Resizing direct pool, bufferSize : {} maxPoolSize from : {} to : ",
+                    new Object[] {bufferSize, currentPoolSize, maxPoolSize});
+            }
+            pool.ensureSize(maxPoolSize);
+        }
+        else
+        {
+            LOGGER.debug("Created direct pool, bufferSize : {} maxPoolSize : {}", bufferSize, maxPoolSize);
+        }
     }
 
     private final class BufferInputStream extends InputStream

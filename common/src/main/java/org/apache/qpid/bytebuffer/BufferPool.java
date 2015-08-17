@@ -21,50 +21,43 @@
 package org.apache.qpid.bytebuffer;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-class PooledByteBufferRef implements ByteBufferRef
+class BufferPool
 {
-    private static final AtomicIntegerFieldUpdater<PooledByteBufferRef> REF_COUNT = AtomicIntegerFieldUpdater.newUpdater(PooledByteBufferRef.class, "_refCount");
+    private static final AtomicIntegerFieldUpdater<BufferPool> MAX_SIZE = AtomicIntegerFieldUpdater.newUpdater(BufferPool.class, "_maxSize");
+    @SuppressWarnings("unused")
+    private volatile int _maxSize;
+    private final ConcurrentLinkedQueue<ByteBuffer> _pooledBuffers = new ConcurrentLinkedQueue<>();
 
-    private final ByteBuffer _buffer;
-    private volatile int _refCount;
-
-    PooledByteBufferRef(final ByteBuffer buffer)
+    BufferPool(final int maxSize)
     {
-        _buffer = buffer;
+        _maxSize = maxSize;
     }
 
-    @Override
-    public void incrementRef()
+    ByteBuffer getBuffer()
     {
+        return _pooledBuffers.poll();
+    }
 
-        if(REF_COUNT.get(this) >= 0)
+    void returnBuffer(ByteBuffer buf)
+    {
+        buf.clear();
+        if(_pooledBuffers.size() < MAX_SIZE.get(this))
         {
-            REF_COUNT.incrementAndGet(this);
+            _pooledBuffers.add(buf);
         }
     }
 
-    @Override
-    public void decrementRef()
+    void ensureSize(final int maxPoolSize)
     {
-        if(REF_COUNT.get(this) > 0 && REF_COUNT.decrementAndGet(this) == 0)
-        {
-            QpidByteBuffer.returnToPool(_buffer);
-        }
+        int currentSize;
+        while((currentSize = MAX_SIZE.get(this))<maxPoolSize && !MAX_SIZE.compareAndSet(this, currentSize, maxPoolSize));
     }
 
-    @Override
-    public ByteBuffer getBuffer()
+    public int getSize()
     {
-        return _buffer.duplicate();
+        return MAX_SIZE.get(this);
     }
-
-    @Override
-    public void removeFromPool()
-    {
-        REF_COUNT.set(this, Integer.MIN_VALUE/2);
-    }
-
-
 }

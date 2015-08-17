@@ -31,7 +31,6 @@ import java.util.Collection;
 public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnectionDelegate
 {
     private static final int NUMBER_OF_BYTES_FOR_TLS_CHECK = 6;
-    private static final QpidByteBuffer EMPTY_BYTE_BUFFER = QpidByteBuffer.allocate(0);
     public final NonBlockingConnection _parent;
 
     private QpidByteBuffer _netInputBuffer;

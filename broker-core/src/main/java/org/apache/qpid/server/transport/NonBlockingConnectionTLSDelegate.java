@@ -20,7 +20,9 @@
 package org.apache.qpid.server.transport;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.util.QpidByteBufferUtils;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 
 public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDelegate
 {
@@ -58,12 +61,23 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     {
         _parent = parent;
         _sslEngine = createSSLEngine(port);
-        _netInputBuffer = QpidByteBuffer.allocateDirect(Math.max(parent.getReceiveBufferSize(),
-                                                                 _sslEngine.getSession().getPacketBufferSize()));
+
+
+        final int bufSize = Math.max(parent.getReceiveBufferSize(),
+                                 _sslEngine.getSession().getPacketBufferSize());
+        QpidByteBufferUtils.createPool(port, bufSize);
+        _netInputBuffer = QpidByteBuffer.allocateDirect(bufSize);
 
         _initialApplicationBufferSize =
                 Math.max(_sslEngine.getSession().getApplicationBufferSize() + 50, _parent.getReceiveBufferSize());
+
+
+
+        QpidByteBufferUtils.createPool(port, _initialApplicationBufferSize);
+
         _applicationBuffer = QpidByteBuffer.allocateDirect(_initialApplicationBufferSize);
+
+        QpidByteBufferUtils.createPool(port, _sslEngine.getSession().getPacketBufferSize());
 
     }
 
@@ -172,7 +186,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             if(_sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP)
             {
                 final QpidByteBuffer netBuffer = QpidByteBuffer.allocateDirect(_sslEngine.getSession().getPacketBufferSize());
-                _status = QpidByteBuffer.encryptSSL(_sslEngine,bufferArray, netBuffer);
+                _status = QpidByteBuffer.encryptSSL(_sslEngine, bufferArray, netBuffer);
                 runSSLEngineTasks(_status);
 
                 netBuffer.flip();

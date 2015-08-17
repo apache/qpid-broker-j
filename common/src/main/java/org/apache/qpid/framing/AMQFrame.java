@@ -30,11 +30,11 @@ import org.apache.qpid.util.BytesDataOutput;
 
 public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
 {
+    private static final int HEADER_SIZE = 7;
     private final int _channel;
 
     private final AMQBody _bodyFrame;
     public static final byte FRAME_END_BYTE = (byte) 0xCE;
-
 
     public AMQFrame(final int channel, final AMQBody bodyFrame)
     {
@@ -62,7 +62,6 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
         buffer.writeByte(FRAME_END_BYTE);
     }
 
-    private static final byte[] FRAME_END_BYTE_ARRAY = new byte[] { FRAME_END_BYTE };
     private static final QpidByteBuffer FRAME_END_BYTE_BUFFER = QpidByteBuffer.allocateDirect(1);
     static
     {
@@ -73,7 +72,7 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
-        QpidByteBuffer frameHeader = QpidByteBuffer.allocate(7);
+        QpidByteBuffer frameHeader = QpidByteBuffer.allocate(HEADER_SIZE);
 
         frameHeader.put(_bodyFrame.getFrameType());
         EncodingUtils.writeUnsignedShort(frameHeader, _channel);

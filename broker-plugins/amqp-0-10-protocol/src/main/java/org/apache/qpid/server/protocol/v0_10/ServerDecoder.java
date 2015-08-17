@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
@@ -55,11 +54,11 @@ public final class ServerDecoder extends AbstractDecoder
         }
         else
         {
-            return readAsNativeByteBuffer(size);
+            return readAsQpidByteBuffer(size);
         }
     }
 
-    private QpidByteBuffer readAsNativeByteBuffer(int len)
+    private QpidByteBuffer readAsQpidByteBuffer(int len)
     {
         QpidByteBuffer currentBuffer = getCurrentBuffer();
         if(currentBuffer.remaining()>=len)
@@ -71,7 +70,7 @@ public final class ServerDecoder extends AbstractDecoder
         }
         else
         {
-            QpidByteBuffer dest = currentBuffer.isDirect() ? QpidByteBuffer.allocateDirect(len) : QpidByteBuffer.allocate(len);
+            QpidByteBuffer dest = QpidByteBuffer.allocate(len);
             while(dest.hasRemaining() && available()>0)
             {
                 advanceIfNecessary();

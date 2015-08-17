@@ -40,6 +40,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -785,7 +787,24 @@ public class ConfiguredObjectTypeRegistry
                     Object value = field.get(null);
                     if(!_defaultContext.containsKey(name))
                     {
-                        _defaultContext.put(name,String.valueOf(value));
+                        final String stringValue;
+                        if (value instanceof Collection || value instanceof Map)
+                        {
+                            try
+                            {
+                                stringValue = new ObjectMapper().writeValueAsString(value);
+                            }
+                            catch (JsonProcessingException e)
+                            {
+                                throw new ServerScopedRuntimeException("Unable to convert value of type '" + value.getClass()
+                                                                       + "' to a JSON string for conext variable ${"+name+"}");
+                            }
+                        }
+                        else
+                        {
+                            stringValue = String.valueOf(value);
+                        }
+                        _defaultContext.put(name, stringValue);
                     }
                     else
                     {
