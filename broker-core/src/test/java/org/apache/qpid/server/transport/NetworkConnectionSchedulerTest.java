@@ -30,7 +30,6 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.EnumSet;
 
@@ -50,7 +49,6 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         when(port.getBindingAddress()).thenReturn("*");
         when(port.getEnabledCipherSuites()).thenReturn(Collections.emptyList());
         when(port.getDisabledCipherSuites()).thenReturn(Collections.emptyList());
-        when(port.getThreadPoolSize()).thenReturn(1);
 
         MultiVersionProtocolEngineFactory engineFactory = mock(MultiVersionProtocolEngineFactory.class);
         MultiVersionProtocolEngine verboseEngine = mock(MultiVersionProtocolEngine.class);
@@ -60,7 +58,7 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         when(verboseEngine.getAggregateTicker()).thenReturn(new AggregateTicker());
         when(timidEngine.getAggregateTicker()).thenReturn(new AggregateTicker());
 
-        final NetworkConnectionScheduler scheduler = new NetworkConnectionScheduler(getName(), 1);
+        final NetworkConnectionScheduler scheduler = new NetworkConnectionScheduler(getName(), 1, 1);
         scheduler.start();
         NonBlockingNetworkTransport transport = new NonBlockingNetworkTransport(engineFactory, EnumSet.of(TransportEncryption.NONE),
                                                                                 scheduler, port);

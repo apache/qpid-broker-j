@@ -70,7 +70,8 @@ class TCPandSSLTransport implements AcceptingTransport
             encryptionSet.add(TransportEncryption.TLS);
         }
 
-        _scheduler = new NetworkConnectionScheduler("Port-"+_port.getName(), _port.getThreadPoolSize());
+        _scheduler = new NetworkConnectionScheduler("Port-"+_port.getName(), _port.getThreadPoolMinimum(),
+                _port.getThreadPoolMaximum());
         _scheduler.start();
         _networkTransport = new NonBlockingNetworkTransport(protocolEngineFactory,
                                                             encryptionSet, _scheduler, _port);

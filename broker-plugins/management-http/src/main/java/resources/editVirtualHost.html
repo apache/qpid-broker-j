@@ -120,7 +120,28 @@
                       </input>
                   </div>
               </div>
-
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Minimum number of connection threads:</div>
+                    <div class="tableContainer-valueCell formLabel-controlCell">
+                        <input data-dojo-type="dijit/form/ValidationTextBox"
+                               name="connectionThreadPoolMinimum"
+                               placeHolder="minumum number of connection threads"
+                               promptMessage="Enter minimum number of threads used by connections"
+                               id="editVirtualHost.connectionThreadPoolMinimum">
+                        </input>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell tableContainer-labelCell">Maximum number of connection threads:</div>
+                    <div class="tableContainer-valueCell formLabel-controlCell">
+                        <input data-dojo-type="dijit/form/ValidationTextBox"
+                               name="connectionThreadPoolMaximum"
+                               placeHolder="maxumum number of connection threads"
+                               promptMessage="Enter maximum number of threads used by connections"
+                               id="editVirtualHost.connectionThreadPoolMaximum">
+                        </input>
+                    </div>
+                </div>
               <div class="clear"></div>
 
               <div data-dojo-type="dijit/TitlePane" data-dojo-props="title: 'Context variables',  open: false">

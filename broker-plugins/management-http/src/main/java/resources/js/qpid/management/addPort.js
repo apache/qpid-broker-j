@@ -86,6 +86,12 @@ define(["dojo/dom",
             registry.byId("formAddPort.maxOpenConnections").set("disabled", ! ("maxOpenConnections" in typeMetaData.attributes));
             dom.byId("formAddPort:maxOpenConnections").style.display = "maxOpenConnections" in typeMetaData.attributes ? "block" : "none";
 
+            //threadPoolSettings
+            var hasThreadPoolSettings = "threadPoolMinimum" in typeMetaData.attributes;
+            dom.byId("formAddPort:threadPoolSettings").style.display = hasThreadPoolSettings ? "block" : "none";
+            registry.byId("formAddPort.threadPoolMinimum").set("disabled", !hasThreadPoolSettings);
+            registry.byId("formAddPort.threadPoolMaximum").set("disabled", !hasThreadPoolSettings);
+
             //transports
             var transportsMultiSelect = dom.byId("formAddPort.transports");
             var transportsValidValues = typeMetaData.attributes.transports.validValues;
@@ -430,6 +436,19 @@ define(["dojo/dom",
                        // want/need client auth
                        registry.byId("formAddPort.needClientAuth").set("checked", port.needClientAuth);
                        registry.byId("formAddPort.wantClientAuth").set("checked", port.wantClientAuth);
+
+                       //threadPoolSettings
+                       var hasThreadPoolSettings = "threadPoolMinimum" in typeMetaData.attributes;
+                       function initThreadPoolSettingWidget(name)
+                       {
+                           var widget = registry.byId("formAddPort." + name);
+                           widget.set("regExpGen", util.signedOrContextVarRegexp);
+                           widget.set("value",  port[name] ? port[name] : "");
+                           widget.set("disabled", !hasThreadPoolSettings);
+                       }
+                       initThreadPoolSettingWidget("threadPoolMaximum");
+                       initThreadPoolSettingWidget("threadPoolMinimum");
+                       dom.byId("formAddPort:threadPoolSettings").style.display = hasThreadPoolSettings ? "block" : "none";
 
                        keystoreWidget.initialValue = port.keyStore;
                        truststoreWidget.initialValue = port.trustStores;

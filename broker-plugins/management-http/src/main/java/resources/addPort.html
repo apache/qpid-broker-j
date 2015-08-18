@@ -176,6 +176,37 @@
                 </div>
             </div>
 
+            <div id="formAddPort:threadPoolSettings" >
+                <div class="clear">
+                    <div class="formLabel-labelCell">
+                        <label for="formAddPort.transports">Minimum number of connection threads:</label>
+                    </div>
+                    <div class="formLabel-controlCell">
+                        <input id="formAddPort.threadPoolMinimum" type="text"
+                               data-dojo-type="dijit.form.ValidationTextBox"
+                               data-dojo-props="
+                            name: 'threadPoolMinimum',
+                            placeHolder: 'minimum number of connection threads',
+                            promptMessage: 'Minimum number of connection threads used to serve client connections on this port.',
+                            title: 'Enter a minimum number of connection threads'"/>
+                    </div>
+                </div>
+                <div class="clear">
+                    <div class="formLabel-labelCell">
+                        <label for="formAddPort.transports">Maximum number of connection threads:</label>
+                    </div>
+                    <div class="formLabel-controlCell">
+                        <input id="formAddPort.threadPoolMaximum" type="text"
+                               data-dojo-type="dijit.form.ValidationTextBox"
+                               data-dojo-props="
+                            name: 'threadPoolMaximum',
+                            placeHolder: 'maximum number of connection threads',
+                            promptMessage: 'Maximum number of connection threads used to serve client connections on this port.',
+                            title: 'Enter a maximum number of connection threads'"/>
+                    </div>
+                </div>
+            </div>
+
             <div id="formAddPort:fieldsTransportSSL">
                 <div class="clear">
                     <div class="formLabel-labelCell">

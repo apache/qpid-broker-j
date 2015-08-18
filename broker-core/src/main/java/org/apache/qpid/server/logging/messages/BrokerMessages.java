@@ -544,16 +544,16 @@ public class BrokerMessages
 
     /**
      * Log a Broker message of the Format:
-     * <pre>BRK-1010 : Platform : JVM : {0} version: {1} OS : {2} version: {3} arch: {4}</pre>
+     * <pre>BRK-1010 : Platform : JVM : {0} version: {1} OS : {2} version: {3} arch: {4} cores: {5}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage PLATFORM(String param1, String param2, String param3, String param4, String param5)
+    public static LogMessage PLATFORM(String param1, String param2, String param3, String param4, String param5, String param6)
     {
         String rawMessage = _messages.getString("PLATFORM");
 
-        final Object[] messageArguments = {param1, param2, param3, param4, param5};
+        final Object[] messageArguments = {param1, param2, param3, param4, param5, param6};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);

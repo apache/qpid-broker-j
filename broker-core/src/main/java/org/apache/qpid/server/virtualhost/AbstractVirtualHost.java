@@ -178,7 +178,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private int _housekeepingThreadCount;
 
     @ManagedAttributeField
-    private int _connectionThreadCount;
+    private int _connectionThreadPoolMaximum;
+
+    @ManagedAttributeField
+    private int _connectionThreadPoolMinimum;
 
     @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
@@ -247,12 +250,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 validateGlobalAddressDomain(domain);
             }
         }
+
+        validateConnectionThreadPoolSettings(this);
     }
 
     @Override
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
+        VirtualHost<?, ?, ?> virtualHost = (VirtualHost<?, ?, ?>) proxyForValidation;
         if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
         {
             throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
@@ -260,7 +266,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         if(changedAttributes.contains(GLOBAL_ADDRESS_DOMAINS))
         {
-            VirtualHost<?, ?, ?> virtualHost = (VirtualHost<?, ?, ?>) proxyForValidation;
+
             if(virtualHost.getGlobalAddressDomains() != null)
             {
                 for(String name : virtualHost.getGlobalAddressDomains())
@@ -268,6 +274,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     validateGlobalAddressDomain(name);
                 }
             }
+        }
+
+        if (changedAttributes.contains(CONNECTION_THREAD_POOL_MAXIMUM) || changedAttributes.contains(CONNECTION_THREAD_POOL_MINIMUM))
+        {
+            validateConnectionThreadPoolSettings(virtualHost);
         }
     }
 
@@ -291,16 +302,23 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         super.validateOnCreate();
         validateMessageStoreCreation();
-        if(getGlobalAddressDomains() != null)
-        {
-            for(String name : getGlobalAddressDomains())
-            {
-                validateGlobalAddressDomain(name);
-            }
-        }
     }
 
-
+    private void validateConnectionThreadPoolSettings(VirtualHost<?,?,?> virtualHost)
+    {
+        if (virtualHost.getConnectionThreadPoolMaximum() < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool maximum %d is too small. Must be greater than zero.", virtualHost.getConnectionThreadPoolMaximum()));
+        }
+        if (virtualHost.getConnectionThreadPoolMinimum() < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool minimum %d is too small. Must be greater than zero.", virtualHost.getConnectionThreadPoolMinimum()));
+        }
+        if (virtualHost.getConnectionThreadPoolMinimum() > virtualHost.getConnectionThreadPoolMaximum())
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool minimum %d cannot be greater than thread pool maximum %d.", virtualHost.getConnectionThreadPoolMinimum() , virtualHost.getConnectionThreadPoolMaximum()));
+        }
+    }
 
     protected void validateMessageStoreCreation()
     {
@@ -1465,10 +1483,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _housekeepingThreadCount;
     }
 
+
     @Override
-    public int getConnectionThreadCount()
+    public int getConnectionThreadPoolMaximum()
     {
-        return _connectionThreadCount;
+        return _connectionThreadPoolMaximum;
+    }
+
+    @Override
+    public int getConnectionThreadPoolMinimum()
+    {
+        return _connectionThreadPoolMinimum;
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )
@@ -1847,7 +1872,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                                           SecurityManager.getSystemTaskSubject("IO Pool", getPrincipal()));
 
         _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool",
-                                                                     getConnectionThreadCount(),
+                                                                     getConnectionThreadPoolMinimum(),
+                                                                     getConnectionThreadPoolMaximum(),
                                                                      connectionThreadFactory);
         _networkConnectionScheduler.start();
         MessageStore messageStore = getMessageStore();

@@ -40,7 +40,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import javax.net.ssl.SSLContext;
 
 @ManagedObject( category = false, type = "AMQP")
-public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X>
+public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X>, PortWithThreadPool
 {
     String DEFAULT_AMQP_SEND_BUFFER_SIZE = "262144";
     String DEFAULT_AMQP_RECEIVE_BUFFER_SIZE = "262144";
@@ -56,6 +56,9 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
 
     String DEFAULT_AMQP_PROTOCOLS = "qpid.port.default_amqp_protocols";
 
+    String PORT_AMQP_THREAD_POOL_MAXIMUM = "port.amqp.threadPool.maximum";
+    String PORT_AMQP_THREAD_POOL_MINIMUM = "port.amqp.threadPool.minimum";
+
     @ManagedContextDefault(name = DEFAULT_AMQP_PROTOCOLS)
     String INSTALLED_PROTOCOLS = AmqpPortImpl.getInstalledProtocolsAsString();
 
@@ -64,10 +67,13 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedContextDefault(name = PORT_MAX_OPEN_CONNECTIONS)
     int DEFAULT_MAX_OPEN_CONNECTIONS = -1;
 
-    String THREAD_POOL_SIZE = "qpid.port.thread_pool_size";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_AMQP_THREAD_POOL_MAXIMUM)
+    long DEFAULT_PORT_AMQP_THREAD_POOL_MAXIMUM = 8;
 
-    @ManagedContextDefault(name = THREAD_POOL_SIZE)
-    int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_AMQP_THREAD_POOL_MINIMUM)
+    long DEFAULT_PORT_AMQP_THREAD_POOL_MINIMUM = 2;
 
     String PORT_MAX_MESSAGE_SIZE = "qpid.port.max_message_size";
 
@@ -94,8 +100,13 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_RECEIVE_BUFFER_SIZE )
     int getReceiveBufferSize();
 
-    @ManagedAttribute( defaultValue = "${" + THREAD_POOL_SIZE + "}")
-    int getThreadPoolSize();
+    @Override
+    @ManagedAttribute( defaultValue = "${" + PORT_AMQP_THREAD_POOL_MAXIMUM + "}")
+    int getThreadPoolMaximum();
+
+    @Override
+    @ManagedAttribute( defaultValue = "${" + PORT_AMQP_THREAD_POOL_MINIMUM + "}")
+    int getThreadPoolMinimum();
 
     @ManagedAttribute( defaultValue = DEFAULT_AMQP_NEED_CLIENT_AUTH )
     boolean getNeedClientAuth();

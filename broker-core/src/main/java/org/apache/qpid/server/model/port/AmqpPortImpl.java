@@ -43,6 +43,7 @@ import javax.net.ssl.X509TrustManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,7 +121,10 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private int _maxOpenConnections;
 
     @ManagedAttributeField
-    private int _threadPoolSize;
+    private int _threadPoolMaximum;
+
+    @ManagedAttributeField
+    private int _threadPoolMinimum;
 
     private final AtomicInteger _connectionCount = new AtomicInteger();
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
@@ -136,6 +140,18 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         super(attributes, broker);
         _broker = broker;
+    }
+
+    @Override
+    public int getThreadPoolMaximum()
+    {
+        return _threadPoolMaximum;
+    }
+
+    @Override
+    public int getThreadPoolMinimum()
+    {
+        return _threadPoolMinimum;
     }
 
     @Override
@@ -172,12 +188,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public int getMaxOpenConnections()
     {
         return _maxOpenConnections;
-    }
-
-    @Override
-    public int getThreadPoolSize()
-    {
-        return _threadPoolSize;
     }
 
     @Override
@@ -326,6 +336,24 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         {
             throw new IllegalConfigurationException(String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
                     getPort(), bindingAddress == null || "".equals(bindingAddress) ? "*" : bindingAddress));
+        }
+    }
+
+    @Override
+    public void onValidate()
+    {
+        super.onValidate();
+        PortWithThreadPoolValidator.validate(this);
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        AmqpPort changed = (AmqpPort) proxyForValidation;
+        if (changedAttributes.contains(THREAD_POOL_MAXIMUM)  || changedAttributes.contains(THREAD_POOL_MINIMUM) )
+        {
+            PortWithThreadPoolValidator.validate(changed);
         }
     }
 

@@ -366,6 +366,12 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     }
 
     @Override
+    public int getNumberOfCores()
+    {
+        return Runtime.getRuntime().availableProcessors();
+    }
+
+    @Override
     public int getConnection_sessionCountLimit()
     {
         return _connection_sessionCountLimit;
@@ -483,7 +489,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                                                                             System.getProperty("java.version")),
                                                          SystemUtils.getOSName(),
                                                          SystemUtils.getOSVersion(),
-                                                         SystemUtils.getOSArch()));
+                                                         SystemUtils.getOSArch(),
+                                                         String.valueOf(getNumberOfCores())));
 
         getEventLogger().message(BrokerMessages.MAX_MEMORY(Runtime.getRuntime().maxMemory()));
 

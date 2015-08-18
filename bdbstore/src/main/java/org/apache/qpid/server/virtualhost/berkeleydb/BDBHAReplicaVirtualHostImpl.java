@@ -90,8 +90,10 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     @ManagedAttributeField
     private int _housekeepingThreadCount;
     @ManagedAttributeField
-    private int _connectionThreadCount;
+    private int _connectionThreadPoolMinimum;
 
+    @ManagedAttributeField
+    private int _connectionThreadPoolMaximum;
 
     @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
@@ -253,7 +255,13 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public int getConnectionThreadCount()
+    public int getConnectionThreadPoolMaximum()
+    {
+        return 0;
+    }
+
+    @Override
+    public int getConnectionThreadPoolMinimum()
     {
         return 0;
     }

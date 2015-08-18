@@ -42,12 +42,13 @@ public class NetworkConnectionScheduler
     private volatile SelectorThread _selectorThread;
     private volatile ThreadPoolExecutor _executor;
     private final AtomicInteger _running = new AtomicInteger();
-    private final int _poolSize;
+    private final int _poolSizeMinimum;
+    private final int _poolSizeMaximum;
     private final String _name;
 
-    public NetworkConnectionScheduler(final String name, int threadPoolSize)
+    public NetworkConnectionScheduler(final String name, int threadPoolSizeMinimum, int threadPoolSizeMaximum)
     {
-        this(name, threadPoolSize, new ThreadFactory()
+        this(name, threadPoolSizeMinimum, threadPoolSizeMaximum, new ThreadFactory()
                                     {
                                         final AtomicInteger _count = new AtomicInteger();
 
@@ -61,10 +62,11 @@ public class NetworkConnectionScheduler
                                     });
     }
 
-    public NetworkConnectionScheduler(String name, int threadPoolSize, ThreadFactory factory)
+    public NetworkConnectionScheduler(String name, int threadPoolSizeMinimum, int threadPoolSizeMaximum, ThreadFactory factory)
     {
         _name = name;
-        _poolSize = threadPoolSize;
+        _poolSizeMaximum = threadPoolSizeMaximum;
+        _poolSizeMinimum = threadPoolSizeMinimum;
         _factory = factory;
     }
 
@@ -75,7 +77,7 @@ public class NetworkConnectionScheduler
         {
             _selectorThread = new SelectorThread(this);
             _selectorThread.start();
-            _executor = new ThreadPoolExecutor(_poolSize, _poolSize, 0L, TimeUnit.MILLISECONDS,
+            _executor = new ThreadPoolExecutor(_poolSizeMinimum, _poolSizeMaximum, 0L, TimeUnit.MILLISECONDS,
                                                new LinkedBlockingQueue<Runnable>(), _factory);
             _executor.prestartAllCoreThreads();
         }
@@ -123,7 +125,7 @@ public class NetworkConnectionScheduler
 
                     if (connection.isStateChanged() || connection.isPartialRead())
                     {
-                        if (_running.get() == _poolSize)
+                        if (_running.get() == _poolSizeMaximum)
                         {
                             schedule(connection);
                         }

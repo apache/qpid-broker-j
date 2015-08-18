@@ -103,6 +103,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @DerivedAttribute
     String getProductVersion();
 
+    @DerivedAttribute
+    int getNumberOfCores();
+
     @ManagedAttribute( defaultValue = "256" )
     int getConnection_sessionCountLimit();
 

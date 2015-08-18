@@ -111,10 +111,12 @@ public class BrokerMessagesTest extends AbstractTestMessages
         String osVersion = "o1.0";
         String osArch = "oarch";
 
-        _logMessage = BrokerMessages.PLATFORM(javaVendor, javaVersion, osName, osVersion, osArch);
+        String cores = "2";
+
+        _logMessage = BrokerMessages.PLATFORM(javaVendor, javaVersion, osName, osVersion, osArch, cores);
         List<Object> log = performLog();
 
-        String[] expected = {"Platform :", "JVM :", javaVendor, " version: ", " OS : ", osName, " version: ", osVersion, " arch: ", osArch};
+        String[] expected = {"Platform :", "JVM :", javaVendor, " version: ", " OS : ", osName, " version: ", osVersion, " arch: ", osArch, " cores: ", cores};
 
         validateLogMessage(log, "BRK-1010", expected);
     }

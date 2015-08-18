@@ -141,7 +141,11 @@ define(["dojo/dom",
                            "needClientAuth",
                            "wantClientAuth",
                            "trustStores",
-                           "maxOpenConnections"
+                           "maxOpenConnections",
+                           "threadPoolMinimum",
+                           "threadPoolMaximum",
+                           "threadPoolMinimumValue",
+                           "threadPoolMaximumValue"
                            ]);
            }
 
@@ -169,6 +173,8 @@ define(["dojo/dom",
               this.bindingAddressValue.innerHTML = this.portData[ "bindingAddress" ] ? entities.encode(String(this.portData[ "bindingAddress" ])) : "" ;
               this.connectionCountValue.innerHTML = this.portData[ "connectionCount" ] ? entities.encode(String(this.portData[ "connectionCount" ])) : "0" ;
               this.maxOpenConnectionsValue.innerHTML = (this.portData[ "maxOpenConnections" ] && this.portData[ "maxOpenConnections" ] >= 0) ? entities.encode(String(this.portData[ "maxOpenConnections" ])) : "(no limit)" ;
+              this.threadPoolMinimumValue.innerHTML = entities.encode(String(this.portData["threadPoolMinimum"] || ""));
+              this.threadPoolMaximumValue.innerHTML = entities.encode(String(this.portData["threadPoolMaximum"] || ""));
 
               this.keyStoreValue.innerHTML = this.portData[ "keyStore" ] ? entities.encode(String(this.portData[ "keyStore" ])) : "";
               this.needClientAuthValue.innerHTML = "<input type='checkbox' disabled='disabled' "+(this.portData[ "needClientAuth" ] ? "checked='checked'": "")+" />" ;
@@ -183,6 +189,10 @@ define(["dojo/dom",
               this.needClientAuth.style.display = "needClientAuth" in typeMetaData.attributes ? "block" : "none";
               this.wantClientAuth.style.display = "wantClientAuth" in typeMetaData.attributes ? "block" : "none";
               this.trustStores.style.display = "trustStores" in typeMetaData.attributes ? "block" : "none";
+
+              var hasThreadPoolSettings = "threadPoolMaximum" in typeMetaData.attributes;
+              this.threadPoolMinimum.style.display = hasThreadPoolSettings ? "block" : "none";
+              this.threadPoolMaximum.style.display = hasThreadPoolSettings ? "block" : "none";
 
               this.maxOpenConnections.style.display = "maxOpenConnections" in typeMetaData.attributes ? "block" : "none";
 

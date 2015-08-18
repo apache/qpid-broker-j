@@ -58,6 +58,8 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     String GLOBAL_ADDRESS_DOMAINS               = "globalAddressDomains";
     String VIRTUALHOST_WORK_DIR_VAR             = "virtualhost.work_dir";
     String VIRTUALHOST_WORK_DIR_VAR_EXPRESSION  = "${qpid.work_dir}${file.separator}${ancestor:virtualhost:name}";
+    String CONNECTION_THREAD_POOL_MINIMUM       = "connectionThreadPoolMinimum";
+    String CONNECTION_THREAD_POOL_MAXIMUM       = "connectionThreadPoolMaximum";
 
     @ManagedContextDefault( name = VIRTUALHOST_WORK_DIR_VAR)
     public static final String VIRTUALHOST_WORK_DIR = VIRTUALHOST_WORK_DIR_VAR_EXPRESSION;
@@ -104,15 +106,24 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingThreadCount}")
     int getHousekeepingThreadCount();
 
-    @ManagedContextDefault( name = "virtualhost.connectionThreadCount")
-    public static final int DEFAULT_CONNECTION_THREAD_COUNT = Runtime.getRuntime().availableProcessors();
+    String VIRTUALHOST_CONNECTION_THREAD_POOL_MAXIMUM = "virtualhost.connectionThreadPool.maximum";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = VIRTUALHOST_CONNECTION_THREAD_POOL_MAXIMUM)
+    long DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_MAXIMUM = Math.max(Runtime.getRuntime().availableProcessors() * 2, 64);
+
+    @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_CONNECTION_THREAD_POOL_MAXIMUM + "}")
+    int getConnectionThreadPoolMaximum();
+
+    String VIRTUALHOST_CONNECTION_THREAD_POOL_MINIMUM = "virtualhost.connectionThreadPool.minimum";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = VIRTUALHOST_CONNECTION_THREAD_POOL_MINIMUM)
+    long DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_MINIMUM = Math.min(Runtime.getRuntime().availableProcessors(), 8);
+
+    @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_CONNECTION_THREAD_POOL_MINIMUM + "}")
+    int getConnectionThreadPoolMinimum();
 
     @ManagedContextDefault( name = "virtualhost.awaitAttainmentTimeout")
     public static final int DEFAULT_AWAIT_ATTAINMENT_TIMEOUT = 5000;
-
-    @ManagedAttribute( defaultValue = "${virtualhost.connectionThreadCount}")
-    int getConnectionThreadCount();
-
 
     @DerivedAttribute( persist = true )
     String getModelVersion();
