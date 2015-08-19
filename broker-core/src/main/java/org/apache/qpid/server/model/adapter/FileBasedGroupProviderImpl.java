@@ -335,18 +335,6 @@ public class FileBasedGroupProviderImpl
         }
     }
 
-    @Override
-    protected void childAdded(ConfiguredObject child)
-    {
-        // no-op, prevent storing groups in the broker store
-    }
-
-    @Override
-    protected void childRemoved(ConfiguredObject child)
-    {
-        // no-op, as per above, groups are not in the store
-    }
-
     private class GroupAdapter extends AbstractConfiguredObject<GroupAdapter> implements Group<GroupAdapter>
     {
         private GroupPrincipal _groupPrincipal;

@@ -1385,11 +1385,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    protected void childAdded(ConfiguredObject<?> child)
+    protected final void childAdded(ConfiguredObject<?> child)
     {
         synchronized (_changeListeners)
         {
-            List<ConfigurationChangeListener> copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+            List<ConfigurationChangeListener> copy = new ArrayList<>(_changeListeners);
             for(ConfigurationChangeListener listener : copy)
             {
                 listener.childAdded(this, child);
@@ -1397,11 +1397,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    protected void childRemoved(ConfiguredObject child)
+    protected final void childRemoved(ConfiguredObject<?> child)
     {
         synchronized (_changeListeners)
         {
-            List<ConfigurationChangeListener> copy = new ArrayList<ConfigurationChangeListener>(_changeListeners);
+            List<ConfigurationChangeListener> copy = new ArrayList<>(_changeListeners);
             for(ConfigurationChangeListener listener : copy)
             {
                 listener.childRemoved(this, child);
