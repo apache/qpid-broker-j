@@ -96,11 +96,14 @@ public class StoreConfigurationChangeListener implements ConfigurationChangeList
     @Override
     public void childRemoved(ConfiguredObject object, ConfiguredObject child)
     {
-        if(child.isDurable())
+        if (!object.managesChildStorage())
         {
-            _store.remove(child.asObjectRecord());
+            if (child.isDurable())
+            {
+                _store.remove(child.asObjectRecord());
+            }
+            child.removeChangeListener(this);
         }
-        child.removeChangeListener(this);
     }
 
     @Override

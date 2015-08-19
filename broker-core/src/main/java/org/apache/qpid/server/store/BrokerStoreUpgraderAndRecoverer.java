@@ -792,12 +792,18 @@ public class BrokerStoreUpgraderAndRecoverer
         new GenericRecoverer(_systemConfig).recover(upgradedRecords);
 
         final StoreConfigurationChangeListener configChangeListener = new StoreConfigurationChangeListener(store);
-        applyRecursively(_systemConfig.getBroker(), new Action<ConfiguredObject<?>>()
+        applyRecursively(_systemConfig.getBroker(), new RecursiveAction<ConfiguredObject<?>>()
         {
             @Override
             public void performAction(final ConfiguredObject<?> object)
             {
-                 object.addChangeListener(configChangeListener);
+                object.addChangeListener(configChangeListener);
+            }
+
+            @Override
+            public boolean applyToChildren(ConfiguredObject<?> object)
+            {
+                return !object.managesChildStorage();
             }
         });
 
@@ -811,31 +817,38 @@ public class BrokerStoreUpgraderAndRecoverer
         return upgrader.getRecords();
     }
 
-    private void applyRecursively(final ConfiguredObject<?> object, final Action<ConfiguredObject<?>> action)
+    private void applyRecursively(final ConfiguredObject<?> object, final RecursiveAction<ConfiguredObject<?>> action)
     {
         applyRecursively(object, action, new HashSet<ConfiguredObject<?>>());
     }
 
     private void applyRecursively(final ConfiguredObject<?> object,
-                                  final Action<ConfiguredObject<?>> action,
+                                  final RecursiveAction<ConfiguredObject<?>> action,
                                   final HashSet<ConfiguredObject<?>> visited)
     {
         if(!visited.contains(object))
         {
             visited.add(object);
             action.performAction(object);
-            for(Class<? extends ConfiguredObject> childClass : object.getModel().getChildTypes(object.getCategoryClass()))
+            if (action.applyToChildren(object))
             {
-                Collection<? extends ConfiguredObject> children = object.getChildren(childClass);
-                if(children != null)
+                for (Class<? extends ConfiguredObject> childClass : object.getModel().getChildTypes(object.getCategoryClass()))
                 {
-                    for(ConfiguredObject<?> child : children)
+                    Collection<? extends ConfiguredObject> children = object.getChildren(childClass);
+                    if (children != null)
                     {
-                        applyRecursively(child, action, visited);
+                        for (ConfiguredObject<?> child : children)
+                        {
+                            applyRecursively(child, action, visited);
+                        }
                     }
                 }
             }
         }
     }
 
+    private interface RecursiveAction<C> extends Action<C>
+    {
+        boolean applyToChildren(C object);
+    }
 }

@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessControlException;
 import java.security.Principal;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -46,10 +45,12 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.NoopConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ExternalFileBasedAuthenticationManager;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -57,12 +58,14 @@ import org.apache.qpid.server.model.PreferencesProvider;
 import org.apache.qpid.server.model.PreferencesSupportingAuthenticationProvider;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.database.PrincipalDatabase;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.util.FileHelper;
 
 public abstract class PrincipalDatabaseAuthenticationManager<T extends PrincipalDatabaseAuthenticationManager<T>>
@@ -74,6 +77,8 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
 
 
     private final Map<Principal, PrincipalAdapter> _userMap = new ConcurrentHashMap<Principal, PrincipalAdapter>();
+    private final DurableConfigurationStore _durableConfigurationStore;
+    private final StoreConfigurationChangeListener _durableConfigurationStoreChangeListener;
 
     private PrincipalDatabase _principalDatabase;
     @ManagedAttributeField
@@ -82,6 +87,32 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     protected PrincipalDatabaseAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
     {
         super(attributes, broker);
+        SystemConfig<?> systemConfig = getModel().getAncestor(SystemConfig.class, this);
+        _durableConfigurationStore = systemConfig.getConfigurationStore();
+        _durableConfigurationStoreChangeListener = new StoreConfigurationChangeListener(_durableConfigurationStore);
+
+        addChangeListener(new NoopConfigurationChangeListener()
+        {
+            @Override
+            public void childRemoved(ConfiguredObject<?> object, ConfiguredObject<?> child)
+            {
+                if (child instanceof PreferencesProvider && child.isDurable())
+                {
+                    _durableConfigurationStore.remove(child.asObjectRecord());
+                    child.removeChangeListener(_durableConfigurationStoreChangeListener);
+                }
+            }
+
+            @Override
+            public void childAdded(ConfiguredObject<?> object, ConfiguredObject<?> child)
+            {
+                if (child instanceof PreferencesProvider && child.isDurable())
+                {
+                    _durableConfigurationStore.create(child.asObjectRecord());
+                    child.addChangeListener(_durableConfigurationStoreChangeListener);
+                }
+            }
+        });
     }
 
     @Override
@@ -122,6 +153,12 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
     {
         super.onOpen();
         initialise();
+        PreferencesProvider<?> preferencesProvider = getPreferencesProvider();
+        if (preferencesProvider != null)
+        {
+            // set store listener to save any attribute changes
+            preferencesProvider.addChangeListener(_durableConfigurationStoreChangeListener);
+        }
     }
 
     @Override
@@ -362,33 +399,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         return super.addChildAsync(childClass, attributes, otherParents);
     }
 
-    @Override
-    public <C extends ConfiguredObject> Collection<C> getChildren(Class<C> clazz)
-    {
-        return super.getChildren(clazz);
-    }
-
-    @Override
-    protected void childAdded(ConfiguredObject child)
-    {
-        if (child instanceof User)
-        {
-            // no-op, prevent storing users in the broker store
-            return;
-        }
-        super.childAdded(child);
-    }
-
-    @Override
-    protected void childRemoved(ConfiguredObject child)
-    {
-        if (child instanceof User)
-        {
-            // no-op, as per above, users are not in the store
-            return;
-        }
-        super.childRemoved(child);
-    }
 
     @Override
     protected void validateChange(final ConfiguredObject<?> updatedObject, final Set<String> changedAttributes)
