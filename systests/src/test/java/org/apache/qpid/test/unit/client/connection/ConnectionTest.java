@@ -44,7 +44,7 @@ public class ConnectionTest extends QpidBrokerTestCase
 
     private String _broker_NotRunning = "tcp://localhost:" + findFreePort();
 
-    private String _broker_BadDNS = "tcp://hg3sgaaw4lgihjs";
+    private String _broker_BadDNS = "tcp://unknownhost.unknowndomain.invalid"; // RFC-2606 guarantees that .invalid address will never resolve
 
     public void testSimpleConnection() throws Exception
     {
