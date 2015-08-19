@@ -594,13 +594,21 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
                     // If the session is open or we are in the process
                     // of closing the session then send a cance
                     // no point otherwise as the connection will be gone
-                    if (!_session.isClosed() || _session.isClosing())
+                    while (!_session.isClosed() || _session.isClosing())
                     {
-                        synchronized(_session.getMessageDeliveryLock())
+                        if (_session.tryLockMessageDelivery())
                         {
-                            synchronized (_connection.getFailoverMutex())
+                            try
                             {
-                                sendCancel();
+                                synchronized (_connection.getFailoverMutex())
+                                {
+                                    sendCancel();
+                                }
+                                break;
+                            }
+                            finally
+                            {
+                                _session.unlockMessageDelivery();
                             }
                         }
                     }

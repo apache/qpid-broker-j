@@ -1087,9 +1087,14 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         if (!sessions.isEmpty())
         {
             AMQSession session = sessions.remove(0);
-            synchronized (session.getMessageDeliveryLock())
+            session.lockMessageDelivery();
+            try
             {
                 doClose(sessions, timeout);
+            }
+            finally
+            {
+                session.unlockMessageDelivery();
             }
         }
         else
@@ -1829,22 +1834,22 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         {
             AMQSession session = sessions.remove(0);
 
-            final Object dispatcherLock = session.getDispatcherLock();
-            if (dispatcherLock != null)
+
+            Object dispatcherLock = session.getDispatcherLock();
+            if (dispatcherLock == null)
             {
-                synchronized (dispatcherLock)
-                {
-                    synchronized (session.getMessageDeliveryLock())
-                    {
-                        doWithAllLocks(r, sessions);
-                    }
-                }
+                dispatcherLock = new Object(); // use dummy intrinsic lock to make subsequent code nicer
             }
-            else
+            synchronized (dispatcherLock)
             {
-                synchronized (session.getMessageDeliveryLock())
+                session.lockMessageDelivery();
+                try
                 {
                     doWithAllLocks(r, sessions);
+                }
+                finally
+                {
+                    session.unlockMessageDelivery();
                 }
             }
         }

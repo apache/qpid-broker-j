@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -96,6 +97,10 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     /** Used for debugging. */
     private static final Logger _logger = LoggerFactory.getLogger(AMQSession.class);
 
+    /** System property to configure dispatcher shutdown timeout in milliseconds. */
+    public static final String DISPATCHER_SHUTDOWN_TIMEOUT_MS = "DISPATCHER_SHUTDOWN_TIMEOUT_MS";
+    /** Dispatcher shutdown timeout default setting. */
+    public static final String DISPATCHER_SHUTDOWN_TIMEOUT_MS_DEFAULT = "1000";
 
     /** System property to enable strict AMQP compliance. */
     public static final String STRICT_AMQP = "STRICT_AMQP";
@@ -132,6 +137,8 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * Flag indicating to start dispatcher as a daemon thread
      */
     protected final boolean DAEMON_DISPATCHER_THREAD = Boolean.getBoolean(ClientProperties.DAEMON_DISPATCHER);
+
+    private final long _dispatcherShutdownTimeoutMs;
 
     /** The connection to which this session belongs. */
     private AMQConnection _connection;
@@ -243,7 +250,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     private final boolean _strictAMQP;
 
     private final boolean _strictAMQPFATAL;
-    private final Object _messageDeliveryLock = new Object();
+    private final Lock _messageDeliveryLock = new ReentrantLock(true);
 
     /** Session state : used to detect if commit is a) required b) allowed , i.e. does the tx span failover. */
     private boolean _dirty;
@@ -340,6 +347,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         _immediatePrefetch =
                 _strictAMQP
                 || Boolean.parseBoolean(System.getProperties().getProperty(IMMEDIATE_PREFETCH, IMMEDIATE_PREFETCH_DEFAULT));
+        _dispatcherShutdownTimeoutMs = Integer.parseInt(System.getProperty(DISPATCHER_SHUTDOWN_TIMEOUT_MS, DISPATCHER_SHUTDOWN_TIMEOUT_MS_DEFAULT));
 
         _connection = con;
         _transacted = transacted;
@@ -442,6 +450,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      *
      * @throws JMSException If the JMS provider fails to close the session due to some internal error.
      */
+    @Override
     public void close() throws JMSException
     {
         close(-1);
@@ -718,15 +727,20 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      */
     public void close(long timeout) throws JMSException
     {
-        synchronized (_messageDeliveryLock)
+        setClosing(true);
+        lockMessageDelivery();
+        try
         {
             // We must close down all producers and consumers in an orderly fashion. This is the only method
             // that can be called from a different thread of control from the one controlling the session.
             synchronized (getFailoverMutex())
             {
-
                 close(timeout, true);
             }
+        }
+        finally
+        {
+            unlockMessageDelivery();
         }
     }
 
@@ -3192,9 +3206,28 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
     public abstract void sendSuspendChannel(boolean suspend) throws QpidException, FailoverException;
 
-    Object getMessageDeliveryLock()
+    boolean tryLockMessageDelivery()
     {
-        return _messageDeliveryLock;
+        try
+        {
+            // Use timeout of zero to respect fairness. See ReentrantLock#tryLock JavaDocs for details.
+            return _messageDeliveryLock.tryLock(0, TimeUnit.SECONDS);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    void lockMessageDelivery()
+    {
+        _messageDeliveryLock.lock();
+    }
+
+    void unlockMessageDelivery()
+    {
+        _messageDeliveryLock.unlock();
     }
 
     /**
@@ -3281,6 +3314,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
         /** Track the 'stopped' state of the dispatcher, a session starts in the stopped state. */
         private final AtomicBoolean _closed = new AtomicBoolean(false);
+        private final CountDownLatch _closeCompleted = new CountDownLatch(1);
 
         private final Object _lock = new Object();
         private final String dispatcherID = "" + System.identityHashCode(this);
@@ -3295,8 +3329,21 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             _queue.close();
             _dispatcherThread.interrupt();
 
-            // fixme awaitTermination
-
+            // If we are not the dispatcherThread we need to await the exiting of the Dispatcher#run(). See QPID-6672.
+            if (Thread.currentThread() != _dispatcherThread)
+            {
+                try
+                {
+                    if(!_closeCompleted.await(_dispatcherShutdownTimeoutMs, TimeUnit.MILLISECONDS))
+                    {
+                        throw new RuntimeException("Dispatcher did not close down within the timeout of " + _dispatcherShutdownTimeoutMs + " ms.");
+                    }
+                }
+                catch (InterruptedException e)
+                {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
 
         private AtomicBoolean getClosed()
@@ -3375,53 +3422,61 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
         public void run()
         {
-            if (_dispatcherLogger.isDebugEnabled())
-            {
-                _dispatcherLogger.debug(_dispatcherThread.getName() + " started");
-            }
-
-            // Allow disptacher to start stopped
-            synchronized (_lock)
-            {
-                while (!_closed.get() && connectionStopped())
-                {
-                    try
-                    {
-                        _lock.wait();
-                    }
-                    catch (InterruptedException e)
-                    {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }
-
             try
             {
-
-                while (((_queue.blockingPeek()) != null) && !_closed.get())
+                if (_dispatcherLogger.isDebugEnabled())
                 {
-                    synchronized (_lock)
-                    {
-                        Dispatchable disp = _queue.nonBlockingTake();
+                    _dispatcherLogger.debug(_dispatcherThread.getName() + " started");
+                }
 
-                        if(disp != null)
+                // Allow dispatcher to start stopped
+                synchronized (_lock)
+                {
+                    while (!_closed.get() && connectionStopped())
+                    {
+                        try
                         {
-                            disp.dispatch(AMQSession.this);
+                            _lock.wait();
+                        }
+                        catch (InterruptedException e)
+                        {
+                            Thread.currentThread().interrupt();
                         }
                     }
                 }
-            }
-            catch (InterruptedException e)
-            {
-                // ignored as run will exit immediately
-            }
 
-            if (_dispatcherLogger.isDebugEnabled())
-            {
-                _dispatcherLogger.debug(_dispatcherThread.getName() + " thread terminating for channel " + _channelId + ":" + AMQSession.this);
-            }
+                try
+                {
 
+                    while (((_queue.blockingPeek()) != null) && !_closed.get())
+                    {
+                        synchronized (_lock)
+                        {
+                            if (!isClosed() && !isClosing() && !_closed.get())
+                            {
+                                Dispatchable disp = _queue.nonBlockingTake();
+
+                                if(disp != null)
+                                {
+                                    disp.dispatch(AMQSession.this);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (InterruptedException e)
+                {
+                    // ignored as run will exit immediately
+                }
+            }
+            finally
+            {
+                _closeCompleted.countDown();
+                if (_dispatcherLogger.isDebugEnabled())
+                {
+                    _dispatcherLogger.debug(_dispatcherThread.getName() + " thread terminating for channel " + _channelId + ":" + AMQSession.this);
+                }
+            }
         }
 
         // only call while holding lock
@@ -3487,9 +3542,20 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 }
                 else
                 {
-                    synchronized (_messageDeliveryLock)
+                    while (!isClosed() && !isClosing())
                     {
-                        notifyConsumer(message);
+                        if (tryLockMessageDelivery())
+                        {
+                            try
+                            {
+                                notifyConsumer(message);
+                                break;
+                            }
+                            finally
+                            {
+                                unlockMessageDelivery();
+                            }
+                        }
                     }
                 }
             }
