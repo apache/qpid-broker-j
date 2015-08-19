@@ -65,7 +65,7 @@ public class FileHelperTest extends QpidTestCase
         assertFalse("File should not exist", _testFile.exists());
         Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
         assertTrue("File was not created", path.toFile().exists());
-        if (Files.getFileStore(path).supportsFileAttributeView(PosixFileAttributeView.class))
+        if (Files.getFileAttributeView(path, PosixFileAttributeView.class) != null)
         {
             assertPermissions(path);
         }
@@ -77,7 +77,7 @@ public class FileHelperTest extends QpidTestCase
         assertFalse("File should not exist", _testFile.exists());
         Path path = _fileHelper.createNewFile(_testFile, TEST_FILE_PERMISSIONS);
         assertTrue("File was not created", path.toFile().exists());
-        if (Files.getFileStore(path).supportsFileAttributeView(PosixFileAttributeView.class))
+        if (Files.getFileAttributeView(path, PosixFileAttributeView.class) != null)
         {
             assertPermissions(path);
         }
@@ -98,7 +98,7 @@ public class FileHelperTest extends QpidTestCase
 
         assertTrue("File was not created", path.toFile().exists());
 
-        if (Files.getFileStore(path).supportsFileAttributeView(PosixFileAttributeView.class))
+        if (Files.getFileAttributeView(path, PosixFileAttributeView.class) != null)
         {
             assertPermissions(path);
         }
@@ -116,7 +116,7 @@ public class FileHelperTest extends QpidTestCase
         assertFalse("File was not moved", path.toFile().exists());
         assertTrue("Target file does not exist", _testFile.exists());
 
-        if (Files.getFileStore(_testFile.toPath()).supportsFileAttributeView(PosixFileAttributeView.class))
+        if (Files.getFileAttributeView(_testFile.toPath(), PosixFileAttributeView.class) != null)
         {
             assertPermissions(_testFile.toPath());
         }
@@ -143,7 +143,7 @@ public class FileHelperTest extends QpidTestCase
         File workDir = TestFileUtils.createTestDirectory("test", true);
         try
         {
-            if (Files.getFileStore(workDir.toPath()).supportsFileAttributeView(PosixFileAttributeView.class))
+            if (Files.getFileAttributeView(workDir.toPath(), PosixFileAttributeView.class) != null)
             {
                 File file = new File(workDir, getTestName());
                 file.mkdirs();

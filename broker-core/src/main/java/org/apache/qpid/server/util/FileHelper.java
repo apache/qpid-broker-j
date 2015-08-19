@@ -108,7 +108,7 @@ public class FileHelper
                 return false;
             }
         }
-        return Files.getFileStore(path).supportsFileAttributeView(PosixFileAttributeView.class);
+        return Files.getFileAttributeView(path, PosixFileAttributeView.class) != null;
     }
 
     public Path atomicFileMoveOrReplace(Path sourceFile, Path targetFile) throws IOException

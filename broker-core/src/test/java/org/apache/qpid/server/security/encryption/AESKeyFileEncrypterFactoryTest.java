@@ -236,7 +236,7 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
 
     private boolean supportsPosixFileAttributes() throws IOException
     {
-        return Files.getFileStore(_tmpDir).supportsFileAttributeView(PosixFileAttributeView.class);
+        return Files.getFileAttributeView(_tmpDir, PosixFileAttributeView.class) != null;
     }
 
     @Override

@@ -134,7 +134,7 @@ public class DerbyVirtualHostNodeTest extends QpidTestCase
 
     public void testOnCreateValidationForNonWritableStorePath() throws Exception
     {
-        if (Files.getFileStore(_workDir.toPath()).supportsFileAttributeView(PosixFileAttributeView.class))
+        if (Files.getFileAttributeView(_workDir.toPath(), PosixFileAttributeView.class) != null)
         {
             File file = new File(_workDir, getTestName());
             file.mkdirs();

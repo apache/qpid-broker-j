@@ -223,12 +223,12 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
 
     private boolean isPosixFileSystem(File file) throws IOException
     {
-        return Files.getFileStore(file.toPath().getRoot()).supportsFileAttributeView(PosixFileAttributeView.class);
+        return Files.getFileAttributeView(file.toPath(), PosixFileAttributeView.class) != null;
     }
 
     private boolean isAclFileSystem(File file) throws IOException
     {
-        return Files.getFileStore(file.toPath().getRoot()).supportsFileAttributeView(AclFileAttributeView.class);
+        return Files.getFileAttributeView(file.toPath(), AclFileAttributeView.class) != null;
     }
 
 
