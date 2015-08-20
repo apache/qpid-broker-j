@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -407,13 +408,6 @@ public final class QpidByteBuffer
     {
         _buffer.putDouble(index, value);
         return this;
-    }
-
-    @Override
-    protected void finalize() throws Throwable
-    {
-        dispose();
-        super.finalize();
     }
 
     public void dispose()
