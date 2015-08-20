@@ -99,7 +99,7 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
      * Test loading of a JNDI properties file through use of a file:// URL
      * supplied via the InitialContext.PROVIDER_URL system property.
      */
-    public void testContextFromProviderURL() throws Exception
+    public void testContextFromProviderFileURL() throws Exception
     {
         Properties properties = new Properties();
         properties.put("connectionfactory.qpidConnectionfactory", CONNECTION_URL);
@@ -108,9 +108,7 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
         File f = File.createTempFile(getTestName(), ".properties");
         try
         {
-            FileOutputStream fos = new FileOutputStream(f);
-            properties.store(fos, null);
-            fos.close();
+            createJndiPropertiesFile(properties, f);
 
             setTestSystemProperty(InitialContext.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
             setTestSystemProperty(InitialContext.PROVIDER_URL,  f.toURI().toURL().toString());
@@ -123,7 +121,33 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
             ConnectionFactory factory = (ConnectionFactory) context.lookup("qpidConnectionfactory");
             assertTrue("ConnectionFactory was not an instance of AMQConnectionFactory", factory instanceof AMQConnectionFactory);
             assertEquals("Unexpected ConnectionURL value", CONNECTION_URL.replaceAll("password", "********"),
-                        ((AMQConnectionFactory)factory).getConnectionURLString());
+                         ((AMQConnectionFactory) factory).getConnectionURLString());
+
+            context.close();
+        }
+        finally
+        {
+            f.delete();
+        }
+    }
+
+    public void testContextFromFileOnFileSystem() throws Exception
+    {
+        Properties properties = new Properties();
+        properties.put("connectionfactory.qpidConnectionfactory", CONNECTION_URL);
+
+        File f = File.createTempFile(getTestName(), ".properties");
+        try
+        {
+            createJndiPropertiesFile(properties, f);
+
+            setTestSystemProperty(InitialContext.INITIAL_CONTEXT_FACTORY,
+                                  "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
+            setTestSystemProperty(InitialContext.PROVIDER_URL, f.getAbsolutePath());
+
+            InitialContext context = new InitialContext();
+            ConnectionFactory factory = (ConnectionFactory) context.lookup("qpidConnectionfactory");
+            assertNotNull("Connection factory not present in loaded configuration", factory);
 
             context.close();
         }
@@ -154,4 +178,13 @@ public class PropertiesFileInitialContextFactoryTest extends QpidTestCase
         }
 
     }
+
+    private void createJndiPropertiesFile(final Properties properties, final File f) throws IOException
+    {
+        try(FileOutputStream fos = new FileOutputStream(f))
+        {
+            properties.store(fos, null);
+        }
+    }
+
 }

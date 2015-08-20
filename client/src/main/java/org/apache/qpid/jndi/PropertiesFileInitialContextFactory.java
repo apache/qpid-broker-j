@@ -24,8 +24,9 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
@@ -69,18 +70,16 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
     {
         environment = (environment == null) ? new Hashtable() : environment;
 
-        String fileName = (environment.containsKey(Context.PROVIDER_URL))
+        String providerUrl = (environment.containsKey(Context.PROVIDER_URL))
                 ? (String)environment.get(Context.PROVIDER_URL) : System.getProperty(Context.PROVIDER_URL);
 
-        if (fileName != null)
+        if (providerUrl != null)
         {
-            try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream((fileName.contains("file:"))
-                                                                           ? new File(new URI(fileName))
-                                                                           : new File(fileName))))
+
+            try (BufferedInputStream inputStream = new BufferedInputStream(getProviderUrlInputStream(providerUrl)))
             {
                 // make copy of the original environment to adhere to the Contexts interface
                 environment = new Hashtable(environment);
-                _logger.debug("Attempting to load '{}'", fileName);
 
                 Properties p = new Properties();
                 p.load(inputStream);
@@ -96,16 +95,17 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
                     environment.put(key, expanded);
                 }
             }
-            catch (IOException | URISyntaxException e)
+            catch (IOException e)
             {
-                NamingException ne = new NamingException("Unable to load property file specified in Provider_URL:" + fileName + ".");
+                NamingException ne = new NamingException("Unable to load property file specified in Provider_URL:" + providerUrl + ".");
                 ne.setRootCause(e);
                 throw ne;
             }
         }
         else
         {
-            _logger.debug("{} was not specified in the context's environment or as a system property.", Context.PROVIDER_URL);
+            _logger.debug("{} was not specified in the context's environment or as a system property.",
+                          Context.PROVIDER_URL);
         }
 
         Map data = new ConcurrentHashMap();
@@ -118,6 +118,21 @@ public class PropertiesFileInitialContextFactory implements InitialContextFactor
         createTopics(data, environment);
 
         return createContext(data, environment);
+    }
+
+    private InputStream getProviderUrlInputStream(final String providerUrl) throws IOException
+    {
+        try
+        {
+            URL url = new URL(providerUrl);
+            _logger.debug("Using provider URL : '{}'", url);
+            return url.openStream();
+        }
+        catch (MalformedURLException mue)
+        {
+            _logger.debug("Could not interpret '{}' as a valid URL, loading from file system instead.", providerUrl);
+            return new FileInputStream(new File(providerUrl));
+        }
     }
 
     // Implementation methods
