@@ -442,6 +442,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public synchronized void assignTargetSizes()
     {
         long totalTarget  = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
+        LOGGER.debug("Assigning target sizes based on total target {}", totalTarget);
         long totalSize = 0l;
         Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
         Map<VirtualHost<?,?,?>,Long> vhs = new HashMap<>();
@@ -472,7 +473,11 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         for(Map.Entry<VirtualHost<?, ?, ?>,Long> entry : vhs.entrySet())
         {
 
-            long size = (long) (entry.getValue().doubleValue() * ((double) totalTarget / (double) totalSize));
+            final long proprotionalShare = (long) ((double) totalTarget / (double) vhs.size());
+
+            long size = totalSize == 0 ? proprotionalShare
+                    : (long) (entry.getValue().doubleValue() * ((double) totalTarget / (double) 2*totalSize)) + (proprotionalShare/2);
+            LOGGER.debug("Assigning target size {} to vhost {}", size, entry.getKey());
             entry.getKey().setTargetSize(size);
         }
     }

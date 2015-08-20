@@ -146,7 +146,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final List<VirtualHostAlias> _aliases = new ArrayList<VirtualHostAlias>();
     private final VirtualHostNode<?> _virtualHostNode;
 
-    private final AtomicLong _targetSize = new AtomicLong(1024*1024);
+    private final AtomicLong _targetSize = new AtomicLong(100 * 1024 * 1024);
 
     private MessageStoreLogSubject _messageStoreLogSubject;
 
@@ -1722,6 +1722,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         long targetSize = _targetSize.get();
         Collection<AMQQueue<?>> queues = getQueues();
         long totalSize = calculateTotalEnqueuedSize(queues);
+        _logger.debug("Allocating target size to queues, total target: {} ; total enqueued size {}", targetSize, totalSize);
         if(targetSize > 0l)
         {
             for (AMQQueue<?> q : queues)
@@ -1890,6 +1891,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         messageStore.upgradeStoreStructure();
 
+        getBroker().assignTargetSizes();
+
         if (isStoreEmpty())
         {
             return doAfter(createDefaultExchanges(), new Runnable()
@@ -1906,6 +1909,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             postCreateDefaultExchangeTasks();
             return Futures.immediateFuture(null);
         }
+
     }
 
     private void postCreateDefaultExchangeTasks()
