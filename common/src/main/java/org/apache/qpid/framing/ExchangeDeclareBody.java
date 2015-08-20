@@ -229,5 +229,9 @@ public class ExchangeDeclareBody extends AMQMethodBodyImpl implements EncodableA
                                               nowait,
                                               arguments);
         }
+        if (arguments != null)
+        {
+            arguments.clearEncodedForm();
+        }
     }
 }

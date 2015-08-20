@@ -149,14 +149,14 @@ public class LargeMessageTest extends QpidBrokerTestCase
 
             TextMessage result = (TextMessage) consumer.receive(10000);
 
-            assertNotNull("Null message recevied", result);
+            assertNotNull("Null message received", result);
             assertEquals("Message Size", _messageText.length(), result.getText().length());
-            assertEquals("Message content differes", _messageText, result.getText());
+            assertEquals("Message content differs", _messageText, result.getText());
         }
         catch (JMSException e)
         {
-            _logger.error("Exception occured", e);
-            fail("Exception occured:" + e.getCause());
+            _logger.error("Exception occurred", e);
+            fail("Exception occurred:" + e.getCause());
         }
     }
 

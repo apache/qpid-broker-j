@@ -28,11 +28,6 @@ import org.apache.qpid.transport.ByteBufferSender;
 public class MockSender implements ByteBufferSender
 {
 
-    private void send(ByteBuffer msg)
-    {
-
-    }
-
     @Override
     public void send(final QpidByteBuffer msg)
     {

@@ -287,6 +287,12 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             {
                 LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
             }
+
+            if (SystemUtils.isWindows())
+            {
+                _delegate.shutdownInput();
+                _delegate.shutdownOutput();
+            }
         }
     }
 
@@ -306,21 +312,26 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     private void shutdownOutput()
     {
-        try
+        if(!SystemUtils.isWindows())
         {
-            if(!SystemUtils.isWindows())
+            try
             {
                 _socketChannel.shutdownOutput();
             }
-        }
-        catch (IOException e)
-        {
-            LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
+            catch (IOException e)
+            {
+                LOGGER.info("Exception closing socket '{}': {}", _remoteSocketAddress, e.getMessage());
+            }
+            finally
+            {
+                _delegate.shutdownOutput();
+            }
         }
     }
 
     private void shutdownInput()
     {
+
         if(!SystemUtils.isWindows())
         {
             try
@@ -330,6 +341,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             catch (IOException e)
             {
                 LOGGER.info("Exception shutting down input for '{}': {}", _remoteSocketAddress, e.getMessage());
+            }
+            finally
+            {
+                _delegate.shutdownInput();
             }
         }
     }
@@ -373,6 +388,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 break;
             }
             _buffers.poll();
+            buf.dispose();
         }
         return result;
 
@@ -407,8 +423,9 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
         else if (msg.remaining() > 0)
         {
-            _buffers.add(msg);
+            _buffers.add(msg.duplicate());
         }
+        msg.position(msg.limit());
     }
 
     @Override
@@ -457,6 +474,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             QpidByteBuffer src = oldDelegate.getNetInputBuffer().duplicate();
             src.flip();
             _delegate.getNetInputBuffer().put(src);
+            src.dispose();
         }
         LOGGER.debug("Identified transport encryption as " + transportEncryption);
     }

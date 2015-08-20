@@ -198,4 +198,10 @@ public class ContentHeaderBody implements AMQBody
             methodProcessor.receiveMessageHeader(properties, bodySize);
         }
     }
+
+    public void dispose()
+    {
+        _properties.dispose();
+        _properties = null;
+    }
 }

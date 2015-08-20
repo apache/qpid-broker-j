@@ -140,20 +140,8 @@ public abstract class Method extends Struct implements ProtocolEvent
 
     public int getBodySize()
     {
-        Collection<QpidByteBuffer> body = getBody();
-        if (body == null)
-        {
-            return 0;
-        }
-        else
-        {
-            int size = 0;
-            for(QpidByteBuffer buf : body)
-            {
-                size += buf.remaining();
-            }
-            return size;
-        }
+        return 0;
+
     }
 
     public abstract byte getEncodedTrack();

@@ -31,7 +31,6 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -49,9 +48,11 @@ public final class QpidByteBuffer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidByteBuffer.class);
 
-    private static final AtomicIntegerFieldUpdater<QpidByteBuffer> DISPOSED_UPDATER = AtomicIntegerFieldUpdater.newUpdater(QpidByteBuffer.class, "_disposed");
+    private static final AtomicIntegerFieldUpdater<QpidByteBuffer> DISPOSED_UPDATER = AtomicIntegerFieldUpdater.newUpdater(
+            QpidByteBuffer.class,
+            "_disposed");
 
-    private final ByteBuffer _buffer;
+    private ByteBuffer _buffer;
     private final ByteBufferRef _ref;
     @SuppressWarnings("unused")
     private volatile int _disposed;
@@ -214,12 +215,21 @@ public final class QpidByteBuffer
         return this;
     }
 
-    public QpidByteBuffer get(final ByteBuffer src)
+    public QpidByteBuffer get(final ByteBuffer dst)
     {
-        src.put(_buffer);
+        dst.put(_buffer);
         return this;
     }
 
+    public void copyTo(final ByteBuffer dst)
+    {
+        dst.put(_buffer.duplicate());
+    }
+
+    public void putCopyOf(final QpidByteBuffer buf)
+    {
+        _buffer.put(buf._buffer.duplicate());
+    }
 
     public QpidByteBuffer rewind()
     {
@@ -330,6 +340,12 @@ public final class QpidByteBuffer
         return this;
     }
 
+
+    public void copyTo(final byte[] dst)
+    {
+        _buffer.duplicate().get(dst);
+    }
+
     public QpidByteBuffer putChar(final char value)
     {
         _buffer.putChar(value);
@@ -378,7 +394,7 @@ public final class QpidByteBuffer
         ByteBuffer buf = _buffer.slice();
         buf.position(offset);
         buf = buf.slice();
-        buf.limit(length);
+        buf.limit(Math.min(length, buf.remaining()));
         return new QpidByteBuffer(buf, _ref);
     }
 
@@ -405,6 +421,7 @@ public final class QpidByteBuffer
         if(DISPOSED_UPDATER.compareAndSet(this,0,1))
         {
             _ref.decrementRef();
+            _buffer = null;
         }
     }
 

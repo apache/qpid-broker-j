@@ -51,7 +51,7 @@ public class MessageMetaData implements StorableMessageMetaData
 {
     private final MessagePublishInfo _messagePublishInfo;
 
-    private final ContentHeaderBody _contentHeaderBody;
+    private ContentHeaderBody _contentHeaderBody;
 
 
     private long _arrivalTime;
@@ -149,6 +149,13 @@ public class MessageMetaData implements StorableMessageMetaData
     public boolean isPersistent()
     {
         return _contentHeaderBody.getProperties().getDeliveryMode() ==  BasicContentHeaderProperties.PERSISTENT;
+    }
+
+    @Override
+    public void dispose()
+    {
+        _contentHeaderBody.dispose();
+        _contentHeaderBody = null;
     }
 
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData>

@@ -138,5 +138,9 @@ public class ConnectionStartOkBody extends AMQMethodBodyImpl implements Encodabl
         {
             dispatcher.receiveConnectionStartOk(clientProperties, mechanism, response, locale);
         }
+        if (clientProperties != null)
+        {
+            clientProperties.clearEncodedForm();
+        }
     }
 }

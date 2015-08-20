@@ -160,5 +160,10 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
         {
             dispatcher.receiveQueueUnbind(queue, exchange, routingKey, arguments);
         }
+        if (arguments != null)
+        {
+            arguments.clearEncodedForm();
+        }
+
     }
 }

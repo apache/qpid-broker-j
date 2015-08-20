@@ -88,6 +88,12 @@ public class InternalMessageMetaData implements StorableMessageMetaData
         return _isPersistent;
     }
 
+    @Override
+    public void dispose()
+    {
+
+    }
+
     static InternalMessageMetaData create(boolean persistent, final InternalMessageHeader header, int contentSize)
     {
         return new InternalMessageMetaData(persistent, header, contentSize);

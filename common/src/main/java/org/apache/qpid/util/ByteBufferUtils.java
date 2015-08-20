@@ -48,7 +48,7 @@ public class ByteBufferUtils
 
             for(QpidByteBuffer buf : bufs)
             {
-                buf.duplicate().get(combined);
+                buf.copyTo(combined);
             }
             combined.flip();
             return combined;

@@ -209,5 +209,9 @@ public class QueueDeclareBody extends AMQMethodBodyImpl implements EncodableAMQD
         {
             dispatcher.receiveQueueDeclare(queue, passive, durable, exclusive, autoDelete, nowait, arguments);
         }
+        if (arguments != null)
+        {
+            arguments.clearEncodedForm();
+        }
     }
 }

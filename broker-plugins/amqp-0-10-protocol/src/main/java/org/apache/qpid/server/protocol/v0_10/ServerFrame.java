@@ -68,7 +68,7 @@ public final class ServerFrame
 
     public QpidByteBuffer getBody()
     {
-        return body.slice();
+        return body;
     }
 
     public byte getFlags()

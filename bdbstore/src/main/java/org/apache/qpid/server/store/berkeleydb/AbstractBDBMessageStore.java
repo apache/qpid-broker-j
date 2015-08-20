@@ -527,7 +527,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         ByteBuffer dst = ByteBuffer.wrap(data);
         for(QpidByteBuffer buf : contentBody)
         {
-            buf.duplicate().get(dst);
+            buf.copyTo(dst);
         }
         value.setData(data);
         try
@@ -1092,7 +1092,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             for(QpidByteBuffer contentChunk : allContent)
             {
                 length += contentChunk.remaining();
-                contentChunk.duplicate().get(dst);
+                contentChunk.copyTo(dst);
             }
             return length;
         }
@@ -1139,13 +1139,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     final int remaining = buf.remaining();
                     if(pos+ remaining >=offsetInMessage)
                     {
-                        buf = buf.slice();
-                        buf.position(offsetInMessage-pos);
-                        buf = buf.slice();
-                        if(buf.remaining()>size)
-                        {
-                            buf.limit(size);
-                        }
+                        buf = buf.view(offsetInMessage-pos,size);
 
                         content.add(buf);
                         added += buf.remaining();
@@ -1254,10 +1248,22 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         public void remove()
         {
             checkMessageStoreOpen();
+            Collection<QpidByteBuffer> data = _messageDataRef.getData();
 
-            int delta = getMetaData().getContentSize();
+            final T metaData = getMetaData();
+            int delta = metaData.getContentSize();
             removeMessage(_messageId, false);
             storedSizeChangeOccurred(-delta);
+            if(data != null)
+            {
+                _messageDataRef.setData(null);
+                for(QpidByteBuffer buf : data)
+                {
+                    buf.dispose();
+                }
+            }
+            metaData.dispose();
+            _messageDataRef = null;
         }
 
         @Override

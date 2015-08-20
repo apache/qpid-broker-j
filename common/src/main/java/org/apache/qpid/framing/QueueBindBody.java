@@ -179,5 +179,9 @@ public class QueueBindBody extends AMQMethodBodyImpl implements EncodableAMQData
         {
             dispatcher.receiveQueueBind(queue, exchange, bindingKey, nowait, arguments);
         }
+        if (arguments != null)
+        {
+            arguments.clearEncodedForm();
+        }
     }
 }

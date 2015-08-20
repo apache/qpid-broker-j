@@ -78,6 +78,12 @@ public class TestMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
+    public void dispose()
+    {
+
+    }
+
+    @Override
     public int writeToBuffer(ByteBuffer dest)
     {
         int oldPosition = dest.position();

@@ -210,5 +210,9 @@ public class BasicConsumeBody extends AMQMethodBodyImpl implements EncodableAMQD
         {
             dispatcher.receiveBasicConsume(queue, consumerTag, noLocal, noAck, exclusive, nowait, arguments);
         }
+        if (arguments != null)
+        {
+            arguments.clearEncodedForm();
+        }
     }
 }

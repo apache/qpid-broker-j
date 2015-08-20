@@ -247,7 +247,7 @@ public class BasicContentHeaderProperties
             else
             {
                 array = new byte[length];
-                _encodedForm.duplicate().get(array);
+                _encodedForm.copyTo(array);
                 offset = 0;
             }
             buffer.write(array, offset, length);
@@ -362,7 +362,7 @@ public class BasicContentHeaderProperties
         {
             int fieldTableLength = input.readInt();
 
-            _headers = new FieldTable(input.readAsByteBuffer(fieldTableLength));
+            _headers = new FieldTable(input, fieldTableLength);
 
             length += 4;
             length += fieldTableLength;
@@ -475,7 +475,9 @@ public class BasicContentHeaderProperties
     {
         if(useEncodedForm())
         {
-            sender.send(_encodedForm.duplicate());
+            final QpidByteBuffer duplicate = _encodedForm.duplicate();
+            sender.send(duplicate);
+            duplicate.dispose();
             return _encodedForm.remaining();
         }
         else
@@ -485,6 +487,7 @@ public class BasicContentHeaderProperties
             writePropertyListPayload(buf.asDataOutput());
             buf.flip();
             sender.send(buf);
+            buf.dispose();
             return propertyListSize;
         }
 
@@ -501,7 +504,9 @@ public class BasicContentHeaderProperties
 
         _encodedForm = buffer.readAsByteBuffer(size);
 
-        decode(_encodedForm.slice().asDataInput());
+        final QpidByteBuffer byteBuffer = _encodedForm.slice();
+        decode(byteBuffer.asDataInput());
+        byteBuffer.dispose();
 
     }
 
@@ -525,12 +530,9 @@ public class BasicContentHeaderProperties
         {
             long length = EncodingUtils.readUnsignedInteger(buffer);
 
-            QpidByteBuffer buf = _encodedForm.slice();
-            buf.position(headersOffset+4);
-            buf = buf.slice();
-            buf.limit((int)length);
+            QpidByteBuffer buf = _encodedForm.view(headersOffset+4, (int)length);
             _headers = new FieldTable(buf);
-
+            buf.dispose();
             buffer.skipBytes((int)length);
         }
 
@@ -949,4 +951,17 @@ public class BasicContentHeaderProperties
     }
 
 
+    public void dispose()
+    {
+        if(_encodedForm != null)
+        {
+            _encodedForm.dispose();
+            _encodedForm = null;
+        }
+        if(_headers != null)
+        {
+            _headers.dispose();
+            _headers = null;
+        }
+    }
 }

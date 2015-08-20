@@ -281,6 +281,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
             if(uncompressed != null)
             {
                 messageProps.setContentEncoding(null);
+                for (QpidByteBuffer buf : body)
+                {
+                    buf.dispose();
+                }
                 body = Collections.singleton(QpidByteBuffer.wrap(uncompressed));
             }
         }
@@ -298,6 +302,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                     messageProps = new MessageProperties();
                 }
                 messageProps.setContentEncoding(GZIPUtils.GZIP_CONTENT_ENCODING);
+                for (QpidByteBuffer buf : body)
+                {
+                    buf.dispose();
+                }
                 body = Collections.singleton(QpidByteBuffer.wrap(compressed));
             }
         }
@@ -306,18 +314,26 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
         xfr = batch ? new MessageTransfer(_name,_acceptMode,_acquireMode,header, body, BATCHED)
                     : new MessageTransfer(_name,_acceptMode,_acquireMode,header, body);
-
+        if (body != null)
+        {
+            for (QpidByteBuffer buf : body)
+            {
+                buf.dispose();
+            }
+            body = null;
+        }
         if(_acceptMode == MessageAcceptMode.NONE && _acquireMode != MessageAcquireMode.PRE_ACQUIRED)
         {
             xfr.setCompletionListener(new MessageAcceptCompletionListener(this, consumer, _session, entry, _flowMode == MessageFlowMode.WINDOW));
         }
         else if(_flowMode == MessageFlowMode.WINDOW)
         {
+            final long messageSize = entry.getMessage().getSize();
             xfr.setCompletionListener(new Method.CompletionListener()
                                         {
                                             public void onComplete(Method method)
                                             {
-                                                deferredAddCredit(1, entry.getMessage().getSize());
+                                                deferredAddCredit(1, messageSize);
                                             }
                                         });
         }
@@ -339,6 +355,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
 
         _session.sendMessage(xfr, _postIdSettingAction);
+        xfr.dispose();
 
         _postIdSettingAction.setAction(null);
         _postIdSettingAction.setXfr(null);

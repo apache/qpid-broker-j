@@ -73,7 +73,7 @@ public final class Functions
 
     public static final String str(ByteBuffer buf, int limit,int start)
     {
-        return str(QpidByteBuffer.wrap(buf), start,limit);
+        return str(QpidByteBuffer.wrap(buf), limit, start);
     }
 
     public static final String str(QpidByteBuffer buf)

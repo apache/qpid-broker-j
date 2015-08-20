@@ -382,118 +382,124 @@ public class ServerSessionDelegate extends SessionDelegate
     @Override
     public void messageTransfer(Session ssn, final MessageTransfer xfr)
     {
-        ServerSession serverSession = (ServerSession) ssn;
-        if(serverSession.blockingTimeoutExceeded())
+        try
         {
-            getVirtualHost(ssn).getEventLogger().message(ChannelMessages.FLOW_CONTROL_IGNORED());
-
-            serverSession.close(AMQConstant.MESSAGE_TOO_LARGE,
-                       "Session flow control was requested, but not enforced by sender");
-        }
-        else if(xfr.getBodySize() > serverSession.getConnection().getMaxMessageSize())
-        {
-            exception(ssn, xfr, ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED,
-                      "Message size of " + xfr.getBodySize() + " greater than allowed maximum of " + serverSession.getConnection().getMaxMessageSize());
-        }
-        else
-        {
-            final MessageDestination destination = getDestinationForMessage(ssn, xfr);
-
-            final DeliveryProperties delvProps =
-                    xfr.getHeader() == null ? null : xfr.getHeader().getDeliveryProperties();
-            if (delvProps != null && delvProps.hasTtl() && !delvProps.hasExpiration())
+            ServerSession serverSession = (ServerSession) ssn;
+            if(serverSession.blockingTimeoutExceeded())
             {
-                delvProps.setExpiration(System.currentTimeMillis() + delvProps.getTtl());
+                getVirtualHost(ssn).getEventLogger().message(ChannelMessages.FLOW_CONTROL_IGNORED());
+
+                serverSession.close(AMQConstant.MESSAGE_TOO_LARGE,
+                           "Session flow control was requested, but not enforced by sender");
             }
-
-            final MessageMetaData_0_10 messageMetaData = new MessageMetaData_0_10(xfr);
-
-            final VirtualHostImpl virtualHost = getVirtualHost(ssn);
-            try
+            else if(xfr.getBodySize() > serverSession.getConnection().getMaxMessageSize())
             {
-                virtualHost.getSecurityManager()
-                        .authorisePublish(messageMetaData.isImmediate(),
-                                          messageMetaData.getRoutingKey(),
-                                          destination.getName(),
-                                          virtualHost.getName());
+                exception(ssn, xfr, ExecutionErrorCode.RESOURCE_LIMIT_EXCEEDED,
+                          "Message size of " + xfr.getBodySize() + " greater than allowed maximum of " + serverSession.getConnection().getMaxMessageSize());
             }
-            catch (AccessControlException e)
+            else
             {
-                ExecutionErrorCode errorCode = ExecutionErrorCode.UNAUTHORIZED_ACCESS;
-                exception(ssn, xfr, errorCode, e.getMessage());
+                final MessageDestination destination = getDestinationForMessage(ssn, xfr);
 
-                return;
-            }
-
-            final MessageStore store = virtualHost.getMessageStore();
-            final StoredMessage<MessageMetaData_0_10> storeMessage = createStoreMessage(xfr, messageMetaData, store);
-            final MessageTransferMessage message =
-                    new MessageTransferMessage(storeMessage, serverSession.getReference());
-            MessageReference<MessageTransferMessage> reference = message.newReference();
-
-            try
-            {
-                final InstanceProperties instanceProperties = new InstanceProperties()
+                final DeliveryProperties delvProps =
+                        xfr.getHeader() == null ? null : xfr.getHeader().getDeliveryProperties();
+                if (delvProps != null && delvProps.hasTtl() && !delvProps.hasExpiration())
                 {
-                    @Override
-                    public Object getProperty(final Property prop)
+                    delvProps.setExpiration(System.currentTimeMillis() + delvProps.getTtl());
+                }
+
+                final MessageMetaData_0_10 messageMetaData = new MessageMetaData_0_10(xfr);
+
+                final VirtualHostImpl virtualHost = getVirtualHost(ssn);
+                try
+                {
+                    virtualHost.getSecurityManager()
+                            .authorisePublish(messageMetaData.isImmediate(),
+                                              messageMetaData.getRoutingKey(),
+                                              destination.getName(),
+                                              virtualHost.getName());
+                }
+                catch (AccessControlException e)
+                {
+                    ExecutionErrorCode errorCode = ExecutionErrorCode.UNAUTHORIZED_ACCESS;
+                    exception(ssn, xfr, errorCode, e.getMessage());
+
+                    return;
+                }
+
+                final MessageStore store = virtualHost.getMessageStore();
+                final StoredMessage<MessageMetaData_0_10> storeMessage = createStoreMessage(xfr, messageMetaData, store);
+                final MessageTransferMessage message =
+                        new MessageTransferMessage(storeMessage, serverSession.getReference());
+                MessageReference<MessageTransferMessage> reference = message.newReference();
+
+                try
+                {
+                    final InstanceProperties instanceProperties = new InstanceProperties()
                     {
-                        switch (prop)
+                        @Override
+                        public Object getProperty(final Property prop)
                         {
-                            case EXPIRATION:
-                                return message.getExpiration();
-                            case IMMEDIATE:
-                                return message.isImmediate();
-                            case MANDATORY:
-                                return (delvProps == null || !delvProps.getDiscardUnroutable())
-                                       && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT;
-                            case PERSISTENT:
-                                return message.isPersistent();
-                            case REDELIVERED:
-                                return delvProps.getRedelivered();
+                            switch (prop)
+                            {
+                                case EXPIRATION:
+                                    return message.getExpiration();
+                                case IMMEDIATE:
+                                    return message.isImmediate();
+                                case MANDATORY:
+                                    return (delvProps == null || !delvProps.getDiscardUnroutable())
+                                           && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT;
+                                case PERSISTENT:
+                                    return message.isPersistent();
+                                case REDELIVERED:
+                                    return delvProps.getRedelivered();
+                            }
+                            return null;
                         }
-                        return null;
-                    }
-                };
+                    };
 
-                int enqueues = serverSession.enqueue(message, instanceProperties, destination);
+                    int enqueues = serverSession.enqueue(message, instanceProperties, destination);
 
-                if (enqueues == 0)
-                {
-                    if ((delvProps == null || !delvProps.getDiscardUnroutable())
-                        && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT)
+                    if (enqueues == 0)
                     {
-                        RangeSet rejects = RangeSetFactory.createRangeSet();
-                        rejects.add(xfr.getId());
-                        MessageReject reject = new MessageReject(rejects, MessageRejectCode.UNROUTABLE, "Unroutable");
-                        ssn.invoke(reject);
+                        if ((delvProps == null || !delvProps.getDiscardUnroutable())
+                            && xfr.getAcceptMode() == MessageAcceptMode.EXPLICIT)
+                        {
+                            RangeSet rejects = RangeSetFactory.createRangeSet();
+                            rejects.add(xfr.getId());
+                            MessageReject reject = new MessageReject(rejects, MessageRejectCode.UNROUTABLE, "Unroutable");
+                            ssn.invoke(reject);
+                        }
+                        else
+                        {
+                            virtualHost.getEventLogger().message(ExchangeMessages.DISCARDMSG(destination.getName(),
+                                                                                             messageMetaData.getRoutingKey()));
+                        }
+                    }
+
+                    if (serverSession.isTransactional())
+                    {
+                        serverSession.processed(xfr);
                     }
                     else
                     {
-                        virtualHost.getEventLogger().message(ExchangeMessages.DISCARDMSG(destination.getName(),
-                                                                                         messageMetaData.getRoutingKey()));
+                        serverSession.recordFuture(FutureResult.IMMEDIATE_FUTURE,
+                                                   new CommandProcessedAction(serverSession, xfr));
                     }
                 }
-
-                if (serverSession.isTransactional())
+                catch (VirtualHostUnavailableException e)
                 {
-                    serverSession.processed(xfr);
+                    getServerConnection(serverSession).sendConnectionCloseAsync(AMQConstant.CONNECTION_FORCED, e.getMessage());
                 }
-                else
+                finally
                 {
-                    serverSession.recordFuture(FutureResult.IMMEDIATE_FUTURE,
-                                               new CommandProcessedAction(serverSession, xfr));
+                    reference.release();
                 }
             }
-            catch (VirtualHostUnavailableException e)
-            {
-                getServerConnection(serverSession).sendConnectionCloseAsync(AMQConstant.CONNECTION_FORCED, e.getMessage());
-            }
-            finally
-            {
-                reference.release();
-            }
-
+        }
+        finally
+        {
+            xfr.dispose();
         }
     }
 

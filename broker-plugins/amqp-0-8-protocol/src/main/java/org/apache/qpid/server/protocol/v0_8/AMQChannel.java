@@ -451,8 +451,9 @@ public class AMQChannel
                     for(int i = 0 ; i < bodyCount ; i++)
                     {
                         ContentBody contentChunk = _currentMessage.getContentChunk(i);
-                        handle.addContent(contentChunk.getPayload().duplicate());
+                        handle.addContent(contentChunk.getPayload());
                         bodyLengthReceived += contentChunk.getSize();
+                        contentChunk.dispose();
                     }
                 }
                 final StoredMessage<MessageMetaData> storedMessage = handle.allContentAdded();

@@ -311,7 +311,9 @@ class WebSocketProvider implements AcceptingTransport
                 else
                 {
                     byte[] copy = new byte[msg.remaining()];
-                    msg.duplicate().get(copy);
+                    final QpidByteBuffer duplicate = msg.duplicate();
+                    duplicate.get(copy);
+                    duplicate.dispose();
                     _connection.sendMessage(copy, 0, copy.length);
                 }
             }

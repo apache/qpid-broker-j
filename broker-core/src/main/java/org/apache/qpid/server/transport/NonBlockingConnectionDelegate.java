@@ -43,4 +43,7 @@ interface NonBlockingConnectionDelegate
 
     QpidByteBuffer getNetInputBuffer();
 
+    void shutdownInput();
+
+    void shutdownOutput();
 }

@@ -47,6 +47,7 @@ import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.transport.network.Frame;
 import org.apache.qpid.transport.network.NetworkDelegate;
 import org.apache.qpid.transport.network.NetworkEvent;
+import org.apache.qpid.transport.util.Functions;
 
 public class ServerAssembler
 {
@@ -144,11 +145,11 @@ public class ServerAssembler
 
     public void frame(ServerFrame frame)
     {
-        List<QpidByteBuffer> segment;
+        List<QpidByteBuffer> frameBuffers;
         if (frame.isFirstFrame() && frame.isLastFrame())
         {
-            segment = Collections.singletonList(frame.getBody());
-            assemble(frame, segment);
+            frameBuffers = Collections.singletonList(frame.getBody());
+            assemble(frame, frameBuffers);
         }
         else
         {
@@ -168,21 +169,22 @@ public class ServerAssembler
             if (frame.isLastFrame())
             {
                 clearSegment(frame);
-                segment = new ArrayList<>(frames.size());
+                frameBuffers = new ArrayList<>(frames.size());
                 for (ServerFrame f : frames)
                 {
-                    segment.add(f.getBody());
+
+                    frameBuffers.add(f.getBody());
                 }
-                assemble(frame, segment);
+                assemble(frame, frameBuffers);
             }
         }
 
     }
 
-    private void assemble(ServerFrame frame, List<QpidByteBuffer> segment)
+    private void assemble(ServerFrame frame, List<QpidByteBuffer> frameBuffers)
     {
         ServerDecoder dec = _decoder;
-        dec.init(segment);
+        dec.init(frameBuffers);
 
         int channel = frame.getChannel();
         Method command;
@@ -248,15 +250,20 @@ public class ServerAssembler
                 break;
             case BODY:
                 command = getIncompleteCommand(channel);
-                command.setBody(segment);
+                command.setBody(frameBuffers);
                 setIncompleteCommand(channel, null);
                 emit(channel, command);
+
                 break;
             default:
                 throw new IllegalStateException("unknown frame type: " + frame.getType());
         }
 
         dec.releaseBuffer();
+        for(QpidByteBuffer buf : frameBuffers)
+        {
+            buf.dispose();
+        }
     }
 
     private void setIncompleteCommand(int channelId, Method incomplete)

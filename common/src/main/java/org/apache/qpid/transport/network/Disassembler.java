@@ -30,6 +30,9 @@ import static org.apache.qpid.transport.network.Frame.LAST_SEG;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.FrameSizeObserver;
@@ -44,6 +47,7 @@ import org.apache.qpid.transport.SegmentType;
 import org.apache.qpid.transport.Struct;
 import org.apache.qpid.transport.codec.BBEncoder;
 import org.apache.qpid.transport.codec.Encoder;
+import org.apache.qpid.transport.util.Functions;
 import org.apache.qpid.util.ByteBufferUtils;
 
 /**
@@ -51,6 +55,7 @@ import org.apache.qpid.util.ByteBufferUtils;
  */
 public final class Disassembler implements ProtocolEventSender, ProtocolDelegate<Void>, FrameSizeObserver
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Disassembler.class);
     private final ByteBufferSender sender;
     private int maxPayload;
     private final Object sendlock = new Object();
@@ -120,6 +125,7 @@ public final class Disassembler implements ProtocolEventSender, ProtocolDelegate
             data.rewind();
             sender.send(QpidByteBuffer.wrap(data));
             sender.send(QpidByteBuffer.wrap(buf));
+
             buf.limit(limit);
 
         }

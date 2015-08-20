@@ -143,6 +143,7 @@ public class SSLSender implements ByteBufferSender
 
     public void send(QpidByteBuffer appData)
     {
+        appData = appData.duplicate();
         if (closed.get() && !_sslStatus.getSslErrorFlag())
         {
             throw new SenderException("SSL Sender is closed");
@@ -256,6 +257,7 @@ public class SSLSender implements ByteBufferSender
             }
 
         }
+        appData.dispose();
     }
 
 

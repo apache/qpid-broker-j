@@ -21,6 +21,7 @@ package org.apache.qpid.transport;
  */
 
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -39,6 +40,7 @@ import org.apache.qpid.transport.network.Frame;
 public final class MessageTransfer extends Method {
 
     public static final int TYPE = 1025;
+    private int _bodySize;
 
     public final int getStructType() {
         return TYPE;
@@ -77,7 +79,12 @@ public final class MessageTransfer extends Method {
 
     public MessageTransfer(String destination, MessageAcceptMode acceptMode, MessageAcquireMode acquireMode, Header header, java.nio.ByteBuffer body, Option ... options)
     {
-        this(destination, acceptMode, acquireMode, header, Collections.singletonList(QpidByteBuffer.wrap(body)), options);
+        this(destination,
+             acceptMode,
+             acquireMode,
+             header,
+             Collections.singletonList(QpidByteBuffer.wrap(body)),
+             options);
     }
 
     public MessageTransfer(String destination, MessageAcceptMode acceptMode, MessageAcquireMode acquireMode, Header header, Collection<QpidByteBuffer> body, Option ... _options) {
@@ -215,8 +222,30 @@ public final class MessageTransfer extends Method {
     }
 
     @Override
-    public final void setBody(Collection<QpidByteBuffer> body) {
-        this._body = body;
+    public final void setBody(Collection<QpidByteBuffer> body)
+    {
+        if (body == null)
+        {
+            _bodySize = 0;
+            _body = null;
+        }
+        else
+        {
+            _body = new ArrayList<>(body.size());
+            int size = 0;
+            for (QpidByteBuffer buf : body)
+            {
+                size += buf.remaining();
+                _body.add(buf.duplicate());
+            }
+            _bodySize = size;
+        }
+    }
+
+    @Override
+    public int getBodySize()
+    {
+        return _bodySize;
     }
 
     public final MessageTransfer body(List<QpidByteBuffer> body)
@@ -306,5 +335,14 @@ public final class MessageTransfer extends Method {
         return result;
     }
 
-
+    public void dispose()
+    {
+        if (_body != null)
+        {
+            for (QpidByteBuffer buf : _body)
+            {
+                buf.dispose();
+            }
+        }
+    }
 }

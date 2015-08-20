@@ -135,7 +135,16 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     public boolean doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
     {
         final int bufCount = bufferArray.size();
-        int byteBuffersWritten = wrapBufferArray(bufferArray);
+        wrapBufferArray(bufferArray);
+
+        boolean bufsSent = true;
+        final Iterator<QpidByteBuffer> itr = bufferArray.iterator();
+        int bufIndex = 0;
+        while(itr.hasNext() && bufsSent && bufIndex++ < bufCount)
+        {
+            QpidByteBuffer buf = itr.next();
+            bufsSent = !buf.hasRemaining();
+        }
 
         _parent.writeToTransport(_encryptedOutput);
 
@@ -145,6 +154,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             QpidByteBuffer buf = iter.next();
             if(buf.remaining() == 0)
             {
+                buf.dispose();
                 iter.remove();
             }
             else
@@ -153,12 +163,14 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             }
         }
 
-        return (bufCount <= byteBuffersWritten) && _encryptedOutput.isEmpty();
+        return bufsSent && _encryptedOutput.isEmpty();
     }
 
     protected void restoreApplicationBufferForWrite()
     {
+        QpidByteBuffer oldApplicationBuffer = _applicationBuffer;
         _applicationBuffer = _applicationBuffer.slice();
+        oldApplicationBuffer.dispose();
         if (_applicationBuffer.limit() != _applicationBuffer.capacity())
         {
             _applicationBuffer.position(_applicationBuffer.limit());
@@ -173,13 +185,13 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
             _applicationBuffer = QpidByteBuffer.allocateDirect(newBufSize);
             _applicationBuffer.put(currentBuffer);
+            currentBuffer.dispose();
         }
 
     }
 
-    private int wrapBufferArray(Collection<QpidByteBuffer> bufferArray) throws SSLException
+    private void wrapBufferArray(Collection<QpidByteBuffer> bufferArray) throws SSLException
     {
-        int byteBuffersWritten = 0;
         int remaining = 0;
         do
         {
@@ -195,25 +207,14 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                 {
                     _encryptedOutput.add(netBuffer);
                 }
-                Iterator<QpidByteBuffer> iter = bufferArray.iterator();
-                while (iter.hasNext())
+                else
                 {
-                    QpidByteBuffer buf = iter.next();
-                    if (buf.remaining() == 0)
-                    {
-                        byteBuffersWritten++;
-                        iter.remove();
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    netBuffer.dispose();
                 }
             }
 
         }
         while(remaining != 0 && _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP);
-        return byteBuffersWritten;
     }
 
     private boolean runSSLEngineTasks(final SSLEngineResult status)
@@ -298,6 +299,28 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     public QpidByteBuffer getNetInputBuffer()
     {
         return _netInputBuffer;
+    }
+
+    @Override
+    public void shutdownInput()
+    {
+        if (_netInputBuffer != null)
+        {
+            _netInputBuffer.dispose();
+            _netInputBuffer = null;
+        }
+
+        if (_applicationBuffer != null)
+        {
+            _applicationBuffer.dispose();
+            _applicationBuffer = null;
+        }
+    }
+
+    @Override
+    public void shutdownOutput()
+    {
+
     }
 
 }

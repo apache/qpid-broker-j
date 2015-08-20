@@ -157,7 +157,7 @@ public class ServerInputHandler implements FrameSizeObserver
                             buffer.position(buffer.position()+4);
                             if (size == 0)
                             {
-                                ServerFrame frame = new ServerFrame(flags, type, track, channel, EMPTY_BYTE_BUFFER);
+                                ServerFrame frame = new ServerFrame(flags, type, track, channel, EMPTY_BYTE_BUFFER.duplicate());
                                 _serverAssembler.received(frame);
 
                             }

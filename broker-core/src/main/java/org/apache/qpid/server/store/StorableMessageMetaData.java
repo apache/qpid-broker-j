@@ -34,5 +34,7 @@ public interface StorableMessageMetaData
     int getContentSize();
 
     boolean isPersistent();
+
+    void dispose();
 }
 

@@ -1109,9 +1109,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
 
             stmt = conn.prepareStatement(INSERT_INTO_MESSAGE_CONTENT);
-            stmt.setLong(1,messageId);
-            stmt.setBinaryStream(2, src.duplicate().asInputStream(), src.remaining());
+            stmt.setLong(1, messageId);
+            final QpidByteBuffer buffer = src.duplicate();
+            stmt.setBinaryStream(2, buffer.asInputStream(), src.remaining());
             stmt.executeUpdate();
+            buffer.dispose();
         }
         catch (SQLException e)
         {
@@ -1607,11 +1609,13 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             else
             {
                 int size = data.remaining() + src.remaining();
-                QpidByteBuffer buf = data.isDirect() ? QpidByteBuffer.allocateDirect(size) : QpidByteBuffer.allocate(size);
-                buf.put(data.duplicate());
-                buf.put(src.duplicate());
+                QpidByteBuffer buf = QpidByteBuffer.allocateDirect(size);
+                buf.putCopyOf(data);
+                buf.putCopyOf(src);
                 buf.flip();
+                src.dispose();
                 _messageDataRef.setData(buf);
+                data.dispose();
             }
         }
 
@@ -1679,10 +1683,20 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         {
             getLogger().debug("REMOVE called on message: {}", _messageId);
             checkMessageStoreOpen();
+            QpidByteBuffer data = _messageDataRef.getData();
 
-            int delta = getMetaData().getContentSize();
+            final T metaData = getMetaData();
+            int delta = metaData.getContentSize();
             AbstractJDBCMessageStore.this.removeMessage(_messageId);
             storedSizeChange(-delta);
+
+            if(data != null)
+            {
+                _messageDataRef.setData(null);
+                data.dispose();
+            }
+            metaData.dispose();
+            _messageDataRef = null;
         }
 
         @Override

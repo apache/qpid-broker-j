@@ -76,7 +76,7 @@ public class SASLSender extends SASLEncryptor implements ByteBufferSender
         {
             throw new SenderException("SSL Sender is closed");
         }
-
+        buf = buf.duplicate();
         if (isSecurityLayerEstablished())
         {
             while (buf.hasRemaining())
@@ -104,6 +104,7 @@ public class SASLSender extends SASLEncryptor implements ByteBufferSender
         {
             delegate.send(buf);
         }
+        buf.dispose();
     }
 
 

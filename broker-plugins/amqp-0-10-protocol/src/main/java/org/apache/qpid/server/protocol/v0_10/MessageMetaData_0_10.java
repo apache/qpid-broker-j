@@ -173,6 +173,12 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return _deliveryProps == null ? false : _deliveryProps.getDeliveryMode() == MessageDeliveryMode.PERSISTENT;
     }
 
+    @Override
+    public void dispose()
+    {
+
+    }
+
     public String getRoutingKey()
     {
         return _deliveryProps == null ? null : _deliveryProps.getRoutingKey();

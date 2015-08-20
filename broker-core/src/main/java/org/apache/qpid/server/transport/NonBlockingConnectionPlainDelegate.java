@@ -36,7 +36,7 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingConnectionPlainDelegate.class);
 
     private final NonBlockingConnection _parent;
-    private QpidByteBuffer _netInputBuffer;
+    private volatile QpidByteBuffer _netInputBuffer;
 
     public NonBlockingConnectionPlainDelegate(NonBlockingConnection parent)
     {
@@ -65,7 +65,9 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
 
     protected void restoreApplicationBufferForWrite()
     {
-        _netInputBuffer = _netInputBuffer.slice();
+        QpidByteBuffer oldNetInputBuffer = _netInputBuffer;
+        _netInputBuffer = oldNetInputBuffer.slice();
+        oldNetInputBuffer.dispose();
         if (_netInputBuffer.limit() != _netInputBuffer.capacity())
         {
             _netInputBuffer.position(_netInputBuffer.limit());
@@ -80,6 +82,7 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
 
             _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
             _netInputBuffer.put(currentBuffer);
+            currentBuffer.dispose();
         }
 
     }
@@ -123,4 +126,19 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
         return _netInputBuffer;
     }
 
+    @Override
+    public void shutdownInput()
+    {
+        if (_netInputBuffer != null)
+        {
+            _netInputBuffer.dispose();
+            _netInputBuffer = null;
+        }
+    }
+
+    @Override
+    public void shutdownOutput()
+    {
+
+    }
 }

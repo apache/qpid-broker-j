@@ -81,11 +81,17 @@ public class FieldTable
         }
     }
 
+    public FieldTable(MarkableDataInput input, int len) throws IOException
+    {
+        this();
+        _encodedForm = input.readAsByteBuffer(len);
+        _encodedSize = len;
+    }
 
     public FieldTable(QpidByteBuffer buffer)
     {
         this();
-        _encodedForm = buffer;
+        _encodedForm = buffer.duplicate();
         _encodedSize = buffer.remaining();
     }
 
@@ -857,7 +863,7 @@ public class FieldTable
         else
         {
             byte[] encodedCopy = new byte[_encodedForm.remaining()];
-            _encodedForm.duplicate().get(encodedCopy);
+            _encodedForm.copyTo(encodedCopy);
             return encodedCopy;
         }
 
@@ -930,6 +936,15 @@ public class FieldTable
                     });
         }
         return map;
+    }
+
+    public void dispose()
+    {
+        if(_encodedForm != null)
+        {
+            _encodedForm.dispose();
+            _encodedForm = null;
+        }
     }
 
 
@@ -1055,9 +1070,33 @@ public class FieldTable
     public void clear()
     {
         initMapIfNecessary();
-        _encodedForm = null;
+        if (_encodedForm != null)
+        {
+            _encodedForm.dispose();
+            _encodedForm = null;
+        }
         _properties.clear();
         _encodedSize = 0;
+    }
+
+    public void clearEncodedForm()
+    {
+        synchronized (this)
+        {
+            if (_properties == null)
+            {
+                if (_encodedForm != null)
+                {
+                    populateFromBuffer();
+                }
+            }
+
+            if (_encodedForm != null)
+            {
+                _encodedForm.dispose();
+                _encodedForm = null;
+            }
+        }
     }
 
     public Set<AMQShortString> keySet()
@@ -1072,7 +1111,7 @@ public class FieldTable
         if (_encodedForm != null)
         {
             byte[] encodedCopy = new byte[_encodedForm.remaining()];
-            _encodedForm.duplicate().get(encodedCopy);
+            _encodedForm.copyTo(encodedCopy);
 
             buffer.write(encodedCopy);
         }
@@ -1103,7 +1142,8 @@ public class FieldTable
     private void setFromBuffer() throws AMQFrameDecodingException, IOException
     {
 
-        MarkableDataInput dataInput = _encodedForm.slice().asDataInput();
+        final QpidByteBuffer slice = _encodedForm.slice();
+        MarkableDataInput dataInput = slice.asDataInput();
 
         if (_encodedSize > 0)
         {
@@ -1122,7 +1162,7 @@ public class FieldTable
             while (dataInput.available() > 0);
 
         }
-
+        slice.dispose();
     }
 
     public int hashCode()

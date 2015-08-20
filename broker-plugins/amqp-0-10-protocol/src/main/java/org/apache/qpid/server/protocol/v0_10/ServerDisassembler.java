@@ -49,6 +49,7 @@ import org.apache.qpid.transport.SegmentType;
 import org.apache.qpid.transport.Struct;
 import org.apache.qpid.transport.codec.Encoder;
 import org.apache.qpid.transport.network.Frame;
+import org.apache.qpid.transport.util.Functions;
 
 /**
  * Disassembler
@@ -95,7 +96,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
     }
 
-    private void frame(byte flags, byte type, byte track, int channel, int size, Collection<QpidByteBuffer> buf)
+    private void frame(byte flags, byte type, byte track, int channel, int size, Collection<QpidByteBuffer> buffers)
     {
         QpidByteBuffer data = QpidByteBuffer.allocate(HEADER_SIZE);
 
@@ -110,21 +111,22 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         if(size > 0)
         {
             int residual = size;
-            for(QpidByteBuffer b : buf)
+            for(QpidByteBuffer b : buffers)
             {
                 final int remaining = b.remaining();
                 if(remaining > 0 )
                 {
                     if(remaining >= residual)
                     {
-                        _sender.send(b.view(0,residual));
-                        b.position(b.position()+residual);
+                        final QpidByteBuffer buffer = b.view(0, residual);
+                        _sender.send(buffer);
+                        buffer.dispose();
+                        b.position(b.position() + residual);
                         break;
                     }
                     else
                     {
-                        _sender.send(b.duplicate());
-                        b.position(b.limit());
+                        _sender.send(b);
                         residual-=remaining;
                     }
                 }
@@ -133,13 +135,13 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
 
     }
 
-    private void fragment(byte flags, SegmentType type, ProtocolEvent event, Collection<QpidByteBuffer> buf)
+    private void fragment(byte flags, SegmentType type, ProtocolEvent event, Collection<QpidByteBuffer> buffers)
     {
         byte typeb = (byte) type.getValue();
         byte track = event.getEncodedTrack() == Frame.L4 ? (byte) 1 : (byte) 0;
 
         int remaining = 0;
-        for(QpidByteBuffer b : buf)
+        for(QpidByteBuffer b : buffers)
         {
             remaining += b.remaining();
         }
@@ -160,7 +162,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
                 newflags |= LAST_FRAME;
             }
 
-            frame(newflags, typeb, track, event.getChannel(), size, buf);
+            frame(newflags, typeb, track, event.getChannel(), size, buffers);
 
             if (remaining == 0)
             {
@@ -253,12 +255,17 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
                 fragment(body == null ? LAST_SEG : 0x0, SegmentType.HEADER, method, Collections.singletonList(QpidByteBuffer.wrap(buf.duplicate())));
                 if (body != null)
                 {
-                    Collection<QpidByteBuffer> dup = new ArrayList<>();
+                    Collection<QpidByteBuffer> dup = new ArrayList<>(body.size());
                     for(QpidByteBuffer b : body)
                     {
                         dup.add(b.duplicate());
                     }
                     fragment(LAST_SEG, SegmentType.BODY, method, dup);
+                    for(QpidByteBuffer b : dup)
+                    {
+                        b.dispose();
+                    }
+
                 }
 
             }

@@ -619,16 +619,16 @@ public class EncodingUtils
         return result;
     }
 
-    public static FieldTable readFieldTable(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
+    public static FieldTable readFieldTable(MarkableDataInput input) throws AMQFrameDecodingException, IOException
     {
-        long length = ((long)(buffer.readInt())) & 0xFFFFFFFFL;
+        long length = ((long)(input.readInt())) & 0xFFFFFFFFL;
         if (length == 0)
         {
             return null;
         }
         else
         {
-            return new FieldTable(buffer.readAsByteBuffer((int) length));
+            return new FieldTable(input, (int) length);
         }
     }
 

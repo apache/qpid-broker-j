@@ -52,11 +52,11 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
     {
         QpidByteBuffer buffer = _netInputBuffer.duplicate();
         buffer.flip();
-        if (buffer.remaining() >= NUMBER_OF_BYTES_FOR_TLS_CHECK)
+        final boolean hasSufficientData = buffer.remaining() >= NUMBER_OF_BYTES_FOR_TLS_CHECK;
+        if (hasSufficientData)
         {
             final byte[] headerBytes = new byte[NUMBER_OF_BYTES_FOR_TLS_CHECK];
-            QpidByteBuffer dup = buffer.duplicate();
-            dup.get(headerBytes);
+            buffer.get(headerBytes);
 
             if (looksLikeSSL(headerBytes))
             {
@@ -67,9 +67,10 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
                 _parent.setTransportEncryption(TransportEncryption.NONE);
             }
 
-            return true;
+
         }
-        return false;
+        buffer.dispose();
+        return hasSufficientData;
     }
 
     @Override
@@ -128,4 +129,13 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
         return _netInputBuffer;
     }
 
+    @Override
+    public void shutdownInput()
+    {
+    }
+
+    @Override
+    public void shutdownOutput()
+    {
+    }
 }

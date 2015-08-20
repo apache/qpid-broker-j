@@ -149,5 +149,9 @@ public class ConnectionStartBody extends AMQMethodBodyImpl implements EncodableA
         {
             dispatcher.receiveConnectionStart(versionMajor, versionMinor, serverProperties, mechanisms, locales);
         }
+        if (serverProperties != null)
+        {
+            serverProperties.clearEncodedForm();
+        }
     }
 }

@@ -392,10 +392,11 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         public void received(QpidByteBuffer msg)
         {
             _lastReadTime = System.currentTimeMillis();
-            QpidByteBuffer msgheader = msg.duplicate().slice();
+            QpidByteBuffer msgheader = msg.slice();
 
             if(_header.remaining() > msgheader.limit())
             {
+                msgheader.dispose();
                 return;
             }
             else
@@ -405,6 +406,8 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
             }
 
             _header.put(msgheader);
+
+            msgheader.dispose();
 
             if(!_header.hasRemaining())
             {

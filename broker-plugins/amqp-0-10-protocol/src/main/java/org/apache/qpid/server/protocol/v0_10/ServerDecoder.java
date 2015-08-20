@@ -82,6 +82,7 @@ public final class ServerDecoder extends AbstractDecoder
                     buf.limit(remaining);
                     currentBuffer.position(currentBuffer.position()+remaining);
                     dest.put(buf);
+                    buf.dispose();
                 }
                 else
                 {

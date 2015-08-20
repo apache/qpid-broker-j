@@ -1038,7 +1038,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     protected void tearDown() throws java.lang.Exception
     {
         super.tearDown();
-
+        
         // close all the connections used by this test.
         for (Connection c : _connections)
         {

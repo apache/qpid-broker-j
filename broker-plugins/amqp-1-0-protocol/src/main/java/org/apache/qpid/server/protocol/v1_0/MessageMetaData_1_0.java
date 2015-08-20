@@ -380,8 +380,12 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         return _messageHeader;
     }
 
-
-
+    @Override
+    public void dispose()
+    {
+        _encoded.dispose();
+        _encoded = null;
+    }
 
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData_1_0>
     {

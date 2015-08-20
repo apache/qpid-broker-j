@@ -71,14 +71,15 @@ public class ByteBufferBinding extends TupleBinding<QpidByteBuffer>
     @Override
     public void objectToEntry(QpidByteBuffer data, final TupleOutput output)
     {
-        data = data.duplicate();
+        QpidByteBuffer dup = data.duplicate();
         byte[] copyBuf = COPY_BUFFER.get();
-        while(data.hasRemaining())
+        while(dup.hasRemaining())
         {
-            int length = Math.min(COPY_BUFFER_SIZE, data.remaining());
-            data.get(copyBuf,0,length);
+            int length = Math.min(COPY_BUFFER_SIZE, dup.remaining());
+            dup.get(copyBuf,0,length);
             output.write(copyBuf,0,length);
         }
+        dup.dispose();
     }
 
     public ByteBuffer readByteBuffer(final TupleInput input, int length)

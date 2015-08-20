@@ -31,7 +31,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
 {
     private final long _messageNumber;
     private QpidByteBuffer _content;
-    private final T _metaData;
+    private T _metaData;
 
     public StoredMemoryMessage(long messageNumber, T metaData)
     {
@@ -55,7 +55,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         {
             if(_content.remaining() >= src.remaining())
             {
-                _content.put(src.duplicate());
+                _content.putCopyOf(src);
             }
             else
             {
@@ -67,7 +67,8 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
                 oldContent.flip();
                 _content = QpidByteBuffer.allocateDirect(size);
                 _content.put(oldContent);
-                _content.put(src.duplicate());
+                _content.putCopyOf(src);
+                oldContent.dispose();
             }
 
         }
@@ -100,7 +101,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
 
         src.get(dst);
 
-
+        src.dispose();
         return length;
     }
 
@@ -130,6 +131,13 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
 
     public void remove()
     {
+        _metaData.dispose();
+        _metaData = null;
+        if (_content != null)
+        {
+            _content.dispose();
+            _content = null;
+        }
     }
 
     @Override

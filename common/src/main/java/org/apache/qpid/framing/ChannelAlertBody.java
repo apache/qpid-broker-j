@@ -133,5 +133,9 @@ public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQD
         {
             dispatcher.receiveChannelAlert(replyCode, replyText, details);
         }
+        if (details != null)
+        {
+            details.clearEncodedForm();
+        }
     }
 }

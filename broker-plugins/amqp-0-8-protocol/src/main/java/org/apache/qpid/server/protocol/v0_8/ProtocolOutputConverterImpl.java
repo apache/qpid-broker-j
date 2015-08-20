@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v0_8;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -110,9 +111,14 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         // straight through case
         boolean compressionSupported = _connection.isCompressionSupported();
 
-        if(msgCompressed && !compressionSupported &&
-                (modifiedContent = GZIPUtils.uncompressBufferToArray(
-                        ByteBufferUtils.combine(message.getContent(0, bodySize)))) != null)
+        Collection<QpidByteBuffer> buffers = null;
+
+        long length;
+        if(msgCompressed
+           && !compressionSupported
+           && ((buffers = message.getContent(0, bodySize)) != null)
+           && (modifiedContent = GZIPUtils.uncompressBufferToArray(
+                        ByteBufferUtils.combine(buffers))) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
@@ -120,14 +126,14 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
             writeMessageDeliveryModified(channelId, deliverBody, modifiedProps, modifiedContent);
 
-            return modifiedContent.length;
+            length = modifiedContent.length;
         }
         else if(!msgCompressed
                 && compressionSupported
                 && contentHeaderBody.getProperties().getEncoding()==null
                 && bodySize > _connection.getMessageCompressionThreshold()
-                && (modifiedContent = GZIPUtils.compressBufferToArray(ByteBufferUtils.combine(message.getContent(0,
-                                                                                                                 bodySize)))) != null)
+                && ((buffers = message.getContent(0, bodySize)) != null)
+                && (modifiedContent = GZIPUtils.compressBufferToArray(ByteBufferUtils.combine(buffers))) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
@@ -135,14 +141,24 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
             writeMessageDeliveryModified(channelId, deliverBody, modifiedProps, modifiedContent);
 
-            return modifiedContent.length;
+            length = modifiedContent.length;
         }
         else
         {
             writeMessageDeliveryUnchanged(message, contentHeaderBody, channelId, deliverBody, bodySize);
 
-            return bodySize;
+            length = bodySize;
         }
+
+        if (buffers != null)
+        {
+            for (QpidByteBuffer buf : buffers)
+            {
+                buf.dispose();
+            }
+        }
+
+        return length;
     }
 
     private int writeMessageDeliveryModified(final int channelId,
@@ -278,7 +294,9 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             for(QpidByteBuffer buf : bufs)
             {
                 size += buf.remaining();
-                sender.send(buf.duplicate());
+
+                sender.send(buf);
+                buf.dispose();
             }
             return size;
         }

@@ -36,19 +36,15 @@ public class ContentBody implements AMQBody
 
     private QpidByteBuffer _payload;
 
-    public ContentBody()
-    {
-    }
-
 
     public ContentBody(ByteBuffer payload)
     {
-        _payload = QpidByteBuffer.wrap(payload);
+        _payload = QpidByteBuffer.wrap(payload.duplicate());
     }
 
     public ContentBody(QpidByteBuffer payload)
     {
-        _payload = payload;
+        _payload = payload.duplicate();
     }
 
 
@@ -65,7 +61,7 @@ public class ContentBody implements AMQBody
     public void writePayload(DataOutput buffer) throws IOException
     {
         byte[] data = new byte[_payload.remaining()];
-        _payload.duplicate().get(data);
+        _payload.copyTo(data);
         buffer.write(data);
     }
 
@@ -80,7 +76,9 @@ public class ContentBody implements AMQBody
     {
         if(_payload != null)
         {
-            sender.send(_payload.duplicate());
+            final QpidByteBuffer duplicate = _payload.duplicate();
+            sender.send(duplicate);
+            duplicate.dispose();
             return _payload.remaining();
         }
         else
@@ -94,6 +92,15 @@ public class ContentBody implements AMQBody
         return _payload;
     }
 
+    public void dispose()
+    {
+        if (_payload != null)
+        {
+            _payload.dispose();
+            _payload = null;
+        }
+    }
+
     public static void process(final MarkableDataInput in,
                                final ChannelMethodProcessor methodProcessor, final long bodySize)
             throws IOException
@@ -105,6 +112,8 @@ public class ContentBody implements AMQBody
         {
             methodProcessor.receiveMessageContent(payload);
         }
+
+        payload.dispose();
     }
 
     public static AMQFrame createAMQFrame(int channelId, ContentBody body)
