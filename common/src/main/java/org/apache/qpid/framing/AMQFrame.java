@@ -72,14 +72,14 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
-        QpidByteBuffer frameHeader = QpidByteBuffer.allocate(HEADER_SIZE);
+        QpidByteBuffer frameHeader = QpidByteBuffer.allocateDirectFromPool(HEADER_SIZE);
 
         frameHeader.put(_bodyFrame.getFrameType());
         EncodingUtils.writeUnsignedShort(frameHeader, _channel);
         EncodingUtils.writeUnsignedInteger(frameHeader, _bodyFrame.getSize());
         frameHeader.flip();
         sender.send(frameHeader);
-
+        frameHeader.dispose();
         long size = 8 + _bodyFrame.writePayload(sender);
 
         sender.send(FRAME_END_BYTE_BUFFER.duplicate());

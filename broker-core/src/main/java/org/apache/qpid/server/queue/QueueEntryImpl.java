@@ -43,6 +43,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
+import org.apache.qpid.server.util.StateChangeListenerEntry;
 
 public abstract class QueueEntryImpl implements QueueEntry
 {
@@ -63,13 +64,13 @@ public abstract class QueueEntryImpl implements QueueEntry
         (QueueEntryImpl.class, EntryState.class, "_state");
 
 
-    private volatile Set<StateChangeListener<? super QueueEntry, State>> _stateChangeListeners;
+    private volatile StateChangeListenerEntry<? super QueueEntry, State> _stateChangeListeners;
 
     private static final
-        AtomicReferenceFieldUpdater<QueueEntryImpl, Set>
+        AtomicReferenceFieldUpdater<QueueEntryImpl, StateChangeListenerEntry>
                 _listenersUpdater =
         AtomicReferenceFieldUpdater.newUpdater
-        (QueueEntryImpl.class, Set.class, "_stateChangeListeners");
+        (QueueEntryImpl.class, StateChangeListenerEntry.class, "_stateChangeListeners");
 
 
     private static final
@@ -98,7 +99,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     public QueueEntryImpl(QueueEntryList queueEntryList)
     {
-        this(queueEntryList,null,Long.MIN_VALUE, null);
+        this(queueEntryList, null, Long.MIN_VALUE, null);
         _state = DELETED_STATE;
     }
 
@@ -221,7 +222,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     public boolean acquire(ConsumerImpl sub)
     {
-        final boolean acquired = acquire(((QueueConsumer<?>)sub).getOwningState().getLockedState());
+        final boolean acquired = acquire(((QueueConsumer<?>) sub).getOwningState().getLockedState());
         if(acquired)
         {
             _deliveryCountUpdater.compareAndSet(this,-1,0);
@@ -414,9 +415,15 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     private void notifyStateChange(final State oldState, final State newState)
     {
-        for(StateChangeListener<? super QueueEntry, State> l : _stateChangeListeners)
+        StateChangeListenerEntry<? super QueueEntry, State> entry = _listenersUpdater.get(this);
+        while(entry != null)
         {
-            l.stateChanged(this, oldState, newState);
+            StateChangeListener<? super QueueEntry, State> l = entry.getListener();
+            if(l != null)
+            {
+                l.stateChanged(this, oldState, newState);
+            }
+            entry = entry.next();
         }
     }
 
@@ -499,24 +506,20 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     public void addStateChangeListener(StateChangeListener<? super MessageInstance,State> listener)
     {
-        Set<StateChangeListener<? super QueueEntry, State>> listeners = _stateChangeListeners;
-        if(listeners == null)
+        StateChangeListenerEntry<? super QueueEntry, State> entry = new StateChangeListenerEntry<>(listener);
+        if(!_listenersUpdater.compareAndSet(this,null, entry))
         {
-            _listenersUpdater.compareAndSet(this, null, new CopyOnWriteArraySet<StateChangeListener<? super QueueEntry, State>>());
-            listeners = _stateChangeListeners;
+            _listenersUpdater.get(this).add(entry);
         }
-
-        listeners.add(listener);
     }
 
     public boolean removeStateChangeListener(StateChangeListener<? super MessageInstance, State> listener)
     {
-        Set<StateChangeListener<? super QueueEntry, State>> listeners = _stateChangeListeners;
-        if(listeners != null)
+        StateChangeListenerEntry entry = _listenersUpdater.get(this);
+        if(entry != null)
         {
-            return listeners.remove(listener);
+            return entry.remove(listener);
         }
-
         return false;
     }
 

@@ -699,7 +699,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             StoredMessage storedMessage = enqueue.getMessage().getStoredMessage();
             if(storedMessage instanceof StoredBDBMessage)
             {
-                postActions.add(((StoredBDBMessage) storedMessage).store(txn));
+                ((StoredBDBMessage) storedMessage).store(txn);
             }
         }
 
@@ -973,37 +973,40 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
 
     }
-    private static final class MessageDataSoftRef<T extends StorableMessageMetaData> extends SoftReference<MessageData<T>> implements MessageDataRef<T>
+    private static final class MessageDataSoftRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
     {
 
-        public MessageDataSoftRef(final T metadata, Collection<QpidByteBuffer> data)
+        private T _metaData;
+        private volatile Collection<QpidByteBuffer> _data;
+
+        private MessageDataSoftRef(final T metaData, Collection<QpidByteBuffer> data)
         {
-            super(new MessageData<T>(metadata, data));
+            _metaData = metaData;
+            _data = data;
         }
 
         @Override
         public T getMetaData()
         {
-            MessageData<T> ref = get();
-            return ref == null ? null : ref.getMetaData();
+            return _metaData;
         }
 
         @Override
         public Collection<QpidByteBuffer> getData()
         {
-            MessageData<T> ref = get();
-
-            return ref == null ? null : ref.getData();
+            return _data;
         }
 
         @Override
         public void setData(final Collection<QpidByteBuffer> data)
         {
-            MessageData<T> ref = get();
-            if(ref != null)
-            {
-                ref.setData(data);
-            }
+            _data = data;
+        }
+
+        public void clear()
+        {
+            _metaData = null;
+            _data = null;
         }
 
         @Override
@@ -1166,7 +1169,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return content;
         }
 
-        synchronized Runnable store(Transaction txn)
+        synchronized void store(Transaction txn)
         {
             if (!stored())
             {
@@ -1180,43 +1183,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
                 MessageDataRef<T> hardRef = _messageDataRef;
                 MessageDataSoftRef<T> messageDataSoftRef;
-                MessageData<T> ref;
-                do
-                {
-                    messageDataSoftRef = new MessageDataSoftRef<>(hardRef.getMetaData(), hardRef.getData());
-                    ref = messageDataSoftRef.get();
-                }
-                while (ref == null);
+
+                messageDataSoftRef = new MessageDataSoftRef<>(hardRef.getMetaData(), hardRef.getData());
 
                 _messageDataRef = messageDataSoftRef;
 
-                class Pointer implements Runnable
-                {
-                    private MessageData<T> _ref;
 
-                    Pointer(final MessageData<T> ref)
-                    {
-                        _ref = ref;
-                    }
-
-                    @Override
-                    public void run()
-                    {
-                        _ref = null;
-                    }
-                }
-                return new Pointer(ref);
-            }
-            else
-            {
-                return new Runnable()
-                {
-
-                    @Override
-                    public void run()
-                    {
-                    }
-                };
             }
         }
 
@@ -1330,7 +1302,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     @Override
                     public void run()
                     {
-                        _postCommitActions.add(storedMessage.store(_txn));
+                        storedMessage.store(_txn);
                         _storeSizeIncrease += contentSize;
                     }
                 });

@@ -32,8 +32,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -53,12 +53,15 @@ public final class QpidByteBuffer
             QpidByteBuffer.class,
             "_disposed");
 
+    private static final ThreadLocal<QpidByteBuffer> _cachedBuffer = new ThreadLocal<>();
+
     private ByteBuffer _buffer;
     private final ByteBufferRef _ref;
     @SuppressWarnings("unused")
     private volatile int _disposed;
 
     private static final ConcurrentMap<Integer, BufferPool> _pools = new ConcurrentHashMap<>();
+    private static final AtomicInteger _maxPooledBufferSize = new AtomicInteger();
 
     QpidByteBuffer(ByteBufferRef ref)
     {
@@ -461,6 +464,35 @@ public final class QpidByteBuffer
         return new QpidByteBuffer(ref);
     }
 
+    public static QpidByteBuffer allocateDirectFromPool(int size)
+    {
+        final int maxPooledBufferSize = _maxPooledBufferSize.get();
+        if(size > maxPooledBufferSize)
+        {
+            return allocateDirect(size);
+        }
+        else
+        {
+            QpidByteBuffer buf = _cachedBuffer.get();
+            if(buf == null || buf.remaining() < size)
+            {
+                if(buf != null)
+                {
+                    buf.dispose();
+                }
+                buf = allocateDirect(maxPooledBufferSize);
+            }
+            QpidByteBuffer rVal = buf.view(0,size);
+            buf.position(buf.position()+size);
+
+            _cachedBuffer.set(buf.slice());
+            buf.dispose();
+            return rVal;
+
+        }
+
+    }
+
 
     public ByteBuffer asByteBuffer()
     {
@@ -539,13 +571,21 @@ public final class QpidByteBuffer
             int currentPoolSize = pool.getSize();
             if (maxPoolSize != currentPoolSize)
             {
-                LOGGER.debug("Resizing direct pool, bufferSize : {} maxPoolSize from : {} to : ",
+                LOGGER.debug("Resizing direct pool, bufferSize : {} maxPoolSize from : {} to : {}",
                     new Object[] {bufferSize, currentPoolSize, maxPoolSize});
             }
             pool.ensureSize(maxPoolSize);
         }
         else
         {
+            int prevMax;
+            while((prevMax = _maxPooledBufferSize.get())<bufferSize)
+            {
+                if(_maxPooledBufferSize.compareAndSet(prevMax, bufferSize))
+                {
+                    break;
+                }
+            }
             LOGGER.debug("Created direct pool, bufferSize : {} maxPoolSize : {}", bufferSize, maxPoolSize);
         }
     }

@@ -120,11 +120,12 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
     {
 
         final int size = getSize();
-        QpidByteBuffer buf = QpidByteBuffer.allocate(size);
+        QpidByteBuffer buf = QpidByteBuffer.allocateDirectFromPool(size);
         DataOutput dataOutput = buf.asDataOutput();
         writePayload(dataOutput);
         buf.flip();
         sender.send(buf);
+        buf.dispose();
         return size;
     }
 
