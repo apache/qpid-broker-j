@@ -36,5 +36,8 @@ public interface StorableMessageMetaData
     boolean isPersistent();
 
     void dispose();
+
+    void clearEncodedForm();
+
 }
 

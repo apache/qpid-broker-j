@@ -84,6 +84,12 @@ public class TestMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
+    public void clearEncodedForm()
+    {
+
+    }
+
+    @Override
     public int writeToBuffer(ByteBuffer dest)
     {
         int oldPosition = dest.position();

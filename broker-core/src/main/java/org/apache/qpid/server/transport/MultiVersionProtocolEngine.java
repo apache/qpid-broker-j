@@ -23,7 +23,6 @@ package org.apache.qpid.server.transport;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;

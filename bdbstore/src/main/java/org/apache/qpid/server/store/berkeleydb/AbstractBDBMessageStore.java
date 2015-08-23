@@ -35,8 +35,6 @@ import java.util.UUID;
 
 import com.sleepycat.bind.tuple.ByteBinding;
 import com.sleepycat.bind.tuple.LongBinding;
-import com.sleepycat.bind.tuple.TupleBinding;
-import com.sleepycat.bind.tuple.TupleOutput;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseEntry;
@@ -74,7 +72,6 @@ import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
-import org.apache.qpid.util.ByteBufferUtils;
 
 
 public abstract class AbstractBDBMessageStore implements MessageStore
@@ -399,11 +396,13 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
     }
 
-    QpidByteBuffer getAllContent(long messageId) throws StoreException
+    Collection<QpidByteBuffer> getAllContent(long messageId) throws StoreException
     {
         DatabaseEntry contentKeyEntry = new DatabaseEntry();
         LongBinding.longToEntry(messageId, contentKeyEntry);
         DatabaseEntry value = new DatabaseEntry();
+
+
         ByteBufferBinding contentTupleBinding = ByteBufferBinding.getInstance();
 
 
@@ -412,9 +411,22 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         try
         {
             OperationStatus status = getMessageContentDb().get(null, contentKeyEntry, value, LockMode.READ_UNCOMMITTED);
+
             if (status == OperationStatus.SUCCESS)
             {
-                return contentTupleBinding.entryToObject(value);
+                byte[] data = value.getData();
+                int offset = value.getOffset();
+                int length = value.getSize();
+                Collection<QpidByteBuffer> buffers = QpidByteBuffer.allocateDirectCollectionFromPool(length
+                                                                                                    );
+                for(QpidByteBuffer buf : buffers)
+                {
+                    int bufSize = buf.remaining();
+                    buf.put(data, offset, bufSize);
+                    buf.flip();
+                    offset+=bufSize;
+                }
+                return buffers;
             }
             else
             {
@@ -1005,7 +1017,18 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         public void clear()
         {
-            _metaData = null;
+            if(_metaData != null)
+            {
+                _metaData.clearEncodedForm();
+                _metaData = null;
+            }
+            if(_data != null)
+            {
+                for(QpidByteBuffer buf : _data)
+                {
+                    buf.dispose();
+                }
+            }
             _data = null;
         }
 
@@ -1043,7 +1066,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public T getMetaData()
+        public synchronized T getMetaData()
         {
             T metaData = _messageDataRef.getMetaData();
 
@@ -1063,7 +1086,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public void addContent(QpidByteBuffer src)
+        public synchronized void addContent(QpidByteBuffer src)
         {
             src = src.slice();
             Collection<QpidByteBuffer> data = _messageDataRef.getData();
@@ -1088,7 +1111,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public int getContent(int offsetInMessage, ByteBuffer dst)
+        public synchronized int getContent(int offsetInMessage, final ByteBuffer dst)
         {
             Collection<QpidByteBuffer> allContent = getContentAsByteBuffer();
             int length = 0;
@@ -1108,7 +1131,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 if(stored())
                 {
                     checkMessageStoreOpen();
-                    data = Collections.singleton(AbstractBDBMessageStore.this.getAllContent(_messageId));
+                    data = AbstractBDBMessageStore.this.getAllContent(_messageId);
                     T metaData = _messageDataRef.getMetaData();
                     if (metaData == null)
                     {
@@ -1124,11 +1147,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 {
                     data = Collections.emptyList();
                 }
-            } return data;
+            }
+            return data;
         }
 
         @Override
-        public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
+        public synchronized Collection<QpidByteBuffer> getContent(final int offsetInMessage, final int size)
         {
             int pos = 0;
             int added = 0;
@@ -1217,7 +1241,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public void remove()
+        public synchronized void remove()
         {
             checkMessageStoreOpen();
             Collection<QpidByteBuffer> data = _messageDataRef.getData();
@@ -1235,7 +1259,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 }
             }
             metaData.dispose();
-            _messageDataRef = null;
         }
 
         @Override
@@ -1250,7 +1273,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public boolean flowToDisk()
+        public synchronized boolean flowToDisk()
         {
 
             flushToStore();
@@ -1266,6 +1289,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
             return this.getClass() + "[messageId=" + _messageId + "]";
         }
+
     }
 
 

@@ -28,8 +28,11 @@ import java.nio.CharBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -493,7 +496,41 @@ public final class QpidByteBuffer
 
     }
 
+    public static Collection<QpidByteBuffer> allocateDirectCollectionFromPool(int size)
+    {
+        final int maxPooledBufferSize = _maxPooledBufferSize.get();
+        if(size <= maxPooledBufferSize || maxPooledBufferSize == 0)
+        {
+            return Collections.singleton(allocateDirectFromPool(size));
+        }
+        else
+        {
+            List<QpidByteBuffer> collections = new ArrayList<>((size / maxPooledBufferSize)+2);
+            int remaining = size;
 
+            QpidByteBuffer buf = _cachedBuffer.get();
+            if(buf != null)
+            {
+                collections.add(buf.slice());
+                remaining -= buf.remaining();
+                buf.dispose();
+            }
+            while(remaining > maxPooledBufferSize)
+            {
+                collections.add(allocateDirect(maxPooledBufferSize));
+                remaining -= maxPooledBufferSize;
+            }
+            buf = allocateDirect(maxPooledBufferSize);
+            collections.add(buf.view(0, remaining));
+            buf.position(buf.position()+remaining);
+
+            _cachedBuffer.set(buf.slice());
+            buf.dispose();
+            return collections;
+
+        }
+
+    }
     public ByteBuffer asByteBuffer()
     {
         _ref.removeFromPool();

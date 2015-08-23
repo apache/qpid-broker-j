@@ -20,7 +20,6 @@
 package org.apache.qpid.server.transport;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.QpidByteBufferUtils;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
@@ -39,7 +38,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 
 public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDelegate
 {
@@ -320,6 +318,15 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     @Override
     public void shutdownOutput()
     {
+        try
+        {
+            _sslEngine.closeOutbound();
+            _sslEngine.closeInbound();
+        }
+        catch (SSLException e)
+        {
+            LOGGER.debug("Exception when closing SSLEngine", e);
+        }
 
     }
 

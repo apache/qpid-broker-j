@@ -23,7 +23,6 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.network.TransportEncryption;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;

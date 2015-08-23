@@ -28,7 +28,6 @@ import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.Formatter;
 
 public class SASLFrameHandler implements ProtocolHandler

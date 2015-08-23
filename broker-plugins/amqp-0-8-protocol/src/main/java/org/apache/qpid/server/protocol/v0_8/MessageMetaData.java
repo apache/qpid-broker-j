@@ -75,7 +75,7 @@ public class MessageMetaData implements StorableMessageMetaData
     }
 
 
-    public ContentHeaderBody getContentHeaderBody()
+    public synchronized ContentHeaderBody getContentHeaderBody()
     {
         return _contentHeaderBody;
     }
@@ -152,10 +152,15 @@ public class MessageMetaData implements StorableMessageMetaData
     }
 
     @Override
-    public void dispose()
+    public synchronized void dispose()
     {
         _contentHeaderBody.dispose();
         _contentHeaderBody = null;
+    }
+
+    public synchronized void clearEncodedForm()
+    {
+        _contentHeaderBody.clearEncodedForm();
     }
 
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData>

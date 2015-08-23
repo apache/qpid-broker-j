@@ -94,6 +94,12 @@ public class InternalMessageMetaData implements StorableMessageMetaData
 
     }
 
+    @Override
+    public void clearEncodedForm()
+    {
+
+    }
+
     static InternalMessageMetaData create(boolean persistent, final InternalMessageHeader header, int contentSize)
     {
         return new InternalMessageMetaData(persistent, header, contentSize);

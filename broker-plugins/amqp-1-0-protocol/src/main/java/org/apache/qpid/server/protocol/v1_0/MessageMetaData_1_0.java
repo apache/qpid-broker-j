@@ -387,6 +387,12 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         _encoded = null;
     }
 
+    @Override
+    public void clearEncodedForm()
+    {
+
+    }
+
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData_1_0>
     {
         private final AMQPDescribedTypeRegistry _typeRegistry = AMQPDescribedTypeRegistry.newInstance();

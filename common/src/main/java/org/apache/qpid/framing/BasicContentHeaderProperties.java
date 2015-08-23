@@ -20,10 +20,8 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.util.ByteBufferDataOutput;
-import org.apache.qpid.util.BytesDataOutput;
 
 public class BasicContentHeaderProperties
 {
@@ -131,7 +127,7 @@ public class BasicContentHeaderProperties
     { 
     }
 
-    public int getPropertyListSize()
+    public synchronized int getPropertyListSize()
     {
         if(useEncodedForm())
         {
@@ -232,7 +228,7 @@ public class BasicContentHeaderProperties
         return _propertyFlags;
     }
 
-    public void writePropertyListPayload(DataOutput buffer) throws IOException
+    public synchronized void writePropertyListPayload(DataOutput buffer) throws IOException
     {
         if(useEncodedForm())
         {
@@ -352,7 +348,7 @@ public class BasicContentHeaderProperties
         {
             length++;
             _encoding = EncodingUtils.readAMQShortString(input);
-            if(_encodedForm != null)
+            if(_encoding != null)
             {
                 length += _encoding.length();
             }
@@ -471,7 +467,7 @@ public class BasicContentHeaderProperties
     }
 
 
-    public long writePropertyListPayload(final ByteBufferSender sender) throws IOException
+    public synchronized long writePropertyListPayload(final ByteBufferSender sender) throws IOException
     {
         if(useEncodedForm())
         {
@@ -493,7 +489,7 @@ public class BasicContentHeaderProperties
 
     }
 
-    public void populatePropertiesFromBuffer(MarkableDataInput buffer, int propertyFlags, int size) throws AMQFrameDecodingException, IOException
+    public synchronized void populatePropertiesFromBuffer(MarkableDataInput buffer, int propertyFlags, int size) throws AMQFrameDecodingException, IOException
     {
         _propertyFlags = propertyFlags;
 
@@ -501,7 +497,10 @@ public class BasicContentHeaderProperties
         {
             _logger.debug("Property flags: " + _propertyFlags);
         }
-
+        if(_encodedForm != null)
+        {
+            _encodedForm.dispose();
+        }
         _encodedForm = buffer.readAsByteBuffer(size);
 
         final QpidByteBuffer byteBuffer = _encodedForm.slice();
@@ -605,7 +604,7 @@ public class BasicContentHeaderProperties
         return (_contentType == null) ? null : _contentType.toString();
     }
 
-    public void setContentType(AMQShortString contentType)
+    public synchronized void setContentType(AMQShortString contentType)
     {
 
         if(contentType == null)
@@ -617,7 +616,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= CONTENT_TYPE_MASK;
         }
         _contentType = contentType;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public void setContentType(String contentType)
@@ -641,7 +640,7 @@ public class BasicContentHeaderProperties
         setEncoding(encoding == null ? null : AMQShortString.valueOf(encoding));
     }
 
-    public void setEncoding(AMQShortString encoding)
+    public synchronized void setEncoding(AMQShortString encoding)
     {
         if(encoding == null)
         {
@@ -652,7 +651,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= ENCODING_MASK;
         }
         _encoding = encoding;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public FieldTable getHeaders()
@@ -665,7 +664,7 @@ public class BasicContentHeaderProperties
         return _headers;
     }
 
-    public void setHeaders(FieldTable headers)
+    public synchronized void setHeaders(FieldTable headers)
     {
         if(headers == null)
         {
@@ -676,7 +675,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= HEADERS_MASK;
         }
         _headers = headers;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public byte getDeliveryMode()
@@ -684,11 +683,11 @@ public class BasicContentHeaderProperties
         return _deliveryMode;
     }
 
-    public void setDeliveryMode(byte deliveryMode)
+    public synchronized void setDeliveryMode(byte deliveryMode)
     {
         _propertyFlags |= DELIVERY_MODE_MASK;
         _deliveryMode = deliveryMode;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public byte getPriority()
@@ -696,11 +695,11 @@ public class BasicContentHeaderProperties
         return _priority;
     }
 
-    public void setPriority(byte priority)
+    public synchronized void setPriority(byte priority)
     {
         _propertyFlags |= PRIORITY_MASK;
         _priority = priority;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public AMQShortString getCorrelationId()
@@ -718,7 +717,7 @@ public class BasicContentHeaderProperties
         setCorrelationId((correlationId == null) ? null : AMQShortString.valueOf(correlationId));
     }
 
-    public void setCorrelationId(AMQShortString correlationId)
+    public synchronized void setCorrelationId(AMQShortString correlationId)
     {
         if(correlationId == null)
         {
@@ -729,7 +728,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= CORRELATION_ID_MASK;
         }
         _correlationId = correlationId;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public String getReplyToAsString()
@@ -747,7 +746,7 @@ public class BasicContentHeaderProperties
         setReplyTo((replyTo == null) ? null : AMQShortString.valueOf(replyTo));
     }
 
-    public void setReplyTo(AMQShortString replyTo)
+    public synchronized void setReplyTo(AMQShortString replyTo)
     {
         if(replyTo == null)
         {
@@ -758,7 +757,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= REPLY_TO_MASK;
         }
         _replyTo = replyTo;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public long getExpiration()
@@ -766,7 +765,7 @@ public class BasicContentHeaderProperties
         return _expiration;
     }
 
-    public void setExpiration(long expiration)
+    public synchronized void setExpiration(long expiration)
     {
         if(expiration == 0l)
         {
@@ -777,7 +776,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= EXPIRATION_MASK;
         }
         _expiration = expiration;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public AMQShortString getMessageId()
@@ -795,7 +794,7 @@ public class BasicContentHeaderProperties
         setMessageId(messageId == null ? null : new AMQShortString(messageId));
     }
 
-    public void setMessageId(AMQShortString messageId)
+    public synchronized void setMessageId(AMQShortString messageId)
     {
         if(messageId == null)
         {
@@ -806,7 +805,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= MESSAGE_ID_MASK;
         }
         _messageId = messageId;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public long getTimestamp()
@@ -814,11 +813,11 @@ public class BasicContentHeaderProperties
         return _timestamp;
     }
 
-    public void setTimestamp(long timestamp)
+    public synchronized void setTimestamp(long timestamp)
     {
         _propertyFlags |= TIMESTAMP_MASK;
         _timestamp = timestamp;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public String getTypeAsString()
@@ -836,7 +835,7 @@ public class BasicContentHeaderProperties
         setType((type == null) ? null : AMQShortString.valueOf(type));
     }
 
-    public void setType(AMQShortString type)
+    public synchronized void setType(AMQShortString type)
     {
         if(type == null)
         {
@@ -847,7 +846,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= TYPE_MASK;
         }
         _type = type;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public String getUserIdAsString()
@@ -865,7 +864,7 @@ public class BasicContentHeaderProperties
         setUserId((userId == null) ? null : AMQShortString.valueOf(userId));
     }
 
-    public void setUserId(AMQShortString userId)
+    public synchronized void setUserId(AMQShortString userId)
     {
         if(userId == null)
         {
@@ -876,7 +875,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= USER_ID_MASK;
         }
         _userId = userId;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public String getAppIdAsString()
@@ -894,7 +893,7 @@ public class BasicContentHeaderProperties
         setAppId((appId == null) ? null : AMQShortString.valueOf(appId));
     }
 
-    public void setAppId(AMQShortString appId)
+    public synchronized void setAppId(AMQShortString appId)
     {
         if(appId == null)
         {
@@ -905,7 +904,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= APPLICATION_ID_MASK;
         }
         _appId = appId;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public String getClusterIdAsString()
@@ -923,7 +922,7 @@ public class BasicContentHeaderProperties
         setClusterId((clusterId == null) ? null : AMQShortString.valueOf(clusterId));
     }
 
-    public void setClusterId(AMQShortString clusterId)
+    public synchronized void setClusterId(AMQShortString clusterId)
     {
         if(clusterId == null)
         {
@@ -934,7 +933,7 @@ public class BasicContentHeaderProperties
             _propertyFlags |= CLUSTER_ID_MASK;
         }
         _clusterId = clusterId;
-        _encodedForm = null;
+        nullEncodedForm();
     }
 
     public String toString()
@@ -945,23 +944,37 @@ public class BasicContentHeaderProperties
             + _expiration + ",JMSPriority = " + _priority + ",JMSTimestamp = " + _timestamp + ",JMSType = " + _type;
     }
 
-    private boolean useEncodedForm()
+    private synchronized boolean useEncodedForm()
     {
         return _encodedForm != null && (_headers == null || _headers.isClean());
     }
 
 
-    public void dispose()
+    public synchronized void dispose()
+    {
+        nullEncodedForm();
+        if(_headers != null)
+        {
+            _headers.dispose();
+            _headers = null;
+        }
+    }
+
+    public synchronized void clearEncodedForm()
+    {
+        nullEncodedForm();
+        if(_headers != null)
+        {
+            _headers.clearEncodedForm();
+        }
+    }
+
+    private synchronized void nullEncodedForm()
     {
         if(_encodedForm != null)
         {
             _encodedForm.dispose();
             _encodedForm = null;
-        }
-        if(_headers != null)
-        {
-            _headers.dispose();
-            _headers = null;
         }
     }
 }

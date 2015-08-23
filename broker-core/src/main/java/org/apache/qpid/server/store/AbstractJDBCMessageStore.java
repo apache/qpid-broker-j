@@ -1200,7 +1200,8 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             {
 
                 byte[] dataAsBytes = getBlobAsBytes(rs, 1);
-                QpidByteBuffer buf = QpidByteBuffer.allocateDirect(dataAsBytes.length);
+                QpidByteBuffer buf = QpidByteBuffer.allocateDirect(dataAsBytes.length
+                                                                  );
                 buf.put(dataAsBytes);
                 buf.flip();
                 return buf;

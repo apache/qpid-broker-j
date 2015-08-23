@@ -179,6 +179,12 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
     }
 
+    @Override
+    public void clearEncodedForm()
+    {
+
+    }
+
     public String getRoutingKey()
     {
         return _deliveryProps == null ? null : _deliveryProps.getRoutingKey();

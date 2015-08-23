@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
