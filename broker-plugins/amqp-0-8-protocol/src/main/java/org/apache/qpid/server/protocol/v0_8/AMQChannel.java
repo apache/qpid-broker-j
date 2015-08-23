@@ -755,28 +755,7 @@ public class AMQChannel
                 {
                     filterManager = new FilterManager();
                 }
-                final Object connectionReference = getConnectionReference();
-                MessageFilter filter = new MessageFilter()
-                {
-
-                    @Override
-                    public String getName()
-                    {
-                        return AMQPFilterTypes.NO_LOCAL.toString();
-                    }
-
-                    @Override
-                    public boolean matches(final Filterable message)
-                    {
-                        return message.getConnectionReference() != connectionReference;
-                    }
-
-                    @Override
-                    public boolean startAtTail()
-                    {
-                        return false;
-                    }
-                };
+                MessageFilter filter = new NoLocalFilter();
                 filterManager.add(filter.getName(), filter);
             }
 
@@ -1473,6 +1452,41 @@ public class AMQChannel
     public long getMaxUncommittedInMemorySize()
     {
         return _maxUncommittedInMemorySize;
+    }
+
+    private class NoLocalFilter implements MessageFilter
+    {
+
+        private final Object _connectionReference;
+
+        public NoLocalFilter()
+        {
+            _connectionReference = getConnectionReference();
+        }
+
+        @Override
+        public String getName()
+        {
+            return AMQPFilterTypes.NO_LOCAL.toString();
+        }
+
+        @Override
+        public boolean matches(final Filterable message)
+        {
+            return message.getConnectionReference() != _connectionReference;
+        }
+
+        @Override
+        public boolean startAtTail()
+        {
+            return false;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "NoLocalFilter[]";
+        }
     }
 
     private class GetDeliveryMethod implements ClientDeliveryMethod

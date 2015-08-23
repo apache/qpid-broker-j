@@ -88,26 +88,8 @@ class HeadersBinding
                              +"' to exchange '"+_binding.getExchange().getName()
                              +"' with arguments: " + _binding.getArguments());
                 _filter = new FilterManager();
-                _filter.add("x-exclude-all",new MessageFilter()
-                    {
-                    @Override
-                        public String getName()
-                        {
-                            return "";
-                        }
 
-                    @Override
-                    public boolean startAtTail()
-                    {
-                        return false;
-                    }
-
-                    @Override
-                        public boolean matches(Filterable message)
-                        {
-                            return false;
-                        }
-                    });
+                _filter.add("x-exclude-all", new ExcludeAllFilter());
             }
         }
         for(Map.Entry<String, Object> entry : _mappings.entrySet())
@@ -301,5 +283,32 @@ class HeadersBinding
     public int hashCode()
     {
         return _binding == null ? 0 : _binding.hashCode();
+    }
+
+    private static class ExcludeAllFilter implements MessageFilter
+    {
+        @Override
+        public String getName()
+        {
+            return "";
+        }
+
+        @Override
+        public boolean startAtTail()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean matches(Filterable message)
+        {
+            return false;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ExcludeAllFilter[]";
+        }
     }
 }

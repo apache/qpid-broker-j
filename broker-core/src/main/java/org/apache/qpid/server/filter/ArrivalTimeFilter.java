@@ -74,4 +74,13 @@ public final class ArrivalTimeFilter implements MessageFilter
     {
         return (int) (_startingFrom ^ (_startingFrom >>> 32));
     }
+
+    @Override
+    public String toString()
+    {
+        return "ArrivalTimeFilter[" +
+               "startingFrom=" + _startingFrom +
+               ", startAtTail=" + _startAtTail +
+               ']';
+    }
 }

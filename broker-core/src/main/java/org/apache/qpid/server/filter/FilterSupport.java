@@ -176,7 +176,11 @@ public class FilterSupport
             return _queue != null ? _queue.hashCode() : 0;
         }
 
-
+        @Override
+        public String toString()
+        {
+            return "NoLocalFilter[]";
+        }
     }
 
 }
