@@ -96,6 +96,14 @@ public final class QpidLoggerTurboFilter extends TurboFilter
         }
     }
 
+    public void filterChanged(EffectiveLevelFilter filter)
+    {
+        if(_filters.contains(filter))
+        {
+            clearCachedResults();
+        }
+    }
+
     @Override
     public boolean equals(final Object o)
     {
@@ -159,6 +167,12 @@ public final class QpidLoggerTurboFilter extends TurboFilter
         turboFilter.filterRemoved(filter);
     }
 
+    private static void filterChanged(final EffectiveLevelFilter filter, final LoggerContext context)
+    {
+        QpidLoggerTurboFilter turboFilter = installIfNecessary(context);
+        turboFilter.filterChanged(filter);
+    }
+
     public static void filterAddedToRootContext(EffectiveLevelFilter filter)
     {
         filterAdded(filter, getRootContext());
@@ -167,6 +181,11 @@ public final class QpidLoggerTurboFilter extends TurboFilter
     public static void filterRemovedFromRootContext(EffectiveLevelFilter filter)
     {
         filterRemoved(filter, getRootContext());
+    }
+
+    public static void filterChangedOnRootContext(final EffectiveLevelFilter filter)
+    {
+        filterChanged(filter, getRootContext());
     }
 
 }

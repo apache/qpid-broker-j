@@ -53,6 +53,7 @@ public abstract class AbstractNameAndLevelFilter<X extends AbstractNameAndLevelF
         if (_filter != null)
         {
             _filter.setLevel(Level.toLevel(getLevel().name()));
+            QpidLoggerTurboFilter.filterChangedOnRootContext(_filter);
         }
     }
 
