@@ -38,6 +38,8 @@ import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
@@ -354,7 +356,6 @@ public class RestServlet extends AbstractServlet
     @Override
     protected void doGetWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        try
         {
             String[] pathInfoElements = getPathInfoElements(request);
             if (pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1)
@@ -420,10 +421,6 @@ public class RestServlet extends AbstractServlet
                         sendCachingHeaders);
             }
         }
-        catch (RuntimeException e)
-        {
-            setResponseStatus(request, response, e);
-        }
     }
 
     private boolean isSingleObjectRequest(HttpServletRequest request)
@@ -465,6 +462,21 @@ public class RestServlet extends AbstractServlet
         performCreateOrUpdate(request, response);
     }
 
+    @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    {
+        try
+        {
+            super.service(request, response);
+        }
+        catch (IllegalArgumentException | IllegalConfigurationException | IllegalStateException | AccessControlException
+                | ExchangeExistsException | QueueExistsException | IntegrityViolationException
+                | IllegalStateTransitionException | NoClassDefFoundError e)
+        {
+            setResponseStatus(request, response, e);
+        }
+    }
+
     private void performCreateOrUpdate(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         response.setContentType("application/json");
@@ -474,7 +486,6 @@ public class RestServlet extends AbstractServlet
         boolean isPostToFullURL = isFullObjectURL && "POST".equalsIgnoreCase(request.getMethod());
         final String[] pathInfoElements = getPathInfoElements(request);
         boolean isOperation = pathInfoElements != null && pathInfoElements.length == _hierarchy.length + 1 && isPostToFullURL;
-        try
         {
             if(!isOperation)
             {
@@ -533,11 +544,6 @@ public class RestServlet extends AbstractServlet
                 doOperation(request, response);
             }
         }
-        catch (RuntimeException | NoClassDefFoundError e)
-        {
-            setResponseStatus(request, response, e);
-        }
-
     }
 
     private void doOperation(final HttpServletRequest request,
@@ -935,15 +941,27 @@ public class RestServlet extends AbstractServlet
                 }
                 responseCode = SC_UNPROCESSABLE_ENTITY;
             }
-            else
+            else if (e instanceof NoClassDefFoundError)
             {
-                if (e instanceof NoClassDefFoundError)
-                {
-                    message = "Not found: " + message;
-                }
+                message = "Not found: " + message;
                 LOGGER.warn("Unexpected exception processing request ", e);
             }
-
+            else
+            {
+                // This should not happen
+                if (e instanceof RuntimeException)
+                {
+                    throw (RuntimeException)e;
+                }
+                else if (e instanceof Error)
+                {
+                    throw (Error)e;
+                }
+                else
+                {
+                    throw new RuntimeException("Unexpected Exception", e);
+                }
+            }
 
             sendJsonErrorResponse(request, response, responseCode, message);
 
@@ -953,7 +971,6 @@ public class RestServlet extends AbstractServlet
     @Override
     protected void doDeleteWithSubjectAndActor(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        try
         {
             Collection<ConfiguredObject<?>> allObjects = getObjects(request);
             if(allObjects != null)
@@ -970,10 +987,6 @@ public class RestServlet extends AbstractServlet
             {
                 sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Not Found");
             }
-        }
-        catch(RuntimeException e)
-        {
-            setResponseStatus(request, response, e);
         }
     }
 

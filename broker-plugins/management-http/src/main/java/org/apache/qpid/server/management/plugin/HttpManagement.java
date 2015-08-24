@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -238,6 +239,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         // set servlet context attributes for broker and configuration
         root.getServletContext().setAttribute(HttpManagementUtil.ATTR_BROKER, getBroker());
         root.getServletContext().setAttribute(HttpManagementUtil.ATTR_MANAGEMENT_CONFIGURATION, this);
+
+        root.addFilter(new FilterHolder(new ExceptionHandlingFilter()), "/*", EnumSet.allOf(DispatcherType.class));
 
         FilterHolder loggingFilter = new FilterHolder(new LoggingFilter());
         root.addFilter(loggingFilter, "/api/*", EnumSet.of(DispatcherType.REQUEST));

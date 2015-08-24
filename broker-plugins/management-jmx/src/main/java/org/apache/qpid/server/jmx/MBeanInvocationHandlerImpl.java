@@ -37,9 +37,11 @@ import javax.management.MBeanOperationInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 import javax.management.RuntimeErrorException;
+import javax.management.RuntimeMBeanException;
 import javax.management.remote.MBeanServerForwarder;
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,7 @@ public class MBeanInvocationHandlerImpl implements InvocationHandler
     private static final Logger _logger = LoggerFactory.getLogger(MBeanInvocationHandlerImpl.class);
 
     private final static String DELEGATE = "JMImplementation:type=MBeanServerDelegate";
+    private final Thread.UncaughtExceptionHandler _uncaughtExceptionHandler;
     private MBeanServer _mbs;
 
     private final boolean _managementRightsInferAllAccess;
@@ -68,6 +71,11 @@ public class MBeanInvocationHandlerImpl implements InvocationHandler
     {
         _managementRightsInferAllAccess = Boolean.valueOf(System.getProperty(BrokerProperties.PROPERTY_MANAGEMENT_RIGHTS_INFER_ALL_ACCESS, "true"));
         _broker = broker;
+        _uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+        if (_uncaughtExceptionHandler == null)
+        {
+            throw new IllegalStateException("no uncaught exception handler set");
+        }
     }
 
     public static MBeanServerForwarder newProxyInstance(Broker<?> broker)
@@ -165,13 +173,12 @@ public class MBeanInvocationHandlerImpl implements InvocationHandler
         }
         catch (InvocationTargetException e)
         {
-            Throwable targetException =  e.getCause();
-            logTargetException(method, args, targetException);
-            throw targetException;
+            handleTargetException(method, args, e.getCause());
+            throw e.getCause();
         }
     }
 
-    private void logTargetException(Method method, Object[] args, Throwable targetException)
+    private void handleTargetException(Method method, Object[] args, Throwable targetException)
     {
         Throwable error = null;
         if (targetException instanceof RuntimeErrorException)
@@ -189,6 +196,21 @@ public class MBeanInvocationHandlerImpl implements InvocationHandler
         else
         {
             _logger.error("Unexpected error occurred on invoking of " + method + " with arguments " + Arrays.toString(args), targetException);
+        }
+
+        if (targetException instanceof ServerScopedRuntimeException)
+        {
+            error = targetException;
+        }
+        else if (targetException instanceof RuntimeMBeanException)
+        {
+            // unwrap RuntimeMBeanException
+            error = ((RuntimeMBeanException)targetException).getTargetException();
+        }
+
+        if (error instanceof Error || error instanceof ServerScopedRuntimeException)
+        {
+            _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), error);
         }
     }
 
