@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.Transaction;
+import org.apache.qpid.server.store.StoreException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,12 +125,6 @@ public class CoalescingCommiter implements Committer
             }
 
             waitForCompletion();
-
-            if (_databaseException != null)
-            {
-                throw _databaseException;
-            }
-
         }
 
         public synchronized boolean isComplete()
@@ -162,6 +157,11 @@ public class CoalescingCommiter implements Committer
             {
                 long duration = System.currentTimeMillis() - startTime;
                 LOGGER.debug("waitForCompletion returning after " + duration + " ms for transaction " + _tx);
+            }
+
+            if (_databaseException != null)
+            {
+                throw _databaseException;
             }
         }
 
@@ -196,6 +196,11 @@ public class CoalescingCommiter implements Committer
             {
                 long duration = System.currentTimeMillis() - startTime;
                 LOGGER.debug("waitForCompletion returning after " + duration + " ms for transaction " + _tx);
+            }
+
+            if (_databaseException != null)
+            {
+                throw _databaseException;
             }
         }
     }
@@ -266,11 +271,7 @@ public class CoalescingCommiter implements Committer
                     startTime = System.currentTimeMillis();
                 }
 
-                Environment environment = _environmentFacade.getEnvironment();
-                if (environment != null && environment.isValid())
-                {
-                    environment.flushLog(true);
-                }
+                _environmentFacade.flushLog();
 
                 if(LOGGER.isDebugEnabled())
                 {
@@ -289,7 +290,7 @@ public class CoalescingCommiter implements Committer
                 }
 
             }
-            catch (DatabaseException e)
+            catch (RuntimeException e)
             {
                 try
                 {
@@ -313,7 +314,7 @@ public class CoalescingCommiter implements Committer
                     {
                         _environmentFacade.close();
                     }
-                    catch (DatabaseException ex)
+                    catch (Exception ex)
                     {
                         LOGGER.error("Exception closing store environment", ex);
                     }
@@ -344,22 +345,22 @@ public class CoalescingCommiter implements Committer
 
         public void close()
         {
-            RuntimeException e = new RuntimeException("Commit thread has been closed, transaction aborted");
             synchronized (_lock)
             {
                 _stopped.set(true);
-                Environment environment = _environmentFacade.getEnvironment();
                 BDBCommitFutureResult commit;
-                if (environment != null && environment.isValid())
+
+                try
                 {
-                    environment.flushLog(true);
+                    _environmentFacade.flushLog();
                     while ((commit = _jobQueue.poll()) != null)
                     {
                         commit.complete();
                     }
                 }
-                else
+                catch(RuntimeException flushException)
                 {
+                    RuntimeException e = new RuntimeException("Commit thread has been closed, transaction aborted");
                     int abortedCommits = 0;
                     while ((commit = _jobQueue.poll()) != null)
                     {

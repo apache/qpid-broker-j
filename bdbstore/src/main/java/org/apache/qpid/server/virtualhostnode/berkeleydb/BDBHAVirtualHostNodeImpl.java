@@ -56,6 +56,7 @@ import com.sleepycat.je.rep.StateChangeEvent;
 import com.sleepycat.je.rep.StateChangeListener;
 import com.sleepycat.je.rep.util.ReplicationGroupAdmin;
 import com.sleepycat.je.rep.utilint.HostPortPair;
+import org.apache.qpid.server.store.StoreException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -349,7 +350,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
 
         try
         {
-            Set<ReplicationNode> remoteNodes = environmentFacade.getEnvironment().getGroup().getNodes();
+            Set<ReplicationNode> remoteNodes = environmentFacade.getNodes();
             for (ReplicationNode node : remoteNodes)
             {
                 String nodeAddress = node.getHostName() + ":" + node.getPort();
@@ -423,7 +424,14 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null && _environmentFacade.compareAndSet(environmentFacade, null))
         {
-            environmentFacade.close();
+            try
+            {
+                environmentFacade.close();
+            }
+            catch (RuntimeException e)
+            {
+                throw new StoreException("Exception occurred on environment facade close", e);
+            }
         }
     }
 

@@ -27,6 +27,8 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 
+import com.sleepycat.je.Transaction;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.util.FileUtils;
 
@@ -65,14 +67,6 @@ public class StandardEnvironmentFacadeTest extends QpidTestCase
         }
     }
 
-    public void testEnvironmentFacade() throws Exception
-    {
-        EnvironmentFacade ef = createEnvironmentFacade();
-        assertNotNull("Environment should not be null", ef);
-        Environment e = ef.getEnvironment();
-        assertTrue("Environment is not valid", e.isValid());
-    }
-
     public void testSecondEnvironmentFacadeUsingSamePathRejected() throws Exception
     {
         EnvironmentFacade ef = createEnvironmentFacade();
@@ -97,21 +91,27 @@ public class StandardEnvironmentFacadeTest extends QpidTestCase
     {
         EnvironmentFacade ef = createEnvironmentFacade();
         ef.close();
-        Environment e = ef.getEnvironment();
-
-        assertNull("Environment should be null after facade close", e);
     }
 
     public void testOverrideJeParameter() throws Exception
     {
-        String statCollectVarName = EnvironmentConfig.STATS_COLLECT;
-
+        // verify that transactions can be created by default
         EnvironmentFacade ef = createEnvironmentFacade();
-        assertEquals("false", ef.getEnvironment().getMutableConfig().getConfigParam(statCollectVarName));
+        Transaction t = ef.beginTransaction(null);
+        t.commit();
         ef.close();
 
-        ef = createEnvironmentFacade(Collections.singletonMap(statCollectVarName, "true"));
-        assertEquals("true", ef.getEnvironment().getMutableConfig().getConfigParam(statCollectVarName));
+        // customize the environment to be non-transactional
+        ef = createEnvironmentFacade(Collections.singletonMap(EnvironmentConfig.ENV_IS_TRANSACTIONAL, "false"));
+        try
+        {
+            ef.beginTransaction(null);
+            fail("Overridden settings were not picked up on environment creation");
+        }
+        catch(UnsupportedOperationException e)
+        {
+            // pass
+        }
         ef.close();
     }
 

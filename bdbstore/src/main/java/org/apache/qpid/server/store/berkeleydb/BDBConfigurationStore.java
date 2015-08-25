@@ -128,7 +128,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
     {
         try
         {
-            new Upgrader(_environmentFacade.getEnvironment(), _parent).upgradeIfNecessary();
+            _environmentFacade.upgradeIfNecessary(_parent);
             if(_overwrite)
             {
                 clearConfigurationRecords();
@@ -263,7 +263,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         com.sleepycat.je.Transaction txn = null;
         try
         {
-            txn = _environmentFacade.getEnvironment().beginTransaction(null, null);
+            txn = _environmentFacade.beginTransaction(null);
             storeConfiguredObjectEntry(txn, configuredObject);
             txn.commit();
             txn = null;
@@ -290,7 +290,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         com.sleepycat.je.Transaction txn = null;
         try
         {
-            txn = _environmentFacade.getEnvironment().beginTransaction(null, null);
+            txn = _environmentFacade.beginTransaction(null);
 
             Collection<UUID> removed = new ArrayList<UUID>(objects.length);
             for(ConfiguredObjectRecord record : objects)
@@ -326,7 +326,7 @@ public class BDBConfigurationStore implements MessageStoreProvider, DurableConfi
         com.sleepycat.je.Transaction txn = null;
         try
         {
-            txn = _environmentFacade.getEnvironment().beginTransaction(null, null);
+            txn = _environmentFacade.beginTransaction(null);
             for(ConfiguredObjectRecord record : records)
             {
                 update(createIfNecessary, record, txn);

@@ -48,9 +48,9 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.Durability;
-import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
+import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.rep.NodeState;
 import com.sleepycat.je.rep.ReplicaWriteException;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
@@ -126,21 +126,12 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
 
         _portHelper.waitUntilAllocatedPortsAreFree();
     }
-    public void testEnvironmentFacade() throws Exception
-    {
-        EnvironmentFacade ef = createMaster();
-        assertNotNull("Environment should not be null", ef);
-        Environment e = ef.getEnvironment();
-        assertTrue("Environment is not valid", e.isValid());
-    }
 
     public void testClose() throws Exception
     {
-        EnvironmentFacade ef = createMaster();
+        ReplicatedEnvironmentFacade ef = createMaster();
         ef.close();
-        Environment e = ef.getEnvironment();
-
-        assertNull("Environment should be null after facade close", e);
+        assertEquals("Unexpected state after close", ReplicatedEnvironmentFacade.State.CLOSED, ef.getFacadeState());
     }
 
     public void testOpenDatabaseReusesCachedHandle() throws Exception
@@ -675,7 +666,9 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         Transaction txn = null;
         try
         {
-            txn = facade.beginTransaction();
+            TransactionConfig transactionConfig = new TransactionConfig();
+            transactionConfig.setDurability(facade.getRealMessageStoreDurability());
+            txn = facade.beginTransaction(transactionConfig);
             assertNotNull("Transaction is not created", txn);
             txn.commit();
             txn = null;
@@ -771,9 +764,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
 
         node1.setDesignatedPrimary(true);
 
-        Transaction txn = node1.beginTransaction();
-        Database db = node1.getEnvironment().openDatabase(txn, "mydb", createConfig);
-        txn.commit();
+        Database db = node1.openDatabase("mydb", createConfig);
 
         // Put a record (that will be replicated)
         putRecord(node1, db, 1, "value1");
@@ -788,6 +779,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         // Stop node1
         node1.close();
 
+        LOGGER.debug("RESTARTING " + replicaName);
         // Restart the node2, making it primary so it becomes master
         TestStateChangeListener node2StateChangeListener = new TestStateChangeListener(State.MASTER);
         node2 = addNode(replicaName, replicaNodeHostPort, true, node2StateChangeListener, new NoopReplicationGroupListener());
@@ -795,13 +787,12 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         assertTrue(replicaName + " did not go into desired state; current actual state is "
                    + node2StateChangeListener.getCurrentActualState(), awaitForStateChange);
 
-        txn = node2.beginTransaction();
-        db = node2.getEnvironment().openDatabase(txn, "mydb", DatabaseConfig.DEFAULT);
-        txn.commit();
+        db = node2.openDatabase("mydb", DatabaseConfig.DEFAULT);
 
         // Do a transaction on node2. The two environments will have diverged
         putRecord(node2, db, 3, "diverged");
 
+        LOGGER.debug("RESTARTING " + TEST_NODE_NAME);
         // Now restart node1 and ensure that it realises it needs to rollback before it can rejoin.
         TestStateChangeListener node1StateChangeListener = new TestStateChangeListener(State.REPLICA);
         final CountDownLatch _replicaRolledback = new CountDownLatch(1);
@@ -810,10 +801,11 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
             @Override
             public void onNodeRolledback()
             {
+                LOGGER.debug("onNodeRolledback in " + TEST_NODE_NAME);
                 _replicaRolledback.countDown();
             }
         });
-        assertTrue("Node 1 did not go into desired state and remained in state " + node1.getNodeState(),
+        assertTrue("Node 1 did not go into desired state",
                    node1StateChangeListener.awaitForStateChange(LISTENER_TIMEOUT, TimeUnit.SECONDS));
         assertTrue("Node 1 did not experience rollback within timeout",
                    _replicaRolledback.await(LISTENER_TIMEOUT, TimeUnit.SECONDS));
@@ -822,6 +814,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         putRecord(node2, db, 4, "value4");
         db.close();
 
+        LOGGER.debug("CLOSING");
         node1.close();
         node2.close();
     }
@@ -850,7 +843,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
                 @Override
                 public Transaction call() throws Exception
                 {
-                    return  replica.getEnvironment().beginTransaction(null, null);
+                    return  replica.beginTransaction(null);
                 }
             });
             Transaction transaction = future.get(5, TimeUnit.SECONDS);
@@ -894,7 +887,9 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         DatabaseEntry key = new DatabaseEntry();
         DatabaseEntry data = new DatabaseEntry();
 
-        Transaction txn = master.beginTransaction();
+        TransactionConfig transactionConfig = new TransactionConfig();
+        transactionConfig.setDurability(master.getRealMessageStoreDurability());
+        Transaction txn = master.beginTransaction(transactionConfig);
         IntegerBinding.intToEntry(keyValue, key);
         StringBinding.stringToEntry(dataValue, data);
 

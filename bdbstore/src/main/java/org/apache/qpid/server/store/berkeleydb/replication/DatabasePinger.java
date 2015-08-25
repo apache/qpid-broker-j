@@ -72,7 +72,7 @@ public class DatabasePinger
             Transaction txn = null;
             try
             {
-                txn = facade.getEnvironment().beginTransaction(null, _pingTransactionConfig);
+                txn = facade.beginTransaction(_pingTransactionConfig);
                 db.put(txn, key, value);
                 txn.commit();
 

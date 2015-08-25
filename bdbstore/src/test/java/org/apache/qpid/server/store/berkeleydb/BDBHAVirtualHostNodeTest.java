@@ -50,6 +50,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.replication.DatabasePinger;
+import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHost;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHostImpl;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationNode;
@@ -102,6 +103,17 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         String repStreamTimeout = "2 h";
         Map<String,String> context = (Map<String,String>)attributes.get(BDBHAVirtualHostNode.CONTEXT);
         context.put(ReplicationConfig.REP_STREAM_TIMEOUT, repStreamTimeout);
+        context.put(EnvironmentConfig.ENV_IS_TRANSACTIONAL, "false");
+        try
+        {
+            _helper.createHaVHN(attributes);
+            fail("Exception was not thrown.");
+        }
+        catch (RuntimeException e)
+        {
+            assertTrue("Unexpected Exception being thrown.", e.getCause() instanceof IllegalArgumentException);
+        }
+        context.put(EnvironmentConfig.ENV_IS_TRANSACTIONAL, "true");
         BDBHAVirtualHostNode<?> node = _helper.createHaVHN(attributes);
 
         node.start();
@@ -113,16 +125,14 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         assertNotNull(store);
 
         BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) store;
-        ReplicatedEnvironment environment = (ReplicatedEnvironment) bdbConfigurationStore.getEnvironmentFacade().getEnvironment();
-        ReplicationConfig replicationConfig = environment.getRepConfig();
+        ReplicatedEnvironmentFacade environmentFacade = (ReplicatedEnvironmentFacade) bdbConfigurationStore.getEnvironmentFacade();
 
-        assertEquals(nodeName, environment.getNodeName());
-        assertEquals(groupName, environment.getGroup().getName());
-        assertEquals(helperAddress, replicationConfig.getNodeHostPort());
-        assertEquals(helperAddress, replicationConfig.getHelperHosts());
+        assertEquals(nodeName, environmentFacade.getNodeName());
+        assertEquals(groupName, environmentFacade.getGroupName());
+        assertEquals(helperAddress, environmentFacade.getHostPort());
+        assertEquals(helperAddress, environmentFacade.getHelperHostPort());
 
-        assertEquals("SYNC,NO_SYNC,SIMPLE_MAJORITY", environment.getConfig().getDurability().toString());
-        assertEquals("Unexpected JE replication stream timeout", repStreamTimeout, replicationConfig.getConfigParam(ReplicationConfig.REP_STREAM_TIMEOUT));
+        assertEquals("SYNC,NO_SYNC,SIMPLE_MAJORITY", environmentFacade.getMessageStoreDurability().toString());
 
         _helper.awaitForVirtualhost(node, 30000);
         VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
@@ -153,20 +163,17 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         Map<String, Object> attributes = _helper.createNodeAttributes(nodeName, groupName, helperAddress, helperAddress, nodeName, node1PortNumber);
         BDBHAVirtualHostNode<?> node = _helper.createAndStartHaVHN(attributes);
 
-        BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) node.getConfigurationStore();
-        ReplicatedEnvironment environment = (ReplicatedEnvironment) bdbConfigurationStore.getEnvironmentFacade().getEnvironment();
-
-        assertEquals("Unexpected node priority value before mutation", 1, environment.getRepMutableConfig().getNodePriority());
-        assertFalse("Unexpected designated primary value before mutation", environment.getRepMutableConfig().getDesignatedPrimary());
-        assertEquals("Unexpected electable group override value before mutation", 0, environment.getRepMutableConfig().getElectableGroupSizeOverride());
+        assertEquals("Unexpected node priority value before mutation", 1, node.getPriority());
+        assertFalse("Unexpected designated primary value before mutation", node.isDesignatedPrimary());
+        assertEquals("Unexpected electable group override value before mutation", 0, node.getQuorumOverride());
 
         node.setAttribute(BDBHAVirtualHostNode.PRIORITY, 1, 2);
         node.setAttribute(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, false, true);
         node.setAttribute(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 0, 1);
 
-        assertEquals("Unexpected node priority value after mutation", 2, environment.getRepMutableConfig().getNodePriority());
-        assertTrue("Unexpected designated primary value after mutation", environment.getRepMutableConfig().getDesignatedPrimary());
-        assertEquals("Unexpected electable group override value after mutation", 1, environment.getRepMutableConfig().getElectableGroupSizeOverride());
+        assertEquals("Unexpected node priority value after mutation", 2, node.getPriority());
+        assertTrue("Unexpected designated primary value after mutation", node.isDesignatedPrimary());
+        assertEquals("Unexpected electable group override value after mutation", 1, node.getQuorumOverride());
 
         assertNotNull("Join time should be set", node.getJoinTime());
         assertNotNull("Last known replication transaction id should be set", node.getLastKnownReplicationTransactionId());

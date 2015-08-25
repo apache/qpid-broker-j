@@ -76,6 +76,11 @@ public class BDBUtils
 
     public synchronized static void runCleaner(final Environment environment)
     {
+        if (environment == null || !environment.isValid())
+        {
+            return;
+        }
+
         boolean cleanerWasRunning = Boolean.parseBoolean(environment.getConfig().getConfigParam(EnvironmentConfig.ENV_RUN_CLEANER));
 
         try

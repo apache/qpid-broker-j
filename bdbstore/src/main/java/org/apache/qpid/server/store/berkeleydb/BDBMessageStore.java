@@ -93,7 +93,7 @@ public class BDBMessageStore extends AbstractBDBMessageStore
                     _environmentFacade.close();
                     _environmentFacade = null;
                 }
-                catch (DatabaseException e)
+                catch (RuntimeException e)
                 {
                     throw new StoreException("Exception occurred on message store close", e);
                 }

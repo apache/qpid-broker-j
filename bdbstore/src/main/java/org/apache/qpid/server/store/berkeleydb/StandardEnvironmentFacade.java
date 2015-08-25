@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -35,6 +36,9 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Sequence;
 import com.sleepycat.je.SequenceConfig;
 import com.sleepycat.je.Transaction;
+import com.sleepycat.je.TransactionConfig;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +53,8 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     private final String _storePath;
     private final ConcurrentMap<String, Database> _cachedDatabases = new ConcurrentHashMap<>();
     private final ConcurrentMap<DatabaseEntry, Sequence> _cachedSequences = new ConcurrentHashMap<>();
+    private final AtomicReference<Environment> _environment;
 
-    private Environment _environment;
     private final Committer _committer;
     private final File _environmentPath;
 
@@ -105,7 +109,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         boolean success = false;
         try
         {
-            _environment = new Environment(_environmentPath, envConfig);
+            _environment = new AtomicReference<>(new Environment(_environmentPath, envConfig));
             success = true;
         }
         finally
@@ -122,9 +126,9 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
 
 
     @Override
-    public Transaction beginTransaction()
+    public Transaction beginTransaction(TransactionConfig transactionConfig)
     {
-        return _environment.beginTransaction(null, null);
+        return getEnvironment().beginTransaction(null, transactionConfig);
     }
 
     @Override
@@ -165,6 +169,31 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
             {
                 EnvHomeRegistry.getInstance().deregisterHome(_environmentPath);
             }
+        }
+    }
+
+    @Override
+    public long getTotalLogSize()
+    {
+        return getEnvironment().getStats(null).getTotalLogSize();
+    }
+
+    @Override
+    public void reduceSizeOnDisk()
+    {
+        BDBUtils.runCleaner(getEnvironment());
+    }
+
+    @Override
+    public void flushLog()
+    {
+        try
+        {
+            getEnvironment().flushLog(true);
+        }
+        catch (RuntimeException e)
+        {
+            throw handleDatabaseException("Exception whilst syncing data to disk", e);
         }
     }
 
@@ -216,9 +245,10 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
 
     private void closeEnvironmentSafely()
     {
-        if (_environment != null)
+        Environment environment = _environment.getAndSet(null);
+        if (environment != null)
         {
-            if (_environment.isValid())
+            if (environment.isValid())
             {
                 try
                 {
@@ -231,7 +261,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
             }
             try
             {
-                _environment.close();
+                environment.close();
             }
             catch (DatabaseException ex)
             {
@@ -241,34 +271,45 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
             {
                 LOGGER.error("Exception closing store environment", ex);
             }
-            finally
-            {
-                _environment = null;
-            }
         }
     }
 
-    @Override
-    public Environment getEnvironment()
+    private Environment getEnvironment()
     {
-        return _environment;
+        final Environment environment = _environment.get();
+        if (environment == null)
+        {
+            throw new IllegalStateException("Environment is null.");
+        }
+        else if (!environment.isValid())
+        {
+            throw new IllegalStateException("Environment is invalid.");
+        }
+        return environment;
+    }
+
+    @Override
+    public void upgradeIfNecessary(ConfiguredObject<?> parent)
+    {
+        Upgrader upgrader = new Upgrader(getEnvironment(), parent);
+        upgrader.upgradeIfNecessary();
     }
 
     private void closeEnvironment()
     {
-        if (_environment != null)
+        Environment environment = _environment.getAndSet(null);
+        if (environment != null)
         {
             // Clean the log before closing. This makes sure it doesn't contain
             // redundant data. Closing without doing this means the cleaner may
             // not get a chance to finish.
             try
             {
-                BDBUtils.runCleaner(_environment);
+                BDBUtils.runCleaner(environment);
             }
             finally
             {
-                _environment.close();
-                _environment = null;
+                environment.close();
             }
         }
     }
@@ -276,7 +317,8 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     @Override
     public RuntimeException handleDatabaseException(String contextMessage, RuntimeException e)
     {
-        if (_environment != null && !_environment.isValid())
+        Environment environment = _environment.get();
+        if (environment != null && !environment.isValid())
         {
             closeEnvironmentSafely();
         }
@@ -293,7 +335,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         Database cachedHandle = _cachedDatabases.get(name);
         if (cachedHandle == null)
         {
-            Database handle = _environment.openDatabase(null, name, databaseConfig);
+            Database handle = getEnvironment().openDatabase(null, name, databaseConfig);
             Database existingHandle = _cachedDatabases.putIfAbsent(name, handle);
             if (existingHandle == null)
             {
@@ -313,7 +355,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     public Database clearDatabase(String name, DatabaseConfig databaseConfig)
     {
         closeDatabase(name);
-        _environment.removeDatabase(null, name);
+        getEnvironment().removeDatabase(null, name);
         return openDatabase(name, databaseConfig);
     }
 
@@ -358,11 +400,5 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         {
             cachedHandle.close();
         }
-    }
-
-    @Override
-    public String getStoreLocation()
-    {
-        return _storePath;
     }
 }

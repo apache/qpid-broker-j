@@ -109,15 +109,15 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     {
         try
         {
-            new Upgrader(getEnvironmentFacade().getEnvironment(), getParent()).upgradeIfNecessary();
+            getEnvironmentFacade().upgradeIfNecessary(getParent());
+
+            // TODO this relies on the fact that the VH will call upgrade just before putting the VH into service.
+            _totalStoreSize = getSizeOnDisk();
         }
         catch(RuntimeException e)
         {
             throw getEnvironmentFacade().handleDatabaseException("Cannot upgrade store", e);
         }
-
-        // TODO this relies on the fact that the VH will call upgrade just before putting the VH into service.
-        _totalStoreSize = getSizeOnDisk();
     }
 
     @Override
@@ -228,7 +228,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 tx = null;
                 try
                 {
-                    tx = getEnvironmentFacade().getEnvironment().beginTransaction(null, null);
+                    tx = getEnvironmentFacade().beginTransaction(null);
 
                     //remove the message meta data from the store
                     DatabaseEntry key = new DatabaseEntry();
@@ -865,12 +865,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
     private void reduceSizeOnDisk()
     {
-        BDBUtils.runCleaner(getEnvironmentFacade().getEnvironment());
+        getEnvironmentFacade().reduceSizeOnDisk();
     }
 
     private long getSizeOnDisk()
     {
-        return getEnvironmentFacade().getEnvironment().getStats(null).getTotalLogSize();
+        return getEnvironmentFacade().getTotalLogSize();
     }
 
     private Database getMessageContentDb()
@@ -1225,8 +1225,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 Transaction txn;
                 try
                 {
-                    txn = getEnvironmentFacade().getEnvironment().beginTransaction(
-                            null, null);
+                    txn = getEnvironmentFacade().beginTransaction(null);
                 }
                 catch (RuntimeException e)
                 {
@@ -1304,7 +1303,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
             try
             {
-                _txn = getEnvironmentFacade().getEnvironment().beginTransaction(null, null);
+                _txn = getEnvironmentFacade().beginTransaction(null);
             }
             catch(RuntimeException e)
             {

@@ -26,10 +26,9 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Collections;
 
-
-import com.sleepycat.je.Environment;
+import com.sleepycat.je.EnvironmentConfig;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -40,7 +39,6 @@ import org.mockito.stubbing.Answer;
 
 public class StandardEnvironmentFacadeFactoryTest extends QpidTestCase
 {
-    private HashMap<String, String> _jeProperties;
     private File _path;
     private ConfiguredObject<?> _parent;
 
@@ -48,9 +46,7 @@ public class StandardEnvironmentFacadeFactoryTest extends QpidTestCase
     public void setUp()throws Exception
     {
         super.setUp();
-        _jeProperties=  new HashMap<>();
-        _jeProperties.put("je.log.memOnly", "true");
-        _jeProperties.put("je.maxMemoryPercent", "5");
+
         _path = TestFileUtils.createTestDirectory(".je.test", true);
 
         // make mock object implementing FileBasedSettings
@@ -84,27 +80,19 @@ public class StandardEnvironmentFacadeFactoryTest extends QpidTestCase
     public void testCreateEnvironmentFacade()
     {
         when(_parent.getName()).thenReturn(getTestName());
-        when(_parent.getContextKeys(any(boolean.class))).thenReturn(_jeProperties.keySet());
-        for (String key : _jeProperties.keySet())
-        {
-            when(_parent.getContextValue(String.class, key)).thenReturn(_jeProperties.get(key));
-        }
+        when(_parent.getContextKeys(any(boolean.class))).thenReturn(Collections.singleton(EnvironmentConfig.ENV_IS_TRANSACTIONAL));
+        when(_parent.getContextValue(String.class, EnvironmentConfig.ENV_IS_TRANSACTIONAL)).thenReturn("false");
 
         StandardEnvironmentFacadeFactory factory = new StandardEnvironmentFacadeFactory();
         EnvironmentFacade facade = factory.createEnvironmentFacade(_parent);
         try
         {
-            assertNotNull("Facade should not be null", facade);
-            Environment environment = facade.getEnvironment();
-            for (String key : _jeProperties.keySet())
-            {
-                when(_parent.getContextValue(String.class, key)).thenReturn(_jeProperties.get(key));
-                assertEquals("Unexpected environment setting", _jeProperties.get(key), environment.getConfig().getConfigParam(key));
-            }
+            facade.beginTransaction(null);
+            fail("Context variables were not picked up on environment creation");
         }
-        finally
+        catch(UnsupportedOperationException e)
         {
-            facade.getEnvironment().close();
+            //pass
         }
     }
 

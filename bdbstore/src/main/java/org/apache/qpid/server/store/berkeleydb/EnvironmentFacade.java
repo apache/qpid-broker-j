@@ -33,6 +33,8 @@ import com.sleepycat.je.Sequence;
 import com.sleepycat.je.SequenceConfig;
 import com.sleepycat.je.Transaction;
 
+import com.sleepycat.je.TransactionConfig;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.util.FutureResult;
 
 public interface EnvironmentFacade
@@ -45,22 +47,25 @@ public interface EnvironmentFacade
         put(EnvironmentConfig.STATS_COLLECT, "false");
     }});
 
-    Environment getEnvironment();
+    void upgradeIfNecessary(ConfiguredObject<?> parent);
 
     Database openDatabase(String databaseName, DatabaseConfig databaseConfig);
     Database clearDatabase(String databaseName, DatabaseConfig databaseConfig);
 
     Sequence openSequence(Database database, DatabaseEntry sequenceKey, SequenceConfig sequenceConfig);
 
-    Transaction beginTransaction();
+    Transaction beginTransaction(TransactionConfig transactionConfig);
 
     FutureResult commit(com.sleepycat.je.Transaction tx, boolean sync);
 
     RuntimeException handleDatabaseException(String contextMessage, RuntimeException e);
 
-    String getStoreLocation();
-
     void closeDatabase(String name);
     void close();
 
+    long getTotalLogSize();
+
+    void reduceSizeOnDisk();
+
+    void flushLog();
 }
