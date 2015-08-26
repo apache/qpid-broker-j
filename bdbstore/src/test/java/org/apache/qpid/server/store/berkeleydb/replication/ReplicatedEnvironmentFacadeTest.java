@@ -72,7 +72,7 @@ import org.apache.qpid.util.FileUtils;
 public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ReplicatedEnvironmentFacadeTest.class);
-    private static final int LISTENER_TIMEOUT = 5;
+    private static final int LISTENER_TIMEOUT = 7;
     private static final int WAIT_STATE_CHANGE_TIMEOUT = 30;
 
     private final PortHelper _portHelper = new PortHelper();
@@ -498,6 +498,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
     public void testEnvironmentAutomaticallyRestartsAndBecomesUnknownOnInsufficientReplicas() throws Exception
     {
         final CountDownLatch masterLatch = new CountDownLatch(1);
+        final CountDownLatch secondMasterLatch = new CountDownLatch(1);
         final AtomicInteger masterStateChangeCount = new AtomicInteger();
         final CountDownLatch unknownLatch = new CountDownLatch(1);
         final AtomicInteger unknownStateChangeCount = new AtomicInteger();
@@ -509,7 +510,14 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
                 if (stateChangeEvent.getState() == State.MASTER)
                 {
                     masterStateChangeCount.incrementAndGet();
-                    masterLatch.countDown();
+                    if (masterLatch.getCount() == 1)
+                    {
+                        masterLatch.countDown();
+                    }
+                    else
+                    {
+                        secondMasterLatch.countDown();
+                    }
                 }
                 else if (stateChangeEvent.getState() == State.UNKNOWN)
                 {
@@ -519,7 +527,11 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
             }
         };
 
-        addNode(stateChangeListener, new NoopReplicationGroupListener());
+        // make sure that node is re-elected as MASTER on second start-up
+        ReplicatedEnvironmentConfiguration config = createReplicatedEnvironmentConfiguration(TEST_NODE_NAME, TEST_NODE_HOST_PORT, TEST_DESIGNATED_PRIMARY);
+        when(config.getPriority()).thenReturn(2);
+        createReplicatedEnvironmentFacade(TEST_NODE_NAME, stateChangeListener, new NoopReplicationGroupListener(), config);
+
         assertTrue("Master was not started", masterLatch.await(LISTENER_TIMEOUT, TimeUnit.SECONDS));
 
         int replica1Port = _portHelper.getNextAvailable();
@@ -537,8 +549,13 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         assertTrue("Environment should be recreated and go into unknown state",
                 unknownLatch.await(WAIT_STATE_CHANGE_TIMEOUT, TimeUnit.SECONDS));
 
-        assertEquals("Node made master an unexpected number of times", 1, masterStateChangeCount.get());
-        assertEquals("Node made unknown an unexpected number of times", 1, unknownStateChangeCount.get());
+        // bring back the cluster in order to make sure that no extra state transition happens between UNKNOWN and MASTER
+        createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
+
+        assertTrue("Master node did not resume", secondMasterLatch.await(LISTENER_TIMEOUT, TimeUnit.SECONDS));
+
+        assertEquals("Node transited into Master state unexpected number of times", 2, masterStateChangeCount.get());
+        assertEquals("Node transited into Unknown state unexpected number of times", 1, unknownStateChangeCount.get());
     }
 
     public void testTransferMasterToSelf() throws Exception

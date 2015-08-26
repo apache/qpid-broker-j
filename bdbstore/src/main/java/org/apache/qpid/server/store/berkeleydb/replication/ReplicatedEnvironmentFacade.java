@@ -1038,11 +1038,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         createEnvironment(false, null);
 
-        if (stateChangeListener != null)
-        {
-            getEnvironment().setStateChangeListener(this);
-        }
-
         LOGGER.info("Environment is restarted");
     }
 
