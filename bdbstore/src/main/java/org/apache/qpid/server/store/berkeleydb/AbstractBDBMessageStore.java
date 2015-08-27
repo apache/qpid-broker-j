@@ -1041,7 +1041,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         private final long _messageId;
 
-        private volatile MessageDataRef<T> _messageDataRef;
+        private MessageDataRef<T> _messageDataRef;
 
         StoredBDBMessage(long messageId, T metaData)
         {
@@ -1258,7 +1258,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public boolean isInMemory()
+        public synchronized boolean isInMemory()
         {
             return _messageDataRef.isHardRef() || _messageDataRef.getData() != null;
         }

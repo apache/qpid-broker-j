@@ -499,7 +499,7 @@ public final class QpidByteBuffer
     public static Collection<QpidByteBuffer> allocateDirectCollectionFromPool(int size)
     {
         final int maxPooledBufferSize = _maxPooledBufferSize.get();
-        if(size <= maxPooledBufferSize || maxPooledBufferSize == 0)
+        if(maxPooledBufferSize == 0)
         {
             return Collections.singleton(allocateDirectFromPool(size));
         }
