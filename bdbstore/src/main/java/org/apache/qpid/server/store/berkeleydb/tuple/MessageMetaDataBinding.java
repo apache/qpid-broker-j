@@ -20,11 +20,15 @@
  */
 package org.apache.qpid.server.store.berkeleydb.tuple;
 
+import com.sleepycat.bind.EntryBinding;
+import com.sleepycat.je.DatabaseEntry;
 import java.nio.ByteBuffer;
 
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
 import com.sleepycat.bind.tuple.TupleOutput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.MessageMetaDataTypeRegistry;
@@ -33,8 +37,10 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 /**
  * Handles the mapping to and from message meta data
  */
-public class MessageMetaDataBinding extends TupleBinding<StorableMessageMetaData>
+public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaData>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MessageMetaDataBinding.class);
+
     private static final MessageMetaDataBinding INSTANCE = new MessageMetaDataBinding();
 
     public static MessageMetaDataBinding getInstance()
@@ -46,31 +52,30 @@ public class MessageMetaDataBinding extends TupleBinding<StorableMessageMetaData
     private MessageMetaDataBinding() { }
 
     @Override
-    public StorableMessageMetaData entryToObject(TupleInput tupleInput)
+    public StorableMessageMetaData entryToObject(DatabaseEntry entry)
     {
-        final int bodySize = tupleInput.readInt();
-        byte[] dataAsBytes = new byte[bodySize];
-        tupleInput.readFast(dataAsBytes);
-
-        ByteBuffer buf = ByteBuffer.wrap(dataAsBytes);
-        buf.position(1);
+        ByteBuffer buf = ByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
+        final int bodySize = buf.getInt() ^ 0x80000000;
+        final int metaDataType = buf.get() & 0xff;
         buf = buf.slice();
-        MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(dataAsBytes[0]);
+        LOGGER.debug("RGDEBUG : remaining {} limit {}", buf.remaining(), bodySize);
+        buf.limit(bodySize-1);
+        MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(metaDataType);
         return type.createMetaData(buf);
     }
 
     @Override
-    public void objectToEntry(StorableMessageMetaData metaData, TupleOutput tupleOutput)
+    public void objectToEntry(StorableMessageMetaData metaData, DatabaseEntry entry)
     {
         final int bodySize = 1 + metaData.getStorableSize();
-        byte[] underlying = new byte[bodySize];
-        underlying[0] = (byte) metaData.getType().ordinal();
+        byte[] underlying = new byte[4+bodySize];
+        underlying[4] = (byte) metaData.getType().ordinal();
         ByteBuffer buf = ByteBuffer.wrap(underlying);
-        buf.position(1);
+        buf.putInt(bodySize ^ 0x80000000);
+        buf.position(5);
         buf = buf.slice();
 
         metaData.writeToBuffer(buf);
-        tupleOutput.writeInt(bodySize);
-        tupleOutput.writeFast(underlying);
+        entry.setData(underlying);
     }
 }

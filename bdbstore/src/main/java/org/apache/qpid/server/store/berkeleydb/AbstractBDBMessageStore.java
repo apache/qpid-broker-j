@@ -402,10 +402,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         LongBinding.longToEntry(messageId, contentKeyEntry);
         DatabaseEntry value = new DatabaseEntry();
 
-
-        ByteBufferBinding contentTupleBinding = ByteBufferBinding.getInstance();
-
-
         getLogger().debug("Message Id: {} Getting content body", messageId);
 
         try
@@ -600,6 +596,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     }
 
 
+    private static final byte[] ENQUEUE_RECORD_VALUE = new byte[1];
     /**
      * Places a message onto a specified queue, in a given transaction.
      *
@@ -618,7 +615,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         QueueEntryKey dd = new QueueEntryKey(queue.getId(), messageId);
         keyBinding.objectToEntry(dd, key);
         DatabaseEntry value = new DatabaseEntry();
-        ByteBinding.byteToEntry((byte) 0, value);
+        value.setData(ENQUEUE_RECORD_VALUE, 0, 1);
 
         try
         {
