@@ -45,7 +45,7 @@ set QPID_WOKR=%HOME%
 goto okQpidWork
 
 :noHome
-set QPID_WORK=c:\Temp
+set QPID_WORK=%APPDATA%\Qpid
 if not exist %QPID_WORK% md %QPID_WORK%
 :okQpidWork
 
@@ -61,9 +61,6 @@ echo The JAVA_HOME environment variable is not defined correctly
 echo This environment variable is needed to run this program.
 goto end
 :okJavaHome
-
-REM set loggin level if not set
-if "%AMQJ_LOGGING_LEVEL%" == "" set AMQJ_LOGGING_LEVEL=info
 
 REM Set the default system properties that we'll use now that they have
 REM all been initialised

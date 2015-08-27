@@ -52,10 +52,6 @@ log() {
   fi
 }
 
-if [ -z $AMQJ_LOGGING_LEVEL ]; then
-    export AMQJ_LOGGING_LEVEL=info
-fi
-
 if [ -z "$QPID_HOME" ]; then
     export QPID_HOME=$(dirname $(dirname $(readlink -f $0)))
     export PATH=${PATH}:${QPID_HOME}/bin
