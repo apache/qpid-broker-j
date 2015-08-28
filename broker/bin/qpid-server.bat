@@ -40,11 +40,6 @@ goto end
 
 REM set QPID_WORK if not set
 if not "%QPID_WORK%" == "" goto okQpidWork
-if "%HOME%" == "" goto noHome
-set QPID_WOKR=%HOME%
-goto okQpidWork
-
-:noHome
 set QPID_WORK=%APPDATA%\Qpid
 if not exist %QPID_WORK% md %QPID_WORK%
 :okQpidWork
