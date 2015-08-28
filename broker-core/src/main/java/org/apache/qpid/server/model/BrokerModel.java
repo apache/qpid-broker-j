@@ -46,12 +46,13 @@ public final class BrokerModel extends Model
      *     Remove Broker#supportedVirtualHostNodeTypes, #supportedVirtualHostTypes, #supportedAuthenticationProviders,
      *            supportedPreferencesProviderTypes, VH#supportedExchangeTypes, VH#supportedQueueTypes
      *     Renamed FileTrustStore/FileKeyStore.path => FileTrustStore/FileKeyStore.storeUrl
-     * 3.1 Add BrokerLogger as a child of Broker
+     * 6.0 Add BrokerLogger as a child of Broker
      *     Replace the defaultVirtualHost (at Broker) with defaultVirtualHostNode flag (at VHN)
      *     Make Connections children of Ports instead of VHosts
+     *     Bring model version and Qpid version into sync
      */
-    public static final int MODEL_MAJOR_VERSION = 3;
-    public static final int MODEL_MINOR_VERSION = 1;
+    public static final int MODEL_MAJOR_VERSION = 6;
+    public static final int MODEL_MINOR_VERSION = 0;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();
     private final Map<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>> _parents =

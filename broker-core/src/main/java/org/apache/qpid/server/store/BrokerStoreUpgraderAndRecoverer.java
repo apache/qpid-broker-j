@@ -63,7 +63,7 @@ public class BrokerStoreUpgraderAndRecoverer
         register(new Upgrader_1_3_to_2_0());
         register(new Upgrader_2_0_to_3_0());
 
-        register(new Upgrader_3_0_to_3_1());
+        register(new Upgrader_3_0_to_6_0());
     }
 
     private void register(StoreUpgraderPhase upgrader)
@@ -318,15 +318,15 @@ public class BrokerStoreUpgraderAndRecoverer
         }
 
     }
-    private class Upgrader_3_0_to_3_1 extends StoreUpgraderPhase
+    private class Upgrader_3_0_to_6_0 extends StoreUpgraderPhase
     {
         private String _defaultVirtualHost;
         private final Set<ConfiguredObjectRecord> _knownBdbHaVirtualHostNode = new HashSet<>();
         private final Map<String, ConfiguredObjectRecord> _knownNonBdbHaVirtualHostNode = new HashMap<>();
 
-        public Upgrader_3_0_to_3_1()
+        public Upgrader_3_0_to_6_0()
         {
-            super("modelVersion", "3.0", "3.1");
+            super("modelVersion", "3.0", "6.0");
         }
 
         @Override
@@ -348,8 +348,8 @@ public class BrokerStoreUpgraderAndRecoverer
                     getUpdateMap().put(record.getId(), record);
                 }
 
-                addMemoryLogger(record);
-                addFileLogger(record);
+                addLogger(record, "memory", "Memory");
+                addLogger(record, "logfile", "File");
                 getNextUpgrader().configuredObject(record);
             }
             else if (record.getType().equals("VirtualHostNode"))
@@ -368,43 +368,30 @@ public class BrokerStoreUpgraderAndRecoverer
             }
         }
 
-        private void addMemoryLogger(final ConfiguredObjectRecord record)
+        private void addLogger(final ConfiguredObjectRecord record, String name, String type)
         {
             Map<String,Object> attributes = new HashMap<>();
-            attributes.put("name", "memory");
-            attributes.put("type", "Memory");
-            final ConfiguredObjectRecord memoryLogger = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
-                                                                                 "BrokerLogger",
-                                                                                 attributes,
-                                                                                 Collections.singletonMap("Broker",
-                                                                                                          record.getId()));
-            addNameValueFilter(1, memoryLogger, LogLevel.INFO, "");
-            getUpdateMap().put(memoryLogger.getId(), memoryLogger);
-            getNextUpgrader().configuredObject(memoryLogger);
+            attributes.put("name", name);
+            attributes.put("type", type);
+            final ConfiguredObjectRecord logger = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                    "BrokerLogger",
+                    attributes,
+                    Collections.singletonMap("Broker",
+                            record.getId()));
+            addNameValueFilter("Root", logger, LogLevel.WARN, "ROOT");
+            addNameValueFilter("Qpid", logger, LogLevel.INFO, "org.apache.qpid.*");
+            addNameValueFilter("Operational", logger, LogLevel.INFO, "qpid.message.*");
+            getUpdateMap().put(logger.getId(), logger);
+            getNextUpgrader().configuredObject(logger);
         }
 
-        private void addFileLogger(final ConfiguredObjectRecord record)
-        {
-            Map<String,Object> attributes = new HashMap<>();
-            attributes.put("name", "file");
-            attributes.put("type", "File");
-
-            final ConfiguredObjectRecord fileLogger = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
-                                                                                       "BrokerLogger",
-                                                                                       attributes,
-                                                                                       Collections.singletonMap("Broker",
-                                                                                                                record.getId()));
-            addNameValueFilter(1, fileLogger, LogLevel.INFO, "");
-            getUpdateMap().put(fileLogger.getId(), fileLogger);
-            getNextUpgrader().configuredObject(fileLogger);
-        }
-        private void addNameValueFilter(int seqNo,
+        private void addNameValueFilter(String inclusionRuleName,
                                         final ConfiguredObjectRecord loggerRecord,
                                         final LogLevel level,
                                         final String loggerName)
         {
             Map<String,Object> attributes = new HashMap<>();
-            attributes.put("name", String.valueOf(seqNo));
+            attributes.put("name", inclusionRuleName);
             attributes.put("level", level.name());
             attributes.put("loggerName", loggerName);
             attributes.put("type", "NameAndLevel");

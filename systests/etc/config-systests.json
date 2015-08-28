@@ -20,7 +20,7 @@
  */
 {
   "name": "Broker",
-  "modelVersion": "3.1",
+  "modelVersion": "6.0",
   "authenticationproviders" : [ {
     "name" : "plain",
     "type" : "PlainPasswordFile",

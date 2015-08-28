@@ -20,7 +20,7 @@
  */
 {
   "name": "${broker.name}",
-  "modelVersion": "3.1",
+  "modelVersion": "6.0",
   "authenticationproviders" : [ {
     "name" : "passwordFile",
     "type" : "PlainPasswordFile",
@@ -55,10 +55,20 @@
     "name" : "memory",
     "type" : "Memory",
     "brokerloggerfilters" : [ {
-      "name" : "acceptFilter1",
+      "name" : "Root",
+      "type" : "NameAndLevel",
+      "level" : "WARN",
+      "loggerName" : "ROOT"
+    }, {
+      "name" : "Qpid",
       "type" : "NameAndLevel",
       "level" : "INFO",
-      "loggerName" : "ROOT"
+      "loggerName" : "org.apache.qpid.*"
+    }, {
+      "name" : "Operational",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.message.*"
     } ]
   } ],
   "ports" : [  {
