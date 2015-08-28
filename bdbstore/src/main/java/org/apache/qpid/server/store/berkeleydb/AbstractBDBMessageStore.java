@@ -22,7 +22,6 @@ import static org.apache.qpid.server.store.berkeleydb.BDBUtils.DEFAULT_DATABASE_
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.abortTransactionSafely;
 import static org.apache.qpid.server.store.berkeleydb.BDBUtils.closeCursorSafely;
 
-import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-import com.sleepycat.bind.tuple.ByteBinding;
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -68,7 +66,6 @@ import org.apache.qpid.server.store.berkeleydb.tuple.MessageMetaDataBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.PreparedTransactionBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.QueueEntryBinding;
 import org.apache.qpid.server.store.berkeleydb.tuple.XidBinding;
-import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
@@ -513,12 +510,11 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      *
      * @param tx         The transaction for the operation.
      * @param messageId       The message to store the data for.
-     * @param offset          The offset of the data chunk in the message.
      * @param contentBody     The content of the data chunk.
      *
      * @throws org.apache.qpid.server.store.StoreException If the operation fails for any reason, or if the specified message does not exist.
      */
-    private void addContent(final Transaction tx, long messageId, int offset,
+    private void addContent(final Transaction tx, long messageId,
                             Collection<QpidByteBuffer> contentBody) throws StoreException
     {
         DatabaseEntry key = new DatabaseEntry();
@@ -702,7 +698,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         PreparedTransaction preparedTransaction = new PreparedTransaction(enqueues, dequeues);
         PreparedTransactionBinding valueBinding = new PreparedTransactionBinding();
         valueBinding.objectToEntry(preparedTransaction, value);
-        List<Runnable> postActions = new ArrayList<>();
         for(org.apache.qpid.server.store.Transaction.EnqueueRecord enqueue : enqueues)
         {
             StoredMessage storedMessage = enqueue.getMessage().getStoredMessage();
@@ -715,7 +710,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         try
         {
             getXidDb().put(txn, key, value);
-            return postActions;
+            return Collections.emptyList();
         }
         catch (RuntimeException e)
         {
@@ -907,7 +902,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
     protected abstract Logger getLogger();
 
-    static interface MessageDataRef<T extends StorableMessageMetaData>
+    interface MessageDataRef<T extends StorableMessageMetaData>
     {
         T getMetaData();
         Collection<QpidByteBuffer> getData();
@@ -950,38 +945,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
     }
 
-    private static final class MessageData<T extends StorableMessageMetaData>
-    {
-        private T _metaData;
-        private SoftReference<Collection<QpidByteBuffer>> _data;
-
-        private MessageData(final T metaData, final Collection<QpidByteBuffer> data)
-        {
-            _metaData = metaData;
-
-            if(data != null)
-            {
-                _data = new SoftReference<>(data);
-            }
-        }
-
-        public T getMetaData()
-        {
-            return _metaData;
-        }
-
-        public Collection<QpidByteBuffer> getData()
-        {
-            return _data == null ? null : _data.get();
-        }
-
-        public void setData(final Collection<QpidByteBuffer> data)
-        {
-            _data = new SoftReference<>(data);
-        }
-
-
-    }
     private static final class MessageDataSoftRef<T extends StorableMessageMetaData> implements MessageDataRef<T>
     {
 
@@ -1203,7 +1166,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             {
 
                 AbstractBDBMessageStore.this.storeMetaData(txn, _messageId, _messageDataRef.getMetaData());
-                AbstractBDBMessageStore.this.addContent(txn, _messageId, 0,
+                AbstractBDBMessageStore.this.addContent(txn, _messageId,
                                                         _messageDataRef.getData() == null
                                                                 ? Collections.<QpidByteBuffer>emptySet()
                                                                 : _messageDataRef.getData());
