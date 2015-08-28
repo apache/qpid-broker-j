@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.AMQMessageHeader;
@@ -32,6 +33,7 @@ import org.apache.qpid.server.store.StoredMessage;
  */
 public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMetaData>
 {
+    private static final MessageMetaData DELETED_MESSAGE_METADATA = new MessageMetaData(new MessagePublishInfo(), new ContentHeaderBody(new BasicContentHeaderProperties()), 0);
     private final long _size;
 
     public AMQMessage(StoredMessage<MessageMetaData> handle)
@@ -47,7 +49,9 @@ public class AMQMessage extends AbstractServerMessageImpl<AMQMessage, MessageMet
 
     public MessageMetaData getMessageMetaData()
     {
-        return getStoredMessage().getMetaData();
+        MessageMetaData metaData = getStoredMessage().getMetaData();
+
+        return metaData == null ? DELETED_MESSAGE_METADATA : metaData;
     }
 
     public ContentHeaderBody getContentHeaderBody()

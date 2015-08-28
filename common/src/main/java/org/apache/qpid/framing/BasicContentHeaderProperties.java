@@ -956,7 +956,6 @@ public class BasicContentHeaderProperties
         if(_headers != null)
         {
             _headers.dispose();
-            _headers = null;
         }
     }
 

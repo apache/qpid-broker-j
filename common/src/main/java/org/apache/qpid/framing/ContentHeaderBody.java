@@ -39,7 +39,7 @@ public class ContentHeaderBody implements AMQBody
     private long _bodySize;
 
     /** must never be null */
-    private BasicContentHeaderProperties _properties;
+    private final BasicContentHeaderProperties _properties;
 
     public ContentHeaderBody(MarkableDataInput buffer, long size) throws AMQFrameDecodingException, IOException
     {
@@ -132,11 +132,6 @@ public class ContentHeaderBody implements AMQBody
         return _properties;
     }
 
-    public void setProperties(BasicContentHeaderProperties props)
-    {
-        _properties = props;
-    }
-
     @Override
     public String toString()
     {
@@ -199,7 +194,6 @@ public class ContentHeaderBody implements AMQBody
     public void dispose()
     {
         _properties.dispose();
-        _properties = null;
     }
 
     public void clearEncodedForm()

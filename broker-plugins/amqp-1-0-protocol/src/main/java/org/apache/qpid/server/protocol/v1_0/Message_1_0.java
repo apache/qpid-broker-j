@@ -22,18 +22,25 @@ package org.apache.qpid.server.protocol.v1_0;
 
 
 import java.lang.ref.SoftReference;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
 
+import org.apache.qpid.amqp_1_0.messaging.SectionEncoderImpl;
+import org.apache.qpid.amqp_1_0.type.Section;
+import org.apache.qpid.amqp_1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.util.ByteBufferUtils;
 
 public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageMetaData_1_0>
 {
+
+    private static final AMQPDescribedTypeRegistry DESCRIBED_TYPE_REGISTRY = AMQPDescribedTypeRegistry.newInstance()
+            .registerTransportLayer()
+            .registerMessagingLayer()
+            .registerTransactionLayer()
+            .registerSecurityLayer();
+    public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<Section>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY));
 
     private volatile SoftReference<Collection<QpidByteBuffer>> _fragmentsRef;
     private long _arrivalTime;
@@ -93,7 +100,8 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 
     private MessageMetaData_1_0 getMessageMetaData()
     {
-        return getStoredMessage().getMetaData();
+        MessageMetaData_1_0 metaData = getStoredMessage().getMetaData();
+        return metaData == null ? DELETED_MESSAGE_METADATA : metaData;
     }
 
     public MessageMetaData_1_0.MessageHeader_1_0 getMessageHeader()

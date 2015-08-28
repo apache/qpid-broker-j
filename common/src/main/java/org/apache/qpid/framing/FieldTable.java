@@ -938,12 +938,43 @@ public class FieldTable
         return map;
     }
 
+    public void clearEncodedForm()
+    {
+        synchronized (this)
+        {
+            if (_properties == null)
+            {
+                if (_encodedForm != null)
+                {
+                    populateFromBuffer();
+                }
+            }
+
+            if (_encodedForm != null)
+            {
+                _encodedForm.dispose();
+                _encodedForm = null;
+            }
+        }
+    }
+
     public void dispose()
     {
-        if(_encodedForm != null)
+        synchronized (this)
         {
-            _encodedForm.dispose();
-            _encodedForm = null;
+            if (_properties == null)
+            {
+                if (_encodedForm != null)
+                {
+                    _properties = new LinkedHashMap<>();
+                }
+            }
+
+            if (_encodedForm != null)
+            {
+                _encodedForm.dispose();
+                _encodedForm = null;
+            }
         }
     }
 
@@ -1079,25 +1110,7 @@ public class FieldTable
         _encodedSize = 0;
     }
 
-    public void clearEncodedForm()
-    {
-        synchronized (this)
-        {
-            if (_properties == null)
-            {
-                if (_encodedForm != null)
-                {
-                    populateFromBuffer();
-                }
-            }
 
-            if (_encodedForm != null)
-            {
-                _encodedForm.dispose();
-                _encodedForm = null;
-            }
-        }
-    }
 
     public Set<AMQShortString> keySet()
     {

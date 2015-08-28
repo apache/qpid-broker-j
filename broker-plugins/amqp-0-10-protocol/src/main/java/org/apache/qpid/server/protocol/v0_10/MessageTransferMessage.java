@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
@@ -33,6 +32,8 @@ import org.apache.qpid.transport.Header;
 public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTransferMessage, MessageMetaData_0_10>
 {
 
+    private final static MessageMetaData_0_10 DELETED_MESSAGE_METADATA = new MessageMetaData_0_10(null, 0, 0);
+
     public MessageTransferMessage(StoredMessage<MessageMetaData_0_10> storeMessage, Object connectionRef)
     {
         super(storeMessage, connectionRef);
@@ -40,7 +41,9 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
 
     private MessageMetaData_0_10 getMetaData()
     {
-        return getStoredMessage().getMetaData();
+        MessageMetaData_0_10 metaData = getStoredMessage().getMetaData();
+
+        return metaData == null ? DELETED_MESSAGE_METADATA : metaData;
     }
 
     public String getInitialRoutingAddress()

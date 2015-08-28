@@ -1065,15 +1065,22 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         @Override
         public synchronized T getMetaData()
         {
-            T metaData = _messageDataRef.getMetaData();
-
-            if(metaData == null)
+            if (_messageDataRef == null)
             {
-                checkMessageStoreOpen();
-                metaData = (T) getMessageMetaData(_messageId);
-                _messageDataRef = new MessageDataSoftRef<>(metaData,null);
+                return null;
             }
-            return metaData;
+            else
+            {
+                T metaData = _messageDataRef.getMetaData();
+
+                if (metaData == null)
+                {
+                    checkMessageStoreOpen();
+                    metaData = (T) getMessageMetaData(_messageId);
+                    _messageDataRef = new MessageDataSoftRef<>(metaData, null);
+                }
+                return metaData;
+            }
         }
 
         @Override
@@ -1122,7 +1129,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         private Collection<QpidByteBuffer> getContentAsByteBuffer()
         {
-            Collection<QpidByteBuffer> data = _messageDataRef.getData();
+            Collection<QpidByteBuffer> data = _messageDataRef == null ? Collections.<QpidByteBuffer>emptyList() : _messageDataRef.getData();
             if(data == null)
             {
                 if(stored())
@@ -1215,23 +1222,26 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
         synchronized FutureResult flushToStore()
         {
-            if(!stored())
+            if (_messageDataRef != null)
             {
-                checkMessageStoreOpen();
-
-                Transaction txn;
-                try
+                if (!stored())
                 {
-                    txn = getEnvironmentFacade().beginTransaction(null);
-                }
-                catch (RuntimeException e)
-                {
-                    throw getEnvironmentFacade().handleDatabaseException("failed to begin transaction", e);
-                }
-                store(txn);
-                getEnvironmentFacade().commit(txn, true);
+                    checkMessageStoreOpen();
 
-                storedSizeChangeOccurred(getMetaData().getContentSize());
+                    Transaction txn;
+                    try
+                    {
+                        txn = getEnvironmentFacade().beginTransaction(null);
+                    }
+                    catch (RuntimeException e)
+                    {
+                        throw getEnvironmentFacade().handleDatabaseException("failed to begin transaction", e);
+                    }
+                    store(txn);
+                    getEnvironmentFacade().commit(txn, true);
+
+                    storedSizeChangeOccurred(getMetaData().getContentSize());
+                }
             }
             return FutureResult.IMMEDIATE_FUTURE;
         }
@@ -1244,8 +1254,11 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
             final T metaData = getMetaData();
             int delta = metaData.getContentSize();
-            removeMessage(_messageId, false);
-            storedSizeChangeOccurred(-delta);
+            if(stored())
+            {
+                removeMessage(_messageId, false);
+                storedSizeChangeOccurred(-delta);
+            }
             if(data != null)
             {
                 _messageDataRef.setData(null);
@@ -1255,17 +1268,18 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 }
             }
             metaData.dispose();
+            _messageDataRef = null;
         }
 
         @Override
         public synchronized boolean isInMemory()
         {
-            return _messageDataRef.isHardRef() || _messageDataRef.getData() != null;
+            return _messageDataRef != null && (_messageDataRef.isHardRef() || _messageDataRef.getData() != null);
         }
 
         private boolean stored()
         {
-            return !_messageDataRef.isHardRef();
+            return _messageDataRef != null && !_messageDataRef.isHardRef();
         }
 
         @Override
@@ -1273,7 +1287,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         {
 
             flushToStore();
-            if(!_messageDataRef.isHardRef())
+            if(_messageDataRef != null && !_messageDataRef.isHardRef())
             {
                 ((MessageDataSoftRef)_messageDataRef).clear();
             }

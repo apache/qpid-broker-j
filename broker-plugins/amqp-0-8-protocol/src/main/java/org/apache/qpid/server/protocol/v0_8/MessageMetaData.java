@@ -41,7 +41,6 @@ import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.ByteBufferOutputStream;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.util.ByteBufferInputStream;
 
 /**
  * Encapsulates a publish body and a content header. In the context of the message store these are treated as a
@@ -155,7 +154,6 @@ public class MessageMetaData implements StorableMessageMetaData
     public synchronized void dispose()
     {
         _contentHeaderBody.dispose();
-        _contentHeaderBody = null;
     }
 
     public synchronized void clearEncodedForm()
