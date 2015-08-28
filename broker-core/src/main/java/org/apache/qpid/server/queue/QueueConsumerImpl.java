@@ -46,6 +46,7 @@ import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.SubscriptionMessages;
 import org.apache.qpid.server.logging.subjects.QueueLogSubject;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -421,16 +422,32 @@ class QueueConsumerImpl
         }
         else
         {
-            Filterable msg = entry.asFilterable();
-            try
+            MessageReference ref = entry.newMessageReference();
+            if(ref != null)
             {
-                return _filters.allAllow(msg);
+                try
+                {
+
+                    Filterable msg = entry.asFilterable();
+                    try
+                    {
+                        return _filters.allAllow(msg);
+                    }
+                    catch (SelectorParsingException e)
+                    {
+                        LOGGER.info(this + " could not evaluate filter [" + _filters
+                                    + "]  against message " + msg
+                                    + ". Error was : " + e.getMessage());
+                        return false;
+                    }
+                }
+                finally
+                {
+                    ref.release();
+                }
             }
-            catch (SelectorParsingException e)
+            else
             {
-                LOGGER.info(this + " could not evaluate filter [" + _filters
-                             + "]  against message " + msg
-                             + ". Error was : " + e.getMessage());
                 return false;
             }
         }

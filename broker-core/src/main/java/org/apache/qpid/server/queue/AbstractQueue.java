@@ -50,7 +50,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.message.MessageInfo;
-import org.apache.qpid.server.message.MessageInfoFacade;
+import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.model.CustomRestHeaders;
 import org.apache.qpid.server.model.RestContentHeader;
 
@@ -3419,7 +3419,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 if (_messageNumber == message.getMessageNumber())
                 {
-                    _messageInfo = new MessageInfoFacade(entry, true);
+                    _messageInfo = new MessageInfoImpl(entry, true);
                 }
             }
             return false;
@@ -3536,7 +3536,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             _position++;
             if((_first == -1 || _position >= _first) && (_last == -1 || _position <= _last))
             {
-                _messages.add(new MessageInfoFacade(entry, _includeHeaders));
+                _messages.add(new MessageInfoImpl(entry, _includeHeaders));
             }
             return _last != -1 && _position > _last;
         }

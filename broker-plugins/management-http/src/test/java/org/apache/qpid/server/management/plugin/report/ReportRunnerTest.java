@@ -54,18 +54,27 @@ public class ReportRunnerTest extends QpidTestCase
 
         runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
                                                                   Collections.<String, String[]>emptyMap());
-        Queue queue1 = createMockQueue(mock(ServerMessage.class));
+        Queue queue1 = createMockQueue(createMockMessageForQueue());
         assertEquals("There are 1 messages on the queue.", runner.runReport(queue1));
 
         runner = (ReportRunner<String>) ReportRunner.createRunner(TestTextReport.NAME,
                                                                   Collections.<String, String[]>emptyMap());
-        Queue queue2 = createMockQueue(mock(ServerMessage.class), mock(ServerMessage.class));
+        Queue queue2 = createMockQueue(createMockMessageForQueue(), createMockMessageForQueue());
         assertEquals("There are 2 messages on the queue.", runner.runReport(queue2));
+    }
+
+    protected ServerMessage createMockMessageForQueue()
+    {
+        final ServerMessage message = mock(ServerMessage.class);
+        final AMQMessageHeader header = mock(AMQMessageHeader.class);
+        when(message.getMessageHeader()).thenReturn(header);
+
+        return message;
     }
 
     public void testTextReportSingleStringParam()
     {
-        Queue queue2 = createMockQueue(mock(ServerMessage.class), mock(ServerMessage.class));
+        Queue queue2 = createMockQueue(createMockMessageForQueue(), createMockMessageForQueue());
 
         Map<String, String[]> parameterMap = new HashMap<>();
         parameterMap.put("stringParam", new String[]{"hello world"});

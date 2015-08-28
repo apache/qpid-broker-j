@@ -39,7 +39,10 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.message.MessageInfo;
+import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.QueueEntry;
@@ -204,7 +207,7 @@ public class ReportRunner<T>
         @Override
         public boolean visit(final QueueEntry entry)
         {
-            _report.addMessage(convertMessage(entry.getMessage()));
+            _report.addMessage(convertMessage(entry));
             return _report.isComplete();
         }
 
@@ -212,154 +215,160 @@ public class ReportRunner<T>
     }
 
 
-    private static ReportableMessage convertMessage(final ServerMessage<?> message)
+    private static ReportableMessage convertMessage(QueueEntry entry)
     {
+        final MessageInfoImpl messageInfo = new MessageInfoImpl(entry, true);
+        final Collection<QpidByteBuffer> contentBuffers = entry.getMessage().getContent(0, (int) entry.getSize());
+        final ByteBuffer content = ByteBufferUtils.combine(contentBuffers);
+        for(QpidByteBuffer buf : contentBuffers)
+        {
+            buf.dispose();
+        }
+
         return new ReportableMessage()
         {
             @Override
             public String getInitialRoutingAddress()
             {
-                return message.getInitialRoutingAddress();
+                return messageInfo.getInitialRoutingAddress();
             }
 
             @Override
             public ReportableMessageHeader getMessageHeader()
             {
-                return convertMessageHeader(message.getMessageHeader());
+                return convertMessageHeader(messageInfo);
             }
 
             @Override
             public ByteBuffer getContent()
             {
-                ByteBuffer content = ByteBufferUtils.combine(message.getContent(0, (int) getSize()));
-
                 return content.asReadOnlyBuffer();
             }
 
             @Override
             public boolean isPersistent()
             {
-                return message.isPersistent();
+                return messageInfo.isPersistent();
             }
 
             @Override
             public long getSize()
             {
-                return message.getSize();
+                return messageInfo.getSize();
             }
 
             @Override
             public long getExpiration()
             {
-                return message.getExpiration();
+                return messageInfo.getExpirationTime() == null ? 0l : messageInfo.getExpirationTime();
             }
 
             @Override
             public long getMessageNumber()
             {
-                return message.getMessageNumber();
+                return messageInfo.getId();
             }
 
             @Override
             public long getArrivalTime()
             {
-                return message.getArrivalTime();
+                return messageInfo.getArrivalTime();
             }
         };
     }
 
-    private static ReportableMessageHeader convertMessageHeader(final AMQMessageHeader messageHeader)
+    private static ReportableMessageHeader convertMessageHeader(final MessageInfoImpl messageInfo)
     {
         return new ReportableMessageHeader()
         {
             @Override
             public String getCorrelationId()
             {
-                return messageHeader.getCorrelationId();
+                return messageInfo.getCorrelationId();
             }
 
             @Override
             public long getExpiration()
             {
-                return messageHeader.getExpiration();
+                return messageInfo.getExpirationTime() == null ? 0l : messageInfo.getExpirationTime();
             }
 
             @Override
             public String getUserId()
             {
-                return messageHeader.getUserId();
+                return messageInfo.getUserId();
             }
 
             @Override
             public String getAppId()
             {
-                return messageHeader.getAppId();
+                return messageInfo.getApplicationId();
             }
 
             @Override
             public String getMessageId()
             {
-                return messageHeader.getMessageId();
+                return messageInfo.getMessageId();
             }
 
             @Override
             public String getMimeType()
             {
-                return messageHeader.getMimeType();
+                return messageInfo.getMimeType();
             }
 
             @Override
             public String getEncoding()
             {
-                return messageHeader.getEncoding();
+                return messageInfo.getEncoding();
             }
 
             @Override
             public byte getPriority()
             {
-                return messageHeader.getPriority();
+                return (byte) messageInfo.getPriority();
             }
 
             @Override
             public long getTimestamp()
             {
-                return messageHeader.getTimestamp();
+                return messageInfo.getTimestamp();
             }
 
             @Override
             public String getType()
             {
-                return messageHeader.getType();
+                return messageInfo.getType();
             }
 
             @Override
             public String getReplyTo()
             {
-                return messageHeader.getReplyTo();
+                return messageInfo.getReplyTo();
             }
 
             @Override
             public Object getHeader(final String name)
             {
-                return makeImmutable(messageHeader.getHeader(name));
+                return makeImmutable(messageInfo.getHeaders().get(name));
             }
 
             @Override
             public boolean containsHeaders(final Set<String> names)
             {
-                return messageHeader.containsHeaders(names);
+                return messageInfo.getHeaders().keySet().contains(names);
             }
 
             @Override
             public boolean containsHeader(final String name)
             {
-                return messageHeader.containsHeader(name);
+                return messageInfo.getHeaders().containsKey(name);
             }
 
             @Override
             public Collection<String> getHeaderNames()
             {
-                return Collections.unmodifiableCollection(messageHeader.getHeaderNames());
+                return Collections.unmodifiableCollection(messageInfo.getHeaders().keySet());
             }
         };
     }
