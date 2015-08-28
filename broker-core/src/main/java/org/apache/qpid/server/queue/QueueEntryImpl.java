@@ -22,7 +22,6 @@ package org.apache.qpid.server.queue;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
+import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
@@ -610,6 +610,19 @@ public abstract class QueueEntryImpl implements QueueEntry
     public boolean isRedelivered()
     {
         return (_flags & REDELIVERED_FLAG) != 0;
+    }
+
+    @Override
+    public MessageReference newMessageReference()
+    {
+        try
+        {
+            return getMessage().newReference();
+        }
+        catch (MessageDeletedException mde)
+        {
+            return null;
+        }
     }
 
     private class EntryInstanceProperties implements InstanceProperties

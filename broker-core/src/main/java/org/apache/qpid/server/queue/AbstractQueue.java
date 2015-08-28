@@ -1304,15 +1304,29 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                     && mightAssign(sub, entry)
                     && !sub.wouldSuspend(entry))
                 {
-                    if (sub.acquires() && !assign(sub, entry))
+
+                    MessageReference messageReference = null;
+                    try
                     {
-                        // restore credit here that would have been taken away by wouldSuspend since we didn't manage
-                        // to acquire the entry for this consumer
-                        sub.restoreCredit(entry);
+
+                        if ((sub.acquires() && !assign(sub, entry))
+                            || (!sub.acquires() && (messageReference = entry.newMessageReference()) == null))
+                        {
+                            // restore credit here that would have been taken away by wouldSuspend since we didn't manage
+                            // to acquire the entry for this consumer
+                            sub.restoreCredit(entry);
+                        }
+                        else
+                        {
+                            deliverMessage(sub, entry, false);
+                        }
                     }
-                    else
+                    finally
                     {
-                        deliverMessage(sub, entry, false);
+                        if (messageReference != null)
+                        {
+                            messageReference.release();
+                        }
                     }
                 }
             }
@@ -1740,10 +1754,22 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while (queueListIterator.advance() && !filter.filterComplete())
         {
             QueueEntry node = queueListIterator.getNode();
-            if (!node.isDeleted() && filter.accept(node))
+            MessageReference reference = node.newMessageReference();
+            if (reference != null)
             {
-                entryList.add(node);
+                try
+                {
+                    if (!node.isDeleted() && filter.accept(node))
+                    {
+                        entryList.add(node);
+                    }
+                }
+                finally
+                {
+                    reference.release();
+                }
             }
+
         }
         return entryList;
 
@@ -1756,12 +1782,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         while(queueListIterator.advance())
         {
             QueueEntry node = queueListIterator.getNode();
-
-            if(!node.isDeleted())
+            MessageReference reference = node.newMessageReference();
+            if(reference != null)
             {
-                if(visitor.visit(node))
+                try
                 {
-                    break;
+
+                    final boolean done = !node.isDeleted() && visitor.visit(node);
+                    if(done)
+                    {
+                        break;
+                    }
+                }
+                finally
+                {
+                    reference.release();
                 }
             }
         }
@@ -2149,17 +2184,29 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     if (!sub.wouldSuspend(node))
                     {
-                        if (sub.acquires() && !assign(sub, node))
+                        MessageReference messageReference = null;
+                        try
                         {
-                            // restore credit here that would have been taken away by wouldSuspend since we didn't manage
-                            // to acquire the entry for this consumer
-                            sub.restoreCredit(node);
-                        }
-                        else
-                        {
-                            deliverMessage(sub, node, batch);
-                        }
 
+                            if ((sub.acquires() && !assign(sub, node))
+                                || (!sub.acquires() && (messageReference = node.newMessageReference()) == null))
+                            {
+                                // restore credit here that would have been taken away by wouldSuspend since we didn't manage
+                                // to acquire the entry for this consumer
+                                sub.restoreCredit(node);
+                            }
+                            else
+                            {
+                                deliverMessage(sub, node, batch);
+                            }
+                        }
+                        finally
+                        {
+                            if (messageReference != null)
+                            {
+                                messageReference.release();
+                            }
+                        }
                     }
                     else // Not enough Credit for message and wouldSuspend
                     {

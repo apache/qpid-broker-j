@@ -21,6 +21,7 @@
 package org.apache.qpid.server.queue;
 
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageReference;
 
 public interface QueueEntry extends MessageInstance, Comparable<QueueEntry>
 {
@@ -36,4 +37,6 @@ public interface QueueEntry extends MessageInstance, Comparable<QueueEntry>
     QueueEntry getNextValidEntry();
 
     void setExpiration(long calculatedExpiration);
+
+    MessageReference newMessageReference();
 }
