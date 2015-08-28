@@ -505,32 +505,29 @@ public final class QpidByteBuffer
         }
         else
         {
-            List<QpidByteBuffer> collections = new ArrayList<>((size / maxPooledBufferSize)+2);
+            List<QpidByteBuffer> buffers = new ArrayList<>((size / maxPooledBufferSize)+2);
             int remaining = size;
 
             QpidByteBuffer buf = _cachedBuffer.get();
-            if(buf != null)
+            if(buf == null)
             {
-                collections.add(buf.slice());
+                buf = allocateDirect(maxPooledBufferSize);
+            }
+            while(remaining > buf.remaining())
+            {
+                buffers.add(buf);
                 remaining -= buf.remaining();
-                buf.dispose();
+                buf = allocateDirect(maxPooledBufferSize);
             }
-            while(remaining > maxPooledBufferSize)
-            {
-                collections.add(allocateDirect(maxPooledBufferSize));
-                remaining -= maxPooledBufferSize;
-            }
-            buf = allocateDirect(maxPooledBufferSize);
-            collections.add(buf.view(0, remaining));
-            buf.position(buf.position()+remaining);
+            buffers.add(buf.view(0, remaining));
+            buf.position(buf.position() + remaining);
 
-            _cachedBuffer.set(buf.slice());
+            _cachedBuffer.set(buf.hasRemaining() ? buf.slice() : allocateDirect(maxPooledBufferSize));
             buf.dispose();
-            return collections;
-
+            return buffers;
         }
-
     }
+
     public ByteBuffer asByteBuffer()
     {
         _ref.removeFromPool();
