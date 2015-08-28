@@ -35,7 +35,7 @@
     "name" : "logfile",
     "type" : "File",
     "fileName" : "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
-    "brokerloggerfilters" : [ {
+    "brokerloginclusionrules" : [ {
       "name" : "Root",
       "type" : "NameAndLevel",
       "level" : "WARN",
@@ -54,7 +54,7 @@
   }, {
     "name" : "memory",
     "type" : "Memory",
-    "brokerloggerfilters" : [ {
+    "brokerloginclusionrules" : [ {
       "name" : "Root",
       "type" : "NameAndLevel",
       "level" : "WARN",

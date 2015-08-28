@@ -24,8 +24,8 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.server.model.BrokerLogger;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.ManagedAttributeField;
 
 public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> extends AbstractLogger<X> implements BrokerLogger<X>
@@ -42,13 +42,13 @@ public abstract class AbstractBrokerLogger<X extends AbstractBrokerLogger<X>> ex
     protected void onResolve()
     {
         super.onResolve();
-        addFilter(new VirtualHostLogEventExcludingFilter(this));
+        addLogInclusionRule(new VirtualHostLogEventExcludingFilter(this));
     }
 
     @Override
-    protected Collection<? extends LoggerFilter> getLoggerFilters()
+    protected Collection<? extends LogInclusionRule> getLogInclusionRules()
     {
-        return getChildren(BrokerLoggerFilter.class);
+        return getChildren(BrokerLogInclusionRule.class);
     }
 
     @Override

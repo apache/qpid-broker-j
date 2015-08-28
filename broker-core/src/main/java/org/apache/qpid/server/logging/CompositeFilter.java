@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
@@ -41,20 +40,20 @@ public class CompositeFilter extends Filter<ILoggingEvent>
     private final AtomicLong _warnCount = new AtomicLong();
     private final AtomicLong _errorCount = new AtomicLong();
 
-    public void addFilter(LoggerFilter filter)
+    public void addLogInclusionRule(LogInclusionRule logInclusionRule)
     {
-        Filter<ILoggingEvent> f = filter.asFilter();
-        f.setName(filter.getName());
+        Filter<ILoggingEvent> f = logInclusionRule.asFilter();
+        f.setName(logInclusionRule.getName());
         _filterList.add(f);
     }
 
-    public void removeFilter(LoggerFilter filter)
+    public void removeLogInclusionRule(LogInclusionRule logInclusionRule)
     {
         Iterator<Filter<ILoggingEvent>> it = _filterList.iterator();
         while(it.hasNext())
         {
             Filter f = it.next();
-            if (f.getName().equals(filter.getName()))
+            if (f.getName().equals(logInclusionRule.getName()))
             {
                 _filterList.remove(f);
                 break;

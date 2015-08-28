@@ -24,16 +24,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.VirtualHostLogger;
 
-public class BrokerNameAndLevelFilterImpl extends AbstractNameAndLevelFilter<BrokerNameAndLevelFilterImpl>
-        implements BrokerNameAndLevelFilter<BrokerNameAndLevelFilterImpl>
+public class VirtualHostNameAndLevelLogInclusionRuleImpl extends AbstractNameAndLevelLogInclusionRule<VirtualHostNameAndLevelLogInclusionRuleImpl>
+        implements VirtualHostNameAndLevelLogInclusionRule<VirtualHostNameAndLevelLogInclusionRuleImpl>
 {
 
     @ManagedObjectFactoryConstructor
-    protected BrokerNameAndLevelFilterImpl(final Map<String, Object> attributes, BrokerLogger<?> logger)
+    protected VirtualHostNameAndLevelLogInclusionRuleImpl(final Map<String, Object> attributes, VirtualHostLogger<?> logger)
     {
         super(parentsMap(logger), attributes);
     }
@@ -42,14 +42,14 @@ public class BrokerNameAndLevelFilterImpl extends AbstractNameAndLevelFilter<Bro
     protected void validateChange(ConfiguredObject<?> proxyForValidation, Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        BrokerNameAndLevelFilter proxyFilter = (BrokerNameAndLevelFilter)proxyForValidation;
+        VirtualHostNameAndLevelLogInclusionRule proxy = (VirtualHostNameAndLevelLogInclusionRule)proxyForValidation;
         if (changedAttributes.contains(LOGGER_NAME) &&
-            ((getLoggerName() != null && !getLoggerName().equals(proxyFilter.getLoggerName())) ||
-             (getLoggerName() == null && proxyFilter.getLoggerName() != null)))
+            ((getLoggerName() != null && !getLoggerName().equals(proxy.getLoggerName())) ||
+             (getLoggerName() == null && proxy.getLoggerName() != null)))
         {
             throw new IllegalConfigurationException("Attribute '" + LOGGER_NAME + " cannot be changed");
         }
     }
 
-
 }
+

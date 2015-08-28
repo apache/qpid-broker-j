@@ -31,9 +31,9 @@ define(["dojo/parser",
     "dojox/grid/EnhancedGrid",
     "dojo/text!showLogger.html",
     "qpid/management/addLogger",
-    "qpid/management/addLoggerFilter",
+    "qpid/management/addLogInclusionRule",
     "dojo/domReady!"],
-  function (parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, EnhancedGrid, template, addLogger, addLoggerFilter)
+  function (parser, query, connect, registry, entities, properties, updater, util, formatter, UpdatableStore, EnhancedGrid, template, addLogger, addLogInclusionRule)
   {
 
     function Logger(name, parent, controller)
@@ -43,7 +43,7 @@ define(["dojo/parser",
       this.management = controller.management;
       var isBrokerParent = parent.type == "broker";
       this.category = isBrokerParent ? "BrokerLogger" : "VirtualHostLogger";
-      this.filterCategory = this.category + "Filter";
+      this.logInclusionRuleCategory = isBrokerParent? "BrokerLogInclusionRule" : "VirtualHostLogInclusionRule";
       this.modelObj = {type: this.category.toLowerCase(), name: name, parent: parent};
       this.userFriendlyName = (isBrokerParent ? "Broker Logger" : "Virtual Host Logger");
     }
@@ -102,9 +102,9 @@ define(["dojo/parser",
         }
       };
 
-      this.filterGrid = new UpdatableStore([], query(".filterGrid", containerNode)[0],
+      this.logInclusionRuleGrid = new UpdatableStore([], query(".logInclusionRuleGrid", containerNode)[0],
         [
-          {name: "Filter Name", field: "name", width: "20%"},
+          {name: "Rule Name", field: "name", width: "20%"},
           {name: "Type", field: "type", width: "20%"},
           {name: "Logger Name", field: "loggerName", width: "30%"},
           {name: "Level", field: "level", width: "20%"},
@@ -116,29 +116,29 @@ define(["dojo/parser",
             {
               var idx = evt.rowIndex;
               var theItem = this.getItem(idx);
-              that.showFilter(theItem);
+              that.showLogInclusionRule(theItem);
             });
         }, gridProperties, EnhancedGrid);
 
-      this.addLoggerFilterButton = registry.byNode(query(".addFilterButton", containerNode)[0]);
-      this.deleteLoggerFilterButton = registry.byNode(query(".deleteFilterButton", containerNode)[0]);
+      this.addLogInclusionRuleButton = registry.byNode(query(".addLogInclusionRuleButton", containerNode)[0]);
+      this.deleteLogInclusionRuleButton = registry.byNode(query(".deleteLogInclusionRuleButton", containerNode)[0]);
 
-      this.deleteLoggerFilterButton.on("click",
+      this.deleteLogInclusionRuleButton.on("click",
         function (e)
         {
           util.deleteSelectedObjects(
-            that.filterGrid.grid,
-            "Are you sure you want to delete logger filter",
+            that.logInclusionRuleGrid.grid,
+            "Are you sure you want to delete log inclusion rule",
             that.management,
-            {type: that.filterCategory.toLowerCase(), parent: that.modelObj},
+            {type: that.logInclusionRuleCategory.toLowerCase(), parent: that.modelObj},
             that.loggerUpdater);
         }
       );
 
-      this.addLoggerFilterButton.on("click",
+      this.addLogInclusionRuleButton.on("click",
         function(e)
         {
-          addLoggerFilter.show(that.management, that.modelObj, that.filterCategory);
+          addLogInclusionRule.show(that.management, that.modelObj, that.logInclusionRuleCategory);
         }
       );
 
@@ -149,14 +149,14 @@ define(["dojo/parser",
       });
     };
 
-    Logger.prototype.showFilter = function (item)
+    Logger.prototype.showLogInclusionRule = function (item)
     {
-      var filterModelObj = {name: item.name, type: this.filterCategory.toLowerCase(), parent: this.modelObj};
+      var ruleModelObj = {name: item.name, type: this.logInclusionRuleCategory.toLowerCase(), parent: this.modelObj};
       var that = this;
-      this.management.load(filterModelObj, {actuals: true}).then(
+      this.management.load(ruleModelObj, {actuals: true}).then(
                               function(data)
                               {
-                                addLoggerFilter.show(that.management, filterModelObj, that.filterCategory, data[0]);
+                                addLogInclusionRule.show(that.management, ruleModelObj, that.logInclusionRuleCategory, data[0]);
                               });
     };
 
@@ -193,7 +193,7 @@ define(["dojo/parser",
         }
       }
 
-      storeNodes(["name", "state", "type", "loggerAttributes", "loggerTypeSpecificDetails", "filterWarning", "durable", "errorCount", "warnCount"]);
+      storeNodes(["name", "state", "type", "loggerAttributes", "loggerTypeSpecificDetails", "logInclusionRuleWarning", "durable", "errorCount", "warnCount"]);
     }
 
     Updater.prototype.update = function (callback)
@@ -253,18 +253,18 @@ define(["dojo/parser",
         this.details.update(data);
       }
 
-      var filterFieldName = this.tabObject.filterCategory.toLowerCase() + "s"; // add plural "s"
-      if (data[filterFieldName])
+      var ruleFieldName = this.tabObject.logInclusionRuleCategory.toLowerCase() + "s"; // add plural "s"
+      if (data[ruleFieldName])
       {
-        this.tabObject.filterGrid.grid.domNode.style.display = "block";
-        this.filterWarning.style.display = "none";
+        this.tabObject.logInclusionRuleGrid.grid.domNode.style.display = "block";
+        this.logInclusionRuleWarning.style.display = "none";
       }
       else
       {
-        this.tabObject.filterGrid.grid.domNode.style.display = "none";
-        this.filterWarning.style.display = "block";
+        this.tabObject.logInclusionRuleGrid.grid.domNode.style.display = "none";
+        this.logInclusionRuleWarning.style.display = "block";
       }
-      util.updateUpdatableStore(this.tabObject.filterGrid, data[filterFieldName]);
+      util.updateUpdatableStore(this.tabObject.logInclusionRuleGrid, data[ruleFieldName]);
     };
 
     return Logger;

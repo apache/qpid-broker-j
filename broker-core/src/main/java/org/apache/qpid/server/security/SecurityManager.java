@@ -41,7 +41,7 @@ import javax.security.auth.Subject;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
+import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Consumer;
@@ -60,7 +60,7 @@ import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostLogger;
-import org.apache.qpid.server.model.VirtualHostLoggerFilter;
+import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.access.ObjectProperties;
@@ -420,7 +420,7 @@ public class SecurityManager
     {
         return Broker.class.isAssignableFrom(category) ||
                PreferencesProvider.class.isAssignableFrom(category) ||
-               BrokerLoggerFilter.class.isAssignableFrom(category) ||
+               BrokerLogInclusionRule.class.isAssignableFrom(category) ||
                VirtualHostAlias.class.isAssignableFrom(category) ||
                ( !VirtualHostNode.class.isAssignableFrom(category) && getModel().getChildTypes(Broker.class).contains(category));
     }
@@ -565,7 +565,7 @@ public class SecurityManager
     {
         return VirtualHost.class.isAssignableFrom(category) ||
                 VirtualHostLogger.class.isAssignableFrom(category) ||
-                VirtualHostLoggerFilter.class.isAssignableFrom(category) ||
+                VirtualHostLogInclusionRule.class.isAssignableFrom(category) ||
                 Connection.class.isAssignableFrom(category);
     }
 

@@ -24,11 +24,11 @@ define(["dojo/dom",
     "dijit/registry",
     "qpid/common/util",
     "dojo/parser",
-    "dojo/text!loggerfilter/nameandlevel/add.html",
+    "dojo/text!loginclusionrule/nameandlevel/add.html",
     "dojo/domReady!"],
   function (dom, query, array, registry, util, parser, template)
   {
-    var addFileLogger =
+    var addLogInclusionRule =
     {
       show: function(data)
       {
@@ -38,7 +38,7 @@ define(["dojo/dom",
         data.containerNode.innerHTML = template;
         return parser.parse(this.containerNode).then(function(instances)
         {
-          var logLevelWidget = registry.byId("addLoggerFilter.level");
+          var logLevelWidget = registry.byId("addLogInclusionRule.level");
           var validValues = that.metadata.getMetaData(data.category, data.type).attributes.level.validValues;
           var validValueStore = util.makeTypeStore(validValues);
           logLevelWidget.set("store", validValueStore);
@@ -46,6 +46,6 @@ define(["dojo/dom",
       }
     };
 
-    return addFileLogger;
+    return addLogInclusionRule;
   }
 );

@@ -32,7 +32,7 @@ import ch.qos.logback.core.spi.FilterReply;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 
-public class VirtualHostLogEventExcludingFilter extends Filter<ILoggingEvent> implements LoggerFilter
+public class VirtualHostLogEventExcludingFilter extends Filter<ILoggingEvent> implements LogInclusionRule
 {
     private final BrokerLogger<?> _brokerLogger ;
 

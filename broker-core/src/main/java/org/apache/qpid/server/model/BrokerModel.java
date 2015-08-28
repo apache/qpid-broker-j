@@ -84,7 +84,7 @@ public final class BrokerModel extends Model
         addRelationship(Broker.class, KeyStore.class);
         addRelationship(Broker.class, Plugin.class);
 
-        addRelationship(BrokerLogger.class, BrokerLoggerFilter.class);
+        addRelationship(BrokerLogger.class, BrokerLogInclusionRule.class);
 
         addRelationship(VirtualHostNode.class, VirtualHost.class);
         addRelationship(VirtualHostNode.class, RemoteReplicationNode.class);
@@ -93,7 +93,7 @@ public final class BrokerModel extends Model
         addRelationship(VirtualHost.class, Exchange.class);
         addRelationship(VirtualHost.class, Queue.class);
 
-        addRelationship(VirtualHostLogger.class, VirtualHostLoggerFilter.class);
+        addRelationship(VirtualHostLogger.class, VirtualHostLogInclusionRule.class);
 
         addRelationship(Port.class, VirtualHostAlias.class);
         addRelationship(Port.class, Connection.class);

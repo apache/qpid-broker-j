@@ -39,9 +39,9 @@ import javax.management.openmbean.TabularData;
 import org.apache.qpid.management.common.mbeans.LoggingManagement;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
 import org.apache.qpid.server.logging.BrokerFileLogger;
-import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
+import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.logging.LogLevel;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
+import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class LoggingManagementMBeanTest extends QpidTestCase
@@ -84,12 +84,12 @@ public class LoggingManagementMBeanTest extends QpidTestCase
 
     public void testViewEffectiveRuntimeLoggerLevels()  throws Exception
     {
-        Collection<BrokerLoggerFilter> filters = new ArrayList<>();
-        filters.add(createMockFilter("a.b.D", LogLevel.DEBUG));
-        filters.add(createMockFilter("a.b.C", LogLevel.INFO));
-        filters.add(createMockFilter("", LogLevel.WARN));
+        Collection<BrokerLogInclusionRule> rules = new ArrayList<>();
+        rules.add(createMockRule("a.b.D", LogLevel.DEBUG));
+        rules.add(createMockRule("a.b.C", LogLevel.INFO));
+        rules.add(createMockRule("", LogLevel.WARN));
 
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(filters);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(rules);
 
         TabularData table = _loggingMBean.viewEffectiveRuntimeLoggerLevels();
         assertEquals(3, table.size());
@@ -102,57 +102,57 @@ public class LoggingManagementMBeanTest extends QpidTestCase
         assertChannelRow(row3, "", LogLevel.WARN.name());
     }
 
-    private BrokerNameAndLevelFilter createMockFilter(String loggerName, LogLevel logLevel, boolean durability)
+    private BrokerNameAndLevelLogInclusionRule createMockRule(String loggerName, LogLevel logLevel, boolean durability)
     {
-        BrokerNameAndLevelFilter filter = mock(BrokerNameAndLevelFilter.class);
-        when(filter.getLevel()).thenReturn(logLevel);
-        when(filter.getLoggerName()).thenReturn(loggerName);
-        when(filter.isDurable()).thenReturn(durability);
-        return filter;
+        BrokerNameAndLevelLogInclusionRule rule = mock(BrokerNameAndLevelLogInclusionRule.class);
+        when(rule.getLevel()).thenReturn(logLevel);
+        when(rule.getLoggerName()).thenReturn(loggerName);
+        when(rule.isDurable()).thenReturn(durability);
+        return rule;
     }
 
-    private BrokerNameAndLevelFilter createMockFilter(String loggerName, LogLevel logLevel)
+    private BrokerNameAndLevelLogInclusionRule createMockRule(String loggerName, LogLevel logLevel)
     {
-        return createMockFilter(loggerName, logLevel, false);
+        return createMockRule(loggerName, logLevel, false);
     }
 
     public void testGetRuntimeRootLoggerLevel()  throws Exception
     {
         assertEquals(LogLevel.OFF.toString(), _loggingMBean.getRuntimeRootLoggerLevel());
 
-        BrokerLoggerFilter rootFilterWithNull = createMockFilter(null, LogLevel.WARN);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithNull));
+        BrokerLogInclusionRule rootRuleWithNull = createMockRule(null, LogLevel.WARN);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(rootRuleWithNull));
         assertEquals(LogLevel.WARN.name(), _loggingMBean.getRuntimeRootLoggerLevel());
 
-        BrokerLoggerFilter rootFilterWithEmptyName = createMockFilter("", LogLevel.ERROR);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithEmptyName));
+        BrokerLogInclusionRule rootRuleWithEmptyName = createMockRule("", LogLevel.ERROR);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(rootRuleWithEmptyName));
         assertEquals(LogLevel.ERROR.name(), _loggingMBean.getRuntimeRootLoggerLevel());
 
-        BrokerLoggerFilter rootFilterWithRootLoggerName = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithRootLoggerName));
+        BrokerLogInclusionRule rootRuleWithRootLoggerName = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(rootRuleWithRootLoggerName));
         assertEquals(LogLevel.DEBUG.name(), _loggingMBean.getRuntimeRootLoggerLevel());
     }
 
     public void testSetRuntimeRootLoggerLevel()  throws Exception
     {
-        assertFalse("Should not be able to set runtime root log level without existing filter",
+        assertFalse("Should not be able to set runtime root log level without existing rule",
                 _loggingMBean.setRuntimeRootLoggerLevel(LogLevel.WARN.name()));
 
-        BrokerLoggerFilter durableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableRootFilter));
-        assertFalse("Should not be able to set runtime root log level on durable root filter",
+        BrokerLogInclusionRule durableRootRule = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(durableRootRule));
+        assertFalse("Should not be able to set runtime root log level on durable root rule",
                 _loggingMBean.setRuntimeRootLoggerLevel(LogLevel.WARN.name()));
 
-        BrokerLoggerFilter nonDurableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableRootFilter));
-        assertTrue("Should be able to set runtime root log level on non-durable root filter",
+        BrokerLogInclusionRule nonDurableRootRule = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(nonDurableRootRule));
+        assertTrue("Should be able to set runtime root log level on non-durable root rule",
                 _loggingMBean.setRuntimeRootLoggerLevel(LogLevel.WARN.name()));
     }
 
     public void testSetRuntimeRootLoggerLevelWhenLoggingLevelUnsupported()  throws Exception
     {
-        BrokerLoggerFilter nonDurableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableRootFilter));
+        BrokerLogInclusionRule nonDurableRootRule = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(nonDurableRootRule));
 
         String currentRootLogLevel = _loggingMBean.getRuntimeRootLoggerLevel();
 
@@ -171,17 +171,17 @@ public class LoggingManagementMBeanTest extends QpidTestCase
 
     public void testSetRuntimeLoggerLevel()  throws Exception
     {
-        assertFalse("Should not be able to set runtime log level without existing filter '" + TEST_LOGGER_NAME + "'",
+        assertFalse("Should not be able to set runtime log level without existing rule '" + TEST_LOGGER_NAME + "'",
                 _loggingMBean.setRuntimeLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
 
-        BrokerLoggerFilter durableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableFilter));
-        assertFalse("Should not be able to set runtime log level on durable filter '" + TEST_LOGGER_NAME + "'",
+        BrokerLogInclusionRule durableRule = createMockRule(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(durableRule));
+        assertFalse("Should not be able to set runtime log level on durable rule '" + TEST_LOGGER_NAME + "'",
                 _loggingMBean.setRuntimeLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
 
-        BrokerLoggerFilter nonDurableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, false);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableFilter));
-        assertTrue("Should be able to set runtime log level on non-durable filter '" + TEST_LOGGER_NAME + "'",
+        BrokerLogInclusionRule nonDurableRule = createMockRule(TEST_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(nonDurableRule));
+        assertTrue("Should be able to set runtime log level on non-durable rule '" + TEST_LOGGER_NAME + "'",
                 _loggingMBean.setRuntimeLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
     }
 
@@ -196,13 +196,13 @@ public class LoggingManagementMBeanTest extends QpidTestCase
 
     public void testViewEffectiveConfigFileLoggerLevels()  throws Exception
     {
-        Collection<BrokerLoggerFilter> filters = new ArrayList<>();
-        filters.add(createMockFilter("a.b.D", LogLevel.DEBUG, true));
-        filters.add(createMockFilter("a.b.C", LogLevel.INFO, true));
-        filters.add(createMockFilter("", LogLevel.WARN, true));
-        filters.add(createMockFilter("a.b.E", LogLevel.WARN, false));
+        Collection<BrokerLogInclusionRule> rules = new ArrayList<>();
+        rules.add(createMockRule("a.b.D", LogLevel.DEBUG, true));
+        rules.add(createMockRule("a.b.C", LogLevel.INFO, true));
+        rules.add(createMockRule("", LogLevel.WARN, true));
+        rules.add(createMockRule("a.b.E", LogLevel.WARN, false));
 
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(filters);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(rules);
 
         TabularData table = _loggingMBean.viewConfigFileLoggerLevels();
         assertEquals(3, table.size());
@@ -217,46 +217,46 @@ public class LoggingManagementMBeanTest extends QpidTestCase
 
     public void testGetConfigFileRootLoggerLevel() throws Exception
     {
-        assertEquals("Unexpected config root logger level when no filter is set", LogLevel.OFF.name(), _loggingMBean.getConfigFileRootLoggerLevel());
+        assertEquals("Unexpected config root logger level when no rule is set", LogLevel.OFF.name(), _loggingMBean.getConfigFileRootLoggerLevel());
 
-        BrokerLoggerFilter rootFilterWithNullName = createMockFilter(null, LogLevel.WARN, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithNullName));
+        BrokerLogInclusionRule rootRuleWithNullName = createMockRule(null, LogLevel.WARN, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(rootRuleWithNullName));
         assertEquals("Unexpected config root logger level", LogLevel.WARN.name(), _loggingMBean.getConfigFileRootLoggerLevel());
 
-        BrokerLoggerFilter rootFilterWithEmptyName = createMockFilter("", LogLevel.ERROR, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithEmptyName));
+        BrokerLogInclusionRule rootRuleWithEmptyName = createMockRule("", LogLevel.ERROR, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(rootRuleWithEmptyName));
         assertEquals("Unexpected config root logger level", LogLevel.ERROR.name(), _loggingMBean.getConfigFileRootLoggerLevel());
 
-        BrokerLoggerFilter rootFilterWithRootLoggerName = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(rootFilterWithRootLoggerName));
+        BrokerLogInclusionRule rootRuleWithRootLoggerName = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(rootRuleWithRootLoggerName));
         assertEquals("Unexpected config root logger level", LogLevel.DEBUG.name(), _loggingMBean.getConfigFileRootLoggerLevel());
 
-        BrokerLoggerFilter nonDurableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableRootFilter));
-        assertEquals("Unexpected config root logger level when root filter is non-durable", LogLevel.OFF.name(), _loggingMBean.getConfigFileRootLoggerLevel());
+        BrokerLogInclusionRule nonDurableRootRule = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(nonDurableRootRule));
+        assertEquals("Unexpected config root logger level when root rule is non-durable", LogLevel.OFF.name(), _loggingMBean.getConfigFileRootLoggerLevel());
     }
 
     public void testSetConfigFileRootLoggerLevel()  throws Exception
     {
-        assertFalse("Should not be able to set config root log level without existing filter",
+        assertFalse("Should not be able to set config root log level without existing rule",
                 _loggingMBean.setConfigFileRootLoggerLevel(LogLevel.WARN.name()));
 
-        BrokerLoggerFilter durableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableRootFilter));
-        assertTrue("Should be able to set config root log level on durable root filter",
+        BrokerLogInclusionRule durableRootRule = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(durableRootRule));
+        assertTrue("Should be able to set config root log level on durable root rule",
                 _loggingMBean.setConfigFileRootLoggerLevel(LogLevel.WARN.name()));
 
-        BrokerLoggerFilter nonDurableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableRootFilter));
-        assertFalse("Should not be able to set config root log level on non-durable root filter",
+        BrokerLogInclusionRule nonDurableRootRule = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(nonDurableRootRule));
+        assertFalse("Should not be able to set config root log level on non-durable root rule",
                 _loggingMBean.setConfigFileRootLoggerLevel(LogLevel.WARN.name()));
     }
 
 
     public void testSetConfigFileRootLoggerLevelWhenLoggingLevelUnsupported()  throws Exception
     {
-        BrokerLoggerFilter durableRootFilter = createMockFilter(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableRootFilter));
+        BrokerLogInclusionRule durableRootRule = createMockRule(ROOT_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(durableRootRule));
 
         String currentRootLogLevel = _loggingMBean.getConfigFileRootLoggerLevel();
 
@@ -275,24 +275,24 @@ public class LoggingManagementMBeanTest extends QpidTestCase
 
     public void testSetConfigFileLoggerLevel() throws Exception
     {
-        assertFalse("Should not be able to set config log level without existing filter",
+        assertFalse("Should not be able to set config log level without existing rule",
                 _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
 
-        BrokerLoggerFilter durableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableFilter));
-        assertTrue("Should be able to set config log level on durable filter",
+        BrokerLogInclusionRule durableRule = createMockRule(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(durableRule));
+        assertTrue("Should be able to set config log level on durable rule",
                 _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
 
-        BrokerLoggerFilter nonDurableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, false);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(nonDurableFilter));
-        assertFalse("Should not be able to set config log level on non-durable filter",
+        BrokerLogInclusionRule nonDurableRule = createMockRule(TEST_LOGGER_NAME, LogLevel.DEBUG, false);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(nonDurableRule));
+        assertFalse("Should not be able to set config log level on non-durable rule",
                 _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, LogLevel.WARN.name()));
     }
 
     public void testSetConfigFileLoggerLevelWhenLoggingLevelUnsupported()  throws Exception
     {
-        BrokerLoggerFilter durableFilter = createMockFilter(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
-        when(_brokerFileLogger.getChildren(BrokerLoggerFilter.class)).thenReturn(Collections.singleton(durableFilter));
+        BrokerLogInclusionRule durableRule = createMockRule(TEST_LOGGER_NAME, LogLevel.DEBUG, true);
+        when(_brokerFileLogger.getChildren(BrokerLogInclusionRule.class)).thenReturn(Collections.singleton(durableRule));
 
         boolean result = _loggingMBean.setConfigFileLoggerLevel(TEST_LOGGER_NAME, UNSUPPORTED_LOG_LEVEL);
         assertFalse("Should not be able to set config root logger level to unsupported value", result);

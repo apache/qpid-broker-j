@@ -29,7 +29,6 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,17 +47,17 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
     protected AbstractLogger(Map<String, Object> attributes, ConfiguredObject<?> parent)
     {
         super(parentsMap(parent), attributes);
-        addChangeListener(new FilterListener());
+        addChangeListener(new LogInclusionRuleListener());
     }
 
-    protected final void addFilter(LoggerFilter filter)
+    protected final void addLogInclusionRule(LogInclusionRule logInclusionRule)
     {
-        _compositeFilter.addFilter(filter);
+        _compositeFilter.addLogInclusionRule(logInclusionRule);
     }
 
-    protected final void removeFilter(LoggerFilter filter)
+    protected final void removeLogInclusionRule(LogInclusionRule logInclusionRule)
     {
-        _compositeFilter.removeFilter(filter);
+        _compositeFilter.removeLogInclusionRule(logInclusionRule);
     }
 
     @Override
@@ -71,9 +70,9 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         appender.setName(getName());
         appender.setContext(loggerContext);
 
-        for(LoggerFilter filter : getLoggerFilters())
+        for(LogInclusionRule logInclusionRule : getLogInclusionRules())
         {
-            _compositeFilter.addFilter(filter);
+            _compositeFilter.addLogInclusionRule(logInclusionRule);
         }
         appender.addFilter(_compositeFilter);
 
@@ -90,7 +89,7 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
 
     protected abstract Appender<ILoggingEvent> createAppenderInstance(Context context);
 
-    protected abstract Collection<? extends LoggerFilter> getLoggerFilters();
+    protected abstract Collection<? extends LogInclusionRule> getLogInclusionRules();
 
     @StateTransition( currentState = { State.ERRORED, State.UNINITIALIZED, State.STOPPED }, desiredState = State.ACTIVE )
     private ListenableFuture<Void> doActivate()
@@ -140,24 +139,24 @@ public abstract class AbstractLogger<X extends AbstractLogger<X>> extends Abstra
         }
     }
 
-    private class FilterListener implements ConfigurationChangeListener
+    private class LogInclusionRuleListener implements ConfigurationChangeListener
     {
 
         @Override
         public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
         {
-            if (child instanceof LoggerFilter)
+            if (child instanceof LogInclusionRule)
             {
-                addFilter((LoggerFilter) child);
+                addLogInclusionRule((LogInclusionRule) child);
             }
         }
 
         @Override
         public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
         {
-            if (child instanceof LoggerFilter)
+            if (child instanceof LogInclusionRule)
             {
-                removeFilter((LoggerFilter) child);
+                removeLogInclusionRule((LogInclusionRule) child);
             }
         }
 

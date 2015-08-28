@@ -20,10 +20,10 @@
  */
 package org.apache.qpid.server.model;
 
-import org.apache.qpid.server.logging.LoggerFilter;
-import org.apache.qpid.server.logging.VirtualHostNameAndLevelFilter;
+import org.apache.qpid.server.logging.LogInclusionRule;
+import org.apache.qpid.server.logging.VirtualHostNameAndLevelLogInclusionRule;
 
-@ManagedObject(defaultType = VirtualHostNameAndLevelFilter.TYPE)
-public interface VirtualHostLoggerFilter<X extends VirtualHostLoggerFilter<X>> extends ConfiguredObject<X>, LoggerFilter
+@ManagedObject(defaultType = VirtualHostNameAndLevelLogInclusionRule.TYPE)
+public interface VirtualHostLogInclusionRule<X extends VirtualHostLogInclusionRule<X>> extends ConfiguredObject<X>, LogInclusionRule
 {
 }

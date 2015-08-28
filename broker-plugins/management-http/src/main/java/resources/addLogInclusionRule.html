@@ -18,31 +18,31 @@
   -->
 
 <div class="dijitHidden">
-    <div data-dojo-type="dijit/Dialog" data-dojo-props="title:'Add Logger Filter'" id="addLoggerFilter">
-        <form id="addLoggerFilter.form" method="post" data-dojo-type="dijit/form/Form">
-            <div id="addLoggerFilter.contentPane">
+    <div data-dojo-type="dijit/Dialog" data-dojo-props="title:'Add Log Inclusion Rule'" id="addLogInclusionRule">
+        <form id="addLogInclusionRule.form" method="post" data-dojo-type="dijit/form/Form">
+            <div id="addLogInclusionRule.contentPane">
                 <div class="clear">
                     <div class="formLabel-labelCell tableContainer-labelCell">Name*:</div>
                     <div class="formLabel-controlCell tableContainer-valueCell">
-                        <input type="text" id="addLoggerFilter.name"
+                        <input type="text" id="addLogInclusionRule.name"
                                data-dojo-type="dijit/form/ValidationTextBox"
                                data-dojo-props="
                           name: 'name',
-                          placeHolder: 'logger filter name',
+                          placeHolder: 'log inclusion rule name',
                           required: true,
-                          promptMessage: 'Name of logger filter must be unique',
-                          title: 'Enter a unique logger filter name'" />
+                          promptMessage: 'Name of log inclusion rule must be unique',
+                          title: 'Enter a unique name for the log inclusion rule'" />
                     </div>
                 </div>
                 <div class="clear">
                     <div class="formLabel-labelCell tableContainer-labelCell">Type*:</div>
                     <div class="tableContainer-valueCell formLabel-controlCell">
-                        <select id="addLoggerFilter.type" data-dojo-type="dijit/form/FilteringSelect"
+                        <select id="addLogInclusionRule.type" data-dojo-type="dijit/form/FilteringSelect"
                                 data-dojo-props="
                                 name: 'type',
                                 required: true,
-                                placeHolder: 'logger filter type',
-                                promptMessage: 'Type of logger filter',
+                                placeHolder: 'log inclusion rule type',
+                                promptMessage: 'Type of log inclusion rule',
                                 title: 'Select type',
                                 searchAttr: 'name'">
                         </select>
@@ -51,7 +51,7 @@
                 <div class="clear">
                     <div class="formLabel-labelCell tableContainer-labelCell">Durable:</div>
                     <div class="formLabel-controlCell tableContainer-valueCell">
-                        <input type="checkbox" id="addLoggerFilter.durable"
+                        <input type="checkbox" id="addLogInclusionRule.durable"
                                data-dojo-type="dijit/form/CheckBox"
                                data-dojo-props="
                                   name: 'durable',
@@ -60,13 +60,13 @@
                     </div>
                 </div>
                 <div class="clear">
-                    <div id="addLoggerFilter.typeFields"></div>
+                    <div id="addLogInclusionRule.typeFields"></div>
                 </div>
                 <div class="clear"></div>
             </div>
             <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
-                <button data-dojo-type="dijit/form/Button" id="addLoggerFilter.addButton" data-dojo-props="label: 'Save'" type="submit"></button>
-                <button data-dojo-type="dijit/form/Button" id="addLoggerFilter.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
+                <button data-dojo-type="dijit/form/Button" id="addLogInclusionRule.addButton" data-dojo-props="label: 'Save'" type="submit"></button>
+                <button data-dojo-type="dijit/form/Button" id="addLogInclusionRule.cancelButton" data-dojo-props="label: 'Cancel'" ></button>
             </div>
         </form>
     </div>

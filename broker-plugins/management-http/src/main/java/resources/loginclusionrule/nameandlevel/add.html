@@ -19,28 +19,28 @@
 
 <div>
     <div class="clear">
-        <div class="formLabel-labelCell tableContainer-labelCell">Logger Name:</div>
+        <div class="formLabel-labelCell tableContainer-labelCell">Log Event Source Name:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
-            <input type="text" id="addLoggerFilter.loggerName"
+            <input type="text" id="addLogInclusionRule.loggerName"
                    data-dojo-type="dijit/form/ValidationTextBox"
                    data-dojo-props="
                               name: 'loggerName',
                               placeHolder: 'ROOT',
-                              promptMessage: 'Enter logger name (usually the package name). To capture loggers from subpackages you must specify the &quot;.*&quot; wildcard at the end (e.g., org.apache.qpid.*)',
-                              title: 'Enter logger name'"/>
+                              promptMessage: 'Enter name of log event source (usually the package name). To capture log events from subpackages you must specify the &quot;.*&quot; wildcard at the end (e.g., org.apache.qpid.*)',
+                              title: 'Enter log event source name'"/>
         </div>
     </div>
     <div class="clear">
         <div class="formLabel-labelCell tableContainer-labelCell">Level:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
-            <input type="text" id="addLoggerFilter.level"
+            <input type="text" id="addLogInclusionRule.level"
                    data-dojo-type="dijit/form/FilteringSelect"
                    data-dojo-props="
                               name: 'level',
                               required: false,
                               placeHolder: 'level',
-                              promptMessage: 'Select filter level',
-                              title: 'Select filter level'"/>
+                              promptMessage: 'Select log level for this rule',
+                              title: 'Select log level for this rule'"/>
         </div>
     </div>
 </div>

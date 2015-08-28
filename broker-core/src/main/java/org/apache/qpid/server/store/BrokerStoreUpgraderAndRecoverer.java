@@ -398,7 +398,7 @@ public class BrokerStoreUpgraderAndRecoverer
 
 
             final ConfiguredObjectRecord filterRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
-                                                                                       "BrokerLoggerFilter",
+                                                                                       "BrokerLogInclusionRule",
                                                                                        attributes,
                                                                                        Collections.singletonMap("BrokerLogger",
                                                                                                                 loggerRecord.getId()));

@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.logging.BrokerFileLogger;
 import org.apache.qpid.server.logging.BrokerMemoryLogger;
-import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
+import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -850,7 +850,7 @@ public class BrokerACLTest extends QpidRestTestCase
         getRestTestHelper().submitRequest("brokerlogger/testLogger1", "GET", HttpServletResponse.SC_OK);
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
-        attributes.put(BrokerNameAndLevelFilter.NAME, "testLogger2");
+        attributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "testLogger2");
         getRestTestHelper().submitRequest("brokerlogger", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
         getRestTestHelper().submitRequest("brokerlogger/testLogger2", "GET", HttpServletResponse.SC_NOT_FOUND);
     }
@@ -915,9 +915,9 @@ public class BrokerACLTest extends QpidRestTestCase
         getRestTestHelper().submitRequest(loggerPath + "/getLogEntries?lastLogId=0", "GET", HttpServletResponse.SC_FORBIDDEN);
     }
 
-    /* === Broker Logger Filters === */
+    /* === Broker Log Inclusion Rules === */
 
-    public void testCreateBrokerLoggerFilterAllowedDenied() throws Exception
+    public void testCreateBrokerLoggerRuleAllowedDenied() throws Exception
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
@@ -928,20 +928,20 @@ public class BrokerACLTest extends QpidRestTestCase
 
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(BrokerNameAndLevelFilter.NAME, "filter1");
-        attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
-        attributes.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
+        attributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "rule1");
+        attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+        attributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "DEBUG");
 
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1", "PUT", attributes, HttpServletResponse.SC_CREATED);
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1", "PUT", attributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "GET", HttpServletResponse.SC_OK);
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
-        attributes.put(BrokerNameAndLevelFilter.NAME, "filter2");
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter2", "GET", HttpServletResponse.SC_NOT_FOUND);
+        attributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "rule2");
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule2", "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
-    public void testUpdateBrokerLoggerFilterAllowedDenied() throws Exception
+    public void testUpdateBrokerLoggerRuleAllowedDenied() throws Exception
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
@@ -950,30 +950,30 @@ public class BrokerACLTest extends QpidRestTestCase
         loggerAttributes.put(ConfiguredObject.TYPE, BrokerMemoryLogger.TYPE);
         getRestTestHelper().submitRequest("brokerlogger", "PUT", loggerAttributes, HttpServletResponse.SC_CREATED);
 
-        Map<String, Object> filterAttributes = new HashMap<>();
-        filterAttributes.put(BrokerNameAndLevelFilter.NAME, "filter1");
-        filterAttributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
-        filterAttributes.put(BrokerNameAndLevelFilter.LEVEL, "INFO");
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1", "PUT", filterAttributes, HttpServletResponse.SC_CREATED);
+        Map<String, Object> ruleAttributes = new HashMap<>();
+        ruleAttributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "rule1");
+        ruleAttributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+        ruleAttributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "INFO");
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1", "PUT", ruleAttributes, HttpServletResponse.SC_CREATED);
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(BrokerNameAndLevelFilter.NAME, "filter1");
-        attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
-        attributes.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
+        attributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "rule1");
+        attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+        attributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "DEBUG");
 
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "PUT", attributes, HttpServletResponse.SC_OK);
-        Map<String,Object> resultAfterUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloggerfilter/testLogger1/filter1");
-        assertEquals("Log level was not changed", "DEBUG", resultAfterUpdate.get(BrokerNameAndLevelFilter.LEVEL));
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "PUT", attributes, HttpServletResponse.SC_OK);
+        Map<String,Object> resultAfterUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloginclusionrule/testLogger1/rule1");
+        assertEquals("Log level was not changed", "DEBUG", resultAfterUpdate.get(BrokerNameAndLevelLogInclusionRule.LEVEL));
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
-        attributes.put(BrokerNameAndLevelFilter.LEVEL, "INFO");
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
+        attributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "INFO");
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "PUT", attributes, HttpServletResponse.SC_FORBIDDEN);
 
-        Map<String,Object> resultAfterDeniedUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloggerfilter/testLogger1/filter1");
-        assertEquals("Log level was changed by not allowed user", "DEBUG", resultAfterDeniedUpdate.get(BrokerNameAndLevelFilter.LEVEL));
+        Map<String,Object> resultAfterDeniedUpdate = getRestTestHelper().getJsonAsSingletonList("brokerloginclusionrule/testLogger1/rule1");
+        assertEquals("Log level was changed by not allowed user", "DEBUG", resultAfterDeniedUpdate.get(BrokerNameAndLevelLogInclusionRule.LEVEL));
     }
 
-    public void testDeleteBrokerLoggerFilterAllowedDenied() throws Exception
+    public void testDeleteBrokerLoggerRuleAllowedDenied() throws Exception
     {
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
@@ -984,20 +984,20 @@ public class BrokerACLTest extends QpidRestTestCase
 
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(BrokerNameAndLevelFilter.NAME, "filter1");
-        attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
-        attributes.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
+        attributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "rule1");
+        attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+        attributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "DEBUG");
 
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1", "PUT", attributes, HttpServletResponse.SC_CREATED);
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1", "PUT", attributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "GET", HttpServletResponse.SC_OK);
 
         getRestTestHelper().setUsernameAndPassword(DENIED_USER, DENIED_USER);
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "DELETE", null, HttpServletResponse.SC_FORBIDDEN);
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "DELETE", null, HttpServletResponse.SC_FORBIDDEN);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "GET", HttpServletResponse.SC_OK);
 
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "DELETE", null, HttpServletResponse.SC_OK);
-        getRestTestHelper().submitRequest("brokerloggerfilter/testLogger1/filter1", "GET", HttpServletResponse.SC_NOT_FOUND);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "DELETE", null, HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest("brokerloginclusionrule/testLogger1/rule1", "GET", HttpServletResponse.SC_NOT_FOUND);
     }
 
     /* === Utility Methods === */

@@ -38,7 +38,7 @@ import ch.qos.logback.core.read.ListAppender;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
+import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
@@ -108,25 +108,25 @@ public class BrokerLoggerTest extends QpidTestCase
         }
     }
 
-    public void testAddNewFilter()
+    public void testAddNewLogInclusionRule()
     {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("loggerName", "org.apache.qpid");
         attributes.put("level", LogLevel.INFO);
         attributes.put("name", "test");
-        attributes.put("type", BrokerNameAndLevelFilter.TYPE);
+        attributes.put("type", BrokerNameAndLevelLogInclusionRule.TYPE);
 
-        Collection<BrokerLoggerFilter> filtersBefore = _brokerLogger.getChildren(BrokerLoggerFilter.class);
-        assertEquals("Unexpected number of filters before creation", 0, filtersBefore.size());
+        Collection<BrokerLogInclusionRule> rulesBefore = _brokerLogger.getChildren(BrokerLogInclusionRule.class);
+        assertEquals("Unexpected number of rules before creation", 0, rulesBefore.size());
 
-        BrokerLoggerFilter<?> createdFilter = _brokerLogger.createChild(BrokerLoggerFilter.class, attributes);
-        assertEquals("Unexpected filter name", "test", createdFilter.getName());
+        BrokerLogInclusionRule<?> createdRule = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
+        assertEquals("Unexpected rule name", "test", createdRule.getName());
 
-        Collection<BrokerLoggerFilter> filtersAfter = _brokerLogger.getChildren(BrokerLoggerFilter.class);
-        assertEquals("Unexpected number of filters after creation", 1, filtersAfter.size());
+        Collection<BrokerLogInclusionRule> rulesAfter = _brokerLogger.getChildren(BrokerLogInclusionRule.class);
+        assertEquals("Unexpected number of rules after creation", 1, rulesAfter.size());
 
-        BrokerLoggerFilter filter = filtersAfter.iterator().next();
-        assertEquals("Unexpected filter", createdFilter, filter);
+        BrokerLogInclusionRule filter = rulesAfter.iterator().next();
+        assertEquals("Unexpected rule", createdRule, filter);
 
         Logger logger = LoggerFactory.getLogger("org.apache.qpid");
 
@@ -136,20 +136,20 @@ public class BrokerLoggerTest extends QpidTestCase
         assertLoggedEvent(_loggerAppender, true, "Test3", logger.getName(), Level.INFO);
     }
 
-    public void testRemoveExistingFilter()
+    public void testRemoveExistingRule()
     {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("loggerName", "org.apache.qpid");
         attributes.put("level", LogLevel.INFO);
         attributes.put("name", "test");
-        attributes.put("type", BrokerNameAndLevelFilter.TYPE);
-        BrokerLoggerFilter<?> createdFilter = _brokerLogger.createChild(BrokerLoggerFilter.class, attributes);
+        attributes.put("type", BrokerNameAndLevelLogInclusionRule.TYPE);
+        BrokerLogInclusionRule<?> createdRule = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
         Logger logger = LoggerFactory.getLogger("org.apache.qpid");
 
         logger.info("Test1");
         assertLoggedEvent(_loggerAppender, true, "Test1", logger.getName(), Level.INFO);
 
-        createdFilter.delete();
+        createdRule.delete();
 
         logger.info("Test2");
         assertLoggedEvent(_loggerAppender, false, "Test2", logger.getName(), Level.INFO);
@@ -176,11 +176,11 @@ public class BrokerLoggerTest extends QpidTestCase
             logger.open();
 
             Map<String, Object> filterAttributes = new HashMap<>();
-            filterAttributes.put(BrokerNameAndLevelFilter.NAME, "1");
-            filterAttributes.put(BrokerNameAndLevelFilter.LEVEL, LogLevel.ALL);
-            filterAttributes.put(BrokerNameAndLevelFilter.LOGGER_NAME, "");
-            filterAttributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelFilter.TYPE);
-            logger.createChild(BrokerLoggerFilter.class, filterAttributes);
+            filterAttributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "1");
+            filterAttributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, LogLevel.ALL);
+            filterAttributes.put(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, "");
+            filterAttributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+            logger.createChild(BrokerLogInclusionRule.class, filterAttributes);
 
             Logger messageLogger = LoggerFactory.getLogger("org.apache.qpid.test");
             messageLogger.debug("test message 1");
@@ -214,10 +214,10 @@ public class BrokerLoggerTest extends QpidTestCase
         attributes.put("loggerName", "org.apache.qpid.*");
         attributes.put("level", LogLevel.WARN);
         attributes.put("name", "test");
-        attributes.put("type", BrokerNameAndLevelFilter.TYPE);
+        attributes.put("type", BrokerNameAndLevelLogInclusionRule.TYPE);
 
 
-        final BrokerLoggerFilter filter = _brokerLogger.createChild(BrokerLoggerFilter.class, attributes);
+        final BrokerLogInclusionRule filter = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
 
         assertEquals(0l, _brokerLogger.getWarnCount());
         assertEquals(0l, _brokerLogger.getErrorCount());
@@ -237,10 +237,10 @@ public class BrokerLoggerTest extends QpidTestCase
         attributes.put("loggerName", "org.apache.qpid.*");
         attributes.put("level", LogLevel.ERROR);
         attributes.put("name", "test");
-        attributes.put("type", BrokerNameAndLevelFilter.TYPE);
+        attributes.put("type", BrokerNameAndLevelLogInclusionRule.TYPE);
 
 
-        _brokerLogger.createChild(BrokerLoggerFilter.class, attributes);
+        _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
 
         messageLogger.warn("warn");
         assertEquals(1l, _brokerLogger.getWarnCount());

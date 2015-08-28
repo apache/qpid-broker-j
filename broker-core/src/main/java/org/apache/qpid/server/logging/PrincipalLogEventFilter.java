@@ -30,7 +30,7 @@ import ch.qos.logback.core.filter.Filter;
 import ch.qos.logback.core.spi.FilterReply;
 
 
-public class PrincipalLogEventFilter extends Filter<ILoggingEvent> implements LoggerFilter
+public class PrincipalLogEventFilter extends Filter<ILoggingEvent> implements LogInclusionRule
 {
     private final Principal _principal;
 

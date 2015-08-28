@@ -37,7 +37,7 @@ import org.apache.qpid.util.LogMonitor;
 public class VirtualHostLoggerRestTest extends QpidRestTestCase
 {
 
-    public void testCreateVirtualHostLoggerAndFilter() throws Exception
+    public void testCreateVirtualHostLoggerAndRule() throws Exception
     {
         String loggerName = "testLogger1";
         String loggerRestUrlBase = "virtualhostlogger/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST;
@@ -50,16 +50,16 @@ public class VirtualHostLoggerRestTest extends QpidRestTestCase
         getRestTestHelper().submitRequest(loggerRestUrlBase, "PUT", virtualHostLoggerAttributes, HttpServletResponse.SC_CREATED);
         Map<String, Object> loggerData = getRestTestHelper().getJsonAsSingletonList(loggerRestUrl);
 
-        String loggerFilterName = "testFilter";
-        Map<String, Object> virtualHostFilterAttributes = new HashMap<>();
-        virtualHostFilterAttributes.put("name", loggerFilterName);
-        virtualHostFilterAttributes.put("level", "DEBUG");
+        String loggerRuleName = "testRule";
+        Map<String, Object> virtualHostRuleAttributes = new HashMap<>();
+        virtualHostRuleAttributes.put("name", loggerRuleName);
+        virtualHostRuleAttributes.put("level", "DEBUG");
 
-        String loggerFilterRestUrlBase = "virtualhostloggerfilter/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST + "/" + loggerName;
-        String loggerFilterRestUrl = loggerFilterRestUrlBase + "/" + loggerFilterName;
+        String loggerRuleRestUrlBase = "virtualhostloginclusionrule/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST + "/" + loggerName;
+        String loggerRuleRestUrl = loggerRuleRestUrlBase + "/" + loggerRuleName;
 
-        getRestTestHelper().submitRequest(loggerFilterRestUrlBase, "PUT", virtualHostFilterAttributes, HttpServletResponse.SC_CREATED);
-        getRestTestHelper().submitRequest(loggerFilterRestUrl, "GET", HttpServletResponse.SC_OK);
+        getRestTestHelper().submitRequest(loggerRuleRestUrlBase, "PUT", virtualHostRuleAttributes, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest(loggerRuleRestUrl, "GET", HttpServletResponse.SC_OK);
 
         String logFileLocation = String.valueOf(loggerData.get(VirtualHostFileLogger.FILE_NAME));
         assertNotNull("Log file attribute is not set ", logFileLocation);
@@ -82,7 +82,7 @@ public class VirtualHostLoggerRestTest extends QpidRestTestCase
         }
     }
 
-    public void testDeleteVirtualHostLoggerAndFilter() throws Exception
+    public void testDeleteVirtualHostLoggerAndRule() throws Exception
     {
         String loggerName = "testLogger1";
         Map<String, Object> attributes = new HashMap<>();

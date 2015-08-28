@@ -58,9 +58,9 @@ import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.BrokerLogbackSocketLogger;
-import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
+import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.model.BrokerLogger;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
+import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
@@ -291,23 +291,23 @@ public class QpidBrokerTestCase extends QpidTestCase
 
             configuration.addObjectConfiguration(BrokerLogger.class, loggerAttrs);
 
-            Map<String, Object> qpidFilterAttrs = new HashMap<>();
-            qpidFilterAttrs.put(BrokerLoggerFilter.NAME, "Qpid");
-            qpidFilterAttrs.put(BrokerLoggerFilter.TYPE, BrokerNameAndLevelFilter.TYPE);
-            qpidFilterAttrs.put(BrokerNameAndLevelFilter.LEVEL, "DEBUG");
-            qpidFilterAttrs.put(BrokerNameAndLevelFilter.LOGGER_NAME, "org.apache.qpid.*");
+            Map<String, Object> qpidRuleAttrs = new HashMap<>();
+            qpidRuleAttrs.put(BrokerLogInclusionRule.NAME, "Qpid");
+            qpidRuleAttrs.put(BrokerLogInclusionRule.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+            qpidRuleAttrs.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "DEBUG");
+            qpidRuleAttrs.put(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, "org.apache.qpid.*");
 
             configuration.addObjectConfiguration(BrokerLogger.class,
-                                                 remotelogback, BrokerLoggerFilter.class, qpidFilterAttrs);
+                                                 remotelogback, BrokerLogInclusionRule.class, qpidRuleAttrs);
 
-            Map<String, Object> operationalLoggingFilterAttrs = new HashMap<>();
-            operationalLoggingFilterAttrs.put(BrokerLoggerFilter.NAME, "Operational");
-            operationalLoggingFilterAttrs.put(BrokerLoggerFilter.TYPE, BrokerNameAndLevelFilter.TYPE);
-            operationalLoggingFilterAttrs.put(BrokerNameAndLevelFilter.LEVEL, "INFO");
-            operationalLoggingFilterAttrs.put(BrokerNameAndLevelFilter.LOGGER_NAME, "qpid.message.*");
+            Map<String, Object> operationalLoggingRuleAttrs = new HashMap<>();
+            operationalLoggingRuleAttrs.put(BrokerLogInclusionRule.NAME, "Operational");
+            operationalLoggingRuleAttrs.put(BrokerLogInclusionRule.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+            operationalLoggingRuleAttrs.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "INFO");
+            operationalLoggingRuleAttrs.put(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, "qpid.message.*");
 
             configuration.addObjectConfiguration(BrokerLogger.class,
-                                                 remotelogback, BrokerLoggerFilter.class, operationalLoggingFilterAttrs);
+                                                 remotelogback, BrokerLogInclusionRule.class, operationalLoggingRuleAttrs);
 
             String workDir = System.getProperty("QPID_WORK") + File.separator + TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST + File.separator + actualPort;
             configuration.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, JsonVirtualHostNode.STORE_PATH, workDir);

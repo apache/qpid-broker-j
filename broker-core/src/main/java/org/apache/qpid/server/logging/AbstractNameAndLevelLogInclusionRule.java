@@ -7,7 +7,6 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.filter.Filter;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -15,7 +14,7 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 
-public abstract class AbstractNameAndLevelFilter<X extends AbstractNameAndLevelFilter<X>> extends AbstractConfiguredObject<X>
+public abstract class AbstractNameAndLevelLogInclusionRule<X extends AbstractNameAndLevelLogInclusionRule<X>> extends AbstractConfiguredObject<X>
 {
     @ManagedAttributeField
     private String _loggerName;
@@ -24,8 +23,8 @@ public abstract class AbstractNameAndLevelFilter<X extends AbstractNameAndLevelF
 
     private LoggerNameAndLevelFilter _filter;
 
-    protected AbstractNameAndLevelFilter(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
-                                         Map<String, Object> attributes)
+    protected AbstractNameAndLevelLogInclusionRule(final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parents,
+                                                   Map<String, Object> attributes)
     {
         super(parents, attributes);
     }

@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostLogger;
-import org.apache.qpid.server.model.VirtualHostLoggerFilter;
+import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 
 public abstract class AbstractVirtualHostLogger <X extends AbstractVirtualHostLogger<X>> extends AbstractLogger<X> implements VirtualHostLogger<X>
 {
@@ -42,13 +42,13 @@ public abstract class AbstractVirtualHostLogger <X extends AbstractVirtualHostLo
     protected void onResolve()
     {
         super.onResolve();
-        addFilter(new PrincipalLogEventFilter(_virtualHost.getPrincipal()));
+        addLogInclusionRule(new PrincipalLogEventFilter(_virtualHost.getPrincipal()));
     }
 
     @Override
-    protected Collection<? extends LoggerFilter> getLoggerFilters()
+    protected Collection<? extends LogInclusionRule> getLogInclusionRules()
     {
-        return getChildren(VirtualHostLoggerFilter.class);
+        return getChildren(VirtualHostLogInclusionRule.class);
     }
 
 }

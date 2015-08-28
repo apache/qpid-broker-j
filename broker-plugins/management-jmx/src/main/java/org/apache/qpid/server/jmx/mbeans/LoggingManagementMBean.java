@@ -42,9 +42,9 @@ import javax.management.openmbean.TabularDataSupport;
 import javax.management.openmbean.TabularType;
 
 import org.apache.qpid.server.logging.BrokerFileLogger;
-import org.apache.qpid.server.logging.BrokerNameAndLevelFilter;
+import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.logging.LogLevel;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
+import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +63,7 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggingManagementMBean.class);
     private static final TabularType LOGGER_LEVEL_TABULAR_TYPE;
     private static final CompositeType LOGGER_LEVEL_COMPOSITE_TYPE;
-    private static final String UNSUPPORTED_LOGGER_FILTER_TYPE = "<UNSUPPORTED>";
+    private static final String UNSUPPORTED_LOG_INCLUSION_RULE_TYPE = "<UNSUPPORTED>";
 
     static
     {
@@ -126,13 +126,13 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
     @Override
     public TabularData viewEffectiveRuntimeLoggerLevels()
     {
-        return getTabularData(findFiltersByDurability(FilterDurability.EITHER));
+        return getTabularData(findRulesByDurability(LogInclusionRuleDurability.EITHER));
     }
 
     @Override
     public String getRuntimeRootLoggerLevel()
     {
-        return getLogLevel(ROOT_LOGGER_NAME, FilterDurability.NONDURABLE);
+        return getLogLevel(ROOT_LOGGER_NAME, LogInclusionRuleDurability.NONDURABLE);
     }
 
     @Override
@@ -144,25 +144,25 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
     @Override
     public boolean setRuntimeLoggerLevel(String logger, String level)
     {
-        return setLogLevel(logger, level, FilterDurability.NONDURABLE);
+        return setLogLevel(logger, level, LogInclusionRuleDurability.NONDURABLE);
     }
 
     @Override
     public TabularData viewConfigFileLoggerLevels()
     {
-        return getTabularData(findFiltersByDurability(FilterDurability.DURABLE));
+        return getTabularData(findRulesByDurability(LogInclusionRuleDurability.DURABLE));
     }
 
     @Override
     public String getConfigFileRootLoggerLevel() throws IOException
     {
-        return getLogLevel(ROOT_LOGGER_NAME, FilterDurability.DURABLE);
+        return getLogLevel(ROOT_LOGGER_NAME, LogInclusionRuleDurability.DURABLE);
     }
 
     @Override
     public boolean setConfigFileLoggerLevel(String logger, String level)
     {
-        return setLogLevel(logger, level, FilterDurability.DURABLE);
+        return setLogLevel(logger, level, LogInclusionRuleDurability.DURABLE);
     }
 
     @Override
@@ -220,32 +220,32 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
         }
     }
 
-    private TabularData getTabularData(Collection<BrokerLoggerFilter<?>> filters)
+    private TabularData getTabularData(Collection<BrokerLogInclusionRule<?>> rules)
     {
         Map<String,String> logToLevelMap = new TreeMap<>();
-        for (BrokerLoggerFilter<?> filter: filters)
+        for (BrokerLogInclusionRule<?> rule: rules)
         {
-            if (filter instanceof BrokerNameAndLevelFilter)
+            if (rule instanceof BrokerNameAndLevelLogInclusionRule)
             {
-                BrokerNameAndLevelFilter<?> nameAndLevelFilter = (BrokerNameAndLevelFilter)filter;
-                logToLevelMap.put(nameAndLevelFilter.getLoggerName(), nameAndLevelFilter.getLevel().name());
+                BrokerNameAndLevelLogInclusionRule<?> nameAndLevelRule = (BrokerNameAndLevelLogInclusionRule)rule;
+                logToLevelMap.put(nameAndLevelRule.getLoggerName(), nameAndLevelRule.getLevel().name());
             }
             else
             {
-                logToLevelMap.put(UNSUPPORTED_LOGGER_FILTER_TYPE, "");
+                logToLevelMap.put(UNSUPPORTED_LOG_INCLUSION_RULE_TYPE, "");
             }
         }
         return createTabularDataFromLevelsMap(logToLevelMap);
     }
 
-    private String getLogLevel(String loggerName, FilterDurability filterDurability)
+    private String getLogLevel(String loggerName, LogInclusionRuleDurability logInclusionRuleDurability)
     {
         LogLevel level = LogLevel.OFF;
-        List<BrokerNameAndLevelFilter<?>> filters = findFiltersByLoggerNameAndDurability(loggerName, filterDurability);
+        List<BrokerNameAndLevelLogInclusionRule<?>> rules = findRulesByLoggerNameAndDurability(loggerName, logInclusionRuleDurability);
 
-        for(BrokerNameAndLevelFilter<?> filter: filters)
+        for(BrokerNameAndLevelLogInclusionRule<?> rule: rules)
         {
-            final LogLevel filterLevel = filter.getLevel();
+            final LogLevel filterLevel = rule.getLevel();
             if (level.compareTo(filterLevel) > 0)
             {
                 level = filterLevel;
@@ -254,7 +254,7 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
         return level.name();
     }
 
-    private boolean setLogLevel(String logger, String level, FilterDurability durability)
+    private boolean setLogLevel(String logger, String level, LogInclusionRuleDurability durability)
     {
         if (!isValidLogLevel(level))
         {
@@ -262,19 +262,19 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
             return false;
         }
 
-        List<BrokerNameAndLevelFilter<?>> filters = findFiltersByLoggerNameAndDurability(logger, durability);
-        if (filters.isEmpty())
+        List<BrokerNameAndLevelLogInclusionRule<?>> rules = findRulesByLoggerNameAndDurability(logger, durability);
+        if (rules.isEmpty())
         {
             LOGGER.warn("There is no logger with name '{}' and durability '{}'", logger, durability.name().toLowerCase());
             return false;
         }
 
         LogLevel targetLevel = LogLevel.valueOf(level);
-        for (BrokerNameAndLevelFilter<?> filter: filters)
+        for (BrokerNameAndLevelLogInclusionRule<?> rule: rules)
         {
             try
             {
-                filter.setAttributes(Collections.<String, Object>singletonMap(BrokerNameAndLevelFilter.LEVEL, targetLevel));
+                rule.setAttributes(Collections.<String, Object>singletonMap(BrokerNameAndLevelLogInclusionRule.LEVEL, targetLevel));
             }
             catch(RuntimeException e)
             {
@@ -286,41 +286,41 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
         return true;
     }
 
-    private List<BrokerLoggerFilter<?>> findFiltersByDurability(FilterDurability durability)
+    private List<BrokerLogInclusionRule<?>> findRulesByDurability(LogInclusionRuleDurability durability)
     {
-        Collection<BrokerLoggerFilter<?>> filters = _brokerFileLogger.getChildren(BrokerLoggerFilter.class);
-        List<BrokerLoggerFilter<?>> results = new ArrayList<>();
+        Collection<BrokerLogInclusionRule<?>> rules = _brokerFileLogger.getChildren(BrokerLogInclusionRule.class);
+        List<BrokerLogInclusionRule<?>> results = new ArrayList<>();
         if (durability == durability.EITHER)
         {
-            results.addAll(filters);
+            results.addAll(rules);
         }
         else
         {
-            for (BrokerLoggerFilter<?> filter: filters)
+            for (BrokerLogInclusionRule<?> rule: rules)
             {
-                if (durability == FilterDurability.valueOf(filter.isDurable()))
+                if (durability == LogInclusionRuleDurability.valueOf(rule.isDurable()))
                 {
-                    results.add(filter);
+                    results.add(rule);
                 }
             }
         }
         return results;
     }
 
-    private List<BrokerNameAndLevelFilter<?>> findFiltersByLoggerNameAndDurability(String loggerName, FilterDurability filterDurability)
+    private List<BrokerNameAndLevelLogInclusionRule<?>> findRulesByLoggerNameAndDurability(String loggerName, LogInclusionRuleDurability logInclusionRuleDurability)
     {
-        List<BrokerNameAndLevelFilter<?>> results = new ArrayList<>();
-        Collection<BrokerLoggerFilter<?>> filters = findFiltersByDurability(filterDurability);
+        List<BrokerNameAndLevelLogInclusionRule<?>> results = new ArrayList<>();
+        Collection<BrokerLogInclusionRule<?>> rules = findRulesByDurability(logInclusionRuleDurability);
         String sanitizedLoggerName = sanitizeLoggerName(loggerName);
-        for (BrokerLoggerFilter<?> filter: filters)
+        for (BrokerLogInclusionRule<?> rule: rules)
         {
-            if (filter instanceof BrokerNameAndLevelFilter)
+            if (rule instanceof BrokerNameAndLevelLogInclusionRule)
             {
-                BrokerNameAndLevelFilter<?> brokerNameAndLevelFilter = (BrokerNameAndLevelFilter<?>)filter;
-                String filterLoggerName = sanitizeLoggerName(brokerNameAndLevelFilter.getLoggerName());
-                if (sanitizedLoggerName.equals(filterLoggerName))
+                BrokerNameAndLevelLogInclusionRule<?> brokerNameAndLevelLogInclusionRule = (BrokerNameAndLevelLogInclusionRule<?>)rule;
+                String ruleLoggerName = sanitizeLoggerName(brokerNameAndLevelLogInclusionRule.getLoggerName());
+                if (sanitizedLoggerName.equals(ruleLoggerName))
                 {
-                    results.add(brokerNameAndLevelFilter);
+                    results.add(brokerNameAndLevelLogInclusionRule);
                 }
             }
         }
@@ -336,13 +336,13 @@ public class LoggingManagementMBean extends AMQManagedObject implements LoggingM
         return loggerName;
     }
 
-    private enum FilterDurability
+    private enum LogInclusionRuleDurability
     {
         DURABLE,
         NONDURABLE,
         EITHER;
 
-        public static FilterDurability valueOf(boolean durable)
+        public static LogInclusionRuleDurability valueOf(boolean durable)
         {
             return durable ? DURABLE : NONDURABLE;
         }

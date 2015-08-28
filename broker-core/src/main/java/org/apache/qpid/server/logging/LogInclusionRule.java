@@ -18,11 +18,14 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.logging;
 
-import org.apache.qpid.server.logging.LoggerFilter;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.filter.Filter;
 
-@ManagedObject
-public interface BrokerLoggerFilter<X extends BrokerLoggerFilter<X>> extends ConfiguredObject<X>, LoggerFilter
+public interface LogInclusionRule
 {
+    Filter<ILoggingEvent> asFilter();
+
+    String getName();
 }

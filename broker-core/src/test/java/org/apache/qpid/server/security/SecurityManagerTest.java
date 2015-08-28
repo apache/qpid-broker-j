@@ -38,8 +38,8 @@ import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerLogInclusionRule;
 import org.apache.qpid.server.model.BrokerLogger;
-import org.apache.qpid.server.model.BrokerLoggerFilter;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
@@ -57,8 +57,8 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 import org.apache.qpid.server.model.VirtualHostLogger;
-import org.apache.qpid.server.model.VirtualHostLoggerFilter;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.security.access.ObjectProperties;
@@ -835,16 +835,16 @@ public class SecurityManagerTest extends QpidTestCase
         assertBrokerChildDeleteAuthorization(mock);
     }
 
-    public void testAuthoriseBrokerLoggerFilterOperations()
+    public void testAuthoriseBrokerLogInclusionRuleOperations()
     {
         BrokerLogger bl = mock(BrokerLogger.class);
         when(bl.getAttribute(ConfiguredObject.NAME)).thenReturn("LOGGER");
         when(bl.getCategoryClass()).thenReturn(BrokerLogger.class);
         when(bl.getParent(Broker.class)).thenReturn(_broker);
 
-        BrokerLoggerFilter mock = mock(BrokerLoggerFilter.class);
+        BrokerLogInclusionRule mock = mock(BrokerLogInclusionRule.class);
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
-        when(mock.getCategoryClass()).thenReturn(BrokerLoggerFilter.class);
+        when(mock.getCategoryClass()).thenReturn(BrokerLogInclusionRule.class);
         when(mock.getParent(BrokerLogger.class)).thenReturn(bl);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
         assertBrokerChildCreateAuthorization(mock, bl);
@@ -873,7 +873,7 @@ public class SecurityManagerTest extends QpidTestCase
         assertDeleteAuthorization(mock, Operation.DELETE, ObjectType.VIRTUALHOST, properties, _virtualHost);
     }
 
-    public void testAuthoriseVirtualHostLoggerFilterOperations()
+    public void testAuthoriseVirtualHostLogInclusionRuleOperations()
     {
         ObjectProperties properties = new ObjectProperties(TEST_VIRTUAL_HOST);
 
@@ -883,9 +883,9 @@ public class SecurityManagerTest extends QpidTestCase
         when(vhl.getParent(VirtualHost.class)).thenReturn(_virtualHost);
         when(vhl.getModel()).thenReturn(BrokerModel.getInstance());
 
-        VirtualHostLoggerFilter<?> mock = mock(VirtualHostLoggerFilter.class);
+        VirtualHostLogInclusionRule<?> mock = mock(VirtualHostLogInclusionRule.class);
         when(mock.getAttribute(ConfiguredObject.NAME)).thenReturn("TEST");
-        doReturn(VirtualHostLoggerFilter.class).when(mock).getCategoryClass();
+        doReturn(VirtualHostLogInclusionRule.class).when(mock).getCategoryClass();
         when(mock.getParent(VirtualHostLogger.class)).thenReturn(vhl);
         when(mock.getModel()).thenReturn(BrokerModel.getInstance());
 

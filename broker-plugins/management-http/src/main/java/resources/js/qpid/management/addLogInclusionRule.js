@@ -28,7 +28,7 @@ define(["dojo/_base/lang",
         "dojo/_base/event",
         'dojo/json',
         "qpid/common/util",
-        "dojo/text!addLoggerFilter.html",
+        "dojo/text!addLogInclusionRule.html",
         "dojo/store/Memory",
         "dojox/validate/us",
         "dojox/validate/web",
@@ -45,7 +45,7 @@ define(["dojo/_base/lang",
         "dojo/domReady!"],
     function (lang, dom, construct, registry, parser, memory, array, event, json, util, template)
     {
-        var addLoggerFilter =
+        var addLogInclusionRule =
         {
             init: function()
             {
@@ -56,23 +56,23 @@ define(["dojo/_base/lang",
             _postParse: function()
             {
                 var that=this;
-                this.name = registry.byId("addLoggerFilter.name");
+                this.name = registry.byId("addLogInclusionRule.name");
                 this.name.set("regExpGen", util.nameOrContextVarRegexp);
 
-                this.dialog = registry.byId("addLoggerFilter");
-                this.addButton = registry.byId("addLoggerFilter.addButton");
-                this.cancelButton = registry.byId("addLoggerFilter.cancelButton");
+                this.dialog = registry.byId("addLogInclusionRule");
+                this.addButton = registry.byId("addLogInclusionRule.addButton");
+                this.cancelButton = registry.byId("addLogInclusionRule.cancelButton");
                 this.cancelButton.on("click", function(e){that._cancel(e);});
                 this.addButton.on("click", function(e){that._add(e);});
 
-                this.typeFieldsContainer = dom.byId("addLoggerFilter.typeFields");
-                this.form = registry.byId("addLoggerFilter.form");
+                this.typeFieldsContainer = dom.byId("addLogInclusionRule.typeFields");
+                this.form = registry.byId("addLogInclusionRule.form");
                 this.form.on("submit", function(){return false;});
 
-                this.loggerFilterType = registry.byId("addLoggerFilter.type");
-                this.loggerFilterType.on("change", function(type){that._typeChanged(type);});
+                this.logInclusionRuleType = registry.byId("addLogInclusionRule.type");
+                this.logInclusionRuleType.on("change", function(type){that._typeChanged(type);});
 
-                this.allFieldsContainer = dom.byId("addLoggerFilter.contentPane");
+                this.allFieldsContainer = dom.byId("addLogInclusionRule.contentPane");
             },
             show: function(management, modelObj, category, actualData)
             {
@@ -82,15 +82,15 @@ define(["dojo/_base/lang",
                 this.category = category;
                 this.configured = false;
                 this._destroyTypeFields(this.typeFieldsContainer);
-                this.loggerFilterType.set("store", util.makeTypeStoreFromMetadataByCategory(management.metadata, category));
+                this.logInclusionRuleType.set("store", util.makeTypeStoreFromMetadataByCategory(management.metadata, category));
                 this.form.reset();
 
                 this.initialData = actualData;
                 this.isNew = !actualData;
 
                 this.name.set("disabled", !this.isNew);
-                this.loggerFilterType.set("disabled", !this.isNew);
-                this.dialog.set("title", this.isNew ? "Add Logger Filter" : "Edit Logger Filter - " + actualData.name)
+                this.logInclusionRuleType.set("disabled", !this.isNew);
+                this.dialog.set("title", this.isNew ? "Add Log Inclusion Rule" : "Edit Log Inclusion Rule - " + actualData.name)
 
                 if (actualData)
                 {
@@ -145,7 +145,7 @@ define(["dojo/_base/lang",
                  {
                      this._configure(type);
                      var that = this;
-                     require(["qpid/management/loggerfilter/" + this.category.toLowerCase() + "/" + type.toLowerCase() + "/add"], function(typeUI)
+                     require(["qpid/management/loginclusionrule/" + this.category.toLowerCase() + "/" + type.toLowerCase() + "/add"], function(typeUI)
                      {
                          try
                          {
@@ -184,11 +184,11 @@ define(["dojo/_base/lang",
 
         try
         {
-            addLoggerFilter.init();
+            addLogInclusionRule.init();
         }
         catch(e)
         {
             console.warn(e);
         }
-        return addLoggerFilter;
+        return addLogInclusionRule;
     });
