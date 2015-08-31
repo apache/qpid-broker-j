@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
+import org.apache.qpid.server.logging.messages.PortMessages;
+import org.apache.qpid.server.logging.subjects.PortLogSubject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -49,6 +51,8 @@ import org.apache.qpid.transport.network.NetworkConnection;
 public class MultiVersionProtocolEngine implements ProtocolEngine
 {
     private static final Logger _logger = LoggerFactory.getLogger(MultiVersionProtocolEngine.class);
+
+    private static final int MINIMUM_REQUIRED_HEADER_BYTES = 8;
 
     private final long _id;
     private final AmqpPort<?> _port;
@@ -160,8 +164,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         _delegate.setTransportBlockedForWriting(blocked);
     }
 
-    private static final int MINIMUM_REQUIRED_HEADER_BYTES = 8;
-
     public void setNetworkConnection(NetworkConnection network)
     {
         _network = network;
@@ -271,22 +273,26 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
         }
 
+        @Override
         public void received(QpidByteBuffer msg)
         {
-            _logger.error("Error processing incoming data, could not negotiate a common protocol");
+            _logger.debug("Error processing incoming data, could not negotiate a common protocol");
             msg.position(msg.limit());
         }
 
+        @Override
         public void closed()
         {
 
         }
 
+        @Override
         public void writerIdle()
         {
 
         }
 
+        @Override
         public void readerIdle()
         {
 
@@ -388,6 +394,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
             _hasWork.set(false);
         }
 
+        @Override
         public void received(QpidByteBuffer msg)
         {
             _lastReadTime = System.currentTimeMillis();
@@ -461,19 +468,16 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
                     //if a default reply was specified use its reply header instead of the most recent supported version
                     if(_defaultSupportedReply != null && !(_defaultSupportedReply == supportedReplyVersion))
                     {
-                        if(_logger.isDebugEnabled())
-                        {
-                            _logger.debug("Default reply to unsupported protocol version was configured, changing reply from "
-                                    + supportedReplyVersion + " to " + _defaultSupportedReply);
-                        }
+                        _logger.debug("Default reply to unsupported protocol version was configured, changing reply from {} to {}",
+                                      supportedReplyVersion, _defaultSupportedReply);
 
                         supportedReplyBytes = defaultSupportedReplyBytes;
                         supportedReplyVersion = _defaultSupportedReply;
                     }
-                    if(_logger.isDebugEnabled())
-                    {
-                        _logger.debug("Unsupported protocol version requested, replying with: " + supportedReplyVersion);
-                    }
+
+                    _broker.getEventLogger().message(new PortLogSubject(_port),
+                                                     PortMessages.UNSUPPORTED_PROTOCOL_HEADER(supportedReplyVersion.toString()));
+
                     final QpidByteBuffer supportedReplyBuf = QpidByteBuffer.allocateDirect(supportedReplyBytes.length);
                     supportedReplyBuf.put(supportedReplyBytes);
                     supportedReplyBuf.flip();
@@ -534,15 +538,14 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         {
         }
 
+        @Override
         public void closed()
         {
             try
             {
                 _delegate = new ClosedDelegateProtocolEngine();
-                if(_logger.isDebugEnabled())
-                {
-                    _logger.debug("Connection from  " + _network.getRemoteAddress() + " was closed before any protocol version was established.");
-                }
+                _logger.debug("Connection from {} was closed before any protocol version was established.",
+                              _network.getRemoteAddress());
             }
             catch(Exception e)
             {
@@ -561,11 +564,13 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
             }
         }
 
+        @Override
         public void writerIdle()
         {
 
         }
 
+        @Override
         public void readerIdle()
         {
             _broker.getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
