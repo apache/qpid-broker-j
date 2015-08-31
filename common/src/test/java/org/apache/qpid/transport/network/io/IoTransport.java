@@ -21,10 +21,12 @@ package org.apache.qpid.transport.network.io;
 
 import java.net.Socket;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.Connection;
 import org.apache.qpid.transport.network.ConnectionBinding;
-import org.apache.qpid.transport.util.Logger;
 
 /**
  * This class provides a socket based transport using the java.io
@@ -37,9 +39,8 @@ import org.apache.qpid.transport.util.Logger;
  */
 public final class IoTransport
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(IoTransport.class);
 
-
-    private static final Logger log = Logger.get(IoTransport.class);
 
     private static int DEFAULT_READ_WRITE_BUFFER_SIZE = 64 * 1024;
     private static int readBufferSize = Integer.getInteger

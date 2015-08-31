@@ -21,28 +21,29 @@
 package org.apache.qpid.transport.network.security.sasl;
 
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.security.sasl.SaslException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.SenderException;
-import org.apache.qpid.transport.util.Logger;
 
 public class SASLSender extends SASLEncryptor implements ByteBufferSender
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(SASLSender.class);
 
     private ByteBufferSender delegate;
     private byte[] appData;
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private static final Logger log = Logger.get(SASLSender.class);
-    
+
     public SASLSender(ByteBufferSender delegate)
     {
         this.delegate = delegate;
-        log.debug("SASL Sender enabled");
+        LOGGER.debug("SASL Sender enabled");
     }
 
     public void close() 
@@ -82,20 +83,20 @@ public class SASLSender extends SASLEncryptor implements ByteBufferSender
             while (buf.hasRemaining())
             {
                 int length = Math.min(buf.remaining(), getSendBuffSize());
-                log.debug("sendBuffSize %s", getSendBuffSize());
-                log.debug("buf.remaining() %s", buf.remaining());
+                LOGGER.debug("sendBuffSize {}", getSendBuffSize());
+                LOGGER.debug("buf.remaining() {}", buf.remaining());
 
                 buf.get(appData, 0, length);
                 try
                 {
                     byte[] out = getSaslClient().wrap(appData, 0, length);
-                    log.debug("out.length %s", out.length);
+                    LOGGER.debug("out.length {}", out.length);
 
                     delegate.send(QpidByteBuffer.wrap(out));
                 }
                 catch (SaslException e)
                 {
-                    log.error("Exception while encrypting data.",e);
+                    LOGGER.error("Exception while encrypting data.", e);
                     throw new SenderException("SASL Sender, Error occurred while encrypting data",e);
                 }
             }
@@ -111,7 +112,7 @@ public class SASLSender extends SASLEncryptor implements ByteBufferSender
     public void securityLayerEstablished()
     {
         appData = new byte[getSendBuffSize()];
-        log.debug("SASL Security Layer Established");
+       LOGGER.debug("SASL Security Layer Established");
     }
 
 }

@@ -30,11 +30,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.ssl.SSLSocket;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.thread.Threading;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.Ticker;
-import org.apache.qpid.transport.util.Logger;
 import org.apache.qpid.util.SystemUtils;
 
 /**
@@ -44,8 +46,7 @@ import org.apache.qpid.util.SystemUtils;
 
 final class IoReceiver implements Runnable
 {
-
-    private static final Logger log = Logger.get(IoReceiver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(IoReceiver.class);
 
     private final ExceptionHandlingByteBufferReceiver receiver;
     private final int bufferSize;
@@ -226,7 +227,7 @@ final class IoReceiver implements Runnable
             }
             catch(Exception e)
             {
-                log.warn(e, "Error closing socket");
+                LOGGER.warn("Error closing socket", e);
             }
         }
     }

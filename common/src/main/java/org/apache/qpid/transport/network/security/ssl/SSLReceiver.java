@@ -28,14 +28,16 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.security.SSLStatus;
-import org.apache.qpid.transport.util.Logger;
 
 public class SSLReceiver implements ExceptionHandlingByteBufferReceiver
 {
-    private static final Logger log = Logger.get(SSLReceiver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SSLReceiver.class);
 
     private final ExceptionHandlingByteBufferReceiver delegate;
     private final SSLEngine engine;
@@ -187,9 +189,9 @@ public class SSLReceiver implements ExceptionHandlingByteBufferReceiver
             }
             catch(SSLException e)
             {
-                if (log.isDebugEnabled())
+                if (LOGGER.isDebugEnabled())
                 {
-                    log.debug(e, "Error caught in SSLReceiver");
+                    LOGGER.debug("Error caught in SSLReceiver", e);
                 }
                 _sslStatus.setSslErrorFlag();
                 synchronized(_sslStatus.getSslLock())
@@ -205,7 +207,8 @@ public class SSLReceiver implements ExceptionHandlingByteBufferReceiver
     private void doTasks()
     {
         Runnable runnable;
-        while ((runnable = engine.getDelegatedTask()) != null) {
+        while ((runnable = engine.getDelegatedTask()) != null)
+        {
             runnable.run();
         }
     }

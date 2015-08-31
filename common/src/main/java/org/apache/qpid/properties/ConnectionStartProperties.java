@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.properties;
 
-import org.apache.qpid.transport.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.util.SystemUtils;
 
 /**
@@ -29,7 +31,7 @@ import org.apache.qpid.util.SystemUtils;
  */
 public class ConnectionStartProperties
 {
-    private static final Logger LOGGER = Logger.get(ConnectionStartProperties.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionStartProperties.class);
 
     /**
      * Used for 0-8/0-9/0-9-1 connections to choose to close

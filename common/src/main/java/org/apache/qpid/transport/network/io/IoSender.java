@@ -23,10 +23,12 @@ import static org.apache.qpid.transport.util.Functions.mod;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.ssl.SSLSocket;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.thread.Threading;
@@ -34,14 +36,13 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.SenderClosedException;
 import org.apache.qpid.transport.SenderException;
 import org.apache.qpid.transport.TransportException;
-import org.apache.qpid.transport.util.Logger;
 import org.apache.qpid.util.SystemUtils;
 
 
 public final class IoSender implements Runnable, ByteBufferSender
 {
 
-    private static final Logger log = Logger.get(IoSender.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(IoSender.class);
 
     // by starting here, we ensure that we always test the wraparound
     // case, we should probably make this configurable somehow so that
@@ -159,7 +160,7 @@ public final class IoSender implements Runnable, ByteBufferSender
                     {
                         try
                         {
-                            log.error("write timed out for socket %s: head %d, tail %d", _remoteSocketAddress, head, tail);
+                            LOGGER.error("write timed out for socket {}: head {}, tail {}", new Object[] {_remoteSocketAddress, head, tail});
                             throw new SenderException(String.format("write timed out for socket %s: head %d, tail %d",  _remoteSocketAddress, head, tail));
                         }
                         finally
@@ -248,7 +249,7 @@ public final class IoSender implements Runnable, ByteBufferSender
             }
             catch(RuntimeException e)
             {
-                log.error(e, "Exception closing receiver for socket %s", _remoteSocketAddress);
+                LOGGER.error("Exception closing receiver for socket {}", _remoteSocketAddress, e);
                 throw new SenderException(e.getMessage(), e);
             }
         }
@@ -310,7 +311,7 @@ public final class IoSender implements Runnable, ByteBufferSender
             }
             catch (IOException e)
             {
-                log.info("Exception in thread sending to '" + _remoteSocketAddress + "': " + e);
+                LOGGER.info("Exception in thread sending to '{}' : {}", _remoteSocketAddress, e.getMessage());
                 exception = e;
                 close(false, false);
                 break;
@@ -352,13 +353,13 @@ public final class IoSender implements Runnable, ByteBufferSender
                 senderThread.join(timeout);
                 if (senderThread.isAlive())
                 {
-                    log.error("join timed out for socket %s to stop", _remoteSocketAddress);
+                    LOGGER.error("join timed out for socket {} to stop", _remoteSocketAddress);
                     throw new SenderException(String.format("join timed out for socket %s to stop", _remoteSocketAddress));
                 }
             }
             catch (InterruptedException e)
             {
-                log.error("interrupted whilst waiting for sender thread for socket %s to stop", _remoteSocketAddress);
+                LOGGER.error("interrupted whilst waiting for sender thread for socket {} to stop", _remoteSocketAddress);
                 throw new SenderException(e);
             }
         }

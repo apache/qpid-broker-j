@@ -27,6 +27,8 @@ import org.ietf.jgss.GSSException;
 import org.ietf.jgss.GSSManager;
 import org.ietf.jgss.GSSName;
 import org.ietf.jgss.Oid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.security.AMQCallbackHandler;
 import org.apache.qpid.client.security.CallbackHandlerRegistry;
@@ -36,7 +38,6 @@ import org.apache.qpid.transport.Connection;
 import org.apache.qpid.transport.ConnectionException;
 import org.apache.qpid.transport.ConnectionOpenOk;
 import org.apache.qpid.transport.ConnectionSettings;
-import org.apache.qpid.transport.util.Logger;
 import org.apache.qpid.util.Strings;
 
 import javax.security.sasl.Sasl;
@@ -51,7 +52,7 @@ import java.util.Map;
  */
 public class ClientConnectionDelegate extends ClientDelegate
 {
-    private static final Logger LOGGER = Logger.get(ClientDelegate.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientConnectionDelegate.class);
 
     private static final String KRB5_OID_STR = "1.2.840.113554.1.2.2";
     protected static final Oid KRB5_OID;

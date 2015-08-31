@@ -30,10 +30,12 @@ import java.util.Map;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.properties.ConnectionStartProperties;
-import org.apache.qpid.transport.util.Logger;
 
 
 /**
@@ -43,9 +45,7 @@ import org.apache.qpid.transport.util.Logger;
 
 public class ClientDelegate extends ConnectionDelegate
 {
-    private static final Logger log = Logger.get(ClientDelegate.class);
-
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClientDelegate.class);
 
     private final ConnectionSettings _connectionSettings;
 
@@ -206,7 +206,7 @@ public class ClientDelegate extends ConnectionDelegate
         int i = heartbeat;
         if (i == 0)
         {
-            log.info("Heartbeat interval is 0 sec. Heartbeats are disabled.");
+            LOGGER.info("Heartbeat interval is 0 sec. Heartbeats are disabled.");
             return 0; // heartbeats are disabled.
         }
         else if (i >= min && i <= max)
@@ -215,8 +215,8 @@ public class ClientDelegate extends ConnectionDelegate
         }
         else
         {
-            log.info("The broker does not support the configured connection heartbeat interval of %s sec," +
-                     " using the brokers max supported value of %s sec instead.", i,max);
+            LOGGER.info("The broker does not support the configured connection heartbeat interval of {} sec," +
+                     " using the brokers max supported value of {} sec instead.", i, max);
             return max;
         }
     }

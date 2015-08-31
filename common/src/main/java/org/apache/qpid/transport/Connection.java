@@ -40,6 +40,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslServer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.transport.network.Assembler;
 import org.apache.qpid.transport.network.Disassembler;
@@ -49,7 +52,6 @@ import org.apache.qpid.transport.network.TransportActivity;
 import org.apache.qpid.transport.network.io.IoNetworkTransport;
 import org.apache.qpid.transport.network.security.SecurityLayer;
 import org.apache.qpid.transport.network.security.SecurityLayerFactory;
-import org.apache.qpid.transport.util.Logger;
 import org.apache.qpid.transport.util.Waiter;
 import org.apache.qpid.util.Strings;
 
@@ -67,8 +69,7 @@ import org.apache.qpid.util.Strings;
 public class Connection extends ConnectionInvoker
     implements ProtocolEventReceiver, ProtocolEventSender
 {
-
-    protected static final Logger log = Logger.get(Connection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Connection.class);
 
     //Usable channels are numbered 0 to <ChannelMax> - 1
     public static final int MAX_CHANNEL_MAX = 0xFFFF;
@@ -392,9 +393,9 @@ public class Connection extends ConnectionInvoker
     public void received(ProtocolEvent event)
     {
         _lastReadTime = System.currentTimeMillis();
-        if(log.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            log.debug("RECV: [%s] %s", this, event);
+            LOGGER.debug("RECV: [{}] {}", this, String.valueOf(event));
         }
         event.delegate(this, delegate);
     }
@@ -402,9 +403,9 @@ public class Connection extends ConnectionInvoker
     public void send(ProtocolEvent event)
     {
         _lastSendTime = System.currentTimeMillis();
-        if(log.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            log.debug("SEND: [%s] %s", this, event);
+            LOGGER.debug("SEND: [{}] {}", this, String.valueOf(event));
         }
         ProtocolEventSender s = sender;
         if (s == null)
@@ -416,9 +417,9 @@ public class Connection extends ConnectionInvoker
 
     public void flush()
     {
-        if(log.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            log.debug("FLUSH: [%s]", this);
+            LOGGER.debug("FLUSH: [{}]", this);
         }
         final ProtocolEventSender theSender = sender;
         if(theSender != null)
@@ -451,9 +452,9 @@ public class Connection extends ConnectionInvoker
              * A peer receiving any other control on a detached transport MUST discard it and
              * send a session.detached with the "not-attached" reason code.
              */
-            if(log.isDebugEnabled())
+            if(LOGGER.isDebugEnabled())
             {
-                log.debug("Control received on unattached channel : %d", channel);
+                LOGGER.debug("Control received on unattached channel : {}", channel);
             }
             invokeSessionDetached(channel, SessionDetachCode.NOT_ATTACHED);
         }
@@ -572,7 +573,7 @@ public class Connection extends ConnectionInvoker
             exception(new ConnectionException("connection aborted"));
         }
 
-        log.debug("connection closed: %s", this);
+        LOGGER.debug("connection closed: {}", this);
 
         synchronized (lock)
         {
@@ -795,7 +796,7 @@ public class Connection extends ConnectionInvoker
         @Override
         public void readerIdle()
         {
-            log.error("Closing connection as no heartbeat or other activity detected within specified interval");
+            LOGGER.error("Closing connection as no heartbeat or other activity detected within specified interval");
             _networkConnection.close();
         }
     }

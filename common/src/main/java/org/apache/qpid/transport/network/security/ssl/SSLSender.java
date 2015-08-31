@@ -28,15 +28,17 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLEngineResult.Status;
 import javax.net.ssl.SSLException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.SenderException;
 import org.apache.qpid.transport.network.security.SSLStatus;
-import org.apache.qpid.transport.util.Logger;
 
 public class SSLSender implements ByteBufferSender
 {
-    private static final Logger log = Logger.get(SSLSender.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SSLSender.class);
 
     private final ByteBufferSender delegate;
     private final SSLEngine engine;
@@ -73,7 +75,7 @@ public class SSLSender implements ByteBufferSender
             {
                 return;
             }
-            log.debug("Closing SSL connection");
+            LOGGER.debug("Closing SSL connection");
 
             engine.closeOutbound();
             try

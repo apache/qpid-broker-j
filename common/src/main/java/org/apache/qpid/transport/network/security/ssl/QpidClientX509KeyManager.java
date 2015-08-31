@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.transport.network.security.ssl;
 
-import org.apache.qpid.transport.util.Logger;
-
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
@@ -34,10 +32,13 @@ import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class QpidClientX509KeyManager extends X509ExtendedKeyManager
 {
-    private static final Logger log = Logger.get(QpidClientX509KeyManager.class);
-    
+    private static final Logger LOGGER = LoggerFactory.getLogger(QpidClientX509KeyManager.class);
+
     private X509ExtendedKeyManager delegate;
     private String alias;
     
@@ -73,7 +74,7 @@ public class QpidClientX509KeyManager extends X509ExtendedKeyManager
 
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {
-        log.debug("chooseClientAlias:Returning alias " + alias);
+        LOGGER.debug("chooseClientAlias:Returning alias {}", alias);
         return alias;
     }
 
@@ -89,7 +90,7 @@ public class QpidClientX509KeyManager extends X509ExtendedKeyManager
 
     public String[] getClientAliases(String keyType, Principal[] issuers)
     {
-        log.debug("getClientAliases:Returning alias " + alias);
+        LOGGER.debug("getClientAliases:Returning alias {}", alias);
         return new String[]{alias};
     }
 
@@ -105,7 +106,7 @@ public class QpidClientX509KeyManager extends X509ExtendedKeyManager
 
     public String chooseEngineClientAlias(String[] keyType, Principal[] issuers, SSLEngine engine)
     {
-        log.debug("chooseEngineClientAlias:Returning alias " + alias);
+        LOGGER.debug("chooseEngineClientAlias:Returning alias {}", alias);
         return alias;
     }
 

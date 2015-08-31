@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.transport;
 
-import org.apache.qpid.transport.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 
 /**
@@ -33,11 +35,11 @@ public class SessionDelegate
     extends MethodDelegate<Session>
     implements ProtocolDelegate<Session>
 {
-    protected static final Logger log = Logger.get(SessionDelegate.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SessionDelegate.class);
 
     public void init(Session ssn, ProtocolHeader hdr)
     {
-        log.warn("INIT: [%s] %s", ssn, hdr);
+        LOGGER.warn("INIT: [{}] {}", ssn, hdr);
     }
 
     public void control(Session ssn, Method method)
@@ -61,12 +63,12 @@ public class SessionDelegate
 
     public void error(Session ssn, ProtocolError error)
     {
-        log.warn("ERROR: [%s] %s", ssn, error);
+        LOGGER.warn("ERROR: [{}] {}", ssn, error);
     }
 
     public void handle(Session ssn, Method method)
     {
-        log.warn("UNHANDLED: [%s] %s", ssn, method);
+        LOGGER.warn("UNHANDLED: [{}] {}", ssn, method);
     }
 
     @Override public void sessionRequestTimeout(Session ssn, SessionRequestTimeout t)
@@ -228,7 +230,7 @@ public class SessionDelegate
 
     public void closed(Session session)
     {
-        log.debug("CLOSED: [%s]", session);
+        LOGGER.debug("CLOSED: [{}]", session);
         synchronized (session.getStateLock())
         {
             session.getStateLock().notifyAll();
@@ -237,7 +239,7 @@ public class SessionDelegate
 
     public void detached(Session session)
     {
-        log.debug("DETACHED: [%s]", session);
+        LOGGER.debug("DETACHED: [{}]", session);
         synchronized (session.getStateLock())
         {
             session.getStateLock().notifyAll();

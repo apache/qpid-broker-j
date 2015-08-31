@@ -23,7 +23,6 @@ package org.apache.qpid.transport;
 
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.transport.network.Frame;
-import org.apache.qpid.transport.util.Logger;
 import org.apache.qpid.transport.util.Waiter;
 import static org.apache.qpid.transport.Option.COMPLETED;
 import static org.apache.qpid.transport.Option.SYNC;
@@ -44,10 +43,12 @@ import static org.apache.qpid.util.Strings.toUTF8;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Session
@@ -57,7 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Session extends SessionInvoker
 {
-    private static final Logger log = Logger.get(Session.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Session.class);
 
     public enum State { NEW, DETACHED, RESUMING, OPEN, CLOSING, CLOSED }
 
@@ -70,12 +71,12 @@ public class Session extends SessionInvoker
 
         public void message(Session ssn, MessageTransfer xfr)
         {
-            log.info("message: %s", xfr);
+            LOGGER.info("message: {}", xfr);
         }
 
         public void exception(Session ssn, SessionException exc)
         {
-            log.error(exc, "session exception");
+            LOGGER.error("session exception", exc);
         }
 
         public void closed(Session ssn) {}
@@ -255,13 +256,13 @@ public class Session extends SessionInvoker
                 while(totalWait <= blockedSendTimeout && !credit.tryAcquire(wait, TimeUnit.MILLISECONDS))
                 {
                     totalWait+=wait;
-                    log.warn("Message send delayed by " + (totalWait)/1000 + "s due to broker enforced flow control");
+                    LOGGER.warn("Message send delayed by {}s due to broker enforced flow control", (totalWait) / 1000);
 
 
                 }
                 if(totalWait > blockedSendTimeout)
                 {
-                    log.error("Message send failed due to timeout waiting on broker enforced flow control");
+                    LOGGER.error("Message send failed due to timeout waiting on broker enforced flow control");
                     throw new SessionException
                             ("timed out waiting for message credit");
                 }
@@ -370,21 +371,6 @@ public class Session extends SessionInvoker
         return commands.remove(id);
     }
 
-    void dump()
-    {
-        synchronized (commandsLock)
-        {
-            TreeMap<Integer, Method> ordered = new TreeMap<Integer, Method>(commands);
-            for (Method m : ordered.values())
-            {
-                if (m != null)
-                {
-                    log.debug("%s", m);
-                }
-            }
-        }
-    }
-
     final void commandPoint(int id)
     {
         synchronized (processedLock)
@@ -424,9 +410,9 @@ public class Session extends SessionInvoker
         int id = nextCommandId();
         cmd.setId(id);
 
-        if(log.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            log.debug("identify: ch=%s, commandId=%s", this.channel, id);
+            LOGGER.debug("identify: ch={}, commandId={}", this.channel, id);
         }
 
         if ((id & 0xff) == 0)
@@ -453,17 +439,17 @@ public class Session extends SessionInvoker
 
     public void processed(int lower, int upper)
     {
-        if(log.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            log.debug("%s ch=%s processed([%d,%d]) %s %s", this, channel, lower, upper, syncPoint, maxProcessed);
+            LOGGER.debug("{} ch={} processed([{},{}]) {} {}", new Object[] {this, channel, lower, upper, syncPoint, maxProcessed});
         }
 
         boolean flush;
         synchronized (processedLock)
         {
-            if(log.isDebugEnabled())
+            if(LOGGER.isDebugEnabled())
             {
-                log.debug("%s processed: %s", this, processed);
+                LOGGER.debug("{} processed: {}", this, processed);
             }
 
             if (ge(upper, commandsIn))
@@ -544,7 +530,7 @@ public class Session extends SessionInvoker
     void syncPoint()
     {
         int id = getCommandsIn() - 1;
-        log.debug("%s synced to %d", this, id);
+        LOGGER.debug("{} synced to {}", this, id);
         boolean flush;
         synchronized (processedLock)
         {
@@ -560,9 +546,9 @@ public class Session extends SessionInvoker
     protected boolean complete(int lower, int upper)
     {
         //avoid autoboxing
-        if(log.isDebugEnabled())
+        if(LOGGER.isDebugEnabled())
         {
-            log.debug("%s complete(%d, %d)", this, lower, upper);
+            LOGGER.debug("{} complete({}, {})", new Object[] {this, lower, upper});
         }
         synchronized (commandsLock)
         {
@@ -581,9 +567,9 @@ public class Session extends SessionInvoker
                 maxComplete = max(maxComplete, upper);
             }
 
-            if(log.isDebugEnabled())
+            if(LOGGER.isDebugEnabled())
             {
-                log.debug("%s   commands remaining: %s", this, commandsOut - maxComplete);
+                LOGGER.debug("{}   commands remaining: {}", this, commandsOut - maxComplete);
             }
 
             commandsLock.notifyAll();
@@ -716,7 +702,7 @@ public class Session extends SessionInvoker
                                 {
                                     // if expiry is > 0 then this will
                                     // happen again on resume
-                                    log.error(e, "error sending flush (full replay buffer)");
+                                    LOGGER.error("error sending flush (full replay buffer)", e);
                                 }
                                 else
                                 {
@@ -777,7 +763,7 @@ public class Session extends SessionInvoker
                     {
                         // if we are not closing then this will happen
                         // again on resume
-                        log.error(e, "error sending command");
+                        LOGGER.error("error sending command", e);
                     }
                     else
                     {
@@ -803,7 +789,7 @@ public class Session extends SessionInvoker
                         {
                             // if expiry is > 0 then this will happen
                             // again on resume
-                            log.error(e, "error sending flush (periodic)");
+                            LOGGER.error("error sending flush (periodic)", e);
                         }
                         else
                         {
@@ -839,7 +825,7 @@ public class Session extends SessionInvoker
 
     public void sync(long timeout)
     {
-        log.debug("%s sync()", this);
+        LOGGER.debug("{} sync()", this);
         synchronized (commandsLock)
         {
             int point = commandsOut - 1;
@@ -853,9 +839,9 @@ public class Session extends SessionInvoker
             while (w.hasTime() && state != CLOSED && lt(maxComplete, point))
             {
                 checkFailoverRequired("Session sync was interrupted by failover.");
-                if(log.isDebugEnabled())
+                if(LOGGER.isDebugEnabled())
                 {
-                    log.debug("%s   waiting for[%d]: %d, %s", this, point, maxComplete, commands);
+                    LOGGER.debug("{}   waiting for[{}]: {}, {}", new Object[] {this, point, maxComplete, commands});
                 }
                 w.await();
             }
@@ -897,9 +883,9 @@ public class Session extends SessionInvoker
         }
         else
         {
-            log.warn("Received a response to a command" +
-            		" that's no longer valid on the client side." +
-            		" [ command id : %s , result : %s ]",command, result);
+            LOGGER.warn("Received a response to a command" +
+                     " that's no longer valid on the client side." +
+                     " [ command id : {} , result : {} ]", command, result);
         }
     }
 
@@ -967,7 +953,7 @@ public class Session extends SessionInvoker
                 while (w.hasTime() && state != CLOSED && !isDone())
                 {
                     checkFailoverRequired("Operation was interrupted by failover.");
-                    log.debug("%s waiting for result: %s", Session.this, this);
+                    LOGGER.debug("{} waiting for result: {}", Session.this, this);
                     w.await();
                 }
             }
@@ -1032,9 +1018,9 @@ public class Session extends SessionInvoker
 
     public void close()
     {
-        if (log.isDebugEnabled())
+        if (LOGGER.isDebugEnabled())
         {
-            log.debug("Closing [%s] in state [%s]", this, state);
+            LOGGER.debug("Closing [{}] in state [{}]", this, state);
         }
         synchronized (commandsLock)
         {
@@ -1075,7 +1061,7 @@ public class Session extends SessionInvoker
 
     public void exception(Throwable t)
     {
-        log.error(t, "caught exception");
+        LOGGER.error("caught exception", t);
     }
 
     public void closed()

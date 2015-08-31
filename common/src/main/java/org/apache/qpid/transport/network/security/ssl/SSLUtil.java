@@ -67,12 +67,15 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import javax.xml.bind.DatatypeConverter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.transport.TransportException;
-import org.apache.qpid.transport.util.Logger;
 
 public class SSLUtil
 {
-    private static final Logger log = Logger.get(SSLUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SSLUtil.class);
+
     private static final Integer DNS_NAME_TYPE = 2;
     public static final String SSLV3_PROTOCOL = "SSLv3";
 
@@ -89,7 +92,7 @@ public class SSLUtil
         }
         catch(SSLPeerUnverifiedException e)
         {
-            log.warn("Exception received while trying to verify hostname",e);
+            LOGGER.warn("Exception received while trying to verify hostname", e);
             // For some reason the SSL engine sets the handshake status to FINISH twice
             // in succession. The first time the peer certificate
             // info is not available. The second time it works !
@@ -205,7 +208,7 @@ public class SSLUtil
             }
             catch (InvalidNameException e)
             {
-                log.warn("Invalid name: '"+dn+"'. ");
+                LOGGER.warn("Invalid name: '{}'", dn);
                 return "";
             }
         }
@@ -224,9 +227,9 @@ public class SSLUtil
         }
         catch (Exception e)
         {
-            log.info("Exception received while trying to retrieve client identity from SSL cert", e);
+            LOGGER.info("Exception received while trying to retrieve client identity from SSL cert", e);
         }
-        log.debug("Extracted Identity from client certificate : " + id);
+        LOGGER.debug("Extracted Identity from client certificate : {}", id);
         return id;
     }
 

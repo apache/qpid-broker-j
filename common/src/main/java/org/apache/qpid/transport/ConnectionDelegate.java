@@ -20,9 +20,10 @@
  */
 package org.apache.qpid.transport;
 
-import org.apache.qpid.transport.util.Logger;
-
 import static org.apache.qpid.transport.Connection.State.CLOSE_RCVD;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -42,7 +43,7 @@ public abstract class ConnectionDelegate
     implements ProtocolDelegate<Connection>
 {
 
-    private static final Logger log = Logger.get(ConnectionDelegate.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionDelegate.class);
 
     public void control(Connection conn, Method method)
     {
