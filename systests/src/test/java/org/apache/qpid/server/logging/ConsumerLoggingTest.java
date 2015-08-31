@@ -320,13 +320,14 @@ public class ConsumerLoggingTest extends AbstractTestLogging
         sendMessage(_session, _queue, SEND_COUNT);
         _session.commit();
 
-        Thread.sleep(2000l);
+        Thread.sleep(2500l);
 
+        _logger.debug("Looking for SUB-1003s");
         List<String> results = waitAndFindMatches("SUB-1003");
 
         assertTrue("Expected at least two suspension messages, but got " + results.size(), results.size() >= 2);
 
-        // Retreive the first message, and start the flow of messages
+        // Retrieve the first message, and start the flow of messages
         Message msg = consumer.receive(1000);
         assertNotNull("Message not retrieved", msg);
         _session.commit();
