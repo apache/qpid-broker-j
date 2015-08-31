@@ -281,10 +281,6 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         {
             throw new IllegalStateException("Environment is null.");
         }
-        else if (!environment.isValid())
-        {
-            throw new IllegalStateException("Environment is invalid.");
-        }
         return environment;
     }
 

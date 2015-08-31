@@ -43,6 +43,7 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDBHARemoteReplicationNodeImpl> implements BDBHARemoteReplicationNode<BDBHARemoteReplicationNodeImpl>
 {
@@ -128,19 +129,28 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
 
         getEventLogger().message(_virtualHostNodeLogSubject, HighAvailabilityMessages.DELETED());
 
+        boolean deletionAllowed;
         try
         {
-            _replicatedEnvironmentFacade.removeNodeFromGroup(nodeName);
+            deletionAllowed = _replicatedEnvironmentFacade.removeNodeFromGroup(nodeName);
+        }
+        catch (ServerScopedRuntimeException e)
+        {
+            throw e;
+        }
+        catch (RuntimeException e)
+        {
+            throw new IllegalStateTransitionException("Unexpected exception on node '" + nodeName + "' deletion", e);
+        }
+
+        if (deletionAllowed)
+        {
             setState(State.DELETED);
             deleted();
         }
-        catch(MasterStateException e)
+        else
         {
             throw new IllegalStateTransitionException("Node '" + nodeName + "' cannot be deleted when role is a master");
-        }
-        catch (Exception e)
-        {
-            throw new IllegalStateTransitionException("Unexpected exception on node '" + nodeName + "' deletion", e);
         }
 
         return Futures.immediateFuture(null);

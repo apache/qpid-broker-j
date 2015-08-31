@@ -711,8 +711,16 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         {
             return ReplicatedEnvironment.State.UNKNOWN.name();
         }
-        ReplicatedEnvironment.State state = getEnvironment().getState();
-        return state.toString();
+
+        try
+        {
+            ReplicatedEnvironment.State state = getEnvironment().getState();
+            return state.toString();
+        }
+        catch (RuntimeException e)
+        {
+            throw handleDatabaseException("Cannot get environment state", e);
+        }
     }
 
     public boolean isDesignatedPrimary()
@@ -756,9 +764,14 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 LOGGER.info("Node " + _prettyGroupNodeName + " successfully set designated primary : " + isPrimary);
             }
         }
-        catch (Exception e)
+        catch (RuntimeException e)
         {
-            throw new ConnectionScopedRuntimeException("Cannot set designated primary to " + isPrimary + " on node " + _prettyGroupNodeName, e);
+            RuntimeException handled = handleDatabaseException("Exception on setting designated primary", e);
+            if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+            {
+                throw handled;
+            }
+            throw new ConnectionScopedRuntimeException("Cannot set designated primary to " + isPrimary + " on node " + _prettyGroupNodeName, handled);
         }
     }
 
@@ -804,8 +817,13 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 LOGGER.debug("Node " + _prettyGroupNodeName + " priority has been changed to " + priority);
             }
         }
-        catch (Exception e)
+        catch (RuntimeException e)
         {
+            RuntimeException handled = handleDatabaseException("Exception on setting priority", e);
+            if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+            {
+                throw handled;
+            }
             throw new ConnectionScopedRuntimeException("Cannot set priority to " + priority + " on node " + _prettyGroupNodeName, e);
         }
     }
@@ -852,8 +870,13 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 LOGGER.debug("Node " + _prettyGroupNodeName + " electable group size override has been changed to " + electableGroupOverride);
             }
         }
-        catch (Exception e)
+        catch (RuntimeException e)
         {
+            RuntimeException handled = handleDatabaseException("Exception on setting electable group override", e);
+            if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+            {
+                throw handled;
+            }
             throw new ConnectionScopedRuntimeException("Cannot set electable group size to " + electableGroupOverride + " on node " + _prettyGroupNodeName, e);
         }
     }
@@ -882,20 +905,33 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                         LOGGER.debug("The mastership has been transferred to " + newMaster);
                     }
                 }
-                catch (DatabaseException e)
+                catch (RuntimeException e)
                 {
-                    LOGGER.warn("Exception on transferring the mastership to " + _prettyGroupNodeName
-                                + " Master transfer timeout : " + _masterTransferTimeout, e);
-                    throw e;
+                    String message = "Exception on transferring the mastership to " + _prettyGroupNodeName
+                            + " Master transfer timeout : " + _masterTransferTimeout;
+                    LOGGER.warn(message, e);
+                    throw handleDatabaseException(message, e);
                 }
                 return null;
             }
         });
     }
 
-    public void removeNodeFromGroup(final String nodeName)
+    public boolean removeNodeFromGroup(final String nodeName)
     {
-        createReplicationGroupAdmin().removeMember(nodeName);
+        try
+        {
+            createReplicationGroupAdmin().removeMember(nodeName);
+            return true;
+        }
+        catch(MasterStateException e)
+        {
+            return false;
+        }
+        catch(RuntimeException e)
+        {
+            throw handleDatabaseException("Exception on node removal from group", e);
+        }
     }
 
     public long getJoinTime()
@@ -907,9 +943,16 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         if (_state.get() == State.OPEN)
         {
-            VLSNRange range = RepInternal.getRepImpl(getEnvironment()).getVLSNIndex().getRange();
-            VLSN lastTxnEnd = range.getLastTxnEnd();
-            return lastTxnEnd.getSequence();
+            try
+            {
+                VLSNRange range = RepInternal.getRepImpl(getEnvironment()).getVLSNIndex().getRange();
+                VLSN lastTxnEnd = range.getLastTxnEnd();
+                return lastTxnEnd.getSequence();
+            }
+            catch (RuntimeException e)
+            {
+                throw handleDatabaseException("Exception on getting last known replication transaction id", e);
+            }
         }
         else
         {
@@ -930,17 +973,18 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     private ReplicatedEnvironment getEnvironment()
     {
+        if (getFacadeState() == State.RESTARTING)
+        {
+            throw new ConnectionScopedRuntimeException("Environment is restarting");
+        }
+
         final ReplicatedEnvironment environment = _environment.get();
         if (environment == null)
         {
             throw new IllegalStateException("Environment is null.");
         }
-        else if (!environment.isValid())
-        {
-            throw new IllegalStateException("Environment is invalid.");
-        }
-        return environment;
 
+        return environment;
     }
 
     @Override
@@ -1306,7 +1350,15 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         {
             throw new IllegalStateException("Environment facade is not opened");
         }
-        return getEnvironment().getGroup().getElectableNodes().size();
+
+        try
+        {
+            return getEnvironment().getGroup().getElectableNodes().size();
+        }
+        catch(RuntimeException e)
+        {
+            throw handleDatabaseException("Exception on getting number of electable group members", e);
+        }
     }
 
     public boolean isMaster()
@@ -1469,7 +1521,14 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         if (!permittedNodes.isEmpty())
         {
             byte[] data = permittedNodeListToBytes(permittedNodes);
-            getEnvironment().registerAppStateMonitor(new EnvironmentStateHolder(data));
+            try
+            {
+                getEnvironment().registerAppStateMonitor(new EnvironmentStateHolder(data));
+            }
+            catch (RuntimeException e)
+            {
+                throw handleDatabaseException("Exception on registering app state monitor", e);
+            }
         }
     }
 
@@ -1605,19 +1664,16 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                     {
                         handleDatabaseException("Exception on replication group check", e);
                     }
-
                     if (continueMonitoring)
                     {
-                        // TODO: this code block does not seem to handle exceptions correctly.
-                        boolean currentDesignatedPrimary = isDesignatedPrimary();
-                        int currentElectableGroupSizeOverride = getElectableGroupSizeOverride();
 
                         Map<ReplicationNode, NodeState> nodeStates = discoverNodeStates(_remoteReplicationNodes.values());
 
-                        executeDatabasePingerOnNodeChangesIfMaster(nodeStates, currentDesignatedPrimary, currentElectableGroupSizeOverride);
+                        executeDatabasePingerOnNodeChangesIfMaster(nodeStates);
 
                         notifyGroupListenerAboutNodeStates(nodeStates);
                     }
+
                 }
             }
             finally
@@ -1801,36 +1857,41 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
          * still available.  This allows us to discover if quorum is lost in a timely manner, rather than
          * having to await the next user transaction.
          */
-        private void executeDatabasePingerOnNodeChangesIfMaster(final Map<ReplicationNode, NodeState> nodeStates,
-                                                                final boolean currentDesignatedPrimary,
-                                                                final int currentElectableGroupSizeOverride)
+        private void executeDatabasePingerOnNodeChangesIfMaster(final Map<ReplicationNode, NodeState> nodeStates)
         {
-            if (ReplicatedEnvironment.State.MASTER == getEnvironment().getState())
+            try
             {
-                Map<String, ReplicatedEnvironment.State> currentGroupState = new HashMap<>();
-                for (Map.Entry<ReplicationNode, NodeState> entry : nodeStates.entrySet())
+                if (ReplicatedEnvironment.State.MASTER == getEnvironment().getState())
                 {
-                    ReplicationNode node = entry.getKey();
-                    NodeState nodeState = entry.getValue();
-                    ReplicatedEnvironment.State state = nodeState == null? ReplicatedEnvironment.State.UNKNOWN : nodeState.getNodeState();
-                    currentGroupState.put(node.getName(), state);
+                    Map<String, ReplicatedEnvironment.State> currentGroupState = new HashMap<>();
+                    for (Map.Entry<ReplicationNode, NodeState> entry : nodeStates.entrySet())
+                    {
+                        ReplicationNode node = entry.getKey();
+                        NodeState nodeState = entry.getValue();
+                        ReplicatedEnvironment.State state = nodeState == null ? ReplicatedEnvironment.State.UNKNOWN : nodeState.getNodeState();
+                        currentGroupState.put(node.getName(), state);
+                    }
+
+                    boolean currentDesignatedPrimary = ReplicatedEnvironmentFacade.this.isDesignatedPrimary();
+                    int currentElectableGroupSizeOverride = ReplicatedEnvironmentFacade.this.getElectableGroupSizeOverride();
+
+                    boolean stateChanged = !_previousGroupState.equals(currentGroupState)
+                            || currentDesignatedPrimary != _previousDesignatedPrimary
+                            || currentElectableGroupSizeOverride != _previousElectableGroupOverride;
+
+                    _previousGroupState = currentGroupState;
+                    _previousDesignatedPrimary = currentDesignatedPrimary;
+                    _previousElectableGroupOverride = currentElectableGroupSizeOverride;
+
+                    if (stateChanged && State.OPEN == _state.get())
+                    {
+                        new DatabasePinger().pingDb(ReplicatedEnvironmentFacade.this);
+                    }
                 }
-
-                ReplicatedEnvironmentFacade.this.isDesignatedPrimary();
-                ReplicatedEnvironmentFacade.this.getElectableGroupSizeOverride();
-
-                boolean stateChanged = !_previousGroupState.equals(currentGroupState)
-                                || currentDesignatedPrimary != _previousDesignatedPrimary
-                                || currentElectableGroupSizeOverride != _previousElectableGroupOverride;
-
-                _previousGroupState = currentGroupState;
-                _previousDesignatedPrimary = currentDesignatedPrimary;
-                _previousElectableGroupOverride = currentElectableGroupSizeOverride;
-
-                if (stateChanged && State.OPEN == _state.get())
-                {
-                    new DatabasePinger().pingDb(ReplicatedEnvironmentFacade.this);
-                }
+            }
+            catch(RuntimeException e)
+            {
+                throw handleDatabaseException("Exception on master check", e);
             }
         }
 
