@@ -55,7 +55,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
 
     public final void open(File passwordFile) throws IOException
     {
-        getLogger().info("PasswordFile using file " + passwordFile.getAbsolutePath());
+        getLogger().debug("PasswordFile using file : {}", passwordFile.getAbsolutePath());
         _passwordFile = passwordFile;
         if (!passwordFile.exists())
         {
@@ -165,8 +165,8 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
         }
         catch (IOException e)
         {
-            getLogger().error("Unable to save password file due to '" + e.getMessage()
-                              + "', password change for user '" + principal + "' discarded");
+            getLogger().error("Unable to save password file due to '{}', password change for user '{}' discarded",
+                              e.getMessage(), principal);
             //revert the password change
             user.restorePassword(orig);
 
@@ -186,10 +186,8 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
             _userUpdate.lock();
             final Map<String, U> newUserMap = new HashMap<>();
 
-            BufferedReader reader = null;
-            try
+            try(BufferedReader reader = new BufferedReader(new FileReader(_passwordFile)))
             {
-                reader = new BufferedReader(new FileReader(_passwordFile));
                 String line;
 
                 while ((line = reader.readLine()) != null)
@@ -201,17 +199,11 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
                     }
 
                     U user = createUserFromFileData(result);
-                    getLogger().info("Created user:" + user);
                     newUserMap.put(user.getName(), user);
                 }
             }
-            finally
-            {
-                if (reader != null)
-                {
-                    reader.close();
-                }
-            }
+
+            getLogger().debug("Loaded {} user(s) from {}", newUserMap.size(), _passwordFile);
 
             _userMap.clear();
             _userMap.putAll(newUserMap);
@@ -308,7 +300,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
             }
             catch(IOException e)
             {
-                getLogger().error("Unable to create the new password file: " + e);
+                getLogger().error("Unable to create the new password file", e);
                 throw new IOException("Unable to create the new password file",e);
             }
     }
@@ -355,7 +347,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
             }
             catch (IOException e)
             {
-                getLogger().error("Unable to remove user '" + user.getName() + "' from password file.");
+                getLogger().error("Unable to remove user '{}' from password file.", user.getName());
                 return false;
             }
 
