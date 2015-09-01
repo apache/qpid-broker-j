@@ -2939,8 +2939,8 @@ public class AMQChannel
             {
                 try
                 {
-                    String name = exchangeName.intern().toString();
-                    String typeString = type == null ? null : type.intern().toString();
+                    String name = exchangeName.toString();
+                    String typeString = type == null ? null : type.toString();
 
                     Map<String, Object> attributes = new HashMap<String, Object>();
                     if (arguments != null)
@@ -3119,16 +3119,12 @@ public class AMQChannel
                 {
                     routingKey = AMQShortString.valueOf(queue.getName());
                 }
-                else
-                {
-                    routingKey = routingKey.intern();
-                }
             }
         }
         else
         {
             queue = virtualHost.getAttainedQueue(queueName.toString());
-            routingKey = routingKey == null ? AMQShortString.EMPTY_STRING : routingKey.intern();
+            routingKey = routingKey == null ? AMQShortString.EMPTY_STRING : routingKey;
         }
 
         if (queue == null)
@@ -3230,7 +3226,7 @@ public class AMQChannel
         }
         else
         {
-            queueName = queueStr.intern();
+            queueName = queueStr;
         }
 
         AMQQueue<?> queue;

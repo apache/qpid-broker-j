@@ -48,9 +48,6 @@ public final class AMQShortString implements Comparable<AMQShortString>
     private static final byte MINUS = (byte)'-';
     private static final byte ZERO = (byte) '0';
 
-    private static final ConcurrentMap<AMQShortString, AMQShortString> _globalInternMap =
-            new ConcurrentHashMap<AMQShortString, AMQShortString>();
-
     private static final Logger _logger = LoggerFactory.getLogger(AMQShortString.class);
 
     private final byte[] _data;
@@ -306,21 +303,12 @@ public final class AMQShortString implements Comparable<AMQShortString>
         return hash;
     }
 
+    @Override
     public String toString()
     {
         if (_asString == null)
         {
-            AMQShortString intern = intern(false);
-
-            if(intern == this)
-            {
-                _asString = new String(_data, _offset, _length, StandardCharsets.UTF_8);
-            }
-            else
-            {
-                _asString = intern.toString();
-            }
-
+            _asString = new String(_data, _offset, _length, StandardCharsets.UTF_8);
         }
         return _asString;
     }
@@ -360,20 +348,6 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
             return (length() == name.length()) ? 0 : -1;
         }
-    }
-
-    public AMQShortString intern()
-    {
-        return intern(true);
-    }
-
-    public AMQShortString intern(boolean keep)
-    {
-
-        AMQShortString internString = keep ? _globalInternMap.putIfAbsent(this,this) : _globalInternMap.get(this);
-
-        return internString == null ? this : internString;
-
     }
 
     public int toIntValue()
