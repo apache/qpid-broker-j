@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.store;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 
@@ -37,8 +36,6 @@ import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNodeImpl;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.test.utils.TestFileUtils;
-import org.apache.qpid.util.FileUtils;
 
 public class SplitStoreTest extends QpidBrokerTestCase
 {
@@ -50,22 +47,9 @@ public class SplitStoreTest extends QpidBrokerTestCase
     {
         super.setUp();
 
-        String virtualHostWorkDir = System.getProperty("QPID_WORK") + File.separator + TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST + File.separator;
+        String virtualHostWorkDir = "${json:QPID_WORK}${json:file.separator}${this:name}${json:file.separator}";
         _messageStorePath =  virtualHostWorkDir  + "messageStore";
         _configStorePath =  virtualHostWorkDir  + "configStore";
-    }
-
-    @Override
-    protected void tearDown() throws Exception
-    {
-        try
-        {
-            super.tearDown();
-        }
-        finally
-        {
-            TestFileUtils.delete(new File(_messageStorePath), true);
-        }
     }
 
     @Override
@@ -107,7 +91,7 @@ public class SplitStoreTest extends QpidBrokerTestCase
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         Queue queue = session.createQueue(getTestQueueName());
         session.createConsumer(queue).close(); // Create durable queue by side effect
-        sendMessage(session, queue, 2);
+        sendMessage(session, queue, 1);
         connection.close();
 
         restartBroker();
@@ -124,18 +108,6 @@ public class SplitStoreTest extends QpidBrokerTestCase
         assertEquals("Unexpected message received after first restart", 0, message.getIntProperty(INDEX));
 
         stopBroker();
-        File messageStoreFile = new File(_messageStorePath);
-        FileUtils.delete(messageStoreFile, true);
-        assertFalse("Store folder was not deleted", messageStoreFile.exists());
-        super.startBroker();
-
-        connection = getConnection();
-        connection.start();
-        session = connection.createSession(true, Session.SESSION_TRANSACTED);
-        consumer = session.createConsumer(queue);
-        message = consumer.receive(500);
-
-        assertNull("Message was received after store removal", message);
     }
 
 }
