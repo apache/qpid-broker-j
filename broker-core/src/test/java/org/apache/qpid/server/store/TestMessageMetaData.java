@@ -20,10 +20,13 @@
  */
 package org.apache.qpid.server.store;
 
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.EncodingUtils;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.util.ByteBufferOutputStream;
@@ -90,12 +93,12 @@ public class TestMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
-    public int writeToBuffer(ByteBuffer dest)
+    public int writeToBuffer(QpidByteBuffer dest)
     {
         int oldPosition = dest.position();
         try
         {
-            DataOutputStream dataOutputStream = new DataOutputStream(new ByteBufferOutputStream(dest));
+            DataOutput dataOutputStream = dest.asDataOutput();
             EncodingUtils.writeLong(dataOutputStream, _messageId);
             EncodingUtils.writeInteger(dataOutputStream, _contentSize);
         }
@@ -107,4 +110,13 @@ public class TestMessageMetaData implements StorableMessageMetaData
 
         return dest.position() - oldPosition;
     };
+
+    @Override
+    public Collection<QpidByteBuffer> asByteBuffers()
+    {
+        QpidByteBuffer buf = QpidByteBuffer.allocateDirectFromPool(getStorableSize());
+        writeToBuffer(buf);
+        buf.position(0);
+        return Collections.singleton(buf);
+    }
 }

@@ -30,6 +30,7 @@ import com.sleepycat.bind.tuple.TupleOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.MessageMetaDataTypeRegistry;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -54,14 +55,15 @@ public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaD
     @Override
     public StorableMessageMetaData entryToObject(DatabaseEntry entry)
     {
-        ByteBuffer buf = ByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
+        QpidByteBuffer buf = QpidByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
         final int bodySize = buf.getInt() ^ 0x80000000;
         final int metaDataType = buf.get() & 0xff;
         buf = buf.slice();
-        LOGGER.debug("RGDEBUG : remaining {} limit {}", buf.remaining(), bodySize);
         buf.limit(bodySize-1);
         MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(metaDataType);
-        return type.createMetaData(buf);
+        final StorableMessageMetaData metaData = type.createMetaData(buf);
+        buf.dispose();
+        return metaData;
     }
 
     @Override
@@ -70,7 +72,7 @@ public class MessageMetaDataBinding implements EntryBinding<StorableMessageMetaD
         final int bodySize = 1 + metaData.getStorableSize();
         byte[] underlying = new byte[4+bodySize];
         underlying[4] = (byte) metaData.getType().ordinal();
-        ByteBuffer buf = ByteBuffer.wrap(underlying);
+        QpidByteBuffer buf = QpidByteBuffer.wrap(underlying);
         buf.putInt(bodySize ^ 0x80000000);
         buf.position(5);
         buf = buf.slice();

@@ -20,7 +20,6 @@
 */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -336,7 +335,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         return buf;
     }
 
-    public int writeToBuffer(ByteBuffer dest)
+    public int writeToBuffer(QpidByteBuffer dest)
     {
         QpidByteBuffer buf = _encoded;
 
@@ -354,8 +353,28 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         {
             buf.limit(dest.remaining());
         }
-        buf.get(dest);
-        return buf.limit();
+        final int length = buf.limit();
+        dest.putCopyOf(buf);
+        buf.dispose();
+        return length;
+    }
+
+    @Override
+    public Collection<QpidByteBuffer> asByteBuffers()
+    {
+        QpidByteBuffer buf = _encoded;
+
+        if(buf == null)
+        {
+            buf = encodeAsBuffer();
+            _encoded = buf;
+        }
+
+        buf = buf.duplicate();
+
+        buf.position(0);
+
+        return Collections.singleton(buf);
     }
 
     public int getContentSize()
@@ -405,7 +424,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             _typeRegistry.registerSecurityLayer();
         }
 
-        public MessageMetaData_1_0 createMetaData(ByteBuffer buf)
+        public MessageMetaData_1_0 createMetaData(QpidByteBuffer buf)
         {
             ValueHandler valueHandler = new ValueHandler(_typeRegistry);
 
@@ -416,12 +435,12 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             {
                 try
                 {
-                    ByteBuffer encodedBuf = buf.duplicate();
-                    final QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(buf);
-                    Object parse = valueHandler.parse(qpidByteBuffer);
+                    int start = buf.position();
+                    QpidByteBuffer encodedBuf = buf.slice();
+                    Object parse = valueHandler.parse(buf);
                     sections.add((Section) parse);
-                    encodedBuf.limit(buf.position());
-                    encodedSections.add(QpidByteBuffer.wrap(encodedBuf));
+                    encodedBuf.limit(buf.position()-start);
+                    encodedSections.add(encodedBuf);
 
                 }
                 catch (AmqpErrorException e)
