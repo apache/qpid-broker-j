@@ -21,6 +21,9 @@
 package org.apache.qpid.server.store;
 
 import java.nio.ByteBuffer;
+import java.util.Collection;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 
 public interface StorableMessageMetaData
@@ -29,7 +32,9 @@ public interface StorableMessageMetaData
 
     int getStorableSize();
 
-    int writeToBuffer(ByteBuffer dest);
+    int writeToBuffer(QpidByteBuffer dest);
+
+    Collection<QpidByteBuffer> asByteBuffers();
 
     int getContentSize();
 

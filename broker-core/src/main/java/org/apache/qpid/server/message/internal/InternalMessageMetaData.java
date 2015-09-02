@@ -20,13 +20,15 @@
  */
 package org.apache.qpid.server.message.internal;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Collections;
 
 public class InternalMessageMetaData implements StorableMessageMetaData
 {
@@ -70,10 +72,16 @@ public class InternalMessageMetaData implements StorableMessageMetaData
     }
 
     @Override
-    public int writeToBuffer(final ByteBuffer dest)
+    public int writeToBuffer(final QpidByteBuffer dest)
     {
         dest.put(_headerBytes);
         return _headerBytes.length;
+    }
+
+    @Override
+    public Collection<QpidByteBuffer> asByteBuffers()
+    {
+        return Collections.singleton(QpidByteBuffer.wrap(_headerBytes));
     }
 
     @Override

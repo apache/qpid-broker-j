@@ -221,7 +221,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
 
         Section bodySection = convertMessageBody(mimeType, data);
 
-        final ByteBuffer allData = encodeConvertedMessage(metaData, bodySection, sectionEncoder);
+        final QpidByteBuffer allData = encodeConvertedMessage(metaData, bodySection, sectionEncoder);
 
         return new StoredMessage<MessageMetaData_1_0>()
                     {
@@ -240,7 +240,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         @Override
                         public int getContent(int offsetInMessage, ByteBuffer dst)
                         {
-                            ByteBuffer buf = allData.duplicate();
+                            QpidByteBuffer buf = allData.duplicate();
                             buf.position(offsetInMessage);
                             buf = buf.slice();
                             int size;
@@ -253,21 +253,16 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                             {
                                 size = buf.remaining();
                             }
-                            dst.put(buf);
+                            buf.copyTo(dst);
+                            buf.dispose();
                             return size;
                         }
 
                         @Override
                         public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
                         {
-                            ByteBuffer buf = allData.duplicate();
-                            buf.position(offsetInMessage);
-                            buf = buf.slice();
-                            if(size < buf.remaining())
-                            {
-                                buf.limit(size);
-                            }
-                            return Collections.singleton(QpidByteBuffer.wrap(buf));
+                            QpidByteBuffer buf = allData.view(offsetInMessage, Math.min(size,allData.remaining()-offsetInMessage));
+                            return Collections.singleton(buf);
                         }
 
                         @Override
@@ -290,7 +285,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         };
     }
 
-    private ByteBuffer encodeConvertedMessage(MessageMetaData_1_0 metaData, Section bodySection, SectionEncoder sectionEncoder)
+    private QpidByteBuffer encodeConvertedMessage(MessageMetaData_1_0 metaData, Section bodySection, SectionEncoder sectionEncoder)
     {
         int headerSize = (int) metaData.getStorableSize();
 
@@ -298,7 +293,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         sectionEncoder.encodeObject(bodySection);
         Binary dataEncoding = sectionEncoder.getEncoding();
 
-        final ByteBuffer allData = ByteBuffer.allocateDirect(headerSize + dataEncoding.getLength());
+        final QpidByteBuffer allData = QpidByteBuffer.allocateDirectFromPool(headerSize + dataEncoding.getLength());
         metaData.writeToBuffer(allData);
         allData.put(dataEncoding.getArray(),dataEncoding.getArrayOffset(),dataEncoding.getLength());
         return allData;

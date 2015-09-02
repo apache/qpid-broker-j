@@ -43,6 +43,7 @@ import com.sleepycat.je.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.AMQFrameDecodingException;
@@ -693,7 +694,7 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             final int bodySize = 1 + metaData.getStorableSize();
             byte[] underlying = new byte[bodySize];
             underlying[0] = (byte) metaData.getType().ordinal();
-            java.nio.ByteBuffer buf = java.nio.ByteBuffer.wrap(underlying);
+            QpidByteBuffer buf = QpidByteBuffer.wrap(underlying);
             buf.position(1);
             buf = buf.slice();
 

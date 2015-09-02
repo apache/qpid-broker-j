@@ -20,18 +20,20 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.io.DataInputStream;
+import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQProtocolVersionException;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.ByteBufferDataInput;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.EncodingUtils;
 import org.apache.qpid.framing.FieldTable;
@@ -41,6 +43,7 @@ import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.ByteBufferOutputStream;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.transport.ByteBufferSender;
 
 /**
  * Encapsulates a publish body and a content header. In the context of the message store these are treated as a
@@ -107,13 +110,13 @@ public class MessageMetaData implements StorableMessageMetaData
     }
 
 
-    public int writeToBuffer(ByteBuffer dest)
+    public int writeToBuffer(QpidByteBuffer dest)
     {
         int oldPosition = dest.position();
         try
         {
 
-            DataOutputStream dataOutputStream = new DataOutputStream(new ByteBufferOutputStream(dest));
+            DataOutput dataOutputStream = dest.asDataOutput();
             EncodingUtils.writeInteger(dataOutputStream, _contentHeaderBody.getSize());
             _contentHeaderBody.writePayload(dataOutputStream);
             EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getExchange());
@@ -138,6 +141,61 @@ public class MessageMetaData implements StorableMessageMetaData
         }
 
         return dest.position()-oldPosition;
+    }
+
+    @Override
+    public Collection<QpidByteBuffer> asByteBuffers()
+    {
+        try
+        {
+            final List<QpidByteBuffer> buffers = new ArrayList<>();
+            QpidByteBuffer buf = QpidByteBuffer.allocateDirectFromPool(4);
+            buffers.add(buf);
+            buf.putInt(0, _contentHeaderBody.getSize());
+            _contentHeaderBody.writePayload(new ByteBufferSender()
+                                            {
+                                                @Override
+                                                public void send(final QpidByteBuffer msg)
+                                                {
+                                                    buffers.add(msg.duplicate());
+                                                }
+
+                                                @Override
+                                                public void flush()
+                                                {
+
+                                                }
+
+                                                @Override
+                                                public void close()
+                                                {
+
+                                                }
+                                            });
+            buf = QpidByteBuffer.allocateDirectFromPool(9+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getExchange())+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getRoutingKey()));
+            DataOutput dataOutputStream = buf.asDataOutput();
+            EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getExchange());
+            EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getRoutingKey());
+            byte flags = 0;
+            if(_messagePublishInfo.isMandatory())
+            {
+                flags |= MANDATORY_FLAG;
+            }
+            if(_messagePublishInfo.isImmediate())
+            {
+                flags |= IMMEDIATE_FLAG;
+            }
+            buf.put(flags);
+            buf.putLong(_arrivalTime);
+            buf.flip();
+            buffers.add(buf);
+            return buffers;
+        }
+        catch (IOException e)
+        {
+            // This shouldn't happen as we are not actually using anything that can throw an IO Exception
+            throw new ConnectionScopedRuntimeException(e);
+        }
     }
 
     public int getContentSize()
@@ -165,11 +223,11 @@ public class MessageMetaData implements StorableMessageMetaData
     {
 
 
-        public MessageMetaData createMetaData(ByteBuffer buf)
+        public MessageMetaData createMetaData(QpidByteBuffer buf)
         {
             try
             {
-                ByteBufferDataInput dataInput = new ByteBufferDataInput(buf.slice());
+                MarkableDataInput dataInput = buf.asDataInput();
                 int size = EncodingUtils.readInteger(dataInput);
                 ContentHeaderBody chb = ContentHeaderBody.createFromBuffer(dataInput, size);
                 final AMQShortString exchange = EncodingUtils.readAMQShortString(dataInput);
