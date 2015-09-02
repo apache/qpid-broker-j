@@ -24,7 +24,6 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.codec.AbstractEncoder;
 
 
@@ -32,7 +31,7 @@ public final class ServerEncoder extends AbstractEncoder
 {
     public static final int DEFAULT_CAPACITY = 8192;
     private final int _threshold;
-    private QpidByteBuffer _out;
+    private ByteBuffer _out;
     private int _segment;
     private int _initialCapacity;
 
@@ -45,7 +44,7 @@ public final class ServerEncoder extends AbstractEncoder
     {
         _initialCapacity = capacity;
         _threshold = capacity/16;
-        _out = QpidByteBuffer.allocateDirectFromPool(capacity);
+        _out = ByteBuffer.allocateDirect(capacity);
         _segment = 0;
     }
 
@@ -53,22 +52,19 @@ public final class ServerEncoder extends AbstractEncoder
     {
         _out.position(_out.limit());
         _out.limit(_out.capacity());
-        QpidByteBuffer oldOut = _out;
         _out = _out.slice();
-        oldOut.dispose();
         if(_out.remaining() < _threshold)
         {
-            _out.dispose();
-            _out = QpidByteBuffer.allocateDirectFromPool(_initialCapacity);
+            _out = ByteBuffer.allocateDirect(_initialCapacity);
         }
         _segment = 0;
     }
 
-    public QpidByteBuffer getBuffer()
+    public ByteBuffer buffer()
     {
         int pos = _out.position();
         _out.position(_segment);
-        QpidByteBuffer slice = _out.slice();
+        ByteBuffer slice = _out.slice();
         slice.limit(pos - _segment);
         _out.position(pos);
         return slice;
@@ -79,19 +75,18 @@ public final class ServerEncoder extends AbstractEncoder
         return _out.position();
     }
 
-    public QpidByteBuffer underlyingBuffer()
+    public ByteBuffer underlyingBuffer()
     {
         return _out;
     }
 
     private void grow(int size)
     {
-        QpidByteBuffer old = _out;
+        ByteBuffer old = _out;
         int capacity = old.capacity();
-        _out = QpidByteBuffer.allocateDirectFromPool(Math.max(Math.max(capacity + size, 2*capacity), _initialCapacity));
+        _out = ByteBuffer.allocateDirect(Math.max(Math.max(capacity + size, 2*capacity), _initialCapacity));
         old.flip();
         _out.put(old);
-        old.dispose();
     }
 
     protected void doPut(byte b)

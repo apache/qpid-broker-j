@@ -935,7 +935,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             final int bodySize = 1 + metaData.getStorableSize();
             byte[] underlying = new byte[bodySize];
             underlying[0] = (byte) metaData.getType().ordinal();
-            QpidByteBuffer buf = QpidByteBuffer.wrap(underlying);
+            ByteBuffer buf = ByteBuffer.wrap(underlying);
             buf.position(1);
             buf = buf.slice();
 
@@ -1059,12 +1059,12 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                     if(rs.next())
                     {
                         byte[] dataAsBytes = getBlobAsBytes(rs, 1);
-                        QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
+                        ByteBuffer buf = ByteBuffer.wrap(dataAsBytes);
                         buf.position(1);
                         buf = buf.slice();
                         MessageMetaDataType type = MessageMetaDataTypeRegistry.fromOrdinal(dataAsBytes[0]);
                         StorableMessageMetaData metaData = type.createMetaData(buf);
-                        buf.dispose();
+
                         return metaData;
                     }
                     else
@@ -1790,12 +1790,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         if (rs.next())
                         {
                             byte[] dataAsBytes = getBlobAsBytes(rs, 2);
-                            QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
+                            ByteBuffer buf = ByteBuffer.wrap(dataAsBytes);
                             buf.position(1);
                             buf = buf.slice();
                             MessageMetaDataType<?> type = MessageMetaDataTypeRegistry.fromOrdinal(dataAsBytes[0]);
                             StorableMessageMetaData metaData = type.createMetaData(buf);
-                            buf.dispose();
                             message = new StoredJDBCMessage(messageId, metaData, true);
 
                         }
@@ -1843,12 +1842,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                         {
                             long messageId = rs.getLong(1);
                             byte[] dataAsBytes = getBlobAsBytes(rs, 2);
-                            QpidByteBuffer buf = QpidByteBuffer.wrap(dataAsBytes);
+                            ByteBuffer buf = ByteBuffer.wrap(dataAsBytes);
                             buf.position(1);
                             buf = buf.slice();
                             MessageMetaDataType<?> type = MessageMetaDataTypeRegistry.fromOrdinal(((int)dataAsBytes[0]) &0xff);
                             StorableMessageMetaData metaData = type.createMetaData(buf);
-                            buf.dispose();
                             StoredJDBCMessage message = new StoredJDBCMessage(messageId, metaData, true);
                             if (!handler.handle(message))
                             {

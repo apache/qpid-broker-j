@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.plugin;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import java.nio.ByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
@@ -30,12 +30,12 @@ public interface MessageMetaDataType<M extends StorableMessageMetaData> extends 
 
     interface Factory<M extends StorableMessageMetaData>
     {
-        M createMetaData(QpidByteBuffer buf);
+        M createMetaData(ByteBuffer buf);
     }
 
     int ordinal();
 
-    M createMetaData(QpidByteBuffer buf);
+    M createMetaData(ByteBuffer buf);
 
     ServerMessage<M> createMessage(StoredMessage<M> msg);
 

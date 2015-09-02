@@ -42,7 +42,7 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
     }
 
     @Override
-    public TestMessageMetaData createMetaData(QpidByteBuffer buf)
+    public TestMessageMetaData createMetaData(ByteBuffer buf)
     {
         return TestMessageMetaData.FACTORY.createMetaData(buf);
     }

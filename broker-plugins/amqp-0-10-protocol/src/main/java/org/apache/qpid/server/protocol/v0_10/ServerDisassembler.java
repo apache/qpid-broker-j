@@ -60,7 +60,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
     private final ByteBufferSender _sender;
     private int _maxPayload;
     private final Object _sendLock = new Object();
-    private final ServerEncoder _encoder =  new ServerEncoder();
+    private final Encoder _encoder =  new ServerEncoder();
 
     public ServerDisassembler(ByteBufferSender sender, int maxFrame)
     {
@@ -189,7 +189,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
 
     private void method(Method method, SegmentType type)
     {
-        ServerEncoder enc = _encoder;
+        Encoder enc = _encoder;
         enc.init();
         enc.writeUint16(method.getEncodedType());
         if (type == SegmentType.COMMAND)
@@ -241,18 +241,18 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
         synchronized (_sendLock)
         {
-            QpidByteBuffer buf = enc.underlyingBuffer();
+            ByteBuffer buf = enc.underlyingBuffer();
             buf.position(0);
             buf.limit(methodLimit);
 
-            fragment(flags, type, method, Collections.singletonList(buf.duplicate()));
+            fragment(flags, type, method, Collections.singletonList(QpidByteBuffer.wrap(buf.duplicate())));
             if (payload)
             {
                 Collection<QpidByteBuffer> body = method.getBody();
                 buf.limit(headerLimit);
                 buf.position(methodLimit);
 
-                fragment(body == null ? LAST_SEG : 0x0, SegmentType.HEADER, method, Collections.singletonList(buf.duplicate()));
+                fragment(body == null ? LAST_SEG : 0x0, SegmentType.HEADER, method, Collections.singletonList(QpidByteBuffer.wrap(buf.duplicate())));
                 if (body != null)
                 {
                     Collection<QpidByteBuffer> dup = new ArrayList<>(body.size());

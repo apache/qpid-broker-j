@@ -20,7 +20,6 @@
 */
 package org.apache.qpid.server.protocol.v0_10;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -30,12 +29,11 @@ import org.apache.qpid.transport.MessageDeliveryMode;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.MessageTransfer;
 import org.apache.qpid.transport.Struct;
+import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.transport.codec.BBEncoder;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 public class MessageMetaData_0_10 implements StorableMessageMetaData
@@ -53,7 +51,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
     private static final MessageMetaDataType_0_10 TYPE = new MessageMetaDataType_0_10();
 
-    private volatile QpidByteBuffer _encoded;
+    private volatile ByteBuffer _encoded;
 
     public MessageMetaData_0_10(MessageTransfer xfr)
     {
@@ -88,7 +86,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
     public int getStorableSize()
     {
-        QpidByteBuffer buf = _encoded;
+        ByteBuffer buf = _encoded;
 
         if(buf == null)
         {
@@ -100,9 +98,9 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         return buf.limit();
     }
 
-    private QpidByteBuffer encodeAsBuffer()
+    private ByteBuffer encodeAsBuffer()
     {
-        ServerEncoder encoder = new ServerEncoder(ENCODER_SIZE);
+        BBEncoder encoder = new BBEncoder(ENCODER_SIZE);
 
         encoder.writeInt64(_arrivalTime);
         encoder.writeInt32(_bodySize);
@@ -139,13 +137,13 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
             }
 
         }
-        QpidByteBuffer buf = encoder.getBuffer();
+        ByteBuffer buf = encoder.buffer();
         return buf;
     }
 
-    public int writeToBuffer(QpidByteBuffer dest)
+    public int writeToBuffer(ByteBuffer dest)
     {
-        QpidByteBuffer buf = _encoded;
+        ByteBuffer buf = _encoded;
 
         if(buf == null)
         {
@@ -162,27 +160,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
             buf.limit(dest.remaining());
         }
         dest.put(buf);
-        final int length = buf.limit();
-        buf.dispose();
-        return length;
-    }
-
-    @Override
-    public Collection<QpidByteBuffer> asByteBuffers()
-    {
-        QpidByteBuffer buf = _encoded;
-
-        if(buf == null)
-        {
-            buf = encodeAsBuffer();
-            _encoded = buf;
-        }
-
-        buf = buf.duplicate();
-
-        buf.position(0);
-
-        return Collections.singleton(buf);
+        return buf.limit();
     }
 
     public int getContentSize()
@@ -245,10 +223,10 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
     private static class MetaDataFactory implements MessageMetaDataType.Factory<MessageMetaData_0_10>
     {
-        public MessageMetaData_0_10 createMetaData(QpidByteBuffer buf)
+        public MessageMetaData_0_10 createMetaData(ByteBuffer buf)
         {
-            ServerDecoder decoder = new ServerDecoder();
-            decoder.init(Collections.singletonList(buf));
+            BBDecoder decoder = new BBDecoder();
+            decoder.init(buf);
 
             long arrivalTime = decoder.readInt64();
             int bodySize = decoder.readInt32();

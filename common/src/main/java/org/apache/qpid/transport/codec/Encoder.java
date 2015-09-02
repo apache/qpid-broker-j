@@ -278,5 +278,7 @@ public interface Encoder
 
     int position();
 
+    ByteBuffer underlyingBuffer();
+
     void init();
 }

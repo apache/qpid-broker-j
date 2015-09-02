@@ -22,8 +22,8 @@ package org.apache.qpid.server.message.internal;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.nio.ByteBuffer;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -44,11 +44,11 @@ public class InternalMessageMetaDataType implements MessageMetaDataType<Internal
     }
 
     @Override
-    public InternalMessageMetaData createMetaData(final QpidByteBuffer buf)
+    public InternalMessageMetaData createMetaData(final ByteBuffer buf)
     {
 
 
-        try(ObjectInputStream is = new ObjectInputStream(buf.asInputStream()))
+        try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(buf)))
         {
             int contentSize = is.readInt();
             InternalMessageHeader header = (InternalMessageHeader) is.readObject();

@@ -22,20 +22,19 @@ package org.apache.qpid.server.store;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.ByteBuffer;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.EncodingUtils;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.util.ByteBufferInputStream;
 
 public class TestMessageMetaDataFactory implements MessageMetaDataType.Factory<TestMessageMetaData>
 {
-    public TestMessageMetaData createMetaData(QpidByteBuffer buf)
+    public TestMessageMetaData createMetaData(ByteBuffer buf)
     {
         try
         {
-            InputStream bbis = buf.asInputStream();
+            ByteBufferInputStream bbis = new ByteBufferInputStream(buf);
             DataInputStream dais = new DataInputStream(bbis);
 
             long id = EncodingUtils.readLong(dais);
