@@ -65,7 +65,10 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     protected void restoreApplicationBufferForWrite()
     {
         QpidByteBuffer oldNetInputBuffer = _netInputBuffer;
+        int unprocessedDataLength = _netInputBuffer.remaining();
+        _netInputBuffer.limit(_netInputBuffer.capacity());
         _netInputBuffer = oldNetInputBuffer.slice();
+        _netInputBuffer.limit(unprocessedDataLength);
         oldNetInputBuffer.dispose();
         if (_netInputBuffer.limit() != _netInputBuffer.capacity())
         {

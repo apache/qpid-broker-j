@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.model.adapter;
 
+import java.lang.management.ManagementFactory;
 import java.security.AccessControlException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -36,6 +37,8 @@ import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.sun.management.HotSpotDiagnosticMXBean;
+import com.sun.management.VMOption;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
 import org.slf4j.Logger;
@@ -860,5 +863,24 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public static Collection<String> getAvailableConfigurationEncrypters()
     {
         return (new QpidServiceLoader()).getInstancesByType(ConfigurationSecretEncrypterFactory.class).keySet();
+    }
+
+    public static long getMaxDirectMemorySize()
+    {
+        final HotSpotDiagnosticMXBean diagnostiMXBean = ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class);
+        long maxMemory = 0;
+        if (diagnostiMXBean != null)
+        {
+            VMOption vmOption = diagnostiMXBean.getVMOption("MaxDirectMemorySize");
+            if (vmOption != null)
+            {
+                maxMemory = Long.parseLong(vmOption.getValue());
+            };
+        }
+        if (maxMemory == 0)
+        {
+            maxMemory = Runtime.getRuntime().maxMemory();
+        }
+        return maxMemory;
     }
 }

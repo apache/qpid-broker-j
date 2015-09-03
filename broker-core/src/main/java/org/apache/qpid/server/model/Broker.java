@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.model.adapter.BrokerAdapter;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 
@@ -73,7 +74,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String DEFAULT_JMX_PORT_NUMBER  = "9099";
 
     @ManagedContextDefault(name = BROKER_FLOW_TO_DISK_THRESHOLD)
-    long DEFAULT_FLOW_TO_DISK_THRESHOLD = (long)(0.4 * (double)Runtime.getRuntime().maxMemory());
+    long DEFAULT_FLOW_TO_DISK_THRESHOLD = (long)(0.4 * (double) BrokerAdapter.getMaxDirectMemorySize());
 
     @ManagedContextDefault(name = CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT)
     long DEFAULT_CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT = 5000l;

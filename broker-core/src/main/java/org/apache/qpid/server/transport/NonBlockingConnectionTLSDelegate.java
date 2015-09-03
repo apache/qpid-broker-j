@@ -167,7 +167,10 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     protected void restoreApplicationBufferForWrite()
     {
         QpidByteBuffer oldApplicationBuffer = _applicationBuffer;
+        int unprocessedDataLength = _applicationBuffer.remaining();
+        _applicationBuffer.limit(_applicationBuffer.capacity());
         _applicationBuffer = _applicationBuffer.slice();
+        _applicationBuffer.limit(unprocessedDataLength);
         oldApplicationBuffer.dispose();
         if (_applicationBuffer.limit() != _applicationBuffer.capacity())
         {
