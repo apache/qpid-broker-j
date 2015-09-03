@@ -172,7 +172,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         _applicationBuffer = _applicationBuffer.slice();
         _applicationBuffer.limit(unprocessedDataLength);
         oldApplicationBuffer.dispose();
-        if (_applicationBuffer.limit() != _applicationBuffer.capacity())
+        if (_applicationBuffer.limit() <= _applicationBuffer.capacity() - _sslEngine.getSession().getApplicationBufferSize())
         {
             _applicationBuffer.position(_applicationBuffer.limit());
             _applicationBuffer.limit(_applicationBuffer.capacity());
