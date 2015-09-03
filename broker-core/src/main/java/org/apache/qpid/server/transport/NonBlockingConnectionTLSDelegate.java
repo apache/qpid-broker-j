@@ -198,7 +198,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         {
             if(_sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP)
             {
-                final QpidByteBuffer netBuffer = QpidByteBuffer.allocateDirect(_sslEngine.getSession().getPacketBufferSize());
+                final QpidByteBuffer netBuffer = QpidByteBuffer.allocateDirectFromPool(_sslEngine.getSession().getPacketBufferSize());
                 _status = QpidByteBuffer.encryptSSL(_sslEngine, bufferArray, netBuffer);
                 runSSLEngineTasks(_status);
 
