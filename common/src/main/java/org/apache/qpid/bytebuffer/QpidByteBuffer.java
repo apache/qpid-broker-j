@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -57,8 +58,9 @@ public final class QpidByteBuffer
             "_disposed");
 
     private static final ThreadLocal<QpidByteBuffer> _cachedBuffer = new ThreadLocal<>();
+    private static final AtomicReference<ByteBuffer> ZEROED = new AtomicReference<>();
 
-    private ByteBuffer _buffer;
+    private volatile ByteBuffer _buffer;
     private final ByteBufferRef _ref;
     @SuppressWarnings("unused")
     private volatile int _disposed;
@@ -400,8 +402,9 @@ public final class QpidByteBuffer
     {
         ByteBuffer buf = _buffer.slice();
         buf.position(offset);
+        buf.limit(offset+Math.min(length, buf.remaining()));
         buf = buf.slice();
-        buf.limit(Math.min(length, buf.remaining()));
+
         return new QpidByteBuffer(buf, _ref);
     }
 
@@ -593,7 +596,18 @@ public final class QpidByteBuffer
 
     static void returnToPool(final ByteBuffer buffer)
     {
-        final BufferPool pool = _pools.get(buffer.capacity());
+        final int bufferSize = buffer.capacity();
+        final BufferPool pool = _pools.get(bufferSize);
+        ByteBuffer zeroed;;
+        while((zeroed = ZEROED.get()) == null || zeroed.capacity() < bufferSize)
+        {
+            ZEROED.compareAndSet(zeroed, ByteBuffer.allocateDirect(bufferSize));
+        }
+        buffer.clear();
+        final ByteBuffer duplicate = zeroed.duplicate();
+        duplicate.limit(bufferSize);
+        buffer.put(duplicate);
+
         pool.returnBuffer(buffer);
     }
 
