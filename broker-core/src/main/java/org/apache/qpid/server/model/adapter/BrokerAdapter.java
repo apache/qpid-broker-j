@@ -441,18 +441,18 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public synchronized void assignTargetSizes()
     {
-        long totalTarget  = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
+        long totalTarget = getContextValue(Long.class, BROKER_FLOW_TO_DISK_THRESHOLD);
         LOGGER.debug("Assigning target sizes based on total target {}", totalTarget);
         long totalSize = 0l;
         Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
-        Map<VirtualHost<?,?,?>,Long> vhs = new HashMap<>();
-        for(VirtualHostNode<?> vhn : vhns)
+        Map<VirtualHost<?, ?, ?>, Long> vhs = new HashMap<>();
+        for (VirtualHostNode<?> vhn : vhns)
         {
             VirtualHost<?, ?, ?> vh = vhn.getVirtualHost();
-            if(vh != null)
+            if (vh != null)
             {
                 long totalQueueDepthBytes = vh.getTotalQueueDepthBytes();
-                vhs.put(vh,totalQueueDepthBytes);
+                vhs.put(vh, totalQueueDepthBytes);
                 totalSize += totalQueueDepthBytes;
             }
         }
@@ -470,14 +470,25 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             _totalMessageSizeExceedThresholdReported = false;
         }
 
-        for(Map.Entry<VirtualHost<?, ?, ?>,Long> entry : vhs.entrySet())
+        final long proportionalShare = (long) ((double) totalTarget / (double) vhs.size());
+        for (Map.Entry<VirtualHost<?, ?, ?>, Long> entry : vhs.entrySet())
         {
+            long virtualHostTotalQueueSize = entry.getValue();
+            final long size;
+            if (totalSize == 0)
+            {
+                size = proportionalShare;
+            }
+            else
+            {
+                long queueSizeBasedShare = (totalTarget * virtualHostTotalQueueSize) / (2 * totalSize);
+                size = queueSizeBasedShare + (proportionalShare / 2);
+            }
 
-            final long proprotionalShare = (long) ((double) totalTarget / (double) vhs.size());
-
-            long size = totalSize == 0 ? proprotionalShare
-                    : (long) (entry.getValue().doubleValue() * ((double) totalTarget / (double) 2*totalSize)) + (proprotionalShare/2);
-            LOGGER.debug("Assigning target size {} to vhost {}", size, entry.getKey());
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Assigning target size {} to vhost {}", size, entry.getKey());
+            }
             entry.getKey().setTargetSize(size);
         }
     }
