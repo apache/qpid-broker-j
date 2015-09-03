@@ -140,6 +140,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
 
         }
         QpidByteBuffer buf = encoder.getBuffer();
+        encoder.close();
         return buf;
     }
 

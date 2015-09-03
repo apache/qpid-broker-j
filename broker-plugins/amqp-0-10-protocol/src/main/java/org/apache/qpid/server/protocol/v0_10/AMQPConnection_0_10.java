@@ -77,6 +77,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
+    private ServerDisassembler _disassembler;
 
 
     public AMQPConnection_0_10(final Broker<?> broker,
@@ -116,9 +117,9 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                 _connection.getEventLogger().message(ConnectionMessages.OPEN(null, null, null, null, false, false, false, false));
 
                 _connection.setNetworkConnection(_network);
-                ServerDisassembler disassembler = new ServerDisassembler(wrapSender(_network.getSender()), Constant.MIN_MAX_FRAME_SIZE);
-                _connection.setSender(disassembler);
-                _connection.addFrameSizeObserver(disassembler);
+                _disassembler = new ServerDisassembler(wrapSender(_network.getSender()), Constant.MIN_MAX_FRAME_SIZE);
+                _connection.setSender(_disassembler);
+                _connection.addFrameSizeObserver(_disassembler);
                 // FIXME Two log messages to maintain compatibility with earlier protocol versions
                 _connection.getEventLogger().message(ConnectionMessages.OPEN(null, "0-10", null, null, false, true, false, false));
 
@@ -260,6 +261,10 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                 public Void run()
                 {
                     _inputHandler.closed();
+                    if(_disassembler != null)
+                    {
+                        _disassembler.closed();
+                    }
                     return null;
                 }
             });

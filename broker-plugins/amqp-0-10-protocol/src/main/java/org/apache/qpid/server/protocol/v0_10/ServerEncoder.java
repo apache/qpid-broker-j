@@ -369,4 +369,8 @@ public final class ServerEncoder extends AbstractEncoder
 		}
 	}
 
+    public void close()
+    {
+        _out.dispose();
+    }
 }

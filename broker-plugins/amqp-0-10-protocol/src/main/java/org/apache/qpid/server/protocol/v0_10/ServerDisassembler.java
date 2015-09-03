@@ -241,7 +241,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
         synchronized (_sendLock)
         {
-            QpidByteBuffer buf = enc.getBuffer();
+            final QpidByteBuffer buf = enc.getBuffer();
 
             QpidByteBuffer duplicate = buf.duplicate();
             fragment(flags, type, method, Collections.singletonList(duplicate));
@@ -254,7 +254,10 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
                 buf.position(methodLimit);
 
                 duplicate = buf.duplicate();
-                fragment(body == null ? LAST_SEG : 0x0, SegmentType.HEADER, method, Collections.singletonList(duplicate));
+                fragment(body == null ? LAST_SEG : 0x0,
+                         SegmentType.HEADER,
+                         method,
+                         Collections.singletonList(duplicate));
                 duplicate.dispose();
 
                 if (body != null)
@@ -291,5 +294,10 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         }
         this._maxPayload = maxFrame - HEADER_SIZE;
 
+    }
+
+    public void closed()
+    {
+        _encoder.close();
     }
 }
