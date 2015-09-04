@@ -103,6 +103,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         data.put(0, flags);
         data.put(1, type);
         data.putShort(2, (short) (size + HEADER_SIZE));
+        data.put(4, (byte) 0);
         data.put(5, track);
         data.putShort(6, (short) channel);
 
