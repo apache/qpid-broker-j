@@ -22,7 +22,6 @@ package org.apache.qpid.server.transport;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.security.Principal;
 import java.security.cert.Certificate;
@@ -56,7 +55,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private final AtomicBoolean _closed = new AtomicBoolean(false);
     private final ProtocolEngine _protocolEngine;
     private final Runnable _onTransportEncryptionAction;
-    private final int _receiveBufferSize;
 
     private volatile int _maxReadIdle;
     private volatile int _maxWriteIdle;
@@ -69,7 +67,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
-                                 int receiveBufferSize,
                                  final Set<TransportEncryption> encryptionSet,
                                  final Runnable onTransportEncryptionAction,
                                  final NetworkConnectionScheduler scheduler,
@@ -80,8 +77,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
         _protocolEngine = protocolEngine;
         _onTransportEncryptionAction = onTransportEncryptionAction;
-
-        _receiveBufferSize = receiveBufferSize;
 
         _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
         _port = port;
@@ -111,11 +106,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         return _partialRead;
     }
 
-    int getReceiveBufferSize()
-    {
-        return _receiveBufferSize;
-    }
-
     Ticker getTicker()
     {
         return _protocolEngine.getAggregateTicker();
@@ -124,11 +114,6 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     SocketChannel getSocketChannel()
     {
         return _socketChannel;
-    }
-
-    public AmqpPort getPort()
-    {
-        return _port;
     }
 
     @Override
@@ -464,7 +449,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 _delegate = new NonBlockingConnectionTLSDelegate(this, _port);
                 break;
             case NONE:
-                _delegate = new NonBlockingConnectionPlainDelegate(this);
+                _delegate = new NonBlockingConnectionPlainDelegate(this, _port);
                 break;
             default:
                 throw new IllegalArgumentException("unknown TransportEncryption " + transportEncryption);

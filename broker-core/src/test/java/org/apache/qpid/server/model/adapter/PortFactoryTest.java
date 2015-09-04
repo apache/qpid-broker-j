@@ -111,8 +111,6 @@ public class PortFactoryTest extends QpidTestCase
         _attributes.put(Port.TRANSPORTS, _tcpStringSet);
         _attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
         _attributes.put(Port.TCP_NO_DELAY, "true");
-        _attributes.put(AmqpPort.RECEIVE_BUFFER_SIZE, "1");
-        _attributes.put(AmqpPort.SEND_BUFFER_SIZE, "2");
         _attributes.put(Port.BINDING_ADDRESS, "127.0.0.1");
     }
 
@@ -145,10 +143,6 @@ public class PortFactoryTest extends QpidTestCase
         assertTrue(_port instanceof AmqpPort);
         assertEquals("Unexpected _port", _portNumber, _port.getPort());
         assertEquals("Unexpected transports", Collections.singleton(PortFactory.DEFAULT_TRANSPORT), _port.getTransports());
-        assertEquals("Unexpected send buffer size", PortFactory.DEFAULT_AMQP_SEND_BUFFER_SIZE,
-                _port.getAttribute(AmqpPort.SEND_BUFFER_SIZE));
-        assertEquals("Unexpected receive buffer size", PortFactory.DEFAULT_AMQP_RECEIVE_BUFFER_SIZE,
-                _port.getAttribute(AmqpPort.RECEIVE_BUFFER_SIZE));
         assertEquals("Unexpected need client auth", PortFactory.DEFAULT_AMQP_NEED_CLIENT_AUTH,
                 _port.getAttribute(Port.NEED_CLIENT_AUTH));
         assertEquals("Unexpected want client auth", PortFactory.DEFAULT_AMQP_WANT_CLIENT_AUTH,
@@ -293,8 +287,6 @@ public class PortFactoryTest extends QpidTestCase
             assertEquals(_tcpTransports, _port.getTransports());
         }
         assertEquals(amqp010ProtocolSet, _port.getProtocols());
-        assertEquals("Unexpected send buffer size", 2, _port.getAttribute(AmqpPort.SEND_BUFFER_SIZE));
-        assertEquals("Unexpected receive buffer size", 1, _port.getAttribute(AmqpPort.RECEIVE_BUFFER_SIZE));
         assertEquals("Unexpected need client auth", needClientAuth, _port.getAttribute(Port.NEED_CLIENT_AUTH));
         assertEquals("Unexpected want client auth", wantClientAuth, _port.getAttribute(Port.WANT_CLIENT_AUTH));
         assertEquals("Unexpected tcp no delay", true, _port.getAttribute(Port.TCP_NO_DELAY));

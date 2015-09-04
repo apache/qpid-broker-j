@@ -109,12 +109,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private boolean _tcpNoDelay;
 
     @ManagedAttributeField
-    private int _sendBufferSize;
-
-    @ManagedAttributeField
-    private int _receiveBufferSize;
-
-    @ManagedAttributeField
     private String _bindingAddress;
 
     @ManagedAttributeField
@@ -170,18 +164,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public boolean isTcpNoDelay()
     {
         return _tcpNoDelay;
-    }
-
-    @Override
-    public int getSendBufferSize()
-    {
-        return _sendBufferSize;
-    }
-
-    @Override
-    public int getReceiveBufferSize()
-    {
-        return _receiveBufferSize;
     }
 
     @Override
@@ -319,6 +301,12 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         VirtualHostAlias child = addVirtualHostAlias(attributes);
         childAdded(child);
         return child;
+    }
+
+    @Override
+    public int getNetworkBufferSize()
+    {
+        return _broker.getNetworkBufferSize();
     }
 
     private VirtualHostAlias addVirtualHostAlias(Map<String,Object> attributes)

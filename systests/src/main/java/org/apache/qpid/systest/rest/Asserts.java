@@ -312,8 +312,6 @@ public class Asserts
                                     Port.AUTHENTICATION_PROVIDER,
                                     Port.BINDING_ADDRESS,
                                     Port.TCP_NO_DELAY,
-                                    AmqpPort.SEND_BUFFER_SIZE,
-                                    AmqpPort.RECEIVE_BUFFER_SIZE,
                                     Port.NEED_CLIENT_AUTH,
                                     Port.WANT_CLIENT_AUTH,
                                     Port.KEY_STORE,

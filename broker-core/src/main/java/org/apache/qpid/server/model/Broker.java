@@ -61,6 +61,19 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String QPID_RMI_PORT  = "qpid.rmi_port";
     String QPID_JMX_PORT  = "qpid.jmx_port";
 
+    String NETWORK_BUFFER_SIZE = "qpid.broker.networkBufferSize";
+    // network buffer should at least hold a SSL/TLS frame which consists of
+    //     5 bytes SSLv3 record header
+    //   256 bytes of IV
+    // 16384 bytes (2^14 bytes) of data
+    //   256 bytes for block cipher padding
+    //    20 bytes for trailer SHA1 hash size
+    // 16384 bytes (2^14 bytes) of extra for large data packets
+    // 33305 bytes in TOTAL
+    int MINIMUM_NETWORK_BUFFER_SIZE = 33305;
+    @ManagedContextDefault(name = NETWORK_BUFFER_SIZE)
+    int DEFAULT_NETWORK_BUFFER_SIZE = 64 * 1024;
+
     @ManagedContextDefault(name = "broker.name")
     String DEFAULT_BROKER_NAME = "Broker";
 
@@ -82,12 +95,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = STORE_FILESYSTEM_MAX_USAGE_PERCENT)
     int DEFAULT_FILESYSTEM_MAX_USAGE_PERCENT = 90;
 
-    String BROKER_FRAME_SIZE = "qpid.broker_frame_size";
-    @ManagedContextDefault(name = BROKER_FRAME_SIZE)
-    int DEFAULT_FRAME_SIZE = 65535;
-
     @ManagedContextDefault(name = BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD)
     boolean DEFAULT_BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD = false;
+
 
     @DerivedAttribute
     String getBuildVersion();
@@ -193,4 +203,5 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     void assignTargetSizes();
 
+    int getNetworkBufferSize();
 }

@@ -1209,7 +1209,7 @@ public class AMQPConnection_0_8
             case SUCCESS:
                 _logger.debug("Connected as: {} ", authResult.getSubject());
 
-                int frameMax = broker.getContextValue(Integer.class, Broker.BROKER_FRAME_SIZE);
+                int frameMax = broker.getNetworkBufferSize();
 
                 if (frameMax <= 0)
                 {
@@ -1316,7 +1316,7 @@ public class AMQPConnection_0_8
                         _logger.debug("Connected as: {}", authResult.getSubject());
                         setAuthorizedSubject(authResult.getSubject());
 
-                        int frameMax = broker.getContextValue(Integer.class, Broker.BROKER_FRAME_SIZE);
+                        int frameMax = broker.getNetworkBufferSize();
 
                         if (frameMax <= 0)
                         {
@@ -1359,7 +1359,7 @@ public class AMQPConnection_0_8
 
         initHeartbeats(heartbeat);
 
-        int brokerFrameMax = getBroker().getContextValue(Integer.class, Broker.BROKER_FRAME_SIZE);
+        int brokerFrameMax = getBroker().getNetworkBufferSize();
         if (brokerFrameMax <= 0)
         {
             brokerFrameMax = Integer.MAX_VALUE;

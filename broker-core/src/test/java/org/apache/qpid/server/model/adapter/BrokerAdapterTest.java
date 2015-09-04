@@ -31,6 +31,7 @@ import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -98,6 +99,30 @@ public class BrokerAdapterTest extends QpidTestCase
         int flowToDiskThreshold = 1024 * 1024 * 1024;
         doAssignTargetSizeTest(new long[] {flowToDiskThreshold / 2, flowToDiskThreshold / 2 , 1024},
                                flowToDiskThreshold);
+    }
+
+    public void testNetworkBufferSize()
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Broker.NAME, "Broker");
+        attributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
+        attributes.put(Broker.DURABLE, true);
+        attributes.put(Broker.CONTEXT, Collections.singletonMap(Broker.NETWORK_BUFFER_SIZE, Broker.MINIMUM_NETWORK_BUFFER_SIZE + 1));
+
+        // testing successful case
+        BrokerAdapter brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
+        brokerAdapter.open();
+        assertEquals("Broker open should be successful", State.ACTIVE, brokerAdapter.getState());
+        assertEquals("Unexpected buffer size", Broker.MINIMUM_NETWORK_BUFFER_SIZE + 1, brokerAdapter.getNetworkBufferSize());
+        brokerAdapter.close();
+
+        // testing unsuccessful case
+        attributes.put(Broker.CONTEXT, Collections.singletonMap(Broker.NETWORK_BUFFER_SIZE, Broker.MINIMUM_NETWORK_BUFFER_SIZE - 1));
+        brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
+        brokerAdapter.open();
+        assertEquals("Broker open should fail with network buffer size less then minimum", State.ERRORED, brokerAdapter.getState());
+        assertEquals("Unexpected buffer size", Broker.DEFAULT_NETWORK_BUFFER_SIZE, brokerAdapter.getNetworkBufferSize());
+        brokerAdapter.close();
     }
 
     private void doAssignTargetSizeTest(final long[] virtualHostQueueSizes, final long flowToDiskThreshold)

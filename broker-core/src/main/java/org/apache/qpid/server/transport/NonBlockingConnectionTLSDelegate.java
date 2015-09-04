@@ -22,6 +22,7 @@ package org.apache.qpid.server.transport;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.QpidByteBufferUtils;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     private final SSLEngine _sslEngine;
     private final NonBlockingConnection _parent;
     private final int _initialApplicationBufferSize;
+    private final int _networkBufferSize;
     private SSLEngineResult _status;
     private final List<QpidByteBuffer> _encryptedOutput = new ArrayList<>();
     private Principal _principal;
@@ -59,24 +61,21 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     {
         _parent = parent;
         _sslEngine = createSSLEngine(port);
+        _networkBufferSize = port.getNetworkBufferSize();
 
+        final int tlsPacketBufferSize = _sslEngine.getSession().getPacketBufferSize();
+        if (tlsPacketBufferSize > _networkBufferSize)
+        {
+            throw new ServerScopedRuntimeException("TLS implementation packet buffer size (" + tlsPacketBufferSize
+                    + ") is greater then broker network buffer size (" + _networkBufferSize + ")");
+        }
 
-        final int bufSize = Math.max(parent.getReceiveBufferSize(),
-                                 _sslEngine.getSession().getPacketBufferSize());
-        QpidByteBufferUtils.createPool(port, bufSize);
-        _netInputBuffer = QpidByteBuffer.allocateDirect(bufSize);
-
-        _initialApplicationBufferSize =
-                Math.max(_sslEngine.getSession().getApplicationBufferSize() + 50, _parent.getReceiveBufferSize());
-
-
+        QpidByteBufferUtils.createPool(port, _networkBufferSize);
+        _netInputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
+        _initialApplicationBufferSize = Math.max(_sslEngine.getSession().getApplicationBufferSize() + 50, _networkBufferSize);
 
         QpidByteBufferUtils.createPool(port, _initialApplicationBufferSize);
-
         _applicationBuffer = QpidByteBuffer.allocateDirect(_initialApplicationBufferSize);
-
-        QpidByteBufferUtils.createPool(port, _sslEngine.getSession().getPacketBufferSize());
-
     }
 
     @Override

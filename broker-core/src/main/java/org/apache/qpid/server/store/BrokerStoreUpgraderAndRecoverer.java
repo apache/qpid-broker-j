@@ -366,6 +366,18 @@ public class BrokerStoreUpgraderAndRecoverer
                 getNextUpgrader().configuredObject(record);
 
             }
+            else if (record.getType().equals("Port") && "AMQP".equals(record.getAttributes().get("type")))
+            {
+                Map<String, Object> updatedAttributes = new HashMap<>(record.getAttributes());
+                if (updatedAttributes.containsKey("receiveBufferSize") || updatedAttributes.containsKey("sendBufferSize"))
+                {
+                    updatedAttributes.remove("receiveBufferSize");
+                    updatedAttributes.remove("sendBufferSize");
+                    record = new ConfiguredObjectRecordImpl(record.getId(), record.getType(), updatedAttributes, record.getParents());
+                    getUpdateMap().put(record.getId(), record);
+                    getNextUpgrader().configuredObject(record);
+                }
+            }
         }
 
         private void addLogger(final ConfiguredObjectRecord record, String name, String type)

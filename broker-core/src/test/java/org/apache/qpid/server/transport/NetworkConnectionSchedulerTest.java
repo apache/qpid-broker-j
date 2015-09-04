@@ -43,8 +43,7 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
     {
         AmqpPort port = mock(AmqpPort.class);
         when(port.isTcpNoDelay()).thenReturn(true);
-        when(port.getSendBufferSize()).thenReturn(1);
-        when(port.getReceiveBufferSize()).thenReturn(1);
+        when(port.getNetworkBufferSize()).thenReturn(1);
         when(port.getPort()).thenReturn(0);
         when(port.getBindingAddress()).thenReturn("*");
         when(port.getEnabledCipherSuites()).thenReturn(Collections.emptyList());

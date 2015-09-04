@@ -141,11 +141,10 @@ public class NonBlockingNetworkTransport
                 socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, _port.isTcpNoDelay());
                 socketChannel.socket().setSoTimeout(1000 * HANDSHAKE_TIMEOUT);
 
-                final int sendBufferSize = _port.getSendBufferSize();
-                final int receiveBufferSize = _port.getReceiveBufferSize();
+                final int bufferSize = _port.getNetworkBufferSize();
 
-                socketChannel.setOption(StandardSocketOptions.SO_SNDBUF, sendBufferSize);
-                socketChannel.setOption(StandardSocketOptions.SO_RCVBUF, receiveBufferSize);
+                socketChannel.setOption(StandardSocketOptions.SO_SNDBUF, bufferSize);
+                socketChannel.setOption(StandardSocketOptions.SO_RCVBUF, bufferSize);
 
                 socketChannel.configureBlocking(false);
 
@@ -157,9 +156,8 @@ public class NonBlockingNetworkTransport
                 NonBlockingConnection connection =
                         new NonBlockingConnection(socketChannel,
                                                   engine,
-                                                  receiveBufferSize,
                                                   _encryptionSet,
-                                new Runnable()
+                                                  new Runnable()
                                                   {
 
                                                       @Override

@@ -110,6 +110,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
     private final boolean _virtualHostPropertiesNodeEnabled;
     private Collection<BrokerLogger> _brokerLoggersToClose;
+    private int _networkBufferSize = DEFAULT_NETWORK_BUFFER_SIZE;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -169,6 +170,13 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     {
         super.postResolveChildren();
 
+        Integer networkBufferSize = getContextValue(Integer.class, NETWORK_BUFFER_SIZE);
+        if (networkBufferSize == null || networkBufferSize < MINIMUM_NETWORK_BUFFER_SIZE)
+        {
+            throw new IllegalConfigurationException(NETWORK_BUFFER_SIZE + " is set to unacceptable value '" +
+                    networkBufferSize + "'. Must be larger than " + MINIMUM_NETWORK_BUFFER_SIZE + ".");
+        }
+        _networkBufferSize = networkBufferSize;
 
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -882,5 +890,11 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             maxMemory = Runtime.getRuntime().maxMemory();
         }
         return maxMemory;
+    }
+
+    @Override
+    public int getNetworkBufferSize()
+    {
+        return _networkBufferSize;
     }
 }

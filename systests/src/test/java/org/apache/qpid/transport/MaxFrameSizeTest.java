@@ -141,7 +141,7 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
                                                     TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
                                                     "secureOnlyMechanisms",
                                                     "[]");
-        setTestSystemProperty(Broker.BROKER_FRAME_SIZE, "8192");
+        setTestSystemProperty(Broker.NETWORK_BUFFER_SIZE, String.valueOf(Broker.MINIMUM_NETWORK_BUFFER_SIZE));
         super.setUp();
         if(isBroker010())
         {
@@ -167,7 +167,7 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         }
         else
         {
-            doAMQP08test(10000, new ResultEvaluator()
+            doAMQP08test(Broker.MINIMUM_NETWORK_BUFFER_SIZE + 1, new ResultEvaluator()
                                 {
 
                                     @Override

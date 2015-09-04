@@ -42,15 +42,11 @@ import javax.net.ssl.SSLContext;
 @ManagedObject( category = false, type = "AMQP")
 public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X>, PortWithThreadPool
 {
-    String DEFAULT_AMQP_SEND_BUFFER_SIZE = "262144";
-    String DEFAULT_AMQP_RECEIVE_BUFFER_SIZE = "262144";
     String DEFAULT_AMQP_TCP_NO_DELAY = "true";
 
     String DEFAULT_AMQP_NEED_CLIENT_AUTH = "false";
     String DEFAULT_AMQP_WANT_CLIENT_AUTH = "false";
 
-    String SEND_BUFFER_SIZE                     = "sendBufferSize";
-    String RECEIVE_BUFFER_SIZE                  = "receiveBufferSize";
     String MAX_OPEN_CONNECTIONS = "maxOpenConnections";
 
 
@@ -93,12 +89,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
 
     @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_TCP_NO_DELAY )
     boolean isTcpNoDelay();
-
-    @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_SEND_BUFFER_SIZE )
-    int getSendBufferSize();
-
-    @ManagedAttribute( defaultValue = AmqpPort.DEFAULT_AMQP_RECEIVE_BUFFER_SIZE )
-    int getReceiveBufferSize();
 
     @Override
     @ManagedAttribute( defaultValue = "${" + PORT_AMQP_THREAD_POOL_MAXIMUM + "}")
@@ -143,4 +133,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     int decrementConnectionCount();
 
     VirtualHostAlias createVirtualHostAlias(Map<String, Object> attributes);
+
+    int getNetworkBufferSize();
 }

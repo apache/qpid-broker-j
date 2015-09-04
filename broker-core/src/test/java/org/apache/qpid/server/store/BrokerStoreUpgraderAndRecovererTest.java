@@ -412,7 +412,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
 
         assertTrue("No virtualhostalias rescords should be returned",
-                   findRecordByType("VirtualHostAlias", records).isEmpty());
+                findRecordByType("VirtualHostAlias", records).isEmpty());
 
     }
 
@@ -432,7 +432,7 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
 
         assertFalse("VirtualHostAlias rescords should be returned",
-                    findRecordByType("VirtualHostAlias", records).isEmpty());
+                findRecordByType("VirtualHostAlias", records).isEmpty());
 
     }
 
@@ -454,9 +454,36 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
 
         assertTrue("No virtualhostalias rescords should be returned",
-                   findRecordByType("VirtualHostAlias", records).isEmpty());
+                findRecordByType("VirtualHostAlias", records).isEmpty());
 
     }
+
+    public void testUpgradeAMQPPortWithNetworkBuffers()
+    {
+        Map<String, Object> portAttributes = new HashMap<>();
+        portAttributes.put("name", getTestName());
+        portAttributes.put("type", "AMQP");
+        portAttributes.put("receiveBufferSize", "1");
+        portAttributes.put("sendBufferSize", "2");
+
+        _brokerRecord.getAttributes().put("modelVersion", "3.0");
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                portAttributes, Collections.singletonMap("Broker", _brokerRecord.getId()));
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
+        assertEquals("Unexpected port size", 1, ports.size());
+        ConfiguredObjectRecord upgradedRecord = ports.get(0);
+        Map<String, Object> attributes = upgradedRecord.getAttributes();
+        assertFalse("receiveBufferSize is found " + attributes.get("receiveBufferSize"), attributes.containsKey("receiveBufferSize"));
+        assertFalse("sendBufferSize is found " + attributes.get("sendBufferSize"), attributes.containsKey("sendBufferSize"));
+        assertEquals("Unexpected name", getTestName(), attributes.get("name"));
+    }
+
     private void upgradeBrokerRecordAndAssertUpgradeResults()
     {
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);

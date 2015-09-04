@@ -24,6 +24,7 @@ import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
 
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,14 +36,15 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingConnectionPlainDelegate.class);
 
     private final NonBlockingConnection _parent;
+    private final int _networkBufferSize;
     private volatile QpidByteBuffer _netInputBuffer;
 
-    public NonBlockingConnectionPlainDelegate(NonBlockingConnection parent)
+    public NonBlockingConnectionPlainDelegate(NonBlockingConnection parent, AmqpPort<?> port)
     {
         _parent = parent;
-        final int receiveBufferSize = parent.getReceiveBufferSize();
-        QpidByteBufferUtils.createPool(parent.getPort(), receiveBufferSize);
-        _netInputBuffer = QpidByteBuffer.allocateDirect(receiveBufferSize);
+        _networkBufferSize = port.getNetworkBufferSize();
+        QpidByteBufferUtils.createPool(port, _networkBufferSize);
+        _netInputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
     }
 
     @Override
@@ -78,9 +80,9 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
         else
         {
             QpidByteBuffer currentBuffer = _netInputBuffer;
-            int newBufSize = (currentBuffer.capacity() < _parent.getReceiveBufferSize())
-                    ? _parent.getReceiveBufferSize()
-                    : currentBuffer.capacity() + _parent.getReceiveBufferSize();
+            int newBufSize = (currentBuffer.capacity() < _networkBufferSize)
+                    ? _networkBufferSize
+                    : currentBuffer.capacity() + _networkBufferSize;
 
             _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
             _netInputBuffer.put(currentBuffer);
