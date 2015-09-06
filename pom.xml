@@ -124,6 +124,8 @@
     <module>bdbstore</module>
     <module>bdbstore/jmx</module>
     <module>bdbstore/systests</module>
+
+    <module>joramtests</module>
   </modules>
 
   <dependencies>

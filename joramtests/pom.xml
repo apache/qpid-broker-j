@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>qpid-java-build</artifactId>
+        <groupId>org.apache.qpid</groupId>
+        <version>6.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>joramtests</artifactId>
+    <properties>
+        <joram-jms-tests-version>1.0</joram-jms-tests-version>
+        <httpclient-version>4.4</httpclient-version>
+        <qpid-amqp-1-0-client-jms-version>0.32</qpid-amqp-1-0-client-jms-version>
+        <qpid-jms-client-version>0.5.0</qpid-jms-client-version>
+
+        <joramtests.broker-virtualhostnode>default</joramtests.broker-virtualhostnode>
+        <joramtests.broker-virtualhost>default</joramtests.broker-virtualhost>
+
+        <joramtests.manangement-url>http://localhost:8080</joramtests.manangement-url>
+        <joramtests.manangement-username>guest</joramtests.manangement-username>
+        <joramtests.manangement-password>guest</joramtests.manangement-password>
+        <joramtests.manangement-api-queue>/api/latest/queue/%s/%s/%s</joramtests.manangement-api-queue>
+        <joramtests.manangement-api-topic>/api/latest/exchange/%s/%s/%s</joramtests.manangement-api-topic>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-jms_1.1_spec</artifactId>
+            <version>${geronimo-jms-1-1-version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.fusesource.joram-jms-tests</groupId>
+            <artifactId>joram-jms-tests</artifactId>
+            <version>${joram-jms-tests-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpclient-version}</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.18.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <dependenciesToScan>
+                        <dependency>org.fusesource.joram-jms-tests:joram-jms-tests</dependency>
+                    </dependenciesToScan>
+                    <systemPropertyVariables>
+                        <java.naming.factory.initial>${java.naming.factory.initial}</java.naming.factory.initial>
+                        <java.naming.provider.url>${java.naming.provider.url}</java.naming.provider.url>
+                        <joramtests.manangement-url>${joramtests.manangement-url}</joramtests.manangement-url>
+
+                        <joramtests.broker-virtualhostnode>${joramtests.broker-virtualhostnode}</joramtests.broker-virtualhostnode>
+                        <joramtests.broker-virtualhost>${joramtests.broker-virtualhost}</joramtests.broker-virtualhost>
+
+                        <joramtests.manangement-url>${joramtests.manangement-url}</joramtests.manangement-url>
+                        <joramtests.manangement-username>${joramtests.manangement-username}</joramtests.manangement-username>
+                        <joramtests.manangement-password>${joramtests.manangement-password}</joramtests.manangement-password>
+                        <joramtests.manangement-api-queue>${joramtests.manangement-api-queue}</joramtests.manangement-api-queue>
+                        <joramtests.manangement-api-topic>${joramtests.manangement-api-topic}</joramtests.manangement-api-topic>
+
+                        <qpid.amqp.version>${qpid.amqp.version}</qpid.amqp.version>
+
+                        <!-- Used to configure logback -->
+                        <joramtest.output-directory>${project.build.directory}</joramtest.output-directory>
+                    </systemPropertyVariables>
+
+                    <includes>
+                        <include>%regex[.*Test.*]</include>
+                    </includes>
+
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>output-test-properties</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo>Joram Integration Tests: To run define system property -Djoramtests to a name of a JMS client e.g. qpid-jms-client</echo>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <profiles>
+        <profile>
+            <id>joram</id>
+            <activation>
+                <property>
+                    <name>joramtests</name>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <skipTests>false</skipTests>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-property</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireProperty>
+                                            <property>joramtests</property>
+                                            <regex>^(qpid-amqp-1-0-client-jms)|(qpid-jms-client)|(jms-client-0-9)|(jms-client-0-10)$</regex>
+                                        </requireProperty>
+                                    </rules>
+                                    <fail>true</fail>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <!-- Profile used to execute Joram tests against the AMQP 1.0 (POC) client -->
+            <id>qpid-amqp-1-0-client-jms</id>
+            <activation>
+                <property>
+                    <name>joramtests</name>
+                    <value>qpid-amqp-1-0-client-jms</value>
+                </property>
+            </activation>
+            <properties>
+                <java.naming.factory.initial>org.apache.qpid.amqp_1_0.jms.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
+                <java.naming.provider.url>${project.build.directory}/test-classes/qpid-amqp-1-0-client-jms/jndi.properties</java.naming.provider.url>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-amqp-1-0-client-jms</artifactId>
+                    <version>${qpid-amqp-1-0-client-jms-version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <!-- Profile used to execute Joram tests against the Qpid JMS client -->
+            <id>qpid-jms-client</id>
+            <activation>
+                <property>
+                    <name>joramtests</name>
+                    <value>qpid-jms-client</value>
+                </property>
+            </activation>
+            <properties>
+                <java.naming.factory.initial>org.apache.qpid.jms.jndi.JmsInitialContextFactory</java.naming.factory.initial>
+                <java.naming.provider.url>${project.build.directory}/test-classes/qpid-jms-client/jndi.properties</java.naming.provider.url>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-jms-client</artifactId>
+                    <version>${qpid-jms-client-version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <!-- Profile used to execute Joram tests against the Old JMS client for 0-8..0-91 -->
+            <id>jms-client-0-9</id>
+            <activation>
+                <property>
+                    <name>joramtests</name>
+                    <value>jms-client-0-9</value>
+                </property>
+            </activation>
+            <properties>
+                <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
+                <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
+                <qpid.amqp.version>0-9</qpid.amqp.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-client</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <!-- Profile used to execute Joram tests against the Old JMS client for 0-10-->
+            <id>jms-client-0-10</id>
+            <activation>
+                <property>
+                    <name>joramtests</name>
+                    <value>jms-client-0-10</value>
+                </property>
+            </activation>
+            <properties>
+                <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
+                <java.naming.provider.url>${project.build.directory}/test-classes/jms-client/jndi.properties</java.naming.provider.url>
+                <qpid.amqp.version>0-10</qpid.amqp.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.qpid</groupId>
+                    <artifactId>qpid-client</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
+</project>
