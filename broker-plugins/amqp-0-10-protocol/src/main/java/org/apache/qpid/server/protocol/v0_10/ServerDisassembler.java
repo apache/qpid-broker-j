@@ -244,7 +244,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
         {
             final QpidByteBuffer buf = enc.getBuffer();
 
-            QpidByteBuffer duplicate = buf.duplicate();
+            QpidByteBuffer duplicate = buf.view(0, methodLimit);
             fragment(flags, type, method, Collections.singletonList(duplicate));
             duplicate.dispose();
 
@@ -254,7 +254,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
                 buf.limit(headerLimit);
                 buf.position(methodLimit);
 
-                duplicate = buf.duplicate();
+                duplicate = buf.slice();
                 fragment(body == null ? LAST_SEG : 0x0,
                          SegmentType.HEADER,
                          method,
