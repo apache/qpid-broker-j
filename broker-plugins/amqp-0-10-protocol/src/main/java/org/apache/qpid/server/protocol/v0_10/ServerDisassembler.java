@@ -98,7 +98,7 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
 
     private void frame(byte flags, byte type, byte track, int channel, int size, Collection<QpidByteBuffer> buffers)
     {
-        QpidByteBuffer data = QpidByteBuffer.allocate(HEADER_SIZE);
+        QpidByteBuffer data = QpidByteBuffer.allocateDirect(HEADER_SIZE);
 
         data.put(0, flags);
         data.put(1, type);
@@ -109,6 +109,8 @@ public final class ServerDisassembler implements ProtocolEventSender, ProtocolDe
 
 
         _sender.send(data);
+        data.dispose();
+
         if(size > 0)
         {
             int residual = size;
