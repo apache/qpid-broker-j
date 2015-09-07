@@ -46,7 +46,6 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
     private final SSLEngine _sslEngine;
     private final NonBlockingConnection _parent;
-    private final int _initialApplicationBufferSize;
     private final int _networkBufferSize;
     private SSLEngineResult _status;
     private final List<QpidByteBuffer> _encryptedOutput = new ArrayList<>();
@@ -70,12 +69,8 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
                     + ") is greater then broker network buffer size (" + _networkBufferSize + ")");
         }
 
-        QpidByteBufferUtils.createPool(port, _networkBufferSize);
         _netInputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
-        _initialApplicationBufferSize = Math.max(_sslEngine.getSession().getApplicationBufferSize() + 50, _networkBufferSize);
-
-        QpidByteBufferUtils.createPool(port, _initialApplicationBufferSize);
-        _applicationBuffer = QpidByteBuffer.allocateDirect(_initialApplicationBufferSize);
+        _applicationBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
     }
 
     @Override
@@ -179,9 +174,9 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         else
         {
             QpidByteBuffer currentBuffer = _applicationBuffer;
-            int newBufSize = (currentBuffer.capacity() < _initialApplicationBufferSize)
-                    ? _initialApplicationBufferSize
-                    : currentBuffer.capacity() + _initialApplicationBufferSize;
+            int newBufSize = (currentBuffer.capacity() < _networkBufferSize)
+                    ? _networkBufferSize
+                    : currentBuffer.capacity() + _networkBufferSize;
 
             _applicationBuffer = QpidByteBuffer.allocateDirect(newBufSize);
             _applicationBuffer.put(currentBuffer);

@@ -43,7 +43,6 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     {
         _parent = parent;
         _networkBufferSize = port.getNetworkBufferSize();
-        QpidByteBufferUtils.createPool(port, _networkBufferSize);
         _netInputBuffer = QpidByteBuffer.allocateDirect(_networkBufferSize);
     }
 

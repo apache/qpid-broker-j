@@ -41,6 +41,7 @@ import com.sun.management.HotSpotDiagnosticMXBean;
 import com.sun.management.VMOption;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
+import org.apache.qpid.server.util.QpidByteBufferUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,10 +167,9 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     }
 
     @Override
-    protected void postResolveChildren()
+    protected void postResolve()
     {
-        super.postResolveChildren();
-
+        super.postResolve();
         Integer networkBufferSize = getContextValue(Integer.class, NETWORK_BUFFER_SIZE);
         if (networkBufferSize == null || networkBufferSize < MINIMUM_NETWORK_BUFFER_SIZE)
         {
@@ -177,6 +177,13 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                     networkBufferSize + "'. Must be larger than " + MINIMUM_NETWORK_BUFFER_SIZE + ".");
         }
         _networkBufferSize = networkBufferSize;
+        QpidByteBufferUtils.createPool(this, _networkBufferSize);
+    }
+
+    @Override
+    protected void postResolveChildren()
+    {
+        super.postResolveChildren();
 
         ch.qos.logback.classic.Logger rootLogger =
                 (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);

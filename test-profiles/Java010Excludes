@@ -81,3 +81,5 @@ org.apache.qpid.client.SyncPublishTest#*
 org.apache.qpid.client.failover.FailoverBehaviourTest#testConnectionCloseInterruptsFailover
 org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testConnectionCloseInterruptsFailover
 
+// This test does not make sense because on 0-10 maxFrameSize is 64kB and the Java Broker sets the networkBufferSize to a minimum of 64kB.
+org.apache.qpid.transport.MaxFrameSizeTest#testTooLargeFrameSize

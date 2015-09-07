@@ -62,17 +62,10 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String QPID_JMX_PORT  = "qpid.jmx_port";
 
     String NETWORK_BUFFER_SIZE = "qpid.broker.networkBufferSize";
-    // network buffer should at least hold a SSL/TLS frame which consists of
-    //     5 bytes SSLv3 record header
-    //   256 bytes of IV
-    // 16384 bytes (2^14 bytes) of data
-    //   256 bytes for block cipher padding
-    //    20 bytes for trailer SHA1 hash size
-    // 16384 bytes (2^14 bytes) of extra for large data packets
-    // 33305 bytes in TOTAL
-    int MINIMUM_NETWORK_BUFFER_SIZE = 33305;
+    // network buffer should at least hold a SSL/TLS frame which in jdk1.8 is 33305 bytes
+    int MINIMUM_NETWORK_BUFFER_SIZE = 64 * 1024;
     @ManagedContextDefault(name = NETWORK_BUFFER_SIZE)
-    int DEFAULT_NETWORK_BUFFER_SIZE = 64 * 1024;
+    int DEFAULT_NETWORK_BUFFER_SIZE = 256 * 1024;
 
     @ManagedContextDefault(name = "broker.name")
     String DEFAULT_BROKER_NAME = "Broker";
