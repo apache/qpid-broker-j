@@ -39,9 +39,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.sun.management.HotSpotDiagnosticMXBean;
 import com.sun.management.VMOption;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
-import org.apache.qpid.server.util.QpidByteBufferUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,7 +177,10 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                     networkBufferSize + "'. Must be larger than " + MINIMUM_NETWORK_BUFFER_SIZE + ".");
         }
         _networkBufferSize = networkBufferSize;
-        QpidByteBufferUtils.createPool(this, _networkBufferSize);
+
+        int poolSize = getContextValue(Integer.class, BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE);
+
+        QpidByteBuffer.initialisePool(_networkBufferSize, poolSize);
     }
 
     @Override

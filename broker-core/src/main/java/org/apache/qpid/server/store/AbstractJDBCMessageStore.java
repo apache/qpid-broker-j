@@ -1149,7 +1149,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 byte[] data = getBlobAsBytes(rs, 1);
                 int offset = 0;
                 int length = data.length;
-                Collection<QpidByteBuffer> buffers = QpidByteBuffer.allocateDirectCollectionFromPool(length);
+                Collection<QpidByteBuffer> buffers = QpidByteBuffer.allocateDirectCollection(length);
                 for(QpidByteBuffer buf : buffers)
                 {
                     int bufSize = buf.remaining();

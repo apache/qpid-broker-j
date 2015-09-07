@@ -293,7 +293,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         sectionEncoder.encodeObject(bodySection);
         Binary dataEncoding = sectionEncoder.getEncoding();
 
-        final QpidByteBuffer allData = QpidByteBuffer.allocateDirectFromPool(headerSize + dataEncoding.getLength());
+        final QpidByteBuffer allData = QpidByteBuffer.allocateDirect(headerSize + dataEncoding.getLength());
         metaData.writeToBuffer(allData);
         allData.put(dataEncoding.getArray(),dataEncoding.getArrayOffset(),dataEncoding.getLength());
         return allData;

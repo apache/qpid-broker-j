@@ -149,7 +149,7 @@ public class MessageMetaData implements StorableMessageMetaData
         try
         {
             final List<QpidByteBuffer> buffers = new ArrayList<>();
-            QpidByteBuffer buf = QpidByteBuffer.allocateDirectFromPool(4);
+            QpidByteBuffer buf = QpidByteBuffer.allocateDirect(4);
             buffers.add(buf);
             buf.putInt(0, _contentHeaderBody.getSize());
             _contentHeaderBody.writePayload(new ByteBufferSender()
@@ -172,7 +172,7 @@ public class MessageMetaData implements StorableMessageMetaData
 
                                                 }
                                             });
-            buf = QpidByteBuffer.allocateDirectFromPool(9+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getExchange())+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getRoutingKey()));
+            buf = QpidByteBuffer.allocateDirect(9+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getExchange())+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getRoutingKey()));
             DataOutput dataOutputStream = buf.asDataOutput();
             EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getExchange());
             EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getRoutingKey());

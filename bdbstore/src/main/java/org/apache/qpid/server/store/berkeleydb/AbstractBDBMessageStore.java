@@ -410,8 +410,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 byte[] data = value.getData();
                 int offset = value.getOffset();
                 int length = value.getSize();
-                Collection<QpidByteBuffer> buffers = QpidByteBuffer.allocateDirectCollectionFromPool(length
-                                                                                                    );
+                Collection<QpidByteBuffer> buffers = QpidByteBuffer.allocateDirectCollection(length);
                 for(QpidByteBuffer buf : buffers)
                 {
                     int bufSize = buf.remaining();

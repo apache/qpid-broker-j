@@ -136,9 +136,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = MESSAGE_COMPRESSION_THRESHOLD_SIZE)
     int DEFAULT_MESSAGE_COMPRESSION_THRESHOLD_SIZE = 102400;
 
-    String BROKER_DIRECT_BYTE_BUFFER_POOL_SIZES = "broker.directByteBufferPoolSizes";
-    @ManagedContextDefault(name = BROKER_DIRECT_BYTE_BUFFER_POOL_SIZES)
-    Map<String, Integer> DEFAULT_BROKER_DIRECT_BYTE_BUFFER_POOL_SIZES = Collections.singletonMap("", 1024);
+    String BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE = "broker.directByteBufferPoolSize";
+    @ManagedContextDefault(name = BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE)
+    int DEFAULT_BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE = 1024;
 
     @ManagedAttribute(validValues = {"org.apache.qpid.server.model.adapter.BrokerAdapter#getAvailableConfigurationEncrypters()"})
     String getConfidentialConfigurationEncryptionProvider();

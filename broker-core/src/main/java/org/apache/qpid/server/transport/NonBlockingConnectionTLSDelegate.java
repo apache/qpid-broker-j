@@ -21,7 +21,6 @@ package org.apache.qpid.server.transport;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.util.QpidByteBufferUtils;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.slf4j.Logger;
@@ -192,7 +191,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         {
             if(_sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_UNWRAP)
             {
-                final QpidByteBuffer netBuffer = QpidByteBuffer.allocateDirectFromPool(_sslEngine.getSession().getPacketBufferSize());
+                final QpidByteBuffer netBuffer = QpidByteBuffer.allocateDirect(_sslEngine.getSession().getPacketBufferSize());
                 _status = QpidByteBuffer.encryptSSL(_sslEngine, bufferArray, netBuffer);
                 runSSLEngineTasks(_status);
 

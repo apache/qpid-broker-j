@@ -114,7 +114,7 @@ public class TestMessageMetaData implements StorableMessageMetaData
     @Override
     public Collection<QpidByteBuffer> asByteBuffers()
     {
-        QpidByteBuffer buf = QpidByteBuffer.allocateDirectFromPool(getStorableSize());
+        QpidByteBuffer buf = QpidByteBuffer.allocateDirect(getStorableSize());
         writeToBuffer(buf);
         buf.position(0);
         return Collections.singleton(buf);

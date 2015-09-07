@@ -103,7 +103,7 @@ public class ContentHeaderBody implements AMQBody
     @Override
     public long writePayload(final ByteBufferSender sender) throws IOException
     {
-        QpidByteBuffer data = QpidByteBuffer.allocateDirectFromPool(HEADER_SIZE);
+        QpidByteBuffer data = QpidByteBuffer.allocateDirect(HEADER_SIZE);
         EncodingUtils.writeUnsignedShort(data, CLASS_ID);
         EncodingUtils.writeUnsignedShort(data, 0);
         data.putLong(_bodySize);

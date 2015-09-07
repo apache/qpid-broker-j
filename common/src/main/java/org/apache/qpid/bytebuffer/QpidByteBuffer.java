@@ -33,11 +33,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -58,15 +54,16 @@ public final class QpidByteBuffer
             "_disposed");
 
     private static final ThreadLocal<QpidByteBuffer> _cachedBuffer = new ThreadLocal<>();
-    private static final AtomicReference<ByteBuffer> ZEROED = new AtomicReference<>();
-
     private volatile ByteBuffer _buffer;
     private final ByteBufferRef _ref;
+
     @SuppressWarnings("unused")
     private volatile int _disposed;
 
-    private static final ConcurrentMap<Integer, BufferPool> _pools = new ConcurrentHashMap<>();
-    private static final AtomicInteger _maxPooledBufferSize = new AtomicInteger();
+    private volatile static boolean _isPoolInitialized;
+    private volatile static BufferPool _bufferPool;
+    private volatile static int _pooledBufferSize;
+    private volatile static ByteBuffer _zeroed;
 
     QpidByteBuffer(ByteBufferRef ref)
     {
@@ -449,19 +446,43 @@ public final class QpidByteBuffer
         return new QpidByteBuffer(new NonPooledByteBufferRef(ByteBuffer.allocate(size)));
     }
 
-
     public static QpidByteBuffer allocateDirect(int size)
     {
-        final ByteBufferRef ref;
-        BufferPool pool = _pools.get(size);
-        if(pool != null)
+        if (size < 0)
         {
-            ByteBuffer buf = pool.getBuffer();
-            if(buf == null)
+            throw new IllegalArgumentException("Cannot allocate QpidByteBuffer with size " + size + " which is negative.");
+        }
+
+        final ByteBufferRef ref;
+        if (_isPoolInitialized && _pooledBufferSize >= size)
+        {
+            if (_pooledBufferSize == size)
             {
-                buf = ByteBuffer.allocateDirect(size);
+                ByteBuffer buf = _bufferPool.getBuffer();
+                if (buf == null)
+                {
+                    buf = ByteBuffer.allocateDirect(size);
+                }
+                ref = new PooledByteBufferRef(buf);
             }
-            ref = new PooledByteBufferRef(buf);
+            else
+            {
+                QpidByteBuffer buf = _cachedBuffer.get();
+                if (buf == null || buf.remaining() < size)
+                {
+                    if (buf != null)
+                    {
+                        buf.dispose();
+                    }
+                    buf = allocateDirect(_pooledBufferSize);
+                }
+                QpidByteBuffer rVal = buf.view(0, size);
+                buf.position(buf.position() + size);
+
+                _cachedBuffer.set(buf.slice());
+                buf.dispose();
+                return rVal;
+            }
         }
         else
         {
@@ -470,62 +491,32 @@ public final class QpidByteBuffer
         return new QpidByteBuffer(ref);
     }
 
-    public static QpidByteBuffer allocateDirectFromPool(int size)
+    public static Collection<QpidByteBuffer> allocateDirectCollection(int size)
     {
-        final int maxPooledBufferSize = _maxPooledBufferSize.get();
-        if(size > maxPooledBufferSize)
+        if(_pooledBufferSize == 0)
         {
-            return allocateDirect(size);
+            return Collections.singleton(allocateDirect(size));
         }
         else
         {
-            QpidByteBuffer buf = _cachedBuffer.get();
-            if(buf == null || buf.remaining() < size)
-            {
-                if(buf != null)
-                {
-                    buf.dispose();
-                }
-                buf = allocateDirect(maxPooledBufferSize);
-            }
-            QpidByteBuffer rVal = buf.view(0,size);
-            buf.position(buf.position()+size);
-
-            _cachedBuffer.set(buf.slice());
-            buf.dispose();
-            return rVal;
-
-        }
-
-    }
-
-    public static Collection<QpidByteBuffer> allocateDirectCollectionFromPool(int size)
-    {
-        final int maxPooledBufferSize = _maxPooledBufferSize.get();
-        if(maxPooledBufferSize == 0)
-        {
-            return Collections.singleton(allocateDirectFromPool(size));
-        }
-        else
-        {
-            List<QpidByteBuffer> buffers = new ArrayList<>((size / maxPooledBufferSize)+2);
+            List<QpidByteBuffer> buffers = new ArrayList<>((size / _pooledBufferSize)+2);
             int remaining = size;
 
             QpidByteBuffer buf = _cachedBuffer.get();
             if(buf == null)
             {
-                buf = allocateDirect(maxPooledBufferSize);
+                buf = allocateDirect(_pooledBufferSize);
             }
             while(remaining > buf.remaining())
             {
                 buffers.add(buf);
                 remaining -= buf.remaining();
-                buf = allocateDirect(maxPooledBufferSize);
+                buf = allocateDirect(_pooledBufferSize);
             }
             buffers.add(buf.view(0, remaining));
             buf.position(buf.position() + remaining);
 
-            _cachedBuffer.set(buf.hasRemaining() ? buf.slice() : allocateDirect(maxPooledBufferSize));
+            _cachedBuffer.set(buf.hasRemaining() ? buf.slice() : allocateDirect(_pooledBufferSize));
             buf.dispose();
             return buffers;
         }
@@ -596,46 +587,28 @@ public final class QpidByteBuffer
 
     static void returnToPool(final ByteBuffer buffer)
     {
-        final int bufferSize = buffer.capacity();
-        final BufferPool pool = _pools.get(bufferSize);
-        ByteBuffer zeroed;;
-        while((zeroed = ZEROED.get()) == null || zeroed.capacity() < bufferSize)
-        {
-            ZEROED.compareAndSet(zeroed, ByteBuffer.allocateDirect(bufferSize));
-        }
         buffer.clear();
-        final ByteBuffer duplicate = zeroed.duplicate();
-        duplicate.limit(bufferSize);
+        final ByteBuffer duplicate = _zeroed.duplicate();
+        duplicate.limit(buffer.capacity());
         buffer.put(duplicate);
 
-        pool.returnBuffer(buffer);
+        _bufferPool.returnBuffer(buffer);
     }
 
-    public static void createPool(int bufferSize, int maxPoolSize)
+    public synchronized static void initialisePool(int bufferSize, int maxPoolSize)
     {
-        final BufferPool pool = _pools.putIfAbsent(bufferSize, new BufferPool(maxPoolSize));
-        if(pool != null)
+        if (_isPoolInitialized)
         {
-            int currentPoolSize = pool.getSize();
-            if (maxPoolSize != currentPoolSize)
-            {
-                LOGGER.debug("Resizing direct pool, bufferSize : {} maxPoolSize from : {} to : {}",
-                    new Object[] {bufferSize, currentPoolSize, maxPoolSize});
-            }
-            pool.ensureSize(maxPoolSize);
+            LOGGER.warn("QpidBteBuffer pool has already been initialised with bufferSize={} and maxPoolSize={}." +
+                            "Second initialisation with bufferSize={} and maxPoolSize={} will be ignored.",
+                    new Object[]{_pooledBufferSize, _bufferPool.getMaxSize(), bufferSize, maxPoolSize});
+            return;
         }
-        else
-        {
-            int prevMax;
-            while((prevMax = _maxPooledBufferSize.get())<bufferSize)
-            {
-                if(_maxPooledBufferSize.compareAndSet(prevMax, bufferSize))
-                {
-                    break;
-                }
-            }
-            LOGGER.debug("Created direct pool, bufferSize : {} maxPoolSize : {}", bufferSize, maxPoolSize);
-        }
+
+        _bufferPool = new BufferPool(maxPoolSize);
+        _pooledBufferSize = bufferSize;
+        _zeroed = ByteBuffer.allocateDirect(_pooledBufferSize);
+        _isPoolInitialized = true;
     }
 
     private final class BufferInputStream extends InputStream

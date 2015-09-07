@@ -44,7 +44,7 @@ public final class ServerEncoder extends AbstractEncoder
     {
         _initialCapacity = capacity;
         _threshold = capacity/16;
-        _out = QpidByteBuffer.allocateDirectFromPool(capacity);
+        _out = QpidByteBuffer.allocateDirect(capacity);
     }
 
     public void init()
@@ -54,7 +54,7 @@ public final class ServerEncoder extends AbstractEncoder
         QpidByteBuffer old = _out;
         if(_out.remaining() < _threshold)
         {
-            _out = QpidByteBuffer.allocateDirectFromPool(_initialCapacity);
+            _out = QpidByteBuffer.allocateDirect(_initialCapacity);
         }
         else
         {
@@ -84,7 +84,7 @@ public final class ServerEncoder extends AbstractEncoder
     {
         QpidByteBuffer old = _out;
         int capacity = old.capacity();
-        _out = QpidByteBuffer.allocateDirectFromPool(Math.max(Math.max(capacity + size, 2*capacity), _initialCapacity));
+        _out = QpidByteBuffer.allocateDirect(Math.max(Math.max(capacity + size, 2*capacity), _initialCapacity));
         old.flip();
         _out.put(old);
         old.dispose();
