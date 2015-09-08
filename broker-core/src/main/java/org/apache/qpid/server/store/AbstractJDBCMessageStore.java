@@ -583,7 +583,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             if (getLogger().isDebugEnabled())
             {
                 getLogger().debug("Enqueuing message {} on queue {} with id {} [Connection {}]",
-                                  new Object[] {messageId, queue.getName(), queue.getId(), conn});
+                                  messageId, queue.getName(), queue.getId(), conn);
             }
 
             try (PreparedStatement stmt = conn.prepareStatement(INSERT_INTO_QUEUE_ENTRY))

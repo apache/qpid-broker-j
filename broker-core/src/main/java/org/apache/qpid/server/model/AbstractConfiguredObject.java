@@ -560,9 +560,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     public void onFailure(final Throwable t)
                     {
                         LOGGER.error("Exception occurred while closing {} : {}",
-                                     new Object[]{child.getClass().getSimpleName(),
-                                             child.getName(),
-                                             t});
+                                     child.getClass().getSimpleName(), child.getName(), t);
                     }
                 });
                 childCloseFutures.add(childCloseFuture);

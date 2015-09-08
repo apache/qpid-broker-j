@@ -160,7 +160,7 @@ public final class IoSender implements Runnable, ByteBufferSender
                     {
                         try
                         {
-                            LOGGER.error("write timed out for socket {}: head {}, tail {}", new Object[] {_remoteSocketAddress, head, tail});
+                            LOGGER.error("write timed out for socket {}: head {}, tail {}", _remoteSocketAddress, head, tail);
                             throw new SenderException(String.format("write timed out for socket %s: head %d, tail %d",  _remoteSocketAddress, head, tail));
                         }
                         finally

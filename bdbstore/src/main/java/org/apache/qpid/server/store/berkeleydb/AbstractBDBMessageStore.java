@@ -274,7 +274,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     }
 
 
-                    getLogger().warn("Lock timeout exception. Retrying (attempt {} of {} ", new Object[] {(attempts + 1), LOCK_RETRY_ATTEMPTS,  e});
+                    getLogger().warn("Lock timeout exception. Retrying (attempt {} of {} ", (attempts + 1), LOCK_RETRY_ATTEMPTS,  e);
 
                     if(++attempts < LOCK_RETRY_ATTEMPTS)
                     {
@@ -617,7 +617,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             if (getLogger().isDebugEnabled())
             {
                 getLogger().debug("Enqueuing message {} on queue {} with id {} in transaction {}",
-                                  new Object[]{messageId, queue.getName(), queue.getId(), tx});
+                                  messageId, queue.getName(), queue.getId(), tx);
             }
             getDeliveryDb().put(tx, key, value);
         }

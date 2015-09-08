@@ -320,7 +320,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                     {
                         hasBrokerAnyErroredChildren = true;
                         LOGGER.warn("Broker child object '{}' of type '{}' is {}",
-                                new Object[]{ child.getName(), childClass.getSimpleName(), State.ERRORED });
+                                child.getName(), childClass.getSimpleName(), State.ERRORED);
                     }
                 }
             }

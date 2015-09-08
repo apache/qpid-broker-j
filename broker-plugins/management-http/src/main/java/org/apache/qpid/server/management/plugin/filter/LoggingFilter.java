@@ -63,7 +63,7 @@ public class LoggingFilter implements Filter
             method = httpRequest.getMethod();
             user = getRequestPrincipals(httpRequest);
             url = getRequestURL(httpRequest);
-            LOGGER.debug("REQUEST  user='{}' method='{}' url='{}'", new String[]{user, method, url});
+            LOGGER.debug("REQUEST  user='{}' method='{}' url='{}'", user, method, url);
         }
         try
         {
@@ -79,7 +79,7 @@ public class LoggingFilter implements Filter
                     user = getRequestPrincipals(httpRequest);
                 }
                 String responseStatus = String.valueOf(httpResponse.getStatus());
-                LOGGER.debug("RESPONSE user='{}' method='{}' url='{}' status='{}'", new String[]{user, method, url, responseStatus});
+                LOGGER.debug("RESPONSE user='{}' method='{}' url='{}' status='{}'", user, method, url, responseStatus);
             }
 
         }

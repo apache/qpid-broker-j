@@ -599,7 +599,7 @@ public final class QpidByteBuffer
     {
         if (_isPoolInitialized && (bufferSize != _pooledBufferSize || maxPoolSize != _bufferPool.getMaxSize()))
         {
-            final String errorMessage = String.format("QpidBteBuffer pool has already been initialised with bufferSize=%d and maxPoolSize=%d." +
+            final String errorMessage = String.format("QpidByteBuffer pool has already been initialised with bufferSize=%d and maxPoolSize=%d." +
                             "Second initialisation with bufferSize=%d and maxPoolSize=%d will be ignored.",
                             _pooledBufferSize, _bufferPool.getMaxSize(), bufferSize, maxPoolSize);
             throw new IllegalStateException(errorMessage);

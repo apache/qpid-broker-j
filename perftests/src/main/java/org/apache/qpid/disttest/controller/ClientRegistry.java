@@ -18,7 +18,6 @@
  */
 package org.apache.qpid.disttest.controller;
 
-import static java.lang.String.valueOf;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -108,11 +107,10 @@ public class ClientRegistry
         LOGGER.debug(
                 "awaitClients(numberOfClientsToAwait={}, idleTimeout={}) " +
                 "returning numberOfClientsAbsent={} after {} ms",
-                new Object[] {
-                        valueOf(numberOfClientsToAwait),
-                        valueOf(idleTimeout),
-                        valueOf(retVal),
-                        valueOf(System.currentTimeMillis() - startTime)});
+                        numberOfClientsToAwait,
+                        idleTimeout,
+                        retVal,
+                        System.currentTimeMillis() - startTime);
     }
 
     private long deadline(final long idleTimeout)

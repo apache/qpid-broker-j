@@ -89,7 +89,7 @@ public class ProducerParticipant implements Participant
         if (LOGGER.isInfoEnabled())
         {
             LOGGER.info("Producer {} about to send messages. Duration limit: {} ms, Message limit: {}",
-                    new Object[]{getName(), requiredDuration, numberOfMessages});
+                    getName(), requiredDuration, numberOfMessages);
         }
 
         while (true)

@@ -2019,7 +2019,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                             public void onFailure(final Throwable t)
                             {
                                 _logger.error("Exception occurred while opening {} : {}",
-                                              new Object[]{child.getClass().getSimpleName(), child.getName(), t});
+                                              child.getClass().getSimpleName(), child.getName(), t);
                             }
 
                         });

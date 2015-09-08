@@ -441,7 +441,7 @@ public class Session extends SessionInvoker
     {
         if(LOGGER.isDebugEnabled())
         {
-            LOGGER.debug("{} ch={} processed([{},{}]) {} {}", new Object[] {this, channel, lower, upper, syncPoint, maxProcessed});
+            LOGGER.debug("{} ch={} processed([{},{}]) {} {}", this, channel, lower, upper, syncPoint, maxProcessed);
         }
 
         boolean flush;
@@ -548,7 +548,7 @@ public class Session extends SessionInvoker
         //avoid autoboxing
         if(LOGGER.isDebugEnabled())
         {
-            LOGGER.debug("{} complete({}, {})", new Object[] {this, lower, upper});
+            LOGGER.debug("{} complete({}, {})", this, lower, upper);
         }
         synchronized (commandsLock)
         {
@@ -841,7 +841,7 @@ public class Session extends SessionInvoker
                 checkFailoverRequired("Session sync was interrupted by failover.");
                 if(LOGGER.isDebugEnabled())
                 {
-                    LOGGER.debug("{}   waiting for[{}]: {}, {}", new Object[] {this, point, maxComplete, commands});
+                    LOGGER.debug("{}   waiting for[{}]: {}, {}", this, point, maxComplete, commands);
                 }
                 w.await();
             }
