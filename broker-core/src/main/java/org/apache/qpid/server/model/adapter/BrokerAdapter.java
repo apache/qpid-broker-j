@@ -21,27 +21,32 @@
 package org.apache.qpid.server.model.adapter;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.PlatformManagedObject;
+import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.security.AccessControlException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.sun.management.HotSpotDiagnosticMXBean;
-import com.sun.management.VMOption;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -885,20 +890,85 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
     public static long getMaxDirectMemorySize()
     {
-        final HotSpotDiagnosticMXBean diagnostiMXBean = ManagementFactory.getPlatformMXBean(HotSpotDiagnosticMXBean.class);
         long maxMemory = 0;
-        if (diagnostiMXBean != null)
+        try
         {
-            VMOption vmOption = diagnostiMXBean.getVMOption("MaxDirectMemorySize");
-            if (vmOption != null)
-            {
-                maxMemory = Long.parseLong(vmOption.getValue());
-            };
+            ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+            Class<?> hotSpotDiagnosticMXBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean", true, systemClassLoader);
+            Class<?> vmOptionClass = Class.forName("com.sun.management.VMOption", true, systemClassLoader);
+
+            Object hotSpotDiagnosticMXBean = ManagementFactory.getPlatformMXBean((Class<? extends PlatformManagedObject>)hotSpotDiagnosticMXBeanClass);
+            Method getVMOption = hotSpotDiagnosticMXBeanClass.getDeclaredMethod("getVMOption", String.class);
+            Object vmOption = getVMOption.invoke(hotSpotDiagnosticMXBean, "MaxDirectMemorySize");
+            Method getValue = vmOptionClass.getDeclaredMethod("getValue");
+            String maxDirectMemoryAsString = (String)getValue.invoke(vmOption);
+            maxMemory = Long.parseLong(maxDirectMemoryAsString);
         }
+        catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException e)
+        {
+            LOGGER.debug("Cannot determine direct memory max size using com.sun.management.HotSpotDiagnosticMXBean: " + e.getMessage());
+        }
+        catch (InvocationTargetException e)
+        {
+            throw new ServerScopedRuntimeException("Unexpected exception in evaluation of MaxDirectMemorySize with HotSpotDiagnosticMXBean", e.getTargetException());
+        }
+
         if (maxMemory == 0)
         {
-            maxMemory = Runtime.getRuntime().maxMemory();
+            Pattern maxDirectMemorySizeArgumentPattern = Pattern.compile("^\\s*-XX:MaxDirectMemorySize\\s*=\\s*(\\d+)\\s*([KkMmGgTt]?)\\s*$");
+            RuntimeMXBean RuntimemxBean = ManagementFactory.getRuntimeMXBean();
+            List<String> inputArguments = RuntimemxBean.getInputArguments();
+            boolean argumentFound = false;
+            for (String argument : inputArguments)
+            {
+                Matcher matcher = maxDirectMemorySizeArgumentPattern.matcher(argument);
+                if (matcher.matches())
+                {
+                    argumentFound = true;
+                    maxMemory = Long.parseLong(matcher.group(1));
+                    String unit = matcher.group(2);
+                    char unitChar = "".equals(unit) ? 0 : unit.charAt(0);
+                    switch (unitChar)
+                    {
+                        case 'k':
+                        case 'K':
+                            maxMemory *= 1024l;
+                            break;
+                        case 'm':
+                        case 'M':
+                            maxMemory *= 1024l * 1024l;
+                            break;
+                        case 'g':
+                        case 'G':
+                            maxMemory *= 1024l * 1024l * 1024l;
+                            break;
+                        case 't':
+                        case 'T':
+                            maxMemory *= 1024l * 1024l * 1024l * 1024l;
+                            break;
+                        case 0:
+                            // noop
+                            break;
+                        default:
+                            throw new IllegalStateException("Unexpected unit character in MaxDirectMemorySize argument : " + argument);
+                    }
+                    // do not break; continue. Oracle and IBM JVMs use the last value when argument is specified multiple times
+                }
+            }
+
+            if (maxMemory == 0)
+            {
+                if (argumentFound)
+                {
+                    throw new IllegalArgumentException("Qpid Broker cannot operate with 0 direct memory. Please, set JVM argument MaxDirectMemorySize to non-zero value");
+                }
+                else
+                {
+                    maxMemory = Runtime.getRuntime().maxMemory();
+                }
+            }
         }
+
         return maxMemory;
     }
 
