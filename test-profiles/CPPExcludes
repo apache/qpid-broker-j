@@ -171,6 +171,9 @@ org.apache.qpid.scripts.QpidPasswdTest#*
 // QPID-3604: Immediate Prefetch no longer supported by 0-10
 org.apache.qpid.client.AsynchMessageListenerTest#testImmediatePrefetchWithMessageListener
 
+// Java Broker has an extenstion to allow it to influence the prefix of temporary queue names
+org.apache.qpid.client.TemporaryQueuePrefixTest#*
+
 // QPID-3936: Exclude Performance Test Framework tests
 org.apache.qpid.systest.disttest.*
 org.apache.qpid.disttest.*
@@ -199,6 +202,9 @@ org.apache.qpid.server.queue.QueueMessageDurabilityTest#*
 
 // QPID-4429 : C++ Broker does not enforce max frame size negotiation rules as per the spec
 org.apache.qpid.transport.MaxFrameSizeTest#*
+
+// CPP Broker does not timeout connections with no activity like the Java Broker
+org.apache.qpid.transport.ProtocolNegotiationTest#testNoProtocolHeaderSent_BrokerClosesConnection
 
 // QPID-6000 : Tests Java specific message compression functionality, and uses the REST API to test it
 org.apache.qpid.systest.MessageCompressionTest#*
