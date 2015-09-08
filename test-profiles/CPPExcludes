@@ -213,4 +213,5 @@ org.apache.qpid.client.SyncPublishTest#*
 org.apache.qpid.server.queue.ArrivalTimeFilterTest#*
 org.apache.qpid.server.queue.DefaultFiltersTest#*
 org.apache.qpid.server.queue.EnsureNondestructiveConsumersTest#*
+org.apache.qpid.server.protocol.v0_8.*
 
