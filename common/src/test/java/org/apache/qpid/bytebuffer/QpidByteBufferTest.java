@@ -25,8 +25,8 @@ import org.apache.qpid.test.utils.QpidTestCase;
 public class QpidByteBufferTest extends QpidTestCase
 {
 
-    public static final int BUFFER_SIZE = 37;
-    public static final int POOL_SIZE = 1;
+    public static final int BUFFER_SIZE = 1;
+    public static final int POOL_SIZE = 1   ;
 
     @Override
     protected void setUp() throws Exception
@@ -82,6 +82,19 @@ public class QpidByteBufferTest extends QpidTestCase
             fail("It is not legal to create buffer with negative size.");
         }
         catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+    }
+
+    public void testSettingUpPoolTwice() throws Exception
+    {
+        try
+        {
+            QpidByteBuffer.initialisePool(BUFFER_SIZE + 1, POOL_SIZE + 1);
+            fail("It is not legal to initialize buffer twice with different settings.");
+        }
+        catch (IllegalStateException e)
         {
             // pass
         }
