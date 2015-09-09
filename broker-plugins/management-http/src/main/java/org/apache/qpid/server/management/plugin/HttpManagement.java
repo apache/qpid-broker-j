@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionManager;
@@ -133,7 +135,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private boolean _compressResponses;
 
     private boolean _allowPortActivation;
-    private Collection<HttpPort<?>> _httpPorts;
+    private Map<HttpPort<?>, Connector> _portConnectorMap = new HashMap<>();
 
     @ManagedObjectFactoryConstructor
     public HttpManagement(Map<String, Object> attributes, Broker broker)
@@ -146,8 +148,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     private ListenableFuture<Void> doStart()
     {
 
-        _httpPorts = getEligibleHttpPorts(getBroker().getPorts());
-        if (_httpPorts.isEmpty())
+        Collection<HttpPort<?>> httpPorts = getEligibleHttpPorts(getBroker().getPorts());
+        if (httpPorts.isEmpty())
         {
             _logger.warn("HttpManagement plugin is configured but no suitable HTTP ports are available.");
         }
@@ -155,7 +157,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         {
             getBroker().getEventLogger().message(ManagementConsoleMessages.STARTUP(OPERATIONAL_LOGGING_NAME));
 
-            _server = createServer(_httpPorts);
+            _server = createServer(httpPorts);
             try
             {
                 _server.start();
@@ -163,7 +165,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
             }
             catch (Exception e)
             {
-                throw new ServerScopedRuntimeException("Failed to start HTTP management on ports : " + _httpPorts, e);
+                throw new ServerScopedRuntimeException("Failed to start HTTP management on ports : " + httpPorts, e);
             }
 
             getBroker().getEventLogger().message(ManagementConsoleMessages.READY(OPERATIONAL_LOGGING_NAME));
@@ -179,12 +181,12 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         {
             try
             {
-                _server.stop();
                 logOperationalShutdownMessage();
+                _server.stop();
             }
             catch (Exception e)
             {
-                throw new ServerScopedRuntimeException("Failed to stop HTTP management on ports : " + _httpPorts, e);
+                throw new ServerScopedRuntimeException("Failed to stop HTTP management", e);
             }
         }
 
@@ -210,6 +212,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         {
             SelectChannelConnector connector = createConnector(port);
             server.addConnector(connector);
+            _portConnectorMap.put(port, connector);
             lastPort = port.getPort();
         }
 
@@ -549,23 +552,25 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
     private void logOperationalListenMessages()
     {
-        for (Port port : _httpPorts)
+        for (Map.Entry<HttpPort<?>, Connector> portConnector : _portConnectorMap.entrySet())
         {
+            HttpPort<?> port = portConnector.getKey();
+            Connector connector = portConnector.getValue();
             Set<Transport> transports = port.getTransports();
             for (Transport transport: transports)
             {
                 getBroker().getEventLogger().message(ManagementConsoleMessages.LISTENING(Protocol.HTTP.name(),
                                                                                          transport.name(),
-                                                                                         port.getPort()));
+                                                                                         connector.getLocalPort()));
             }
         }
     }
 
     private void logOperationalShutdownMessage()
     {
-        for (Port port : _httpPorts)
+        for (Connector connector : _portConnectorMap.values())
         {
-            getBroker().getEventLogger().message(ManagementConsoleMessages.SHUTTING_DOWN(Protocol.HTTP.name(), port.getPort()));
+            getBroker().getEventLogger().message(ManagementConsoleMessages.SHUTTING_DOWN(Protocol.HTTP.name(), connector.getLocalPort()));
         }
     }
 
