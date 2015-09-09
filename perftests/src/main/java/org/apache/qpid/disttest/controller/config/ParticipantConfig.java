@@ -38,7 +38,6 @@ public abstract class ParticipantConfig
     private int _batchSize;
     private long _maximumDuration;
 
-    // For GSON
     public ParticipantConfig()
     {
         _name = null;

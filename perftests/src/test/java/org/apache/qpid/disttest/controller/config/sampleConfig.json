@@ -33,13 +33,13 @@
               "_name": "connection1",
               "_sessions": []
             }
-          ];
+          ],
           "_messageProviders":[
             {
-              "_name": "testProvider1";
+              "_name": "testProvider1",
               "_messageProperties": {
-                 "priority": {"@def": "list"; "_items": [1,2,3,4,4]};
-                "id": {"@def": "random"; "_upper": 10};
+                 "priority": {"@def": "list", "_items": [1,2,3,4,4]},
+                "id": {"@def": "random", "_upper": 10},
                 "test": "test-value"
               }
             }

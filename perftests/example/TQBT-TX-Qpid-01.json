@@ -1,8 +1,8 @@
 {
     "_tests":[
     {
-      "_name": "TQBT-TX-Qpid-01";
-      "_description": "16 clients, one 1P 1C each. Non-Persistent, Transactional publisher batch 1, Transactional consumer batch 1000, 10 minutes";
+      "_name": "TQBT-TX-Qpid-01",
+      "_description": "16 clients, one 1P 1C each. Non-Persistent, Transactional publisher batch 1, Transactional consumer batch 1000, 10 minutes",
       "_queues":[
         {
           "_name": "direct://amq.direct//testQueue1",
@@ -148,7 +148,7 @@
               "x-qpid-flow-resume-capacity": 1500000
             }
         }
-      ];
+      ],
       "_clients":[
         {
           "_name": "client1",

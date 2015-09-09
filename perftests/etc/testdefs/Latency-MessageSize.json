@@ -1,7 +1,7 @@
 {
     "_tests":[
     {
-      "_name": "Latency - Message Size - TRANSIENT";
+      "_name": "Latency - Message Size - TRANSIENT",
       "_iterations":[
         {
           "_messageSize": 256
@@ -84,7 +84,7 @@
       ]
     },
     {
-      "_name": "Latency - Message Size - PERSISTENT";
+      "_name": "Latency - Message Size - PERSISTENT",
       "_iterations":[
         {
           "_messageSize": 256

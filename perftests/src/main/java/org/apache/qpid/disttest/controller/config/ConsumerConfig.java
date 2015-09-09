@@ -31,7 +31,6 @@ public class ConsumerConfig extends ParticipantConfig
     private boolean _synchronous;
     private boolean _evaluateLatency;
 
-    // For Gson
     public ConsumerConfig()
     {
         _isDurableSubscription = false;

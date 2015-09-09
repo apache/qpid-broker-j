@@ -42,7 +42,7 @@ public class JsonHandlerTest extends QpidTestCase
         _jsonHandler = new JsonHandler();
 
         _testCommand = new SendChristmasCards(CommandType.START_TEST, Collections.singletonMap(SendChristmasCards.CardType.FUNNY, 5));
-        _testCommand.persons = Arrays.asList(new Person("Phil"), new Person("Andrew"));
+        _testCommand._persons = Arrays.asList(new Person("Phil"), new Person("Andrew"));
     }
 
     public void testMarshallUnmarshall() throws Exception
@@ -54,11 +54,31 @@ public class JsonHandlerTest extends QpidTestCase
         assertEquals("Unmarshalled command should be equal to the original object", _testCommand, unmarshalledCommand);
     }
 
-    public void testGeneratorDesrialization()
+    public void testSimplePropertyValueMarshallUnmarshall() throws Exception
     {
-        String json = "{_messageProperties: {test: 1; generator: {'@def': 'list'; _cyclic: false; _items: ['first', " +
-                "{'@def': 'range'; _upper:10; '_type':'int'}]}}}";
+        String json = "{'_messageProperties': {'test': 1}}";
         final TestCommand unmarshalledCommand = _jsonHandler.unmarshall(json, TestCommand.class);
+
+        Map<String, PropertyValue> properties = unmarshalledCommand.getMessageProperties();
+        assertNotNull("Properties should not be null", properties);
+        assertFalse("Properties should not be empty", properties.isEmpty());
+        assertEquals("Unexpected properties size", 1, properties.size());
+        PropertyValue testProperty = properties.get("test");
+        assertNotNull("Unexpected property test", testProperty);
+        assertTrue("Unexpected property test", testProperty.getValue() instanceof Number);
+        assertEquals("Unexpected property value", 1, ((Number)testProperty.getValue()).intValue());
+
+        String newJson =_jsonHandler.marshall(unmarshalledCommand);
+        final TestCommand newUnmarshalledCommand = _jsonHandler.unmarshall(newJson, TestCommand.class);
+        assertEquals("Unmarshalled command should be equal to the original object", unmarshalledCommand, newUnmarshalledCommand);
+    }
+
+    public void testGeneratorDesrialization() throws Exception
+    {
+        String json = "{'_messageProperties': {'test': 1, 'generator': {'@def': 'list',  '_cyclic': false, '_items': ['first', " +
+                "{'@def': 'range', '_upper':10, '_type':'int'}]}}}";
+        final TestCommand unmarshalledCommand = _jsonHandler.unmarshall(json, TestCommand.class);
+
         Map<String, PropertyValue> properties = unmarshalledCommand.getMessageProperties();
         assertNotNull("Properties should not be null", properties);
         assertFalse("Properties should not be empty", properties.isEmpty());
@@ -68,13 +88,16 @@ public class JsonHandlerTest extends QpidTestCase
         assertTrue("Unexpected property test", testProperty.getValue() instanceof Number);
         assertEquals("Unexpected property value", 1, ((Number)testProperty.getValue()).intValue());
         Object generatorObject = properties.get("generator");
-        assertTrue("Unexpected generator object", generatorObject instanceof ListPropertyValue);
+
+        assertTrue("Unexpected generator object : " + generatorObject, generatorObject instanceof ListPropertyValue);
+
         PropertyValue generator = (PropertyValue)generatorObject;
         assertEquals("Unexpected generator value", "first", generator.getValue());
         for (int i = 0; i < 10; i++)
         {
             assertEquals("Unexpected generator value", new Integer(i), generator.getValue());
         }
+
         String newJson =_jsonHandler.marshall(unmarshalledCommand);
         final TestCommand newUnmarshalledCommand = _jsonHandler.unmarshall(newJson, TestCommand.class);
         assertEquals("Unmarshalled command should be equal to the original object", unmarshalledCommand, newUnmarshalledCommand);
@@ -90,7 +113,12 @@ public class JsonHandlerTest extends QpidTestCase
         enum CardType {FUNNY, TRADITIONAL}
 
         private Map<CardType, Integer> _cardTypes;
-        private List<Person> persons;
+        private List<Person> _persons;
+
+        public SendChristmasCards()
+        {
+            this(null, null);
+        }
 
         public SendChristmasCards(final CommandType type, Map<CardType, Integer> cardTypes)
         {
@@ -105,7 +133,7 @@ public class JsonHandlerTest extends QpidTestCase
 
         public List<Person> getPersons()
         {
-            return persons;
+            return _persons;
         }
 
         @Override
@@ -145,6 +173,11 @@ public class JsonHandlerTest extends QpidTestCase
     static class Person
     {
         private String _firstName;
+
+        public Person()
+        {
+            this(null);
+        }
 
         public Person(final String firstName)
         {
@@ -190,6 +223,11 @@ public class JsonHandlerTest extends QpidTestCase
     {
 
         private Map<String, PropertyValue> _messageProperties;
+
+        public TestCommand()
+        {
+            super(null);
+        }
 
         public TestCommand(CommandType type)
         {

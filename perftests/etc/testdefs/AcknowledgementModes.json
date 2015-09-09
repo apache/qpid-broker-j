@@ -1,7 +1,7 @@
 {
     "_tests":[
     {
-      "_name": "Transient Ack Modes";
+      "_name": "Transient Ack Modes",
       "_iterations":[
         {
           "_messageSize": 1024,
@@ -70,7 +70,7 @@
       ]
     },
     {
-      "_name": "Persistent Ack Modes";
+      "_name": "Persistent Ack Modes",
       "_iterations":[
         {
           "_messageSize": 1024,

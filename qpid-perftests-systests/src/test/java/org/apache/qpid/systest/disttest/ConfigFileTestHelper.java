@@ -19,6 +19,7 @@
  */
 package org.apache.qpid.systest.disttest;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -39,7 +40,7 @@ public class ConfigFileTestHelper
         return reader;
     }
 
-    public static Config getConfigFromResource(Class<?> testClass, String resourceName)
+    public static Config getConfigFromResource(Class<?> testClass, String resourceName) throws IOException
     {
         ConfigReader configReader = new ConfigReader();
         Config config = configReader.readConfig(getConfigFileReader(testClass, resourceName));

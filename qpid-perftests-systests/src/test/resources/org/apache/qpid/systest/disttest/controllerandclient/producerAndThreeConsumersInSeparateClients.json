@@ -1,12 +1,12 @@
 {
     "_tests":[
     {
-      "_name": "ProducerAndThreeConsumersInSeparateClients";
+      "_name": "ProducerAndThreeConsumersInSeparateClients",
       "_queues":[
         {
           "_name": "direct://amq.direct//testQueue"
         }
-      ];
+      ],
       "_clients":[
         {
           "_name": "producingClient",

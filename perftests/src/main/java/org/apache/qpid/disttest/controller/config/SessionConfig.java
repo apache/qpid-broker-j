@@ -39,7 +39,6 @@ public class SessionConfig
     private List<ProducerConfig> _producers;
     private List<ConsumerConfig> _consumers;
 
-    // For Gson
     public SessionConfig()
     {
         this(null, Session.SESSION_TRANSACTED, EMPTY_CONSUMER_LIST, EMPTY_PRODUCER_LIST);

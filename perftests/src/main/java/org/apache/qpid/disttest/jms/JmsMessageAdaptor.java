@@ -19,6 +19,8 @@
  */
 package org.apache.qpid.disttest.jms;
 
+import java.io.IOException;
+
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.Session;
@@ -56,9 +58,9 @@ public class JmsMessageAdaptor
             final JsonHandler jsonHandler = new JsonHandler();
             jmsMessage.setStringProperty(DistributedTestConstants.MSG_JSON_PROPERTY, jsonHandler.marshall(command));
         }
-        catch (final JMSException jmse)
+        catch (final JMSException | IOException e)
         {
-            throw new DistributedTestException("Unable to convert command " + command + " to JMS Message", jmse);
+            throw new DistributedTestException("Unable to convert command " + command + " to JMS Message", e);
         }
 
         return jmsMessage;
@@ -75,10 +77,10 @@ public class JmsMessageAdaptor
             command = jsonHandler.unmarshall(jmsMessage.getStringProperty(DistributedTestConstants.MSG_JSON_PROPERTY),
                             getCommandClassFromType(commandType));
         }
-        catch (final JMSException jmse)
+        catch (final JMSException | IOException e)
         {
             throw new DistributedTestException("Unable to convert JMS message " + jmsMessage + " to command object",
-                            jmse);
+                            e);
         }
         return command;
     }

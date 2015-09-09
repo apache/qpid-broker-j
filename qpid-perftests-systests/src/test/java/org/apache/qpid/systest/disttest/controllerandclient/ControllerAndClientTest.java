@@ -179,7 +179,7 @@ public class ControllerAndClientTest extends DistributedTestSystemTestBase
         assertEquals("Test 2", resultList.get(1).getName());
     }
 
-    private List<TestResult> runTestsForTwoClients(String jsonConfigFile, int expectedNumberOfTests) throws NamingException, InterruptedException
+    private List<TestResult> runTestsForTwoClients(String jsonConfigFile, int expectedNumberOfTests) throws Exception
     {
         final Config config = ConfigFileTestHelper.getConfigFromResource(getClass(), jsonConfigFile);
         _controller.setConfig(config);

@@ -24,6 +24,11 @@ public class RegisterClientCommand extends Command
     private final String _clientName;
     private final String _clientQueueName;
 
+    public RegisterClientCommand()
+    {
+        this(null, null);
+    }
+
     public RegisterClientCommand(final String clientName, final String clientQueueName)
     {
         super(CommandType.REGISTER_CLIENT);

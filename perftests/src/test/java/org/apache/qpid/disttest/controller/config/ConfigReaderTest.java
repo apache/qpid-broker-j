@@ -33,7 +33,7 @@ public class ConfigReaderTest extends QpidTestCase
     private Config _config;
 
     @Override
-    protected void setUp()
+    protected void setUp() throws Exception
     {
         ConfigReader configReader = new ConfigReader();
         Reader reader = ConfigFileTestHelper.getConfigFileReader(getClass(), "sampleConfig.json");

@@ -37,12 +37,12 @@ public class ListPropertyValue extends GeneratedPropertySupport
         super();
         _cyclic = true;
         _currentIndex = 0;
-        _items = new ArrayList<PropertyValue>();
+        _items = new ArrayList<>();
     }
 
     public synchronized void setItems(List<PropertyValue> items)
     {
-        _items = new ArrayList<PropertyValue>(items);
+        _items = new ArrayList<>(items);
     }
 
     public synchronized List<PropertyValue> getItems()

@@ -29,10 +29,6 @@ import org.apache.qpid.disttest.message.Command;
 
 public class ClientConfig
 {
-    /*
-     * TODO add this field when repeating groups of clients need to be used. Talk to Phil and Keith!
-     * private int _instances;
-    */
 
     private List<ConnectionConfig> _connections;
     private List<MessageProviderConfig> _messageProviders;

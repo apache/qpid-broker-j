@@ -19,9 +19,11 @@
 package org.apache.qpid.disttest.client.property;
 
 /**
- * Provides operations to get a message property value.
+ * Provides a message property value.  Property values can be simple (e.g. a string
+ * or a number) or can represent a function that is capable of returning a sequence of values,
+ * so that each message is sent with a different value.
  */
 public interface PropertyValue
 {
-    public Object getValue();
+    Object getValue();
 }

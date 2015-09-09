@@ -29,7 +29,7 @@ public class PropertyValueFactory
     {
         try
         {
-            return (PropertyValue)getPropertyValueClass(type).newInstance();
+            return getPropertyValueClass(type).newInstance();
         }
         catch(Exception e)
         {
@@ -37,12 +37,12 @@ public class PropertyValueFactory
         }
     }
 
-    public Class<?> getPropertyValueClass(String type) throws ClassNotFoundException
+    public Class<PropertyValue> getPropertyValueClass(String type) throws ClassNotFoundException
     {
         String className = "org.apache.qpid.disttest.client.property."
                            + Character.toTitleCase(type.charAt(0))
                            + type.substring(1)
                            + "PropertyValue";
-        return Class.forName(className);
+        return (Class<PropertyValue>) Class.forName(className);
     }
 }

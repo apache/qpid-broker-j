@@ -19,25 +19,24 @@
  */
 package org.apache.qpid.disttest.json;
 
-import org.apache.qpid.disttest.client.property.PropertyValue;
-import org.apache.qpid.disttest.message.Command;
+import java.io.IOException;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.qpid.disttest.message.Command;
 
 public class JsonHandler
 {
-    private final Gson _gson = new GsonBuilder()
-            .registerTypeAdapter(PropertyValue.class, new PropertyValueAdapter())
-            .create();
 
-    public <T extends Command> T unmarshall(final String jsonParams, final Class<T> clazz)
+    private final ObjectMapper _objectMapper = new ObjectMapperFactory().createObjectMapper();
+
+    public <T extends Command> T unmarshall(final String json, final Class<T> clazz) throws IOException
     {
-        return _gson.fromJson(jsonParams, clazz);
+        return _objectMapper.readValue(json, clazz);
     }
 
-    public <T extends Command> String marshall(final T command)
+    public <T extends Command> String marshall(final T command) throws IOException
     {
-        return _gson.toJson(command);
+        return _objectMapper.writeValueAsString(command);
     }
 }

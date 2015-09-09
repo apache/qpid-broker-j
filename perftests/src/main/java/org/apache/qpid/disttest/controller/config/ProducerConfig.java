@@ -39,7 +39,6 @@ public class ProducerConfig extends ParticipantConfig
     private long _startDelay;
     private String _messageProviderName;
 
-    // For Gson
     public ProducerConfig()
     {
         _deliveryMode = Message.DEFAULT_DELIVERY_MODE;

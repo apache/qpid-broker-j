@@ -25,10 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 
-import com.google.gson.Gson;
 
 public class JavaScriptConfigEvaluatorTest extends QpidTestCase
 {
@@ -85,11 +88,11 @@ public class JavaScriptConfigEvaluatorTest extends QpidTestCase
         return (List<?>)configAsMap.get(property);
     }
 
-    private Map getObject(String jsonStringIn)
+    private Map getObject(String jsonStringIn) throws Exception
     {
-        Gson gson = new Gson();
-        @SuppressWarnings("rawtypes")
-        TreeMap object = gson.fromJson(jsonStringIn, TreeMap.class);
-        return object;
+        final ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+        objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+        return objectMapper.readValue(jsonStringIn, TreeMap.class);
     }
 }

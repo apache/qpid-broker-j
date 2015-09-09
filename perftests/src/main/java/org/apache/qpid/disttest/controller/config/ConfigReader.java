@@ -24,13 +24,12 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.qpid.disttest.client.property.PropertyValue;
-import org.apache.qpid.disttest.json.PropertyValueAdapter;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import org.apache.qpid.disttest.json.ObjectMapperFactory;
+
 
 public class ConfigReader
 {
@@ -44,12 +43,12 @@ public class ConfigReader
         return config;
     }
 
-    public Config readConfig(Reader reader)
+    public Config readConfig(Reader reader) throws IOException
     {
         return readConfig(reader, false);
     }
 
-    public Config readConfig(Reader reader, boolean isJavascript)
+    public Config readConfig(Reader reader, boolean isJavascript) throws IOException
     {
         if (isJavascript)
         {
@@ -66,25 +65,23 @@ public class ConfigReader
         Reader reader = null;
         if (fileName.endsWith(".js"))
         {
-            LOGGER.info("Evaluating javascript:" + fileName);
+            LOGGER.info("Evaluating javascript: {}", fileName);
             reader = new StringReader(new JavaScriptConfigEvaluator().evaluateJavaScript(fileName));
         }
         else
         {
-            LOGGER.info("Loading JSON:" + fileName);
+            LOGGER.info("Loading JSON: {}", fileName);
             reader = new FileReader(fileName);
         }
         return reader;
     }
 
 
-    private Config readJson(Reader reader)
+    private Config readJson(Reader reader) throws IOException
     {
-        Gson gson = new GsonBuilder()
-            .registerTypeAdapter(PropertyValue.class, new PropertyValueAdapter())
-            .create();
-        Config config = gson.fromJson(reader, Config.class);
-        return config;
+        final ObjectMapper objectMapper = new ObjectMapperFactory().createObjectMapper();
+
+        return objectMapper.readValue(reader, Config.class);
     }
 
 }

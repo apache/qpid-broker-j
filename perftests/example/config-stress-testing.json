@@ -1,7 +1,7 @@
 {
     "_tests":[
     {
-      "_name": "One producer to one consumer";
+      "_name": "One producer to one consumer",
       "_iterations":[ 
         {
           "_messageSize": 10000

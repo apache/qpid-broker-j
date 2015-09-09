@@ -1,8 +1,8 @@
 {
     "_tests":[
     {
-      "_name": "PQBT-AA-Qpid-01";
-      "_description": "16 clients, one 1P 1C each. Persistent, Auto-Ack, 10 minutes";
+      "_name": "PQBT-AA-Qpid-01",
+      "_description": "16 clients, one 1P 1C each. Persistent, Auto-Ack, 10 minutes",
       "_queues":[
         {
           "_name": "direct://amq.direct//testQueue1?durable='true'",
@@ -148,7 +148,7 @@
               "x-qpid-flow-resume-capacity": 1500000
             }
         }
-      ];
+      ],
       "_clients":[
         {
           "_name": "client1",

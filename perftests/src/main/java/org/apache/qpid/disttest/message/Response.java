@@ -47,6 +47,11 @@ public class Response extends Command
         super(commandType);
     }
 
+    protected Response()
+    {
+        super(null);
+    }
+
     public String getRegisteredClientName()
     {
         return _registeredClientName;

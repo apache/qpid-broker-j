@@ -18,10 +18,13 @@
  */
 package org.apache.qpid.disttest.client.property;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Provides operations to generate message property values.
  */
 public interface GeneratedPropertyValue extends PropertyValue
 {
-    public String getDefinition();
+    @JsonProperty(value = "@def")
+    String getDefinition();
 }

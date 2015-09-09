@@ -33,7 +33,6 @@ public class ConnectionConfig
     private List<SessionConfig> _sessions;
     private String _factory;
 
-    // For Gson
     public ConnectionConfig()
     {
         super();

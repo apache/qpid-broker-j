@@ -23,9 +23,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
-import org.apache.qpid.disttest.controller.config.Config;
-import org.apache.qpid.disttest.controller.config.ConfigReader;
-
 public class ConfigFileTestHelper
 {
     public static Reader getConfigFileReader(Class<?> testClass, String resourceName)
@@ -37,12 +34,5 @@ public class ConfigFileTestHelper
         }
         Reader reader = new InputStreamReader(inputStream);
         return reader;
-    }
-
-    public static Config getConfigFromResource(Class<?> testClass, String resourceName)
-    {
-        ConfigReader configReader = new ConfigReader();
-        Config config = configReader.readConfig(getConfigFileReader(testClass, resourceName));
-        return config;
     }
 }

@@ -1,12 +1,12 @@
 {
     "_tests":[
     {
-      "_name": "Test 1";
+      "_name": "Test 1",
       "_queues":[
         {
           "_name": "direct://amq.direct//testQueue"
         }
-      ];
+      ],
       "_clients":[
         {
           "_name": "producingClient",
@@ -53,12 +53,12 @@
       ]
     },
     {
-        "_name": "Test 2";
+        "_name": "Test 2",
         "_queues":[
           {
             "_name": "direct://amq.direct//testQueue2"
           }
-        ];
+        ],
         "_clients":[
           {
             "_name": "producingClient",

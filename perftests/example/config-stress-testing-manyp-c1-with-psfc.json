@@ -1,7 +1,7 @@
 {
     "_tests":[
     {
-      "_name": "Many producers to one consumer w/producer flow-control";
+      "_name": "Many producers to one consumer w/producer flow-control",
       "_queues":[
         {
           "_name": "direct://amq.direct//testQueue",
@@ -11,7 +11,7 @@
               "x-qpid-flow-resume-capacity": 8388608
             }
         }
-      ];
+      ],
       "_clients":[
         {
           "_name": "producingClient1",

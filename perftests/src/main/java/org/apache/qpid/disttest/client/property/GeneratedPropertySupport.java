@@ -62,7 +62,7 @@ public abstract class GeneratedPropertySupport implements GeneratedPropertyValue
     @Override
     public String toString()
     {
-        return "GeneratedPropertyValue [value=" + getLastValue() + ", @def=" + getDefinition() + "]";
+        return this.getClass().getSimpleName() + " [value=" + getLastValue() + ", @def=" + getDefinition() + "]";
     }
 
 }
