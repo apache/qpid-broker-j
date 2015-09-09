@@ -37,6 +37,7 @@
         <qpid-amqp-1-0-client-jms-version>0.32</qpid-amqp-1-0-client-jms-version>
         <qpid-jms-client-version>0.5.0</qpid-jms-client-version>
 
+        <joramtests.broker-hostport>localhost:5672</joramtests.broker-hostport>
         <joramtests.broker-virtualhostnode>default</joramtests.broker-virtualhostnode>
         <joramtests.broker-virtualhost>default</joramtests.broker-virtualhost>
 
@@ -143,7 +144,25 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <configuration>
+                    <delimiters>
+                        <delimiter>${*}</delimiter>
+                    </delimiters>
+                    <useDefaultDelimiters>false</useDefaultDelimiters>
+                </configuration>
+            </plugin>
         </plugins>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </testResource>
+        </testResources>
     </build>
     <profiles>
         <profile>
