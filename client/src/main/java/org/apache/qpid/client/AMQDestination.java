@@ -57,6 +57,10 @@ public abstract class AMQDestination implements Destination, Referenceable, Exte
     private static final Logger _logger = LoggerFactory.getLogger(AMQDestination.class);
     private static final long serialVersionUID = -3152767926421156400L;
 
+    static
+    {
+        ClientProperties.ensureIsLoaded();
+    }
 
     private String _exchangeName;
 

@@ -51,44 +51,54 @@ public class CommonProperties
     public static final String HANDSHAKE_TIMEOUT_PROP_NAME = "qpid.handshake_timeout";
     public static final int HANDSHAKE_TIMEOUT_DEFAULT = 2;
 
+    private volatile static boolean _loaded;
+
     static
     {
+        ensureIsLoaded();
+    }
 
-        Properties props = new Properties(QpidProperties.asProperties());
-        String initialProperties = System.getProperty("qpid.common_properties_file");
-        URL initialPropertiesLocation = null;
-        try
+    public static synchronized void ensureIsLoaded()
+    {
+        if (!_loaded)
         {
-            if (initialProperties == null)
+            Properties props = new Properties(QpidProperties.asProperties());
+            String initialProperties = System.getProperty("qpid.common_properties_file");
+            URL initialPropertiesLocation = null;
+            try
             {
-                initialPropertiesLocation = CommonProperties.class.getClassLoader().getResource("qpid-common.properties");
+                if (initialProperties == null)
+                {
+                    initialPropertiesLocation = CommonProperties.class.getClassLoader().getResource("qpid-common.properties");
+                }
+                else
+                {
+                    initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
+                }
+
+                if (initialPropertiesLocation != null)
+                {
+                    props.load(initialPropertiesLocation.openStream());
+                }
             }
-            else
+            catch (MalformedURLException e)
             {
-                initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
+                LOGGER.warn("Could not open common properties file '" + initialProperties + "'.", e);
             }
-
-            if (initialPropertiesLocation != null)
+            catch (IOException e)
             {
-                props.load(initialPropertiesLocation.openStream());
+                LOGGER.warn("Could not open common properties file '" + initialPropertiesLocation + "'.", e);
             }
-        }
-        catch (MalformedURLException e)
-        {
-            LOGGER.warn("Could not open common properties file '"+initialProperties+"'.", e);
-        }
-        catch (IOException e)
-        {
-            LOGGER.warn("Could not open common properties file '" + initialPropertiesLocation + "'.", e);
-        }
 
-        Set<String> propertyNames = new HashSet<>(props.stringPropertyNames());
-        propertyNames.removeAll(System.getProperties().stringPropertyNames());
-        for (String propName : propertyNames)
-        {
-            System.setProperty(propName, props.getProperty(propName));
-        }
+            Set<String> propertyNames = new HashSet<>(props.stringPropertyNames());
+            propertyNames.removeAll(System.getProperties().stringPropertyNames());
+            for (String propName : propertyNames)
+            {
+                System.setProperty(propName, props.getProperty(propName));
+            }
 
+            _loaded = true;
+        }
     }
 
     private CommonProperties()

@@ -47,6 +47,7 @@ import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQHeadersExchange;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQTopic;
+import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.url.BindingURL;
 import org.apache.qpid.url.URLSyntaxException;
@@ -59,6 +60,11 @@ import org.slf4j.LoggerFactory;
 public class PropertiesFileInitialContextFactory implements InitialContextFactory
 {
     private final Logger _logger = LoggerFactory.getLogger(PropertiesFileInitialContextFactory.class);
+
+    static
+    {
+        ClientProperties.ensureIsLoaded();
+    }
 
     private String CONNECTION_FACTORY_PREFIX = "connectionfactory.";
     private String DESTINATION_PREFIX = "destination.";

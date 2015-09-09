@@ -265,46 +265,56 @@ public class ClientProperties
      */
     public static final String QPID_USE_LEGACY_GETQUEUEDEPTH_BEHAVIOUR = "qpid.use_legacy_getqueuedepth_behavior";
 
+    private volatile static boolean _loaded;
+
     static
     {
-        // force load of common properties
-        Class<CommonProperties> commonPropertiesClass = CommonProperties.class;
+        ensureIsLoaded();
+    }
 
-        Properties props = new Properties();
-        String initialProperties = System.getProperty("qpid.client_properties_file");
-        URL initialPropertiesLocation = null;
-        try
+    public static synchronized void ensureIsLoaded()
+    {
+        if (!_loaded)
         {
-            if (initialProperties == null)
+            CommonProperties.ensureIsLoaded();
+
+            Properties props = new Properties();
+            String initialProperties = System.getProperty("qpid.client_properties_file");
+            URL initialPropertiesLocation = null;
+            try
             {
-                initialPropertiesLocation = ClientProperties.class.getClassLoader().getResource("qpid-client.properties");
+                if (initialProperties == null)
+                {
+                    initialPropertiesLocation = ClientProperties.class.getClassLoader().getResource("qpid-client.properties");
+                }
+                else
+                {
+                    initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
+                }
+
+                if (initialPropertiesLocation != null)
+                {
+                    props.load(initialPropertiesLocation.openStream());
+                }
             }
-            else
+            catch (MalformedURLException e)
             {
-                initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
+                LOGGER.warn("Could not open client properties file '" + initialProperties + "'.", e);
             }
-
-            if (initialPropertiesLocation != null)
+            catch (IOException e)
             {
-                props.load(initialPropertiesLocation.openStream());
+                LOGGER.warn("Could not open client properties file '" + initialPropertiesLocation + "'.", e);
             }
-        }
-        catch (MalformedURLException e)
-        {
-            LOGGER.warn("Could not open client properties file '"+initialProperties+"'.", e);
-        }
-        catch (IOException e)
-        {
-            LOGGER.warn("Could not open client properties file '" + initialPropertiesLocation + "'.", e);
-        }
 
-        Set<String> propertyNames = new HashSet<>(props.stringPropertyNames());
-        propertyNames.removeAll(System.getProperties().stringPropertyNames());
-        for (String propName : propertyNames)
-        {
-            System.setProperty(propName, props.getProperty(propName));
-        }
+            Set<String> propertyNames = new HashSet<>(props.stringPropertyNames());
+            propertyNames.removeAll(System.getProperties().stringPropertyNames());
+            for (String propName : propertyNames)
+            {
+                System.setProperty(propName, props.getProperty(propName));
+            }
 
+            _loaded = true;
+        }
     }
 
     private ClientProperties()

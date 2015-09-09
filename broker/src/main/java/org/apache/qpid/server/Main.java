@@ -33,6 +33,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.qpid.configuration.CommonProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,6 +111,8 @@ public class Main
         OPTIONS.addOption(OPTION_MM_PASSWORD);
         OPTIONS.addOption(OPTION_CONFIGURATION_PROPERTY);
         OPTIONS.addOption(OPTION_INITIAL_SYSTEM_PROPERTIES);
+
+        CommonProperties.ensureIsLoaded();
     }
 
     protected CommandLine _commandLine;

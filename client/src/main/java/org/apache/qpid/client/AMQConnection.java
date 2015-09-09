@@ -91,6 +91,11 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
 
     private static final Logger _logger = LoggerFactory.getLogger(AMQConnection.class);
 
+    static
+    {
+        ClientProperties.ensureIsLoaded();
+    }
+
     private static final AtomicLong CONN_NUMBER_GENERATOR = new AtomicLong();
     private static final long DEFAULT_CLOSE_TIMEOUT = Long.getLong(ClientProperties.QPID_CLOSE_TIMEOUT,
                                                                    ClientProperties.DEFAULT_CLOSE_TIMEOUT);

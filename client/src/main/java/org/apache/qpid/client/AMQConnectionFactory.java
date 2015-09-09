@@ -23,6 +23,7 @@ package org.apache.qpid.client;
 import static org.apache.qpid.client.AMQConnection.JNDI_ADDRESS_CONNECTION_URL;
 
 import org.apache.qpid.client.util.JMSExceptionHelper;
+import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.jndi.ObjectFactory;
 import org.apache.qpid.url.URLSyntaxException;
@@ -57,6 +58,11 @@ public class AMQConnectionFactory implements ConnectionFactory, QueueConnectionF
                                              javax.naming.spi.ObjectFactory, Referenceable, XATopicConnectionFactory,
                                              XAQueueConnectionFactory, XAConnectionFactory, Serializable
 {
+    static
+    {
+        ClientProperties.ensureIsLoaded();
+    }
+
     protected static final String NO_URL_CONFIGURED = "The connection factory wasn't created with a proper URL, the connection details are empty";
     private final static  ObjectFactory OBJECT_FACTORY = new ObjectFactory();
 
