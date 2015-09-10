@@ -30,6 +30,11 @@
 
   <properties>
     <dependency-change-verification>true</dependency-change-verification>
+
+    <qpid.disttest.duration>5000</qpid.disttest.duration>
+    <qpid.amqp.version>0-9</qpid.amqp.version>
+    <qpid.dest_syntax>BURL</qpid.dest_syntax>
+    <qpid.close_timeout>90000</qpid.close_timeout>
   </properties>
 
   <dependencies>
@@ -118,7 +123,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
-        <!--version specified in qpid-parent pluginManagement -->
         <configuration>
           <descriptors>
             <descriptor>src/main/assembly/qpid-perftests-bin.xml</descriptor>
@@ -138,7 +142,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-deploy-plugin</artifactId>
-        <!--version specified in qpid-parent pluginManagement -->
         <configuration>
           <skip>true</skip>
         </configuration>
@@ -147,7 +150,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.3.2</version>
+        <version>${exec-maven-plugin-version}</version>
         <executions>
           <execution>
             <goals>
@@ -157,32 +160,32 @@
         </executions>
         <configuration>
           <mainClass>org.apache.qpid.disttest.ControllerRunner</mainClass>
-          <includePluginDependencies>true</includePluginDependencies>
           <arguments>
             <argument>jndi-config=${basedir}/etc/perftests-jndi.properties</argument>
             <argument>test-config=${basedir}/etc/testdefs</argument>
             <argument>distributed=false</argument>
             <argument>writeToDb=false</argument>
           </arguments>
+          <classpathScope>compile</classpathScope>
           <systemProperties>
             <systemProperty>
-              <key>qpid.amqp.version</key><value>0-91</value>
+              <key>qpid.disttest.duration</key>
+              <value>${qpid.disttest.duration}</value>
             </systemProperty>
             <systemProperty>
-              <key>qpid.dest_syntax</key><value>BURL</value>
+              <key>qpid.amqp.version</key>
+              <value>${qpid.amqp.version}</value>
             </systemProperty>
             <systemProperty>
-              <key>qpid.disttest.duration</key><value>5000</value>
+              <key>qpid.dest_syntax</key>
+              <value>${qpid.dest_syntax}</value>
+            </systemProperty>
+            <systemProperty>
+              <key>qpid.close_timeout</key>
+              <value>${qpid.close_timeout}</value>
             </systemProperty>
           </systemProperties>
         </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-jms_1.1_spec</artifactId>
-            <version>${geronimo-jms-1-1-version}</version>
-          </dependency>
-        </dependencies>
       </plugin>
 
     </plugins>
