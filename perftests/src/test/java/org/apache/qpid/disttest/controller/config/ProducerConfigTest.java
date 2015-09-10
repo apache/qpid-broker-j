@@ -41,6 +41,17 @@ public class ProducerConfigTest extends QpidTestCase
         assertEquals(Message.DEFAULT_TIME_TO_LIVE, p.getTimeToLive());
     }
 
+    public void testCreateProducerCommandAppliesDurationOverride()
+    {
+        long overriddenDuration = 123;
+        setTestSystemProperty(ParticipantConfig.DURATION_OVERRIDE_SYSTEM_PROPERTY, String.valueOf(overriddenDuration));
+        ProducerConfig producerConfig = new ProducerConfig();
+
+        CreateProducerCommand command = producerConfig.createCommand("name");
+
+        assertEquals(123, command.getMaximumDuration());
+    }
+
     public void testMessageSizeDefault()
     {
         CreateProducerCommand producer = new ProducerConfig().createCommand("session1");

@@ -26,7 +26,7 @@ public class CreateConsumerCommand extends CreateParticpantCommand
     private String _selector;
     private boolean _noLocal;
     private boolean _synchronous;
-    private long _receiveTimeout = 5000;
+    private long _receiveTimeout;
     private boolean _evaluateLatency;
 
     public CreateConsumerCommand()
@@ -87,7 +87,6 @@ public class CreateConsumerCommand extends CreateParticpantCommand
     public void setReceiveTimeout(long receiveTimeout)
     {
         _receiveTimeout  = receiveTimeout;
-
     }
 
     public long getReceiveTimeout()

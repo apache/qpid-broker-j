@@ -28,9 +28,6 @@ public abstract class ParticipantConfig
 
     public static final String DURATION_OVERRIDE_SYSTEM_PROPERTY = "qpid.disttest.duration";
 
-    /** used to ensure we only log about the overridden duration once */
-    private boolean _alreadyLoggedAboutOverriddenDuration;
-
     private String _destinationName;
     private boolean _isTopic;
     private long _numberOfMessages;
@@ -65,40 +62,30 @@ public abstract class ParticipantConfig
 
     protected void setParticipantProperties(CreateParticpantCommand createParticipantCommand)
     {
+        final Long overriddenMaximumDuration = getOverriddenMaximumDuration();
+        Long maximumDuration = overriddenMaximumDuration == null ? _maximumDuration : overriddenMaximumDuration ;
+
         createParticipantCommand.setParticipantName(_name);
         createParticipantCommand.setDestinationName(_destinationName);
         createParticipantCommand.setTopic(_isTopic);
         createParticipantCommand.setNumberOfMessages(_numberOfMessages);
         createParticipantCommand.setBatchSize(_batchSize);
-
-        Long overridenDuration = getOverriddenDuration();
-        Long maximumDuration = overridenDuration == null ? _maximumDuration : overridenDuration;
         createParticipantCommand.setMaximumDuration(maximumDuration);
     }
 
-    private Long getOverriddenDuration()
+
+    protected Long getOverriddenMaximumDuration()
     {
-        String overriddenDurationString = System.getProperty(DURATION_OVERRIDE_SYSTEM_PROPERTY);
-        if(overriddenDurationString != null)
+        String overriddenDurationStr = System.getProperty(DURATION_OVERRIDE_SYSTEM_PROPERTY);
+        Long overriddenDuration = Long.getLong(DURATION_OVERRIDE_SYSTEM_PROPERTY);
+        if(overriddenDuration != null)
         {
-            try
-            {
-                long overriddenDuration = Long.valueOf(overriddenDurationString);
-
-                if(!_alreadyLoggedAboutOverriddenDuration)
-                {
-                    LOGGER.info("Applied overridden maximum duration " + overriddenDuration);
-                    _alreadyLoggedAboutOverriddenDuration = true;
-                }
-
-                return overriddenDuration;
-            }
-            catch (NumberFormatException e)
-            {
-                LOGGER.error("Couldn't parse overridden duration " + overriddenDurationString, e);
-            }
+            return overriddenDuration;
         }
-
+        else if(overriddenDurationStr != null)
+        {
+            LOGGER.error("Couldn't parse overridden duration as long :" + overriddenDurationStr);
+        }
         return null;
     }
 }

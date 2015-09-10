@@ -100,21 +100,17 @@ public class ProducerConfig extends ParticipantConfig
     private Integer getOverriddenMessageSize()
     {
         String overriddenMessageSizeString = System.getProperty(MESSAGE_SIZE_OVERRIDE_SYSTEM_PROPERTY);
-        if(overriddenMessageSizeString != null)
+        Integer overriddenMessageSize = Integer.getInteger(MESSAGE_SIZE_OVERRIDE_SYSTEM_PROPERTY);
+        if(overriddenMessageSize != null)
         {
-            try
-            {
-                int overriddenMessageSize = Integer.valueOf(overriddenMessageSizeString);
-                LOGGER.info("Applied overridden message size " + overriddenMessageSize);
-                return overriddenMessageSize;
-            }
-            catch (NumberFormatException e)
-            {
-                LOGGER.error("Couldn't parse overridden message size " + overriddenMessageSizeString, e);
-            }
+            return overriddenMessageSize;
         }
-
+        else if(overriddenMessageSizeString != null)
+        {
+            LOGGER.error("Couldn't parse overridden message size as integer :" + overriddenMessageSizeString);
+        }
         return null;
     }
+
 
 }

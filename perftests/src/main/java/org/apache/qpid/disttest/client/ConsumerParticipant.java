@@ -56,11 +56,13 @@ public class ConsumerParticipant implements Participant
 
     private volatile Exception _asyncMessageListenerException;
     private List<Long> _messageLatencies;
+    private final long _syncReceiveTimeout;
 
     public ConsumerParticipant(final ClientJmsDelegate delegate, final CreateConsumerCommand command)
     {
         _jmsDelegate = delegate;
         _command = command;
+        _syncReceiveTimeout = _command.getReceiveTimeout() > 0 ? _command.getReceiveTimeout() : 50l;
         _resultFactory = new ParticipantResultFactory();
         if (command.isEvaluateLatency())
         {
@@ -131,12 +133,10 @@ public class ConsumerParticipant implements Participant
 
         _startTime = System.currentTimeMillis();
 
-        Message message = null;
-
+        Message message;
         do
         {
-            message = _jmsDelegate.consumeMessage(_command.getParticipantName(),
-                                                  _command.getReceiveTimeout());
+            message = _jmsDelegate.consumeMessage(_command.getParticipantName(), _syncReceiveTimeout);
         } while (processMessage(message));
     }
 
@@ -152,7 +152,7 @@ public class ConsumerParticipant implements Participant
         {
             if (LOGGER.isTraceEnabled())
             {
-                LOGGER.trace("message " + messageCount + " received by " + this);
+                LOGGER.trace("Message {} received by {}", message, this);
             }
             int messagePayloadSize = _jmsDelegate.calculatePayloadSizeFrom(message);
             _allConsumedPayloadSizes.add(messagePayloadSize);
@@ -177,7 +177,7 @@ public class ConsumerParticipant implements Participant
             {
                 if (LOGGER.isTraceEnabled() && batchEnabled)
                 {
-                    LOGGER.trace("Committing: batch size " + _command.getBatchSize() );
+                    LOGGER.trace("Committing: batch size {} ", _command.getBatchSize() );
                 }
                 _jmsDelegate.commitOrAcknowledgeMessageIfNecessary(_command.getSessionName(), message);
             }
@@ -191,9 +191,7 @@ public class ConsumerParticipant implements Participant
         {
             if (LOGGER.isDebugEnabled())
             {
-                LOGGER.debug("message " + messageCount
-                        + " reachedExpectedNumberOfMessages " + reachedExpectedNumberOfMessages
-                        + " reachedMaximumDuration " + reachedMaximumDuration);
+                LOGGER.debug("Message {} reachedMaximumDuration {}", messageCount, reachedMaximumDuration);
             }
 
             if (batchEnabled && !batchComplete)
