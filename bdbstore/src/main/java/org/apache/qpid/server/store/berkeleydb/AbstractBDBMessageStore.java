@@ -567,7 +567,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             throws StoreException
     {
         getLogger().debug("storeMetaData called for transaction {}, messageId {}, messageMetaData {} ",
-                          new Object[] {tx, messageId, messageMetaData});
+                          tx, messageId, messageMetaData);
 
         DatabaseEntry key = new DatabaseEntry();
         LongBinding.longToEntry(messageId, key);
