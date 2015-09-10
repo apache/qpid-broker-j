@@ -379,7 +379,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             throw new ServerScopedRuntimeException("Cannot save data into the store", dbe);
         }
 
-        if (dbe instanceof StoreException || dbe instanceof ConnectionScopedRuntimeException)
+        if (dbe instanceof ServerScopedRuntimeException )
+        {
+            // always throw ServerScopedRuntimeException to prevent its swallowing
+            throw dbe;
+        }
+        else if (dbe instanceof ConnectionScopedRuntimeException)
         {
             return dbe;
         }
@@ -444,6 +449,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 {
                     int attemptNumber = 1;
                     boolean restarted = false;
+                    Exception lastException = null;
                     while(_state.get() == State.RESTARTING && attemptNumber <= _environmentRestartRetryLimit)
                     {
                         try
@@ -456,10 +462,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                         {
                             LOGGER.warn("Failure whilst trying to restart environment (attempt number "
                                     + attemptNumber + " of " + _environmentRestartRetryLimit + ")", e);
+                            lastException = e;
                         }
                         catch (Exception e)
                         {
                             LOGGER.error("Fatal failure whilst trying to restart environment", e);
+                            lastException = e;
                             break;
                         }
                         attemptNumber++;
@@ -467,7 +475,11 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
                     if (!restarted)
                     {
-                        LOGGER.warn("Failed to restart environment.");
+                        LOGGER.error("Failed to restart environment.");
+                        if (lastException != null)
+                        {
+                            handleUncaughtExceptionInExecutorService(lastException);
+                        }
                     }
                 }
             });
@@ -592,7 +604,14 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 @Override
                 public void run()
                 {
-                    stateChanged(stateChangeEvent);
+                    try
+                    {
+                        stateChanged(stateChangeEvent);
+                    }
+                    catch (Throwable e)
+                    {
+                        handleUncaughtExceptionInExecutorService(e);
+                    }
                 }
             });
         }
@@ -726,10 +745,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     public boolean isDesignatedPrimary()
     {
-        if (_state.get() != State.OPEN)
-        {
-            throw new IllegalStateException("Environment facade is not opened");
-        }
         return getEnvironment().getRepMutableConfig().getDesignatedPrimary();
     }
 
@@ -778,10 +793,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     int getPriority()
     {
-        if (_state.get() != State.OPEN)
-        {
-            throw new IllegalStateException("Environment facade is not opened");
-        }
         ReplicationMutableConfig repConfig = getEnvironment().getRepMutableConfig();
         return repConfig.getNodePriority();
     }
@@ -831,10 +842,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     int getElectableGroupSizeOverride()
     {
-        if (_state.get() != State.OPEN)
-        {
-            throw new IllegalStateException("Environment facade is not opened");
-        }
         ReplicationMutableConfig repConfig = getEnvironment().getRepMutableConfig();
         return repConfig.getElectableGroupSizeOverride();
     }
@@ -1073,8 +1080,15 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 @Override
                 public void run()
                 {
-                    StateChangeEvent detached = new StateChangeEvent(ReplicatedEnvironment.State.DETACHED, NameIdPair.NULL);
-                    stateChanged(detached);
+                    try
+                    {
+                        StateChangeEvent detached = new StateChangeEvent(ReplicatedEnvironment.State.DETACHED, NameIdPair.NULL);
+                        stateChanged(detached);
+                    }
+                    catch (Throwable e)
+                    {
+                        handleUncaughtExceptionInExecutorService(e);
+                    }
                 }
             });
         }
@@ -1347,11 +1361,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     public int getNumberOfElectableGroupMembers()
     {
-        if (_state.get() != State.OPEN)
-        {
-            throw new IllegalStateException("Environment facade is not opened");
-        }
-
         try
         {
             return getEnvironment().getGroup().getElectableNodes().size();
@@ -1641,6 +1650,23 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         });
     }
 
+    private void handleUncaughtExceptionInExecutorService(Throwable e)
+    {
+        LOGGER.error("Unexpected exception", e);
+        Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+        if (uncaughtExceptionHandler != null)
+        {
+            uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
+        }
+        else
+        {
+            // it should never happen as we set default UncaughtExceptionHandler in main
+            e.printStackTrace();
+            Runtime.getRuntime().halt(1);
+        }
+    }
+
+
     private class RemoteNodeStateLearner implements Callable<Void>
     {
         private static final long TIMEOUT_WARN_GAP = 1000 * 60 * 5;
@@ -1663,7 +1689,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                     }
                     catch(RuntimeException e)
                     {
-                        handleDatabaseException("Exception on replication group check", e);
+                        RuntimeException handledException = handleDatabaseException("Exception on replication group check", e);
+                        LOGGER.debug("Non fatal exception on performing replication group check. Ignoring...", handledException);
                     }
                     if (continueMonitoring)
                     {
@@ -1676,6 +1703,24 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                     }
 
                 }
+            }
+            catch(Error e)
+            {
+                continueMonitoring = false;
+                handleUncaughtExceptionInExecutorService(e);
+            }
+            catch (ServerScopedRuntimeException e)
+            {
+                State currentState = _state.get();
+                if (currentState != State.CLOSING && currentState != State.CLOSED)
+                {
+                    continueMonitoring = false;
+                    handleUncaughtExceptionInExecutorService(e);
+                }
+            }
+            catch(RuntimeException e)
+            {
+                LOGGER.warn("Unexpected exception on discovering node states", e);
             }
             finally
             {
@@ -1821,8 +1866,22 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 }
                 catch (ExecutionException e)
                 {
+                    Throwable cause = e.getCause();
                     LOGGER.warn("Cannot determine state for node '" + nodeName + "' from group "
-                                + _configuration.getGroupName(), e.getCause());
+                            + _configuration.getGroupName(), cause);
+
+                    if (cause instanceof Error)
+                    {
+                        throw (Error) cause;
+                    }
+                    else  if (cause instanceof RuntimeException)
+                    {
+                        throw (RuntimeException) cause;
+                    }
+                    else
+                    {
+                        throw new RuntimeException("Unexpected exception", cause);
+                    }
                 }
                 catch (TimeoutException e)
                 {
@@ -1892,7 +1951,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             }
             catch(RuntimeException e)
             {
-                throw handleDatabaseException("Exception on master check", e);
+                Exception handledException = handleDatabaseException("Exception on master check", e);
+                LOGGER.debug("Non fatal exception on performing ping. Ignoring...", handledException);
             }
         }
 
@@ -2005,6 +2065,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
             if (exception instanceof LogWriteException)
             {
+                // TODO: calling handleUncaughtExceptionInExecutorService() looks more attractive then delegating broker close to VHN
                 onException(exception);
             }
 

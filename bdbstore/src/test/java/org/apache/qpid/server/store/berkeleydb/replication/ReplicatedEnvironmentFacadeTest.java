@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -89,11 +90,23 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
 
     private File _storePath;
     private final Map<String, ReplicatedEnvironmentFacade> _nodes = new HashMap<String, ReplicatedEnvironmentFacade>();
+    private Thread.UncaughtExceptionHandler _defaultUncaughtExceptionHandler;
+    private CopyOnWriteArrayList<Throwable> _unhandledExceptions;
 
     public void setUp() throws Exception
     {
         super.setUp();
-
+        _unhandledExceptions = new CopyOnWriteArrayList<>();
+        _defaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
+        {
+            @Override
+            public void uncaughtException(Thread t, Throwable e)
+            {
+                LOGGER.error("Unhandled exception in thread " + t, e);
+                _unhandledExceptions.add(e);
+            }
+        });
         _storePath = TestFileUtils.createTestDirectory("bdb", true);
 
         setTestSystemProperty(ReplicatedEnvironmentFacade.DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME, "100");
@@ -111,6 +124,11 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         }
         finally
         {
+            if (_defaultUncaughtExceptionHandler != null)
+            {
+                Thread.setDefaultUncaughtExceptionHandler(_defaultUncaughtExceptionHandler);
+            }
+
             try
             {
                 if (_storePath != null)
@@ -120,7 +138,17 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
             }
             finally
             {
-                super.tearDown();
+                try
+                {
+                    super.tearDown();
+                }
+                finally
+                {
+                    if (!_unhandledExceptions.isEmpty())
+                    {
+                        fail("Unhandled exception(s) detected:" + _unhandledExceptions);
+                    }
+                }
             }
         }
 

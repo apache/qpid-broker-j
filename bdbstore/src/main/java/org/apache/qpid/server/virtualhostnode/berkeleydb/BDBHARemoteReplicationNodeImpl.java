@@ -21,14 +21,21 @@
 
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
+import static org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNodeImpl.MUTATE_JE_TIMEOUT_MS;
+
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.sleepycat.je.rep.MasterStateException;
-
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
 import org.apache.qpid.server.logging.subjects.BDBHAVirtualHostNodeLogSubject;
@@ -47,6 +54,8 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDBHARemoteReplicationNodeImpl> implements BDBHARemoteReplicationNode<BDBHARemoteReplicationNodeImpl>
 {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(BDBHARemoteReplicationNodeImpl.class);
 
     private final ReplicatedEnvironmentFacade _replicatedEnvironmentFacade;
     private final String _address;
@@ -163,11 +172,32 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
             String nodeName = getName();
             getEventLogger().message(_groupLogSubject, HighAvailabilityMessages.TRANSFER_MASTER(getName(), getAddress()));
 
-            _replicatedEnvironmentFacade.transferMasterAsynchronously(nodeName);
+            _replicatedEnvironmentFacade.transferMasterAsynchronously(nodeName).get(MUTATE_JE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         }
-        catch (Exception e)
+        catch (TimeoutException e)
         {
-            throw new IllegalConfigurationException("Cannot transfer mastership to '" + getName() + "'", e);
+            LOGGER.warn("Transfer master did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. Node may still be elected master at a later time.");
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException e)
+        {
+            Throwable cause = e.getCause();
+
+            if (cause instanceof Error)
+            {
+                throw (Error) cause;
+            }
+            else  if (cause instanceof ServerScopedRuntimeException)
+            {
+                throw (ServerScopedRuntimeException) cause;
+            }
+            else
+            {
+                throw new ConnectionScopedRuntimeException("Unexpected exception on master transfer: " + cause.getMessage(), cause);
+            }
         }
     }
 

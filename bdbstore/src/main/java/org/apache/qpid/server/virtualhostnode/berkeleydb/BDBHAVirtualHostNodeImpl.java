@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,6 +58,7 @@ import com.sleepycat.je.rep.StateChangeListener;
 import com.sleepycat.je.rep.util.ReplicationGroupAdmin;
 import com.sleepycat.je.rep.utilint.HostPortPair;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +106,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
      * Length of time we synchronously await the a JE mutation to complete.  It is not considered an error if we exceed this timeout, although a
      * a warning will be logged.
      */
-    private static final int MUTATE_JE_TIMEOUT_MS = 100;
+    static final int MUTATE_JE_TIMEOUT_MS = 100;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BDBHAVirtualHostNodeImpl.class);
 
@@ -145,6 +147,8 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
 
     @ManagedAttributeField(afterSet = "postSetPermittedNodes")
     private List<String> _permittedNodes;
+
+    private boolean _isClosed;
 
     @ManagedObjectFactoryConstructor
     public BDBHAVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> broker)
@@ -689,18 +693,35 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         try
         {
             closeVirtualHostIfExist().get();
-
-            Map<String, Object> hostAttributes = new HashMap<>();
-            hostAttributes.put(VirtualHost.MODEL_VERSION, BrokerModel.MODEL_VERSION);
-            hostAttributes.put(VirtualHost.NAME, getGroupName());
-            hostAttributes.put(VirtualHost.TYPE, "BDB_HA_REPLICA");
-            hostAttributes.put(VirtualHost.DURABLE, false);
-            createChild(VirtualHost.class, hostAttributes);
         }
-        catch (Exception e)
+        catch (InterruptedException e)
         {
-            LOGGER.error("Failed to create a replica virtualhost", e);
+            Thread.currentThread().interrupt();
         }
+        catch (ExecutionException e)
+        {
+            Throwable cause = e.getCause();
+            if (cause instanceof Error)
+            {
+                throw (Error) cause;
+            }
+            else  if (cause instanceof ServerScopedRuntimeException)
+            {
+                throw (ServerScopedRuntimeException) cause;
+            }
+            else
+            {
+                // we do not want to kill the broker on VH close failures
+                LOGGER.error("Unexpected exception on virtual host close", cause);
+            }
+        }
+
+        Map<String, Object> hostAttributes = new HashMap<>();
+        hostAttributes.put(VirtualHost.MODEL_VERSION, BrokerModel.MODEL_VERSION);
+        hostAttributes.put(VirtualHost.NAME, getGroupName());
+        hostAttributes.put(VirtualHost.TYPE, "BDB_HA_REPLICA");
+        hostAttributes.put(VirtualHost.DURABLE, false);
+        createChild(VirtualHost.class, hostAttributes);
     }
 
     protected ListenableFuture<Void> closeVirtualHostIfExist()
@@ -724,18 +745,50 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         }
     }
 
+    @Override
+    protected ListenableFuture<Void> beforeClose()
+    {
+        _isClosed = true;
+        return super.beforeClose();
+    }
+
     private class EnvironmentStateChangeListener implements StateChangeListener
     {
         @Override
         public void stateChange(StateChangeEvent stateChangeEvent) throws RuntimeException
         {
-            com.sleepycat.je.rep.ReplicatedEnvironment.State state = stateChangeEvent.getState();
-
-            if (LOGGER.isInfoEnabled())
+            if (_isClosed)
             {
-                LOGGER.info("Received BDB event indicating transition to state " + state + " for " + getName());
+                LOGGER.debug("Ignoring state transition into state {} because VHN is already closed or closing", stateChangeEvent.getState());
             }
+            else
+            {
+                try
+                {
+                    doStateChange(stateChangeEvent);
+                }
+                catch (RuntimeException e)
+                {
+                    // Ignore exception when VHN is closed or closing
+                    if (!_isClosed)
+                    {
+                        throw e;
+                    }
+                    else
+                    {
+                        LOGGER.debug("Ignoring any runtime exception thrown on state transition after node close", e);
+                    }
+                }
+            }
+        }
+
+        private void doStateChange(StateChangeEvent stateChangeEvent)
+        {
+            com.sleepycat.je.rep.ReplicatedEnvironment.State state = stateChangeEvent.getState();
             NodeRole previousRole = getRole();
+
+            LOGGER.info("Received BDB event indicating transition from state {} to {} for {}", previousRole, state, getName());
+
             try
             {
                 switch (state)
@@ -778,24 +831,11 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
-            try
-            {
-                environmentFacade.setPriority(_priority).get(MUTATE_JE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                getEventLogger().message(getVirtualHostNodeLogSubject(),
-                        HighAvailabilityMessages.PRIORITY_CHANGED(String.valueOf(_priority)));
-            }
-            catch (TimeoutException e)
-            {
-                LOGGER.warn("Change node priority did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _priority + " will become effective once the JE task thread is free.");
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
-            catch (ExecutionException e)
-            {
-                throw new ServerScopedRuntimeException("Failed to set priority node to value " + _priority + " on " + this, e);
-            }
+            resolveFuture(environmentFacade.setPriority(_priority),
+                    "Change node priority did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _priority + " will become effective once the JE task thread is free.",
+                    "Failed to set priority node to value " + _priority + " on " + this);
+            getEventLogger().message(getVirtualHostNodeLogSubject(),
+                    HighAvailabilityMessages.PRIORITY_CHANGED(String.valueOf(_priority)));
         }
     }
 
@@ -806,24 +846,11 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
-            try
-            {
-                environmentFacade.setDesignatedPrimary(_designatedPrimary).get(MUTATE_JE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                getEventLogger().message(getVirtualHostNodeLogSubject(),
-                        HighAvailabilityMessages.DESIGNATED_PRIMARY_CHANGED(String.valueOf(_designatedPrimary)));
-            }
-            catch (TimeoutException e)
-            {
-                LOGGER.warn("Change designated primary did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _designatedPrimary + " will become effective once the JE task thread is free.");
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
-            catch (ExecutionException e)
-            {
-                throw new ServerScopedRuntimeException("Failed to set designated primary to value " + _designatedPrimary + " on " + this, e);
-            }
+            resolveFuture(environmentFacade.setDesignatedPrimary(_designatedPrimary),
+                    "Change designated primary did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _designatedPrimary + " will become effective once the JE task thread is free.",
+                    "Failed to set designated primary to value " + _designatedPrimary + " on " + this);
+            getEventLogger().message(getVirtualHostNodeLogSubject(),
+                    HighAvailabilityMessages.DESIGNATED_PRIMARY_CHANGED(String.valueOf(_designatedPrimary)));
         }
     }
 
@@ -834,24 +861,11 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
-            try
-            {
-                environmentFacade.setElectableGroupSizeOverride(_quorumOverride).get(MUTATE_JE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-                getEventLogger().message(getVirtualHostNodeLogSubject(),
-                        HighAvailabilityMessages.QUORUM_OVERRIDE_CHANGED(String.valueOf(_quorumOverride)));
-            }
-            catch (TimeoutException e)
-            {
-                LOGGER.warn("Change quorum override did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _quorumOverride + " will become effective once the JE task thread is free.");
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
-            catch (ExecutionException e)
-            {
-                throw new ServerScopedRuntimeException("Failed to set quorum override to value " + _quorumOverride + " on " + this, e);
-            }
+            resolveFuture(environmentFacade.setElectableGroupSizeOverride(_quorumOverride),
+                    "Change quorum override did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. New value " + _quorumOverride + " will become effective once the JE task thread is free.",
+                    "Failed to set quorum override to value " + _quorumOverride + " on " + this);
+            getEventLogger().message(getVirtualHostNodeLogSubject(),
+                    HighAvailabilityMessages.QUORUM_OVERRIDE_CHANGED(String.valueOf(_quorumOverride)));
         }
     }
 
@@ -862,27 +876,47 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
         if (environmentFacade != null)
         {
-            try
-            {
-                getEventLogger().message(getGroupLogSubject(), HighAvailabilityMessages.TRANSFER_MASTER(getName(), getAddress()));
-                environmentFacade.transferMasterToSelfAsynchronously().get(MUTATE_JE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            }
-            catch (TimeoutException e)
-            {
-                LOGGER.warn("Transfer master did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. Node may still be elected master at a later time.");
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
-            catch (ExecutionException e)
-            {
-                throw new ServerScopedRuntimeException("Failed to transfer master to " + this, e);
-            }
+            getEventLogger().message(getGroupLogSubject(), HighAvailabilityMessages.TRANSFER_MASTER(getName(), getAddress()));
+            resolveFuture(environmentFacade.transferMasterToSelfAsynchronously(),
+                    "Transfer master did not complete within " + MUTATE_JE_TIMEOUT_MS + "ms. Node may still be elected master at a later time.",
+                    "Failed to transfer master to " + this);
         }
         else
         {
             // Ignored
+        }
+    }
+
+    private void resolveFuture(Future future, String timeoutLogMessage, String exceptionMessage)
+    {
+        try
+        {
+            future.get(MUTATE_JE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        }
+        catch (TimeoutException e)
+        {
+            LOGGER.warn(timeoutLogMessage);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException e)
+        {
+            Throwable cause = e.getCause();
+
+            if (cause instanceof Error)
+            {
+                throw (Error) cause;
+            }
+            else  if (cause instanceof ServerScopedRuntimeException)
+            {
+                throw (ServerScopedRuntimeException) cause;
+            }
+            else
+            {
+                throw new ConnectionScopedRuntimeException(exceptionMessage, cause);
+            }
         }
     }
 

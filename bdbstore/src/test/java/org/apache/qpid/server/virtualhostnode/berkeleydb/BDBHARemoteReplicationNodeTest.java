@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -28,6 +30,9 @@ import static org.mockito.Mockito.when;
 import java.security.AccessControlException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -39,6 +44,8 @@ import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
 import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BDBHARemoteReplicationNodeTest extends QpidTestCase
@@ -79,14 +86,40 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
 
     }
 
-    public void testUpdateRole()
+    public void testUpdateRole() throws Exception
     {
         String remoteReplicationName = getName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
 
+        Future<Void> future = mock(Future.class);
+        when(_facade.transferMasterAsynchronously(remoteReplicationName)).thenReturn(future);
         remoteReplicationNode.setAttribute(BDBHARemoteReplicationNode.ROLE, remoteReplicationNode.getRole(), NodeRole.MASTER);
 
         verify(_facade).transferMasterAsynchronously(remoteReplicationName);
+
+        remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
+        doThrow(new ExecutionException(new RuntimeException("Test"))).when(future).get(anyLong(), any(TimeUnit.class));
+        try
+        {
+            remoteReplicationNode.setAttribute(BDBHARemoteReplicationNode.ROLE, remoteReplicationNode.getRole(), NodeRole.MASTER);
+            fail("ConnectionScopedRuntimeException is expected");
+        }
+        catch(ConnectionScopedRuntimeException e)
+        {
+            // pass
+        }
+
+        remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
+        doThrow(new ExecutionException(new ServerScopedRuntimeException("Test"))).when(future).get(anyLong(), any(TimeUnit.class));
+        try
+        {
+            remoteReplicationNode.setAttribute(BDBHARemoteReplicationNode.ROLE, remoteReplicationNode.getRole(), NodeRole.MASTER);
+            fail("ServerScopedRuntimeException is expected");
+        }
+        catch(ServerScopedRuntimeException e)
+        {
+            // pass
+        }
     }
 
     public void testDelete()
