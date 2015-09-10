@@ -45,6 +45,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -1219,7 +1220,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         envConfig.setTransactional(true);
         envConfig.setExceptionListener(new ExceptionListener());
         envConfig.setDurability(_defaultDurability);
-
+        envConfig.setCacheMode(CacheMode.EVICT_LN);
         envConfig.setConfigParam(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
         envConfig.setConfigParam(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
         envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + _configuration.getName() + "]"));

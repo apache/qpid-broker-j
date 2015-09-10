@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -81,7 +82,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);
-
+        envConfig.setCacheMode(CacheMode.EVICT_LN);
         envConfig.setConfigParam(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
         envConfig.setConfigParam(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
         envConfig.setLoggingHandler(new Slf4jLoggingHandler("["+configuration.getName()+"]"));
