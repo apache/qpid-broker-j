@@ -24,6 +24,6 @@ public class ExchangeIsAlternateException extends RuntimeException
 {
     public ExchangeIsAlternateException(String name)
     {
-        super(name);
+        super("Exchange '" + name + "' is in use as an alternate exchange");
     }
 }

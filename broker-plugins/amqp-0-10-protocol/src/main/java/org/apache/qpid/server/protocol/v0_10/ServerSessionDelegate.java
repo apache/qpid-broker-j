@@ -1005,7 +1005,14 @@ public class ServerSessionDelegate extends SessionDelegate
             }
             else
             {
-                virtualHost.removeExchange(exchange, !method.getIfUnused());
+                if (method.getIfUnused() && exchange.hasBindings())
+                {
+                    exception(session, method, ExecutionErrorCode.PRECONDITION_FAILED, "Exchange has bindings");
+                }
+                else
+                {
+                    virtualHost.removeExchange(exchange, !method.getIfUnused());
+                }
             }
         }
         catch (ExchangeIsAlternateException e)

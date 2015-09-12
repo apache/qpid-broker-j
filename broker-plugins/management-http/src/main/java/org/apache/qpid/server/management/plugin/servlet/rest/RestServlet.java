@@ -38,30 +38,29 @@ import java.util.Set;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
-
-import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.ConfiguredObjectOperation;
-import org.apache.qpid.server.model.IllegalStateTransitionException;
-import org.apache.qpid.server.model.IntegrityViolationException;
-import org.apache.qpid.server.model.Content;
-import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.ExchangeExistsException;
-import org.apache.qpid.server.virtualhost.QueueExistsException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.IllegalStateTransitionException;
+import org.apache.qpid.server.model.IntegrityViolationException;
+import org.apache.qpid.server.model.Content;
+import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.ExchangeExistsException;
+import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
+import org.apache.qpid.server.virtualhost.RequiredExchangeException;
+import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.util.DataUrlUtils;
 
 public class RestServlet extends AbstractServlet
@@ -471,7 +470,7 @@ public class RestServlet extends AbstractServlet
         }
         catch (IllegalArgumentException | IllegalConfigurationException | IllegalStateException | AccessControlException
                 | ExchangeExistsException | QueueExistsException | IntegrityViolationException
-                | IllegalStateTransitionException | NoClassDefFoundError e)
+                | IllegalStateTransitionException | NoClassDefFoundError | ExchangeIsAlternateException | RequiredExchangeException e)
         {
             setResponseStatus(request, response, e);
         }
@@ -922,7 +921,9 @@ public class RestServlet extends AbstractServlet
                     || e instanceof AbstractConfiguredObject.DuplicateIdException
                     || e instanceof AbstractConfiguredObject.DuplicateNameException
                     || e instanceof IntegrityViolationException
-                    || e instanceof IllegalStateTransitionException)
+                    || e instanceof IllegalStateTransitionException
+                    || e instanceof ExchangeIsAlternateException
+                    || e instanceof RequiredExchangeException)
             {
                 responseCode = HttpServletResponse.SC_CONFLICT;
             }

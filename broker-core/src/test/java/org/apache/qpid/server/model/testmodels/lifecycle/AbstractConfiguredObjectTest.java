@@ -18,16 +18,19 @@
  */
 package org.apache.qpid.server.model.testmodels.lifecycle;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.IllegalStateTransitionException;
+import org.apache.qpid.server.model.NoopConfigurationChangeListener;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -228,7 +231,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         final AtomicReference<State> newState = new AtomicReference<>();
         final AtomicInteger callCounter = new AtomicInteger();
-        parent.addChangeListener(new NoopChangeListener()
+        parent.addChangeListener(new NoopConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State old, final State state)
@@ -244,7 +247,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(1, callCounter.get());
     }
 
-    public void testUnsuccessfulStateTransitionDoesnotInvokesListener() throws Exception
+    public void testUnsuccessfulStateTransitionDoesNotInvokesListener() throws Exception
     {
         final IllegalStateTransitionException expectedException =
                 new IllegalStateTransitionException("This test fails the state transition.");
@@ -259,12 +262,19 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         parent.create();
 
         final AtomicInteger callCounter = new AtomicInteger();
-        parent.addChangeListener(new NoopChangeListener()
+        parent.addChangeListener(new NoopConfigurationChangeListener()
         {
             @Override
             public void stateChanged(final ConfiguredObject<?> object, final State old, final State state)
             {
                 super.stateChanged(object, old, state);
+                callCounter.incrementAndGet();
+            }
+
+            @Override
+            public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue)
+            {
+                super.attributeSet(object, attributeName, oldAttributeValue, newAttributeValue);
                 callCounter.incrementAndGet();
             }
         });
@@ -279,47 +289,96 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
             assertSame("State transition threw unexpected exception.", expectedException, e);
         }
         assertEquals(0, callCounter.get());
+        assertEquals(State.ACTIVE, parent.getDesiredState());
+        assertEquals(State.ACTIVE, parent.getState());
     }
 
-    private static class NoopChangeListener implements ConfigurationChangeListener
+
+    public void testSuccessfulDeletion() throws Exception
     {
-        @Override
-        public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+        TestConfiguredObject configuredObject = new TestConfiguredObject("configuredObject");
+        configuredObject.create();
+
+        final List<ChangeEvent> events = new ArrayList<>();
+        configuredObject.addChangeListener(new NoopConfigurationChangeListener()
         {
+            @Override
+            public void attributeSet(ConfiguredObject<?> object, String attributeName, Object oldAttributeValue, Object newAttributeValue)
+            {
+                events.add(new ChangeEvent(EventType.ATTRIBUTE_SET, object, attributeName, oldAttributeValue, newAttributeValue));
+            }
+
+            @Override
+            public void stateChanged(ConfiguredObject<?> object, State oldState, State newState)
+            {
+                events.add(new ChangeEvent(EventType.STATE_CHANGED, object, ConfiguredObject.DESIRED_STATE, oldState, newState));
+            }
+        });
+
+        configuredObject.delete();
+        assertEquals(2, events.size());
+        assertEquals(State.DELETED, configuredObject.getDesiredState());
+        assertEquals(State.DELETED, configuredObject.getState());
+
+        assertEquals("Unexpected events number", 2, events.size());
+        ChangeEvent event0 = events.get(0);
+        ChangeEvent event1 = events.get(1);
+
+        assertEquals("Unexpected first event: " + event0,
+                new ChangeEvent(EventType.STATE_CHANGED, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE, State.DELETED), event0 );
+        assertEquals("Unexpected second event: " + event1,
+                new ChangeEvent(EventType.ATTRIBUTE_SET, configuredObject, Exchange.DESIRED_STATE, State.ACTIVE, State.DELETED), event1 );
+    }
+
+    private enum EventType
+    {
+        ATTRIBUTE_SET,
+        STATE_CHANGED
+    }
+
+    private class ChangeEvent
+    {
+        private final ConfiguredObject<?> _source;
+        private final String _attributeName;
+        private final Object _oldValue;
+        private final Object _newValue;
+        private final EventType _eventType;
+
+        public ChangeEvent(EventType eventType, ConfiguredObject<?> source, String attributeName, Object oldValue, Object newValue)
+        {
+            _source = source;
+            _attributeName = attributeName;
+            _oldValue = oldValue;
+            _newValue = newValue;
+            _eventType = eventType;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            ChangeEvent that = (ChangeEvent) o;
+
+            return (_source != null ? _source.equals(that._source) : that._source == null)
+                    && (_attributeName != null ? _attributeName.equals(that._attributeName) : that._attributeName == null)
+                    && (_oldValue != null ? _oldValue.equals(that._oldValue) : that._oldValue == null)
+                    && (_newValue != null ? _newValue.equals(that._newValue) : that._newValue == null)
+                    && _eventType == that._eventType;
 
         }
 
         @Override
-        public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+        public String toString()
         {
-
-        }
-
-        @Override
-        public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-        {
-
-        }
-
-        @Override
-        public void attributeSet(final ConfiguredObject<?> object,
-                                 final String attributeName,
-                                 final Object oldAttributeValue,
-                                 final Object newAttributeValue)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeStart(final ConfiguredObject<?> object)
-        {
-
-        }
-
-        @Override
-        public void bulkChangeEnd(final ConfiguredObject<?> object)
-        {
-
+            return "ChangeEvent{" +
+                    "_source=" + _source +
+                    ", _attributeName='" + _attributeName + '\'' +
+                    ", _oldValue=" + _oldValue +
+                    ", _newValue=" + _newValue +
+                    ", _eventType=" + _eventType +
+                    '}';
         }
     }
 }

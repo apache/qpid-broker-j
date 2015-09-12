@@ -829,11 +829,12 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
                 }
             });
         }
-        catch (ExchangeIsAlternateException e)
+        catch(ExchangeIsAlternateException | RequiredExchangeException e)
         {
-
+            // let management know about constraint violations
+            // in order to report error back to caller
+            return Futures.immediateFailedFuture(e);
         }
-        return Futures.immediateFuture(null);
     }
 
     @Override

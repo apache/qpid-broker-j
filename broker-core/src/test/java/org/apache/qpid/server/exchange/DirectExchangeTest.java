@@ -21,20 +21,23 @@ package org.apache.qpid.server.exchange;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.util.BrokerTestHelper;
+import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class DirectExchangeTest extends QpidTestCase
 {
-
     private DirectExchange _exchange;
     private VirtualHostImpl _vhost;
-
 
     @Override
     public void setUp() throws Exception
@@ -116,6 +119,59 @@ public class DirectExchangeTest extends QpidTestCase
         assertSame(ampqDirect, _vhost.getChildById(Exchange.class, ampqDirect.getId()));
         assertSame(ampqDirect, _vhost.getChildByName(Exchange.class, ampqDirect.getName()));
 
+    }
+
+    public void testDeleteWithChecksOfExchangeSetAsAlternate() throws Exception
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.DURABLE, false);
+        attributes.put(Queue.ALTERNATE_EXCHANGE, _exchange.getName());
+
+        Queue queue = (Queue) _vhost.createChild(Queue.class, attributes);
+        queue.open();
+
+        assertEquals("Unexpected alternate exchange on queue", _exchange, queue.getAlternateExchange());
+
+        try
+        {
+            ListenableFuture<Void> deleteFuture = _exchange.deleteWithChecks();
+            deleteFuture.get(1000, TimeUnit.MILLISECONDS);
+            fail("Exchange deletion should fail with ExchangeIsAlternateException");
+        }
+        catch(ExchangeIsAlternateException e)
+        {
+            // pass
+        }
+
+        assertEquals("Unexpected effective exchange state", State.ACTIVE, _exchange.getState());
+        assertEquals("Unexpected desired exchange state", State.ACTIVE, _exchange.getDesiredState());
+    }
+
+    public void testDeleteOfExchangeSetAsAlternate() throws Exception
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(Queue.NAME, getTestName());
+        attributes.put(Queue.DURABLE, false);
+        attributes.put(Queue.ALTERNATE_EXCHANGE, _exchange.getName());
+
+        Queue queue = (Queue) _vhost.createChild(Queue.class, attributes);
+        queue.open();
+
+        assertEquals("Unexpected alternate exchange on queue", _exchange, queue.getAlternateExchange());
+
+        try
+        {
+            _exchange.delete();
+            fail("Exchange deletion should fail with ExchangeIsAlternateException");
+        }
+        catch(ExchangeIsAlternateException e)
+        {
+            // pass
+        }
+
+        assertEquals("Unexpected effective exchange state", State.ACTIVE, _exchange.getState());
+        assertEquals("Unexpected desired exchange state", State.ACTIVE, _exchange.getDesiredState());
     }
 
 }

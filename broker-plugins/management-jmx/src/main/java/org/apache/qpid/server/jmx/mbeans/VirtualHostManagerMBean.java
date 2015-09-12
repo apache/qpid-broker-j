@@ -51,6 +51,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
+import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
@@ -219,7 +220,7 @@ public class VirtualHostManagerMBean extends AbstractStatisticsGatheringMBean<Vi
         {
             exchange.delete();
         }
-        catch(RequiredExchangeException e)
+        catch(RequiredExchangeException | ExchangeIsAlternateException e)
         {
             throw new UnsupportedOperationException(e.getMessage(), e);
         }

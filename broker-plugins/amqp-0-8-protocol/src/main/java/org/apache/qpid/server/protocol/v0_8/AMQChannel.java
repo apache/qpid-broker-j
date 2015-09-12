@@ -3068,11 +3068,18 @@ public class AMQChannel
                 }
                 else
                 {
-                    virtualHost.removeExchange(exchange, !ifUnused);
+                    if (ifUnused && exchange.hasBindings())
+                    {
+                        closeChannel(AMQConstant.IN_USE, "Exchange has bindings");
+                    }
+                    else
+                    {
+                        virtualHost.removeExchange(exchange, !ifUnused);
 
-                    ExchangeDeleteOkBody responseBody = _connection.getMethodRegistry().createExchangeDeleteOkBody();
+                        ExchangeDeleteOkBody responseBody = _connection.getMethodRegistry().createExchangeDeleteOkBody();
 
-                    _connection.writeFrame(responseBody.generateFrame(getChannelId()));
+                        _connection.writeFrame(responseBody.generateFrame(getChannelId()));
+                    }
                 }
             }
         }

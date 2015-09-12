@@ -1144,8 +1144,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected ListenableFuture<Void> attainState()
     {
+        return attainState(getDesiredState());
+    }
+
+    private ListenableFuture<Void> attainState(State desiredState)
+    {
         final State currentState = getState();
-        State desiredState = getDesiredState();
         ListenableFuture<Void> returnVal;
 
         if (_attainStateFuture.isDone())
@@ -1315,16 +1319,43 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     authoriseSetAttributes(proxyForValidation, desiredStateOnlySet);
                     validateChange(proxyForValidation, desiredStateOnlySet);
 
-                    if (changeAttribute(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState))
+                    if (desiredState == State.DELETED)
                     {
-                        attributeSet(ConfiguredObject.DESIRED_STATE,
-                                     currentDesiredState,
-                                     desiredState);
-                        return attainStateIfOpenedOrReopenFailed();
+                        // for DELETED state we should invoke transition method first to make sure that object can be deleted.
+                        // If method results in exception being thrown due to various integrity violations
+                        // then object cannot be deleted without prior resolving of integrity violations.
+                        // The state transition should be disallowed.
+                        if (desiredState != currentDesiredState)
+                        {
+                            return doAfter(attainState(desiredState), new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    // state transition notification should be already issued.
+                                    // changing attribute value and notifying listeners about attribute change
+                                    // in case when any listener relies on attribute change rather then on state change
+                                    changeAttribute(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState);
+                                    attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState);
+                                }
+                            });
+                        }
+                        else
+                        {
+                            return Futures.immediateFuture(null);
+                        }
                     }
                     else
                     {
-                        return Futures.immediateFuture(null);
+                        if (changeAttribute(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState))
+                        {
+                            attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState);
+                            return attainStateIfOpenedOrReopenFailed();
+                        }
+                        else
+                        {
+                            return Futures.immediateFuture(null);
+                        }
                     }
                 }
             }
