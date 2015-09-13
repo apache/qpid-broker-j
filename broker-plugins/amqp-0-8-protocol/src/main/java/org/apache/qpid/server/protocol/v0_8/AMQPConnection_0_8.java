@@ -447,7 +447,7 @@ public class AMQPConnection_0_8
         }
     }
 
-    public List<AMQChannel> getChannels()
+    private List<AMQChannel> getChannels()
     {
         synchronized (_channelMap)
         {
@@ -474,7 +474,7 @@ public class AMQPConnection_0_8
         return !_closingChannelsList.isEmpty() && _closingChannelsList.containsKey(channelId);
     }
 
-    public void addChannel(AMQChannel channel)
+    private void addChannel(AMQChannel channel)
     {
         final int channelId = channel.getChannelId();
 
@@ -499,7 +499,7 @@ public class AMQPConnection_0_8
         return _maxNoOfChannels;
     }
 
-    public void setMaximumNumberOfChannels(Long value)
+    private void setMaximumNumberOfChannels(Long value)
     {
         _maxNoOfChannels = value;
     }
@@ -678,6 +678,7 @@ public class AMQPConnection_0_8
         _network.close();
     }
 
+    @Override
     public String toString()
     {
         return _network.getRemoteAddress() + "(" + (getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName() + ")");
@@ -696,17 +697,17 @@ public class AMQPConnection_0_8
         }
     }
 
-    public SaslServer getSaslServer()
+    private SaslServer getSaslServer()
     {
         return _saslServer;
     }
 
-    public void setSaslServer(SaslServer saslServer)
+    private void setSaslServer(SaslServer saslServer)
     {
         _saslServer = saslServer;
     }
 
-    public void setClientProperties(FieldTable clientProperties)
+    private void setClientProperties(FieldTable clientProperties)
     {
         if (clientProperties != null)
         {
@@ -987,6 +988,7 @@ public class AMQPConnection_0_8
         }
     }
 
+    @Override
     public List<AMQChannel> getSessionModels()
     {
 		return new ArrayList<>(getChannels());
@@ -1449,11 +1451,12 @@ public class AMQPConnection_0_8
         return _messageCompressionThreshold;
     }
 
-    public SubjectCreator getSubjectCreator()
+    private SubjectCreator getSubjectCreator()
     {
         return getPort().getAuthenticationProvider().getSubjectCreator(getTransport().isSecure());
     }
 
+    @Override
     public EventLogger getEventLogger()
     {
         if(_virtualHost != null)

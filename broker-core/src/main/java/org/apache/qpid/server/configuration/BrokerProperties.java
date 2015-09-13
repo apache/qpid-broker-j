@@ -34,7 +34,6 @@ public class BrokerProperties
     public static final String PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX = "qpid.broker_dead_letter_exchange_suffix";
     public static final String PROPERTY_DEAD_LETTER_QUEUE_SUFFIX = "qpid.broker_dead_letter_queue_suffix";
 
-    public static final String PROPERTY_MSG_AUTH = "qpid.broker_msg_auth";
     public static final String PROPERTY_STATUS_UPDATES = "qpid.broker_status_updates";
     public static final String PROPERTY_LOCALE = "qpid.broker_locale";
     public static final String PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY = "qpid.broker_default_supported_protocol_version_reply";
@@ -43,11 +42,8 @@ public class BrokerProperties
     public static final String PROPERTY_MANAGEMENT_RIGHTS_INFER_ALL_ACCESS = "qpid.broker_jmx_method_rights_infer_all_access";
     public static final String PROPERTY_USE_CUSTOM_RMI_SOCKET_FACTORY = "qpid.broker_jmx_use_custom_rmi_socket_factory";
 
-    public static final String PROPERTY_DEFAULT_SHARED_MESSAGE_GROUP = "qpid.broker_default-shared-message-group";
-
     public static final String PROPERTY_QPID_HOME = "QPID_HOME";
     public static final String PROPERTY_QPID_WORK = "QPID_WORK";
-    public static final String PROPERTY_LOG_RECORDS_BUFFER_SIZE = "qpid.broker_log_records_buffer_size";
     public static final String POSIX_FILE_PERMISSIONS = "qpid.default_posix_file_permissions";
     public static final String PROPERTY_STARTUP_FAILOVER_CONSOLE_LOG_LEVEL = "qpid.startup_failover_console_log_level";
 

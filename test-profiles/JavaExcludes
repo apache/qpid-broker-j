@@ -24,12 +24,6 @@ org.apache.qpid.client.SessionCreateTest#*
 org.apache.qpid.test.client.queue.QueuePolicyTest#testRingPolicy
 org.apache.qpid.test.client.queue.QueuePolicyTest#testRejectPolicy
 
-org.apache.qpid.server.protocol.v0_8.AckTest#*
-org.apache.qpid.server.protocol.v0_8.AcknowledgeTest#*
-org.apache.qpid.server.protocol.v0_8.AMQChannelTest#*
-org.apache.qpid.server.protocol.v0_8.QueueBrowserUsesNoAckTest#*
-org.apache.qpid.server.protocol.v0_8.MaxChannelsTest#*
-
 // Test runs for 2 minutes testing that subtraction works
 org.apache.qpid.util.SerialTest#testCorollary1
 

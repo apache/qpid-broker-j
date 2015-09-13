@@ -160,7 +160,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     }
 
-    public final Broker<?> getBroker()
+    public Broker<?> getBroker()
     {
         return _broker;
     }

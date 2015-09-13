@@ -128,8 +128,7 @@ public class AMQChannel
     private final DefaultQueueAssociationClearingTask
             _defaultQueueAssociationClearingTask = new DefaultQueueAssociationClearingTask();
 
-    //TODO use Broker property to configure message authorization requirements
-    private boolean _messageAuthorizationRequired = Boolean.getBoolean(BrokerProperties.PROPERTY_MSG_AUTH);
+    private final boolean _messageAuthorizationRequired;
 
     private final int _channelId;
 
@@ -239,6 +238,7 @@ public class AMQChannel
                                connection.getAuthorizedSubject().getPrivateCredentials());
         _subject.getPrincipals().add(new SessionPrincipal(this));
         _maxUncommittedInMemorySize = connection.getVirtualHost().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
+        _messageAuthorizationRequired = connection.getVirtualHost().getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH);
         _logSubject = new ChannelLogSubject(this);
 
         _messageStore = messageStore;

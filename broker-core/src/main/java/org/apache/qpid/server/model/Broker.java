@@ -54,8 +54,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String BROKER_FLOW_TO_DISK_THRESHOLD = "broker.flowToDiskThreshold";
     String BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD = "broker.failStartupWithErroredChild";
 
-    String STORE_FILESYSTEM_MAX_USAGE_PERCENT = "store.filesystem.maxUsagePercent";
+    String BROKER_MSG_AUTH = "qpid.broker_msg_auth";
 
+    String STORE_FILESYSTEM_MAX_USAGE_PERCENT = "store.filesystem.maxUsagePercent";
     String QPID_AMQP_PORT = "qpid.amqp_port";
     String QPID_HTTP_PORT = "qpid.http_port";
     String QPID_RMI_PORT  = "qpid.rmi_port";
@@ -91,6 +92,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD)
     boolean DEFAULT_BROKER_FAIL_STARTUP_WITH_ERRORED_CHILD = false;
 
+    @ManagedContextDefault(name = BROKER_MSG_AUTH)
+    boolean DEFAULT_BROKER_MSG_AUTH = false;
 
     @DerivedAttribute
     String getBuildVersion();

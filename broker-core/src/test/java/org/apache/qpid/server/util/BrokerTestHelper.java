@@ -46,7 +46,6 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
@@ -89,9 +88,6 @@ public class BrokerTestHelper
         when(systemConfig.getObjectFactory()).thenReturn(objectFactory);
         when(systemConfig.getModel()).thenReturn(objectFactory.getModel());
         when(systemConfig.getCategoryClass()).thenReturn(SystemConfig.class);
-
-        SubjectCreator subjectCreator = mock(SubjectCreator.class);
-        when(subjectCreator.getMechanisms()).thenReturn(Collections.<String>emptyList());
 
         Broker broker = mock(Broker.class);
         when(broker.getConnection_sessionCountLimit()).thenReturn(1);
