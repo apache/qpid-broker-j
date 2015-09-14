@@ -21,14 +21,12 @@ package org.apache.qpid.disttest.message;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.DELIVERY_MODE;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.PRIORITY;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.PRODUCER_INTERVAL;
-import static org.apache.qpid.disttest.message.ParticipantAttribute.PRODUCER_START_DELAY;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TIME_TO_LIVE;
 
 public class ProducerParticipantResult extends ParticipantResult
 {
     private int _priority;
     private long _timeToLive;
-    private long _startDelay;
     private long _interval;
     private int _deliveryMode;
     public ProducerParticipantResult()
@@ -64,17 +62,6 @@ public class ProducerParticipantResult extends ParticipantResult
     public void setTimeToLive(long timeToLive)
     {
         _timeToLive = timeToLive;
-    }
-
-    @OutputAttribute(attribute=PRODUCER_START_DELAY)
-    public long getStartDelay()
-    {
-        return _startDelay;
-    }
-
-    public void setStartDelay(long startDelay)
-    {
-        _startDelay = startDelay;
     }
 
     @OutputAttribute(attribute=PRODUCER_INTERVAL)

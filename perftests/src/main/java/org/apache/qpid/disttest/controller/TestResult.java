@@ -24,16 +24,20 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
 
 public class TestResult implements ITestResult
 {
     private final SortedSet<ParticipantResult> _participantResults = Collections.synchronizedSortedSet(
-            new TreeSet<ParticipantResult>(ParticipantResult.PARTICIPANT_NAME_COMPARATOR));
+            new TreeSet<>(ParticipantResult.PARTICIPANT_NAME_COMPARATOR));
 
+    private final String _name;
     private boolean _hasErrors;
-    private String _name;
+    private double _producedMessageRate;
+    private double _consumedMessageRate;
+
 
     public TestResult(String name)
     {
@@ -43,17 +47,38 @@ public class TestResult implements ITestResult
     @Override
     public List<ParticipantResult> getParticipantResults()
     {
-        List<ParticipantResult> list = new ArrayList<ParticipantResult>(_participantResults);
+        List<ParticipantResult> list = new ArrayList<>(_participantResults);
         return Collections.unmodifiableList(list);
     }
 
-    public void addParticipantResult(ParticipantResult participantResult)
+    public void addParticipantResult(ParticipantResult result)
     {
-        _participantResults.add(participantResult);
-        if(participantResult.hasError())
+        _participantResults.add(result);
+        if(result.hasError())
         {
             _hasErrors = true;
         }
+
+        final double timeTakenInSecs = result.getTimeTaken() / 1000.0;
+        final double rate = result.getNumberOfMessagesProcessed() / timeTakenInSecs;
+        if (result instanceof ConsumerParticipantResult)
+        {
+            _consumedMessageRate += rate;
+        }
+        else
+        {
+            _producedMessageRate += rate;
+        }
+    }
+
+    public double getConsumedMessageRate()
+    {
+        return _consumedMessageRate;
+    }
+
+    public double getProducedMessageRate()
+    {
+        return _producedMessageRate;
     }
 
     @Override
@@ -66,5 +91,16 @@ public class TestResult implements ITestResult
     public String getName()
     {
         return _name;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "TestResult{" +
+                "_name='" + _name + '\'' +
+                ", _hasErrors=" + _hasErrors +
+                ", _producedMessageRate=" + _producedMessageRate +
+                ", _consumedMessageRate=" + _consumedMessageRate +
+                '}';
     }
 }

@@ -45,7 +45,7 @@ public class ProducerConfigTest extends QpidTestCase
     {
         long overriddenDuration = 123;
         setTestSystemProperty(ParticipantConfig.DURATION_OVERRIDE_SYSTEM_PROPERTY, String.valueOf(overriddenDuration));
-        ProducerConfig producerConfig = new ProducerConfig();
+        ProducerConfig producerConfig = new ProducerConfig("", "", 0, 0, 1, 0, 0, 0, 0, 0, "");
 
         CreateProducerCommand command = producerConfig.createCommand("name");
 
@@ -91,7 +91,6 @@ public class ProducerConfigTest extends QpidTestCase
                 priority,
                 timeToLive,
                 interval,
-                startDelay,
                 providerName);
 
         CreateProducerCommand command = producerConfig.createCommand("session1");
@@ -108,7 +107,6 @@ public class ProducerConfigTest extends QpidTestCase
         assertEquals(priority, command.getPriority());
         assertEquals(timeToLive, command.getTimeToLive());
         assertEquals(interval, command.getInterval());
-        assertEquals(startDelay, command.getStartDelay());
         assertEquals(providerName, command.getMessageProviderName());
     }
 }

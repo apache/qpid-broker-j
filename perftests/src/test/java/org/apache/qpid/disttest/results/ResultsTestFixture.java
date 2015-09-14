@@ -42,7 +42,6 @@ import static org.apache.qpid.disttest.message.ParticipantAttribute.PARTICIPANT_
 import static org.apache.qpid.disttest.message.ParticipantAttribute.PAYLOAD_SIZE;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.PRIORITY;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.PRODUCER_INTERVAL;
-import static org.apache.qpid.disttest.message.ParticipantAttribute.PRODUCER_START_DELAY;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TEST_NAME;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.THROUGHPUT;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TIME_TAKEN;
@@ -106,7 +105,6 @@ public class ResultsTestFixture
         participantAttributes.put(DELIVERY_MODE, 5);
         participantAttributes.put(BATCH_SIZE, 6);
         participantAttributes.put(MAXIMUM_DURATION, 7);
-        participantAttributes.put(PRODUCER_START_DELAY, 8);
         participantAttributes.put(PRODUCER_INTERVAL, 9);
         participantAttributes.put(IS_TOPIC, true);
         participantAttributes.put(IS_DURABLE_SUBSCRIPTION, false);

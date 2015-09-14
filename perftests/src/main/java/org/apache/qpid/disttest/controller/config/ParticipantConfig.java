@@ -18,7 +18,7 @@
  */
 package org.apache.qpid.disttest.controller.config;
 
-import org.apache.qpid.disttest.message.CreateParticpantCommand;
+import org.apache.qpid.disttest.message.CreateParticipantCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +39,7 @@ public abstract class ParticipantConfig
     {
         _name = null;
         _destinationName = null;
-        _numberOfMessages = 0;
         _batchSize = 0;
-        _maximumDuration = 0;
     }
 
     public ParticipantConfig(
@@ -60,17 +58,21 @@ public abstract class ParticipantConfig
         _maximumDuration = maximumDuration;
     }
 
-    protected void setParticipantProperties(CreateParticpantCommand createParticipantCommand)
+    protected void setParticipantProperties(CreateParticipantCommand createParticipantCommand)
     {
         final Long overriddenMaximumDuration = getOverriddenMaximumDuration();
-        Long maximumDuration = overriddenMaximumDuration == null ? _maximumDuration : overriddenMaximumDuration ;
+        Long maximumDuration = overriddenMaximumDuration == null ? _maximumDuration : overriddenMaximumDuration;
 
         createParticipantCommand.setParticipantName(_name);
         createParticipantCommand.setDestinationName(_destinationName);
         createParticipantCommand.setTopic(_isTopic);
         createParticipantCommand.setNumberOfMessages(_numberOfMessages);
         createParticipantCommand.setBatchSize(_batchSize);
-        createParticipantCommand.setMaximumDuration(maximumDuration);
+        // only override if the test has a _maximumDuration and the override value is valid
+        if (_maximumDuration > 0 && maximumDuration >= 0)
+        {
+            createParticipantCommand.setMaximumDuration(maximumDuration);
+        }
     }
 
 

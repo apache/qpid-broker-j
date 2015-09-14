@@ -65,12 +65,12 @@ public class ConfigReader
         Reader reader = null;
         if (fileName.endsWith(".js"))
         {
-            LOGGER.info("Evaluating javascript: {}", fileName);
+            LOGGER.debug("Evaluating javascript: {}", fileName);
             reader = new StringReader(new JavaScriptConfigEvaluator().evaluateJavaScript(fileName));
         }
         else
         {
-            LOGGER.info("Loading JSON: {}", fileName);
+            LOGGER.debug("Loading JSON: {}", fileName);
             reader = new FileReader(fileName);
         }
         return reader;

@@ -21,15 +21,7 @@ package org.apache.qpid.disttest.client;
 
 import org.apache.qpid.disttest.Visitor;
 import org.apache.qpid.disttest.jms.ClientJmsDelegate;
-import org.apache.qpid.disttest.message.CreateConnectionCommand;
-import org.apache.qpid.disttest.message.CreateConsumerCommand;
-import org.apache.qpid.disttest.message.CreateMessageProviderCommand;
-import org.apache.qpid.disttest.message.CreateProducerCommand;
-import org.apache.qpid.disttest.message.CreateSessionCommand;
-import org.apache.qpid.disttest.message.NoOpCommand;
-import org.apache.qpid.disttest.message.StartTestCommand;
-import org.apache.qpid.disttest.message.StopClientCommand;
-import org.apache.qpid.disttest.message.TearDownTestCommand;
+import org.apache.qpid.disttest.message.*;
 
 public class ClientCommandVisitor extends Visitor
 {
@@ -69,16 +61,14 @@ public class ClientCommandVisitor extends Visitor
 
         final ProducerParticipant participant = new ProducerParticipant(_clientJmsDelegate, command);
         _clientJmsDelegate.createProducer(command);
-        final ParticipantExecutor executor = new ParticipantExecutor(participant);
-        _client.addParticipantExecutor(executor);
+        _client.addParticipant(participant);
     }
 
     public void visit(final CreateConsumerCommand command)
     {
         final ConsumerParticipant participant = new ConsumerParticipant(_clientJmsDelegate, command);
         _clientJmsDelegate.createConsumer(command);
-        final ParticipantExecutor executor = new ParticipantExecutor(participant);
-        _client.addParticipantExecutor(executor);
+        _client.addParticipant(participant);
     }
 
     public void visit(final StartTestCommand command)
@@ -94,6 +84,11 @@ public class ClientCommandVisitor extends Visitor
     public void visit(final CreateMessageProviderCommand command)
     {
         _clientJmsDelegate.createMessageProvider(command);
+    }
+
+    public void visit(final StartDataCollectionCommand command)
+    {
+        _client.startDataCollection();
     }
 
 }

@@ -19,6 +19,7 @@
  */
 package org.apache.qpid.disttest.client;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -43,8 +44,9 @@ public class ClientTest extends QpidTestCase
     private Client _client;
     private ClientJmsDelegate _delegate;
     private ClientCommandVisitor _visitor;
-    private ParticipantExecutor _participant;
+    private ParticipantExecutor _participantExecutor;
     private ParticipantExecutorRegistry _participantRegistry;
+    private Participant _participant;
 
     @Override
     protected void setUp() throws Exception
@@ -54,11 +56,12 @@ public class ClientTest extends QpidTestCase
         _visitor = mock(ClientCommandVisitor.class);
         _client = new Client(_delegate);
         _client.setClientCommandVisitor(_visitor);
-        _participant = mock(ParticipantExecutor.class);
-        when(_participant.getParticipantName()).thenReturn("testParticipantMock");
+        _participantExecutor = mock(ParticipantExecutor.class);
+        _participant = mock(Participant.class);
+        when(_participantExecutor.getParticipantName()).thenReturn("testParticipantMock");
 
         _participantRegistry = mock(ParticipantExecutorRegistry.class);
-        when(_participantRegistry.executors()).thenReturn(Collections.singletonList(_participant));
+        when(_participantRegistry.executors()).thenReturn(Collections.singletonList(_participantExecutor));
         _client.setParticipantRegistry(_participantRegistry);
     }
 
@@ -104,22 +107,22 @@ public class ClientTest extends QpidTestCase
     public void testStartTest() throws Exception
     {
         _client.start();
-        _client.addParticipantExecutor(_participant);
+        _client.addParticipant(_participant);
 
-        verify(_participantRegistry).add(_participant);
+        verify(_participantRegistry).add(any(ParticipantExecutor.class));
 
         _client.startTest();
 
-        InOrder inOrder = Mockito.inOrder(_delegate, _participant);
+        InOrder inOrder = Mockito.inOrder(_delegate, _participantExecutor);
         inOrder.verify(_delegate).startConnections();
-        inOrder.verify(_participant).start(_client);
+        inOrder.verify(_participantExecutor).start(_client);
     }
 
     public void testTearDownTest() throws Exception
     {
         // before we can tear down the test the client needs to be in the "running test" state, which requires a participant
         _client.start();
-        _client.addParticipantExecutor(_participant);
+        _client.addParticipant(_participant);
         _client.startTest();
 
         _client.tearDownTest();

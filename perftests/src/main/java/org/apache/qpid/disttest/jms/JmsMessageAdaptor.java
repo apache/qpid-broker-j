@@ -28,23 +28,7 @@ import javax.jms.Session;
 import org.apache.qpid.disttest.DistributedTestConstants;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.json.JsonHandler;
-import org.apache.qpid.disttest.message.Command;
-import org.apache.qpid.disttest.message.CommandType;
-import org.apache.qpid.disttest.message.ConsumerParticipantResult;
-import org.apache.qpid.disttest.message.CreateConnectionCommand;
-import org.apache.qpid.disttest.message.CreateConsumerCommand;
-import org.apache.qpid.disttest.message.CreateMessageProviderCommand;
-import org.apache.qpid.disttest.message.CreateProducerCommand;
-import org.apache.qpid.disttest.message.CreateResponderCommand;
-import org.apache.qpid.disttest.message.CreateSessionCommand;
-import org.apache.qpid.disttest.message.NoOpCommand;
-import org.apache.qpid.disttest.message.ParticipantResult;
-import org.apache.qpid.disttest.message.ProducerParticipantResult;
-import org.apache.qpid.disttest.message.RegisterClientCommand;
-import org.apache.qpid.disttest.message.Response;
-import org.apache.qpid.disttest.message.StartTestCommand;
-import org.apache.qpid.disttest.message.StopClientCommand;
-import org.apache.qpid.disttest.message.TearDownTestCommand;
+import org.apache.qpid.disttest.message.*;
 
 public class JmsMessageAdaptor
 {
@@ -109,6 +93,8 @@ public class JmsMessageAdaptor
                 return Response.class;
             case START_TEST:
                 return StartTestCommand.class;
+            case START_DATA_COLLECTION:
+                return StartDataCollectionCommand.class;
             case TEAR_DOWN_TEST:
                 return TearDownTestCommand.class;
             case PARTICIPANT_RESULT:

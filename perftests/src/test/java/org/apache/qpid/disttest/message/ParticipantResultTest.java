@@ -36,7 +36,6 @@ import static org.apache.qpid.disttest.message.ParticipantAttribute.PARTICIPANT_
 import static org.apache.qpid.disttest.message.ParticipantAttribute.PAYLOAD_SIZE;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.PRIORITY;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.PRODUCER_INTERVAL;
-import static org.apache.qpid.disttest.message.ParticipantAttribute.PRODUCER_START_DELAY;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TEST_NAME;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TIME_TAKEN;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TIME_TO_LIVE;
@@ -142,14 +141,12 @@ public class ParticipantResultTest extends QpidTestCase
 
         int priority = 2;
         long timeToLive = 30;
-        long producerStartDelay = 40;
         long producerInterval = 50;
         int messageSize = 60;
         int deliveryMode = DeliveryMode.PERSISTENT;
 
         result.setPriority(priority);
         result.setTimeToLive(timeToLive);
-        result.setStartDelay(producerStartDelay);
         result.setInterval(producerInterval);
         result.setPayloadSize(messageSize);
         result.setDeliveryMode(deliveryMode);
@@ -157,7 +154,6 @@ public class ParticipantResultTest extends QpidTestCase
 
         assertEquals(priority,           result.getAttributes().get(PRIORITY));
         assertEquals(timeToLive,         result.getAttributes().get(TIME_TO_LIVE));
-        assertEquals(producerStartDelay, result.getAttributes().get(PRODUCER_START_DELAY));
         assertEquals(producerInterval,   result.getAttributes().get(PRODUCER_INTERVAL));
         assertEquals(messageSize,        result.getAttributes().get(PAYLOAD_SIZE));
         assertEquals(deliveryMode,       result.getAttributes().get(DELIVERY_MODE));

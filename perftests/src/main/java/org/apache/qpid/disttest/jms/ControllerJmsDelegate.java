@@ -161,6 +161,8 @@ public class ControllerJmsDelegate
             LOGGER.error("Unable to close controller queue listener session", e);
         }
 
+        LOGGER.debug("Closed sessions");
+
         try
         {
             _connection.stop();
@@ -170,6 +172,8 @@ public class ControllerJmsDelegate
             LOGGER.error("Unable to stop connection", e);
         }
 
+        LOGGER.debug("Stopped connection");
+
         try
         {
             _connection.close();
@@ -178,6 +182,8 @@ public class ControllerJmsDelegate
         {
             throw new DistributedTestException("Unable to close connection", e);
         }
+
+        LOGGER.debug("Closed connection");
     }
 
     public void registerClient(final RegisterClientCommand command)

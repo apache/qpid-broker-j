@@ -21,8 +21,11 @@ package org.apache.qpid.disttest.controller.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.CommandForClient;
 import org.apache.qpid.disttest.message.Command;
+import org.apache.qpid.disttest.message.CreateParticipantCommand;
+import org.apache.qpid.disttest.message.CreateProducerCommand;
 
 public class TestInstance
 {
@@ -31,6 +34,7 @@ public class TestInstance
     private TestConfig _testConfig;
     private IterationValue _iterationValue;
     private int _iterationNumber;
+    private double _producerRate;
 
     public TestInstance(TestConfig testConfig, int iterationNumber, IterationValue iterationValue)
     {
@@ -55,6 +59,22 @@ public class TestInstance
             Command command = commandForClient.getCommand();
 
             _iterationValue.applyToCommand(command);
+
+            if (command instanceof CreateProducerCommand)
+            {
+                CreateProducerCommand producerCommand = (CreateProducerCommand) command;
+                producerCommand.setRate(_producerRate);
+            }
+
+            if (command instanceof CreateParticipantCommand)
+            {
+                CreateParticipantCommand participantCommand = (CreateParticipantCommand) command;
+                if ((participantCommand.getNumberOfMessages() <= 0 && participantCommand.getMaximumDuration() <= 0))
+                {
+                    throw new DistributedTestException("Test '" + getName()
+                            + "' must specify a positive integer value for numberOfMessages or maximumDuration");
+                }
+            }
 
             newCommands.add(new CommandForClient(clientName, command));
         }
@@ -95,5 +115,10 @@ public class TestInstance
                "testName=" + _testConfig.getName() +
                ", iterationNumber=" + _iterationNumber +
                ']';
+    }
+
+    public void setProducerRate(double producerRate)
+    {
+        _producerRate = producerRate;
     }
 }

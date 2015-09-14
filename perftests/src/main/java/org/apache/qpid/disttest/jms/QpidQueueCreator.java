@@ -74,7 +74,7 @@ public class QpidQueueCreator implements QueueCreator
         }
         catch (Exception e)
         {
-            throw new DistributedTestException("Failed to create amq destionation object:" + queueConfig, e);
+            throw new DistributedTestException("Failed to create amq destination object:" + queueConfig, e);
         }
     }
 
@@ -104,7 +104,7 @@ public class QpidQueueCreator implements QueueCreator
             int counter = 0;
             while (currentQueueDepth > 0)
             {
-                LOGGER.info("Queue {} has {} message(s)", destination.getQueueName(), currentQueueDepth);
+                LOGGER.debug("Queue {} has {} message(s)", destination.getQueueName(), currentQueueDepth);
 
                 while(messageConsumer.receive(_drainPollTimeout) != null)
                 {

@@ -24,7 +24,7 @@ import javax.jms.DeliveryMode;
 
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
-import org.apache.qpid.disttest.message.CreateParticpantCommand;
+import org.apache.qpid.disttest.message.CreateParticipantCommand;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;
@@ -60,9 +60,6 @@ public class ParticipantResultFactoryTest extends QpidTestCase
         CreateProducerCommand command = new CreateProducerCommand();
         setCommonCommandFields(command);
 
-        long producerStartDelay = 30;
-        command.setStartDelay(producerStartDelay);
-
         int deliveryMode = DeliveryMode.PERSISTENT;
         command.setDeliveryMode(deliveryMode);
 
@@ -95,7 +92,6 @@ public class ParticipantResultFactoryTest extends QpidTestCase
         assertEquals(acknowledgeMode, result.getAcknowledgeMode());
         assertEquals(priority, result.getPriority());
         assertEquals(producerInterval, result.getInterval());
-        assertEquals(producerStartDelay, result.getStartDelay());
         assertEquals(timeToLive, result.getTimeToLive());
         assertEquals(totalNumberOfConsumers, result.getTotalNumberOfConsumers());
         assertEquals(totalNumberOfProducers, result.getTotalNumberOfProducers());
@@ -160,7 +156,7 @@ public class ParticipantResultFactoryTest extends QpidTestCase
     }
 
 
-    private void setCommonCommandFields(CreateParticpantCommand command)
+    private void setCommonCommandFields(CreateParticipantCommand command)
     {
         command.setBatchSize(BATCH_SIZE);
         command.setMaximumDuration(MAXIMUM_DURATION);

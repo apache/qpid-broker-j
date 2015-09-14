@@ -54,8 +54,7 @@ public class ParticipantExecutorTest extends QpidTestCase
         when(_client.getClientName()).thenReturn(CLIENT_NAME);
         _participant = mock(Participant.class);
 
-        _participantExecutor = new ParticipantExecutor(_participant);
-        _participantExecutor.setExecutor(new SynchronousExecutor());
+        _participantExecutor = new ParticipantExecutor(_participant, new SynchronousExecutor());
 
         _mockResult = mock(ParticipantResult.class);
     }
@@ -102,78 +101,6 @@ public class ParticipantExecutorTest extends QpidTestCase
         inOrder.verify(_client).sendResults(_mockResult);
     }
 
-    public void testThreadNameAndDaemonness() throws Exception
-    {
-        ThreadPropertyReportingParticipant participant = new ThreadPropertyReportingParticipant(PARTICIPANT_NAME);
-        _participantExecutor = new ParticipantExecutor(participant);
-
-        _participantExecutor.start(_client);
-        participant.awaitExecution();
-
-        assertTrue("Participant should be run in a thread named after it", participant.threadWasCalled().endsWith(PARTICIPANT_NAME));
-        assertTrue("Executor should use daemon threads to avoid them preventing JVM termination", participant.wasDaemon());
-    }
-
-    private static final class ThreadPropertyReportingParticipant implements Participant
-    {
-        private final String _participantName;
-        private final CountDownLatch _participantExecuted = new CountDownLatch(1);
-        private String _threadName;
-        private boolean _daemon;
-
-        public ThreadPropertyReportingParticipant(String participantName)
-        {
-            _participantName = participantName;
-        }
-
-        public String threadWasCalled()
-        {
-            return _threadName;
-        }
-
-        public boolean wasDaemon()
-        {
-            return _daemon;
-        }
-
-        @Override
-        public void releaseResources()
-        {
-        }
-
-        @Override
-        public String getName()
-        {
-            return _participantName;
-        }
-
-        @Override
-        public ParticipantResult doIt(String registeredClientName) throws Exception
-        {
-            Thread currentThread = Thread.currentThread();
-            _threadName = currentThread.getName();
-            _daemon = currentThread.isDaemon();
-
-            _participantExecuted.countDown();
-
-            return null; // unused
-        }
-
-        public void awaitExecution()
-        {
-            boolean success = false;
-            try
-            {
-                success = _participantExecuted.await(5, TimeUnit.SECONDS);
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-            }
-
-            assertTrue("Participant not executed", success);
-        }
-    }
 
     /** avoids our unit test needing to use multiple threads */
     private final class SynchronousExecutor implements Executor

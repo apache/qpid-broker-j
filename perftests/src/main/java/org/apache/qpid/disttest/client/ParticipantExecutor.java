@@ -19,9 +19,6 @@
 package org.apache.qpid.disttest.client;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,20 +29,17 @@ public class ParticipantExecutor
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParticipantExecutor.class);
 
-    private static final ExecutorService SHARED_UNBOUNDED_THREAD_POOL = Executors.newCachedThreadPool(new DaemonThreadFactory());
-
-    private Executor _executor = SHARED_UNBOUNDED_THREAD_POOL;
+    private final Executor _executor;
+    private final Participant _participant;
+    private final ParticipantResultFactory _factory;
 
     private Client _client;
 
-    private final Participant _participant;
-
-    private final ParticipantResultFactory _factory;
-
-    public ParticipantExecutor(Participant participant)
+    public ParticipantExecutor(Participant participant, Executor executor)
     {
         _participant = participant;
         _factory = new ParticipantResultFactory();
+        _executor = executor;
     }
 
     /**
@@ -55,18 +49,13 @@ public class ParticipantExecutor
     {
         _client = client;
 
-        LOGGER.debug("Starting test participant in background thread: " + this);
+        LOGGER.debug("Starting test participant in background thread: {} ", this);
         _executor.execute(new ParticipantRunnable());
     }
 
     public String getParticipantName()
     {
         return _participant.getName();
-    }
-
-    void setExecutor(Executor executor)
-    {
-        _executor = executor;
     }
 
     private class ParticipantRunnable implements Runnable
@@ -118,17 +107,6 @@ public class ParticipantExecutor
 
                 _client.sendResults(result);
             }
-        }
-    }
-
-    private static final class DaemonThreadFactory implements ThreadFactory
-    {
-        @Override
-        public Thread newThread(Runnable r)
-        {
-            Thread thread = new Thread(r);
-            thread.setDaemon(true);
-            return thread;
         }
     }
 

@@ -46,18 +46,18 @@ public class TestResultAggregator
                                      producerResultAggregator);
 
         ParticipantResult aggregatedProducerResult = producerResultAggregator.getAggregatedResult();
-        ParticipantResult aggregaredConsumerResult = consumerResultAggregator.getAggregatedResult();
+        ParticipantResult aggregatedConsumerResult = consumerResultAggregator.getAggregatedResult();
 
         ParticipantResult aggregatedAllResult = aggregateAggregatedResults(
                 aggregatedResultsAggregator, aggregatedProducerResult,
-                aggregaredConsumerResult);
+                aggregatedConsumerResult);
 
         applyNonAggregateablesToAll(aggregatedAllResult,
-                aggregatedProducerResult, aggregaredConsumerResult);
+                aggregatedProducerResult, aggregatedConsumerResult);
 
         AggregatedTestResult newTestResult = new AggregatedTestResult(originalTestResult);
         newTestResult.setAllProducerParticipantResult(aggregatedProducerResult);
-        newTestResult.setAllConsumerParticipantResult(aggregaredConsumerResult);
+        newTestResult.setAllConsumerParticipantResult(aggregatedConsumerResult);
         newTestResult.setAllParticipantResult(aggregatedAllResult);
 
         if (hasError)

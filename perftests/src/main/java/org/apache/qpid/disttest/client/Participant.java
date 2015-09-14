@@ -28,4 +28,5 @@ public interface Participant
 
     String getName();
 
+    void startDataCollection();
 }

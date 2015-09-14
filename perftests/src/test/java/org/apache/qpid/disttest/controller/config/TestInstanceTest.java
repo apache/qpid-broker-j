@@ -47,7 +47,10 @@ public class TestInstanceTest extends QpidTestCase
         super.setUp();
         _noOpCommand = mock(NoOpCommand.class);
         _createProducerCommand = mock(CreateProducerCommand.class);
+        when(_createProducerCommand.getMaximumDuration()).thenReturn(1l);
+
         _createConsumerCommand = mock(CreateConsumerCommand.class);
+        when(_createConsumerCommand.getMaximumDuration()).thenReturn(1l);
     }
 
     public void testCreateCommandsWithIterationValues()

@@ -29,19 +29,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.config.Config;
-import org.apache.qpid.disttest.controller.config.TestInstance;
 import org.apache.qpid.disttest.jms.ControllerJmsDelegate;
 import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.RegisterClientCommand;
 import org.apache.qpid.disttest.message.Response;
 import org.apache.qpid.disttest.message.StopClientCommand;
-import org.apache.qpid.disttest.results.aggregation.ITestResult;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -52,7 +48,6 @@ public class ControllerTest extends QpidTestCase
 
     private Controller _controller;
     private ControllerJmsDelegate _respondingJmsDelegate;
-    private TestRunner _testRunner;
     private ClientRegistry _clientRegistry;
 
     @Override
@@ -60,14 +55,13 @@ public class ControllerTest extends QpidTestCase
     {
         super.setUp();
         _respondingJmsDelegate = mock(ControllerJmsDelegate.class);
-        _controller = new Controller(_respondingJmsDelegate, REGISTRATION_TIMEOUT, COMMAND_RESPONSE_TIMEOUT);
-        _testRunner = mock(TestRunner.class);
+        _controller = new Controller(_respondingJmsDelegate,
+                                     REGISTRATION_TIMEOUT, COMMAND_RESPONSE_TIMEOUT, Collections.<String,String>emptyMap());
         _clientRegistry = mock(ClientRegistry.class);
 
         Config configWithOneClient = createMockConfig(1);
         _controller.setConfig(configWithOneClient);
         _controller.setClientRegistry(_clientRegistry);
-        _controller.setTestRunnerFactory(createTestFactoryReturningMock());
 
         doAnswer(new Answer<Void>()
         {
@@ -141,37 +135,6 @@ public class ControllerTest extends QpidTestCase
         verify(_respondingJmsDelegate).sendCommandToClient(eq(CLIENT1_REGISTERED_NAME), isA(StopClientCommand.class));
     }
 
-    public void testRunAllTests()
-    {
-        Config config = createSimpleConfig();
-        _controller.setConfig(config);
-
-        TestResult testResult = new TestResult("test1");
-
-        when(_testRunner.run()).thenReturn(testResult);
-
-        ResultsForAllTests results = _controller.runAllTests();
-
-        List<ITestResult> testResults = results.getTestResults();
-        assertEquals(1, testResults.size());
-        assertSame(testResult, testResults.get(0));
-
-        verify(_testRunner).run();
-    }
-
-    private Config createSimpleConfig()
-    {
-        Config config = mock(Config.class);
-        TestInstance testInstance = mock(TestInstance.class);
-
-        List<TestInstance> testInstances = Arrays.asList(testInstance);
-
-        when(config.getTests()).thenReturn(testInstances);
-        when(config.getTotalNumberOfClients()).thenReturn(1); // necessary otherwise controller rejects "invalid" config
-
-        return config;
-    }
-
     private Config createMockConfig(int numberOfClients)
     {
         Config config = mock(Config.class);
@@ -179,18 +142,4 @@ public class ControllerTest extends QpidTestCase
         return config;
     }
 
-    private TestRunnerFactory createTestFactoryReturningMock()
-    {
-        TestRunnerFactory testRunnerFactory = mock(TestRunnerFactory.class);
-
-        when(testRunnerFactory.createTestRunner(
-                isA(ParticipatingClients.class),
-                isA(TestInstance.class),
-                isA(ControllerJmsDelegate.class),
-                isA(Long.class),
-                isA(Long.class)))
-                .thenReturn(_testRunner);
-
-        return testRunnerFactory;
-    }
 }

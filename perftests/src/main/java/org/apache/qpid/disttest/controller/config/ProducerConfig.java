@@ -36,7 +36,6 @@ public class ProducerConfig extends ParticipantConfig
     private int _priority;
     private long _timeToLive;
     private long _interval;
-    private long _startDelay;
     private String _messageProviderName;
 
     public ProducerConfig()
@@ -46,7 +45,6 @@ public class ProducerConfig extends ParticipantConfig
         _priority = Message.DEFAULT_PRIORITY;
         _timeToLive = Message.DEFAULT_TIME_TO_LIVE;
         _interval = 0;
-        _startDelay = 0;
         _messageProviderName = null;
     }
 
@@ -61,7 +59,6 @@ public class ProducerConfig extends ParticipantConfig
             int priority,
             long timeToLive,
             long interval,
-            long startDelay,
             String messageProviderName)
     {
         super(producerName, destinationName, false, numberOfMessages, batchSize, maximumDuration);
@@ -71,7 +68,6 @@ public class ProducerConfig extends ParticipantConfig
         _priority = priority;
         _timeToLive = timeToLive;
         _interval = interval;
-        _startDelay = startDelay;
         _messageProviderName = messageProviderName;
     }
 
@@ -91,7 +87,6 @@ public class ProducerConfig extends ParticipantConfig
         command.setPriority(_priority);
         command.setTimeToLive(_timeToLive);
         command.setInterval(_interval);
-        command.setStartDelay(_startDelay);
         command.setMessageProviderName(_messageProviderName);
 
         return command;

@@ -31,10 +31,23 @@
   <properties>
     <dependency-change-verification>true</dependency-change-verification>
 
-    <qpid.disttest.duration>5000</qpid.disttest.duration>
+    <!-- Overrides for system properties understood by Qpid JMS 0-8..0-10 client -->
     <qpid.amqp.version>0-9</qpid.amqp.version>
     <qpid.dest_syntax>BURL</qpid.dest_syntax>
     <qpid.close_timeout>90000</qpid.close_timeout>
+
+    <!-- Overrides for system properties understood by disttest itself -->
+    <qpid.disttest.loglevel>info</qpid.disttest.loglevel>
+    <qpid.disttest.duration>5000</qpid.disttest.duration>
+
+    <!-- The following provide values for the disttest command line -->
+    <qpid.disttest.test_config>${basedir}/etc/</qpid.disttest.test_config>
+    <qpid.disttest.hillclimb>false</qpid.disttest.hillclimb>
+    <qpid.disttest.hillclimb.max_runs>3</qpid.disttest.hillclimb.max_runs>
+    <qpid.disttest.hillclimb.start_target_rate>1025.0</qpid.disttest.hillclimb.start_target_rate>
+    <qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>0.95</qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>
+    <qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>0.95</qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>
+    <qpid.disttest.hillclimb.minimum_delta>1.0</qpid.disttest.hillclimb.minimum_delta>
   </properties>
 
   <dependencies>
@@ -162,12 +175,22 @@
           <mainClass>org.apache.qpid.disttest.ControllerRunner</mainClass>
           <arguments>
             <argument>jndi-config=${basedir}/etc/perftests-jndi.properties</argument>
-            <argument>test-config=${basedir}/etc/testdefs</argument>
+            <argument>test-config=${qpid.disttest.test_config}</argument>
             <argument>distributed=false</argument>
             <argument>writeToDb=false</argument>
+            <argument>hill-climb=${qpid.disttest.hillclimb}</argument>
+            <argument>hill-climber.max-runs=${qpid.disttest.hillclimb.max_runs}</argument>
+            <argument>hill-climber.start-target-rate=${qpid.disttest.hillclimb.start_target_rate}</argument>
+            <argument>hill-climber.production-to-target-ratio-success-threshold=${qpid.disttest.hillclimb.production_to_target_ratio_success_threshold}</argument>
+            <argument>hill-climber.consumption-to-production-ratio-success-threshold=${qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold}</argument>
+            <argument>hill-climber.minimum-delta=${qpid.disttest.hillclimb.minimum_delta}</argument>
           </arguments>
           <classpathScope>compile</classpathScope>
           <systemProperties>
+            <systemProperty>
+              <key>qpid.disttest.loglevel</key>
+              <value>${qpid.disttest.loglevel}</value>
+            </systemProperty>
             <systemProperty>
               <key>qpid.disttest.duration</key>
               <value>${qpid.disttest.duration}</value>

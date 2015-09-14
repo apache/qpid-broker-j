@@ -15,21 +15,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-package org.apache.qpid.disttest.client.utils;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
+package org.apache.qpid.disttest.message;
 
-/**
- * Implementations of this interface execute a {@link Callable} but place some
- * kind of limit on that execution, such as time.
- */
-public interface ExecutorWithLimits
+
+public class StartDataCollectionCommand extends Command
 {
-    <T> T execute(Callable<T> callback) throws CancellationException, Exception;
-
-    void shutdown();
-
+    public StartDataCollectionCommand()
+    {
+        super(CommandType.START_DATA_COLLECTION);
+    }
 }

@@ -27,7 +27,6 @@
                     {
                       "_name": "Producer1",
                       "_destinationName": "direct://amq.direct//testQueue",
-                      "_numberOfMessages": 1000000,
                       "_deliveryMode": 1,
                       "_messageSize": 10000
                     }
@@ -51,7 +50,6 @@
                     {
                       "_name": "Producer2",
                       "_destinationName": "direct://amq.direct//testQueue",
-                      "_numberOfMessages": 1000000,
                       "_deliveryMode": 1,
                       "_messageSize": 10000
                     }
@@ -75,7 +73,6 @@
                     {
                       "_name": "Producer3",
                       "_destinationName": "direct://amq.direct//testQueue",
-                      "_numberOfMessages": 1000000,
                       "_deliveryMode": 1,
                       "_messageSize": 10000
                     }
@@ -99,7 +96,6 @@
                     {
                       "_name": "Producer4",
                       "_destinationName": "direct://amq.direct//testQueue",
-                      "_numberOfMessages": 1000000,
                       "_deliveryMode": 1,
                       "_messageSize": 10000
                     }
@@ -123,7 +119,6 @@
                     {
                       "_name": "Producer5",
                       "_destinationName": "direct://amq.direct//testQueue",
-                      "_numberOfMessages": 1000000,
                       "_deliveryMode": 1,
                       "_messageSize": 10000
                     }
@@ -146,8 +141,7 @@
                   "_consumers": [
                     {
                       "_name": "Consumer1",
-                      "_destinationName": "direct://amq.direct//testQueue",
-                      "_numberOfMessages": 5000000
+                      "_destinationName": "direct://amq.direct//testQueue"
                     }
                   ]
                 }

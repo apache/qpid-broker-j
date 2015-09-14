@@ -45,7 +45,6 @@ public enum ParticipantAttribute
     DELIVERY_MODE("deliveryMode"),
     BATCH_SIZE("batchSize"),
     MAXIMUM_DURATION("maximumDurationMs"),
-    PRODUCER_START_DELAY("producerStartDelayMs"),
     PRODUCER_INTERVAL("producerIntervalMs"),
     IS_TOPIC("isTopic"),
     IS_DURABLE_SUBSCRIPTION("isDurableSubscription"),

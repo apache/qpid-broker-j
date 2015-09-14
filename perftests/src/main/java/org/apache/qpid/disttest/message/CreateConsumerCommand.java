@@ -19,7 +19,7 @@
  */
 package org.apache.qpid.disttest.message;
 
-public class CreateConsumerCommand extends CreateParticpantCommand
+public class CreateConsumerCommand extends CreateParticipantCommand
 {
     private boolean _isDurableSubscription;
     private boolean _isBrowsingSubscription;

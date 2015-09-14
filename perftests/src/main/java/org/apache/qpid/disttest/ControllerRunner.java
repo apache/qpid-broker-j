@@ -47,11 +47,23 @@ public class ControllerRunner extends AbstractRunner
     public static final String OUTPUT_DIR_PROP = "outputdir";
     public static final String WRITE_TO_DB = "writeToDb";
     public static final String RUN_ID = "runId";
+    public static final String HILL_CLIMB = "hill-climb";
+    public static final String HILL_CLIMBER_MAX_NUMBER_OF_RUNS = "hill-climber.max-runs";
+    public static final String HILL_CLIMBER_START_TARGET_RATE = "hill-climber.start-target-rate";
+    public static final String HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD = "hill-climber.production-to-target-ratio-success-threshold";
+    public static final String HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD = "hill-climber.consumption-to-production-ratio-success-threshold";
+    public static final String HILL_CLIMBER_MINIMUM_DELTA = "hill-climber.minimum-delta";
 
     private static final String TEST_CONFIG_DEFAULT = "perftests-config.json";
     private static final String DISTRIBUTED_DEFAULT = "false";
     private static final String OUTPUT_DIR_DEFAULT = ".";
-    public static final String WRITE_TO_DB_DEFAULT = "false";
+    private static final String WRITE_TO_DB_DEFAULT = "false";
+    private static final String HILL_CLIMB_DEFAULT = "true";
+    private static final String HILL_CLIMBER_MAX_NUMBER_OF_RUNS_DEFAULT = "3";
+    private static final String HILL_CLIMBER_START_TARGET_RATE_DEFAULT = "1025";
+    private static final String HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD_DEFAULT = "0.95";
+    private static final String HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD_DEFAULT = "0.95";
+    private static final String HILL_CLIMBER_MINIMUM_DELTA_DEFAULT = "1";
 
     private final Aggregator _aggregator = new Aggregator();
 
@@ -68,6 +80,17 @@ public class ControllerRunner extends AbstractRunner
         getCliOptions().put(OUTPUT_DIR_PROP, OUTPUT_DIR_DEFAULT);
         getCliOptions().put(WRITE_TO_DB, WRITE_TO_DB_DEFAULT);
         getCliOptions().put(RUN_ID, null);
+        getCliOptions().put(HILL_CLIMB, HILL_CLIMB_DEFAULT);
+        getCliOptions().put(HILL_CLIMBER_MAX_NUMBER_OF_RUNS,
+                            HILL_CLIMBER_MAX_NUMBER_OF_RUNS_DEFAULT);
+        getCliOptions().put(HILL_CLIMBER_START_TARGET_RATE,
+                            HILL_CLIMBER_START_TARGET_RATE_DEFAULT);
+        getCliOptions().put(HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD,
+                            HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD_DEFAULT);
+        getCliOptions().put(HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD,
+                            HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD_DEFAULT);
+        getCliOptions().put(HILL_CLIMBER_MINIMUM_DELTA,
+                            HILL_CLIMBER_MINIMUM_DELTA_DEFAULT);
     }
 
     public static void main(String[] args) throws Exception
@@ -87,13 +110,25 @@ public class ControllerRunner extends AbstractRunner
 
         try
         {
-            runTests(jmsDelegate);
+            Controller controller = new Controller(jmsDelegate,
+                                                   DistributedTestConstants.REGISTRATION_TIMEOUT,
+                                                   DistributedTestConstants.COMMAND_RESPONSE_TIMEOUT,
+                                                   getCliOptions());
+            try
+            {
+                runTests(controller);
+            }
+            finally
+            {
+                controller.stopAllRegisteredClients();
+            }
         }
         finally
         {
             jmsDelegate.closeConnections();
         }
     }
+
 
     private void setUpResultsDbWriter()
     {
@@ -113,9 +148,8 @@ public class ControllerRunner extends AbstractRunner
         _resultsFileWriter = new ResultsCsvWriter(outputDir);
     }
 
-    private void runTests(ControllerJmsDelegate jmsDelegate)
+    private void runTests(Controller controller)
     {
-        Controller controller = new Controller(jmsDelegate, DistributedTestConstants.REGISTRATION_TIMEOUT, DistributedTestConstants.COMMAND_RESPONSE_TIMEOUT);
 
         String testConfigPath = getCliOptions().get(ControllerRunner.TEST_CONFIG_PROP);
         List<String> testConfigFiles = _configFileHelper.getTestConfigFiles(testConfigPath);
@@ -123,7 +157,7 @@ public class ControllerRunner extends AbstractRunner
 
         try
         {
-            List<ResultsForAllTests> results = new ArrayList<ResultsForAllTests>();
+            List<ResultsForAllTests> results = new ArrayList<>();
 
             for (String testConfigFile : testConfigFiles)
             {
@@ -142,10 +176,6 @@ public class ControllerRunner extends AbstractRunner
         catch(Exception e)
         {
             LOGGER.error("Problem running test", e);
-        }
-        finally
-        {
-            controller.stopAllRegisteredClients();
         }
     }
 

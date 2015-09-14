@@ -18,12 +18,10 @@
       ],
       "_iterations": [
         {
-          "_messageSize": 100,
-          "_numberOfMessages": 10
+          "_messageSize": 100
         },
         {
-          "_messageSize": 200,
-          "_numberOfMessages": 5
+          "_messageSize": 200
         }
       ],
       "_clients": [

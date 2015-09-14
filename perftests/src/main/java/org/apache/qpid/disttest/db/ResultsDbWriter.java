@@ -80,24 +80,23 @@ public class ResultsDbWriter
             ", %13$s bigint" +      // DELIVERY_MODE
             ", %14$s bigint" +      // BATCH_SIZE
             ", %15$s bigint" +      // MAXIMUM_DURATION
-            ", %16$s bigint" +      // PRODUCER_START_DELAY
-            ", %17$s bigint" +      // PRODUCER_INTERVAL
-            ", %18$s bigint" +      // IS_TOPIC
-            ", %19$s bigint" +      // IS_DURABLE_SUBSCRIPTION
-            ", %20$s bigint" +      // IS_BROWSING_SUBSCRIPTION
-            ", %21$s bigint" +      // IS_SELECTOR
-            ", %22$s bigint" +      // IS_NO_LOCAL
-            ", %23$s bigint" +      // IS_SYNCHRONOUS_CONSUMER
-            ", %24$s bigint" +      // TOTAL_NUMBER_OF_CONSUMERS
-            ", %25$s bigint" +      // TOTAL_NUMBER_OF_PRODUCERS
-            ", %26$s bigint" +      // TOTAL_PAYLOAD_PROCESSED
-            ", %27$s bigint" +      // TIME_TAKEN
-            ", %28$s varchar(2000)" +  // ERROR_MESSAGE
-            ", %29$s bigint" +      // MIN_LATENCY
-            ", %30$s bigint" +      // MAX_LATENCY
-            ", %31$s double" +      // LATENCY_STANDARD_DEVIATION
-            ", %32$s varchar(200) not null" +
-            ", %33$s timestamp not null" +
+            ", %16$s bigint" +      // PRODUCER_INTERVAL
+            ", %17$s bigint" +      // IS_TOPIC
+            ", %18$s bigint" +      // IS_DURABLE_SUBSCRIPTION
+            ", %19$s bigint" +      // IS_BROWSING_SUBSCRIPTION
+            ", %20$s bigint" +      // IS_SELECTOR
+            ", %21$s bigint" +      // IS_NO_LOCAL
+            ", %22$s bigint" +      // IS_SYNCHRONOUS_CONSUMER
+            ", %23$s bigint" +      // TOTAL_NUMBER_OF_CONSUMERS
+            ", %24$s bigint" +      // TOTAL_NUMBER_OF_PRODUCERS
+            ", %25$s bigint" +      // TOTAL_PAYLOAD_PROCESSED
+            ", %26$s bigint" +      // TIME_TAKEN
+            ", %27$s varchar(2000)" +  // ERROR_MESSAGE
+            ", %28$s bigint" +      // MIN_LATENCY
+            ", %29$s bigint" +      // MAX_LATENCY
+            ", %30$s double" +      // LATENCY_STANDARD_DEVIATION
+            ", %31$s varchar(200) not null" +
+            ", %32$s timestamp not null" +
             ")",
             RESULTS_TABLE_NAME,
             TEST_NAME.getDisplayName(),
@@ -114,7 +113,6 @@ public class ResultsDbWriter
             DELIVERY_MODE.getDisplayName(),
             BATCH_SIZE.getDisplayName(),
             MAXIMUM_DURATION.getDisplayName(),
-            PRODUCER_START_DELAY.getDisplayName(),
             PRODUCER_INTERVAL.getDisplayName(),
             IS_TOPIC.getDisplayName(),
             IS_DURABLE_SUBSCRIPTION.getDisplayName(),
@@ -330,8 +328,8 @@ public class ResultsDbWriter
         try
         {
             String sqlTemplate = String.format(
-                    "INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) " +
-                    "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) " +
+                    "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     RESULTS_TABLE_NAME,
                     TEST_NAME.getDisplayName(),
                     ITERATION_NUMBER.getDisplayName(),
@@ -347,7 +345,6 @@ public class ResultsDbWriter
                     DELIVERY_MODE.getDisplayName(),
                     BATCH_SIZE.getDisplayName(),
                     MAXIMUM_DURATION.getDisplayName(),
-                    PRODUCER_START_DELAY.getDisplayName(),
                     PRODUCER_INTERVAL.getDisplayName(),
                     IS_TOPIC.getDisplayName(),
                     IS_DURABLE_SUBSCRIPTION.getDisplayName(),
@@ -383,7 +380,6 @@ public class ResultsDbWriter
             statement.setLong(columnIndex++, participantResult.getDeliveryMode());
             statement.setLong(columnIndex++, participantResult.getBatchSize());
             statement.setLong(columnIndex++, participantResult.getMaximumDuration());
-            statement.setLong(columnIndex++, 0 /* TODO PRODUCER_START_DELAY*/);
             statement.setLong(columnIndex++, 0 /* TODO PRODUCER_INTERVAL*/);
             statement.setLong(columnIndex++, 0 /* TODO IS_TOPIC*/);
             statement.setLong(columnIndex++, 0 /* TODO IS_DURABLE_SUBSCRIPTION*/);

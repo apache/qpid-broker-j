@@ -29,8 +29,6 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.config.QueueConfig;
@@ -42,7 +40,6 @@ import org.apache.qpid.disttest.message.NoOpCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.Response;
 import org.apache.qpid.disttest.message.StartTestCommand;
-import org.apache.qpid.disttest.message.TearDownTestCommand;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -60,7 +57,7 @@ public class TestRunnerTest extends QpidTestCase
     private static final long TEST_RESULT_TIMEOUT = 2000;
     private static final long DELAY = 100;
 
-    private TestRunner _testRunner;
+    private OrdinaryTestRunner _testRunner;
     private TestInstance _testInstance;
     private ControllerJmsDelegate _respondingJmsDelegate;
     private ParticipatingClients _participatingClients;
@@ -93,7 +90,7 @@ public class TestRunnerTest extends QpidTestCase
     {
         _testInstance = createTestInstanceWithConnection();
 
-        _testRunner = new TestRunner(_participatingClients, _testInstance , _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
+        _testRunner = new OrdinaryTestRunner(_participatingClients, _testInstance , _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
         _testRunner.sendTestSetupCommands();
 
         verify(_respondingJmsDelegate).sendCommandToClient(eq(CLIENT1_REGISTERED_NAME), isA(CreateConnectionCommand.class));
@@ -101,7 +98,7 @@ public class TestRunnerTest extends QpidTestCase
 
     public void testSendCommandToAllParticipatingClients()
     {
-        _testRunner = new TestRunner(_participatingClients, mock(TestInstance.class), _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
+        _testRunner = new OrdinaryTestRunner(_participatingClients, mock(TestInstance.class), _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
 
         StartTestCommand startTestCommand = new StartTestCommand();
         _testRunner.sendCommandToParticipatingClients(startTestCommand);
@@ -112,7 +109,7 @@ public class TestRunnerTest extends QpidTestCase
     public void testWaitsForCommandResponses()
     {
         _testInstance = createTestInstanceWithConnection();
-        _testRunner = new TestRunner(_participatingClients, _testInstance , _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
+        _testRunner = new OrdinaryTestRunner(_participatingClients, _testInstance , _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
 
         _testRunner.sendTestSetupCommands();
 
@@ -124,7 +121,7 @@ public class TestRunnerTest extends QpidTestCase
         ControllerJmsDelegate jmsDelegate = mock(ControllerJmsDelegate.class);
 
         _testInstance = createTestInstanceWithConnection();
-        _testRunner = new TestRunner(_participatingClients, _testInstance , jmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
+        _testRunner = new OrdinaryTestRunner(_participatingClients, _testInstance , jmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
 
         _testRunner.sendTestSetupCommands();
         // we don't call sendCommandResponseLater so controller should time out
@@ -146,7 +143,7 @@ public class TestRunnerTest extends QpidTestCase
         List<QueueConfig> queues = mock(List.class);
         when(_testInstance.getQueues()).thenReturn(queues);
 
-        _testRunner = new TestRunner(_participatingClients, _testInstance, _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
+        _testRunner = new OrdinaryTestRunner(_participatingClients, _testInstance, _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
 
         _testRunner.createQueues();
         verify(_respondingJmsDelegate).createQueues(queues);
@@ -155,37 +152,6 @@ public class TestRunnerTest extends QpidTestCase
         verify(_respondingJmsDelegate).deleteQueues(queues);
     }
 
-    public void testRun()
-    {
-        _testInstance = createTestInstanceWithOneParticipant();
-        _testRunner = new TestRunner(_participatingClients, _testInstance , _respondingJmsDelegate, COMMAND_RESPONSE_TIMEOUT, TEST_RESULT_TIMEOUT);
-
-        ParticipantResult incomingParticipantResult = new ParticipantResult(PARTICIPANT_NAME);
-        incomingParticipantResult.setRegisteredClientName(CLIENT1_REGISTERED_NAME);
-        sendTestResultsLater(_testRunner, incomingParticipantResult);
-
-        TestResult results = _testRunner.run();
-
-        verify(_respondingJmsDelegate).addCommandListener(isA(TestRunner.TestCommandResponseListener.class));
-        verify(_respondingJmsDelegate).addCommandListener(isA(TestRunner.ParticipantResultListener.class));
-
-        verify(_respondingJmsDelegate).createQueues(isA(List.class));
-
-        verify(_respondingJmsDelegate).sendCommandToClient(eq(CLIENT1_REGISTERED_NAME), isA(StartTestCommand.class));
-        verify(_respondingJmsDelegate).sendCommandToClient(eq(CLIENT1_REGISTERED_NAME), isA(NoOpCommand.class));
-        verify(_respondingJmsDelegate).sendCommandToClient(eq(CLIENT1_REGISTERED_NAME), isA(TearDownTestCommand.class));
-
-        verify(_respondingJmsDelegate).deleteQueues(isA(List.class));
-
-        verify(_respondingJmsDelegate).removeCommandListener(isA(TestRunner.ParticipantResultListener.class));
-        verify(_respondingJmsDelegate).removeCommandListener(isA(TestRunner.TestCommandResponseListener.class));
-
-        List<ParticipantResult> participantResults = results.getParticipantResults();
-        assertEquals(1, participantResults.size());
-        ParticipantResult resultingParticipantResult = participantResults.get(0);
-
-        assertResultHasCorrectTestDetails(resultingParticipantResult);
-    }
 
     private void assertResultHasCorrectTestDetails(ParticipantResult resultingParticipantResult)
     {
@@ -230,23 +196,4 @@ public class TestRunnerTest extends QpidTestCase
 
         return testInstance;
     }
-
-    private void sendTestResultsLater(final TestRunner runner, final ParticipantResult result)
-    {
-        doLater(new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                runner.processParticipantResult(result);
-            }
-        }, DELAY);
-    }
-
-    private void doLater(TimerTask task, long delayInMillis)
-    {
-        Timer timer = new Timer();
-        timer.schedule(task, delayInMillis);
-    }
-
 }

@@ -19,13 +19,18 @@
 package org.apache.qpid.systest.disttest.endtoend;
 
 import static org.apache.qpid.disttest.AbstractRunner.JNDI_CONFIG_PROP;
+import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMB;
+import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_MINIMUM_DELTA;
+import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_MAX_NUMBER_OF_RUNS;
 import static org.apache.qpid.disttest.ControllerRunner.OUTPUT_DIR_PROP;
-import static org.apache.qpid.disttest.ControllerRunner.RUN_ID;
 import static org.apache.qpid.disttest.ControllerRunner.TEST_CONFIG_PROP;
-import static org.apache.qpid.disttest.ControllerRunner.WRITE_TO_DB;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.qpid.disttest.ControllerRunner;
 import org.apache.qpid.disttest.message.ParticipantAttribute;
@@ -35,57 +40,216 @@ import org.apache.qpid.util.FileUtils;
 
 public class EndToEndTest extends QpidBrokerTestCase
 {
-    private ControllerRunner _runner;
-    private static final String TEST_CONFIG = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/endtoend.json";
+    private static final String TEST_CONFIG_ITERATIONS = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/iterations.json";
+    private static final String TEST_CONFIG_MANYPARTICIPANTS = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/manyparticipants.json";
+    private static final String TEST_CONFIG_HILLCLIMBING = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/hillclimbing.js";
     private static final String JNDI_CONFIG_FILE = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/perftests.systests.properties";
-    private static final String RUN1 = "run1";
+    private static final int NUMBER_OF_HEADERS = 1;
+    private static final int NUMBER_OF_SUMMARIES = 3;
 
-    public void testRunner() throws Exception
+    private File _csvOutputDir;
+
+    @Override
+    public void setUp() throws Exception
     {
-        File csvOutputDir = createTemporaryCsvDirectory();
-        assertTrue("CSV output dir must not exist",csvOutputDir.isDirectory());
+        super.setUp();
+        _csvOutputDir = createTemporaryCsvDirectory();
+        assertTrue("CSV output dir must not exist", _csvOutputDir.isDirectory());
+    }
 
-        final String[] args = new String[] {TEST_CONFIG_PROP + "=" + TEST_CONFIG,
-                                            JNDI_CONFIG_PROP + "=" + JNDI_CONFIG_FILE,
-                                            WRITE_TO_DB + "=true",
-                                            RUN_ID + "=" + RUN1,
-                                            OUTPUT_DIR_PROP  + "=" + csvOutputDir.getAbsolutePath()};
-        _runner = new ControllerRunner();
-        _runner.parseArgumentsIntoConfig(args);
-        _runner.runController();
+    @Override
+    public void tearDown() throws Exception
+    {
+        try
+        {
+            if (_csvOutputDir != null && _csvOutputDir.exists())
+            {
+               // FileUtils.delete(_csvOutputDir, true);
+            }
+        }
+        finally
+        {
+            super.tearDown();
+        }
+    }
 
-        File expectedCsvOutputFile = new File(csvOutputDir, "endtoend.csv");
-        assertTrue("CSV output file must exist", expectedCsvOutputFile.exists());
-        final String csvContents = FileUtils.readFileAsString(expectedCsvOutputFile);
-        final String[] csvLines = csvContents.split("\n");
+    public void testIterations() throws Exception
+    {
+        Map<String, String> arguments = new HashMap<>();
+        arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_ITERATIONS);
+        arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
+        arguments.put(OUTPUT_DIR_PROP, _csvOutputDir.getAbsolutePath());
+        arguments.put(HILL_CLIMB, "false");
 
-        int numberOfHeaders = 1;
+        final String[] csvLines = runControllerAndGetResults(arguments);
+
         int numberOfParticipants = 2;
-        int numberOfSummaries = 3;
+        int numberOfIterations = 2;
+        int dataRowsPerIteration = numberOfParticipants + NUMBER_OF_SUMMARIES;
 
-        int numberOfExpectedRows = numberOfHeaders + numberOfParticipants + numberOfSummaries;
+        int numberOfExpectedRows = NUMBER_OF_HEADERS + dataRowsPerIteration * numberOfIterations;
         assertEquals("Unexpected number of lines in CSV", numberOfExpectedRows, csvLines.length);
 
-        assertDataRowsHaveCorrectTestAndClientName("End To End 1", "producingClient", "participantProducer1", csvLines[1], 1);
-        assertDataRowsHaveCorrectTestAndClientName("End To End 1", "consumingClient", "participantConsumer1", csvLines[3], 1);
+        final String testName = "Iterations";
+        assertDataRowsForIterationArePresent(csvLines, testName, 0, dataRowsPerIteration);
+        assertDataRowsForIterationArePresent(csvLines, testName, 1, dataRowsPerIteration);
 
-        assertDataRowsHaveCorrectTestAndClientName("End To End 1", "", TestResultAggregator.ALL_PARTICIPANTS_NAME, csvLines[4], 1);
-        assertDataRowsHaveCorrectTestAndClientName("End To End 1", "", TestResultAggregator.ALL_CONSUMER_PARTICIPANTS_NAME, csvLines[2], 1);
-        assertDataRowsHaveCorrectTestAndClientName("End To End 1", "", TestResultAggregator.ALL_PRODUCER_PARTICIPANTS_NAME, csvLines[5], 1);
+        assertDataRowHasCorrectTestAndClientName(testName, "", TestResultAggregator.ALL_PARTICIPANTS_NAME, csvLines[4 + dataRowsPerIteration]);
+    }
+
+    public void testManyParticipants() throws Exception
+    {
+        Map<String, String> arguments = new HashMap<>();
+        arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_MANYPARTICIPANTS);
+        arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
+        arguments.put(OUTPUT_DIR_PROP, _csvOutputDir.getAbsolutePath());
+        arguments.put(HILL_CLIMB, "false");
+
+        final String[] csvLines = runControllerAndGetResults(arguments);
+
+        int numberOfParticipants = 4;
+        int dataRowsPerIteration = numberOfParticipants + NUMBER_OF_SUMMARIES;
+
+        int numberOfExpectedRows = NUMBER_OF_HEADERS + dataRowsPerIteration;
+        assertEquals("Unexpected number of lines in CSV", numberOfExpectedRows, csvLines.length);
+
+        int actualMessagesSent = 0;
+        int reportedTotalMessagesSent = 0;
+        int actualMessagesReceived = 0;
+        int reportedTotalMessagesReceived = 0;
+
+        for(String csvLine : Arrays.copyOfRange(csvLines, 1, csvLines.length))
+        {
+            String[] cells = splitCsvCells(csvLine);
+
+            final String participantName = cells[ParticipantAttribute.PARTICIPANT_NAME.ordinal()];
+            final int numberOfMessages = Integer.valueOf(cells[ParticipantAttribute.NUMBER_OF_MESSAGES_PROCESSED.ordinal()]);
+            if (participantName.equals(TestResultAggregator.ALL_PARTICIPANTS_NAME))
+            {
+                // ignore
+            }
+            else if (participantName.equals(TestResultAggregator.ALL_PRODUCER_PARTICIPANTS_NAME))
+            {
+                reportedTotalMessagesSent = numberOfMessages;
+            }
+            else if (participantName.equals(TestResultAggregator.ALL_CONSUMER_PARTICIPANTS_NAME))
+            {
+                reportedTotalMessagesReceived = numberOfMessages;
+            }
+            else if (participantName.contains("Producer"))
+            {
+                actualMessagesSent += numberOfMessages;
+            }
+            else if (participantName.contains("Consumer"))
+            {
+                actualMessagesReceived += numberOfMessages;
+            }
+        }
+
+        assertEquals("Reported total messages sent does not match total sent by producers", reportedTotalMessagesSent, actualMessagesSent);
+        assertEquals("Reported total messages received does not match total received by consumers", reportedTotalMessagesReceived, actualMessagesReceived);
 
     }
 
-    private void assertDataRowsHaveCorrectTestAndClientName(String testName, String clientName, String participantName, String csvLine, int expectedNumberOfMessagesProcessed)
+    public void testHillClimbing() throws Exception
     {
-        final int DONT_STRIP_EMPTY_LAST_FIELD_FLAG = -1;
-        String[] cells = csvLine.split(",", DONT_STRIP_EMPTY_LAST_FIELD_FLAG);
+        Map<String, String> arguments = new HashMap<>();
+        arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_HILLCLIMBING);
+        arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
+        arguments.put(OUTPUT_DIR_PROP, _csvOutputDir.getAbsolutePath());
+        arguments.put(HILL_CLIMB, "true");
+        // Reduce the minimum delta and number of runs so that test executes more quickly.We are not interested in an accurate repeatable value in this test.
+        arguments.put(HILL_CLIMBER_MINIMUM_DELTA, "10");
+        arguments.put(HILL_CLIMBER_MAX_NUMBER_OF_RUNS, "1");
+
+        final String[] csvLines = runControllerAndGetResults(arguments);
+
+        int numberOfParticipants = 2;
+
+        int numberOfExpectedRows = NUMBER_OF_HEADERS + numberOfParticipants + NUMBER_OF_SUMMARIES;
+        assertEquals("Unexpected number of lines in CSV", numberOfExpectedRows, csvLines.length);
+
+        final String testName = "HillClimbing";
+        assertDataRowHasCorrectTestAndClientName(testName, "producingClient", "Producer1", csvLines[1]);
+        assertDataRowHasCorrectTestAndClientName(testName, "consumingClient", "Consumer1", csvLines[3]);
+
+        assertDataRowHasCorrectTestAndClientName(testName, "", TestResultAggregator.ALL_PARTICIPANTS_NAME, csvLines[4]);
+        assertDataRowHasCorrectTestAndClientName(testName, "", TestResultAggregator.ALL_CONSUMER_PARTICIPANTS_NAME, csvLines[2]);
+        assertDataRowHasCorrectTestAndClientName(testName, "", TestResultAggregator.ALL_PRODUCER_PARTICIPANTS_NAME, csvLines[5]);
+
+        assertDataRowHasThroughputValues(csvLines[4]);
+
+    }
+
+    private String[] runControllerAndGetResults(Map<String, String> args) throws Exception
+    {
+        String[] argsAsArray = new String[args.size()];
+        int i = 0;
+        for(Map.Entry<String, String> entry : args.entrySet())
+        {
+            argsAsArray[i++] = entry.getKey() + "=" + entry.getValue();
+        }
+
+        ControllerRunner runner = new ControllerRunner();
+        runner.parseArgumentsIntoConfig(argsAsArray);
+        runner.runController();
+
+        String testConfig = args.get(TEST_CONFIG_PROP);
+        String filename = Paths.get(testConfig).getFileName().toString();
+        String expectedCsvFilename = filename.replaceAll("\\.[^.]*$", ".csv");
+
+        File expectedCsvOutputFile = new File(_csvOutputDir, expectedCsvFilename);
+        assertTrue("CSV output file must exist", expectedCsvOutputFile.exists());
+        final String csvContents = FileUtils.readFileAsString(expectedCsvOutputFile);
+        return csvContents.split("\n");
+    }
+
+    private void assertDataRowsForIterationArePresent(String[] csvLines, String testName, int iterationNumber, int expectedCount)
+    {
+        String itrAsString = String.valueOf(iterationNumber);
+
+        int actualCount = 0;
+        for(String csvLine : csvLines)
+        {
+            String[] cells = splitCsvCells(csvLine);
+
+            if (testName.equals(cells[ParticipantAttribute.TEST_NAME.ordinal()])
+                && itrAsString.equals(cells[ParticipantAttribute.ITERATION_NUMBER.ordinal()]))
+            {
+                actualCount++;
+            }
+        }
+
+        assertEquals("Unexpected number of data rows for test name " + testName + " iteration nunber " + iterationNumber, expectedCount, actualCount);
+    }
+
+    private void assertDataRowHasThroughputValues(String csvLine)
+    {
+        String[] cells = splitCsvCells(csvLine);
+
+        double throughput = Double.valueOf(cells[ParticipantAttribute.THROUGHPUT.ordinal()]);
+        int messageThroughput = Integer.valueOf(cells[ParticipantAttribute.MESSAGE_THROUGHPUT.ordinal()]);
+        assertTrue("Throughput in line " + csvLine + " is not greater than zero : " + throughput, throughput > 0);
+        assertTrue("Message throughput in line " + csvLine + " is not greater than zero : " + messageThroughput, messageThroughput > 0);
+
+    }
+
+    private void assertDataRowHasCorrectTestAndClientName(String testName, String clientName, String participantName, String csvLine)
+    {
+        String[] cells = splitCsvCells(csvLine);
+
         // All attributes become cells in the CSV, so this will be true
         assertEquals("Unexpected number of cells in CSV line " + csvLine, ParticipantAttribute.values().length, cells.length);
         assertEquals("Unexpected test name in CSV line " + csvLine, testName, cells[ParticipantAttribute.TEST_NAME.ordinal()]);
         assertEquals("Unexpected client name in CSV line " + csvLine, clientName, cells[ParticipantAttribute.CONFIGURED_CLIENT_NAME.ordinal()]);
         assertEquals("Unexpected participant name in CSV line " + csvLine, participantName, cells[ParticipantAttribute.PARTICIPANT_NAME.ordinal()]);
-        assertEquals("Unexpected number of messages processed in CSV line " + csvLine, String.valueOf(expectedNumberOfMessagesProcessed), cells[ParticipantAttribute.NUMBER_OF_MESSAGES_PROCESSED.ordinal()]);
 
+    }
+
+    private String[] splitCsvCells(String csvLine)
+    {
+        int DONT_STRIP_EMPTY_LAST_FIELD_FLAG = -1;
+        return csvLine.split(",", DONT_STRIP_EMPTY_LAST_FIELD_FLAG);
     }
 
     private File createTemporaryCsvDirectory() throws IOException
@@ -93,7 +257,7 @@ public class EndToEndTest extends QpidBrokerTestCase
         String tmpDir = System.getProperty("java.io.tmpdir");
         File csvDir = new File(tmpDir, "csv");
         csvDir.mkdir();
-        csvDir.deleteOnExit();
+        //csvDir.deleteOnExit();
         return csvDir;
     }
 

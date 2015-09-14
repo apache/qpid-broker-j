@@ -19,14 +19,14 @@
  */
 package org.apache.qpid.disttest.message;
 
-public class CreateProducerCommand extends CreateParticpantCommand
+public class CreateProducerCommand extends CreateParticipantCommand
 {
     private int _deliveryMode;
     private int _messageSize;
     private int _priority;
     private long _timeToLive;
     private long _interval;
-    private long _startDelay;
+    private double _rate;
     private String _messageProviderName;
 
     public CreateProducerCommand()
@@ -84,16 +84,6 @@ public class CreateProducerCommand extends CreateParticpantCommand
         this._interval = interval;
     }
 
-    public long getStartDelay()
-    {
-        return _startDelay;
-    }
-
-    public void setStartDelay(long startDelay)
-    {
-        this._startDelay = startDelay;
-    }
-
     public String getMessageProviderName()
     {
         return _messageProviderName;
@@ -103,4 +93,15 @@ public class CreateProducerCommand extends CreateParticpantCommand
     {
         this._messageProviderName = messageProviderName;
     }
+
+    public double getRate()
+    {
+        return _rate;
+    }
+
+    public void setRate(double rate)
+    {
+        _rate = rate;
+    }
+
 }

@@ -15,14 +15,29 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-package org.apache.qpid.systest.disttest;
+package org.apache.qpid.disttest.controller;
 
-public abstract class SystemTestConstants
+
+import org.apache.qpid.disttest.controller.config.TestInstance;
+import org.apache.qpid.disttest.jms.ControllerJmsDelegate;
+
+public class OrdinaryTestRunner extends AbstractTestRunner
 {
-    public static final long REGISTRATION_TIMEOUT = 20000;
-    public static final long COMMAND_RESPONSE_TIMEOUT = 30000;
-    public static final long TEST_RESULT_TIMEOUT = 20000;
+
+    public OrdinaryTestRunner(ParticipatingClients participatingClients,
+                              TestInstance testInstance,
+                              ControllerJmsDelegate jmsDelegate,
+                              long commandResponseTimeout,
+                              long testResultTimeout)
+    {
+        super(participatingClients, commandResponseTimeout, testInstance, jmsDelegate, testResultTimeout);
+    }
+
+    @Override
+    public TestResult run()
+    {
+        return doIt();
+    }
 
 }

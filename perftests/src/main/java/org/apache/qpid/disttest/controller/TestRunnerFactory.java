@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,10 +23,35 @@ package org.apache.qpid.disttest.controller;
 import org.apache.qpid.disttest.controller.config.TestInstance;
 import org.apache.qpid.disttest.jms.ControllerJmsDelegate;
 
+import java.util.Map;
+
+import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMB;
+
 public class TestRunnerFactory
 {
-    public TestRunner createTestRunner(ParticipatingClients participatingClients, TestInstance testInstance, ControllerJmsDelegate jmsDelegate, long commandResponseTimeout, long testResultTimeout)
+    public ITestRunner createTestRunner(ParticipatingClients participatingClients,
+                                        TestInstance testInstance,
+                                        ControllerJmsDelegate jmsDelegate,
+                                        long commandResponseTimeout,
+                                        long testResultTimeout,
+                                        final Map<String, String> options)
     {
-        return new TestRunner(participatingClients, testInstance, jmsDelegate, commandResponseTimeout, testResultTimeout);
+
+        if (Boolean.valueOf(options.get(HILL_CLIMB)))
+        {
+            return new HillClimbingTestRunner(participatingClients,
+                                              testInstance,
+                                              jmsDelegate,
+                                              commandResponseTimeout,
+                                              testResultTimeout, options);
+        }
+        else
+        {
+            return new OrdinaryTestRunner(participatingClients,
+                                          testInstance,
+                                          jmsDelegate,
+                                          commandResponseTimeout,
+                                          testResultTimeout);
+        }
     }
 }

@@ -423,10 +423,8 @@ public class ClientJmsDelegate
                             sessionName, jmse);
         }
     }
-
     public Message sendNextMessage(final CreateProducerCommand command)
     {
-        Message sentMessage = null;
         MessageProvider messageProvider = _testMessageProviders.get(command.getMessageProviderName());
         if (messageProvider == null)
         {
@@ -437,30 +435,68 @@ public class ClientJmsDelegate
         final MessageProducer producer = _testProducers.get(command.getParticipantName());
         try
         {
-            sentMessage = messageProvider.nextMessage(session, command);
+            Message message = messageProvider.nextMessage(session, command);
             int deliveryMode = producer.getDeliveryMode();
             int priority = producer.getPriority();
             long ttl = producer.getTimeToLive();
             if (messageProvider.isPropertySet(MessageProvider.PRIORITY))
             {
-                priority = sentMessage.getJMSPriority();
+                priority = message.getJMSPriority();
             }
             if (messageProvider.isPropertySet(MessageProvider.DELIVERY_MODE))
             {
-                deliveryMode = sentMessage.getJMSDeliveryMode();
+                deliveryMode = message.getJMSDeliveryMode();
             }
             if (messageProvider.isPropertySet(MessageProvider.TTL))
             {
-                ttl = sentMessage.getLongProperty(MessageProvider.TTL);
+                ttl = message.getLongProperty(MessageProvider.TTL);
             }
-            producer.send(sentMessage, deliveryMode, priority, ttl);
+            producer.send(message, deliveryMode, priority, ttl);
+            return message;
         }
         catch (final JMSException jmse)
         {
             throw new DistributedTestException("Unable to create and send message with producer: " +
                             command.getParticipantName() + " on session: " + command.getSessionName(), jmse);
         }
-        return sentMessage;
+    }
+
+    public Message sendNextMessage(final CreateProducerCommand command, boolean preMessage)
+    {
+        MessageProvider messageProvider = _testMessageProviders.get(command.getMessageProviderName());
+        if (messageProvider == null)
+        {
+            messageProvider = _defaultMessageProvider;
+        }
+
+        final Session session = _testSessions.get(command.getSessionName());
+        final MessageProducer producer = _testProducers.get(command.getParticipantName());
+        try
+        {
+            Message message = messageProvider.nextMessage(session, command);
+            int deliveryMode = producer.getDeliveryMode();
+            int priority = producer.getPriority();
+            long ttl = producer.getTimeToLive();
+            if (messageProvider.isPropertySet(MessageProvider.PRIORITY))
+            {
+                priority = message.getJMSPriority();
+            }
+            if (messageProvider.isPropertySet(MessageProvider.DELIVERY_MODE))
+            {
+                deliveryMode = message.getJMSDeliveryMode();
+            }
+            if (messageProvider.isPropertySet(MessageProvider.TTL))
+            {
+                ttl = message.getLongProperty(MessageProvider.TTL);
+            }
+            producer.send(message, deliveryMode, priority, ttl);
+            return message;
+        }
+        catch (final JMSException jmse)
+        {
+            throw new DistributedTestException("Unable to create and send message with producer: " +
+                            command.getParticipantName() + " on session: " + command.getSessionName(), jmse);
+        }
     }
 
     protected void addSession(final String sessionName, final Session newSession)

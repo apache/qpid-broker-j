@@ -20,7 +20,7 @@
 package org.apache.qpid.disttest.message;
 
 
-public abstract class CreateParticpantCommand extends Command
+public abstract class CreateParticipantCommand extends Command
 {
     private boolean _isTopic;
     private String _participantName;
@@ -30,7 +30,7 @@ public abstract class CreateParticpantCommand extends Command
     private int _batchSize;
     private long _maximumDuration;
 
-    public CreateParticpantCommand(CommandType type)
+    public CreateParticipantCommand(CommandType type)
     {
         super(type);
     }

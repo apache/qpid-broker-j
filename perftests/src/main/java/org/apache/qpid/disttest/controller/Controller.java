@@ -20,6 +20,7 @@
 package org.apache.qpid.disttest.controller;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -27,11 +28,9 @@ import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.config.Config;
 import org.apache.qpid.disttest.controller.config.TestInstance;
 import org.apache.qpid.disttest.jms.ControllerJmsDelegate;
-import org.apache.qpid.disttest.message.Command;
-import org.apache.qpid.disttest.message.CommandType;
-import org.apache.qpid.disttest.message.RegisterClientCommand;
-import org.apache.qpid.disttest.message.Response;
-import org.apache.qpid.disttest.message.StopClientCommand;
+import org.apache.qpid.disttest.message.*;
+import org.apache.qpid.disttest.results.aggregation.ITestResult;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,21 +43,23 @@ public class Controller
 
     private final ControllerJmsDelegate _jmsDelegate;
 
-    private volatile CountDownLatch _stopClientsResponseLatch = null;
+    private final TestRunnerFactory _testRunnerFactory;
+    private final Map<String, String> _options;
 
+    private volatile CountDownLatch _stopClientsResponseLatch = null;
     private Config _config;
-    private TestRunnerFactory _testRunnerFactory;
     private ClientRegistry _clientRegistry;
 
-    private long _testResultTimeout = TestRunner.WAIT_FOREVER;
 
-    public Controller(final ControllerJmsDelegate jmsDelegate, long registrationTimeout, long commandResponseTimeout)
+    public Controller(final ControllerJmsDelegate jmsDelegate, long registrationTimeout,
+                      long commandResponseTimeout, final Map<String, String> options)
     {
         _jmsDelegate = jmsDelegate;
         _registrationTimeout = registrationTimeout;
         _commandResponseTimeout = commandResponseTimeout;
         _testRunnerFactory = new TestRunnerFactory();
         _clientRegistry = new ClientRegistry();
+        _options = options;
 
         _jmsDelegate.addCommandListener(new RegisterClientCommandListener());
         _jmsDelegate.addCommandListener(new StopClientResponseListener());
@@ -158,20 +159,27 @@ public class Controller
 
         for (TestInstance testInstance : _config.getTests())
         {
-
             ParticipatingClients participatingClients = new ParticipatingClients(_clientRegistry, testInstance.getClientNames());
 
-            LOGGER.info("Running test " + testInstance + ". Participating clients: " + participatingClients.getRegisteredNames());
-            TestRunner runner = _testRunnerFactory.createTestRunner(participatingClients,
-                                                                    testInstance,
-                                                                    _jmsDelegate,
-                                                                    _commandResponseTimeout,
-                                                                    _testResultTimeout);
+            ITestRunner runner = _testRunnerFactory.createTestRunner(participatingClients,
+                    testInstance,
+                    _jmsDelegate,
+                    _commandResponseTimeout,
+                    AbstractTestRunner.WAIT_FOREVER,
+                    _options);
+            LOGGER.info("Running test {}. Participating clients: {}",
+                    testInstance, participatingClients.getRegisteredNames());
 
-            TestResult testResult = runner.run();
-            LOGGER.info("Finished test " + testInstance);
-
-            resultsForAllTests.add(testResult);
+            ITestResult result = runner.run();
+            if (result != null)
+            {
+                LOGGER.info("Finished test {}, result {}", testInstance, result);
+                resultsForAllTests.add(result);
+            }
+            else
+            {
+                LOGGER.warn("Finished test {} without producing a result.", testInstance);
+            }
         }
 
         return resultsForAllTests;
@@ -208,24 +216,9 @@ public class Controller
         }
     }
 
-    public void setTestResultTimeout(final long testResultTimeout)
-    {
-        _testResultTimeout = testResultTimeout;
-
-    }
-
     void setClientRegistry(ClientRegistry clientRegistry)
     {
         _clientRegistry = clientRegistry;
-
     }
 
-    void setTestRunnerFactory(TestRunnerFactory factory)
-    {
-        if (factory == null)
-        {
-            throw new IllegalArgumentException("TestRunnerFactory cannot be null!");
-        }
-        _testRunnerFactory = factory;
-    }
 }

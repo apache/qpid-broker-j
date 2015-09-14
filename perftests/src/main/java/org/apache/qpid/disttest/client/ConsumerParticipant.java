@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -51,9 +52,14 @@ public class ConsumerParticipant implements Participant
     private final ClientJmsDelegate _jmsDelegate;
     private final CreateConsumerCommand _command;
     private final ParticipantResultFactory _resultFactory;
+    private final AtomicBoolean _collectingData = new AtomicBoolean();
+    private final boolean _batchEnabled;
+    private final long _expectedNumberOfMessages;
+    private final boolean _evaluateLatency;
+    private final int _batchSize;
+    private final long _maximumDuration;
 
-    private long _startTime;
-
+    private volatile long _startTime;
     private volatile Exception _asyncMessageListenerException;
     private List<Long> _messageLatencies;
     private final long _syncReceiveTimeout;
@@ -63,23 +69,24 @@ public class ConsumerParticipant implements Participant
         _jmsDelegate = delegate;
         _command = command;
         _syncReceiveTimeout = _command.getReceiveTimeout() > 0 ? _command.getReceiveTimeout() : 50l;
+        _batchSize = _command.getBatchSize();
+        _batchEnabled = _batchSize > 0;
+
+
         _resultFactory = new ParticipantResultFactory();
         if (command.isEvaluateLatency())
         {
-            _messageLatencies = new ArrayList<Long>();
+            _messageLatencies = new ArrayList<>();
         }
+        _expectedNumberOfMessages = _command.getNumberOfMessages();
+        _evaluateLatency = _command.isEvaluateLatency();
+        _maximumDuration = _command.getMaximumDuration();
     }
 
     @Override
     public ParticipantResult doIt(String registeredClientName) throws Exception
     {
-        final Date start = new Date();
         final int acknowledgeMode = _jmsDelegate.getAcknowledgeMode(_command.getSessionName());
-
-        if (_command.getMaximumDuration() == 0 && _command.getNumberOfMessages() == 0)
-        {
-            throw new DistributedTestException("number of messages and duration cannot both be zero");
-        }
 
         if (_command.isSynchronous())
         {
@@ -87,14 +94,14 @@ public class ConsumerParticipant implements Participant
         }
         else
         {
-            LOGGER.info("Consumer {} registering listener", getName());
+            LOGGER.debug("Consumer {} registering listener", getName());
 
             _jmsDelegate.registerListener(_command.getParticipantName(), new MessageListener(){
 
                 @Override
                 public void onMessage(Message message)
                 {
-                    processAsynchMessage(message);
+                    processAsyncMessage(message);
                 }
 
             });
@@ -104,15 +111,13 @@ public class ConsumerParticipant implements Participant
         }
 
         Date end = new Date();
+        final Date start = new Date(_startTime);
         int numberOfMessagesReceived = _totalNumberOfMessagesReceived.get();
         long totalPayloadSize = _totalPayloadSizeOfAllMessagesReceived.get();
         int payloadSize = getPayloadSizeForResultIfConstantOrZeroOtherwise(_allConsumedPayloadSizes);
 
-        if (LOGGER.isInfoEnabled())
-        {
-            LOGGER.info("Consumer {} finished consuming. Number of messages consumed: {}",
-                        getName(), numberOfMessagesReceived);
-        }
+        LOGGER.info("Consumer {} finished consuming. Number of messages consumed: {}",
+                    getName(), numberOfMessagesReceived);
 
         ParticipantResult result = _resultFactory.createForConsumer(
                 getName(),
@@ -127,17 +132,35 @@ public class ConsumerParticipant implements Participant
         return result;
     }
 
+    @Override
+    public void startDataCollection()
+    {
+        _collectingData.set(true);
+    }
+
     private void synchronousRun()
     {
-        LOGGER.info("Consumer {} about to consume messages", getName());
+        LOGGER.debug("Consumer {} about to consume messages", getName());
 
-        _startTime = System.currentTimeMillis();
-
-        Message message;
+        boolean keepLooping = true;
         do
         {
-            message = _jmsDelegate.consumeMessage(_command.getParticipantName(), _syncReceiveTimeout);
-        } while (processMessage(message));
+            Message message = _jmsDelegate.consumeMessage(_command.getParticipantName(), _syncReceiveTimeout);
+            if (message != null)
+            {
+                keepLooping = processMessage(message);
+            }
+            else
+            {
+                boolean reachedMaximumDuration = _startTime > 0 && _maximumDuration > 0 && System.currentTimeMillis() - _startTime >= _maximumDuration;
+                if (reachedMaximumDuration)
+                {
+                    LOGGER.debug("Consumer participant done due to maximumDuration reached.");
+                    keepLooping = false;
+                }
+            }
+        }
+        while (keepLooping);
     }
 
     /**
@@ -145,62 +168,58 @@ public class ConsumerParticipant implements Participant
      */
     private boolean processMessage(Message message)
     {
-        int messageCount = message == null? _totalNumberOfMessagesReceived.get() : _totalNumberOfMessagesReceived.incrementAndGet() ;
-        boolean batchEnabled = _command.getBatchSize() > 0;
-        boolean batchComplete = batchEnabled && messageCount % _command.getBatchSize() == 0;
-        if (message != null)
+        if (!_collectingData.get())
         {
-            if (LOGGER.isTraceEnabled())
+            // If we are performing a run with fixed number of messages we may receive a message before the startDataCollection command.
+            if (_expectedNumberOfMessages > 0)
             {
-                LOGGER.trace("Message {} received by {}", message, this);
+                _totalNumberOfMessagesReceived.incrementAndGet();
             }
-            int messagePayloadSize = _jmsDelegate.calculatePayloadSizeFrom(message);
-            _allConsumedPayloadSizes.add(messagePayloadSize);
-            _totalPayloadSizeOfAllMessagesReceived.addAndGet(messagePayloadSize);
-
-            if (_command.isEvaluateLatency())
-            {
-                long mesageTimestamp;
-                try
-                {
-                    mesageTimestamp = message.getJMSTimestamp();
-                }
-                catch (JMSException e)
-                {
-                    throw new DistributedTestException("Cannot get message timestamp!", e);
-                }
-                long latency = System.currentTimeMillis() - mesageTimestamp;
-                _messageLatencies.add(latency);
-            }
-
-            if (!batchEnabled || batchComplete)
-            {
-                if (LOGGER.isTraceEnabled() && batchEnabled)
-                {
-                    LOGGER.trace("Committing: batch size {} ", _command.getBatchSize() );
-                }
-                _jmsDelegate.commitOrAcknowledgeMessageIfNecessary(_command.getSessionName(), message);
-            }
+            _jmsDelegate.commitOrAcknowledgeMessageIfNecessary(_command.getSessionName(), message);
+            return true;
         }
 
-        boolean reachedExpectedNumberOfMessages = _command.getNumberOfMessages() > 0 && messageCount >= _command.getNumberOfMessages();
-        boolean reachedMaximumDuration = _command.getMaximumDuration() > 0 && System.currentTimeMillis() - _startTime >= _command.getMaximumDuration();
-        boolean finishedConsuming = reachedExpectedNumberOfMessages || reachedMaximumDuration;
-
-        if (finishedConsuming)
+        if (_startTime == 0)
         {
-            if (LOGGER.isDebugEnabled())
+            _startTime = System.currentTimeMillis();
+        }
+
+        LOGGER.trace("Message {} received by {}", message, this);
+
+        final int messageCount = _totalNumberOfMessagesReceived.incrementAndGet() ;
+
+        int messagePayloadSize = _jmsDelegate.calculatePayloadSizeFrom(message);
+        _allConsumedPayloadSizes.add(messagePayloadSize);
+        _totalPayloadSizeOfAllMessagesReceived.addAndGet(messagePayloadSize);
+
+        if (_evaluateLatency)
+        {
+            long messageTimestamp = getMessageTimestamp(message);
+            long latency = System.currentTimeMillis() - messageTimestamp;
+            _messageLatencies.add(latency);
+        }
+
+        boolean batchComplete = (_batchEnabled && (messageCount % _batchSize == 0));
+        if (!_batchEnabled || batchComplete)
+        {
+            if (_batchEnabled)
             {
-                LOGGER.debug("Message {} reachedMaximumDuration {}", messageCount, reachedMaximumDuration);
+                LOGGER.trace("Committing: batch size {} ", _batchSize);
             }
+            _jmsDelegate.commitOrAcknowledgeMessageIfNecessary(_command.getSessionName(), message);
+        }
 
-            if (batchEnabled && !batchComplete)
+        boolean reachedMaximumDuration = _maximumDuration > 0 && System.currentTimeMillis() - _startTime >= _maximumDuration;
+        boolean receivedAllMessages = _expectedNumberOfMessages > 0  && messageCount >= _expectedNumberOfMessages;
+
+        if (reachedMaximumDuration || receivedAllMessages)
+        {
+            LOGGER.debug("Message {} reached duration : {} : received all messages : {}",
+                         messageCount, reachedMaximumDuration, reachedMaximumDuration);
+
+            if (_batchEnabled)
             {
-                if (LOGGER.isTraceEnabled())
-                {
-                    LOGGER.trace("Committing: batch size " + _command.getBatchSize() );
-                }
-
+                LOGGER.trace("Committing: final batch");
                 // commit/acknowledge remaining messages if necessary
                 _jmsDelegate.commitOrAcknowledgeMessageIfNecessary(_command.getSessionName(), message);
             }
@@ -210,27 +229,33 @@ public class ConsumerParticipant implements Participant
         return true;
     }
 
+    private long getMessageTimestamp(final Message message)
+    {
+        try
+        {
+            return message.getJMSTimestamp();
+        }
+        catch (JMSException e)
+        {
+            throw new DistributedTestException("Cannot get message timestamp!", e);
+        }
+    }
+
 
     /**
      * Intended to be called from a {@link MessageListener}. Updates {@link #_asyncRunHasFinished} if
      * no more messages should be processed, causing {@link #doIt(String)} to exit.
      */
-    public void processAsynchMessage(Message message)
+    public void processAsyncMessage(Message message)
     {
         boolean continueRunning = true;
         try
         {
-            if (_startTime == 0)
-            {
-                // reset counter and start time on receiving of first message
-                _startTime = System.currentTimeMillis();
-            }
-
             continueRunning = processMessage(message);
         }
         catch (Exception e)
         {
-            LOGGER.error("Error occured consuming message " + _totalNumberOfMessagesReceived, e);
+            LOGGER.error("Error occurred consuming message " + _totalNumberOfMessagesReceived, e);
             continueRunning = false;
             _asyncMessageListenerException = e;
         }

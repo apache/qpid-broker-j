@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,26 +18,10 @@
  * under the License.
  *
  */
-package org.apache.qpid.disttest.client.utils;
 
-import java.util.concurrent.Callable;
+package org.apache.qpid.disttest.controller;
 
-/**
- * Executes a {@link Callable} without any limits.
- */
-public class ExecutorWithNoLimits implements ExecutorWithLimits
+public interface ITestRunner
 {
-
-    @Override
-    public <T> T execute(Callable<T> _callback) throws Exception
-    {
-        return _callback.call();
-    }
-
-    @Override
-    public void shutdown()
-    {
-        // Deliberately blank
-    }
-
+    TestResult run();
 }

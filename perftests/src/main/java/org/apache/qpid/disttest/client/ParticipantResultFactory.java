@@ -23,7 +23,7 @@ import java.util.Date;
 
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
-import org.apache.qpid.disttest.message.CreateParticpantCommand;
+import org.apache.qpid.disttest.message.CreateParticipantCommand;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;
@@ -70,7 +70,6 @@ public class ParticipantResultFactory
     {
         final ProducerParticipantResult producerParticipantResult = new ProducerParticipantResult();
 
-        producerParticipantResult.setStartDelay(command.getStartDelay());
         producerParticipantResult.setDeliveryMode(command.getDeliveryMode());
         producerParticipantResult.setPriority(command.getPriority());
         producerParticipantResult.setInterval(command.getInterval());
@@ -95,7 +94,7 @@ public class ParticipantResultFactory
         participantResult.setEndDate(end);
     }
 
-    private void setTestProperties(final ParticipantResult participantResult, CreateParticpantCommand command, String participantName, String clientRegisteredName, int acknowledgeMode)
+    private void setTestProperties(final ParticipantResult participantResult, CreateParticipantCommand command, String participantName, String clientRegisteredName, int acknowledgeMode)
     {
         participantResult.setParticipantName(participantName);
         participantResult.setRegisteredClientName(clientRegisteredName);

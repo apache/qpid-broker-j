@@ -49,6 +49,7 @@ public class ConsumerParticipantTest extends QpidTestCase
     private static final long RECEIVE_TIMEOUT = 100;
     private static final String CLIENT_NAME = "CLIENT_NAME";
     private static final int PAYLOAD_SIZE_PER_MESSAGE = 1024;
+    public static final long MAXIMUM_DURATION = 100l;
 
     private final Message _mockMessage = mock(Message.class);
     private final CreateConsumerCommand _command = new CreateConsumerCommand();
@@ -70,6 +71,7 @@ public class ConsumerParticipantTest extends QpidTestCase
         _command.setParticipantName(PARTICIPANT_NAME1);
         _command.setSynchronous(true);
         _command.setReceiveTimeout(RECEIVE_TIMEOUT);
+        _command.setMaximumDuration(MAXIMUM_DURATION);
 
         _consumerParticipant = new ConsumerParticipant(_delegate, _command);
 
@@ -80,123 +82,23 @@ public class ConsumerParticipantTest extends QpidTestCase
         _testStartTime = System.currentTimeMillis();
     }
 
-    public void testNoMessagesToReceive() throws Exception
+    public void testReceiveMessagesForDurationSync() throws Exception
     {
-        _command.setNumberOfMessages(0);
-        _command.setMaximumDuration(0);
 
-        try
-        {
-            _consumerParticipant.doIt(CLIENT_NAME);
-            fail("Exception not thrown");
-        }
-        catch(DistributedTestException e)
-        {
-            // PASS
-            assertEquals("number of messages and duration cannot both be zero", e.getMessage());
-
-        }
-
-        verify(_delegate, never()).consumeMessage(anyString(), anyLong());
-    }
-
-    public void testReceiveOneMessageSynch() throws Exception
-    {
-        int numberOfMessages = 1;
-        long totalPayloadSize = PAYLOAD_SIZE_PER_MESSAGE * numberOfMessages;
-        _command.setNumberOfMessages(numberOfMessages);
-
+        _consumerParticipant.startDataCollection();
         ParticipantResult result = _consumerParticipant.doIt(CLIENT_NAME);
 
         assertExpectedConsumerResults(result, PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,
-                                      Session.CLIENT_ACKNOWLEDGE, null, numberOfMessages, PAYLOAD_SIZE_PER_MESSAGE, totalPayloadSize, null);
-
-        _inOrder.verify(_delegate).consumeMessage(PARTICIPANT_NAME1, RECEIVE_TIMEOUT);
-        _inOrder.verify(_delegate).calculatePayloadSizeFrom(_mockMessage);
-        _inOrder.verify(_delegate).commitOrAcknowledgeMessageIfNecessary(SESSION_NAME1, _mockMessage);
-    }
-
-    public void testReceiveMessagesForDurationSynch() throws Exception
-    {
-        long duration = 100;
-        _command.setMaximumDuration(duration);
-
-        ParticipantResult result = _consumerParticipant.doIt(CLIENT_NAME);
-
-        assertExpectedConsumerResults(result, PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,
-                                      Session.CLIENT_ACKNOWLEDGE, null, null, PAYLOAD_SIZE_PER_MESSAGE, null, duration);
+                                      Session.CLIENT_ACKNOWLEDGE, null, null, PAYLOAD_SIZE_PER_MESSAGE, null, MAXIMUM_DURATION);
 
         verify(_delegate, atLeastOnce()).consumeMessage(PARTICIPANT_NAME1, RECEIVE_TIMEOUT);
         verify(_delegate, atLeastOnce()).calculatePayloadSizeFrom(_mockMessage);
         verify(_delegate, atLeastOnce()).commitOrAcknowledgeMessageIfNecessary(SESSION_NAME1, _mockMessage);
     }
 
-    public void testReceiveMessagesBatchedSynch() throws Exception
-    {
-        int numberOfMessages = 10;
-        final int batchSize = 3;
-        long totalPayloadSize = PAYLOAD_SIZE_PER_MESSAGE * numberOfMessages;
-        _command.setNumberOfMessages(numberOfMessages);
-        _command.setBatchSize(batchSize);
-
-        ParticipantResult result = _consumerParticipant.doIt(CLIENT_NAME);
-
-        assertExpectedConsumerResults(result, PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,
-                                      Session.CLIENT_ACKNOWLEDGE, batchSize, numberOfMessages, PAYLOAD_SIZE_PER_MESSAGE, totalPayloadSize, null);
-
-        verify(_delegate, times(numberOfMessages)).consumeMessage(PARTICIPANT_NAME1, RECEIVE_TIMEOUT);
-        verify(_delegate, times(numberOfMessages)).calculatePayloadSizeFrom(_mockMessage);
-        verify(_delegate, times(4)).commitOrAcknowledgeMessageIfNecessary(SESSION_NAME1, _mockMessage);
-    }
-
-    public void testReceiveMessagesWithVaryingPayloadSize() throws Exception
-    {
-        int numberOfMessages = 3;
-
-        int firstPayloadSize = PAYLOAD_SIZE_PER_MESSAGE;
-        int secondPayloadSize = PAYLOAD_SIZE_PER_MESSAGE * 2;
-        int thirdPayloadSize = PAYLOAD_SIZE_PER_MESSAGE * 4;
-
-        _command.setNumberOfMessages(numberOfMessages);
-
-        when(_delegate.calculatePayloadSizeFrom(_mockMessage)).thenReturn(firstPayloadSize, secondPayloadSize, thirdPayloadSize);
-
-        ParticipantResult result = _consumerParticipant.doIt(CLIENT_NAME);
-
-        final int expectedPayloadResultPayloadSize = 0;
-        final long totalPayloadSize = firstPayloadSize + secondPayloadSize + thirdPayloadSize;
-        assertExpectedConsumerResults(result, PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,
-                                      Session.CLIENT_ACKNOWLEDGE, null, numberOfMessages, expectedPayloadResultPayloadSize, totalPayloadSize, null);
-
-        verify(_delegate, times(numberOfMessages)).consumeMessage(PARTICIPANT_NAME1, RECEIVE_TIMEOUT);
-        verify(_delegate, times(numberOfMessages)).calculatePayloadSizeFrom(_mockMessage);
-        verify(_delegate, times(numberOfMessages)).commitOrAcknowledgeMessageIfNecessary(SESSION_NAME1, _mockMessage);
-    }
-
     public void testReleaseResources()
     {
         _consumerParticipant.releaseResources();
         verify(_delegate).closeTestConsumer(PARTICIPANT_NAME1);
-    }
-
-    public void testLatency() throws Exception
-    {
-        int numberOfMessages = 1;
-        long totalPayloadSize = PAYLOAD_SIZE_PER_MESSAGE * numberOfMessages;
-        _command.setNumberOfMessages(numberOfMessages);
-        _command.setEvaluateLatency(true);
-        _consumerParticipant = new ConsumerParticipant(_delegate, _command);
-        ParticipantResult result = _consumerParticipant.doIt(CLIENT_NAME);
-
-        assertExpectedConsumerResults(result, PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,
-                                      Session.CLIENT_ACKNOWLEDGE, null, numberOfMessages, PAYLOAD_SIZE_PER_MESSAGE, totalPayloadSize, null);
-
-        _inOrder.verify(_delegate).consumeMessage(PARTICIPANT_NAME1, RECEIVE_TIMEOUT);
-        _inOrder.verify(_delegate).calculatePayloadSizeFrom(_mockMessage);
-        _inOrder.verify(_delegate).commitOrAcknowledgeMessageIfNecessary(SESSION_NAME1, _mockMessage);
-        assertTrue("Unexpected consuemr results", result instanceof ConsumerParticipantResult);
-        Collection<Long> latencies = ((ConsumerParticipantResult)result).getMessageLatencies();
-        assertNotNull("Message latency is not cllected", latencies);
-        assertEquals("Unexpected message latency results", 1,  latencies.size());
     }
 }

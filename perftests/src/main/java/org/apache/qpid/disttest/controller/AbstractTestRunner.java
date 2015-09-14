@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +16,9 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
+
 package org.apache.qpid.disttest.controller;
 
 import java.util.Collection;
@@ -37,33 +40,24 @@ import org.apache.qpid.disttest.message.Command;
 import org.apache.qpid.disttest.message.CommandType;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.Response;
+import org.apache.qpid.disttest.message.StartDataCollectionCommand;
 import org.apache.qpid.disttest.message.StartTestCommand;
 import org.apache.qpid.disttest.message.TearDownTestCommand;
 
-public class TestRunner
+public abstract class AbstractTestRunner implements ITestRunner
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestRunner.class);
-
-    private static final long PARTICIPANT_RESULTS_LOG_INTERVAL = 60000;
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTestRunner.class);
     public static final long WAIT_FOREVER = -1;
-
-    private final long _commandResponseTimeout;
-
-    private final Set<CommandType> _setOfResponsesToExpect = Collections.synchronizedSet(new HashSet<CommandType>());
-
-    private final ParticipatingClients _participatingClients;
-
-    private final TestInstance _testInstance;
-    private ControllerJmsDelegate _jmsDelegate;
-
-    private volatile CountDownLatch _commandResponseLatch = null;
-    private final CountDownLatch _testResultsLatch;
-    private final TestResult _testResult;
-
+    private static final long PARTICIPANT_RESULTS_LOG_INTERVAL = 60000;
+    protected final long _commandResponseTimeout;
+    protected final ParticipatingClients _participatingClients;
+    protected final TestInstance _testInstance;
+    protected CountDownLatch _testResultsLatch;
     /** Length of time to await test results or {@value #WAIT_FOREVER} */
-    private final long _testResultTimeout;
-
-    private Thread _removeQueuesShutdownHook = new Thread()
+    protected final long _testResultTimeout;
+    private final Set<CommandType> _setOfResponsesToExpect = Collections.synchronizedSet(new HashSet<CommandType>());
+    protected ControllerJmsDelegate _jmsDelegate;
+    protected Thread _removeQueuesShutdownHook = new Thread()
     {
         @Override
         public void run()
@@ -79,74 +73,19 @@ public class TestRunner
             }
         }
     };
+    private volatile CountDownLatch _commandResponseLatch = null;
 
-    public TestRunner(ParticipatingClients participatingClients, TestInstance testInstance, ControllerJmsDelegate jmsDelegate, long commandResponseTimeout, long testResultTimeout)
+    public AbstractTestRunner(ParticipatingClients participatingClients,
+                              long commandResponseTimeout,
+                              TestInstance testInstance,
+                              ControllerJmsDelegate jmsDelegate,
+                              long testResultTimeout)
     {
         _participatingClients = participatingClients;
+        _commandResponseTimeout = commandResponseTimeout;
         _testInstance = testInstance;
         _jmsDelegate = jmsDelegate;
-        _commandResponseTimeout = commandResponseTimeout;
-        _testResultsLatch = new CountDownLatch(testInstance.getTotalNumberOfParticipants());
         _testResultTimeout = testResultTimeout;
-        _testResult = new TestResult(testInstance.getName());
-    }
-
-    public TestResult run()
-    {
-        final ParticipantResultListener participantResultListener = new ParticipantResultListener();
-        TestCommandResponseListener testCommandResponseListener = new TestCommandResponseListener();
-
-        try
-        {
-            _jmsDelegate.addCommandListener(testCommandResponseListener);
-            _jmsDelegate.addCommandListener(participantResultListener);
-
-            runParts();
-
-            return _testResult;
-        }
-        catch(RuntimeException e)
-        {
-            LOGGER.error("Couldn't run test", e);
-            throw e;
-        }
-        finally
-        {
-            _jmsDelegate.removeCommandListener(participantResultListener);
-            _jmsDelegate.removeCommandListener(testCommandResponseListener);
-        }
-    }
-
-    private void runParts()
-    {
-        boolean queuesCreated = false;
-
-        try
-        {
-            createQueues();
-            queuesCreated = true;
-            Runtime.getRuntime().addShutdownHook(_removeQueuesShutdownHook);
-
-            sendTestSetupCommands();
-            awaitCommandResponses();
-            sendCommandToParticipatingClients(new StartTestCommand());
-            awaitCommandResponses();
-
-            awaitTestResults();
-
-            sendCommandToParticipatingClients(new TearDownTestCommand());
-            awaitCommandResponses();
-        }
-        finally
-        {
-
-            if (queuesCreated)
-            {
-                deleteQueues();
-            }
-
-            Runtime.getRuntime().removeShutdownHook(_removeQueuesShutdownHook);
-        }
     }
 
     void createQueues()
@@ -161,6 +100,7 @@ public class TestRunner
     void sendTestSetupCommands()
     {
         List<CommandForClient> commandsForAllClients = _testInstance.createCommands();
+        validateCommands(commandsForAllClients);
         final int numberOfCommandsToSend = commandsForAllClients.size();
         _commandResponseLatch = new CountDownLatch(numberOfCommandsToSend);
 
@@ -179,11 +119,15 @@ public class TestRunner
         }
     }
 
+    protected void validateCommands(List<CommandForClient> commandsForAllClients)
+    {
+        // pass
+    }
+
     void awaitCommandResponses()
     {
         awaitLatch(_commandResponseLatch, _commandResponseTimeout, "Timed out waiting for command responses");
     }
-
 
     void processCommandResponse(final Response response)
     {
@@ -195,7 +139,6 @@ public class TestRunner
         _commandResponseLatch.countDown();
         checkForResponseError(response);
     }
-
 
     void awaitTestResults()
     {
@@ -253,11 +196,11 @@ public class TestRunner
         }
     }
 
-    public void processParticipantResult(ParticipantResult result)
+    void processParticipantResult(ParticipantResult result, TestResult testResult)
     {
         setOriginalTestDetailsOn(result);
 
-        _testResult.addParticipantResult(result);
+        testResult.addParticipantResult(result);
         LOGGER.debug("Received result " + result);
 
         _testResultsLatch.countDown();
@@ -308,8 +251,79 @@ public class TestRunner
         }
     }
 
+
+    protected TestResult doIt()
+    {
+        TestResult testResult = new TestResult(_testInstance.getName());
+        _testResultsLatch = new CountDownLatch(_testInstance.getTotalNumberOfParticipants());
+
+        ParticipantResultListener participantResultListener = new ParticipantResultListener(testResult);
+        TestCommandResponseListener testCommandResponseListener = new TestCommandResponseListener();
+
+        try
+        {
+            _jmsDelegate.addCommandListener(testCommandResponseListener);
+            _jmsDelegate.addCommandListener(participantResultListener);
+
+            runParts();
+
+            return testResult;
+        }
+        catch(RuntimeException e)
+        {
+            LOGGER.error("Couldn't run test", e);
+            throw e;
+        }
+        finally
+        {
+            _jmsDelegate.removeCommandListener(participantResultListener);
+            _jmsDelegate.removeCommandListener(testCommandResponseListener);
+        }
+    }
+
+    protected void runParts()
+    {
+        boolean queuesCreated = false;
+
+        try
+        {
+            createQueues();
+            queuesCreated = true;
+            Runtime.getRuntime().addShutdownHook(_removeQueuesShutdownHook);
+
+            sendTestSetupCommands();
+            awaitCommandResponses();
+            sendCommandToParticipatingClients(new StartTestCommand());
+            awaitCommandResponses();
+            sendCommandToParticipatingClients(new StartDataCollectionCommand());
+            awaitCommandResponses();
+
+            awaitTestResults();
+
+            sendCommandToParticipatingClients(new TearDownTestCommand());
+            awaitCommandResponses();
+        }
+        finally
+        {
+
+            if (queuesCreated)
+            {
+                deleteQueues();
+            }
+
+            Runtime.getRuntime().removeShutdownHook(_removeQueuesShutdownHook);
+        }
+    }
+
     final class ParticipantResultListener implements CommandListener
     {
+        private final TestResult _testResult;
+
+        public ParticipantResultListener(TestResult testResult)
+        {
+             _testResult = testResult;
+        }
+
         @Override
         public boolean supports(Command command)
         {
@@ -319,7 +333,7 @@ public class TestRunner
         @Override
         public void processCommand(Command command)
         {
-            processParticipantResult((ParticipantResult) command);
+            processParticipantResult((ParticipantResult) command, _testResult);
 
         }
     }
@@ -344,5 +358,4 @@ public class TestRunner
             return false;
         }
     }
-
 }

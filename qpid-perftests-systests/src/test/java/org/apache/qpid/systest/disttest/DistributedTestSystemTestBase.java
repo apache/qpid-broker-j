@@ -56,11 +56,6 @@ public class DistributedTestSystemTestBase extends QpidBrokerTestCase
         super.tearDown();
     }
 
-    public Context getContext()
-    {
-        return _context;
-    }
-
     @Override
     public Connection getConnection() throws JMSException, NamingException
     {

@@ -19,7 +19,12 @@
  */
 package org.apache.qpid.disttest.client;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -45,6 +50,10 @@ public class Client
     private Visitor _visitor;
     private final AtomicReference<ClientState> _state;
     private ParticipantExecutorRegistry _participantRegistry = new ParticipantExecutorRegistry();
+    private Set<Participant> _participants = new HashSet<>();
+
+    private final ExecutorService _executorService = Executors.newCachedThreadPool(new DaemonThreadFactory());
+
 
     public Client(final ClientJmsDelegate delegate) throws NamingException
     {
@@ -87,9 +96,11 @@ public class Client
         _latch.countDown();
     }
 
-    public void addParticipantExecutor(final ParticipantExecutor participant)
+    public void addParticipant(final Participant participant)
     {
-        _participantRegistry.add(participant);
+        final ParticipantExecutor executor = new ParticipantExecutor(participant, _executorService);
+        _participantRegistry.add(executor);
+        _participants.add(participant);
     }
 
     public void waitUntilStopped()
@@ -110,12 +121,16 @@ public class Client
                 _latch.await(timeout, TimeUnit.MILLISECONDS);
             }
         }
-        catch (final InterruptedException ie)
+        catch (InterruptedException ie)
         {
             Thread.currentThread().interrupt();
         }
+        finally
+        {
+            _clientJmsDelegate.destroy();
+            _executorService.shutdown();
+        }
 
-        _clientJmsDelegate.destroy();
     }
 
     public void processInstruction(final Command command)
@@ -203,8 +218,8 @@ public class Client
             throw new DistributedTestException("Client '" + _clientJmsDelegate.getClientName() + "' is not in RUNNING_TEST state! Ignoring tearDownTest");
         }
 
-
         _participantRegistry.clear();
+        _participants.clear();
     }
 
     public void sendResults(ParticipantResult testResult)
@@ -225,5 +240,25 @@ public class Client
     {
         _participantRegistry = participantRegistry;
     }
+
+    public void startDataCollection()
+    {
+        for (Participant participant : _participants)
+        {
+            participant.startDataCollection();
+        }
+    }
+
+    private static final class DaemonThreadFactory implements ThreadFactory
+    {
+        @Override
+        public Thread newThread(Runnable r)
+        {
+            Thread thread = new Thread(r);
+            thread.setDaemon(true);
+            return thread;
+        }
+    }
+
 
 }
