@@ -58,7 +58,7 @@ public class ControllerRunner extends AbstractRunner
     private static final String DISTRIBUTED_DEFAULT = "false";
     private static final String OUTPUT_DIR_DEFAULT = ".";
     private static final String WRITE_TO_DB_DEFAULT = "false";
-    private static final String HILL_CLIMB_DEFAULT = "true";
+    private static final String HILL_CLIMB_DEFAULT = "false";
     private static final String HILL_CLIMBER_MAX_NUMBER_OF_RUNS_DEFAULT = "3";
     private static final String HILL_CLIMBER_START_TARGET_RATE_DEFAULT = "1025";
     private static final String HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD_DEFAULT = "0.95";
