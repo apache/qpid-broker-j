@@ -987,45 +987,43 @@ public class ServerSessionDelegate extends SessionDelegate
     @Override
     public void exchangeDelete(Session session, ExchangeDelete method)
     {
-        VirtualHostImpl virtualHost = getVirtualHost(session);
-
-        try
+        if (nameNullOrEmpty(method.getExchange()))
         {
-            if (nameNullOrEmpty(method.getExchange()))
-            {
-                exception(session, method, ExecutionErrorCode.INVALID_ARGUMENT, "Delete not allowed for default exchange");
-                return;
-            }
+            exception(session, method, ExecutionErrorCode.INVALID_ARGUMENT, "Delete not allowed for default exchange");
+            return;
+        }
 
-            ExchangeImpl exchange = getExchange(session, method.getExchange());
+        ExchangeImpl exchange = getExchange(session, method.getExchange());
 
-            if(exchange == null)
+        if(exchange == null)
+        {
+            exception(session, method, ExecutionErrorCode.NOT_FOUND, "No such exchange '" + method.getExchange() + "'");
+        }
+        else
+        {
+            if (method.getIfUnused() && exchange.hasBindings())
             {
-                exception(session, method, ExecutionErrorCode.NOT_FOUND, "No such exchange '" + method.getExchange() + "'");
+                exception(session, method, ExecutionErrorCode.PRECONDITION_FAILED, "Exchange has bindings");
             }
             else
             {
-                if (method.getIfUnused() && exchange.hasBindings())
+                try
                 {
-                    exception(session, method, ExecutionErrorCode.PRECONDITION_FAILED, "Exchange has bindings");
+                    exchange.delete();
                 }
-                else
+                catch (ExchangeIsAlternateException e)
                 {
-                    virtualHost.removeExchange(exchange, !method.getIfUnused());
+                    exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Exchange in use as an alternate exchange");
+                }
+                catch (RequiredExchangeException e)
+                {
+                    exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Exchange '"+method.getExchange()+"' cannot be deleted");
+                }
+                catch (AccessControlException e)
+                {
+                    exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
                 }
             }
-        }
-        catch (ExchangeIsAlternateException e)
-        {
-            exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Exchange in use as an alternate exchange");
-        }
-        catch (RequiredExchangeException e)
-        {
-            exception(session, method, ExecutionErrorCode.NOT_ALLOWED, "Exchange '"+method.getExchange()+"' cannot be deleted");
-        }
-        catch (AccessControlException e)
-        {
-            exception(session, method, ExecutionErrorCode.UNAUTHORIZED_ACCESS, e.getMessage());
         }
     }
 

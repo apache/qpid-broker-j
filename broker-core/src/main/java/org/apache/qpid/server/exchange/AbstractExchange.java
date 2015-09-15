@@ -171,8 +171,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
         return getLifetimePolicy() != LifetimePolicy.PERMANENT;
     }
 
-    @Override
-    public ListenableFuture<Void> deleteWithChecks()
+    private ListenableFuture<Void> deleteWithChecks()
     {
         if(hasReferrers())
         {
@@ -818,7 +817,7 @@ public abstract class AbstractExchange<T extends AbstractExchange<T>>
     {
         try
         {
-            ListenableFuture<Void> removeExchangeFuture = _virtualHost.removeExchangeAsync(this, true);
+            ListenableFuture<Void> removeExchangeFuture = deleteWithChecks();
             return doAfter(removeExchangeFuture, new Runnable()
             {
                 @Override

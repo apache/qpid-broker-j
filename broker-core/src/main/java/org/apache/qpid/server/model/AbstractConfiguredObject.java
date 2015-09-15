@@ -1164,19 +1164,38 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 try
                 {
-                    returnVal = (ListenableFuture<Void>) stateChangingMethod.invoke(this);
-                    doAfter(returnVal, new Runnable()
+                    final SettableFuture<Void> stateTransitionResult = SettableFuture.create();
+                    ListenableFuture<Void> stateTransitionFuture = (ListenableFuture<Void>) stateChangingMethod.invoke(this);
+                    Futures.addCallback(stateTransitionFuture, new FutureCallback<Void>()
                     {
                         @Override
-                        public void run()
+                        public void onSuccess(Void result)
                         {
-                            _attainStateFuture.set(AbstractConfiguredObject.this);
-                            if(getState() != currentState)
+                            try
                             {
-                                notifyStateChanged(currentState, getState());
+                                _attainStateFuture.set(AbstractConfiguredObject.this);
+                                if (getState() != currentState)
+                                {
+                                    notifyStateChanged(currentState, getState());
+                                }
+                                stateTransitionResult.set(null);
+                            }
+                            catch (Throwable e)
+                            {
+                                stateTransitionResult.setException(e);
                             }
                         }
+
+                        @Override
+                        public void onFailure(Throwable t)
+                        {
+                            // state transition failed to attain desired state
+                            // setting the _attainStateFuture, so, object relying on it could get the configured object
+                            _attainStateFuture.set(AbstractConfiguredObject.this);
+                            stateTransitionResult.setException(t);
+                        }
                     });
+                    returnVal = stateTransitionResult;
                 }
                 catch (IllegalAccessException e)
                 {
@@ -1184,6 +1203,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
                 catch (InvocationTargetException e)
                 {
+                    // state transition failed to attain desired state
+                    // setting the _attainStateFuture, so, object relying on it could get the configured object
+                    _attainStateFuture.set(this);
+
                     Throwable underlying = e.getTargetException();
                     if(underlying instanceof RuntimeException)
                     {

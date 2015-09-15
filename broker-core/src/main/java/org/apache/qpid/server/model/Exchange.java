@@ -69,7 +69,4 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
                           Map<String,Object> bindingArguments,
                           Map<String, Object> attributes);
 
-
-
-    ListenableFuture<Void> deleteWithChecks();
 }

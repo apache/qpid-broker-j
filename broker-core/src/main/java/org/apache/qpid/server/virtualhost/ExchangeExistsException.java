@@ -22,8 +22,9 @@
 package org.apache.qpid.server.virtualhost;
 
 import org.apache.qpid.server.exchange.ExchangeImpl;
+import org.apache.qpid.server.model.IntegrityViolationException;
 
-public class ExchangeExistsException extends RuntimeException
+public class ExchangeExistsException extends IntegrityViolationException
 {
     private final ExchangeImpl _existing;
 

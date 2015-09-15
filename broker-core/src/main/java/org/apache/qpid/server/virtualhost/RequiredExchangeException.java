@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-public class RequiredExchangeException extends RuntimeException
+import org.apache.qpid.server.model.IntegrityViolationException;
+
+public class RequiredExchangeException extends IntegrityViolationException
 {
     public RequiredExchangeException(String name)
     {

@@ -222,7 +222,7 @@ public class VirtualHostManagerMBeanTest extends QpidTestCase
             assertEquals("No such exchange \"unknownexchange\"", oe.getMessage());
         }
 
-        verify(mockExchange, never()).deleteWithChecks();
+        verify(mockExchange, never()).delete();
     }
 
     private static Map<String,Object> matchesMap(final String name,

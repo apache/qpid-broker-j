@@ -161,21 +161,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public void removeExchange(final ExchangeImpl<?> exchange, final boolean force)
-            throws ExchangeIsAlternateException, RequiredExchangeException
-    {
-        throwUnsupportedForReplica();
-    }
-
-    @Override
-    public ListenableFuture<Void> removeExchangeAsync(final ExchangeImpl<?> exchange, final boolean force)
-            throws ExchangeIsAlternateException, RequiredExchangeException
-    {
-        throwUnsupportedForReplica();
-        return null;
-    }
-
-    @Override
     public MessageDestination getAttainedMessageDestination(final String name)
     {
         return null;

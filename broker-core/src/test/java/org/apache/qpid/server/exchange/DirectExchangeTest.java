@@ -121,33 +121,6 @@ public class DirectExchangeTest extends QpidTestCase
 
     }
 
-    public void testDeleteWithChecksOfExchangeSetAsAlternate() throws Exception
-    {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(Queue.NAME, getTestName());
-        attributes.put(Queue.DURABLE, false);
-        attributes.put(Queue.ALTERNATE_EXCHANGE, _exchange.getName());
-
-        Queue queue = (Queue) _vhost.createChild(Queue.class, attributes);
-        queue.open();
-
-        assertEquals("Unexpected alternate exchange on queue", _exchange, queue.getAlternateExchange());
-
-        try
-        {
-            ListenableFuture<Void> deleteFuture = _exchange.deleteWithChecks();
-            deleteFuture.get(1000, TimeUnit.MILLISECONDS);
-            fail("Exchange deletion should fail with ExchangeIsAlternateException");
-        }
-        catch(ExchangeIsAlternateException e)
-        {
-            // pass
-        }
-
-        assertEquals("Unexpected effective exchange state", State.ACTIVE, _exchange.getState());
-        assertEquals("Unexpected desired exchange state", State.ACTIVE, _exchange.getDesiredState());
-    }
-
     public void testDeleteOfExchangeSetAsAlternate() throws Exception
     {
         Map<String, Object> attributes = new HashMap<>();

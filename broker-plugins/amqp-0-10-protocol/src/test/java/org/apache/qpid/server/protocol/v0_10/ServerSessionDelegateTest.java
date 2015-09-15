@@ -88,7 +88,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
         final ExchangeDelete method = new ExchangeDelete(getTestName(), Option.IF_UNUSED);
         _delegate.exchangeDelete(_session, method);
 
-        verify(_host).removeExchange(exchange, false);
+        verify(exchange).delete();
     }
 
 }

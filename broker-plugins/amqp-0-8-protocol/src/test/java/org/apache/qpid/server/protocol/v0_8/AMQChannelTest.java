@@ -146,7 +146,7 @@ public class AMQChannelTest extends QpidTestCase
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
         channel.receiveExchangeDelete(AMQShortString.valueOf(getTestName()), true, false);
 
-        verify(_virtualHost).removeExchange(exchange, false);
+        verify(exchange).delete();
     }
 
     public void testOversizedMessageClosesChannel() throws Exception

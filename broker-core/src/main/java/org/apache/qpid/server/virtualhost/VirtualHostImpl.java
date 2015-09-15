@@ -70,12 +70,6 @@ public interface VirtualHostImpl< X extends VirtualHostImpl<X,Q,E>, Q extends AM
             throws ExchangeExistsException, ReservedExchangeNameException,
                    NoFactoryForTypeException;
 
-    void removeExchange(E exchange, boolean force) throws ExchangeIsAlternateException,
-                                                                                 RequiredExchangeException;
-
-    ListenableFuture<Void> removeExchangeAsync(E exchange, boolean force) throws ExchangeIsAlternateException,
-                                                                 RequiredExchangeException;
-
     E getAttainedExchange(String name);
 
     MessageDestination getAttainedMessageDestination(String name);

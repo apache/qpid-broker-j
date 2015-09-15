@@ -20,9 +20,10 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.queue.AMQQueue;
 
-public class QueueExistsException extends RuntimeException
+public class QueueExistsException extends IntegrityViolationException
 {
     private final AMQQueue _existing;
 

@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-public class ReservedExchangeNameException extends RuntimeException
+import org.apache.qpid.server.model.IntegrityViolationException;
+
+public class ReservedExchangeNameException extends IntegrityViolationException
 {
     private final String _name;
 

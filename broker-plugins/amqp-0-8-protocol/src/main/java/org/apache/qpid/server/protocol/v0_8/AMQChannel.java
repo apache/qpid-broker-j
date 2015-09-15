@@ -3047,54 +3047,53 @@ public class AMQChannel
 
         VirtualHostImpl virtualHost = _connection.getVirtualHost();
         sync();
-        try
+
+        if (isDefaultExchange(exchangeStr))
         {
+            _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
+                    "Default Exchange cannot be deleted", getChannelId());
 
-            if (isDefaultExchange(exchangeStr))
+        }
+
+        else
+        {
+            final String exchangeName = exchangeStr.toString();
+
+            final ExchangeImpl exchange = virtualHost.getAttainedExchange(exchangeName);
+            if (exchange == null)
             {
-                _connection.sendConnectionClose(AMQConstant.NOT_ALLOWED,
-                        "Default Exchange cannot be deleted", getChannelId());
-
+                closeChannel(AMQConstant.NOT_FOUND, "No such exchange: '" + exchangeStr + "'");
             }
-
             else
             {
-                final String exchangeName = exchangeStr.toString();
-
-                final ExchangeImpl exchange = virtualHost.getAttainedExchange(exchangeName);
-                if (exchange == null)
+                if (ifUnused && exchange.hasBindings())
                 {
-                    closeChannel(AMQConstant.NOT_FOUND, "No such exchange: '" + exchangeStr + "'");
+                    closeChannel(AMQConstant.IN_USE, "Exchange has bindings");
                 }
                 else
                 {
-                    if (ifUnused && exchange.hasBindings())
+                    try
                     {
-                        closeChannel(AMQConstant.IN_USE, "Exchange has bindings");
-                    }
-                    else
-                    {
-                        virtualHost.removeExchange(exchange, !ifUnused);
+                        exchange.delete();
 
                         ExchangeDeleteOkBody responseBody = _connection.getMethodRegistry().createExchangeDeleteOkBody();
 
                         _connection.writeFrame(responseBody.generateFrame(getChannelId()));
                     }
+                    catch (ExchangeIsAlternateException e)
+                    {
+                        closeChannel(AMQConstant.NOT_ALLOWED, "Exchange in use as an alternate exchange");
+                    }
+                    catch (RequiredExchangeException e)
+                    {
+                        closeChannel(AMQConstant.NOT_ALLOWED, "Exchange '" + exchangeStr + "' cannot be deleted");
+                    }
+                    catch (AccessControlException e)
+                    {
+                        _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
+                    }
                 }
             }
-        }
-        catch (ExchangeIsAlternateException e)
-        {
-            closeChannel(AMQConstant.NOT_ALLOWED, "Exchange in use as an alternate exchange");
-        }
-        catch (RequiredExchangeException e)
-        {
-            closeChannel(AMQConstant.NOT_ALLOWED,
-                         "Exchange '" + exchangeStr + "' cannot be deleted");
-        }
-        catch (AccessControlException e)
-        {
-            _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
         }
     }
 

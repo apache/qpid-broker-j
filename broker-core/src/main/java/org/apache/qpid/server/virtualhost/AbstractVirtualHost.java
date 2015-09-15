@@ -877,20 +877,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public void removeExchange(final ExchangeImpl<?> exchange, final boolean force)
-            throws ExchangeIsAlternateException, RequiredExchangeException
-    {
-        doSync(removeExchangeAsync(exchange, force));
-    }
-
-    @Override
-    public ListenableFuture<Void> removeExchangeAsync(ExchangeImpl exchange, boolean force)
-            throws ExchangeIsAlternateException, RequiredExchangeException
-    {
-        return exchange.deleteWithChecks();
-    }
-
-    @Override
     public String getLocalAddress(final String routingAddress)
     {
         String localAddress = routingAddress;

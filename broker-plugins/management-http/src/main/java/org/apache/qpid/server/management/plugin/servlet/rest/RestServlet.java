@@ -57,10 +57,6 @@ import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.ExchangeExistsException;
-import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
-import org.apache.qpid.server.virtualhost.RequiredExchangeException;
-import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.util.DataUrlUtils;
 
 public class RestServlet extends AbstractServlet
@@ -469,8 +465,7 @@ public class RestServlet extends AbstractServlet
             super.service(request, response);
         }
         catch (IllegalArgumentException | IllegalConfigurationException | IllegalStateException | AccessControlException
-                | ExchangeExistsException | QueueExistsException | IntegrityViolationException
-                | IllegalStateTransitionException | NoClassDefFoundError | ExchangeIsAlternateException | RequiredExchangeException e)
+                | IntegrityViolationException | IllegalStateTransitionException | NoClassDefFoundError  e)
         {
             setResponseStatus(request, response, e);
         }
@@ -917,13 +912,10 @@ public class RestServlet extends AbstractServlet
         {
             int responseCode = HttpServletResponse.SC_BAD_REQUEST;
             String message = e.getMessage();
-            if (e instanceof ExchangeExistsException || e instanceof QueueExistsException
-                    || e instanceof AbstractConfiguredObject.DuplicateIdException
+            if (e instanceof AbstractConfiguredObject.DuplicateIdException
                     || e instanceof AbstractConfiguredObject.DuplicateNameException
                     || e instanceof IntegrityViolationException
-                    || e instanceof IllegalStateTransitionException
-                    || e instanceof ExchangeIsAlternateException
-                    || e instanceof RequiredExchangeException)
+                    || e instanceof IllegalStateTransitionException)
             {
                 responseCode = HttpServletResponse.SC_CONFLICT;
             }

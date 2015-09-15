@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-public class ExchangeIsAlternateException extends RuntimeException
+import org.apache.qpid.server.model.IntegrityViolationException;
+
+public class ExchangeIsAlternateException extends IntegrityViolationException
 {
     public ExchangeIsAlternateException(String name)
     {
