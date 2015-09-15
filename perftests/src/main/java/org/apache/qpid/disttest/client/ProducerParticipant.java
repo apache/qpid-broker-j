@@ -208,7 +208,7 @@ public class ProducerParticipant implements Participant
     @Override
     public String toString()
     {
-        return "ProducerParticipant [command=" + _command + "]";
+        return "ProducerParticipant " + getName() + " [command=" + _command + "]";
     }
 
 }

@@ -301,6 +301,6 @@ public class ConsumerParticipant implements Participant
     @Override
     public String toString()
     {
-        return "ConsumerParticipant [_command=" + _command + ", _startTime=" + _startTime + "]";
+        return "ConsumerParticipant " + getName() + " [_command=" + _command + ", _startTime=" + _startTime + "]";
     }
 }

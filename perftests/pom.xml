@@ -41,7 +41,7 @@
     <qpid.disttest.duration>5000</qpid.disttest.duration>
 
     <!-- The following provide values for the disttest command line -->
-    <qpid.disttest.test_config>${basedir}/etc/</qpid.disttest.test_config>
+    <qpid.disttest.test_config>${basedir}/etc/testdefs</qpid.disttest.test_config>
     <qpid.disttest.hillclimb>false</qpid.disttest.hillclimb>
     <qpid.disttest.hillclimb.max_runs>3</qpid.disttest.hillclimb.max_runs>
     <qpid.disttest.hillclimb.start_target_rate>1025.0</qpid.disttest.hillclimb.start_target_rate>

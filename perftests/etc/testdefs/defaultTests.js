@@ -1,0 +1,125 @@
+/*
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ */
+
+var ACKNOWLEDGE_MODE_SESSION_TRANSACTED = 0;
+var ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE = 1;
+var ACKNOWLEDGE_MODE_CLIENT_ACKNOWLEDGE = 2;
+var ACKNOWLEDGE_MODE_DUPS_OK_ACKNOWLEDGE = 3;
+var DELIVERY_MODE_TRANSIENT = 1;
+var DELIVERY_MODE_PERSISTENT = 2;
+
+var messageSize = 1024;
+var maximumDuration = 10000;
+var numberOfParticipantPairs = 10;
+
+
+function createProducerConnection(i, connectionFactory, destination, acknowledgeMode, deliveryMode)
+{
+  return {
+    "_name": "producingConnection_" + i,
+    "_factory": connectionFactory,
+    "_sessions": [
+      {
+        "_sessionName": "producingSession_" + i,
+        "_acknowledgeMode": acknowledgeMode,
+        "_producers": [
+          {
+            "_name": "Producer_" + i,
+            "_destinationName": destination,
+            "_messageSize": messageSize,
+            "_deliveryMode": deliveryMode,
+            "_maximumDuration": maximumDuration
+          }
+        ]
+      }
+    ]
+  };
+}
+
+function createConsumerConnection(i, connectionFactory, destination, acknowledgeMode)
+{
+  return {
+    "_name": "consumingConnection_" + i,
+    "_factory": connectionFactory,
+    "_sessions": [
+      {
+        "_sessionName": "consumingSession_" + i,
+        "_acknowledgeMode": acknowledgeMode,
+        "_consumers": [
+          {
+            "_name": "Consumer_" + i,
+            "_destinationName": destination,
+            "_maximumDuration": maximumDuration
+          }
+        ]
+      }
+    ]
+  };
+}
+
+function createTest(name, acknowledgeMode, deliveryMode, transport)
+{
+  var test = {
+    "_name": name,
+    "_queues": [],
+    "_clients": [
+      {
+        "_name": "producingClient",
+        "_connections": []
+      },
+      {
+        "_name": "consumingClient",
+        "_connections": []
+      }
+    ]
+  }
+
+  var connectionFactory;
+  if (transport.toLowerCase() == "plain")
+  {
+    connectionFactory = "connectionfactory";
+  }
+  else if (transport.toLowerCase() == "ssl")
+  {
+    connectionFactory = "sslconnectionfactory";
+  }
+
+  for(var i=0; i < numberOfParticipantPairs; i++)
+  {
+    var queueName = "testQueue_" + i;
+    var destination = "BURL:direct:////" + queueName + "?durable='true'";
+    test._queues.push({"_name": queueName, "_durable": true});
+
+    test._clients[0]._connections.push(createProducerConnection(i, connectionFactory, destination, acknowledgeMode, deliveryMode));
+    test._clients[1]._connections.push(createConsumerConnection(i, connectionFactory, destination, acknowledgeMode));
+  }
+
+  return test;
+}
+
+
+var jsonObject = {
+  _tests: [createTest("persistent_transaction_plain", ACKNOWLEDGE_MODE_SESSION_TRANSACTED, DELIVERY_MODE_PERSISTENT, "PLAIN"),
+           createTest("transient_autoack_plain", ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT, "PLAIN"),
+           createTest("persistent_transaction_ssl", ACKNOWLEDGE_MODE_SESSION_TRANSACTED, DELIVERY_MODE_PERSISTENT, "SSL"),
+           createTest("transient_autoack_ssl", ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT, "SSL")]
+};
+

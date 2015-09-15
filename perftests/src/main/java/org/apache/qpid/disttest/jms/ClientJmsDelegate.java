@@ -20,9 +20,10 @@
 package org.apache.qpid.disttest.jms;
 
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -72,12 +73,12 @@ public class ClientJmsDelegate
     private final String _clientName;
     private Queue _instructionQueue;
 
-    private Map<String, Connection> _testConnections;
-    private Map<String, Session> _testSessions;
-    private Map<String, MessageProducer> _testProducers;
-    private Map<String, MessageConsumer> _testConsumers;
-    private Map<String, Session> _testSubscriptions;
-    private Map<String, MessageProvider> _testMessageProviders;
+    private final ConcurrentMap<String, Connection> _testConnections;
+    private final ConcurrentMap<String, Session> _testSessions;
+    private final ConcurrentMap<String, MessageProducer> _testProducers;
+    private final ConcurrentMap<String, MessageConsumer> _testConsumers;
+    private final ConcurrentMap<String, Session> _testSubscriptions;
+    private final ConcurrentMap<String, MessageProvider> _testMessageProviders;
 
     private final MessageProvider _defaultMessageProvider;
 
@@ -94,12 +95,12 @@ public class ClientJmsDelegate
             _controllerSession = _controllerConnection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             _controlQueueProducer = _controllerSession.createProducer(_controllerQueue);
             _clientName = UUID.randomUUID().toString();
-            _testConnections = new HashMap<String, Connection>();
-            _testSessions = new HashMap<String, Session>();
-            _testProducers = new HashMap<String, MessageProducer>();
-            _testConsumers = new HashMap<String, MessageConsumer>();
-            _testSubscriptions = new HashMap<String, Session>();
-            _testMessageProviders = new HashMap<String, MessageProvider>();
+            _testConnections = new ConcurrentHashMap<>();
+            _testSessions = new ConcurrentHashMap<>();
+            _testProducers = new ConcurrentHashMap<>();
+            _testConsumers = new ConcurrentHashMap<>();
+            _testSubscriptions = new ConcurrentHashMap<>();
+            _testMessageProviders = new ConcurrentHashMap<>();
             _defaultMessageProvider = new MessageProvider(null);
         }
         catch (final NamingException ne)
@@ -304,7 +305,7 @@ public class ClientJmsDelegate
                         String subscription = "subscription-" + command.getParticipantName() + System.currentTimeMillis();
                         jmsConsumer = session.createDurableSubscriber(topic, subscription);
 
-                        _testSubscriptions.put(subscription, session);
+                        addSubscription(subscription, session);
                         LOGGER.debug("created durable subscription " + subscription + " to topic " + topic);
                     }
                     else
@@ -320,7 +321,7 @@ public class ClientJmsDelegate
                     jmsConsumer = session.createConsumer(destination, command.getSelector());
                 }
 
-                _testConsumers.put(command.getParticipantName(), jmsConsumer);
+                addConsumer(command.getParticipantName(), jmsConsumer);
             }
         }
         catch (final JMSException jmse)
@@ -425,11 +426,8 @@ public class ClientJmsDelegate
     }
     public Message sendNextMessage(final CreateProducerCommand command)
     {
-        MessageProvider messageProvider = _testMessageProviders.get(command.getMessageProviderName());
-        if (messageProvider == null)
-        {
-            messageProvider = _defaultMessageProvider;
-        }
+        final String messageProviderName = command.getMessageProviderName();
+        final MessageProvider messageProvider = getMessageProvider(messageProviderName);
 
         final Session session = _testSessions.get(command.getSessionName());
         final MessageProducer producer = _testProducers.get(command.getParticipantName());
@@ -461,57 +459,58 @@ public class ClientJmsDelegate
         }
     }
 
-    public Message sendNextMessage(final CreateProducerCommand command, boolean preMessage)
+    private MessageProvider getMessageProvider(String messageProviderName)
     {
-        MessageProvider messageProvider = _testMessageProviders.get(command.getMessageProviderName());
-        if (messageProvider == null)
+        final MessageProvider messageProvider;
+        if (messageProviderName == null || !_testMessageProviders.containsKey(messageProviderName))
         {
             messageProvider = _defaultMessageProvider;
         }
-
-        final Session session = _testSessions.get(command.getSessionName());
-        final MessageProducer producer = _testProducers.get(command.getParticipantName());
-        try
+        else
         {
-            Message message = messageProvider.nextMessage(session, command);
-            int deliveryMode = producer.getDeliveryMode();
-            int priority = producer.getPriority();
-            long ttl = producer.getTimeToLive();
-            if (messageProvider.isPropertySet(MessageProvider.PRIORITY))
-            {
-                priority = message.getJMSPriority();
-            }
-            if (messageProvider.isPropertySet(MessageProvider.DELIVERY_MODE))
-            {
-                deliveryMode = message.getJMSDeliveryMode();
-            }
-            if (messageProvider.isPropertySet(MessageProvider.TTL))
-            {
-                ttl = message.getLongProperty(MessageProvider.TTL);
-            }
-            producer.send(message, deliveryMode, priority, ttl);
-            return message;
+            messageProvider = _testMessageProviders.get(messageProviderName);
         }
-        catch (final JMSException jmse)
-        {
-            throw new DistributedTestException("Unable to create and send message with producer: " +
-                            command.getParticipantName() + " on session: " + command.getSessionName(), jmse);
-        }
+        return messageProvider;
     }
 
     protected void addSession(final String sessionName, final Session newSession)
     {
-        _testSessions.put(sessionName, newSession);
+        if(_testSessions.putIfAbsent(sessionName, newSession) != null)
+        {
+            throw new DistributedTestException("Session '" + sessionName + "' is already registered");
+        }
     }
 
     protected void addConnection(final String connectionName, final Connection newConnection)
     {
-        _testConnections.put(connectionName, newConnection);
+        if(_testConnections.putIfAbsent(connectionName, newConnection) != null)
+        {
+            throw new DistributedTestException("Connection '" + connectionName + "' is already registered");
+        }
     }
 
     protected void addProducer(final String producerName, final MessageProducer jmsProducer)
     {
-        _testProducers.put(producerName, jmsProducer);
+        if(_testProducers.putIfAbsent(producerName, jmsProducer) != null)
+        {
+            throw new DistributedTestException("Producer '" + producerName + "' is already registered");
+        }
+    }
+
+    private void addConsumer(String consumerName, MessageConsumer jmsConsumer)
+    {
+        if(_testConsumers.putIfAbsent(consumerName, jmsConsumer) != null)
+        {
+            throw new DistributedTestException("Consumer '" + consumerName + "' is already registered");
+        }
+    }
+
+    private void addSubscription(String subscriptionName, Session session)
+    {
+        if(_testSubscriptions.putIfAbsent(subscriptionName, session) != null)
+        {
+            throw new DistributedTestException("Subscribing session '" + subscriptionName + "' is already registered");
+        }
     }
 
     public Message consumeMessage(String consumerName, long receiveInterval)
