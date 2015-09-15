@@ -53,6 +53,7 @@ public class TestInstance
         List<CommandForClient> commands = _testConfig.createCommands();
         List<CommandForClient> newCommands = new ArrayList<CommandForClient>(commands.size());
 
+        double ratePerProducer = calculateRatePerProducer(_producerRate, commands);
         for (CommandForClient commandForClient : commands)
         {
             String clientName = commandForClient.getClientName();
@@ -63,7 +64,7 @@ public class TestInstance
             if (command instanceof CreateProducerCommand)
             {
                 CreateProducerCommand producerCommand = (CreateProducerCommand) command;
-                producerCommand.setRate(_producerRate);
+                producerCommand.setRate(ratePerProducer);
             }
 
             if (command instanceof CreateParticipantCommand)
@@ -120,5 +121,19 @@ public class TestInstance
     public void setProducerRate(double producerRate)
     {
         _producerRate = producerRate;
+    }
+
+    private double calculateRatePerProducer(final double totalRate, final List<CommandForClient> commands)
+    {
+        int numberOfProducers = 0;
+        for (CommandForClient commandForClient : commands)
+        {
+            Command command = commandForClient.getCommand();
+            if (command instanceof CreateProducerCommand)
+            {
+                numberOfProducers++;
+            }
+        }
+        return totalRate / numberOfProducers;
     }
 }
