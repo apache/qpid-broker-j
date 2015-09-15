@@ -37,7 +37,6 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.util.Action;
@@ -214,7 +213,7 @@ public class Main
 
                 protocol.append(pv.getMajorVersion()).append('-').append(pv.getMinorVersion());
             }
-            System.out.println(QpidProperties.getVersionString() + " (" + protocol + ")");
+            System.out.println(CommonProperties.getVersionString() + " (" + protocol + ")");
         }
         else
         {

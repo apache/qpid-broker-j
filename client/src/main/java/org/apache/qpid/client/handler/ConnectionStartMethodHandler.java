@@ -36,8 +36,8 @@ import org.apache.qpid.client.security.AMQCallbackHandler;
 import org.apache.qpid.client.security.CallbackHandlerRegistry;
 import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.client.state.StateAwareMethodListener;
-import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.configuration.ClientProperties;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ConnectionStartBody;
 import org.apache.qpid.framing.ConnectionStartOkBody;
@@ -158,9 +158,9 @@ public class ConnectionStartMethodHandler implements StateAwareMethodListener<Co
                 clientProperties.setString(ConnectionStartProperties.CLIENT_ID_0_8,
                         session.getClientID());
                 clientProperties.setString(ConnectionStartProperties.PRODUCT,
-                        QpidProperties.getProductName());
+                        CommonProperties.getProductName());
                 clientProperties.setString(ConnectionStartProperties.VERSION_0_8,
-                        QpidProperties.getReleaseVersion());
+                        CommonProperties.getReleaseVersion());
                 clientProperties.setString(ConnectionStartProperties.PLATFORM,
                         ConnectionStartProperties.getPlatformInfo());
                 clientProperties.setString(ConnectionStartProperties.PROCESS,

@@ -53,10 +53,9 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.AMQConnectionException;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.AMQDecoder;
 import org.apache.qpid.codec.ServerDecoder;
-import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
@@ -387,11 +386,11 @@ public class AMQPConnection_0_8
             FieldTable serverProperties = FieldTableFactory.newFieldTable();
 
             serverProperties.setString(ServerPropertyNames.PRODUCT,
-                    QpidProperties.getProductName());
+                    CommonProperties.getProductName());
             serverProperties.setString(ServerPropertyNames.VERSION,
-                    QpidProperties.getReleaseVersion());
+                    CommonProperties.getReleaseVersion());
             serverProperties.setString(ServerPropertyNames.QPID_BUILD,
-                    QpidProperties.getBuildVersion());
+                    CommonProperties.getBuildVersion());
             serverProperties.setString(ServerPropertyNames.QPID_INSTANCE_NAME,
                     getBroker().getName());
             serverProperties.setString(ConnectionStartProperties.QPID_CLOSE_WHEN_NO_ROUTE,

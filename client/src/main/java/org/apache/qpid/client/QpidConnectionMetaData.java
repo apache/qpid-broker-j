@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.client;
 
-import org.apache.qpid.common.QpidProperties;
+import org.apache.qpid.configuration.CommonProperties;
 
 import javax.jms.ConnectionMetaData;
 import javax.jms.JMSException;
@@ -48,7 +48,7 @@ public class QpidConnectionMetaData implements ConnectionMetaData
 
     public String getJMSProviderName() throws JMSException
     {
-        return "Apache " + QpidProperties.getProductName();
+        return "Apache " + CommonProperties.getProductName();
     }
 
     public String getJMSVersion() throws JMSException
@@ -73,7 +73,7 @@ public class QpidConnectionMetaData implements ConnectionMetaData
 
     public String getProviderVersion() throws JMSException
     {
-        return QpidProperties.getProductName() + " (Client: [" + getClientVersion() + "] ; Broker [" + getBrokerVersion() + "] ; Protocol: [ "
+        return CommonProperties.getProductName() + " (Client: [" + getClientVersion() + "] ; Broker [" + getBrokerVersion() + "] ; Protocol: [ "
                + getProtocolVersion() + "] )";
     }
 
@@ -90,7 +90,7 @@ public class QpidConnectionMetaData implements ConnectionMetaData
 
     public String getClientVersion()
     {
-        return QpidProperties.getBuildVersion();
+        return CommonProperties.getBuildVersion();
     }
 
 

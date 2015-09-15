@@ -38,7 +38,7 @@ import javax.security.auth.Subject;
 import ch.qos.logback.classic.Level;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.common.QpidProperties;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
@@ -282,7 +282,7 @@ public class Broker
             initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
         }
 
-        Properties props = new Properties(QpidProperties.asProperties());
+        Properties props = new Properties(CommonProperties.asProperties());
         if(initialPropertiesLocation != null)
         {
 

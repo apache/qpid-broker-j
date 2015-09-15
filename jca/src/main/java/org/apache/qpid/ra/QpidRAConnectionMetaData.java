@@ -28,7 +28,7 @@ import java.util.Enumeration;
 import javax.jms.ConnectionMetaData;
 
 import org.apache.qpid.client.CustomJMSXProperty;
-import org.apache.qpid.common.QpidProperties;
+import org.apache.qpid.configuration.CommonProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +110,7 @@ public class QpidRAConnectionMetaData implements ConnectionMetaData
          _log.trace("getJMSProviderName()");
       }
 
-      return QpidProperties.getProductName() + " Resource Adapter" ;
+      return CommonProperties.getProductName() + " Resource Adapter" ;
    }
 
    /**
@@ -167,7 +167,7 @@ public class QpidRAConnectionMetaData implements ConnectionMetaData
 
    static
    {
-	   final String version = QpidProperties.getReleaseVersion() ;
+	   final String version = CommonProperties.getReleaseVersion() ;
 	   int major = -1 ;
 	   int minor = -1 ;
 	   if (version != null)

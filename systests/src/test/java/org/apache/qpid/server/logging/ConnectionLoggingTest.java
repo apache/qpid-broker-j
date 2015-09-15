@@ -22,7 +22,7 @@ package org.apache.qpid.server.logging;
 
 import javax.jms.Connection;
 
-import org.apache.qpid.common.QpidProperties;
+import org.apache.qpid.configuration.CommonProperties;
 
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +91,7 @@ public class ConnectionLoggingTest extends AbstractTestLogging
 
         // validate the last three CON-1001 messages.
         //  MESSAGE [con:1(/127.0.0.1:52540)] CON-1001 : Open : Client ID : clientid : Protocol Version : 0-9 : Client Version : 1.2.3_4 : Client Product : product
-        validateConnectionOpen(results, 0, true, true, clientid, true, QpidProperties.getReleaseVersion(), true, QpidProperties.getProductName());
+        validateConnectionOpen(results, 0, true, true, clientid, true, CommonProperties.getReleaseVersion(), true, CommonProperties.getProductName());
 
         //  MESSAGE [con:1(/127.0.0.1:52540)] CON-1001 : Open : Protocol Version : 0-9
         validateConnectionOpen(results, 1, true, false, null, false, null, false, null);

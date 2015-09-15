@@ -38,8 +38,8 @@ import javax.security.sasl.SaslServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.common.ServerPropertyNames;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
@@ -109,9 +109,9 @@ public class ServerConnectionDelegate extends ServerDelegate
             map.put(ServerPropertyNames.QPID_FEATURES, features);
         }
 
-        map.put(ServerPropertyNames.PRODUCT, QpidProperties.getProductName());
-        map.put(ServerPropertyNames.VERSION, QpidProperties.getReleaseVersion());
-        map.put(ServerPropertyNames.QPID_BUILD, QpidProperties.getBuildVersion());
+        map.put(ServerPropertyNames.PRODUCT, CommonProperties.getProductName());
+        map.put(ServerPropertyNames.VERSION, CommonProperties.getReleaseVersion());
+        map.put(ServerPropertyNames.QPID_BUILD, CommonProperties.getBuildVersion());
         map.put(ServerPropertyNames.QPID_INSTANCE_NAME, broker.getName());
         map.put(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED, String.valueOf(broker.isMessageCompressionEnabled()));
         map.put(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED, String.valueOf(broker.isVirtualHostPropertiesNodeEnabled()));

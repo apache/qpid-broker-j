@@ -32,7 +32,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
 
-import org.apache.qpid.common.QpidProperties;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -214,7 +214,7 @@ public class BrokerRestTest extends QpidRestTestCase
                 ConfiguredObject.CONTEXT,
                 ConfiguredObject.DESIRED_STATE);
 
-        assertEquals("Unexpected value of attribute " + Broker.BUILD_VERSION, QpidProperties.getBuildVersion(),
+        assertEquals("Unexpected value of attribute " + Broker.BUILD_VERSION, CommonProperties.getBuildVersion(),
                 brokerDetails.get(Broker.BUILD_VERSION));
         assertEquals("Unexpected value of attribute " + Broker.OPERATING_SYSTEM, SystemUtils.getOSString(),
                 brokerDetails.get(Broker.OPERATING_SYSTEM));

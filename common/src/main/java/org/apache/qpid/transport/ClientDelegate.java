@@ -30,10 +30,10 @@ import java.util.Map;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslException;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.properties.ConnectionStartProperties;
 
@@ -75,8 +75,8 @@ public class ClientDelegate extends ConnectionDelegate
         clientProperties.put(ConnectionStartProperties.SESSION_FLOW, 1);
         clientProperties.put(ConnectionStartProperties.PID, ConnectionStartProperties.getPID());
         clientProperties.put(ConnectionStartProperties.PROCESS, System.getProperty(ClientProperties.PROCESS_NAME, "Qpid Java Client"));
-        clientProperties.put(ConnectionStartProperties.VERSION_0_10, QpidProperties.getReleaseVersion());
-        clientProperties.put(ConnectionStartProperties.PRODUCT, QpidProperties.getProductName());
+        clientProperties.put(ConnectionStartProperties.VERSION_0_10, CommonProperties.getReleaseVersion());
+        clientProperties.put(ConnectionStartProperties.PRODUCT, CommonProperties.getProductName());
         clientProperties.put(ConnectionStartProperties.PLATFORM, ConnectionStartProperties.getPlatformInfo());
 
         List<Object> brokerMechs = start.getMechanisms();

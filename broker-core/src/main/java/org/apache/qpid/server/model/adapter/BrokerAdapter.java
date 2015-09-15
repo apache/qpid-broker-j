@@ -50,7 +50,7 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.common.QpidProperties;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
@@ -363,7 +363,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public String getBuildVersion()
     {
-        return QpidProperties.getBuildVersion();
+        return CommonProperties.getBuildVersion();
     }
 
     @Override
@@ -388,7 +388,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     @Override
     public String getProductVersion()
     {
-        return QpidProperties.getReleaseVersion();
+        return CommonProperties.getReleaseVersion();
     }
 
     @Override
@@ -523,8 +523,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     protected void onOpen()
     {
         super.onOpen();
-        getEventLogger().message(BrokerMessages.STARTUP(QpidProperties.getReleaseVersion(),
-                                                        QpidProperties.getBuildVersion()));
+        getEventLogger().message(BrokerMessages.STARTUP(CommonProperties.getReleaseVersion(),
+                                                        CommonProperties.getBuildVersion()));
 
         getEventLogger().message(BrokerMessages.PLATFORM(System.getProperty("java.vendor"),
                                                          System.getProperty("java.runtime.version",

@@ -22,6 +22,7 @@ package org.apache.qpid.configuration;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashSet;
@@ -31,10 +32,11 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.common.QpidProperties;
-
 /**
  * Centralised record of Qpid common properties.
+ *
+ * Qpid build specific information like  project name, version number, and source code repository revision number
+ * are captured by this class and exposed via public static methods.
  *
  * @see ClientProperties
  */
@@ -51,58 +53,157 @@ public class CommonProperties
     public static final String HANDSHAKE_TIMEOUT_PROP_NAME = "qpid.handshake_timeout";
     public static final int HANDSHAKE_TIMEOUT_DEFAULT = 2;
 
-    private volatile static boolean _loaded;
+    /** The name of the version properties file to load from the class path. */
+    public static final String VERSION_RESOURCE = "qpidversion.properties";
 
+    /** Defines the name of the product property. */
+    public static final String PRODUCT_NAME_PROPERTY = "qpid.name";
+
+    /** Defines the name of the version property. */
+    public static final String RELEASE_VERSION_PROPERTY = "qpid.version";
+
+    /** Defines the name of the version suffix property. */
+    public static final String RELEASE_VERSION_SUFFIX = "qpid.version.suffix";
+
+    /** Defines the name of the source code revision property. */
+    public static final String BUILD_VERSION_PROPERTY = "qpid.svnversion";
+
+    /** Defines the default value for all properties that cannot be loaded. */
+    private static final String DEFAULT = "unknown";
+
+    /** Holds the product name. */
+    private static final String productName;
+
+    /** Holds the product version. */
+    private static final String releaseVersion;
+
+    /** Holds the source code revision. */
+    private static final String buildVersion;
+
+    private static final Properties properties = new Properties();
+
+    // Loads the values from the version properties file and common properties file.
     static
     {
-        ensureIsLoaded();
+
+        loadProperties(properties, VERSION_RESOURCE, false);
+
+        buildVersion =  properties.getProperty(BUILD_VERSION_PROPERTY, DEFAULT);
+        productName = properties.getProperty(PRODUCT_NAME_PROPERTY, DEFAULT);
+
+        String version = properties.getProperty(RELEASE_VERSION_PROPERTY, DEFAULT);
+
+        boolean loadFromFile = true;
+        String initialProperties = System.getProperty("qpid.common_properties_file");
+        if (initialProperties == null)
+        {
+            initialProperties = "qpid-common.properties";
+            loadFromFile = false;
+        }
+
+        loadProperties(properties, initialProperties, loadFromFile);
+
+        String versionSuffix = properties.getProperty(RELEASE_VERSION_SUFFIX);
+        releaseVersion = versionSuffix == null || "".equals(versionSuffix) ? version : version + ";" + versionSuffix;
+
+        Set<String> propertyNames = new HashSet<>(properties.stringPropertyNames());
+        propertyNames.removeAll(System.getProperties().stringPropertyNames());
+        for (String propName : propertyNames)
+        {
+            System.setProperty(propName, properties.getProperty(propName));
+        }
+
     }
 
-    public static synchronized void ensureIsLoaded()
+    public static void ensureIsLoaded()
     {
-        if (!_loaded)
-        {
-            Properties props = new Properties(QpidProperties.asProperties());
-            String initialProperties = System.getProperty("qpid.common_properties_file");
-            URL initialPropertiesLocation = null;
-            try
-            {
-                if (initialProperties == null)
-                {
-                    initialPropertiesLocation = CommonProperties.class.getClassLoader().getResource("qpid-common.properties");
-                }
-                else
-                {
-                    initialPropertiesLocation = (new File(initialProperties)).toURI().toURL();
-                }
+        //noop; to call from static initialization blocks of other classes to provoke CommonProperties class initialization
+    }
 
-                if (initialPropertiesLocation != null)
-                {
-                    props.load(initialPropertiesLocation.openStream());
-                }
-            }
-            catch (MalformedURLException e)
-            {
-                LOGGER.warn("Could not open common properties file '" + initialProperties + "'.", e);
-            }
-            catch (IOException e)
-            {
-                LOGGER.warn("Could not open common properties file '" + initialPropertiesLocation + "'.", e);
-            }
+    public static Properties asProperties()
+    {
+        return new Properties(properties);
+    }
 
-            Set<String> propertyNames = new HashSet<>(props.stringPropertyNames());
-            propertyNames.removeAll(System.getProperties().stringPropertyNames());
-            for (String propName : propertyNames)
-            {
-                System.setProperty(propName, props.getProperty(propName));
-            }
+    /**
+     * Gets the product name.
+     *
+     * @return The product name.
+     */
+    public static String getProductName()
+    {
+        return productName;
+    }
 
-            _loaded = true;
-        }
+    /**
+     * Gets the product version.
+     *
+     * @return The product version.
+     */
+    public static String getReleaseVersion()
+    {
+        return releaseVersion;
+    }
+
+    /**
+     * Gets the source code revision.
+     *
+     * @return The source code revision.
+     */
+    public static String getBuildVersion()
+    {
+        return buildVersion;
+    }
+
+    /**
+     * Extracts all of the version information as a printable string.
+     *
+     * @return All of the version information as a printable string.
+     */
+    public static String getVersionString()
+    {
+        return getProductName() + " - " + getReleaseVersion() + " build: " + getBuildVersion();
     }
 
     private CommonProperties()
     {
         //no instances
     }
+
+    private static void loadProperties(Properties properties, String resourceLocation, boolean loadFromFile)
+    {
+        try
+        {
+            URL propertiesResource;
+            if (loadFromFile)
+            {
+                propertiesResource = (new File(resourceLocation)).toURI().toURL();
+            }
+            else
+            {
+                propertiesResource = CommonProperties.class.getClassLoader().getResource(resourceLocation);
+            }
+
+            if (propertiesResource != null)
+            {
+                try (InputStream propertyStream = propertiesResource.openStream())
+                {
+                    if (propertyStream != null)
+                    {
+                        properties.load(propertyStream);
+                    }
+                }
+                catch (IOException e)
+                {
+                    LOGGER.warn("Could not load properties file '" + resourceLocation + "'.", e);
+                }
+            }
+        }
+        catch (MalformedURLException e)
+        {
+            LOGGER.warn("Could not open properties file '" + resourceLocation + "'.", e);
+        }
+    }
+
+
 }

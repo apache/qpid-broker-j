@@ -73,8 +73,8 @@ import org.apache.qpid.client.failover.FailoverProtectedOperation;
 import org.apache.qpid.client.security.CallbackHandlerRegistry;
 import org.apache.qpid.client.state.AMQStateManager;
 import org.apache.qpid.client.util.JMSExceptionHelper;
-import org.apache.qpid.common.QpidProperties;
 import org.apache.qpid.configuration.ClientProperties;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.jms.ConnectionListener;
@@ -232,7 +232,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
     {
         if (_logger.isDebugEnabled())
         {
-            _logger.debug("Qpid version : " +  QpidProperties.getVersionString());
+            _logger.debug("Qpid version : " +  CommonProperties.getVersionString());
         }
 
         // The registering of any additional SASL mechanisms with the Java Security API requires
