@@ -18,6 +18,8 @@
  */
 package org.apache.qpid.disttest.jms;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,14 +33,105 @@ import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.config.QueueConfig;
+import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.framing.FieldTable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Qpid 0-8..0-10 specific class for creating/deleting queues using a non-JMS API.
+ * Uses reflection to invoke methods to retain compatibility with Qpid versions <= 0.32.
+ */
 public class QpidQueueCreator implements QueueCreator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(QpidQueueCreator.class);
+
+    private static final String CREATE_QUEUE = "createQueue";
+    private static final String BIND_QUEUE = "bindQueue";
+    // The Qpid AMQSession API currently makes the #deleteQueue method protected and the
+    // raw protocol method public.  This should be changed then we should switch the below to
+    // use deleteQueue.
+    private static final String DELETE_QUEUE = "sendQueueDelete";
+
+    private static final String GET_AMQQUEUE_NAME = "getAMQQueueName";
+    private static final String GET_ROUTING_KEY = "getRoutingKey";
+    private static final String GET_EXCHANGE_NAME = "getExchangeName";
+
     private static final Map<String,Object> EMPTY_QUEUE_BIND_ARGUMENTS = Collections.emptyMap();
     private static int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
+
+    // Methods on AMQSession
+    private final Method _createQueue;
+    private final Method _bindQueue;
+    private final Method _deleteQueue;
+
+    // Methods on AMQDestination
+    private final Method _getAMQQueueName;
+    private final Method _getRoutingKey;
+    private final Method _getExchangeName;
+
+    public QpidQueueCreator()
+    {
+        Method createQueue = getMethod(AMQSession.class, CREATE_QUEUE,
+                                       String.class, Boolean.TYPE, Boolean.TYPE,
+                                       Boolean.TYPE, Map.class);
+        if (createQueue == null)
+        {
+            createQueue = getMethod(AMQSession.class, CREATE_QUEUE,
+                                    AMQShortString.class, Boolean.TYPE, Boolean.TYPE,
+                                    Boolean.TYPE, Map.class);
+        }
+        if (createQueue == null)
+        {
+            throw new DistributedTestException("Failed to find method '" + CREATE_QUEUE + "' on class AMQSession");
+        }
+        _createQueue = createQueue;
+
+        Method bindQueue = getMethod(AMQSession.class, BIND_QUEUE,
+                                       String.class, String.class, Map.class,
+                                       String.class, AMQDestination.class);
+        if (bindQueue == null)
+        {
+            bindQueue = getMethod(AMQSession.class, BIND_QUEUE,
+                                  AMQShortString.class, AMQShortString.class, FieldTable.class,
+                                  AMQShortString.class, AMQDestination.class);
+        }
+        if (bindQueue == null)
+        {
+            throw new DistributedTestException("Failed to find method '" + BIND_QUEUE + "' on class AMQSession");
+        }
+        _bindQueue = bindQueue;
+
+        Method deleteQueue = getMethod(AMQSession.class, DELETE_QUEUE, String.class);
+        if (deleteQueue == null)
+        {
+            deleteQueue = getMethod(AMQSession.class, DELETE_QUEUE, AMQShortString.class);
+        }
+        if (deleteQueue == null)
+        {
+            throw new DistributedTestException("Failed to find method '" + DELETE_QUEUE + "' on class AMQSession");
+        }
+        _deleteQueue = deleteQueue;
+
+        _getAMQQueueName = getMethod(AMQDestination.class, GET_AMQQUEUE_NAME);
+        if (_getAMQQueueName == null)
+        {
+            throw new DistributedTestException("Failed to find method '" + GET_AMQQUEUE_NAME + "' on class AMQDestination");
+        }
+
+        _getRoutingKey = getMethod(AMQDestination.class, GET_ROUTING_KEY);
+        if (_getRoutingKey == null)
+        {
+            throw new DistributedTestException("Failed to find method '" + GET_ROUTING_KEY + "' on class AMQDestination");
+        }
+
+        _getExchangeName = getMethod(AMQDestination.class, GET_EXCHANGE_NAME);
+        if (_getExchangeName == null)
+        {
+            throw new DistributedTestException("Failed to find method '" + GET_EXCHANGE_NAME + "' on class AMQDestination");
+        }
+    }
 
     @Override
     public void createQueues(Connection connection, Session session, List<QueueConfig> configs)
@@ -62,7 +155,7 @@ public class QpidQueueCreator implements QueueCreator
             // of messages takes time and might cause the timeout exception
             drainQueue(connection, destination);
 
-            deleteQueue(amqSession, destination.getAMQQueueName());
+            deleteQueue(amqSession, destination);
         }
     }
 
@@ -143,11 +236,10 @@ public class QpidQueueCreator implements QueueCreator
             AMQDestination destination = (AMQDestination) session.createQueue(queueConfig.getName());
             boolean autoDelete = false;
             boolean exclusive = false;
-            session.createQueue(destination.getAMQQueueName(), autoDelete,
-                    queueConfig.isDurable(), exclusive, queueConfig.getAttributes());
-            session.bindQueue(destination.getAMQQueueName(), destination.getRoutingKey(),
-                    EMPTY_QUEUE_BIND_ARGUMENTS, destination.getExchangeName(),
-                    destination, autoDelete);
+            createQueueByReflection(session, destination, autoDelete,
+                                    queueConfig.isDurable(), exclusive,
+                                    queueConfig.getAttributes());
+            bindQueueByReflections(session, destination);
 
             LOGGER.debug("Created queue {}", queueConfig);
         }
@@ -157,19 +249,65 @@ public class QpidQueueCreator implements QueueCreator
         }
     }
 
-    private void deleteQueue(AMQSession<?, ?> session, String queueName)
+    private void deleteQueue(AMQSession<?, ?> session, AMQDestination destination)
     {
         try
         {
-            // The Qpid AMQSession API currently makes the #deleteQueue method protected and the
-            // raw protocol method public.  This should be changed then we should switch the below to
-            // use #deleteQueue.
-            session.sendQueueDelete(queueName);
-            LOGGER.debug("Deleted queue {}", queueName);
+            Object amqQueueName = invokeByReflection(destination, _getAMQQueueName);
+            invokeByReflection(session, _deleteQueue, amqQueueName);
+
+            LOGGER.debug("Deleted queue {}", destination);
         }
         catch (Exception e)
         {
-            throw new DistributedTestException("Failed to delete queue:" + queueName, e);
+            throw new DistributedTestException("Failed to delete queue:" + destination, e);
         }
     }
+
+    private void createQueueByReflection(AMQSession<?, ?> session,
+                                         AMQDestination destination,
+                                         boolean autoDelete,
+                                         boolean durable, final boolean exclusive,
+                                         Map<String, Object> attributes)
+    {
+        Object amqQueueName = invokeByReflection(destination, _getAMQQueueName);
+        invokeByReflection(session, _createQueue, amqQueueName, autoDelete, durable, exclusive, attributes);
+    }
+
+    private void bindQueueByReflections(AMQSession<?, ?> session,
+                                        AMQDestination destination)
+    {
+        Object amqQueueName = invokeByReflection(destination, _getAMQQueueName);
+        Object routingKey = invokeByReflection(destination, _getRoutingKey);
+        Object bindArguments = _bindQueue.getParameterTypes()[2].equals(Map.class) ?
+                EMPTY_QUEUE_BIND_ARGUMENTS : FieldTable.convertToFieldTable(EMPTY_QUEUE_BIND_ARGUMENTS);
+        Object exchangeName = invokeByReflection(destination, _getExchangeName);
+
+      invokeByReflection(session, _bindQueue, amqQueueName, routingKey, bindArguments, exchangeName, destination);
+    }
+
+    private Object invokeByReflection(Object target, Method method, Object... parameters)
+    {
+        try
+        {
+            return method.invoke(target, parameters);
+        }
+        catch (IllegalAccessException | InvocationTargetException e)
+        {
+            throw new DistributedTestException("Failed to invoke '" + method + "'", e);
+        }
+    }
+
+    private Method getMethod(final Class<?> targetClass, final String methodName, final Class... parametersTypes)
+    {
+        try
+        {
+            return targetClass.getMethod(methodName, parametersTypes);
+        }
+        catch (NoSuchMethodException e)
+        {
+            return null;
+        }
+    }
+
 }
