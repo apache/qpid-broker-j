@@ -22,11 +22,13 @@ package org.apache.qpid.disttest;
 
 import java.io.FileInputStream;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Map;
 import java.util.Properties;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
+import javax.naming.NamingException;
 
 public class AbstractRunner
 {
@@ -40,20 +42,21 @@ public class AbstractRunner
 
     protected Context getContext()
     {
-        Context context = null;
+        String jndiConfig = getJndiConfig();
+        Hashtable env = new Hashtable();
+        env.put(Context.PROVIDER_URL, jndiConfig);
+        // Java allows this to be overridden with a system property of the same name
+        env.put(InitialContext.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
 
-        try(FileInputStream inStream = new FileInputStream(getJndiConfig()))
+        try
         {
-            final Properties properties = new Properties();
-            properties.load(inStream);
-            context = new InitialContext(properties);
+            return  new InitialContext(env);
         }
-        catch (Exception e)
+        catch (NamingException e)
         {
-            throw new DistributedTestException("Exception while loading JNDI properties", e);
+            throw new DistributedTestException("Exception whilst creating InitialContext from URL '"
+                                               + jndiConfig + "'", e);
         }
-
-        return context;
     }
 
     public void parseArgumentsIntoConfig(String[] args)
