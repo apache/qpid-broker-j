@@ -1,0 +1,175 @@
+#!/bin/bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+# This script is used to measure memory consumption by Qpid Java Broker running in Oracle JDK
+
+function waitfor()
+{
+  counter=1
+  until grep -a -l "$2" $1 >/dev/null 2>&1 ; do
+    sleep 1 ;
+    let "counter += 1"
+    if [ "$counter" -gt "$3" ]; then
+      break
+    fi
+  done
+}
+
+function awaitBroker()
+{
+  echo "Awaiting broker..."
+  waitfor ${QPID_WORK}/log/qpid.log "BRK-1004" "30"
+  echo "Broker is ready"
+}
+
+function startBroker()
+{
+  echo "Starting broker"
+  ${QPID_HOME}/bin/qpid-server -prop qpid.rmi_port=$RMI_PORT 2>${QPID_WORK}/log/qpid.stderr > ${QPID_WORK}/log/qpid.stdout &
+  brokerpid=$!
+  echo "Broker started: PID $brokerpid"
+}
+
+function stopBroker()
+{
+  messageSize=$1
+  messageCount=$2
+  resultFile=$3
+
+  echo "Killing broker with pid $brokerpid"
+  kill -15 $brokerpid  2>&1 1> /dev/null
+  slip 1
+  kill -9 $brokerpid  2>&1 1> /dev/null
+  grep BRK-1014 ${QPID_WORK}/log/qpid.log | sed 's/,/ /g' | sed 's/^/# /' >> $resultFile
+  mv  ${QPID_WORK}/log/qpid.log  ${QPID_WORK}/log/qpid.log.$messageSize_$messageCount
+  rm -fr  $QPID_WORK/default/messages
+}
+
+function performTest()
+{
+  messageSize=$1
+  messageCount=$2
+  resultFile=$3
+  connections=${4:-1}
+  sessions=${5:-1}
+  producers=${6:-1}
+
+  startBroker
+  awaitBroker
+  echo "Running test: messageSize=$messageSize messageNumber=$messageCount connections=${connections} sessions=${sessions}"
+  java -cp "${TOOLS_DIR}/target/qpid-tools-6.0.0-SNAPSHOT.jar:${TOOLS_DIR}/target/dependency/*" -Dqpid.amqp.version=${PROTOCOL} org.apache.qpid.tools.MemoryConsumptionTestClient \
+     connections=${connections} sessions=${sessions} producers=${producers} \
+     messagecount=${messageCount} size=${messageSize} jmxuser=admin jmxpassword=admin jmxhost=${BROKER_HOSTNAME} jmxport=${RMI_PORT} >> $resultFile
+  stopBroker $messageSize $messageCount $resultFile
+}
+
+function performMessageNumberTests()
+{
+  messageSize=$1
+  messageNumbers=$2
+  resultFile=$3
+
+  for messageNumber in $messageNumbers
+  do
+    performTest $messageSize $messageNumber $resultFile 1 1 1
+  done
+}
+
+function performConnectionsTests()
+{
+  sessionNumber=${1}
+  connectionsNumbers=$2
+  resultFile=$3
+
+  for connectionsNumber in $connectionsNumbers
+  do
+    performTest 0 2 $resultFile ${connectionsNumber} ${sessionNumber} 1
+  done
+}
+
+if [ -z ${QPID_HOME+x} ]
+then
+  echo "QPID_HOME environment variable is unset"
+  exit 1
+else
+  echo "QPID_HOME=$QPID_HOME"
+fi
+if [ -z ${QPID_WORK+x} ]
+then
+  echo "QPID_WORK environment variable is unset"
+  exit 1
+else
+  echo "QPID_WORK=$QPID_WORK"
+fi
+
+echo "QPID_OPTS=$QPID_OPTS"
+
+if [ command -v readlink >/dev/null 2>&1 ]
+then
+  TOOLS_DIR=$(dirname $(dirname $(readlink -f ${0})))
+else
+  TOOLS_DIR=$(dirname $(cd "$(dirname "${0}")"; pwd))
+fi
+echo "Tools module folder ${TOOLS_DIR}"
+
+if [ ! -d ${TOOLS_DIR}/target ]
+then
+  echo "target directory does not exists run: mvn package"
+  exit 1
+fi
+
+if [ ! -d ${TOOLS_DIR}/target/dependency ]
+then
+  echo "target dependencies directory does not exists run: mvn dependency:copy-dependencies"
+  exit 1
+fi
+
+PROTOCOL=${1:-0-9}
+BROKER_HOSTNAME=${2:-"localhost"}
+RMI_PORT=${3:-8999}
+
+javaVersion=`java -version 2>&1 | grep "java version" | awk '{print $3}' | sed -e "s/\"//g"`
+startTime=`date "+%Y-%m-%d %H:%M:%S"`
+startTimeFile=`date "+%Y-%m-%d-%H-%M-%S"`
+resultFile="${TOOLS_DIR}/target/results-${PROTOCOL}-${javaVersion}-${startTimeFile}.txt"
+
+echo "Results will be written into ${resultFile}"
+
+rm -fr $QPID_WORK
+mkdir -p ${QPID_WORK}/log
+
+echo "# $startTime" > ${resultFile}
+echo "# amqp=${PROTOCOL} java=${javaVersion} QPID_OPTS=${QPID_OPTS}" >> ${resultFile}
+echo "heap usage, direct memory usage, connections, sessions, producers, is transacted, messages, message size, delivery mode, user friendly heap usage, user friendly direct memory usage" >> ${resultFile}
+
+performMessageNumberTests 0 "10 50 100 1000 10000 100000 1000000" ${resultFile}
+performMessageNumberTests 1024 "10 50 100 1000 10000 100000 1000000" ${resultFile}
+performMessageNumberTests 102400 "10 50 100 1000 10000 100000" ${resultFile}
+performMessageNumberTests 1048576 "10 50 100 1000 10000" ${resultFile}
+performMessageNumberTests 10485760 "10 50 100 1000" ${resultFile}
+performMessageNumberTests 32768000 "10 50 100" ${resultFile}
+
+performConnectionsTests 1 "1 100 1000 10000" ${resultFile}
+performConnectionsTests 10 "1 100 1000 10000" ${resultFile}
+performConnectionsTests 100 "1 100 1000 10000" ${resultFile}
+performConnectionsTests 200 "1 100 1000 10000" ${resultFile}
+
+endTime=`date "+%Y-%m-%d %H:%M:%S"`
+echo "# $endTime" >> results.txt
