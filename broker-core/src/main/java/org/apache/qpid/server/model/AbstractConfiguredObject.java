@@ -1173,7 +1173,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         {
                             try
                             {
-                                _attainStateFuture.set(AbstractConfiguredObject.this);
                                 if (getState() != currentState)
                                 {
                                     notifyStateChanged(currentState, getState());
@@ -1183,6 +1182,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                             catch (Throwable e)
                             {
                                 stateTransitionResult.setException(e);
+                            }
+                            finally
+                            {
+                                _attainStateFuture.set(AbstractConfiguredObject.this);
                             }
                         }
 
