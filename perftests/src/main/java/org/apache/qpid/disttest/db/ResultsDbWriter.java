@@ -95,8 +95,9 @@ public class ResultsDbWriter
             ", %28$s bigint" +      // MIN_LATENCY
             ", %29$s bigint" +      // MAX_LATENCY
             ", %30$s double" +      // LATENCY_STANDARD_DEVIATION
-            ", %31$s varchar(200) not null" +
-            ", %32$s timestamp not null" +
+            ", %31$s double" +      // MESSAGE_THROUGHPUT
+            ", %32$s varchar(200) not null" +
+            ", %33$s timestamp not null" +
             ")",
             RESULTS_TABLE_NAME,
             TEST_NAME.getDisplayName(),
@@ -128,6 +129,7 @@ public class ResultsDbWriter
             MIN_LATENCY.getDisplayName(),
             MAX_LATENCY.getDisplayName(),
             LATENCY_STANDARD_DEVIATION.getDisplayName(),
+            MESSAGE_THROUGHPUT.getDisplayName(),
             RUN_ID,
             INSERTED_TIMESTAMP
         );
@@ -328,8 +330,8 @@ public class ResultsDbWriter
         try
         {
             String sqlTemplate = String.format(
-                    "INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) " +
-                    "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO %s (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) " +
+                    "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     RESULTS_TABLE_NAME,
                     TEST_NAME.getDisplayName(),
                     ITERATION_NUMBER.getDisplayName(),
@@ -360,6 +362,7 @@ public class ResultsDbWriter
                     MIN_LATENCY.getDisplayName(),
                     MAX_LATENCY.getDisplayName(),
                     LATENCY_STANDARD_DEVIATION.getDisplayName(),
+                    MESSAGE_THROUGHPUT.getDisplayName(),
                     RUN_ID,
                     INSERTED_TIMESTAMP
                     );
@@ -395,6 +398,7 @@ public class ResultsDbWriter
             statement.setLong(columnIndex++, participantResult.getMinLatency());
             statement.setLong(columnIndex++, participantResult.getMaxLatency());
             statement.setDouble(columnIndex++, participantResult.getLatencyStandardDeviation());
+            statement.setDouble(columnIndex++, participantResult.getMessageThroughput());
 
             statement.setString(columnIndex++, _runId);
             statement.setTimestamp(columnIndex++, new Timestamp(_clock.currentTimeMillis()));

@@ -49,7 +49,6 @@
       <version>${project.version}</version>
     </dependency>
 
-
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
@@ -60,7 +59,7 @@
       <groupId>org.apache.derby</groupId>
       <artifactId>derby</artifactId>
       <version>${derby-version}</version>
-      <scope>runtime</scope>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Non Apache Licence deps, use provided scope so users must supply -->
@@ -126,7 +125,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.3.2</version>
+        <version>${exec-maven-plugin-version}</version>
         <executions>
           <execution>
             <goals>
@@ -136,7 +135,7 @@
         </executions>
         <configuration>
           <mainClass>org.apache.qpid.disttest.charting.ChartingUtil</mainClass>
-          <includePluginDependencies>true</includePluginDependencies>
+          <classpathScope>compile</classpathScope>
           <arguments>
             <argument>chart-defs=${basedir}/../etc/chartdefs</argument>
           </arguments>
@@ -152,18 +151,6 @@
             </systemProperty>
           </systemProperties>
         </configuration>
-        <dependencies>
-          <dependency>
-	    <groupId>net.sourceforge.csvjdbc</groupId>
-	    <artifactId>csvjdbc</artifactId>
-	    <version>${csvjdbc-version}</version>
-          </dependency>
-	  <dependency>
-	    <groupId>jfree</groupId>
-	    <artifactId>jfreechart</artifactId>
-	    <version>${jfreechart-version}</version>
-	  </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
