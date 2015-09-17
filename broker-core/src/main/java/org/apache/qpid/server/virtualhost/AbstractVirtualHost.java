@@ -1854,6 +1854,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
         };
 
+        long threadPoolKeepAliveTimeout = getContextValue(Long.class, CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT);
+
         final SuppressingInheritedAccessControlContextThreadFactory connectionThreadFactory =
                 new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-iopool",
                                                                           SecurityManager.getSystemTaskSubject("IO Pool", getPrincipal()));
@@ -1861,6 +1863,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool",
                                                                      getConnectionThreadPoolMinimum(),
                                                                      getConnectionThreadPoolMaximum(),
+                                                                     threadPoolKeepAliveTimeout,
                                                                      connectionThreadFactory);
         _networkConnectionScheduler.start();
         MessageStore messageStore = getMessageStore();

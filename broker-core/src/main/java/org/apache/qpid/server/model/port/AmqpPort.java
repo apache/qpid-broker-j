@@ -54,6 +54,7 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
 
     String PORT_AMQP_THREAD_POOL_MAXIMUM = "port.amqp.threadPool.maximum";
     String PORT_AMQP_THREAD_POOL_MINIMUM = "port.amqp.threadPool.minimum";
+    String PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "port.amqp.threadPool.keep_alive_timeout";
 
     @ManagedContextDefault(name = DEFAULT_AMQP_PROTOCOLS)
     String INSTALLED_PROTOCOLS = AmqpPortImpl.getInstalledProtocolsAsString();
@@ -70,6 +71,10 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @SuppressWarnings("unused")
     @ManagedContextDefault( name = PORT_AMQP_THREAD_POOL_MINIMUM)
     long DEFAULT_PORT_AMQP_THREAD_POOL_MINIMUM = 2;
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT)
+    long DEFAULT_PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT = 1000 * 60 * 60; // 1 hour
 
     String PORT_MAX_MESSAGE_SIZE = "qpid.port.max_message_size";
 

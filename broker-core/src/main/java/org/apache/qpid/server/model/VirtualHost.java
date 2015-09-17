@@ -60,6 +60,7 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     String VIRTUALHOST_WORK_DIR_VAR_EXPRESSION  = "${qpid.work_dir}${file.separator}${ancestor:virtualhost:name}";
     String CONNECTION_THREAD_POOL_MINIMUM       = "connectionThreadPoolMinimum";
     String CONNECTION_THREAD_POOL_MAXIMUM       = "connectionThreadPoolMaximum";
+    String CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "connectionThreadPoolKeepAliveTimeout";
 
     @ManagedContextDefault( name = VIRTUALHOST_WORK_DIR_VAR)
     public static final String VIRTUALHOST_WORK_DIR = VIRTUALHOST_WORK_DIR_VAR_EXPRESSION;
@@ -72,6 +73,10 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     @ManagedContextDefault( name = "virtualhost.housekeepingCheckPeriod")
     public static final long DEFAULT_HOUSEKEEPING_CHECK_PERIOD = 30000l;
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT)
+    long DEFAULT_CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = 1000 * 60 * 60; // 1 hour
 
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingCheckPeriod}")
     long getHousekeepingCheckPeriod();

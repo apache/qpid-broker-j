@@ -70,8 +70,10 @@ class TCPandSSLTransport implements AcceptingTransport
             encryptionSet.add(TransportEncryption.TLS);
         }
 
+        long threadPoolKeepAliveTimeout = _port.getContextValue(Long.class, AmqpPort.PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT);
+
         _scheduler = new NetworkConnectionScheduler("Port-"+_port.getName(), _port.getThreadPoolMinimum(),
-                _port.getThreadPoolMaximum());
+                _port.getThreadPoolMaximum(), threadPoolKeepAliveTimeout);
         _scheduler.start();
         _networkTransport = new NonBlockingNetworkTransport(protocolEngineFactory,
                                                             encryptionSet, _scheduler, _port);
