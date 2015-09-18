@@ -54,6 +54,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import com.sun.management.GarbageCollectionNotificationInfo;
+import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -294,7 +295,7 @@ public class MemoryConsumptionTestClient
         LOGGER.debug("Consuming left over messages, using receive timeout:" + receiveTimeout);
 
         Connection connection = connectionFactory.createConnection();
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Session session = ((AMQConnection)connection).createSession(false, Session.AUTO_ACKNOWLEDGE, 10);
         Destination destination = session.createQueue(queueString);
         MessageConsumer consumer = session.createConsumer(destination);
         connection.start();
