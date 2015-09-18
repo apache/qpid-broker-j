@@ -45,6 +45,14 @@
       <outputDirectory>/lib</outputDirectory>
       <useProjectArtifact>true</useProjectArtifact>
     </dependencySet>
+    <dependencySet>
+      <outputDirectory>/lib</outputDirectory>
+      <useProjectArtifact>false</useProjectArtifact>
+      <scope>provided</scope>
+      <includes>
+        <include>org.apache.derby:derby</include>
+      </includes>
+    </dependencySet>
   </dependencySets>
 </assembly>
 

@@ -93,7 +93,8 @@ public class ChartWriter
             "        <title>%s</title>\n" +
             "        <style type='text/css'>figure { float: left; display: table; width: 87px;}</style>\n" +
             "    </head>\n" +
-            "    <body>\n", summaryPageTitle);
+            "    <body>\n" +
+            "        <h1>%s</h1>\n", summaryPageTitle, summaryPageTitle);
 
         String htmlFooter =
             "    </body>\n" +
