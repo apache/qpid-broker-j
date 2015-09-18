@@ -55,7 +55,7 @@ function stopBroker()
 
   echo "Killing broker with pid $brokerpid"
   kill -15 $brokerpid  2>&1 1> /dev/null
-  slip 1
+  sleep 1
   kill -9 $brokerpid  2>&1 1> /dev/null
   grep BRK-1014 ${QPID_WORK}/log/qpid.log | sed 's/,/ /g' | sed 's/^/# /' >> $resultFile
   mv  ${QPID_WORK}/log/qpid.log  ${QPID_WORK}/log/qpid.log.$messageSize_$messageCount
