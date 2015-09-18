@@ -54,9 +54,9 @@ function stopBroker()
   resultFile=$3
 
   echo "Killing broker with pid $brokerpid"
-  kill -15 $brokerpid  2>&1 1> /dev/null
+  kill -15 $brokerpid 2>&1 1> /dev/null
   sleep 1
-  kill -9 $brokerpid  2>&1 1> /dev/null
+  (kill -9 $brokerpid 2>&1) > /dev/null
   grep BRK-1014 ${QPID_WORK}/log/qpid.log | sed 's/,/ /g' | sed 's/^/# /' >> $resultFile
   mv  ${QPID_WORK}/log/qpid.log  ${QPID_WORK}/log/qpid.log.$messageSize_$messageCount
   rm -fr  $QPID_WORK/default/messages
@@ -145,6 +145,7 @@ PROTOCOL=${1:-0-9}
 BROKER_HOSTNAME=${2:-"localhost"}
 RMI_PORT=${3:-8999}
 
+brokerVersion=`$QPID_HOME/bin/qpid-server -v | grep "qpid -" | awk '{print $3 " rev" $5}'`
 javaVersion=`java -version 2>&1 | grep "java version" | awk '{print $3}' | sed -e "s/\"//g"`
 startTime=`date "+%Y-%m-%d %H:%M:%S"`
 startTimeFile=`date "+%Y-%m-%d-%H-%M-%S"`
@@ -156,18 +157,18 @@ rm -fr $QPID_WORK
 mkdir -p ${QPID_WORK}/log
 
 echo "# $startTime" > ${resultFile}
-echo "# amqp=${PROTOCOL} java=${javaVersion} QPID_OPTS=${QPID_OPTS}" >> ${resultFile}
-echo "heap usage, direct memory usage, connections, sessions, producers, is transacted, messages, message size, delivery mode, user friendly heap usage, user friendly direct memory usage" >> ${resultFile}
+echo "# amqp=${PROTOCOL} java=${javaVersion} broker=${brokerVersion} QPID_OPTS=${QPID_OPTS}" >> ${resultFile}
+echo "# heap usage, direct memory usage, connections, sessions, producers, is transacted, messages, message size, delivery mode, user friendly heap usage, user friendly direct memory usage" >> ${resultFile}
 
-performMessageNumberTests 0 "10 50 100 1000 10000 100000 1000000" ${resultFile}
-performMessageNumberTests 1024 "10 50 100 1000 10000 100000 1000000" ${resultFile}
-performMessageNumberTests 102400 "10 50 100 1000 10000 100000" ${resultFile}
-performMessageNumberTests 1048576 "10 50 100 1000 10000" ${resultFile}
+performMessageNumberTests 0        "10 50 100 1000 10000 100000 1000000" ${resultFile}
+performMessageNumberTests 1024     "10 50 100 1000 10000 100000 1000000" ${resultFile}
+performMessageNumberTests 102400   "10 50 100 1000 10000 100000" ${resultFile}
+performMessageNumberTests 1048576  "10 50 100 1000 10000" ${resultFile}
 performMessageNumberTests 10485760 "10 50 100 1000" ${resultFile}
 performMessageNumberTests 32768000 "10 50 100" ${resultFile}
 
-performConnectionsTests 1 "1 100 1000 10000" ${resultFile}
-performConnectionsTests 10 "1 100 1000 10000" ${resultFile}
+performConnectionsTests 1   "1 100 1000 10000" ${resultFile}
+performConnectionsTests 10  "1 100 1000 10000" ${resultFile}
 performConnectionsTests 100 "1 100 1000 10000" ${resultFile}
 performConnectionsTests 200 "1 100 1000 10000" ${resultFile}
 
