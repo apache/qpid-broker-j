@@ -86,7 +86,7 @@ public class NetworkConnectionScheduler
             _selectorThread = new SelectorThread(this);
             _selectorThread.start();
             _executor = new ThreadPoolExecutor(_poolSizeMinimum, _poolSizeMaximum,
-                                               _threadKeepAliveTimeout, TimeUnit.MILLISECONDS,
+                                               _threadKeepAliveTimeout, TimeUnit.MINUTES,
                                                new LinkedBlockingQueue<Runnable>(), _factory);
             _executor.prestartAllCoreThreads();
             _executor.allowCoreThreadTimeOut(true);
@@ -99,8 +99,6 @@ public class NetworkConnectionScheduler
 
     public void schedule(final NonBlockingConnection connection)
     {
-        increaseCorePoolPoolSizeIfNecessary();
-
         _executor.execute(new Runnable()
                         {
                             @Override
@@ -119,6 +117,8 @@ public class NetworkConnectionScheduler
                                 }
                             }
                         });
+
+        increaseCorePoolPoolSizeIfNecessary();
     }
 
     private void increaseCorePoolPoolSizeIfNecessary()

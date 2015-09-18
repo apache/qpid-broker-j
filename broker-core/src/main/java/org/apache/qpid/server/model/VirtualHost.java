@@ -76,7 +76,7 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT)
-    long DEFAULT_CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = 1000 * 60 * 60; // 1 hour
+    long DEFAULT_CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = 60; // Minutes
 
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingCheckPeriod}")
     long getHousekeepingCheckPeriod();
