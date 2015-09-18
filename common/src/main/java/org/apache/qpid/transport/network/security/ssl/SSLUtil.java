@@ -88,15 +88,19 @@ public class SSLUtil
         try
         {
             Certificate cert = engine.getSession().getPeerCertificates()[0];
-            verifyHostname(hostnameExpected, (X509Certificate) cert);
+            if (cert instanceof X509Certificate)
+            {
+                verifyHostname(hostnameExpected, (X509Certificate) cert);
+            }
+            else
+            {
+                throw new TransportException("Cannot verify peer's hostname as peer does not present a X509Certificate. "
+                                             + "Presented certificate : " + cert);
+            }
         }
         catch(SSLPeerUnverifiedException e)
         {
-            LOGGER.warn("Exception received while trying to verify hostname", e);
-            // For some reason the SSL engine sets the handshake status to FINISH twice
-            // in succession. The first time the peer certificate
-            // info is not available. The second time it works !
-            // Therefore have no choice but to ignore the exception here.
+            throw new TransportException("Failed to verify peer's hostname", e);
         }
     }
 

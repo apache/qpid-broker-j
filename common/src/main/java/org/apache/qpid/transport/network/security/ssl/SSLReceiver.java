@@ -162,29 +162,29 @@ public class SSLReceiver implements ExceptionHandlingByteBufferReceiver
                             continue;
                         }
                         break;
-
+                    case NEED_WRAP:
+                        break;
                     case NEED_TASK:
                         doTasks();
-                        handshakeStatus = engine.getHandshakeStatus();
-
+                        break;
                     case FINISHED:
                         if (_hostname != null)
                         {
                             SSLUtil.verifyHostname(engine, _hostname);
                         }
-                            
-                    case NEED_WRAP:                        
-                    case NOT_HANDSHAKING:
-                        synchronized(_sslStatus.getSslLock())
-                        {
-                            _sslStatus.getSslLock().notifyAll();
-                        }
                         break;
-
+                    case NOT_HANDSHAKING:
+                        break;
                     default:
                         throw new IllegalStateException("SSLReceiver: Invalid State " + status);
                 }
-
+                if (handshakeStatus != HandshakeStatus.NEED_UNWRAP)
+                {
+                    synchronized(_sslStatus.getSslLock())
+                    {
+                        _sslStatus.getSslLock().notifyAll();
+                    }
+                }
 
             }
             catch(SSLException e)
