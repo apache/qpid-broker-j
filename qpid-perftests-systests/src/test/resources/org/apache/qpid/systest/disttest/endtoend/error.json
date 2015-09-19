@@ -18,13 +18,25 @@
  * under the License.
  *
  */
-package org.apache.qpid.disttest.results;
-
-import org.apache.qpid.disttest.controller.ResultsForAllTests;
-
-public interface ResultsWriter
 {
-    void begin();
-    void writeResults(ResultsForAllTests resultsForAllTests, String testConfigFile);
-    void end();
+    "_tests":[
+    {
+      "_name": "TestWillError",
+      "_queues":[
+        {
+          "_name": "direct://amq.direct//testQueue"
+        }
+      ],
+      "_clients":[
+        {
+          "_name": "client",
+          "_connections":[
+            {
+              "_name": "connection1",
+              "_factory": "unknown" /* Unknown connection factory, will cause exception */
+            }
+          ]
+        }
+      ]
+    }]
 }

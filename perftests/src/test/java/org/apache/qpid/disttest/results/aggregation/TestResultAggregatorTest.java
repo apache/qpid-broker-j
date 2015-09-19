@@ -18,14 +18,10 @@
  */
 package org.apache.qpid.disttest.results.aggregation;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.controller.TestResult;
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.ParticipantResult;
@@ -64,33 +60,6 @@ public class TestResultAggregatorTest extends QpidTestCase
     private static final int BATCH_SIZE = 3;
 
     private TestResultAggregator _aggregator = new TestResultAggregator();
-
-    public void testAggregateTestResults()
-    {
-        ResultsForAllTests resultsForAllTests1 = mock(ResultsForAllTests.class);
-        ResultsForAllTests resultsForAllTests2 = mock(ResultsForAllTests.class);
-
-        ResultsForAllTests summaryResult1 = mock(ResultsForAllTests.class);
-        ResultsForAllTests summaryResult2 = mock(ResultsForAllTests.class);
-
-        when(resultsForAllTests1.getAllParticipantsResult()).thenReturn(summaryResult1);
-        when(resultsForAllTests2.getAllParticipantsResult()).thenReturn(summaryResult2);
-
-        ITestResult testResult1 = mock(ITestResult.class);
-        ITestResult testResult2 = mock(ITestResult.class);
-
-        when(summaryResult1.getTestResults()).thenReturn(Arrays.asList(testResult1));
-        when(summaryResult2.getTestResults()).thenReturn(Arrays.asList(testResult2));
-
-        ResultsForAllTests actualSummaryResults = _aggregator.aggregateTestResults(Arrays.asList(
-                resultsForAllTests1,
-                resultsForAllTests2));
-
-        assertEquals(
-                "Summary results should contain the all the 'all participants' test results",
-                Arrays.asList(testResult1, testResult2),
-                actualSummaryResults.getTestResults());
-    }
 
     public void testAggregateResultsForTwoConsumerAndOneProducer() throws Exception
     {

@@ -35,11 +35,11 @@
         "_name": "producingClient1",
         "_connections":[
           {
-            "_name": "connection1",
+            "_name": "producingConnection1",
             "_factory": "connectionfactory",
             "_sessions": [
               {
-                "_sessionName": "session1",
+                "_sessionName": "producingSession1",
                 "_producers": [
                   {
                     "_name": "participantProducer1",
@@ -56,11 +56,11 @@
         "_name": "producingClient2",
         "_connections":[
           {
-            "_name": "connection1",
+            "_name": "producingConnection2",
             "_factory": "connectionfactory",
             "_sessions": [
               {
-                "_sessionName": "session1",
+                "_sessionName": "producingSession1",
                 "_producers": [
                   {
                     "_name": "participantProducer2",
@@ -77,11 +77,11 @@
         "_name": "consumingClient",
         "_connections":[
           {
-            "_name": "connection1",
+            "_name": "consumingConnection1",
             "_factory": "connectionfactory",
             "_sessions": [
               {
-                "_sessionName": "session1",
+                "_sessionName": "consumingSession1",
                 "_consumers": [
                   {
                     "_name": "participantConsumer1",
@@ -93,11 +93,11 @@
             ]
           },
           {
-            "_name": "connection2",
+            "_name": "consumingConnection2",
             "_factory": "connectionfactory",
             "_sessions": [
               {
-                "_sessionName": "session1",
+                "_sessionName": "consumingSession2",
                 "_consumers": [
                   {
                     "_name": "participantConsumer2",

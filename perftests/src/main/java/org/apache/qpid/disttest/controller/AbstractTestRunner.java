@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,18 +47,21 @@ import org.apache.qpid.disttest.message.TearDownTestCommand;
 
 public abstract class AbstractTestRunner implements ITestRunner
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTestRunner.class);
     public static final long WAIT_FOREVER = -1;
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractTestRunner.class);
     private static final long PARTICIPANT_RESULTS_LOG_INTERVAL = 60000;
-    protected final long _commandResponseTimeout;
-    protected final ParticipatingClients _participatingClients;
-    protected final TestInstance _testInstance;
-    protected CountDownLatch _testResultsLatch;
-    /** Length of time to await test results or {@value #WAIT_FOREVER} */
-    protected final long _testResultTimeout;
+    private final long _commandResponseTimeout;
+    private final ParticipatingClients _participatingClients;
+    private final TestInstance _testInstance;
+    private final AtomicInteger _errorResponseCount = new AtomicInteger();
     private final Set<CommandType> _setOfResponsesToExpect = Collections.synchronizedSet(new HashSet<CommandType>());
+
+    /** Length of time to await test results or {@value #WAIT_FOREVER} */
+    private final long _testResultTimeout;
+    private CountDownLatch _testResultsLatch;
     protected ControllerJmsDelegate _jmsDelegate;
-    protected Thread _removeQueuesShutdownHook = new Thread()
+    private final Thread _removeQueuesShutdownHook = new Thread()
     {
         @Override
         public void run()
@@ -74,12 +78,11 @@ public abstract class AbstractTestRunner implements ITestRunner
         }
     };
     private volatile CountDownLatch _commandResponseLatch = null;
-
-    public AbstractTestRunner(ParticipatingClients participatingClients,
-                              long commandResponseTimeout,
-                              TestInstance testInstance,
-                              ControllerJmsDelegate jmsDelegate,
-                              long testResultTimeout)
+    protected AbstractTestRunner(ParticipatingClients participatingClients,
+                                 long commandResponseTimeout,
+                                 TestInstance testInstance,
+                                 ControllerJmsDelegate jmsDelegate,
+                                 long testResultTimeout)
     {
         _participatingClients = participatingClients;
         _commandResponseTimeout = commandResponseTimeout;
@@ -88,7 +91,7 @@ public abstract class AbstractTestRunner implements ITestRunner
         _testResultTimeout = testResultTimeout;
     }
 
-    void createQueues()
+    private void createQueues()
     {
         List<QueueConfig> queues = _testInstance.getQueues();
         if (!queues.isEmpty())
@@ -97,7 +100,12 @@ public abstract class AbstractTestRunner implements ITestRunner
         }
     }
 
-    void sendTestSetupCommands()
+    public TestInstance getTestInstance()
+    {
+        return _testInstance;
+    }
+
+    private void sendTestSetupCommands()
     {
         List<CommandForClient> commandsForAllClients = _testInstance.createCommands();
         validateCommands(commandsForAllClients);
@@ -117,6 +125,8 @@ public abstract class AbstractTestRunner implements ITestRunner
 
             sendCommandInternal(registeredClientName, command);
         }
+
+
     }
 
     protected void validateCommands(List<CommandForClient> commandsForAllClients)
@@ -124,23 +134,33 @@ public abstract class AbstractTestRunner implements ITestRunner
         // pass
     }
 
-    void awaitCommandResponses()
+    private void awaitCommandResponses()
     {
         awaitLatch(_commandResponseLatch, _commandResponseTimeout, "Timed out waiting for command responses");
+
+        if (_errorResponseCount.get() > 0)
+        {
+            throw new DistributedTestException("One or more clients were unable to successfully process commands. "
+                                               + _errorResponseCount + " command(s) generated an error response.");
+        }
     }
 
-    void processCommandResponse(final Response response)
+    private void processCommandResponse(final Response response)
     {
         if (LOGGER.isDebugEnabled())
         {
             LOGGER.debug("Received response for command " + response);
         }
 
-        _commandResponseLatch.countDown();
+        if (response.hasError())
+        {
+            _errorResponseCount.incrementAndGet();
+        }
         checkForResponseError(response);
+        _commandResponseLatch.countDown();
     }
 
-    void awaitTestResults()
+    private void awaitTestResults()
     {
         long timeout = _testResultTimeout;
         DistributedTestException lastException = null;
@@ -172,7 +192,7 @@ public abstract class AbstractTestRunner implements ITestRunner
         }
     }
 
-    void deleteQueues()
+    private void deleteQueues()
     {
         List<QueueConfig> queues = _testInstance.getQueues();
         if (!queues.isEmpty())
@@ -181,7 +201,7 @@ public abstract class AbstractTestRunner implements ITestRunner
         }
     }
 
-    void sendCommandToParticipatingClients(final Command command)
+    private void sendCommandToParticipatingClients(final Command command)
     {
         Collection<String> participatingRegisteredClients = _participatingClients.getRegisteredNames();
         final int numberOfClients = participatingRegisteredClients.size();
@@ -196,7 +216,7 @@ public abstract class AbstractTestRunner implements ITestRunner
         }
     }
 
-    void processParticipantResult(ParticipantResult result, TestResult testResult)
+    private void processParticipantResult(ParticipantResult result, TestResult testResult)
     {
         setOriginalTestDetailsOn(result);
 
@@ -232,7 +252,7 @@ public abstract class AbstractTestRunner implements ITestRunner
             if (!countedDownOK)
             {
                 final long latchCount = latch.getCount();
-                String formattedMessage = "After " + timeout + "ms ... " + message + " ... Expecting " + latchCount + " more responses.";
+                String formattedMessage = "After " + timeout + "ms ... " + message + " ... Expecting " + latchCount + " more response(s).";
                 LOGGER.info(formattedMessage); // info rather than error because we time out periodically so we can log progress
                 throw new DistributedTestException(formattedMessage);
             }
@@ -247,7 +267,7 @@ public abstract class AbstractTestRunner implements ITestRunner
     {
         if (response.hasError())
         {
-            LOGGER.error("Client " + response.getRegisteredClientName() + " reported error " + response);
+            LOGGER.error("Client {} reported error {}", response.getRegisteredClientName()  ,response);
         }
     }
 
@@ -256,6 +276,7 @@ public abstract class AbstractTestRunner implements ITestRunner
     {
         TestResult testResult = new TestResult(_testInstance.getName());
         _testResultsLatch = new CountDownLatch(_testInstance.getTotalNumberOfParticipants());
+        _errorResponseCount.set(0);
 
         ParticipantResultListener participantResultListener = new ParticipantResultListener(testResult);
         TestCommandResponseListener testCommandResponseListener = new TestCommandResponseListener();
@@ -281,7 +302,7 @@ public abstract class AbstractTestRunner implements ITestRunner
         }
     }
 
-    protected void runParts()
+    private void runParts()
     {
         boolean queuesCreated = false;
 
@@ -315,7 +336,7 @@ public abstract class AbstractTestRunner implements ITestRunner
         }
     }
 
-    final class ParticipantResultListener implements CommandListener
+    private final class ParticipantResultListener implements CommandListener
     {
         private final TestResult _testResult;
 
@@ -338,7 +359,7 @@ public abstract class AbstractTestRunner implements ITestRunner
         }
     }
 
-    final class TestCommandResponseListener implements CommandListener
+    private final class TestCommandResponseListener implements CommandListener
     {
         @Override
         public void processCommand(Command command)

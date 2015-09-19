@@ -18,13 +18,49 @@
  * under the License.
  *
  */
+
 package org.apache.qpid.disttest.results;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 
-public interface ResultsWriter
+public class CompositeResultsWriter implements ResultsWriter
 {
-    void begin();
-    void writeResults(ResultsForAllTests resultsForAllTests, String testConfigFile);
-    void end();
+    private final List<ResultsWriter> _writers = new ArrayList<>();
+
+    public void addWriter(ResultsWriter writer)
+    {
+        _writers.add(writer);
+    }
+
+    @Override
+    public void begin()
+    {
+        for (ResultsWriter writer : _writers)
+        {
+            writer.begin();
+        }
+
+    }
+
+    @Override
+    public void writeResults(final ResultsForAllTests resultsForAllTests, final String testConfigFile)
+    {
+        for (ResultsWriter writer : _writers)
+        {
+            writer.writeResults(resultsForAllTests, testConfigFile);
+        }
+    }
+
+    @Override
+    public void end()
+    {
+        for (ResultsWriter writer : _writers)
+        {
+            writer.begin();
+        }
+
+    }
 }

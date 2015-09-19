@@ -26,10 +26,10 @@ public class Response extends Command
     protected String _errorMessage;
     private CommandType _inReplyToCommandType;
 
-    public Response(final String registeredclientName, final CommandType inReplyToCommandType, final String errorMessage)
+    public Response(final String registeredClientName, final CommandType inReplyToCommandType, final String errorMessage)
     {
         super(CommandType.RESPONSE);
-        _registeredClientName = registeredclientName;
+        _registeredClientName = registeredClientName;
         _errorMessage = errorMessage;
         _inReplyToCommandType = inReplyToCommandType;
     }

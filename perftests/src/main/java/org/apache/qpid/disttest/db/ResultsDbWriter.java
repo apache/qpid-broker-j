@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.message.ParticipantResult;
+import org.apache.qpid.disttest.results.ResultsWriter;
 import org.apache.qpid.disttest.results.aggregation.ITestResult;
 
 /**
@@ -51,7 +52,7 @@ import org.apache.qpid.disttest.results.aggregation.ITestResult;
  * <li>{@link #writeResults(ResultsForAllTests)} (usually multiple times)</li>
  * </ul>
  */
-public class ResultsDbWriter
+public class ResultsDbWriter implements ResultsWriter
 {
     private static final Logger _logger = LoggerFactory.getLogger(ResultsDbWriter.class);
 
@@ -223,7 +224,7 @@ public class ResultsDbWriter
         return new RuntimeException("Couldn't initialise ResultsDbWriter from context with environment" + environment, e);
     }
 
-    public void createResultsTableIfNecessary()
+    private void createResultsTableIfNecessary()
     {
         try
         {
@@ -282,7 +283,15 @@ public class ResultsDbWriter
         }
     }
 
-    public void writeResults(ResultsForAllTests results)
+    @Override
+    public void begin()
+    {
+        createResultsTableIfNecessary();
+
+    }
+
+    @Override
+    public void writeResults(ResultsForAllTests results, String testName)
     {
         try
         {
@@ -293,6 +302,12 @@ public class ResultsDbWriter
             throw new RuntimeException("Couldn't write results " + results, e);
         }
         _logger.info(this + " wrote " + results.getTestResults().size() + " results to database");
+    }
+
+    @Override
+    public void end()
+    {
+
     }
 
     private void writeResultsThrowingException(ResultsForAllTests results) throws SQLException

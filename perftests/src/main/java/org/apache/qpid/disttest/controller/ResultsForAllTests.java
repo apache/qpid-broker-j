@@ -49,22 +49,23 @@ public class ResultsForAllTests
         return _hasErrors;
     }
 
-    public ResultsForAllTests getAllParticipantsResult()
+    public List<ITestResult> getAllParticipantsResult()
     {
-        ResultsForAllTests summaryResultsForAllTests = new ResultsForAllTests();
+        List<ITestResult> results = new ArrayList<>(_results.size());
 
         for (ITestResult testResult : _results)
         {
             for(ParticipantResult participantResult : testResult.getParticipantResults())
             {
-                if(TestResultAggregator.ALL_CONSUMER_PARTICIPANTS_NAME.equals(participantResult.getParticipantName()))
+                if(TestResultAggregator.ALL_PARTICIPANTS_NAME.equals(participantResult.getParticipantName()))
                 {
                     TestResult summaryTestResult = new TestResult(testResult.getName());
                     summaryTestResult.addParticipantResult(participantResult);
-                    summaryResultsForAllTests.add(summaryTestResult);
+                    results.add(summaryTestResult);
                 }
             }
         }
-        return summaryResultsForAllTests;
+
+        return results;
     }
 }

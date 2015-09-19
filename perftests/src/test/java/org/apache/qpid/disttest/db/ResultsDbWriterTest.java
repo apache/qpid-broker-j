@@ -85,9 +85,9 @@ public class ResultsDbWriterTest extends QpidTestCase
         String runId = "myRunId";
 
         ResultsDbWriter resultsDbWriter = new ResultsDbWriter(context, runId, _clock);
-        resultsDbWriter.createResultsTableIfNecessary();
+        resultsDbWriter.begin();
 
-        resultsDbWriter.writeResults(results);
+        resultsDbWriter.writeResults(results, "testfile");
 
         ParticipantResult expectedResult = _resultsTestFixture.getFirstParticipantResult(results);
         assertResultsAreInDb(context, expectedResult, runId);

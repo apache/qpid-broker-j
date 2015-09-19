@@ -18,24 +18,26 @@
  */
 package org.apache.qpid.disttest.results;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.results.ResultsCsvWriter;
+import org.apache.qpid.disttest.results.aggregation.ITestResult;
 import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
 import org.apache.qpid.disttest.results.formatting.CSVFormatter;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestFileUtils;
 import org.apache.qpid.util.FileUtils;
 
-public class ResultsFileWriterTest extends QpidTestCase
+public class ResultsCsvWriterTest extends QpidTestCase
 {
     private CSVFormatter _csvFormater = mock(CSVFormatter.class);
-    private TestResultAggregator _testResultAggregator = mock(TestResultAggregator.class);
 
     private File _outputDir = TestFileUtils.createTestDirectory();
 
@@ -45,42 +47,43 @@ public class ResultsFileWriterTest extends QpidTestCase
     public void setUp()
     {
         _resultsFileWriter.setCsvFormater(_csvFormater);
-        _resultsFileWriter.setTestResultAggregator(_testResultAggregator);
     }
 
     public void testWriteResultsToFile()
     {
-        ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
-
-        String expectedCsvContents = "expected-csv-contents";
-        when(_csvFormater.format(resultsForAllTests)).thenReturn(expectedCsvContents);
-
-        _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
-
-        File resultsFile = new File(_outputDir, "config.csv");
-
-        assertEquals(expectedCsvContents, FileUtils.readFileAsString(resultsFile));
-    }
-
-    public void testWriteResultsSummary()
-    {
+        List<ITestResult> testResult1 = mock(List.class);
         ResultsForAllTests results1 = mock(ResultsForAllTests.class);
+        when(results1.getTestResults()).thenReturn(testResult1);
+
+
+        List<ITestResult> testResult2 = mock(List.class);
         ResultsForAllTests results2 = mock(ResultsForAllTests.class);
-        ResultsForAllTests summaryResults = mock(ResultsForAllTests.class);
+        when(results2.getTestResults()).thenReturn(testResult2);
 
-        when(_testResultAggregator.aggregateTestResults(Arrays.asList(results1, results2)))
-            .thenReturn(summaryResults);
-
+        String expectedCsvContents1 = "expected-csv-contents1";
+        String expectedCsvContents2 = "expected-csv-contents2";
         String expectedSummaryFileContents = "expected-summary-file";
+        when(_csvFormater.format(testResult1)).thenReturn(expectedCsvContents1);
+        when(_csvFormater.format(testResult2)).thenReturn(expectedCsvContents2);
 
-        when(_csvFormater.format(summaryResults))
-            .thenReturn(expectedSummaryFileContents);
+        _resultsFileWriter.begin();
+        _resultsFileWriter.writeResults(results1, "config1.json");
 
-        _resultsFileWriter.writeResultsSummary(Arrays.asList(results1, results2));
+        File resultsFile1 = new File(_outputDir, "config1.csv");
+        assertEquals(expectedCsvContents1, FileUtils.readFileAsString(resultsFile1));
+
+        _resultsFileWriter.writeResults(results2, "config2.json");
+
+        File resultsFile2 = new File(_outputDir, "config2.csv");
+        assertEquals(expectedCsvContents2, FileUtils.readFileAsString(resultsFile2));
+
+        when(_csvFormater.format(any(List.class))).thenReturn(expectedSummaryFileContents);
+
+        _resultsFileWriter.end();
 
         File summaryFile = new File(_outputDir, ResultsCsvWriter.TEST_SUMMARY_FILE_NAME);
-
         assertEquals(expectedSummaryFileContents, FileUtils.readFileAsString(summaryFile));
     }
+
 
 }

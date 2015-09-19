@@ -70,8 +70,8 @@ public class HillClimbingTestRunner extends AbstractTestRunner
             do
             {
                 LOGGER.info("Running test : {}, iteration : {}, run number : {}/{}, rate: {}",
-                        _testInstance, iteration, runNumber, maxNumberOfRuns, rate);
-                _testInstance.setProducerRate(rate);
+                        getTestInstance(), iteration, runNumber, maxNumberOfRuns, rate);
+                getTestInstance().setProducerRate(rate);
 
                 TestResult testResult = doIt();
 

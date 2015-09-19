@@ -21,10 +21,12 @@ package org.apache.qpid.disttest.results;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.controller.ResultsForAllTests;
+import org.apache.qpid.disttest.results.aggregation.ITestResult;
 import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
 import org.apache.qpid.disttest.results.formatting.CSVFormatter;
 import org.slf4j.Logger;
@@ -36,11 +38,11 @@ public class ResultsCsvWriter implements ResultsWriter
 
     static final String TEST_SUMMARY_FILE_NAME = "test-summary.csv";
 
+    private final List<ITestResult> _summaryResultsList = new ArrayList();
+
     private final File _outputDir;
 
     private CSVFormatter _csvFormater = new CSVFormatter();
-
-    private TestResultAggregator _testResultAggregator = new TestResultAggregator();
 
     public ResultsCsvWriter(File outputDir)
     {
@@ -48,17 +50,25 @@ public class ResultsCsvWriter implements ResultsWriter
     }
 
     @Override
-    public void writeResults(ResultsForAllTests resultsForAllTests, String testConfigFile)
+    public void begin()
     {
-        final String outputFile = generateOutputCsvNameFrom(testConfigFile);
-        writeResultsToOutputFile(resultsForAllTests, outputFile);
     }
 
     @Override
-    public void writeResultsSummary(List<ResultsForAllTests> allResultsList)
+    public void writeResults(ResultsForAllTests resultsForAllTests, String testConfigFile)
     {
-        ResultsForAllTests combinedResults = _testResultAggregator.aggregateTestResults(allResultsList);
-        writeResultsToOutputFile(combinedResults, new File(_outputDir, TEST_SUMMARY_FILE_NAME).getAbsolutePath());
+        final String outputFile = generateOutputCsvNameFrom(testConfigFile);
+        List<ITestResult> testResults = resultsForAllTests.getTestResults();
+        writeResultsToOutputFile(testResults, outputFile);
+
+        List<ITestResult> allRows = resultsForAllTests.getAllParticipantsResult();
+        _summaryResultsList.addAll(allRows);
+    }
+
+    @Override
+    public void end()
+    {
+        writeResultsToOutputFile(_summaryResultsList, new File(_outputDir, TEST_SUMMARY_FILE_NAME).getAbsolutePath());
     }
 
     /**
@@ -72,44 +82,23 @@ public class ResultsCsvWriter implements ResultsWriter
         return new File(_outputDir, cvsFile).getAbsolutePath();
     }
 
-    private void writeResultsToOutputFile(ResultsForAllTests resultsForAllTests, String outputFile)
+    private void writeResultsToOutputFile(List<ITestResult> resultsForAllTests, String outputFile)
     {
-        FileWriter writer = null;
-        try
+        try(FileWriter writer = new FileWriter(outputFile))
         {
             final String outputCsv = _csvFormater.format(resultsForAllTests);
-            writer = new FileWriter(outputFile);
             writer.write(outputCsv);
-            LOGGER.info("Wrote " + resultsForAllTests.getTestResults().size() + " test result(s) to output file " + outputFile);
+            LOGGER.info("Wrote {} test result(s) to output file {}", resultsForAllTests.size(), outputFile);
         }
         catch (IOException e)
         {
             throw new DistributedTestException("Unable to write output file " + outputFile, e);
-        }
-        finally
-        {
-            if (writer != null)
-            {
-                try
-                {
-                    writer.close();
-                }
-                catch (IOException e)
-                {
-                    LOGGER.error("Failed to close stream for file " + outputFile, e);
-                }
-            }
         }
     }
 
     public void setCsvFormater(CSVFormatter csvFormater)
     {
         _csvFormater = csvFormater;
-    }
-
-    void setTestResultAggregator(TestResultAggregator testResultAggregator)
-    {
-        _testResultAggregator = testResultAggregator;
     }
 
 }

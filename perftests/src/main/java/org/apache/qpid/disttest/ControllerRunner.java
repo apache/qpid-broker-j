@@ -32,8 +32,10 @@ import org.apache.qpid.disttest.controller.config.Config;
 import org.apache.qpid.disttest.controller.config.ConfigReader;
 import org.apache.qpid.disttest.db.ResultsDbWriter;
 import org.apache.qpid.disttest.jms.ControllerJmsDelegate;
+import org.apache.qpid.disttest.results.CompositeResultsWriter;
 import org.apache.qpid.disttest.results.ResultsCsvWriter;
 import org.apache.qpid.disttest.results.ResultsWriter;
+import org.apache.qpid.disttest.results.ResultsXmlWriter;
 import org.apache.qpid.disttest.results.aggregation.Aggregator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +71,8 @@ public class ControllerRunner extends AbstractRunner
 
     private final ConfigFileHelper _configFileHelper = new ConfigFileHelper();
 
-    private ResultsWriter _resultsFileWriter;
+    private final CompositeResultsWriter _resultsWriter = new CompositeResultsWriter();
 
-    private ResultsDbWriter _resultsDbWriter;
 
     public ControllerRunner()
     {
@@ -103,8 +104,7 @@ public class ControllerRunner extends AbstractRunner
     public void runController() throws Exception
     {
         Context context = getContext();
-        setUpResultFilesWriter();
-        setUpResultsDbWriter();
+        setUpResultsWriters();
 
         ControllerJmsDelegate jmsDelegate = new ControllerJmsDelegate(context);
 
@@ -125,10 +125,17 @@ public class ControllerRunner extends AbstractRunner
         }
         finally
         {
+            tearDownResultsWriters();
             jmsDelegate.closeConnections();
         }
     }
 
+    private void setUpResultsWriters()
+    {
+        setUpResultFileWriters();
+        setUpResultsDbWriter();
+        _resultsWriter.begin();
+    }
 
     private void setUpResultsDbWriter()
     {
@@ -136,21 +143,26 @@ public class ControllerRunner extends AbstractRunner
         if(Boolean.valueOf(writeToDbStr))
         {
             String runId = getCliOptions().get(RUN_ID);
-            _resultsDbWriter = new ResultsDbWriter(getContext(), runId);
-            _resultsDbWriter.createResultsTableIfNecessary();
+            _resultsWriter.addWriter(new ResultsDbWriter(getContext(), runId));
         }
     }
 
-    void setUpResultFilesWriter()
+    void setUpResultFileWriters()
     {
         String outputDirString = getCliOptions().get(ControllerRunner.OUTPUT_DIR_PROP);
         File outputDir = new File(outputDirString);
-        _resultsFileWriter = new ResultsCsvWriter(outputDir);
+        _resultsWriter.addWriter(new ResultsCsvWriter(outputDir));
+        _resultsWriter.addWriter(new ResultsXmlWriter(outputDir));
+    }
+
+    private void tearDownResultsWriters()
+    {
+        _resultsWriter.end();
     }
 
     private void runTests(Controller controller)
     {
-
+        boolean testError = false;
         String testConfigPath = getCliOptions().get(ControllerRunner.TEST_CONFIG_PROP);
         List<String> testConfigFiles = _configFileHelper.getTestConfigFiles(testConfigPath);
         createClientsIfNotDistributed(testConfigFiles);
@@ -166,16 +178,24 @@ public class ControllerRunner extends AbstractRunner
 
                 controller.awaitClientRegistrations();
 
-                LOGGER.info("Running test : " + testConfigFile);
+                LOGGER.info("Running test : {} ", testConfigFile);
                 ResultsForAllTests testResult = runTest(controller, testConfigFile);
+                if (testResult.hasErrors())
+                {
+                    testError = true;
+                }
                 results.add(testResult);
             }
-
-            _resultsFileWriter.writeResultsSummary(results);
         }
         catch(Exception e)
         {
             LOGGER.error("Problem running test", e);
+            throw new DistributedTestException("Problem running tests", e);
+        }
+
+        if (testError)
+        {
+            throw new DistributedTestException("One or more tests ended in error");
         }
     }
 
@@ -187,11 +207,7 @@ public class ControllerRunner extends AbstractRunner
         ResultsForAllTests rawResultsForAllTests = controller.runAllTests();
         ResultsForAllTests resultsForAllTests = _aggregator.aggregateResults(rawResultsForAllTests);
 
-        _resultsFileWriter.writeResults(resultsForAllTests, testConfigFile);
-        if(_resultsDbWriter != null)
-        {
-            _resultsDbWriter.writeResults(resultsForAllTests);
-        }
+        _resultsWriter.writeResults(resultsForAllTests, testConfigFile);
 
         return resultsForAllTests;
     }

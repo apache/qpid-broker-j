@@ -34,15 +34,13 @@ import org.apache.qpid.disttest.results.aggregation.ITestResult;
  */
 public class CSVFormatter
 {
-    public String format(ResultsForAllTests results)
+    public String format(List<ITestResult> results)
     {
         StringBuilder builder = new StringBuilder();
 
         builder.append(header());
 
-        List<ITestResult> testResults = results.getTestResults();
-
-        for (ITestResult testResult : testResults)
+        for (ITestResult testResult : results)
         {
 
             List<ParticipantResult> participantResults = new ArrayList<ParticipantResult>(testResult.getParticipantResults());

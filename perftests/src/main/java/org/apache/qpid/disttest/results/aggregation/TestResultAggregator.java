@@ -108,23 +108,4 @@ public class TestResultAggregator
         aggregatedAllResult.setMessageThroughput(aggregatedConsumerResult.getMessageThroughput());
     }
 
-    /**
-     * Produces a single {@link ResultsForAllTests} from the supplied list, only containing
-     * the "All participants" results.
-     */
-    public ResultsForAllTests aggregateTestResults(List<ResultsForAllTests> allResultsList)
-    {
-        ResultsForAllTests retVal = new ResultsForAllTests();
-
-        for (ResultsForAllTests resultsForAllTests : allResultsList)
-        {
-            ResultsForAllTests allParticipantsResult = resultsForAllTests.getAllParticipantsResult();
-            for (ITestResult testResult : allParticipantsResult.getTestResults())
-            {
-                retVal.add(testResult);
-            }
-        }
-
-        return retVal;
-    }
 }

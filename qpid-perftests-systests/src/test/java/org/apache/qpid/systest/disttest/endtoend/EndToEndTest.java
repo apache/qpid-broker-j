@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.qpid.disttest.ControllerRunner;
+import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.message.ParticipantAttribute;
 import org.apache.qpid.disttest.results.aggregation.TestResultAggregator;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -43,18 +44,19 @@ public class EndToEndTest extends QpidBrokerTestCase
     private static final String TEST_CONFIG_ITERATIONS = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/iterations.json";
     private static final String TEST_CONFIG_MANYPARTICIPANTS = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/manyparticipants.json";
     private static final String TEST_CONFIG_HILLCLIMBING = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/hillclimbing.js";
+    private static final String TEST_CONFIG_ERROR = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/endtoend/error.json";
     private static final String JNDI_CONFIG_FILE = "qpid-perftests-systests/src/test/resources/org/apache/qpid/systest/disttest/perftests.systests.properties";
     private static final int NUMBER_OF_HEADERS = 1;
     private static final int NUMBER_OF_SUMMARIES = 3;
 
-    private File _csvOutputDir;
+    private File _outputDir;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
-        _csvOutputDir = createTemporaryCsvDirectory();
-        assertTrue("CSV output dir must not exist", _csvOutputDir.isDirectory());
+        _outputDir = createTemporaryOutputDirectory();
+        assertTrue("Output dir must not exist", _outputDir.isDirectory());
     }
 
     @Override
@@ -62,9 +64,9 @@ public class EndToEndTest extends QpidBrokerTestCase
     {
         try
         {
-            if (_csvOutputDir != null && _csvOutputDir.exists())
+            if (_outputDir != null && _outputDir.exists())
             {
-               // FileUtils.delete(_csvOutputDir, true);
+               FileUtils.delete(_outputDir, true);
             }
         }
         finally
@@ -78,10 +80,12 @@ public class EndToEndTest extends QpidBrokerTestCase
         Map<String, String> arguments = new HashMap<>();
         arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_ITERATIONS);
         arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
-        arguments.put(OUTPUT_DIR_PROP, _csvOutputDir.getAbsolutePath());
+        arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "false");
 
-        final String[] csvLines = runControllerAndGetResults(arguments);
+        runController(arguments);
+        checkXmlFile(arguments);
+        String[] csvLines = getCsvResults(arguments);
 
         int numberOfParticipants = 2;
         int numberOfIterations = 2;
@@ -102,10 +106,12 @@ public class EndToEndTest extends QpidBrokerTestCase
         Map<String, String> arguments = new HashMap<>();
         arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_MANYPARTICIPANTS);
         arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
-        arguments.put(OUTPUT_DIR_PROP, _csvOutputDir.getAbsolutePath());
+        arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "false");
 
-        final String[] csvLines = runControllerAndGetResults(arguments);
+        runController(arguments);
+        checkXmlFile(arguments);
+        String[] csvLines = getCsvResults(arguments);
 
         int numberOfParticipants = 4;
         int dataRowsPerIteration = numberOfParticipants + NUMBER_OF_SUMMARIES;
@@ -146,8 +152,12 @@ public class EndToEndTest extends QpidBrokerTestCase
             }
         }
 
-        assertEquals("Reported total messages sent does not match total sent by producers", reportedTotalMessagesSent, actualMessagesSent);
-        assertEquals("Reported total messages received does not match total received by consumers", reportedTotalMessagesReceived, actualMessagesReceived);
+        assertEquals("Reported total messages sent does not match total sent by producers",
+                     reportedTotalMessagesSent,
+                     actualMessagesSent);
+        assertEquals("Reported total messages received does not match total received by consumers",
+                     reportedTotalMessagesReceived,
+                     actualMessagesReceived);
 
     }
 
@@ -156,13 +166,15 @@ public class EndToEndTest extends QpidBrokerTestCase
         Map<String, String> arguments = new HashMap<>();
         arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_HILLCLIMBING);
         arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
-        arguments.put(OUTPUT_DIR_PROP, _csvOutputDir.getAbsolutePath());
+        arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
         arguments.put(HILL_CLIMB, "true");
         // Reduce the minimum delta and number of runs so that test executes more quickly.We are not interested in an accurate repeatable value in this test.
         arguments.put(HILL_CLIMBER_MINIMUM_DELTA, "10");
         arguments.put(HILL_CLIMBER_MAX_NUMBER_OF_RUNS, "1");
 
-        final String[] csvLines = runControllerAndGetResults(arguments);
+        runController(arguments);
+        checkXmlFile(arguments);
+        String[] csvLines = getCsvResults(arguments);
 
         int numberOfParticipants = 2;
 
@@ -175,13 +187,34 @@ public class EndToEndTest extends QpidBrokerTestCase
 
         assertDataRowHasCorrectTestAndClientName(testName, "", TestResultAggregator.ALL_PARTICIPANTS_NAME, csvLines[4]);
         assertDataRowHasCorrectTestAndClientName(testName, "", TestResultAggregator.ALL_CONSUMER_PARTICIPANTS_NAME, csvLines[2]);
-        assertDataRowHasCorrectTestAndClientName(testName, "", TestResultAggregator.ALL_PRODUCER_PARTICIPANTS_NAME, csvLines[5]);
+        assertDataRowHasCorrectTestAndClientName(testName,
+                                                 "",
+                                                 TestResultAggregator.ALL_PRODUCER_PARTICIPANTS_NAME,
+                                                 csvLines[5]);
 
         assertDataRowHasThroughputValues(csvLines[4]);
 
     }
 
-    private String[] runControllerAndGetResults(Map<String, String> args) throws Exception
+    public void testTestScriptCausesError() throws Exception
+    {
+        Map<String, String> arguments = new HashMap<>();
+        arguments.put(TEST_CONFIG_PROP, TEST_CONFIG_ERROR);
+        arguments.put(JNDI_CONFIG_PROP, JNDI_CONFIG_FILE);
+        arguments.put(OUTPUT_DIR_PROP, _outputDir.getAbsolutePath());
+
+        try
+        {
+            runController(arguments);
+            fail("Exception not thrown");
+        }
+        catch (DistributedTestException e)
+        {
+            // PASS
+        }
+    }
+
+    private void runController(Map<String, String> args) throws Exception
     {
         String[] argsAsArray = new String[args.size()];
         int i = 0;
@@ -193,15 +226,32 @@ public class EndToEndTest extends QpidBrokerTestCase
         ControllerRunner runner = new ControllerRunner();
         runner.parseArgumentsIntoConfig(argsAsArray);
         runner.runController();
+    }
 
+    private String[] getCsvResults(final Map<String, String> args)
+    {
         String testConfig = args.get(TEST_CONFIG_PROP);
-        String filename = Paths.get(testConfig).getFileName().toString();
-        String expectedCsvFilename = filename.replaceAll("\\.[^.]*$", ".csv");
+        String expectedCsvFilename = buildOutputFilename(testConfig, ".csv");
 
-        File expectedCsvOutputFile = new File(_csvOutputDir, expectedCsvFilename);
+        File expectedCsvOutputFile = new File(_outputDir, expectedCsvFilename);
         assertTrue("CSV output file must exist", expectedCsvOutputFile.exists());
         final String csvContents = FileUtils.readFileAsString(expectedCsvOutputFile);
         return csvContents.split("\n");
+    }
+
+    private void checkXmlFile(final Map<String, String> args)
+    {
+        String testConfig = args.get(TEST_CONFIG_PROP);
+        String expectedXmlFilename = buildOutputFilename(testConfig, ".xml");
+
+        File expectedXmlOutputFile = new File(_outputDir, expectedXmlFilename);
+        assertTrue("XML output file must exist", expectedXmlOutputFile.exists());
+    }
+
+    private String buildOutputFilename(final String testConfig, final String extension)
+    {
+        String filename = Paths.get(testConfig).getFileName().toString();
+        return filename.replaceAll("\\.[^.]*$", extension);
     }
 
     private void assertDataRowsForIterationArePresent(String[] csvLines, String testName, int iterationNumber, int expectedCount)
@@ -252,12 +302,12 @@ public class EndToEndTest extends QpidBrokerTestCase
         return csvLine.split(",", DONT_STRIP_EMPTY_LAST_FIELD_FLAG);
     }
 
-    private File createTemporaryCsvDirectory() throws IOException
+    private File createTemporaryOutputDirectory() throws IOException
     {
         String tmpDir = System.getProperty("java.io.tmpdir");
         File csvDir = new File(tmpDir, "csv");
         csvDir.mkdir();
-        //csvDir.deleteOnExit();
+        csvDir.deleteOnExit();
         return csvDir;
     }
 

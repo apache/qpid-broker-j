@@ -35,7 +35,7 @@ public class CSVFormatterTest extends QpidTestCase
         ResultsTestFixture resultsTestFixture = new ResultsTestFixture();
         ResultsForAllTests resultsForAllTests = resultsTestFixture.createResultsForAllTests();
 
-        String output = _formatter.format(resultsForAllTests);
+        String output = _formatter.format(resultsForAllTests.getTestResults());
 
         String expectedOutput = readCsvOutputFileAsString("expectedOutput.csv");
 
