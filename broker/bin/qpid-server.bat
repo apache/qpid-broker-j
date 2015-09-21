@@ -158,7 +158,7 @@ REM end parsing -run arguments
 :endRunArgs
 
 set JAVA_VM=-server
-set JAVA_MEM=-Xmx2g
+set JAVA_MEM=-Xmx512m -XX:MaxDirectMemorySize=1536m
 set JAVA_GC=-XX:+UseConcMarkSweepGC -XX:+HeapDumpOnOutOfMemoryError
 
 REM Use QPID_JAVA_GC if set
