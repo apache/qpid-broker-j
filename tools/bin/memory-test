@@ -19,6 +19,7 @@
 #
 
 # This script is used to measure memory consumption by Qpid Java Broker running in Oracle JDK
+# Use plot.py to plot graphs of memory usage from results collected by this test
 
 function waitfor()
 {
