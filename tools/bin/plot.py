@@ -27,7 +27,7 @@ set output "{outputFile}"
 byte_buffer_size=256*1024
 
 heap(messages, connections, sessions)=15*1024*1024 + 15*1024*sessions*connections + 1024*messages + 17*1024*connections
-direct(messages, messageSize, connections, sessions)=2*1024*1024 + (200+messageSize)*messages + 2*byte_buffer_size*connections
+direct(messages, messageSize, connections, sessions)=2*1024*1024 + (200+messageSize*2)*messages + 2*byte_buffer_size*connections
 
 set title "{title}"
 set key top left
