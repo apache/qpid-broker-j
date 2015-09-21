@@ -486,16 +486,16 @@ public class BrokerMessages
 
     /**
      * Log a Broker message of the Format:
-     * <pre>BRK-1011 : Maximum Memory : {0,number} bytes</pre>
+     * <pre>BRK-1011 : Maximum Memory : Heap : {0,number} bytes Direct : {1,number} bytes</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage MAX_MEMORY(Number param1)
+    public static LogMessage MAX_MEMORY(Number param1, Number param2)
     {
         String rawMessage = _messages.getString("MAX_MEMORY");
 
-        final Object[] messageArguments = {param1};
+        final Object[] messageArguments = {param1, param2};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);

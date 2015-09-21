@@ -124,11 +124,15 @@ public class BrokerMessagesTest extends AbstractTestMessages
     public void testBrokerMemory()
     {
         long oneGiga = 1024*1024*1024;
+        long twoGiga = oneGiga * 2;
 
-        _logMessage = BrokerMessages.MAX_MEMORY(oneGiga);
+        _logMessage = BrokerMessages.MAX_MEMORY(oneGiga, twoGiga);
         List<Object> log = performLog();
 
-        String[] expected = {"Maximum Memory :", NumberFormat.getNumberInstance().format(oneGiga), "bytes"};
+        String[] expected = {"Maximum Memory :",
+                             "Heap", NumberFormat.getNumberInstance().format(oneGiga), "bytes",
+                             "Direct", NumberFormat.getNumberInstance().format(twoGiga), "bytes"
+        };
 
         validateLogMessage(log, "BRK-1011", expected);
     }

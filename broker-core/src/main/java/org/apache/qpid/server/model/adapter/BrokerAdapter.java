@@ -534,7 +534,9 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
                                                          SystemUtils.getOSArch(),
                                                          String.valueOf(getNumberOfCores())));
 
-        getEventLogger().message(BrokerMessages.MAX_MEMORY(Runtime.getRuntime().maxMemory()));
+        long directMemory = getMaxDirectMemorySize();
+        long heapMemory = Runtime.getRuntime().maxMemory();
+        getEventLogger().message(BrokerMessages.MAX_MEMORY(heapMemory, directMemory));
 
         if (SystemUtils.getProcessPid() != null)
         {
