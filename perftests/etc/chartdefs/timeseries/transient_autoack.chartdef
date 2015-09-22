@@ -26,8 +26,10 @@ yAxisTitle=Messages Per Second
 
 series.1.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_autoack_plain'
 series.1.colourName=red
+series.2.shape=cross
 series.1.legend=Plain
 
 series.2.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_autoack_ssl'
 series.2.colourName=blue
+series.2.shape=cross
 series.2.legend=SSL

@@ -21,6 +21,7 @@ package org.apache.qpid.disttest.charting.chartbuilder;
 
 import java.awt.Color;
 import java.awt.Stroke;
+import java.awt.Shape;
 
 import org.jfree.chart.JFreeChart;
 
@@ -32,4 +33,5 @@ public interface SeriesStrokeAndPaintApplier
 {
     void setSeriesStroke(int seriesIndex, Stroke stroke, JFreeChart targetChart);
     void setSeriesPaint(int seriesIndex, Color color, JFreeChart targetChart);
+    void setSeriesShape(int seriesIndex, Shape shape, JFreeChart targetChart);
 }

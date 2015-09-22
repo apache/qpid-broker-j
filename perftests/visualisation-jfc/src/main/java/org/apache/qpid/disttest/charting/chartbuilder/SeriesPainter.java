@@ -20,10 +20,12 @@
 package org.apache.qpid.disttest.charting.chartbuilder;
 
 import java.awt.BasicStroke;
+import java.awt.Shape;
 import java.util.List;
 
 import org.apache.qpid.disttest.charting.definition.SeriesDefinition;
 import org.jfree.chart.JFreeChart;
+import org.jfree.util.ShapeUtilities;
 
 public class SeriesPainter
 {
@@ -44,6 +46,23 @@ public class SeriesPainter
                 BasicStroke stroke = buildStrokeOfWidth(width, dashed);
                 strokeAndPaintApplier.setSeriesStroke(i, stroke, chart);
             }
+            if (seriesDefinition.getShape() != null)
+            {
+                Shape shape = buildShape(seriesDefinition.getShape());
+                strokeAndPaintApplier.setSeriesShape(i, shape, chart);
+            }
+        }
+    }
+
+    private Shape buildShape(String shapeName)
+    {
+        if ("cross".equalsIgnoreCase(shapeName))
+        {
+            return ShapeUtilities.createRegularCross(1, 1);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unrecognised shape name : '" + shapeName + "'");
         }
     }
 

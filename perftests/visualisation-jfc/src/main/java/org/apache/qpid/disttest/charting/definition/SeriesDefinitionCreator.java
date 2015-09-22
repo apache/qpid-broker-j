@@ -31,6 +31,7 @@ public class SeriesDefinitionCreator
     public static final String SERIES_DIRECTORY_KEY_FORMAT = "series.%d.dir";
     public static final String SERIES_COLOUR_NAME_FORMAT = "series.%d.colourName";
     public static final String SERIES_STROKE_WIDTH_FORMAT = "series.%d.strokeWidth";
+    public static final String SERIES_SHAPE_FORMAT = "series.%d.shape";
 
     public List<SeriesDefinition> createFromProperties(Properties properties)
     {
@@ -53,10 +54,14 @@ public class SeriesDefinitionCreator
                                                                                           index)), false, Strings.SYSTEM_RESOLVER);
             Integer seriesStrokeWidth = properties.getProperty(String.format(SERIES_STROKE_WIDTH_FORMAT, index)) == null
                     ? null : Integer.parseInt(properties.getProperty(String.format(SERIES_STROKE_WIDTH_FORMAT, index)));
+            String shapeName = Strings.expand(properties.getProperty(String.format(SERIES_SHAPE_FORMAT,
+                                                                                          index)), false, Strings.SYSTEM_RESOLVER);
 
             if (seriesStatement != null)
             {
-                final SeriesDefinition seriesDefinition = new SeriesDefinition(seriesStatement, seriesLegend, seriesDir, seriesColourName, seriesStrokeWidth);
+                final SeriesDefinition seriesDefinition = new SeriesDefinition(seriesStatement, seriesLegend, seriesDir,
+                                                                               seriesColourName, seriesStrokeWidth,
+                                                                               shapeName);
                 seriesDefinitions.add(seriesDefinition);
             }
             else

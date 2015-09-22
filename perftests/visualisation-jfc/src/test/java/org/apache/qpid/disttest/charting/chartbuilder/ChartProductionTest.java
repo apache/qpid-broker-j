@@ -83,7 +83,7 @@ public class ChartProductionTest extends QpidTestCase
 
         when(_seriesDefinition.getSeriesLegend()).thenReturn(TEST_SERIESLEGEND);
         when(_seriesDefinition.getStrokeWidth()).thenReturn(null);
-        when(_seriesDefinition.getSeriesColourName()).thenReturn(null);
+        when(_seriesDefinition.getSeriesColourName()).thenReturn("blue");
 
         when(_chartingDefinition.getChartStemName()).thenReturn(getName());
         when(_chartingDefinition.getChartTitle()).thenReturn(TEST_CHARTTITLE);
@@ -146,6 +146,8 @@ public class ChartProductionTest extends QpidTestCase
 
     public void testTimeSeriesLineChart() throws Exception
     {
+        when(_seriesDefinition.getShape()).thenReturn("cross");
+
         SeriesRow[] timelineSeriesRows = new SeriesRow[]
         {
             new SeriesRow(new Date(1), 1d),
@@ -154,6 +156,7 @@ public class ChartProductionTest extends QpidTestCase
             new SeriesRow(new Date(4), 4d),
             new SeriesRow(new Date(5), 5d),
             new SeriesRow(new Date(6), 6d),
+            new SeriesRow(new Date(7), 4d),
         };
         ChartBuilder builder = ChartBuilderFactory.createChartBuilder(
                 ChartType.TIMELINE,

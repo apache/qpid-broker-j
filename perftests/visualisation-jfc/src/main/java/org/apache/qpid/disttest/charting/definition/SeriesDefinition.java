@@ -26,14 +26,21 @@ public class SeriesDefinition
     private final String _seriesDirectory;
     private final String _seriesColourName;
     private final Integer _seriesStrokeWidth;
+    private final String _shape;
 
-    public SeriesDefinition(String seriesStatement, String seriesLegend, String seriesDirectory, String seriesColourName, Integer seriesStrokeWidth)
+    public SeriesDefinition(String seriesStatement,
+                            String seriesLegend,
+                            String seriesDirectory,
+                            String seriesColourName,
+                            Integer seriesStrokeWidth,
+                            String shape)
     {
         _seriesStatement = seriesStatement;
         _seriesLegend = seriesLegend;
         _seriesDirectory = seriesDirectory;
         _seriesColourName = seriesColourName;
         _seriesStrokeWidth = seriesStrokeWidth;
+        _shape = shape;
     }
 
     public String getSeriesStatement()
@@ -59,6 +66,11 @@ public class SeriesDefinition
     public Integer getStrokeWidth()
     {
         return _seriesStrokeWidth;
+    }
+
+    public String getShape()
+    {
+        return _shape;
     }
 
     @Override

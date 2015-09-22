@@ -38,6 +38,7 @@ public class JdbcSeriesBuilderTest extends QpidTestCase
     private static final String TEST_SERIES_1_LEGEND = "SERIES_1_LEGEND";
     private static final String TEST_SERIES1_COLOUR_NAME = "blue";
     private static final Integer TEST_SERIES1_STROKE_WIDTH = 3;
+    private static final String TEST_SERIES1_SHAPE_NAME = "cross";
 
     private DatasetHolder _seriesWalkerCallback = mock(DatasetHolder.class);
 
@@ -88,7 +89,8 @@ public class JdbcSeriesBuilderTest extends QpidTestCase
                 TEST_SERIES_1_LEGEND,
                 _testTempDir.getAbsolutePath(),
                 TEST_SERIES1_COLOUR_NAME,
-                TEST_SERIES1_STROKE_WIDTH);
+                TEST_SERIES1_STROKE_WIDTH,
+                TEST_SERIES1_SHAPE_NAME);
         return definition;
     }
 

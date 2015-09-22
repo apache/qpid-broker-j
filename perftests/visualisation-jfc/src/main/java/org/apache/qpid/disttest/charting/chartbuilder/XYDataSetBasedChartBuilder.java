@@ -19,6 +19,7 @@
  */
 package org.apache.qpid.disttest.charting.chartbuilder;
 
+import java.awt.Shape;
 import java.awt.Color;
 import java.awt.Stroke;
 import java.util.ArrayList;
@@ -30,8 +31,11 @@ import org.apache.qpid.disttest.charting.seriesbuilder.DatasetHolder;
 import org.apache.qpid.disttest.charting.seriesbuilder.SeriesBuilder;
 import org.apache.qpid.disttest.charting.seriesbuilder.SeriesRow;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.general.Dataset;
 import org.jfree.data.xy.DefaultXYDataset;
+import org.jfree.util.ShapeUtilities;
 
 
 public abstract class XYDataSetBasedChartBuilder extends BaseChartBuilder
@@ -113,6 +117,18 @@ public abstract class XYDataSetBasedChartBuilder extends BaseChartBuilder
             public void setSeriesPaint(int seriesIndex, Color colour, JFreeChart targetChart)
             {
                 targetChart.getXYPlot().getRenderer().setSeriesPaint(seriesIndex, colour);
+            }
+
+            @Override
+            public void setSeriesShape(final int seriesIndex, final Shape shape, final JFreeChart targetChart)
+            {
+                XYItemRenderer renderer = targetChart.getXYPlot().getRenderer();
+                if (renderer instanceof XYLineAndShapeRenderer)
+                {
+                    XYLineAndShapeRenderer lineAndShapeRenderer = (XYLineAndShapeRenderer) renderer;
+                    lineAndShapeRenderer.setSeriesShapesVisible(seriesIndex, true);
+                    lineAndShapeRenderer.setSeriesShape(seriesIndex, shape);
+                }
             }
         };
     }

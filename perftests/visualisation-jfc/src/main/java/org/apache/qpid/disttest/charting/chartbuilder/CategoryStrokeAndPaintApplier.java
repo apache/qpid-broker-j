@@ -24,6 +24,8 @@ import java.awt.Color;
 import java.awt.Stroke;
 
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.renderer.category.CategoryItemRenderer;
+import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 
 class CategoryStrokeAndPaintApplier implements SeriesStrokeAndPaintApplier
 {
@@ -37,5 +39,17 @@ class CategoryStrokeAndPaintApplier implements SeriesStrokeAndPaintApplier
     public void setSeriesPaint(int seriesIndex, Color colour, JFreeChart targetChart)
     {
         targetChart.getCategoryPlot().getRenderer().setSeriesPaint(seriesIndex, colour);
+    }
+
+    @Override
+    public void setSeriesShape(final int seriesIndex, final java.awt.Shape shape, final JFreeChart targetChart)
+    {
+        CategoryItemRenderer renderer = targetChart.getCategoryPlot().getRenderer();
+        if (renderer instanceof LineAndShapeRenderer)
+        {
+            LineAndShapeRenderer lineAndShapeRenderer = (LineAndShapeRenderer) renderer;
+            lineAndShapeRenderer.setSeriesShapesVisible(seriesIndex, true);
+            lineAndShapeRenderer.setSeriesShape(seriesIndex, shape);
+        }
     }
 }
