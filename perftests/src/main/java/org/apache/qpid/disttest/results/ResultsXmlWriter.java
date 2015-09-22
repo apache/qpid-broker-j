@@ -84,6 +84,7 @@ public class ResultsXmlWriter implements  ResultsWriter
         {
             DocumentBuilder docBuilder = _docFactory.newDocumentBuilder();
             Document doc = docBuilder.newDocument();
+            doc.setXmlStandalone(true);
 
             Element root = doc.createElement("testsuite");
             root.setAttribute("tests", Integer.toString(resultsForAllTests.getTestResults().size()));
@@ -118,6 +119,7 @@ public class ResultsXmlWriter implements  ResultsWriter
 
             Transformer transformer = _transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, "yes");
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
             DOMSource source = new DOMSource(doc);
             StreamResult result = new StreamResult(new File(outputFile));

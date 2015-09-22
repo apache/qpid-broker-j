@@ -47,14 +47,14 @@ public class ResultsXmlWriterTest extends QpidTestCase
     {
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
 
-        String expectedCsvContents = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
-                                     + "<testsuite tests=\"0\"/>\n";
+        String expectedXmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                                    + "<testsuite tests=\"0\"/>\n";
 
         _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
 
         File resultsFile = new File(_outputDir, "config.xml");
 
-        assertEquals(expectedCsvContents, FileUtils.readFileAsString(resultsFile));
+        assertEquals(expectedXmlContent, FileUtils.readFileAsString(resultsFile));
     }
 
     public void testResultForOneTest()
@@ -65,16 +65,16 @@ public class ResultsXmlWriterTest extends QpidTestCase
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
         when(resultsForAllTests.getTestResults()).thenReturn(Collections.singletonList(test));
 
-        String expectedCsvContents = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
-                                     + "<testsuite tests=\"1\">\n"
-                                     + "  <testcase classname=\"config.json\" name=\"mytest\"/>\n"
-                                     + "</testsuite>\n";
+        String expectedXmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                                    + "<testsuite tests=\"1\">\n"
+                                    + "  <testcase classname=\"config.json\" name=\"mytest\"/>\n"
+                                    + "</testsuite>\n";
 
         _resultsFileWriter.writeResults(resultsForAllTests, "config.json");
 
         File resultsFile = new File(_outputDir, "config.xml");
 
-        assertEquals(expectedCsvContents, FileUtils.readFileAsString(resultsFile));
+        assertEquals(expectedXmlContent, FileUtils.readFileAsString(resultsFile));
     }
 
     public void testResultForOneTestWithError()
@@ -91,7 +91,7 @@ public class ResultsXmlWriterTest extends QpidTestCase
         ResultsForAllTests resultsForAllTests = mock(ResultsForAllTests.class);
         when(resultsForAllTests.getTestResults()).thenReturn(Collections.singletonList(test));
 
-        String expectedCsvContents = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        String expectedXmlContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                                      + "<testsuite tests=\"1\">\n"
                                      + "  <testcase classname=\"config.json\" name=\"mytest\">\n"
                                      + "    <error message=\"something went wrong\"/>\n"
@@ -102,7 +102,7 @@ public class ResultsXmlWriterTest extends QpidTestCase
 
         File resultsFile = new File(_outputDir, "config.xml");
 
-        assertEquals(expectedCsvContents, FileUtils.readFileAsString(resultsFile));
+        assertEquals(expectedXmlContent, FileUtils.readFileAsString(resultsFile));
     }
 
 }
