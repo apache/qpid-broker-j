@@ -19,7 +19,7 @@
 
 chartType=TIMELINE
 chartTitle=Persistent Transacted
-chartDescription=10P 10C, persistent, transacted, 1K message, plain/SSL
+chartDescription=10P 10C, persistent, transacted, 1kB message, plain/SSL
 
 xAxisTitle=Date
 yAxisTitle=Messages Per Second

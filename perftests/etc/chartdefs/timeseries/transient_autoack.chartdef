@@ -19,7 +19,7 @@
 
 chartType=TIMELINE
 chartTitle=Transient Auto-Ack
-chartDescription=10P 10C, transient, auto-ack, 1K message, plain/SSL
+chartDescription=10P 10C, transient, auto-ack, 1kB message, plain/SSL
 
 xAxisTitle=Date
 yAxisTitle=Messages Per Second

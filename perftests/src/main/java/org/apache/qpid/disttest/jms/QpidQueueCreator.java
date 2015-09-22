@@ -81,10 +81,10 @@ public class QpidQueueCreator implements QueueCreator
             createQueue = getMethod(AMQSession.class, CREATE_QUEUE,
                                     AMQShortString.class, Boolean.TYPE, Boolean.TYPE,
                                     Boolean.TYPE, Map.class);
-        }
-        if (createQueue == null)
-        {
-            throw new DistributedTestException("Failed to find method '" + CREATE_QUEUE + "' on class AMQSession");
+            if (createQueue == null)
+            {
+                throw new DistributedTestException("Failed to find method '" + CREATE_QUEUE + "' on class AMQSession");
+            }
         }
         _createQueue = createQueue;
 
@@ -96,10 +96,10 @@ public class QpidQueueCreator implements QueueCreator
             bindQueue = getMethod(AMQSession.class, BIND_QUEUE,
                                   AMQShortString.class, AMQShortString.class, FieldTable.class,
                                   AMQShortString.class, AMQDestination.class);
-        }
-        if (bindQueue == null)
-        {
-            throw new DistributedTestException("Failed to find method '" + BIND_QUEUE + "' on class AMQSession");
+            if (bindQueue == null)
+            {
+                throw new DistributedTestException("Failed to find method '" + BIND_QUEUE + "' on class AMQSession");
+            }
         }
         _bindQueue = bindQueue;
 
@@ -107,10 +107,10 @@ public class QpidQueueCreator implements QueueCreator
         if (deleteQueue == null)
         {
             deleteQueue = getMethod(AMQSession.class, DELETE_QUEUE, AMQShortString.class);
-        }
-        if (deleteQueue == null)
-        {
-            throw new DistributedTestException("Failed to find method '" + DELETE_QUEUE + "' on class AMQSession");
+            if (deleteQueue == null)
+            {
+                throw new DistributedTestException("Failed to find method '" + DELETE_QUEUE + "' on class AMQSession");
+            }
         }
         _deleteQueue = deleteQueue;
 
@@ -283,7 +283,7 @@ public class QpidQueueCreator implements QueueCreator
                 EMPTY_QUEUE_BIND_ARGUMENTS : FieldTable.convertToFieldTable(EMPTY_QUEUE_BIND_ARGUMENTS);
         Object exchangeName = invokeByReflection(destination, _getExchangeName);
 
-      invokeByReflection(session, _bindQueue, amqQueueName, routingKey, bindArguments, exchangeName, destination);
+        invokeByReflection(session, _bindQueue, amqQueueName, routingKey, bindArguments, exchangeName, destination);
     }
 
     private Object invokeByReflection(Object target, Method method, Object... parameters)
