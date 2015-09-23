@@ -49,6 +49,8 @@ import static org.apache.qpid.disttest.message.ParticipantAttribute.TIME_TO_LIVE
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TOTAL_NUMBER_OF_CONSUMERS;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TOTAL_NUMBER_OF_PRODUCERS;
 import static org.apache.qpid.disttest.message.ParticipantAttribute.TOTAL_PAYLOAD_PROCESSED;
+import static org.apache.qpid.disttest.message.ParticipantAttribute.PROVIDER_VERSION;
+import static org.apache.qpid.disttest.message.ParticipantAttribute.PROTOCOL_VERSION;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -69,6 +71,8 @@ public class ResultsTestFixture
     private static final String TEST1 = "TEST1";
     private static final String PARTICIPANT = "PARTICIPANT";
     private static final String CONFIGURED_CLIENT1 = "CONFIGURED_CLIENT1";
+    private static final String PROVIDER_VERSION1 = "PROVIDER_VERSION";
+    private static final String PROTOCOL_VERSION1 = "PROTOCOL_VERSION1";
 
     public ResultsForAllTests createResultsForAllTests()
     {
@@ -123,6 +127,8 @@ public class ResultsTestFixture
         participantAttributes.put(AVERAGE_LATENCY, 4.6f);
         participantAttributes.put(LATENCY_STANDARD_DEVIATION, 2.0f);
         participantAttributes.put(MESSAGE_THROUGHPUT, 2);
+        participantAttributes.put(PROVIDER_VERSION, PROVIDER_VERSION1);
+        participantAttributes.put(PROTOCOL_VERSION, PROTOCOL_VERSION1);
         return participantAttributes;
     }
 

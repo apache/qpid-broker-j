@@ -31,17 +31,19 @@ import org.apache.qpid.disttest.results.aggregation.SeriesStatistics;
 
 public class ParticipantResultFactory
 {
-    public ConsumerParticipantResult createForConsumer(String participantName, String clientRegisteredName,
-            CreateConsumerCommand command, int acknowledgeMode, int numberOfMessagesReceived, int payloadSize,
-            long totalPayloadReceived, Date start, Date end)
-    {
-        return createForConsumer(participantName, clientRegisteredName, command, acknowledgeMode, numberOfMessagesReceived,
-                payloadSize, totalPayloadReceived, start, end, null);
-    }
 
-    public ConsumerParticipantResult createForConsumer(String participantName, String clientRegisteredName,
-            CreateConsumerCommand command, int acknowledgeMode, int numberOfMessagesReceived, int payloadSize,
-            long totalPayloadReceived, Date start, Date end, Collection<Long> messageLatencies)
+    public ConsumerParticipantResult createForConsumer(String participantName,
+                                                       String clientRegisteredName,
+                                                       CreateConsumerCommand command,
+                                                       int acknowledgeMode,
+                                                       int numberOfMessagesReceived,
+                                                       int payloadSize,
+                                                       long totalPayloadReceived,
+                                                       Date start,
+                                                       Date end,
+                                                       Collection<Long> messageLatencies,
+                                                       String providerVersion,
+                                                       String protocolVersion)
     {
         ConsumerParticipantResult consumerParticipantResult = new ConsumerParticipantResult();
         consumerParticipantResult.setMessageLatencies(messageLatencies);
@@ -63,10 +65,24 @@ public class ParticipantResultFactory
         consumerParticipantResult.setMinLatency(statistics.getMinimum());
         consumerParticipantResult.setMaxLatency(statistics.getMaximum());
         consumerParticipantResult.setLatencyStandardDeviation(statistics.getStandardDeviation());
+
+        consumerParticipantResult.setProviderVersion(providerVersion);
+        consumerParticipantResult.setProtocolVersion(protocolVersion);
+
         return consumerParticipantResult;
     }
 
-    public ProducerParticipantResult createForProducer(String participantName, String clientRegisteredName, CreateProducerCommand command, int acknowledgeMode, int numberOfMessagesSent, int payloadSize, long totalPayloadSent, Date start, Date end)
+    public ProducerParticipantResult createForProducer(String participantName,
+                                                       String clientRegisteredName,
+                                                       CreateProducerCommand command,
+                                                       int acknowledgeMode,
+                                                       int numberOfMessagesSent,
+                                                       int payloadSize,
+                                                       long totalPayloadSent,
+                                                       Date start,
+                                                       Date end,
+                                                       String providerVersion,
+                                                       String protocolVersion)
     {
         final ProducerParticipantResult producerParticipantResult = new ProducerParticipantResult();
 
@@ -77,6 +93,8 @@ public class ParticipantResultFactory
         producerParticipantResult.setTotalNumberOfConsumers(0);
         producerParticipantResult.setTotalNumberOfProducers(1);
 
+        producerParticipantResult.setProviderVersion(providerVersion);
+        producerParticipantResult.setProtocolVersion(protocolVersion);
 
         setTestProperties(producerParticipantResult, command, participantName, clientRegisteredName, acknowledgeMode);
 

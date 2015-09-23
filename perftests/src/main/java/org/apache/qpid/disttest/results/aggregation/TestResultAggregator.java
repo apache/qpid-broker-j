@@ -18,9 +18,6 @@
  */
 package org.apache.qpid.disttest.results.aggregation;
 
-import java.util.List;
-
-import org.apache.qpid.disttest.controller.ResultsForAllTests;
 import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.disttest.message.ProducerParticipantResult;

@@ -38,6 +38,9 @@ public class TestResultAggregatorTest extends QpidTestCase
 
     private static final String PRODUCER_PARTICIPANT_NAME = "PRODUCER_PARTICIPANT_NAME";
 
+    private static final String PROVIDER_VERSION = "PROVIDER_VERSION";
+    private static final String PROTOCOL_VERSION = "PROTOCOL_VERSION";
+
     private static final long CONSUMER1_STARTDATE = 50;
     private static final long CONSUMER1_ENDDATE = 20000;
 
@@ -76,17 +79,20 @@ public class TestResultAggregatorTest extends QpidTestCase
         assertMinimalAggregatedResults(
                 aggregatedTestResult.getAllConsumerParticipantResult(),
                 TEST1_NAME, TEST1_ITERATION_NUMBER,
-                BATCH_SIZE, NUMBER_OF_MESSAGES_CONSUMED_IN_TOTAL, 2, 0);
+                BATCH_SIZE, NUMBER_OF_MESSAGES_CONSUMED_IN_TOTAL, 2, 0,
+                PROVIDER_VERSION, PROTOCOL_VERSION);
 
         assertMinimalAggregatedResults(
                 aggregatedTestResult.getAllProducerParticipantResult(),
                 TEST1_NAME, TEST1_ITERATION_NUMBER,
-                BATCH_SIZE, NUMBER_OF_MESSAGES_PRODUCED, 0, 1);
+                BATCH_SIZE, NUMBER_OF_MESSAGES_PRODUCED, 0, 1,
+                PROVIDER_VERSION, PROTOCOL_VERSION);
 
         assertMinimalAggregatedResults(
                 aggregatedTestResult.getAllParticipantResult(),
                 TEST1_NAME, TEST1_ITERATION_NUMBER,
-                BATCH_SIZE, NUMBER_OF_MESSAGES_CONSUMED_IN_TOTAL, 2, 1);
+                BATCH_SIZE, NUMBER_OF_MESSAGES_CONSUMED_IN_TOTAL, 2, 1,
+                PROVIDER_VERSION, PROTOCOL_VERSION);
     }
 
     public void testAggregateResultsWhenParticipantErrored()
@@ -125,23 +131,29 @@ public class TestResultAggregatorTest extends QpidTestCase
         assertMinimalAggregatedResults(
                 aggregatedTestResult.getAllConsumerParticipantResult(),
                 TEST1_NAME, TEST1_ITERATION_NUMBER,
-                BATCH_SIZE, NUMBER_OF_MESSAGES_CONSUMED_IN_TOTAL, 2, 0);
+                BATCH_SIZE, NUMBER_OF_MESSAGES_CONSUMED_IN_TOTAL, 2, 0,
+                PROVIDER_VERSION, PROTOCOL_VERSION);
+
 
         assertLatencyAggregatedResults(aggregatedTestResult.getAllConsumerParticipantResult());
 
         assertMinimalAggregatedResults(
                 aggregatedTestResult.getAllProducerParticipantResult(),
                 TEST1_NAME, TEST1_ITERATION_NUMBER,
-                BATCH_SIZE, NUMBER_OF_MESSAGES_PRODUCED, 0, 1);
+                BATCH_SIZE, NUMBER_OF_MESSAGES_PRODUCED, 0, 1,
+                PROVIDER_VERSION, PROTOCOL_VERSION);
+
 
         assertMinimalAggregatedResults(
                 aggregatedTestResult.getAllParticipantResult(),
                 TEST1_NAME, TEST1_ITERATION_NUMBER,
-                BATCH_SIZE, NUMBER_OF_MESSAGES_CONSUMED_IN_TOTAL, 2, 1);
+                BATCH_SIZE, NUMBER_OF_MESSAGES_CONSUMED_IN_TOTAL, 2, 1,
+                PROVIDER_VERSION, PROTOCOL_VERSION);
+
 
         int expectedThroughtput = (int)Math.round(NUMBER_OF_MESSAGES_PRODUCED * 1000.0d /(CONSUMER2_ENDDATE - PRODUCER_STARTDATE));
         ParticipantResult result = aggregatedTestResult.getAllParticipantResult();
-        assertEquals("Unexpected message throughtput", expectedThroughtput, result.getMessageThroughput());
+        assertEquals("Unexpected message throughput", expectedThroughtput, result.getMessageThroughput());
     }
 
     private void assertLatencyAggregatedResults(ParticipantResult allConsumerParticipantResult)
@@ -154,7 +166,8 @@ public class TestResultAggregatorTest extends QpidTestCase
         assertEquals("Unexpected standard deviation", 2.0, results.getLatencyStandardDeviation(), 0.01);
     }
 
-    private void assertMinimalAggregatedResults(ParticipantResult result, String expectedTestName, int expectedIterationNumber, int expectedBatchSize, long expectedNumberOfMessagesProcessed, int expectedTotalNumberOfConsumers, int expectedTotalNumberOfProducers)
+    private void assertMinimalAggregatedResults(ParticipantResult result, String expectedTestName, int expectedIterationNumber, int expectedBatchSize, long expectedNumberOfMessagesProcessed, int expectedTotalNumberOfConsumers, int expectedTotalNumberOfProducers,
+                                                String expectedProviderVersion, String expectedProtocolVersion)
     {
         assertEquals("Unexpected test name in " + result.getParticipantName(), expectedTestName, result.getTestName());
         assertEquals("Unexpected iteration number in " + result.getParticipantName(), expectedIterationNumber, result.getIterationNumber());
@@ -162,6 +175,8 @@ public class TestResultAggregatorTest extends QpidTestCase
         assertEquals("Unexpected number of messages processed in " + result.getParticipantName(), expectedNumberOfMessagesProcessed, result.getNumberOfMessagesProcessed());
         assertEquals("Unexpected total number of consumers " + result.getParticipantName(), expectedTotalNumberOfConsumers, result.getTotalNumberOfConsumers());
         assertEquals("Unexpected total number of producers " + result.getParticipantName(), expectedTotalNumberOfProducers, result.getTotalNumberOfProducers());
+        assertEquals("Unexpected provider version" + result.getProviderVersion(), expectedProviderVersion, result.getProviderVersion());
+        assertEquals("Unexpected protocol version" + result.getProtocolVersion(), expectedProtocolVersion, result.getProtocolVersion());
     }
 
     private TestResult createResultsFromTest()
@@ -169,21 +184,40 @@ public class TestResultAggregatorTest extends QpidTestCase
         TestResult testResult = new TestResult(TEST1_NAME);
 
         ConsumerParticipantResult consumerResult1 = new ConsumerParticipantResult();
-        setPropertiesOn(consumerResult1, TEST1_NAME, TEST1_ITERATION_NUMBER, CONSUMER_PARTICIPANT_NAME1, NUMBER_OF_MESSAGES_PROCESSED_PER_CONSUMER, BATCH_SIZE, PAYLOAD_SIZE, TOTAL_PAYLOAD_PROCESSED_PER_CONSUMER, CONSUMER1_STARTDATE, CONSUMER1_ENDDATE, 1, 0);
+        setPropertiesOn(consumerResult1, TEST1_NAME, TEST1_ITERATION_NUMBER, CONSUMER_PARTICIPANT_NAME1, NUMBER_OF_MESSAGES_PROCESSED_PER_CONSUMER, BATCH_SIZE, PAYLOAD_SIZE, TOTAL_PAYLOAD_PROCESSED_PER_CONSUMER, CONSUMER1_STARTDATE, CONSUMER1_ENDDATE, 1, 0,
+                        PROVIDER_VERSION,
+                        PROTOCOL_VERSION);
         testResult.addParticipantResult(consumerResult1);
 
         ConsumerParticipantResult consumerResult2 = new ConsumerParticipantResult();
-        setPropertiesOn(consumerResult2, TEST1_NAME, TEST1_ITERATION_NUMBER, CONSUMER_PARTICIPANT_NAME2, NUMBER_OF_MESSAGES_PROCESSED_PER_CONSUMER, BATCH_SIZE, PAYLOAD_SIZE, TOTAL_PAYLOAD_PROCESSED_PER_CONSUMER, CONSUMER2_STARTDATE, CONSUMER2_ENDDATE, 1, 0);
+        setPropertiesOn(consumerResult2, TEST1_NAME, TEST1_ITERATION_NUMBER, CONSUMER_PARTICIPANT_NAME2, NUMBER_OF_MESSAGES_PROCESSED_PER_CONSUMER, BATCH_SIZE, PAYLOAD_SIZE, TOTAL_PAYLOAD_PROCESSED_PER_CONSUMER, CONSUMER2_STARTDATE, CONSUMER2_ENDDATE, 1, 0,
+                        PROVIDER_VERSION,
+                        PROTOCOL_VERSION);
         testResult.addParticipantResult(consumerResult2);
 
         ParticipantResult producerResult = new ProducerParticipantResult();
-        setPropertiesOn(producerResult, TEST1_NAME, TEST1_ITERATION_NUMBER, PRODUCER_PARTICIPANT_NAME, NUMBER_OF_MESSAGES_PRODUCED, BATCH_SIZE, PAYLOAD_SIZE, TOTAL_PAYLOAD_PRODUCED_IN_TOTAL, PRODUCER_STARTDATE, PRODUCER_ENDDATE, 0, 1);
+        setPropertiesOn(producerResult, TEST1_NAME, TEST1_ITERATION_NUMBER, PRODUCER_PARTICIPANT_NAME, NUMBER_OF_MESSAGES_PRODUCED, BATCH_SIZE, PAYLOAD_SIZE, TOTAL_PAYLOAD_PRODUCED_IN_TOTAL, PRODUCER_STARTDATE, PRODUCER_ENDDATE, 0, 1,
+                        PROVIDER_VERSION,
+                        PROTOCOL_VERSION);
         testResult.addParticipantResult(producerResult);
 
         return testResult;
     }
 
-    private void setPropertiesOn(ParticipantResult participantResult, String testName, int iterationNumber, String participantName, long numberOfMessagesProcessed, int batchSize, int payloadSize, long totalPayloadProcessed, long start, long end, int totalNumberOfConsumers, int totalNumberOfProducers)
+    private void setPropertiesOn(ParticipantResult participantResult,
+                                 String testName,
+                                 int iterationNumber,
+                                 String participantName,
+                                 long numberOfMessagesProcessed,
+                                 int batchSize,
+                                 int payloadSize,
+                                 long totalPayloadProcessed,
+                                 long start,
+                                 long end,
+                                 int totalNumberOfConsumers,
+                                 int totalNumberOfProducers,
+                                 String providerVersion,
+                                 String protocolVersion)
     {
         participantResult.setParticipantName(participantName);
         participantResult.setTestName(testName);
@@ -197,6 +231,9 @@ public class TestResultAggregatorTest extends QpidTestCase
         participantResult.setStartDate(new Date(start));
         participantResult.setEndDate(new Date(end));
         participantResult.setBatchSize(batchSize);
+
+        participantResult.setProviderVersion(providerVersion);
+        participantResult.setProtocolVersion(protocolVersion);
     }
 
 }

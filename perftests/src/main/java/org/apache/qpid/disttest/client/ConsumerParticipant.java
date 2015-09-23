@@ -87,6 +87,8 @@ public class ConsumerParticipant implements Participant
     public ParticipantResult doIt(String registeredClientName) throws Exception
     {
         final int acknowledgeMode = _jmsDelegate.getAcknowledgeMode(_command.getSessionName());
+        final String providerVersion = _jmsDelegate.getProviderVersion(_command.getSessionName());
+        final String protocolVersion = _jmsDelegate.getProtocolVersion(_command.getSessionName());
 
         if (_command.isSynchronous())
         {
@@ -127,7 +129,11 @@ public class ConsumerParticipant implements Participant
                 numberOfMessagesReceived,
                 payloadSize,
                 totalPayloadSize,
-                start, end, _messageLatencies);
+                start,
+                end,
+                _messageLatencies,
+                providerVersion,
+                protocolVersion);
 
         return result;
     }

@@ -19,6 +19,8 @@
  */
 package org.apache.qpid.disttest.jms;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.UUID;
@@ -79,6 +81,7 @@ public class ClientJmsDelegate
     private final ConcurrentMap<String, MessageConsumer> _testConsumers;
     private final ConcurrentMap<String, Session> _testSubscriptions;
     private final ConcurrentMap<String, MessageProvider> _testMessageProviders;
+    private final ConcurrentMap<Session, Connection> _testSessionToConnections;
 
     private final MessageProvider _defaultMessageProvider;
 
@@ -102,6 +105,7 @@ public class ClientJmsDelegate
             _testSubscriptions = new ConcurrentHashMap<>();
             _testMessageProviders = new ConcurrentHashMap<>();
             _defaultMessageProvider = new MessageProvider(null);
+            _testSessionToConnections = new ConcurrentHashMap<>();
         }
         catch (final NamingException ne)
         {
@@ -225,9 +229,13 @@ public class ClientJmsDelegate
             final boolean transacted = command.getAcknowledgeMode() == Session.SESSION_TRANSACTED;
 
             final Session newSession = connection.createSession(transacted, command.getAcknowledgeMode());
-            LOGGER.debug("Created session " + command.getSessionName() + " with transacted = " + newSession.getTransacted() + " and acknowledgeMode = " + newSession.getAcknowledgeMode());
+            LOGGER.debug("Created session {} with transacted = {} and acknowledgeMode = {}",
+                         command.getSessionName(),
+                         newSession.getTransacted(),
+                         newSession.getAcknowledgeMode());
 
             addSession(command.getSessionName(), newSession);
+            _testSessionToConnections.put(newSession, connection);
         }
         catch (final JMSException jmse)
         {
@@ -358,34 +366,9 @@ public class ClientJmsDelegate
         }
     }
 
-    public Destination getControllerQueue()
-    {
-        return _controllerQueue;
-    }
-
     public String getClientName()
     {
         return _clientName;
-    }
-
-    public int getNoOfTestConnections()
-    {
-        return _testConnections.size();
-    }
-
-    public int getNoOfTestSessions()
-    {
-        return _testSessions.size();
-    }
-
-    public int getNoOfTestProducers()
-    {
-        return _testProducers.size();
-    }
-
-    public int getNoOfTestConsumers()
-    {
-        return _testConsumers.size();
     }
 
     public void startConnections()
@@ -473,7 +456,7 @@ public class ClientJmsDelegate
         return messageProvider;
     }
 
-    protected void addSession(final String sessionName, final Session newSession)
+    private void addSession(final String sessionName, final Session newSession)
     {
         if(_testSessions.putIfAbsent(sessionName, newSession) != null)
         {
@@ -481,7 +464,7 @@ public class ClientJmsDelegate
         }
     }
 
-    protected void addConnection(final String connectionName, final Connection newConnection)
+    private void addConnection(final String connectionName, final Connection newConnection)
     {
         if(_testConnections.putIfAbsent(connectionName, newConnection) != null)
         {
@@ -489,7 +472,7 @@ public class ClientJmsDelegate
         }
     }
 
-    protected void addProducer(final String producerName, final MessageProducer jmsProducer)
+    private void addProducer(final String producerName, final MessageProducer jmsProducer)
     {
         if(_testProducers.putIfAbsent(producerName, jmsProducer) != null)
         {
@@ -643,6 +626,8 @@ public class ClientJmsDelegate
         _testProducers.clear();
         _testConsumers.clear();
 
+        _testSessionToConnections.clear();
+
         if (failureCounter > 0)
         {
             throw new DistributedTestException("Tear down test encountered " + failureCounter + " failures with the following errors: " + jmsErrorMessages.toString());
@@ -746,5 +731,101 @@ public class ClientJmsDelegate
         {
             // ignore
         }
+    }
+
+    public String getProviderVersion(String sessionName)
+    {
+        Session session = _testSessions.get(sessionName);
+        Connection connection = getConnectionFor(session);
+
+        if (connection != null)
+        {
+            return getProviderVersion(connection);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public String getProtocolVersion(String sessionName)
+    {
+        Session session = _testSessions.get(sessionName);
+        Connection connection = getConnectionFor(session);
+        if (connection != null)
+        {
+            return getProtocolVersion(connection);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    private String getProviderVersion(final Connection connection)
+    {
+        try
+        {
+            // Unfortunately, Qpid 0-8..0-10 does not define ConnectionMetaData#getProviderVersion in a useful way
+            String qpidRelease = getQpidReleaseVersionByReflection("org.apache.qpid.configuration.CommonProperties");
+            if (qpidRelease == null)
+            {
+                qpidRelease = getQpidReleaseVersionByReflection("org.apache.qpid.common.QpidProperties");  // < 0.32
+
+                if (qpidRelease == null && connection.getMetaData() != null)
+                {
+                    ConnectionMetaData metaData = connection.getMetaData();
+                    qpidRelease = metaData.getProviderVersion();
+                }
+            }
+
+            return qpidRelease;
+        }
+        catch (JMSException e)
+        {
+            return null;
+        }
+    }
+
+    private String getQpidReleaseVersionByReflection(final String className)
+    {
+        try
+        {
+            Class clazz = Class.forName(className);
+            Method method = clazz.getMethod("getReleaseVersion");
+            Object version =  method.invoke(null);
+            return String.valueOf(version);
+        }
+        catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
+        {
+            return null;
+        }
+    }
+
+    private String getProtocolVersion(final Connection connection)
+    {
+        if (connection != null)
+        {
+            try
+            {
+                final Method method = connection.getClass().getMethod("getProtocolVersion"); // Qpid 0-8..0-10 method only
+                Object version =  method.invoke(connection);
+                return String.valueOf(version);
+            }
+            catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
+            {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Connection getConnectionFor(final Session session)
+    {
+        if (session != null)
+        {
+            return _testSessionToConnections.get(session);
+        }
+        return null;
     }
 }

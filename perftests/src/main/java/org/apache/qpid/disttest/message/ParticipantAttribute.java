@@ -60,8 +60,9 @@ public enum ParticipantAttribute
     MIN_LATENCY("minLatency"),
     MAX_LATENCY("maxLatency"),
     LATENCY_STANDARD_DEVIATION("latencyStandardDeviation"),
-    MESSAGE_THROUGHPUT("throughputMessagesPerS")
-    ;
+    MESSAGE_THROUGHPUT("throughputMessagesPerS"),
+    PROVIDER_VERSION("providerVersion"),
+    PROTOCOL_VERSION("protocolVersion");
 
     private String _displayName;
     private String _decimalFormat;

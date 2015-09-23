@@ -55,6 +55,9 @@ public class ParticipantResult extends Response
     private int _totalNumberOfConsumers;
     private int _totalNumberOfProducers;
 
+    private String _providerVersion;
+    private String _protocolVersion;
+
     // As Session.SESSION_TRANSACTED is 0, we use value -1 so we can distinguish the case where an aggregated result
     // summarizes results from participants using different session acknowledge modes.
     private int _acknowledgeMode = -1;
@@ -319,4 +322,27 @@ public class ParticipantResult extends Response
     {
         return 0;
     }
+
+    @OutputAttribute(attribute = ParticipantAttribute.PROVIDER_VERSION)
+    public String getProviderVersion()
+    {
+        return _providerVersion;
+    }
+
+    public void setProviderVersion(final String providerVersion)
+    {
+        _providerVersion = providerVersion;
+    }
+
+    @OutputAttribute(attribute = ParticipantAttribute.PROTOCOL_VERSION)
+    public String getProtocolVersion()
+    {
+        return _protocolVersion;
+    }
+
+    public void setProtocolVersion(final String protocolVersion)
+    {
+        _protocolVersion = protocolVersion;
+    }
+
 }

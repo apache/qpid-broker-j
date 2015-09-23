@@ -67,6 +67,9 @@ public class ProducerParticipant implements Participant
     @Override
     public ParticipantResult doIt(String registeredClientName) throws Exception
     {
+        final String providerVersion = _jmsDelegate.getProviderVersion(_command.getSessionName());
+        final String protocolVersion = _jmsDelegate.getProtocolVersion(_command.getSessionName());
+
         long startTime = 0;
         Message lastPublishedMessage = null;
         int numberOfMessagesSent = 0;
@@ -158,7 +161,12 @@ public class ProducerParticipant implements Participant
                 _command,
                 _acknowledgeMode,
                 numberOfMessagesSent,
-                payloadSize, totalPayloadSizeOfAllMessagesSent, start, end);
+                payloadSize,
+                totalPayloadSizeOfAllMessagesSent,
+                start,
+                end,
+                providerVersion,
+                protocolVersion);
     }
 
     @Override

@@ -40,14 +40,16 @@ public class ParticipantResultAggregator
     private int _totalNumberOfConsumers = 0;
     private int _totalNumberOfProducers = 0;
 
-    private NavigableSet<Integer> _encounteredPayloadSizes = new TreeSet<Integer>();
-    private NavigableSet<Integer> _encounteredIterationNumbers = new TreeSet<Integer>();
-    private NavigableSet<Integer> _encounteredBatchSizes = new TreeSet<Integer>();
-    private NavigableSet<Integer> _encounteredAcknowledgeMode = new TreeSet<Integer>();
-    private NavigableSet<Integer> _encounteredDeliveryModes = new TreeSet<Integer>();
-    private NavigableSet<Boolean> _encounteredDurableSubscriptions = new TreeSet<Boolean>();
-    private NavigableSet<Boolean> _encounteredTopics = new TreeSet<Boolean>();
-    private NavigableSet<String> _encountedTestNames = new TreeSet<String>();
+    private NavigableSet<Integer> _encounteredPayloadSizes = new TreeSet<>();
+    private NavigableSet<Integer> _encounteredIterationNumbers = new TreeSet<>();
+    private NavigableSet<Integer> _encounteredBatchSizes = new TreeSet<>();
+    private NavigableSet<Integer> _encounteredAcknowledgeMode = new TreeSet<>();
+    private NavigableSet<Integer> _encounteredDeliveryModes = new TreeSet<>();
+    private NavigableSet<Boolean> _encounteredDurableSubscriptions = new TreeSet<>();
+    private NavigableSet<Boolean> _encounteredTopics = new TreeSet<>();
+    private NavigableSet<String> _encounteredTestNames = new TreeSet<>();
+    private NavigableSet<String> _encounteredProviderVersions = new TreeSet<>();
+    private NavigableSet<String> _encounteredProtocolVersions = new TreeSet<>();
 
     private SeriesStatistics _latencyStatistics = new SeriesStatistics();
 
@@ -114,7 +116,15 @@ public class ParticipantResultAggregator
     {
         if (result.getTestName() != null)
         {
-            _encountedTestNames.add(result.getTestName());
+            _encounteredTestNames.add(result.getTestName());
+        }
+        if (result.getProviderVersion() != null)
+        {
+            _encounteredProviderVersions.add(result.getProviderVersion());
+        }
+        if (result.getProtocolVersion() != null)
+        {
+            _encounteredProtocolVersions.add(result.getProtocolVersion());
         }
         _encounteredPayloadSizes.add(result.getPayloadSize());
         _encounteredIterationNumbers.add(result.getIterationNumber());
@@ -155,9 +165,17 @@ public class ParticipantResultAggregator
         {
             aggregatedResult.setPayloadSize(_encounteredPayloadSizes.first());
         }
-        if (_encountedTestNames.size() == 1)
+        if (_encounteredTestNames.size() == 1)
         {
-            aggregatedResult.setTestName(_encountedTestNames.first());
+            aggregatedResult.setTestName(_encounteredTestNames.first());
+        }
+        if (_encounteredProviderVersions.size() == 1)
+        {
+            aggregatedResult.setProviderVersion(_encounteredProviderVersions.first());
+        }
+        if (_encounteredProtocolVersions.size() == 1)
+        {
+            aggregatedResult.setProtocolVersion(_encounteredProtocolVersions.first());
         }
         if (_encounteredBatchSizes.size() == 1)
         {

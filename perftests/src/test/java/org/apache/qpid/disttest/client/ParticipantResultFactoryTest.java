@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.disttest.client;
 
+import java.util.Collections;
 import java.util.Date;
 
 import javax.jms.DeliveryMode;
@@ -44,6 +45,9 @@ public class ParticipantResultFactoryTest extends QpidTestCase
 
     private static final Date START = new Date(0);
     private static final Date END = new Date(START.getTime() + TIME_TAKEN);
+
+    private static final String PROVIDER_VERSION = "1.0";
+    private static final String PROTOCOL_VERSION = "MSS";
 
     private ParticipantResultFactory _participantResultFactory;
 
@@ -84,7 +88,9 @@ public class ParticipantResultFactoryTest extends QpidTestCase
                                                                                        NUMBER_OF_MESSAGES_PROCESSED,
                                                                                        PAYLOAD_SIZE,
                                                                                        TOTAL_PAYLOAD_PROCESSED,
-                                                                                       START, END);
+                                                                                       START, END,
+                                                                                       PROVIDER_VERSION,
+                                                                                       PROTOCOL_VERSION);
 
         assertCommonResultProperties(result);
 
@@ -94,7 +100,6 @@ public class ParticipantResultFactoryTest extends QpidTestCase
         assertEquals(producerInterval, result.getInterval());
         assertEquals(timeToLive, result.getTimeToLive());
         assertEquals(totalNumberOfConsumers, result.getTotalNumberOfConsumers());
-        assertEquals(totalNumberOfProducers, result.getTotalNumberOfProducers());
     }
 
     public void testCreateForConsumer()
@@ -133,7 +138,10 @@ public class ParticipantResultFactoryTest extends QpidTestCase
                                                                                        NUMBER_OF_MESSAGES_PROCESSED,
                                                                                        PAYLOAD_SIZE,
                                                                                        TOTAL_PAYLOAD_PROCESSED,
-                                                                                       START, END);
+                                                                                       START, END,
+                                                                                       Collections.<Long>emptyList(),
+                                                                                       PROVIDER_VERSION,
+                                                                                       PROTOCOL_VERSION);
 
         assertCommonResultProperties(result);
 
@@ -173,6 +181,8 @@ public class ParticipantResultFactoryTest extends QpidTestCase
         assertEquals(NUMBER_OF_MESSAGES_PROCESSED, result.getNumberOfMessagesProcessed());
         assertEquals(TOTAL_PAYLOAD_PROCESSED, result.getTotalPayloadProcessed());
         assertEquals(PAYLOAD_SIZE, result.getPayloadSize());
+        assertEquals(PROVIDER_VERSION, result.getProviderVersion());
+        assertEquals(PROTOCOL_VERSION, result.getProtocolVersion());
     }
 
 }
