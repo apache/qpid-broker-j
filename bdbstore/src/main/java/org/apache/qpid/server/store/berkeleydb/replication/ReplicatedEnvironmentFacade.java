@@ -45,6 +45,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -77,7 +79,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.berkeleydb.BDBUtils;
 import org.apache.qpid.server.store.berkeleydb.CoalescingCommiter;
 import org.apache.qpid.server.store.berkeleydb.EnvHomeRegistry;
@@ -269,7 +270,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     }
 
     @Override
-    public FutureResult commit(final Transaction tx, boolean syncCommit)
+    public ListenableFuture<Void> commit(final Transaction tx, boolean syncCommit)
     {
         try
         {
@@ -287,7 +288,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         {
             return _coalescingCommiter.commit(tx, syncCommit);
         }
-        return FutureResult.IMMEDIATE_FUTURE;
+        return Futures.immediateFuture(null);
     }
 
     @Override

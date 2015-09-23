@@ -23,6 +23,8 @@ package org.apache.qpid.server.txn;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +33,6 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
 
@@ -54,9 +55,9 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
     //Set true to ensure strict ordering when enqueuing messages with mixed delivery mode, i.e. disable async persistence
     private boolean _strictOrderWithMixedDeliveryMode = Boolean.getBoolean(QPID_STRICT_ORDER_WITH_MIXED_DELIVERY_MODE);
 
-    public static interface FutureRecorder
+    public interface FutureRecorder
     {
-        public void recordFuture(FutureResult future, Action action);
+        void recordFuture(ListenableFuture<Void> future, Action action);
 
     }
 
@@ -84,7 +85,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
      */
     public void addPostTransactionAction(final Action immediateAction)
     {
-        addFuture(FutureResult.IMMEDIATE_FUTURE, immediateAction);
+        addFuture(Futures.<Void>immediateFuture(null), immediateAction);
 
     }
 
@@ -93,7 +94,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         Transaction txn = null;
         try
         {
-            FutureResult future;
+            ListenableFuture<Void> future;
             if(record != null)
             {
                 _logger.debug("Dequeue of message number {} from transaction log. Queue : {}", record.getMessageNumber(), record.getQueueId());
@@ -106,7 +107,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             }
             else
             {
-                future = FutureResult.IMMEDIATE_FUTURE;
+                future = Futures.immediateFuture(null);
             }
             addFuture(future, postTransactionAction);
             postTransactionAction = null;
@@ -119,11 +120,11 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
     }
 
 
-    private void addFuture(final FutureResult future, final Action action)
+    private void addFuture(final ListenableFuture<Void> future, final Action action)
     {
         if(action != null)
         {
-            if(future.isComplete())
+            if(future.isDone())
             {
                 action.postCommit();
             }
@@ -134,13 +135,13 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         }
     }
 
-    private void addEnqueueFuture(final FutureResult future, final Action action, boolean persistent)
+    private void addEnqueueFuture(final ListenableFuture<Void> future, final Action action, boolean persistent)
     {
         if(action != null)
         {
             // For persistent messages, do not synchronously invoke postCommit even if the future  is completed.
             // Otherwise, postCommit (which actually does the enqueuing) might be called on successive messages out of order.
-            if(future.isComplete() && !persistent && !_strictOrderWithMixedDeliveryMode)
+            if(future.isDone() && !persistent && !_strictOrderWithMixedDeliveryMode)
             {
                 action.postCommit();
             }
@@ -173,7 +174,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
                 }
 
             }
-            FutureResult future;
+            ListenableFuture<Void> future;
             if(txn != null)
             {
                 future = txn.commitTranAsync();
@@ -181,7 +182,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             }
             else
             {
-                future = FutureResult.IMMEDIATE_FUTURE;
+                future = Futures.immediateFuture(null);
             }
             addFuture(future, postTransactionAction);
             postTransactionAction = null;
@@ -199,7 +200,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
         Transaction txn = null;
         try
         {
-            FutureResult future;
+            ListenableFuture<Void> future;
             final MessageEnqueueRecord enqueueRecord;
             if(queue.getMessageDurability().persist(message.isPersistent()))
             {
@@ -212,7 +213,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             }
             else
             {
-                future = FutureResult.IMMEDIATE_FUTURE;
+                future = Futures.immediateFuture(null);
                 enqueueRecord = null;
             }
             final EnqueueAction underlying = postTransactionAction;
@@ -282,7 +283,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
                 i++;
             }
 
-            FutureResult future;
+            ListenableFuture<Void> future;
             if (txn != null)
             {
                 future = txn.commitTranAsync();
@@ -290,7 +291,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             }
             else
             {
-                future = FutureResult.IMMEDIATE_FUTURE;
+                future = Futures.immediateFuture(null);
             }
             final EnqueueAction underlying = postTransactionAction;
             addEnqueueFuture(future, new Action()
@@ -344,7 +345,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
     {
         if(immediatePostTransactionAction != null)
         {
-            addFuture(FutureResult.IMMEDIATE_FUTURE, new Action()
+            addFuture(Futures.<Void>immediateFuture(null), new Action()
             {
                 public void postCommit()
                 {

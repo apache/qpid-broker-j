@@ -31,12 +31,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
-import org.apache.qpid.server.util.FutureResult;
 
 /** A simple message store that stores the messages in a thread-safe structure in memory. */
 public class MemoryMessageStore implements MessageStore
@@ -60,9 +62,9 @@ public class MemoryMessageStore implements MessageStore
         private Set<Xid> _localDistributedTransactionsRemoves = new HashSet<Xid>();
 
         @Override
-        public FutureResult commitTranAsync()
+        public ListenableFuture<Void> commitTranAsync()
         {
-            return FutureResult.IMMEDIATE_FUTURE;
+            return Futures.immediateFuture(null);
         }
 
         @Override

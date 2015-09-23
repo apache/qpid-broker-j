@@ -23,11 +23,13 @@ package org.apache.qpid.server.txn;
 import java.util.UUID;
 
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.NullMessageStore;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -101,9 +103,9 @@ class MockStoreTransaction implements Transaction
         _state = TransactionState.COMMITTED;
     }
 
-    public FutureResult commitTranAsync()
+    public ListenableFuture<Void> commitTranAsync()
     {
-        throw new UnsupportedOperationException();
+        return Futures.immediateFuture(null);
     }
 
     public void abortTran()

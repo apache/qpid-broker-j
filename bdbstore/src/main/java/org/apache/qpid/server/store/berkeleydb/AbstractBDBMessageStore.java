@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -55,7 +57,6 @@ import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.store.Xid;
@@ -541,7 +542,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 throw new StoreException("Error adding content for message id " + messageId + ": " + status);
             }
 
-            getLogger().debug("Storing content for message {} in transaction {}", messageId,  tx);
+            getLogger().debug("Storing content for message {} in transaction {}", messageId, tx);
 
         }
         catch (RuntimeException e)
@@ -759,14 +760,14 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      *
      * @throws org.apache.qpid.server.store.StoreException If the operation fails for any reason.
      */
-    private FutureResult commitTranImpl(final Transaction tx, boolean syncCommit) throws StoreException
+    private ListenableFuture<Void> commitTranImpl(final Transaction tx, boolean syncCommit) throws StoreException
     {
         if (tx == null)
         {
             throw new StoreException("Fatal internal error: transactional is null at commitTran");
         }
 
-        FutureResult result = getEnvironmentFacade().commit(tx, syncCommit);
+        ListenableFuture<Void> result = getEnvironmentFacade().commit(tx, syncCommit);
 
         getLogger().debug("commitTranImpl completed {} transaction {}",
                           syncCommit ? "synchronous" : "asynchronous", tx);
@@ -1182,7 +1183,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             }
         }
 
-        synchronized FutureResult flushToStore()
+        synchronized ListenableFuture<Void> flushToStore()
         {
             if (_messageDataRef != null)
             {
@@ -1202,10 +1203,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                     store(txn);
                     getEnvironmentFacade().commit(txn, true);
 
-                    storedSizeChangeOccurred(getMetaData().getContentSize());
                 }
             }
-            return FutureResult.IMMEDIATE_FUTURE;
+            return Futures.immediateFuture(null);
         }
 
         @Override
@@ -1347,12 +1347,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public FutureResult commitTranAsync() throws StoreException
+        public ListenableFuture<Void> commitTranAsync() throws StoreException
         {
             checkMessageStoreOpen();
             doPreCommitActions();
             AbstractBDBMessageStore.this.storedSizeChangeOccurred(_storeSizeIncrease);
-            FutureResult futureResult = AbstractBDBMessageStore.this.commitTranImpl(_txn, false);
+            ListenableFuture<Void> futureResult = AbstractBDBMessageStore.this.commitTranImpl(_txn, false);
             doPostCommitActions();
             return futureResult;
         }

@@ -36,16 +36,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
@@ -55,7 +54,6 @@ import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.handler.DistributedTransactionHandler;
 import org.apache.qpid.server.store.handler.MessageHandler;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
-import org.apache.qpid.server.util.FutureResult;
 
 public abstract class AbstractJDBCMessageStore implements MessageStore
 {
@@ -799,105 +797,26 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
     }
 
-    private FutureResult commitTranAsync(final ConnectionWrapper connWrapper) throws StoreException
+    private ListenableFuture<Void> commitTranAsync(final ConnectionWrapper connWrapper) throws StoreException
     {
-        final Future<?> result = _executor.submit(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                commitTran(connWrapper);
-            }
-        });
-        return new FutureResult()
-        {
-            @Override
-            public boolean isComplete()
-            {
-                boolean done = result.isDone();
-                try
-                {
-                    result.get();
-                }
-                catch (InterruptedException e)
-                {
-                    // this won't happen as we're actually already done;
-                }
-                catch (ExecutionException e)
-                {
-                    if(e.getCause() instanceof RuntimeException)
-                    {
-                        throw (RuntimeException)e.getCause();
-                    }
-                    else if(e.getCause() instanceof Error)
-                    {
-                        throw (Error)e.getCause();
-                    }
-                    else
-                    {
-                        throw new StoreException(e);
-                    }
-                }
-                return done;
-            }
-
-            @Override
-            public void waitForCompletion()
-            {
-                try
-                {
-                    result.get();
-                }
-                catch (InterruptedException e)
-                {
-                    throw new StoreException(e);
-                }
-                catch (ExecutionException e)
-                {
-                    if(e.getCause() instanceof RuntimeException)
-                    {
-                        throw (RuntimeException)e.getCause();
-                    }
-                    else if(e.getCause() instanceof Error)
-                    {
-                        throw (Error)e.getCause();
-                    }
-                    else
-                    {
-                        throw new StoreException(e);
-                    }
-                }
-            }
-
-            @Override
-            public void waitForCompletion(final long timeout) throws TimeoutException
-            {
-
-                try
-                {
-                    result.get(timeout, TimeUnit.MILLISECONDS);
-                }
-                catch (InterruptedException e)
-                {
-                    throw new StoreException(e);
-                }
-                catch (ExecutionException e)
-                {
-                    if(e.getCause() instanceof RuntimeException)
-                    {
-                        throw (RuntimeException)e.getCause();
-                    }
-                    else if(e.getCause() instanceof Error)
-                    {
-                        throw (Error)e.getCause();
-                    }
-                    else
-                    {
-                        throw new StoreException(e);
-                    }
-                }
-            }
-        };
+        final SettableFuture<Void> future = SettableFuture.create();
+        _executor.submit(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                try
+                                {
+                                    commitTran(connWrapper);
+                                    future.set(null);
+                                }
+                                catch (RuntimeException e)
+                                {
+                                    future.setException(e);
+                                }
+                            }
+                        });
+        return future;
     }
 
     private void abortTran(ConnectionWrapper connWrapper) throws StoreException
@@ -1253,11 +1172,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public FutureResult commitTranAsync()
+        public ListenableFuture<Void> commitTranAsync()
         {
             checkMessageStoreOpen();
             doPreCommitActions();
-            FutureResult futureResult = AbstractJDBCMessageStore.this.commitTranAsync(_connWrapper);
+            ListenableFuture<Void> futureResult = AbstractJDBCMessageStore.this.commitTranAsync(_connWrapper);
             storedSizeChange(_storeSizeIncrease);
             doPostCommitActions();
             return futureResult;
@@ -1678,7 +1597,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             }
         }
 
-        synchronized FutureResult flushToStore()
+        synchronized ListenableFuture<Void> flushToStore()
         {
             if (_messageDataRef != null)
             {
@@ -1697,7 +1616,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                 }
 
             }
-            return FutureResult.IMMEDIATE_FUTURE;
+            return Futures.immediateFuture(null);
         }
 
         @Override

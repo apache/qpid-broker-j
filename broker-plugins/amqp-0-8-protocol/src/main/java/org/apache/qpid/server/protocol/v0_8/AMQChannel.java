@@ -38,11 +38,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.security.auth.Subject;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +110,7 @@ import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.util.FutureResult;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
@@ -1864,7 +1866,7 @@ public class AMQChannel
         }
     }
 
-    public void recordFuture(final FutureResult future, final ServerTransaction.Action action)
+    public void recordFuture(final ListenableFuture<Void> future, final ServerTransaction.Action action)
     {
         _unfinishedCommandsQueue.add(new AsyncCommand(future, action));
     }
@@ -1879,7 +1881,6 @@ public class AMQChannel
         AsyncCommand cmd;
         while((cmd = _unfinishedCommandsQueue.poll()) != null)
         {
-            cmd.awaitReadyForCompletion();
             cmd.complete();
         }
         if(_transaction instanceof LocalTransaction)
@@ -1890,25 +1891,52 @@ public class AMQChannel
 
     private static class AsyncCommand
     {
-        private final FutureResult _future;
+        private final ListenableFuture<Void> _future;
         private ServerTransaction.Action _action;
 
-        public AsyncCommand(final FutureResult future, final ServerTransaction.Action action)
+        public AsyncCommand(final ListenableFuture<Void> future, final ServerTransaction.Action action)
         {
             _future = future;
             _action = action;
         }
 
-        void awaitReadyForCompletion()
-        {
-            _future.waitForCompletion();
-        }
-
         void complete()
         {
-            if(!_future.isComplete())
+            boolean interrupted = false;
+            try
             {
-                _future.waitForCompletion();
+                while (true)
+                {
+                    try
+                    {
+                        _future.get();
+                        break;
+                    }
+                    catch (InterruptedException e)
+                    {
+                        interrupted = true;
+                    }
+
+                }
+            }
+            catch(ExecutionException e)
+            {
+                if(e.getCause() instanceof RuntimeException)
+                {
+                    throw (RuntimeException)e.getCause();
+                }
+                else if(e.getCause() instanceof Error)
+                {
+                    throw (Error) e.getCause();
+                }
+                else
+                {
+                    throw new ServerScopedRuntimeException(e.getCause());
+                }
+            }
+            if(interrupted)
+            {
+                Thread.currentThread().interrupt();
             }
             _action.postCommit();
             _action = null;

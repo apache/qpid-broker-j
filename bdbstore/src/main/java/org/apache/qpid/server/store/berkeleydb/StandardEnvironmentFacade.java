@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -44,7 +45,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.berkeleydb.logging.Slf4jLoggingHandler;
 
 public class StandardEnvironmentFacade implements EnvironmentFacade
@@ -133,7 +133,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     }
 
     @Override
-    public FutureResult commit(com.sleepycat.je.Transaction tx, boolean syncCommit)
+    public ListenableFuture<Void> commit(com.sleepycat.je.Transaction tx, boolean syncCommit)
     {
         try
         {

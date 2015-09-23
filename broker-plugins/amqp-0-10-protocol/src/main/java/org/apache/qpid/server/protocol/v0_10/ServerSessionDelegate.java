@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import com.google.common.util.concurrent.Futures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,6 @@ import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.txn.AlreadyKnownDtxException;
 import org.apache.qpid.server.txn.DtxNotSelectedException;
@@ -138,7 +138,7 @@ public class ServerSessionDelegate extends SessionDelegate
         serverSession.accept(method.getTransfers());
         if(!serverSession.isTransactional())
         {
-            serverSession.recordFuture(FutureResult.IMMEDIATE_FUTURE,
+            serverSession.recordFuture(Futures.<Void>immediateFuture(null),
                                        new CommandProcessedAction(serverSession, method));
         }
     }
@@ -482,7 +482,7 @@ public class ServerSessionDelegate extends SessionDelegate
                     }
                     else
                     {
-                        serverSession.recordFuture(FutureResult.IMMEDIATE_FUTURE,
+                        serverSession.recordFuture(Futures.<Void>immediateFuture(null),
                                                    new CommandProcessedAction(serverSession, xfr));
                     }
                 }

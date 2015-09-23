@@ -22,12 +22,14 @@ import static org.mockito.Mockito.*;
 
 import java.util.Collections;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.txn.AsyncAutoCommitTransaction.FutureRecorder;
 import org.apache.qpid.server.txn.ServerTransaction.Action;
@@ -43,7 +45,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
     private MessageStore _messageStore = mock(MessageStore.class);
     private Transaction _storeTransaction = mock(Transaction.class);
     private ServerTransaction.EnqueueAction _postTransactionAction = mock(ServerTransaction.EnqueueAction.class);
-    private FutureResult _future = mock(FutureResult.class);
+    private ListenableFuture<Void> _future = mock(ListenableFuture.class);
 
 
     @Override
@@ -62,7 +64,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
 
         when(_message.isPersistent()).thenReturn(true);
-        when(_future.isComplete()).thenReturn(true);
+        when(_future.isDone()).thenReturn(true);
 
         AsyncAutoCommitTransaction asyncAutoCommitTransaction =
                 new AsyncAutoCommitTransaction(_messageStore, _futureRecorder);
@@ -79,7 +81,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
 
         when(_message.isPersistent()).thenReturn(true);
-        when(_future.isComplete()).thenReturn(true);
+        when(_future.isDone()).thenReturn(true);
 
         AsyncAutoCommitTransaction asyncAutoCommitTransaction =
                 new AsyncAutoCommitTransaction(_messageStore, _futureRecorder);
@@ -96,7 +98,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         setTestSystemProperty(STRICT_ORDER_SYSTEM_PROPERTY, "false");
 
         when(_message.isPersistent()).thenReturn(true);
-        when(_future.isComplete()).thenReturn(false);
+        when(_future.isDone()).thenReturn(false);
 
         AsyncAutoCommitTransaction asyncAutoCommitTransaction =
                 new AsyncAutoCommitTransaction(_messageStore, _futureRecorder);
@@ -136,7 +138,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         asyncAutoCommitTransaction.enqueue(_queue, _message, _postTransactionAction);
 
         verifyZeroInteractions(_storeTransaction);
-        verify(_futureRecorder).recordFuture(eq(FutureResult.IMMEDIATE_FUTURE), any(Action.class));
+        verify(_futureRecorder).recordFuture(any(ListenableFuture.class), any(Action.class));
         verifyZeroInteractions(_postTransactionAction);
     }
 }

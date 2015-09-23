@@ -24,10 +24,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Sequence;
 import com.sleepycat.je.SequenceConfig;
@@ -35,7 +35,6 @@ import com.sleepycat.je.Transaction;
 
 import com.sleepycat.je.TransactionConfig;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.util.FutureResult;
 
 public interface EnvironmentFacade
 {
@@ -56,7 +55,7 @@ public interface EnvironmentFacade
 
     Transaction beginTransaction(TransactionConfig transactionConfig);
 
-    FutureResult commit(com.sleepycat.je.Transaction tx, boolean sync);
+    ListenableFuture<Void> commit(com.sleepycat.je.Transaction tx, boolean sync);
 
     RuntimeException handleDatabaseException(String contextMessage, RuntimeException e);
 

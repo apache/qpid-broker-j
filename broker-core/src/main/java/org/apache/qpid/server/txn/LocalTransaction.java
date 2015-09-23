@@ -23,8 +23,18 @@ package org.apache.qpid.server.txn;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.util.concurrent.AbstractFuture;
+import com.google.common.util.concurrent.ForwardingListenableFuture;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +43,9 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 /**
  * A concrete implementation of ServerTransaction where enqueue/dequeue
@@ -54,7 +64,7 @@ public class LocalTransaction implements ServerTransaction
     private final MessageStore _transactionLog;
     private volatile long _txnStartTime = 0L;
     private volatile long _txnUpdateTime = 0l;
-    private FutureResult _asyncTran;
+    private ListenableFuture<Void> _asyncTran;
 
     public LocalTransaction(MessageStore transactionLog)
     {
@@ -369,69 +379,56 @@ public class LocalTransaction implements ServerTransaction
         }
     }
 
-    public FutureResult commitAsync(final Runnable deferred)
+    public void commitAsync(final Runnable deferred)
     {
         sync();
-        FutureResult future = FutureResult.IMMEDIATE_FUTURE;
         if(_transaction != null)
         {
-            future = new FutureResult()
-                        {
-                            private volatile boolean _completed = false;
-                            private FutureResult _underlying = _transaction.commitTranAsync();
+            final ListenableFuture<Void> underlying = _transaction.commitTranAsync();
 
-                            @Override
-                            public boolean isComplete()
-                            {
-                                return _completed || checkUnderlyingCompletion();
-                            }
+            /*
+              Note that this future is not a general purpose future and makes assumptions about the fact that get() is
+              only called once (which is enforced by how sync() works.  The post transaction actions must be performed
+              in the connection thread (i.e. the thread that the sync() is called from - not the commit thread which is
+              where the actions would occur if we added a listener to the underlying future
+             */
+            _asyncTran = new ForwardingListenableFuture<Void>()
+            {
 
-                            @Override
-                            public void waitForCompletion()
-                            {
-                                if(!_completed)
-                                {
-                                    _underlying.waitForCompletion();
-                                    checkUnderlyingCompletion();
-                                }
-                            }
+                @Override
+                protected ListenableFuture<Void> delegate()
+                {
+                    return underlying;
+                }
 
-                            @Override
-                            public void waitForCompletion(final long timeout) throws TimeoutException
-                            {
+                @Override
+                public Void get(final long timeout, final TimeUnit unit)
+                        throws InterruptedException, TimeoutException, ExecutionException
+                {
+                    throw new UnsupportedOperationException();
+                }
 
-                                if(!_completed)
-                                {
-                                    _underlying.waitForCompletion(timeout);
-                                    checkUnderlyingCompletion();
-                                }
-                            }
+                @Override
+                public Void get() throws InterruptedException, ExecutionException
+                {
+                    final Void rval;
+                    try
+                    {
+                        rval = super.get();
+                        doPostTransactionActions();
+                        deferred.run();
+                    }
+                    finally
+                    {
+                        resetDetails();
+                    }
+                    return rval;
+                }
 
-                            private synchronized boolean checkUnderlyingCompletion()
-                            {
-                                if(!_completed && _underlying.isComplete())
-                                {
-                                    completeDeferredWork();
-                                    _completed = true;
-                                }
-                                return _completed;
 
-                            }
 
-                            private void completeDeferredWork()
-                            {
-                                try
-                                {
-                                    doPostTransactionActions();
-                                    deferred.run();
-                                }
-                                finally
-                                {
-                                    resetDetails();
-                                }
-                            }
             };
-            _asyncTran = future;
+
         }
         else
         {
@@ -445,25 +442,19 @@ public class LocalTransaction implements ServerTransaction
                     resetDetails();
                 }
         }
-        return future;
     }
 
     private void doPostTransactionActions()
     {
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Beginning " + _postTransactionActions.size() + " post transaction actions");
-        }
+        _logger.debug("Beginning {} post transaction actions",  _postTransactionActions.size());
 
         for(int i = 0; i < _postTransactionActions.size(); i++)
         {
             _postTransactionActions.get(i).postCommit();
         }
 
-        if(_logger.isDebugEnabled())
-        {
-            _logger.debug("Completed post transaction actions");
-        }
+        _logger.debug("Completed post transaction actions");
+
     }
 
     public void rollback()
@@ -493,7 +484,42 @@ public class LocalTransaction implements ServerTransaction
     {
         if(_asyncTran != null)
         {
-            _asyncTran.waitForCompletion();
+            boolean interrupted = false;
+            try
+            {
+                while (true)
+                {
+                    try
+                    {
+                        _asyncTran.get();
+                        break;
+                    }
+                    catch (InterruptedException e)
+                    {
+                        interrupted = true;
+                    }
+
+                }
+            }
+            catch(ExecutionException e)
+            {
+                if(e.getCause() instanceof RuntimeException)
+                {
+                    throw (RuntimeException)e.getCause();
+                }
+                else if(e.getCause() instanceof Error)
+                {
+                    throw (Error) e.getCause();
+                }
+                else
+                {
+                    throw new ServerScopedRuntimeException(e.getCause());
+                }
+            }
+            if(interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
             _asyncTran = null;
         }
     }

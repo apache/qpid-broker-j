@@ -20,8 +20,9 @@
  */
 package org.apache.qpid.server.store;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.message.EnqueueableMessage;
-import org.apache.qpid.server.util.FutureResult;
 
 public interface Transaction
 {
@@ -47,7 +48,7 @@ public interface Transaction
      * Commits all operations performed within a given transactional context.
      *
      */
-    FutureResult commitTranAsync();
+    ListenableFuture<Void> commitTranAsync();
 
     /**
      * Abandons all operations performed within a given transactional context.

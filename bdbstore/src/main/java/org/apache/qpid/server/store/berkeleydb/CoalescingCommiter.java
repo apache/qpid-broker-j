@@ -22,9 +22,14 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.util.concurrent.AbstractFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.Transaction;
@@ -32,7 +37,7 @@ import org.apache.qpid.server.store.StoreException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.util.FutureResult;
+import org.apache.qpid.server.store.StoreException;
 
 public class CoalescingCommiter implements Committer
 {
@@ -68,47 +73,46 @@ public class CoalescingCommiter implements Committer
     }
 
     @Override
-    public FutureResult commit(Transaction tx, boolean syncCommit)
+    public ListenableFuture<Void> commit(Transaction tx, boolean syncCommit)
     {
-        BDBCommitFutureResult commitFuture = new BDBCommitFutureResult(_commitThread, tx, syncCommit);
+        ThreadNotifyingSettableFuture future = new ThreadNotifyingSettableFuture();
+        BDBCommitFutureResult commitFuture = new BDBCommitFutureResult(_commitThread, tx, syncCommit, future);
         commitFuture.commit();
-        return commitFuture;
+        return future;
     }
 
-    private static final class BDBCommitFutureResult implements FutureResult
+    private static final class BDBCommitFutureResult
     {
         private static final Logger LOGGER = LoggerFactory.getLogger(BDBCommitFutureResult.class);
 
         private final CommitThread _commitThread;
         private final Transaction _tx;
         private final boolean _syncCommit;
-        private RuntimeException _databaseException;
-        private boolean _complete;
+        private final ThreadNotifyingSettableFuture _future;
 
-        public BDBCommitFutureResult(CommitThread commitThread, Transaction tx, boolean syncCommit)
+        public BDBCommitFutureResult(CommitThread commitThread,
+                                     Transaction tx,
+                                     boolean syncCommit,
+                                     final ThreadNotifyingSettableFuture future)
         {
             _commitThread = commitThread;
             _tx = tx;
             _syncCommit = syncCommit;
+            _future = future;
         }
 
-        public synchronized void complete()
+        public void complete()
         {
             if (LOGGER.isDebugEnabled())
             {
                 LOGGER.debug("complete() called for transaction " + _tx);
             }
-            _complete = true;
-
-            notifyAll();
+            _future.set(null);
         }
 
-        public synchronized void abort(RuntimeException databaseException)
+        public void abort(RuntimeException databaseException)
         {
-            _complete = true;
-            _databaseException = databaseException;
-
-            notifyAll();
+            _future.setException(databaseException);
         }
 
         public void commit() throws DatabaseException
@@ -124,83 +128,41 @@ public class CoalescingCommiter implements Committer
                 return;
             }
 
-            waitForCompletion();
-        }
-
-        public synchronized boolean isComplete()
-        {
-            return _complete;
-        }
-
-        public synchronized void waitForCompletion()
-        {
-            long startTime = 0;
-            if(LOGGER.isDebugEnabled())
+            boolean interrupted = false;
+            try
             {
-                startTime = System.currentTimeMillis();
-            }
-
-            while (!isComplete())
-            {
-                _commitThread.explicitNotify();
-                try
+                while (true)
                 {
-                    wait(250);
+                    try
+                    {
+                        _future.get();
+                        break;
+                    }
+                    catch (InterruptedException e)
+                    {
+                        interrupted = true;
+                    }
                 }
-                catch (InterruptedException e)
+                if (interrupted)
                 {
-                    throw new RuntimeException(e);
+                    Thread.currentThread().interrupt();
                 }
+
             }
-
-            if(LOGGER.isDebugEnabled())
+            catch (ExecutionException e)
             {
-                long duration = System.currentTimeMillis() - startTime;
-                LOGGER.debug("waitForCompletion returning after " + duration + " ms for transaction " + _tx);
-            }
-
-            if (_databaseException != null)
-            {
-                throw _databaseException;
-            }
-        }
-
-        public synchronized void waitForCompletion(long timeout) throws TimeoutException
-        {
-            long startTime= System.currentTimeMillis();
-            long remaining = timeout;
-
-            while (!isComplete() && remaining > 0)
-            {
-                _commitThread.explicitNotify();
-                try
+                if(e.getCause() instanceof RuntimeException)
                 {
-                    wait(remaining);
+                    throw (RuntimeException)e.getCause();
                 }
-                catch (InterruptedException e)
+                else if(e.getCause() instanceof Error)
                 {
-                    throw new RuntimeException(e);
+                    throw (Error)e.getCause();
                 }
-                if(!isComplete())
+                else
                 {
-                    remaining = (startTime + timeout) - System.currentTimeMillis();
+                    throw new StoreException(e.getCause());
                 }
-            }
-
-            if(remaining < 0l)
-            {
-                throw new TimeoutException("commit did not occur within given timeout period: " + timeout);
-            }
-
-            if(LOGGER.isDebugEnabled())
-            {
-                long duration = System.currentTimeMillis() - startTime;
-                LOGGER.debug("waitForCompletion returning after " + duration + " ms for transaction " + _tx);
-            }
-
-            if (_databaseException != null)
-            {
-                throw _databaseException;
             }
         }
     }
@@ -232,7 +194,7 @@ public class CoalescingCommiter implements Committer
         {
             synchronized (_lock)
             {
-                _lock.notify();
+                _lock.notifyAll();
             }
         }
 
@@ -375,6 +337,43 @@ public class CoalescingCommiter implements Committer
 
                 _lock.notifyAll();
             }
+        }
+    }
+
+    private final class ThreadNotifyingSettableFuture extends AbstractFuture<Void>
+    {
+        @Override
+        public Void get(final long timeout, final TimeUnit unit)
+                throws InterruptedException, TimeoutException, ExecutionException
+        {
+            _commitThread.explicitNotify();
+            return super.get(timeout, unit);
+        }
+
+        @Override
+        public Void get() throws InterruptedException, ExecutionException
+        {
+            _commitThread.explicitNotify();
+            return super.get();
+        }
+
+        @Override
+        protected boolean set(final Void value)
+        {
+            return super.set(value);
+        }
+
+        @Override
+        protected boolean setException(final Throwable throwable)
+        {
+            return super.setException(throwable);
+        }
+
+        @Override
+        public void addListener(final Runnable listener, final Executor exec)
+        {
+            super.addListener(listener, exec);
+            _commitThread.explicitNotify();
         }
     }
 }

@@ -20,15 +20,14 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.Transaction;
-
-import org.apache.qpid.server.util.FutureResult;
 
 public interface Committer
 {
     void start();
 
-    FutureResult commit(Transaction tx, boolean syncCommit);
+    ListenableFuture<Void> commit(Transaction tx, boolean syncCommit);
 
     void stop();
 }

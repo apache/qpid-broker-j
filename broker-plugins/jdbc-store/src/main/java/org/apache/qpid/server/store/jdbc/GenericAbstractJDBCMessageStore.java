@@ -23,9 +23,10 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.util.FutureResult;
 import org.apache.qpid.server.store.Transaction;
 
 public abstract class GenericAbstractJDBCMessageStore extends org.apache.qpid.server.store.AbstractJDBCMessageStore
@@ -132,7 +133,7 @@ public abstract class GenericAbstractJDBCMessageStore extends org.apache.qpid.se
         }
 
         @Override
-        public FutureResult commitTranAsync()
+        public ListenableFuture<Void> commitTranAsync()
         {
             try
             {
