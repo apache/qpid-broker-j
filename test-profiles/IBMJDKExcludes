@@ -18,3 +18,6 @@
 //
 
 org.apache.qpid.server.transport.TCPandSSLTransportTest#*
+
+# Transformer on IBM JDK has different whitespace behaviour
+org.apache.qpid.disttest.results.ResultsXmlWriterTest#*
