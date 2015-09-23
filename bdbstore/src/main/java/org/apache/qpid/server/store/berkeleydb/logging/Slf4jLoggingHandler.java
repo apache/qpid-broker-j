@@ -146,19 +146,12 @@ public class Slf4jLoggingHandler extends Handler
         LEVEL_MAP = Collections.unmodifiableMap(map);
     }
 
-    private static final Logger BDB_LOGGER = LoggerFactory.getLogger("BDB");
-
-    private boolean isEnabledFor(Level level)
-    {
-        final MappedLevel mappedLevel = LEVEL_MAP.get(level);
-        return mappedLevel == null ? false : mappedLevel.isEnabled(BDB_LOGGER);
-    }
-
     @Override
     public void publish(final LogRecord record)
     {
         MappedLevel level = convertLevel(record.getLevel());
-        if (level.isEnabled(BDB_LOGGER))
+        final Logger logger = LoggerFactory.getLogger(record.getLoggerName());
+        if (level.isEnabled(logger))
         {
 
             Formatter formatter = getFormatter();
@@ -168,7 +161,7 @@ public class Slf4jLoggingHandler extends Handler
                 String message = formatter.format(record);
                 try
                 {
-                    level.log(BDB_LOGGER, message);
+                    level.log(logger, message);
                 }
                 catch (RuntimeException e)
                 {
@@ -187,7 +180,7 @@ public class Slf4jLoggingHandler extends Handler
     {
         MappedLevel mappedLevel = convertLevel(record.getLevel());
 
-        return mappedLevel.isEnabled(BDB_LOGGER);
+        return mappedLevel.isEnabled(LoggerFactory.getLogger(record.getLoggerName()));
     }
 
     private MappedLevel convertLevel(final Level level)
