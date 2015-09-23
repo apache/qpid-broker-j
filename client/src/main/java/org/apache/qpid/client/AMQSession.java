@@ -602,7 +602,6 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
 
             int type = resolveAddressType(dest);
-            boolean resolved = false;
             switch (type)
             {
                 case AMQDestination.QUEUE_TYPE:
@@ -611,12 +610,10 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                     if(createNode)
                     {
                         handleQueueNodeCreation(dest,noLocal);
-                        resolved = true;
                         break;
                     }
                     else if (isQueueExist(dest,assertNode))
                     {
-                        resolved = true;
                         break;
                     }
 
@@ -627,13 +624,11 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                     {
                         verifySubject(dest);
                         handleExchangeNodeCreation(dest);
-                        resolved = true;
                         break;
                     }
                     else if (isExchangeExist(dest,assertNode))
                     {
                         verifySubject(dest);
-                        resolved = true;
                         break;
                     }
 
@@ -642,10 +637,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                             "The name '" + dest.getAddressName() +
                             "' supplied in the address doesn't resolve to an exchange or a queue");
             }
-            if(resolved)
-            {
-                dest.setAddressResolved(System.currentTimeMillis());
-            }
+            dest.setAddressResolved(System.currentTimeMillis());
         }
     }
 
