@@ -94,13 +94,14 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     public boolean doWrite(Collection<QpidByteBuffer> bufferArray) throws IOException
     {
         long bytesToWrite = 0l;
-
-        for(QpidByteBuffer buf : bufferArray)
+        if(!bufferArray.isEmpty())
         {
-            bytesToWrite += buf.remaining();
+            for (QpidByteBuffer buf : bufferArray)
+            {
+                bytesToWrite += buf.remaining();
+            }
         }
-        final long actualWritten = _parent.writeToTransport(bufferArray);
-        return actualWritten >= bytesToWrite;
+        return bytesToWrite == 0l || _parent.writeToTransport(bufferArray) >= bytesToWrite;
 
     }
 
