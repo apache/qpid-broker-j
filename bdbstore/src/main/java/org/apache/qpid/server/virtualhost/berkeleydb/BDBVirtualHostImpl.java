@@ -28,6 +28,8 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.berkeleydb.BDBMessageStore;
+import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
+import org.apache.qpid.server.store.berkeleydb.BDBCacheSizeSetter;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
 @ManagedObject(category = false, type = BDBVirtualHostImpl.VIRTUAL_HOST_TYPE)
@@ -49,6 +51,7 @@ public class BDBVirtualHostImpl extends AbstractVirtualHost<BDBVirtualHostImpl> 
                               final VirtualHostNode<?> virtualHostNode)
     {
         super(attributes, virtualHostNode);
+        addChangeListener(new BDBCacheSizeSetter());
     }
 
 
@@ -74,5 +77,19 @@ public class BDBVirtualHostImpl extends AbstractVirtualHost<BDBVirtualHostImpl> 
     public Long getStoreOverfullSize()
     {
         return _storeOverfullSize;
+    }
+
+    @Override
+    public void setBDBCacheSize(long cacheSize)
+    {
+        BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
+        if (bdbMessageStore != null)
+        {
+            EnvironmentFacade environmentFacade = bdbMessageStore.getEnvironmentFacade();
+            if (environmentFacade != null)
+            {
+                environmentFacade.setCacheSize(cacheSize);
+            }
+        }
     }
 }

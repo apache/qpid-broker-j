@@ -62,7 +62,7 @@ public class StandardEnvironmentFacadeFactory implements EnvironmentFacadeFactor
             @Override
             public Map<String, String> getParameters()
             {
-                return BDBUtils.getContextSettingsWithNameMatchingRegExpPattern(parent, NON_REP_JE_PARAM_PATTERN);
+                return BDBUtils.getEnvironmentConfigurationParameters(parent);
             }
         };
 

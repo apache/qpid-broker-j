@@ -67,4 +67,6 @@ public interface EnvironmentFacade
     void reduceSizeOnDisk();
 
     void flushLog();
+
+    void setCacheSize(long cacheSize);
 }

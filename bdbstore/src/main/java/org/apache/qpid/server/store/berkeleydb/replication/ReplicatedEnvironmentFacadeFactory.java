@@ -21,7 +21,6 @@
 package org.apache.qpid.server.store.berkeleydb.replication;
 
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.berkeleydb.BDBUtils;
@@ -31,8 +30,6 @@ import org.apache.qpid.server.store.berkeleydb.HASettings;
 
 public class ReplicatedEnvironmentFacadeFactory implements EnvironmentFacadeFactory
 {
-    public static final Pattern REP_JE_PARAM_PATTERN = Pattern.compile("^je\\.rep\\..*");
-
     @Override
     public EnvironmentFacade createEnvironmentFacade(final ConfiguredObject<?> parent)
     {
@@ -55,13 +52,13 @@ public class ReplicatedEnvironmentFacadeFactory implements EnvironmentFacadeFact
             @Override
             public Map<String, String> getParameters()
             {
-                return buildEnvironmentConfigParameters(parent);
+                return BDBUtils.getEnvironmentConfigurationParameters(parent);
             }
 
             @Override
             public Map<String, String> getReplicationParameters()
             {
-                return buildReplicationConfigParameters(parent);
+                return BDBUtils.getReplicatedEnvironmentConfigurationParameters(parent);
             }
 
             @Override
@@ -121,19 +118,5 @@ public class ReplicatedEnvironmentFacadeFactory implements EnvironmentFacadeFact
 
         };
         return new ReplicatedEnvironmentFacade(configuration);
-
     }
-
-    private Map<String, String> buildEnvironmentConfigParameters(ConfiguredObject<?> parent)
-    {
-        return BDBUtils.getContextSettingsWithNameMatchingRegExpPattern(parent, NON_REP_JE_PARAM_PATTERN);
-    }
-
-    private Map<String, String> buildReplicationConfigParameters(ConfiguredObject<?> parent)
-    {
-
-        return BDBUtils.getContextSettingsWithNameMatchingRegExpPattern(parent, REP_JE_PARAM_PATTERN);
-    }
-
-
 }

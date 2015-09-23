@@ -30,17 +30,21 @@ import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 
 public class BDBUtils
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BDBUtils.class);
 
     public static final DatabaseConfig DEFAULT_DATABASE_CONFIG = new DatabaseConfig().setTransactional(true).setAllowCreate(true);
+
+    private static final Pattern NON_REP_JE_PARAM_PATTERN = Pattern.compile("^je\\.(?!rep\\.).*");
+    private static final Pattern REP_JE_PARAM_PATTERN = Pattern.compile("^je\\.rep\\..*");
 
     public static void closeCursorSafely(Cursor cursor, final EnvironmentFacade environmentFacade) throws StoreException
     {
@@ -121,18 +125,33 @@ public class BDBUtils
 
     }
 
-    public static Map<String, String> getContextSettingsWithNameMatchingRegExpPattern(ConfiguredObject<?> object, Pattern pattern)
+    public static Map<String, String> getReplicatedEnvironmentConfigurationParameters(ConfiguredObject<?> object)
+    {
+        return Collections.unmodifiableMap(getContextSettingsWithNameMatchingRegExpPattern(object, REP_JE_PARAM_PATTERN));
+    }
+
+    public static Map<String, String> getEnvironmentConfigurationParameters(ConfiguredObject<?> object)
+    {
+        Map<String, String> parameters = getContextSettingsWithNameMatchingRegExpPattern(object, NON_REP_JE_PARAM_PATTERN);
+        if (!parameters.containsKey(EnvironmentConfig.MAX_MEMORY) && !parameters.containsKey(EnvironmentConfig.MAX_MEMORY_PERCENT))
+        {
+            parameters.put(EnvironmentConfig.MAX_MEMORY, String.valueOf(BDBVirtualHost.BDB_MIN_CACHE_SIZE));
+        }
+        return Collections.unmodifiableMap(parameters);
+    }
+
+    private static Map<String, String> getContextSettingsWithNameMatchingRegExpPattern(ConfiguredObject<?> object, Pattern pattern)
     {
         Map<String, String> targetMap = new HashMap<>();
         for (String name : object.getContextKeys(false))
         {
             if (pattern.matcher(name).matches())
             {
-                String contextValue = object.getContextValue(String.class,name);
+                String contextValue = object.getContextValue(String.class, name);
                 targetMap.put(name, contextValue);
             }
         }
 
-        return Collections.unmodifiableMap(targetMap);
+        return targetMap;
     }
 }

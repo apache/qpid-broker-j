@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +15,11 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
-import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
+package org.apache.qpid.server.store.berkeleydb;
 
-public interface BDBVirtualHostNode<X extends BDBVirtualHostNode<X>> extends org.apache.qpid.server.model.VirtualHostNode<X>, org.apache.qpid.server.store.FileBasedSettings, BDBEnvironmentContainer
+public interface BDBEnvironmentContainer
 {
-    String STORE_PATH = "storePath";
-
-    @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}config")
-    String getStorePath();
+    void setBDBCacheSize(long cacheSize);
 }

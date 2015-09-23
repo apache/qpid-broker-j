@@ -57,6 +57,7 @@ import com.sleepycat.je.Durability.ReplicaAckPolicy;
 import com.sleepycat.je.Durability.SyncPolicy;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.EnvironmentFailureException;
+import com.sleepycat.je.EnvironmentMutableConfig;
 import com.sleepycat.je.ExceptionEvent;
 import com.sleepycat.je.LogWriteException;
 import com.sleepycat.je.Sequence;
@@ -652,6 +653,72 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             throw handleDatabaseException("Exception whilst syncing data to disk", e);
         }
     }
+
+    @Override
+    public void setCacheSize(final long cacheSize)
+    {
+        LOGGER.debug("Submitting a job to set cache size on {} to {}", _prettyGroupNodeName, cacheSize);
+
+        Future<Void> future = _environmentJobExecutor.submit(new Callable<Void>()
+        {
+            @Override
+            public Void call()
+            {
+                setCacheSizeInternal(cacheSize);
+                return null;
+            }
+        });
+        int timeout = 1;
+        try
+        {
+            future.get(timeout, TimeUnit.SECONDS);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException e)
+        {
+            Throwable cause = e.getCause();
+            if (cause instanceof Error)
+            {
+                throw (Error) cause;
+            } else if (cause instanceof RuntimeException)
+            {
+                throw (RuntimeException) cause;
+            } else
+            {
+                throw new ConnectionScopedRuntimeException("Unexpected exception while setting cache size", e);
+            }
+        }
+        catch (TimeoutException e)
+        {
+            LOGGER.info("setting of cache size on {} timed out after {} seconds", _prettyGroupNodeName, timeout);
+        }
+    }
+
+    void setCacheSizeInternal(long cacheSize)
+    {
+        try
+        {
+            final ReplicatedEnvironment environment = getEnvironment();
+            final EnvironmentMutableConfig oldConfig = environment.getMutableConfig();
+            final EnvironmentMutableConfig newConfig = oldConfig.setCacheSize(cacheSize);
+            environment.setMutableConfig(newConfig);
+
+            LOGGER.debug("Node {} cache size has been changed to {}", _prettyGroupNodeName, cacheSize);
+        }
+        catch (RuntimeException e)
+        {
+            RuntimeException handled = handleDatabaseException("Exception on setting cache size", e);
+            if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+            {
+                throw handled;
+            }
+            throw new ConnectionScopedRuntimeException("Cannot set cache size to " + cacheSize + " on node " + _prettyGroupNodeName, e);
+        }
+    }
+
 
     public Set<ReplicationNode> getNodes()
     {

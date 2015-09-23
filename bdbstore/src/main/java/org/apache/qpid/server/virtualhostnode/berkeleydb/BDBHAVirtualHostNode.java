@@ -25,9 +25,10 @@ import java.util.List;
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.store.berkeleydb.HASettings;
+import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 
 
-public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends BDBVirtualHostNode<X>, HASettings
+public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends BDBVirtualHostNode<X>, HASettings, BDBEnvironmentContainer
 {
     public static final String GROUP_NAME = "groupName";
     public static final String ADDRESS = "address";

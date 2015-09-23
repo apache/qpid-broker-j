@@ -25,18 +25,20 @@ import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
+import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
-public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings
+public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings, BDBEnvironmentContainer
 {
 
     String STORE_PATH = "storePath";
 
-    // Default the JE cache to 5% of total memory, but no less than 10Mb and no more than 200Mb
-    @ManagedContextDefault(name="je.maxMemory")
-    long DEFAULT_JE_CACHE_SIZE = Math.max(10l*1024l*1024l,
-                                          Math.min(200l*1024l*1024l,
-                                                   Runtime.getRuntime().maxMemory()/20l));
+    long BDB_MIN_CACHE_SIZE = 10*1024*1024;
+    String QPID_BROKER_BDB_TOTAL_CACHE_SIZE = "qpid.broker.bdbTotalCacheSize";
+
+    // Default the JE cache to 5% of total memory, but no less than 10Mb
+    @ManagedContextDefault(name= QPID_BROKER_BDB_TOTAL_CACHE_SIZE)
+    long DEFAULT_JE_CACHE_SIZE = Math.max(BDB_MIN_CACHE_SIZE, Runtime.getRuntime().maxMemory()/20l);
 
     @ManagedAttribute(mandatory = true, defaultValue = "${qpid.work_dir}${file.separator}${this:name}${file.separator}messages")
     String getStorePath();

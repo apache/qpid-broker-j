@@ -26,8 +26,5 @@ import org.apache.qpid.server.model.ConfiguredObject;
 
 public interface EnvironmentFacadeFactory
 {
-    Pattern NON_REP_JE_PARAM_PATTERN = Pattern.compile("^je\\.(?!rep\\.).*");
-
     EnvironmentFacade createEnvironmentFacade(final ConfiguredObject<?> parent);
-
 }

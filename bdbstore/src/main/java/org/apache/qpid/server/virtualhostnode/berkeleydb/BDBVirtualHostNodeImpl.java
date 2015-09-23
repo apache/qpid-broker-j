@@ -32,6 +32,8 @@ import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
+import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
+import org.apache.qpid.server.store.berkeleydb.BDBCacheSizeSetter;
 import org.apache.qpid.server.virtualhostnode.AbstractStandardVirtualHostNode;
 
 @ManagedObject(type = BDBVirtualHostNodeImpl.VIRTUAL_HOST_NODE_TYPE, category = false,
@@ -47,6 +49,7 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     public BDBVirtualHostNodeImpl(Map<String, Object> attributes, Broker<?> parent)
     {
         super(attributes, parent);
+        addChangeListener(new BDBCacheSizeSetter());
     }
 
     @Override
@@ -76,5 +79,19 @@ public class BDBVirtualHostNodeImpl extends AbstractStandardVirtualHostNode<BDBV
     public static Map<String, Collection<String>> getSupportedChildTypes()
     {
         return Collections.singletonMap(VirtualHost.class.getSimpleName(), getSupportedVirtualHostTypes(true));
+    }
+
+    @Override
+    public void setBDBCacheSize(long cacheSize)
+    {
+        BDBConfigurationStore bdbConfigurationStore = (BDBConfigurationStore) getConfigurationStore();
+        if (bdbConfigurationStore != null)
+        {
+            EnvironmentFacade environmentFacade = bdbConfigurationStore.getEnvironmentFacade();
+            if (environmentFacade != null)
+            {
+                environmentFacade.setCacheSize(cacheSize);
+            }
+        }
     }
 }

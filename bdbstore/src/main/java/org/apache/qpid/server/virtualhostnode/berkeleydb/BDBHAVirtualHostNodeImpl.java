@@ -57,8 +57,6 @@ import com.sleepycat.je.rep.StateChangeEvent;
 import com.sleepycat.je.rep.StateChangeListener;
 import com.sleepycat.je.rep.util.ReplicationGroupAdmin;
 import com.sleepycat.je.rep.utilint.HostPortPair;
-import org.apache.qpid.server.store.StoreException;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,9 +84,13 @@ import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.VirtualHostStoreUpgraderAndRecoverer;
 import org.apache.qpid.server.store.berkeleydb.BDBConfigurationStore;
+import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
+import org.apache.qpid.server.store.berkeleydb.BDBCacheSizeSetter;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacadeFactory;
 import org.apache.qpid.server.store.berkeleydb.replication.ReplicationGroupListener;
+import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBHAVirtualHostImpl;
@@ -155,6 +157,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     {
         super(broker, attributes);
         _systemConfig = broker.getParent(SystemConfig.class);
+        addChangeListener(new BDBCacheSizeSetter());
     }
 
     @Override
@@ -750,6 +753,16 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     {
         _isClosed = true;
         return super.beforeClose();
+    }
+
+    @Override
+    public void setBDBCacheSize(long cacheSize)
+    {
+        EnvironmentFacade environmentFacade = _environmentFacade.get();
+        if (environmentFacade != null)
+        {
+            environmentFacade.setCacheSize(cacheSize);
+        }
     }
 
     private class EnvironmentStateChangeListener implements StateChangeListener

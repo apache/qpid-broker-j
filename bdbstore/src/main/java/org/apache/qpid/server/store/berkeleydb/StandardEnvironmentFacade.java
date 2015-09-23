@@ -35,6 +35,7 @@ import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.EnvironmentMutableConfig;
 import com.sleepycat.je.Sequence;
 import com.sleepycat.je.SequenceConfig;
 import com.sleepycat.je.Transaction;
@@ -196,6 +197,15 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         {
             throw handleDatabaseException("Exception whilst syncing data to disk", e);
         }
+    }
+
+    @Override
+    public void setCacheSize(long cacheSize)
+    {
+        Environment environment = getEnvironment();
+        EnvironmentMutableConfig mutableConfig = environment.getMutableConfig();
+        mutableConfig.setCacheSize(cacheSize);
+        environment.setMutableConfig(mutableConfig);
     }
 
     private void closeSequences()
