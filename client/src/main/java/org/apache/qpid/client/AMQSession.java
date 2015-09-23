@@ -612,12 +612,13 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                     {
                         handleQueueNodeCreation(dest,noLocal);
                         resolved = true;
+                        break;
                     }
                     else if (isQueueExist(dest,assertNode))
                     {
                         resolved = true;
+                        break;
                     }
-                    break;
 
                 case AMQDestination.TOPIC_TYPE:
 
@@ -627,13 +628,14 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                         verifySubject(dest);
                         handleExchangeNodeCreation(dest);
                         resolved = true;
+                        break;
                     }
                     else if (isExchangeExist(dest,assertNode))
                     {
                         verifySubject(dest);
                         resolved = true;
+                        break;
                     }
-                    break;
 
                 default:
                     throw new QpidException(

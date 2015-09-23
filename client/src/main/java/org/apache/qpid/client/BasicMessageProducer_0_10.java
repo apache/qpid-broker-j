@@ -98,17 +98,9 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
         }
         else
         {       
-            try
-            {
-                getSession().resolveAddress(destination,false,false);
-                getSession().handleLinkCreation(destination);
-                getSession().sync();
-            }
-            catch(Exception e)
-            {
-                QpidException ex = new QpidException("Exception occured while verifying destination",e);
-                throw ex;                
-            }
+            getSession().resolveAddress(destination,false,false);
+            getSession().handleLinkCreation(destination);
+            getSession().sync();
         }
     }
 

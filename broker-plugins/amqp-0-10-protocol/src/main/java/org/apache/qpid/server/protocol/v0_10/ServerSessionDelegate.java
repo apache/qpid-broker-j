@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.nio.ByteBuffer;
 import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -1576,27 +1575,37 @@ public class ServerSessionDelegate extends SessionDelegate
     {
         QueueQueryResult result = new QueueQueryResult();
 
-        AMQQueue queue = getQueue(session, method.getQueue());
+        MessageSource source = getMessageSource(session, method.getQueue());
 
-        if(queue != null)
+        if(source != null)
         {
-            result.setQueue(queue.getName());
-            result.setDurable(queue.isDurable());
-            result.setExclusive(queue.isExclusive());
-            result.setAutoDelete(queue.getLifetimePolicy() != LifetimePolicy.PERMANENT);
-            Map<String, Object> arguments = new LinkedHashMap<String, Object>();
-            Collection<String> availableAttrs = queue.getAvailableAttributes();
+            result.setQueue(source.getName());
 
-            for(String attrName : availableAttrs)
+            if (source instanceof AMQQueue)
             {
-                arguments.put(attrName, queue.getAttribute(attrName));
+                final AMQQueue queue = (AMQQueue) source;
+                result.setDurable(queue.isDurable());
+                result.setExclusive(queue.isExclusive());
+                result.setAutoDelete(queue.getLifetimePolicy() != LifetimePolicy.PERMANENT);
+                Map<String, Object> arguments = new LinkedHashMap<>();
+                Collection<String> availableAttrs = queue.getAvailableAttributes();
+                for(String attrName : availableAttrs)
+                {
+                    arguments.put(attrName,  queue.getAttribute(attrName));
+                }
+                result.setArguments(QueueArgumentsConverter.convertModelArgsToWire(arguments));
+                result.setMessageCount(queue.getQueueDepthMessages());
+                result.setSubscriberCount(queue.getConsumerCount());
             }
-            result.setArguments(QueueArgumentsConverter.convertModelArgsToWire(arguments));
-            result.setMessageCount(queue.getQueueDepthMessages());
-            result.setSubscriberCount(queue.getConsumerCount());
-
+            else
+            {
+                result.setDurable(true);
+                result.setExclusive(false);
+                result.setAutoDelete(false);
+                result.setMessageCount(Integer.MAX_VALUE);
+                result.setSubscriberCount(0);
+            }
         }
-
 
         session.executionResult((int) method.getId(), result);
 

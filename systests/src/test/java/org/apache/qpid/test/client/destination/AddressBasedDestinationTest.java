@@ -48,6 +48,7 @@ import javax.naming.InitialContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQAnyDestination;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
@@ -855,9 +856,9 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
 
         prod.send(ssn.createTextMessage("A"));
         TextMessage m = (TextMessage)consumer1.receive(1000);
-        assertEquals("Consumer1 should recieve message A",m.getText(),"A");
+        assertEquals("Consumer1 should receive message A", m.getText(), "A");
         m = (TextMessage)consumer2.receive(1000);
-        assertEquals("Consumer2 should recieve message A",m.getText(),"A");
+        assertEquals("Consumer2 should receive message A",m.getText(),"A");
 
         consumer1.close();
         consumer2.close();
@@ -1302,6 +1303,41 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         }
     }
 
+    public void testUnknownNodeDetectedByProducerAndConsumer() throws Exception
+    {
+        Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue queue = session.createQueue("ADDR: unknown-node");
+        String expectedMessage = "The name 'unknown-node' supplied in the "
+                   + "address doesn't resolve to an exchange or a queue";
+        try
+        {
+            session.createConsumer(queue);
+            fail("Attempt to create a consumer with unknown node name should fail");
+        }
+        catch(JMSException e)
+        {
+            Throwable cause = e.getCause();
+            assertTrue("Unexpected exception cause. Expecting : " + QpidException.class
+                       + " got : " + cause.getClass(), cause instanceof QpidException);
+            assertTrue("Unexpected exception message : " + cause.getMessage(),
+                       cause.getMessage().contains(expectedMessage));
+        }
+
+        try
+        {
+            session.createProducer(queue);
+            fail("Attempt to create a producer with unknown node name should fail");
+        }
+        catch(JMSException e)
+        {
+            Throwable cause = e.getCause();
+            assertTrue("Unexpected exception cause. Expecting : " + QpidException.class
+                       + " got : " + cause.getClass(), cause instanceof QpidException);
+            assertTrue("Unexpected exception message : " + cause.getMessage(),
+                       cause.getMessage().contains(expectedMessage));
+        }
+    }
+
     public void testUnknownExchangeType() throws Exception
     {
         createExchangeImpl(false, false, true);
@@ -1312,7 +1348,7 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         assertQueueBrowserWithSelector(Session.AUTO_ACKNOWLEDGE);
     }
 
-    public void testQueueBrowserWithSelectorClientAcknowldgement() throws Exception
+    public void testQueueBrowserWithSelectorClientAcknowledgement() throws Exception
     {
         assertQueueBrowserWithSelector(Session.CLIENT_ACKNOWLEDGE);
     }
@@ -1354,13 +1390,13 @@ public class AddressBasedDestinationTest extends QpidBrokerTestCase
         QueueBrowser browser = session.createBrowser(queue, INDEX + "%2=0");
         _connection.start();
 
-        Enumeration<Message> enumaration = browser.getEnumeration();
+        Enumeration<Message> enumeration = browser.getEnumeration();
 
         int counter = 0;
         int expectedIndex = 0;
-        while (enumaration.hasMoreElements())
+        while (enumeration.hasMoreElements())
         {
-            Message m = enumaration.nextElement();
+            Message m = enumeration.nextElement();
             assertNotNull("Expected not null message at step " + counter, m);
             int messageIndex = m.getIntProperty(INDEX);
             assertEquals("Unexpected index", expectedIndex, messageIndex);
