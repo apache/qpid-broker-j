@@ -344,7 +344,14 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         {
             int readData = readFromNetwork();
 
-            return (readData > 0) || _delegate.processData();
+            if (readData > 0)
+            {
+                return _delegate.processData();
+            }
+            else
+            {
+                return false;
+            }
         }
         else
         {
