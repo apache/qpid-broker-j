@@ -29,6 +29,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import com.sleepycat.je.cleaner.Cleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +150,7 @@ public class Slf4jLoggingHandler extends Handler
     @Override
     public void publish(final LogRecord record)
     {
-        MappedLevel level = convertLevel(record.getLevel());
+        MappedLevel level = convertLevel(record);
         final Logger logger = LoggerFactory.getLogger(record.getLoggerName());
         if (level.isEnabled(logger))
         {
@@ -173,6 +174,16 @@ public class Slf4jLoggingHandler extends Handler
                 reportError(null, e, ErrorManager.FORMAT_FAILURE);
             }
         }
+    }
+
+    private MappedLevel convertLevel(LogRecord record)
+    {
+        if (record.getLevel() == Level.SEVERE && record.getLoggerName().equals(Cleaner.class.getName()) && record.getMessage().startsWith("Average cleaner backlog has grown from"))
+        {
+            // this is not a real ERROR condition; reducing level to INFO
+            return INFO;
+        }
+        return convertLevel(record.getLevel());
     }
 
     @Override
