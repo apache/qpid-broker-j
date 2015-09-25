@@ -68,6 +68,7 @@ public class BrokerDetails implements Serializable
 
     public static final int DEFAULT_PORT = 5672;
     public static final String TCP = "tcp";
+    public static final String SOCKET = "socket";
     public static final String DEFAULT_TRANSPORT = BrokerDetails.TCP;
     public static final String URL_FORMAT_EXAMPLE =
             "<transport>://<hostname>[:<port Default=\"" + BrokerDetails.DEFAULT_PORT + "\">][?<option>='<value>'[,<option>='<value>']]";
@@ -113,7 +114,7 @@ public class BrokerDetails implements Serializable
             if (transport != null)
             {
                 //todo this list of valid transports should be enumerated somewhere
-                if (!(transport.equalsIgnoreCase(BrokerDetails.TCP)))
+                if (!(transport.equalsIgnoreCase(BrokerDetails.TCP) || transport.equalsIgnoreCase(BrokerDetails.SOCKET)))
                 {
                     if (transport.equalsIgnoreCase("localhost"))
                     {

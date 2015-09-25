@@ -24,10 +24,13 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
@@ -42,6 +45,8 @@ public class IoNetworkTransport
     private static final int TIMEOUT = Integer.getInteger(CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME,
                                                               CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT);
     private NetworkConnection _connection;
+
+    private final static Map<String, Socket> _registeredSockets = new ConcurrentHashMap<>();
 
     protected IoNetworkConnection createNetworkConnection(final Socket socket,
                                                        final ExceptionHandlingByteBufferReceiver engine,
@@ -62,28 +67,43 @@ public class IoNetworkTransport
         int receiveBufferSize = settings.getReadBufferSize();
 
         final Socket socket;
-        try
+        if("tcp".equalsIgnoreCase(settings.getProtocol()))
         {
-            socket = new Socket();
-            socket.setReuseAddress(true);
-            socket.setTcpNoDelay(settings.isTcpNodelay());
-            socket.setSendBufferSize(sendBufferSize);
-            socket.setReceiveBufferSize(receiveBufferSize);
-
-            if(LOGGER.isDebugEnabled())
+            try
             {
-                LOGGER.debug("SO_RCVBUF : " + socket.getReceiveBufferSize());
-                LOGGER.debug("SO_SNDBUF : " + socket.getSendBufferSize());
-                LOGGER.debug("TCP_NODELAY : " + socket.getTcpNoDelay());
+                socket = new Socket();
+                socket.setReuseAddress(true);
+                socket.setTcpNoDelay(settings.isTcpNodelay());
+                socket.setSendBufferSize(sendBufferSize);
+                socket.setReceiveBufferSize(receiveBufferSize);
+
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.debug("SO_RCVBUF : " + socket.getReceiveBufferSize());
+                    LOGGER.debug("SO_SNDBUF : " + socket.getSendBufferSize());
+                    LOGGER.debug("TCP_NODELAY : " + socket.getTcpNoDelay());
+                }
+
+                InetAddress address = InetAddress.getByName(settings.getHost());
+
+                socket.connect(new InetSocketAddress(address, settings.getPort()), settings.getConnectTimeout());
             }
-
-            InetAddress address = InetAddress.getByName(settings.getHost());
-
-            socket.connect(new InetSocketAddress(address, settings.getPort()), settings.getConnectTimeout());
+            catch (IOException e)
+            {
+                throw new TransportException("Error connecting to broker", e);
+            }
         }
-        catch (IOException e)
+        else if("socket".equalsIgnoreCase(settings.getProtocol()))
         {
-            throw new TransportException("Error connecting to broker", e);
+            socket = _registeredSockets.remove(settings.getHost());
+            if(socket == null)
+            {
+                throw new TransportException("No socket registered with id '"+settings.getHost()+"'");
+            }
+        }
+        else
+        {
+            throw new TransportException("Unknown transport '"+settings.getProtocol()+"'");
         }
 
         try
@@ -116,6 +136,11 @@ public class IoNetworkTransport
         {
             _connection.close();
         }
+    }
+
+    public static void registerOpenSocket(String id, Socket socket)
+    {
+        _registeredSockets.put(id, socket);
     }
 
     public NetworkConnection getConnection()
