@@ -36,7 +36,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.updater.Task;
-import org.apache.qpid.server.configuration.updater.TaskWithException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
@@ -67,7 +66,7 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     @Override
     public boolean createUser(final String username, final String password, final Map<String, String> attributes)
     {
-        return runTask(new Task<Boolean>()
+        return runTask(new Task<Boolean, RuntimeException>()
         {
             @Override
             public Boolean execute()
@@ -81,6 +80,24 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
                 User user = createChild(User.class, userAttrs);
                 return user != null;
 
+            }
+
+            @Override
+            public String getObject()
+            {
+                return ConfigModelPasswordManagingAuthenticationProvider.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "create user";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return username;
             }
         });
     }
@@ -108,7 +125,7 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     @Override
     public Map<String, Map<String, String>> getUsers()
     {
-        return runTask(new Task<Map<String, Map<String, String>>>()
+        return runTask(new Task<Map<String, Map<String, String>>, RuntimeException>()
         {
             @Override
             public Map<String, Map<String, String>> execute()
@@ -120,6 +137,24 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
                     users.put(user, Collections.<String, String>emptyMap());
                 }
                 return users;
+            }
+
+            @Override
+            public String getObject()
+            {
+                return ConfigModelPasswordManagingAuthenticationProvider.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "get users";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return null;
             }
         });
     }
@@ -139,7 +174,7 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
     @Override
     public void setPassword(final String username, final String password) throws AccountNotFoundException
     {
-        runTask(new TaskWithException<Void, AccountNotFoundException>()
+        runTask(new Task<Object, AccountNotFoundException>()
         {
             @Override
             public Void execute() throws AccountNotFoundException
@@ -155,6 +190,24 @@ public abstract class ConfigModelPasswordManagingAuthenticationProvider<X extend
                 {
                     throw new AccountNotFoundException("No such user: '" + username + "'");
                 }
+            }
+
+            @Override
+            public String getObject()
+            {
+                return ConfigModelPasswordManagingAuthenticationProvider.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "set password";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return username;
             }
         });
 

@@ -37,6 +37,7 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
@@ -121,7 +122,7 @@ public class TaskExecutorImpl implements TaskExecutor
     @Override
     public void stop()
     {
-        if (_running.compareAndSet(true,false))
+        if (_running.compareAndSet(true, false))
         {
             ExecutorService executor = _executor;
             if (executor != null)
@@ -136,79 +137,54 @@ public class TaskExecutorImpl implements TaskExecutor
     }
 
     @Override
-    public <T> Future<T> submit(Task<T> task)
+    public <T, E extends Exception> Future<T> submit(Task<T, E> userTask) throws E
+    {
+        return submitWrappedTask(new TaskLoggingWrapper<>(userTask));
+    }
+
+    private <T, E extends Exception> Future<T> submitWrappedTask(TaskLoggingWrapper<T, E> task) throws E
     {
         checkState(task);
         if (isTaskExecutorThread())
         {
-            LOGGER.debug("Running task {} immediately", task);
-            T result = executeTask(task);
-            return new ImmediateFuture(result);
+            if (LOGGER.isTraceEnabled())
+            {
+                LOGGER.trace("Running {} immediately", task);
+            }
+            T result = task.execute();
+            return new ImmediateFuture<>(result);
         }
         else
         {
-            LOGGER.debug("Submitting task {} to executor {}", task, _name);
-            return _executor.submit(new CallableWrapper(task));
-        }
-    }
-
-    private static class ExceptionTaskWrapper<T, E extends Exception> implements Task<T>
-    {
-        private final TaskWithException<T,E> _underlying;
-        private E _exception;
-
-        private ExceptionTaskWrapper(final TaskWithException<T, E> underlying)
-        {
-            _underlying = underlying;
-        }
-
-
-        @Override
-        public T execute()
-        {
-            try
+            if (LOGGER.isTraceEnabled())
             {
-                return _underlying.execute();
+                LOGGER.trace("Submitting {} to executor {}", task, _name);
             }
-            catch (Exception e)
-            {
-                _exception = (E) e;
-                return null;
-            }
-        }
 
-        E getException()
-        {
-            return _exception;
+            return _executor.submit(new CallableWrapper<>(task));
         }
     }
 
     @Override
-    public <T, E extends Exception> T run(TaskWithException<T, E> task) throws CancellationException, E
+    public void execute(final Runnable command)
     {
-        ExceptionTaskWrapper<T,E> wrapper = new ExceptionTaskWrapper<T, E>(task);
-        T result = run(wrapper);
-        if(wrapper.getException() != null)
-        {
-            throw wrapper.getException();
-        }
-        else
-        {
-            return result;
-        }
+        LOGGER.trace("Running runnable {} through executor interface", command);
+        _wrappedExecutor.execute(command);
     }
 
 
     @Override
-    public <T> T run(Task<T> task) throws CancellationException
+    public <T, E extends Exception> T run(Task<T, E> userTask) throws CancellationException, E
     {
+        TaskLoggingWrapper<T, E> task = new TaskLoggingWrapper<>(userTask);
         try
         {
-            Future<T> future = submit(task);
+            Future<T> future = submitWrappedTask(task);
             return future.get();
         }
         catch (InterruptedException e)
         {
+            Thread.currentThread().interrupt();
             throw new ServerScopedRuntimeException("Task execution was interrupted: " + task, e);
         }
         catch (ExecutionException e)
@@ -218,47 +194,36 @@ public class TaskExecutorImpl implements TaskExecutor
             {
                 throw (RuntimeException) cause;
             }
-            else if (cause instanceof Exception)
-            {
-                throw new ServerScopedRuntimeException("Failed to execute user task: " + task, cause);
-            }
             else if (cause instanceof Error)
             {
                 throw (Error) cause;
             }
             else
             {
-                throw new ServerScopedRuntimeException("Failed to execute user task: " + task, cause);
+                try
+                {
+                    throw (E) cause;
+                }
+                catch (ClassCastException cce)
+                {
+                    throw new ServerScopedRuntimeException("Failed to execute user task: " + task, cause);
+                }
             }
         }
     }
 
-    @Override
-    public Executor getExecutor()
-    {
-        return _wrappedExecutor;
-    }
-
-    public boolean isTaskExecutorThread()
+    private boolean isTaskExecutorThread()
     {
         return Thread.currentThread() == _taskThread;
     }
 
-    private <T> void checkState(Task<T> task)
+    private void checkState(Task<?, ?> task)
     {
         if (!_running.get())
         {
             LOGGER.error("Task executor {} is not in ACTIVE state, unable to execute : {} ", _name, task);
             throw new IllegalStateException("Task executor " + _name + " is not in ACTIVE state");
         }
-    }
-
-    private <T> T executeTask(Task<T> userTask)
-    {
-        LOGGER.debug("Performing task {}", userTask);
-        T result = userTask.execute();
-        LOGGER.debug("Task {} is performed successfully with result: {}", userTask, result);
-        return result;
     }
 
     private Subject getContextSubject()
@@ -281,29 +246,124 @@ public class TaskExecutorImpl implements TaskExecutor
         return contextSubject;
     }
 
-    private class CallableWrapper<T> implements Callable<T>
+    private class TaskLoggingWrapper<T, E extends Exception> implements Task<T, E>
     {
-        private final Task<T> _userTask;
-        private final Subject _contextSubject;
+        private final Task<T,E> _task;
 
-        public CallableWrapper(Task<T> userWork)
+        public TaskLoggingWrapper(Task<T, E> task)
         {
-            _userTask = userWork;
-            _contextSubject = getContextSubject();
+            _task = task;
         }
 
         @Override
-        public T call()
+        public T execute() throws E
         {
-            T result = Subject.doAs(_contextSubject, new PrivilegedAction<T>()
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Performing {}", this);
+            }
+
+            boolean success = false;
+            T result = null;
+            try
+            {
+                result = _task.execute();
+                success = true;
+            }
+            finally
+            {
+                if (LOGGER.isDebugEnabled())
+                {
+                    if (success)
+                    {
+                        LOGGER.debug("{} performed successfully with result: {}", this, result);
+                    } else
+                    {
+                        LOGGER.debug("{} failed to perform successfully", this);
+                    }
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public String getObject()
+        {
+            return _task.getObject();
+        }
+
+        @Override
+        public String getAction()
+        {
+            return _task.getAction();
+        }
+
+        @Override
+        public String getArguments()
+        {
+            return _task.getArguments();
+        }
+
+        @Override
+        public String toString()
+        {
+            String arguments =  getArguments();
+            if (arguments == null)
+            {
+                return String.format("Task['%s' on '%s']", getAction(), getObject());
+            }
+            return String.format("Task['%s' on '%s' with arguments '%s']", getAction(), getObject(), arguments);
+        }
+    }
+
+    private class CallableWrapper<T, E extends Exception> implements Callable<T>
+    {
+        private final Task<T, E> _userTask;
+        private final Subject _contextSubject;
+        private final AtomicReference<Throwable> _throwable;
+
+        public CallableWrapper(Task<T, E> userWork)
+        {
+            _userTask = userWork;
+            _contextSubject = getContextSubject();
+            _throwable = new AtomicReference<>();
+        }
+
+        @Override
+        public T call() throws Exception
+        {
+            T result =  Subject.doAs(_contextSubject, new PrivilegedAction<T>()
                 {
                     @Override
                     public T run()
                     {
-                        return executeTask(_userTask);
+                        try
+                        {
+                            return _userTask.execute();
+                        }
+                        catch(Throwable t)
+                        {
+                            _throwable.set(t);
+                        }
+                        return null;
                     }
                 });
-
+            Throwable t = _throwable.get();
+            if (t != null)
+            {
+                if (t instanceof RuntimeException)
+                {
+                    throw (RuntimeException) t;
+                }
+                else if (t instanceof Error)
+                {
+                    throw (Error) t;
+                }
+                else
+                {
+                    throw (Exception) t;
+                }
+            }
             return result;
         }
     }

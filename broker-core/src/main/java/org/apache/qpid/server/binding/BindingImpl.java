@@ -222,7 +222,7 @@ public class BindingImpl
 
     public void setArguments(final Map<String, Object> arguments)
     {
-        runTask(new Task<Void>()
+        runTask(new Task<Void, RuntimeException>()
                 {
                     @Override
                     public Void execute()
@@ -230,6 +230,24 @@ public class BindingImpl
                         _arguments = arguments;
                         BindingImpl.super.setAttribute(ARGUMENTS, getActualAttributes().get(ARGUMENTS), arguments);
                         return null;
+                    }
+
+                    @Override
+                    public String getObject()
+                    {
+                        return BindingImpl.this.toString();
+                    }
+
+                    @Override
+                    public String getAction()
+                    {
+                        return "set arguments";
+                    }
+
+                    @Override
+                    public String getArguments()
+                    {
+                        return arguments.toString();
                     }
                 }
                );

@@ -38,6 +38,7 @@ import javax.net.ssl.X509TrustManager;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.TrustStoreMessages;
 import org.slf4j.Logger;
@@ -257,10 +258,10 @@ public class ManagedPeerCertificateTrustsStoreImpl
     {
         final Map<String, Object> updateMap = new HashMap<>();
 
-        doAfter(doOnConfigThread(new Callable<ListenableFuture<Void>>()
+        doAfter(doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
                                     {
                                         @Override
-                                        public ListenableFuture<Void> call() throws Exception
+                                        public ListenableFuture<Void> execute()
                                         {
                                             Set<Certificate> certs = new HashSet<>(_storedCertificates);
                                             if(certs.add(cert))
@@ -268,6 +269,24 @@ public class ManagedPeerCertificateTrustsStoreImpl
                                                 updateMap.put("storedCertificates", new ArrayList<>(certs));
                                             }
                                             return Futures.immediateFuture(null);
+                                        }
+
+                                        @Override
+                                        public String getObject()
+                                        {
+                                            return ManagedPeerCertificateTrustsStoreImpl.this.toString();
+                                        }
+
+                                        @Override
+                                        public String getAction()
+                                        {
+                                            return "add certificate";
+                                        }
+
+                                        @Override
+                                        public String getArguments()
+                                        {
+                                            return String.valueOf(cert);
                                         }
                                     }),
                  new Callable<ListenableFuture<Void>>()

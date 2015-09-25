@@ -25,7 +25,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
-public interface TaskExecutor
+public interface TaskExecutor extends Executor
 {
     interface Factory
     {
@@ -46,15 +46,9 @@ public interface TaskExecutor
 
     void stop();
 
-    <T, E extends Exception> T run(TaskWithException<T, E> task) throws CancellationException, E;
+    <T, E extends Exception> T run(Task<T, E> task) throws CancellationException, E;
 
-    <T> T run(Task<T> task) throws CancellationException;
-
-    <T> Future<T> submit(Task<T> task) throws CancellationException;
-
-    boolean isTaskExecutorThread();
-
-    Executor getExecutor();
+    <T, E extends Exception> Future<T> submit(Task<T, E> task) throws CancellationException, E;
 
     Factory getFactory();
 }

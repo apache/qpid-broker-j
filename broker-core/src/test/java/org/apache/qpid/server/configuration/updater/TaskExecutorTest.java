@@ -141,12 +141,30 @@ public class TaskExecutorTest extends QpidTestCase
     public void testSubmitAndWait() throws Exception
     {
         _executor.start();
-        Object result = _executor.run(new Task<Object>()
+        Object result = _executor.run(new Task<String, RuntimeException>()
         {
             @Override
             public String execute()
             {
                 return "DONE";
+            }
+
+            @Override
+            public String getObject()
+            {
+                return getTestName();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "test";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return null;
             }
         });
         assertEquals("Unexpected task execution result", "DONE", result);
@@ -194,13 +212,31 @@ public class TaskExecutorTest extends QpidTestCase
         _executor.start();
         try
         {
-            _executor.run(new Task<Object>()
+            _executor.run(new Task<Void, RuntimeException>()
             {
 
                 @Override
                 public Void execute()
                 {
                     throw exception;
+                }
+
+                @Override
+                public String getObject()
+                {
+                    return getTestName();
+                }
+
+                @Override
+                public String getAction()
+                {
+                    return "test";
+                }
+
+                @Override
+                public String getArguments()
+                {
+                    return null;
                 }
             });
             fail("Exception is expected");
@@ -221,12 +257,30 @@ public class TaskExecutorTest extends QpidTestCase
             @Override
             public Object run()
             {
-                _executor.run(new Task<Object>()
+                _executor.run(new Task<Void, RuntimeException>()
                 {
                     @Override
                     public Void execute()
                     {
                         taskSubject.set(Subject.getSubject(AccessController.getContext()));
+                        return null;
+                    }
+
+                    @Override
+                    public String getObject()
+                    {
+                        return getTestName();
+                    }
+
+                    @Override
+                    public String getAction()
+                    {
+                        return "test";
+                    }
+
+                    @Override
+                    public String getArguments()
+                    {
                         return null;
                     }
                 });
@@ -237,22 +291,39 @@ public class TaskExecutorTest extends QpidTestCase
         assertEquals("Unexpected security manager subject", subject, taskSubject.get());
     }
 
-    private class SubjectRetriever implements Task<Subject>
+    private class SubjectRetriever implements Task<Subject, RuntimeException>
     {
         @Override
         public Subject execute()
         {
             return Subject.getSubject(AccessController.getContext());
         }
+
+        @Override
+        public String getObject()
+        {
+            return getTestName();
+        }
+
+        @Override
+        public String getAction()
+        {
+            return "test";
+        }
+
+        @Override
+        public String getArguments()
+        {
+            return null;
+        }
     }
 
-    private class NeverEndingCallable implements Task<Void>
+    private class NeverEndingCallable implements Task<Void, RuntimeException>
     {
         private CountDownLatch _waitLatch;
 
         public NeverEndingCallable(CountDownLatch waitLatch)
         {
-            super();
             _waitLatch = waitLatch;
         }
 
@@ -276,6 +347,24 @@ public class TaskExecutorTest extends QpidTestCase
                     throw new ServerScopedRuntimeException(e);
                 }
             }
+            return null;
+        }
+
+        @Override
+        public String getObject()
+        {
+            return getTestName();
+        }
+
+        @Override
+        public String getAction()
+        {
+            return "test";
+        }
+
+        @Override
+        public String getArguments()
+        {
             return null;
         }
     }

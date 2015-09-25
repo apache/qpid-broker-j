@@ -22,13 +22,10 @@ package org.apache.qpid.server.configuration.updater;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-
-import com.google.common.util.concurrent.MoreExecutors;
 
 public class CurrentThreadTaskExecutor implements TaskExecutor
 {
@@ -74,21 +71,14 @@ public class CurrentThreadTaskExecutor implements TaskExecutor
     }
 
     @Override
-    public <T, E extends Exception> T run(final TaskWithException<T, E> task) throws CancellationException, E
+    public <T, E extends Exception> T run(final Task<T, E> task) throws CancellationException, E
     {
         checkThread();
         return task.execute();
     }
 
     @Override
-    public <T> T run(final Task<T> task) throws CancellationException
-    {
-        checkThread();
-        return task.execute();
-    }
-
-    @Override
-    public <T> Future<T> submit(Task<T> task) throws CancellationException
+    public <T, E extends Exception> Future<T> submit(Task<T, E> task) throws CancellationException, E
     {
         checkThread();
         final T result = task.execute();
@@ -134,18 +124,6 @@ public class CurrentThreadTaskExecutor implements TaskExecutor
     }
 
     @Override
-    public boolean isTaskExecutorThread()
-    {
-        return true;
-    }
-
-    @Override
-    public Executor getExecutor()
-    {
-        return MoreExecutors.directExecutor();
-    }
-
-    @Override
     public Factory getFactory()
     {
         return new Factory()
@@ -162,5 +140,11 @@ public class CurrentThreadTaskExecutor implements TaskExecutor
                 return CurrentThreadTaskExecutor.this;
             }
         };
+    }
+
+    @Override
+    public void execute(Runnable command)
+    {
+        command.run();
     }
 }

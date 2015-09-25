@@ -20,7 +20,13 @@
  */
 package org.apache.qpid.server.configuration.updater;
 
-public interface Task<X>
+public interface Task<V, E extends Exception>
 {
-    X execute();
+    V execute() throws E;
+
+    String getObject();
+
+    String getAction();
+
+    String getArguments();
 }

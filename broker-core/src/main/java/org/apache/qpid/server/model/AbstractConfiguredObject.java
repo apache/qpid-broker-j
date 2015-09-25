@@ -67,7 +67,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.configuration.updater.TaskWithException;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
@@ -456,10 +455,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     public final ListenableFuture<Void> openAsync()
     {
-        return doOnConfigThread(new Callable<ListenableFuture<Void>>()
+        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
                                 {
                                     @Override
-                                    public ListenableFuture<Void> call() throws Exception
+                                    public ListenableFuture<Void> execute()
                                     {
                                         if (_dynamicState.compareAndSet(DynamicState.UNINIT, DynamicState.OPENED))
                                         {
@@ -484,15 +483,33 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                         }
 
                                     }
+
+                                    @Override
+                                    public String getObject()
+                                    {
+                                        return AbstractConfiguredObject.this.toString();
+                                    }
+
+                                    @Override
+                                    public String getAction()
+                                    {
+                                        return "open";
+                                    }
+
+                                    @Override
+                                    public String getArguments()
+                                    {
+                                        return null;
+                                    }
                                 });
 
     }
 
-    protected final <T> ListenableFuture<T> doOnConfigThread(final Callable<ListenableFuture<T>> action)
+    protected final <T, E extends Exception> ListenableFuture<T> doOnConfigThread(final Task<ListenableFuture<T>, E> task)
     {
         final SettableFuture<T> returnVal = SettableFuture.create();
 
-        _taskExecutor.submit(new Task<Void>()
+        _taskExecutor.submit(new Task<Void, RuntimeException>()
         {
 
             @Override
@@ -500,7 +517,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 try
                 {
-                    Futures.addCallback(action.call(), new FutureCallback<T>()
+                    Futures.addCallback(task.execute(), new FutureCallback<T>()
                     {
                         @Override
                         public void onSuccess(final T result)
@@ -520,6 +537,24 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     returnVal.setException(t);
                 }
                 return null;
+            }
+
+            @Override
+            public String getObject()
+            {
+                return task.getObject();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return task.getAction();
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return task.getArguments();
             }
         });
 
@@ -606,10 +641,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     @Override
     public final ListenableFuture<Void> closeAsync()
     {
-        return doOnConfigThread(new Callable<ListenableFuture<Void>>()
+        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Void> call() throws Exception
+            public ListenableFuture<Void> execute()
             {
                 LOGGER.debug("Closing " + AbstractConfiguredObject.this.getClass().getSimpleName() + " : " + getName());
 
@@ -641,6 +676,24 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     return Futures.immediateFuture(null);
                 }
             }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractConfiguredObject.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "close";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return null;
+            }
         });
 
     }
@@ -661,10 +714,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     public final ListenableFuture<Void> createAsync()
     {
-        return doOnConfigThread(new Callable<ListenableFuture<Void>>()
+        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Void> call() throws Exception
+            public ListenableFuture<Void> execute()
             {
                 if (_dynamicState.compareAndSet(DynamicState.UNINIT, DynamicState.OPENED))
                 {
@@ -712,6 +765,24 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
                 return Futures.immediateFuture(null);
 
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractConfiguredObject.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "create";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return null;
             }
         });
 
@@ -822,7 +893,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                     }
                                                 }
                                             }
-                                        },  getTaskExecutor().getExecutor());
+                                        },  getTaskExecutor());
                 }
                 catch(RuntimeException e)
                 {
@@ -1311,10 +1382,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private ListenableFuture<Void> setDesiredState(final State desiredState)
             throws IllegalStateTransitionException, AccessControlException
     {
-        return doOnConfigThread(new Callable<ListenableFuture<Void>>()
+        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Void> call() throws Exception
+            public ListenableFuture<Void> execute()
             {
                 final State state = getState();
                 final State currentDesiredState = getDesiredState();
@@ -1384,6 +1455,24 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         }
                     }
                 }
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractConfiguredObject.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "set desired state";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.valueOf(desiredState);
             }
         });
     }
@@ -1547,7 +1636,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     public Object setAttribute(final String name, final Object expected, final Object desired)
             throws IllegalStateException, AccessControlException, IllegalArgumentException
     {
-        return _taskExecutor.run(new Task<Object>()
+        return _taskExecutor.run(new Task<Object, RuntimeException>()
         {
             @Override
             public Object execute()
@@ -1564,6 +1653,33 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     return getAttribute(name);
                 }
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractConfiguredObject.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "set attribute";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                ConfiguredObjectAttribute<?,?> attr = _attributeTypes.get(name);
+                if(attr != null )
+                {
+                    if (!attr.isSecure())
+                    {
+                        return name + "=" + desired;
+                    }
+                    return name + "=" + SECURED_STRING_VALUE;
+                }
+                return name;
             }
         });
     }
@@ -1726,10 +1842,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     public <C extends ConfiguredObject> ListenableFuture<C> createChildAsync(final Class<C> childClass, final Map<String, Object> attributes,
                                                       final ConfiguredObject... otherParents)
     {
-        return doOnConfigThread(new Callable<ListenableFuture<C>>()
+        return doOnConfigThread(new Task<ListenableFuture<C>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<C> call() throws Exception
+            public ListenableFuture<C> execute()
             {
                 authoriseCreateChild(childClass, attributes, otherParents);
                 return doAfter(addChildAsync(childClass, attributes, otherParents),
@@ -1746,6 +1862,28 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                         return Futures.immediateFuture(child);
                                     }
                                 });
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractConfiguredObject.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "create child";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                if (attributes != null)
+                {
+                    return "childClass=" + childClass.getSimpleName() + ", name=" + attributes.get(NAME) + ", type=" + attributes.get(TYPE);
+                }
+                return "childClass=" + childClass.getSimpleName();
             }
         });
     }
@@ -1978,12 +2116,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return getTaskExecutor();
     }
 
-    protected final <C> C runTask(Task<C> task)
-    {
-        return _taskExecutor.run(task);
-    }
-
-    protected final <T, E extends Exception> T runTask(TaskWithException<T,E> task) throws E
+    protected final <T, E extends Exception> T runTask(Task<T,E> task) throws E
     {
         return _taskExecutor.run(task);
     }
@@ -1996,7 +2129,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final ChainedListenableFuture<Void> doAfter(ListenableFuture<?> first, final Runnable second)
     {
-        return doAfter(getTaskExecutor().getExecutor(), first, second);
+        return doAfter(getTaskExecutor(), first, second);
     }
 
     protected static <V> ChainedListenableFuture<Void>  doAfter(Executor executor, ListenableFuture<V> first, final Runnable second)
@@ -2082,12 +2215,12 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
     protected final <V> ChainedListenableFuture<V> doAfter(ListenableFuture<V> first, final Callable<ListenableFuture<V>> second)
     {
-        return doAfter(getTaskExecutor().getExecutor(), first, second);
+        return doAfter(getTaskExecutor(), first, second);
     }
 
     protected final <V,A> ChainedListenableFuture<V> doAfter(ListenableFuture<A> first, final CallableWithArgument<ListenableFuture<V>,A> second)
     {
-        return doAfter(getTaskExecutor().getExecutor(), first, second);
+        return doAfter(getTaskExecutor(), first, second);
     }
 
 
@@ -2180,7 +2313,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected <V> ChainedListenableFuture<Void> doAfterAlways(ListenableFuture<V> future,
                                                               Runnable after)
     {
-        return doAfterAlways(getTaskExecutor().getExecutor(), future, after);
+        return doAfterAlways(getTaskExecutor(), future, after);
     }
 
     protected static <V> ChainedListenableFuture<Void> doAfterAlways(Executor executor,
@@ -2227,7 +2360,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         final Map<String,Object> updateAttributes = new HashMap<>(attributes);
         Object desiredState = updateAttributes.remove(ConfiguredObject.DESIRED_STATE);
-        runTask(new Task<Void>()
+        runTask(new Task<Void, RuntimeException>()
         {
             @Override
             public Void execute()
@@ -2237,6 +2370,24 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
                 changeAttributes(updateAttributes);
                 return null;
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractConfiguredObject.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "set attributes";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return "attributes number=" + attributes.size();
             }
         });
         if(desiredState != null)

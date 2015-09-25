@@ -706,4 +706,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     {
         return false;
     }
+
+    @Override
+    public String toString()
+    {
+        return "ConsumerTarget_0_10[name=" + _name + ", session=" + _session.toLogString() + "]";
+    }
 }

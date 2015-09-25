@@ -375,11 +375,10 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
     public String toString()
     {
-        String subscriber = "[channel=" + _channel +
-                            ", consumerTag=" + _consumerTag +
-                            ", session=" + getConnection().getRemoteAddressString();
 
-        return subscriber + "]";
+        return "ConsumerTarget_0_8[channel=" + _channel +
+                            ", consumerTag=" + _consumerTag +
+                            ", session=" + getConnection().getRemoteAddressString() + "]";
     }
 
     @Override

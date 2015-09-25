@@ -51,7 +51,7 @@ public class GenericRecoverer
 
     public void recover(final List<ConfiguredObjectRecord> records)
     {
-        _root.getTaskExecutor().run(new Task<Void>()
+        _root.getTaskExecutor().run(new Task<Void, RuntimeException>()
         {
             @Override
             public Void execute()
@@ -61,9 +61,21 @@ public class GenericRecoverer
             }
 
             @Override
-            public String toString()
+            public String getObject()
             {
-                return  "RecoveringChildrenOf_" + _root.getCategoryClass().getSimpleName();
+                return _root.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "recover";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return null;
             }
         });
     }

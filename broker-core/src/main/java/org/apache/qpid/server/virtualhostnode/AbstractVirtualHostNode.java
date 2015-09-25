@@ -188,7 +188,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
                                             returnVal.setException(t);
                                         }
                                     }
-                                }, getTaskExecutor().getExecutor()
+                                }, getTaskExecutor()
                                );
         }
         catch(RuntimeException e)

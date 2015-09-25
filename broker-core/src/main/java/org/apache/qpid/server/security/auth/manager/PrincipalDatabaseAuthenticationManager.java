@@ -280,7 +280,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
                             returnVal.set(null);
                         }
                     }
-                }, getTaskExecutor().getExecutor());
+                }, getTaskExecutor());
 
             }
 

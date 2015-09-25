@@ -135,7 +135,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
                             _modelClosedFuture.set(null);
                         }
                     }
-                }, getTaskExecutor().getExecutor());
+                }, getTaskExecutor());
 
         setState(State.ACTIVE);
         _logSubject = new ConnectionLogSubject(this);

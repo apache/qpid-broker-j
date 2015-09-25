@@ -231,7 +231,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
                                 {
                                     returnVal.setException(t);
                                 }
-                            }, getTaskExecutor().getExecutor()
+                            }, getTaskExecutor()
                            );
 
         return returnVal;

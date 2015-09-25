@@ -580,4 +580,10 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     {
         return false;
     }
+
+    @Override
+    public String toString()
+    {
+        return "ConsumerTarget_1_0[linkSession=" + _link.getSession().toLogString() + "]";
+    }
 }

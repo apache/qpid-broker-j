@@ -50,6 +50,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.model.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -460,7 +461,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     {
                         returnVal.setException(t);
                     }
-                }, getTaskExecutor().getExecutor());
+                }, getTaskExecutor());
 
                 return returnVal;
             }
@@ -1742,10 +1743,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     public ListenableFuture<Void> registerConnectionAsync(final AMQPConnection<?> connection)
     {
-        return doOnConfigThread(new Callable<ListenableFuture<Void>>()
+        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Void> call() throws Exception
+            public ListenableFuture<Void> execute()
             {
                 _connections.add(connection);
 
@@ -1762,6 +1763,24 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
                 return Futures.immediateFuture(null);
             }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "register connection";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.valueOf(connection);
+            }
         });
 
     }
@@ -1774,10 +1793,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     public ListenableFuture<Void> deregisterConnectionAsync(final AMQPConnection<?> connection)
     {
-        return doOnConfigThread(new Callable<ListenableFuture<Void>>()
+        return doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
         {
             @Override
-            public ListenableFuture<Void> call() throws Exception
+            public ListenableFuture<Void> execute()
             {
                 if (_connections.remove(connection))
                 {
@@ -1787,6 +1806,24 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     }
                 }
                 return Futures.immediateFuture(null);
+            }
+
+            @Override
+            public String getObject()
+            {
+                return AbstractVirtualHost.this.toString();
+            }
+
+            @Override
+            public String getAction()
+            {
+                return "deregister connection";
+            }
+
+            @Override
+            public String getArguments()
+            {
+                return String.valueOf(connection);
             }
         });
     }

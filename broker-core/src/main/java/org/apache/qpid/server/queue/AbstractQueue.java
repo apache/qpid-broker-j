@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -49,6 +50,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageInfoImpl;
 import org.apache.qpid.server.model.CustomRestHeaders;
@@ -60,8 +62,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.Task;
-import org.apache.qpid.server.configuration.updater.TaskWithException;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -280,7 +280,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final QueueRunner _queueRunner;
     private boolean _closing;
-    private final ConcurrentMap<String,Task<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
 
     protected AbstractQueue(Map<String, Object> attributes, VirtualHostImpl virtualHost)
     {
@@ -485,10 +485,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         final List<String> filterArguments = filterValue.values().iterator().next();
                         // check the arguments are valid
                         filterFactory.newInstance(filterArguments);
-                        _defaultFiltersMap.put(name, new Task<MessageFilter>()
+                        _defaultFiltersMap.put(name, new Callable<MessageFilter>()
                         {
                             @Override
-                            public MessageFilter execute()
+                            public MessageFilter call()
                             {
                                 return filterFactory.newInstance(filterArguments);
                             }
@@ -682,15 +682,30 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         try
         {
-            return getTaskExecutor().run(new TaskWithException<QueueConsumerImpl, Exception>()
+            return getTaskExecutor().run(new Task<QueueConsumerImpl, Exception>()
             {
+                @Override
+                public QueueConsumerImpl execute() throws Exception
+                {
+                    return addConsumerInternal(target, filters, messageClass, consumerName, optionSet);
+                }
 
                 @Override
-                public QueueConsumerImpl execute()
-                        throws Exception
+                public String getObject()
                 {
+                    return AbstractQueue.this.toString();
+                }
 
-                    return addConsumerInternal(target, filters, messageClass, consumerName, optionSet);
+                @Override
+                public String getAction()
+                {
+                    return "add consumer";
+                }
+
+                @Override
+                public String getArguments()
+                {
+                    return "target=" + target + ", consumerName=" + consumerName + ", optionSet=" + optionSet;
                 }
             });
         }
@@ -809,11 +824,28 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             {
                 filters = new FilterManager();
             }
-            for (Map.Entry<String,Task<MessageFilter>> filter : _defaultFiltersMap.entrySet())
+            for (Map.Entry<String,Callable<MessageFilter>> filter : _defaultFiltersMap.entrySet())
             {
                 if(!filters.hasFilter(filter.getKey()))
                 {
-                    filters.add(filter.getKey(), filter.getValue().execute());
+                    MessageFilter f;
+                    try
+                    {
+                        f = filter.getValue().call();
+                    }
+                    catch (Exception e)
+                    {
+                        if (e instanceof RuntimeException)
+                        {
+                            throw (RuntimeException) e;
+                        }
+                        else
+                        {
+                            // Should never happen
+                            throw new ServerScopedRuntimeException(e);
+                        }
+                    }
+                    filters.add(filter.getKey(), f);
                 }
             }
         }
@@ -1966,7 +1998,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     _deleteFuture.setException(t);
                 }
-            }, getTaskExecutor().getExecutor());
+            }, getTaskExecutor());
 
         }
         return _deleteFuture;

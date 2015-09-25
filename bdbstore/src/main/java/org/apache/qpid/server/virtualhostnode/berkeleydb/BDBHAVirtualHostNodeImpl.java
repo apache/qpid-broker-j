@@ -57,11 +57,11 @@ import com.sleepycat.je.rep.StateChangeEvent;
 import com.sleepycat.je.rep.StateChangeListener;
 import com.sleepycat.je.rep.util.ReplicationGroupAdmin;
 import com.sleepycat.je.rep.utilint.HostPortPair;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.ConfigStoreMessages;
 import org.apache.qpid.server.logging.messages.HighAvailabilityMessages;
@@ -1028,8 +1028,14 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public void onReplicationNodeAddedToGroup(final ReplicationNode node)
         {
-            getTaskExecutor().submit(new VirtualHostNodeGroupTask()
+            getTaskExecutor().submit(new VirtualHostNodeGroupTask(node)
             {
+                @Override
+                public String getAction()
+                {
+                    return "remote node added";
+                }
+
                 @Override
                 public void perform()
                 {
@@ -1049,8 +1055,14 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public void onReplicationNodeRecovered(final ReplicationNode node)
         {
-            getTaskExecutor().submit(new VirtualHostNodeGroupTask()
+            getTaskExecutor().submit(new VirtualHostNodeGroupTask(node)
             {
+                @Override
+                public String getAction()
+                {
+                    return "remote node recovered";
+                }
+
                 @Override
                 public void perform()
                 {
@@ -1071,8 +1083,14 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         @Override
         public void onReplicationNodeRemovedFromGroup(final ReplicationNode node)
         {
-            getTaskExecutor().submit(new VirtualHostNodeGroupTask()
+            getTaskExecutor().submit(new VirtualHostNodeGroupTask(node)
             {
+                @Override
+                public String getAction()
+                {
+                    return "remote node removed";
+                }
+
                 @Override
                 public void perform()
                 {
@@ -1187,7 +1205,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             });
         }
 
-        private boolean processIntruderNode(ReplicationNode node)
+        private boolean processIntruderNode(final ReplicationNode node)
         {
             final String hostAndPort = node.getHostName() + ":" + node.getPort();
             getEventLogger().message(getGroupLogSubject(), HighAvailabilityMessages.INTRUDER_DETECTED(node.getName(), hostAndPort));
@@ -1211,13 +1229,31 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                                            BDBHAVirtualHostNodeImpl.this.getName(),
                                            _lastRole.get(),
                                            String.valueOf(BDBHAVirtualHostNodeImpl.this.getPermittedNodes()) ));
-                getTaskExecutor().submit(new Task<Void>()
+                getTaskExecutor().submit(new Task<Void, RuntimeException>()
                 {
                     @Override
                     public Void execute()
                     {
                         shutdownOnIntruder(hostAndPort);
                         return null;
+                    }
+
+                    @Override
+                    public String getObject()
+                    {
+                        return BDBHAVirtualHostNodeImpl.this.toString();
+                    }
+
+                    @Override
+                    public String getAction()
+                    {
+                        return "intruder detected";
+                    }
+
+                    @Override
+                    public String getArguments()
+                    {
+                        return "ReplicationNode[" + node.getName() + " from " + hostAndPort + "]";
                     }
                 });
 
@@ -1302,8 +1338,15 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         });
     }
 
-    private abstract class VirtualHostNodeGroupTask implements Task<Void>
+    private abstract class VirtualHostNodeGroupTask implements Task<Void, RuntimeException>
     {
+        private final ReplicationNode _replicationNode;
+
+        public VirtualHostNodeGroupTask(ReplicationNode replicationNode)
+        {
+            _replicationNode = replicationNode;
+        }
+
         @Override
         public Void execute()
         {
@@ -1316,6 +1359,18 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                     return null;
                 }
             });
+        }
+
+        @Override
+        public String getObject()
+        {
+            return BDBHAVirtualHostNodeImpl.this.toString();
+        }
+
+        @Override
+        public String getArguments()
+        {
+            return "ReplicationNode[" + _replicationNode.getName() + " from " + _replicationNode.getHostName() + ":" + _replicationNode.getPort() + "]";
         }
 
         abstract void perform();

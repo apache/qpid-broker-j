@@ -83,7 +83,6 @@ public class AMQChannelTest extends QpidTestCase
         super.setUp();
 
         TaskExecutor taskExecutor = mock(TaskExecutor.class);
-        when(taskExecutor.getExecutor()).thenReturn(mock(Executor.class));
 
         _broker = mock(Broker.class);
         when(_broker.getEventLogger()).thenReturn(mock(EventLogger.class));
