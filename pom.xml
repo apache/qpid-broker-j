@@ -305,9 +305,8 @@
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>build/**</exclude>
-            <exclude>lib/**</exclude>
             <exclude>test-profiles/test_resources/ssl/**</exclude>
+            <exclude>specs/**</exclude>
           </excludes>
         </configuration>
       </plugin>
