@@ -28,6 +28,8 @@ import java.net.URL;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,6 +79,12 @@ public class CommonProperties
     /** Holds the product version. */
     private static final String releaseVersion;
 
+    /** Holds the product major version - derived from the releaseVersion */
+    private static final int releaseVersionMajor;
+
+    /** Holds the product minor version - derived from the releaseVersion */
+    private static final int releaseVersionMinor;
+
     /** Holds the source code revision. */
     private static final String buildVersion;
 
@@ -92,6 +100,19 @@ public class CommonProperties
         productName = properties.getProperty(PRODUCT_NAME_PROPERTY, DEFAULT);
 
         String version = properties.getProperty(RELEASE_VERSION_PROPERTY, DEFAULT);
+        Pattern pattern = Pattern.compile("(\\d+)\\.(\\d+).*");
+        Matcher m = pattern.matcher(version);
+        if (m.matches())
+        {
+            releaseVersionMajor = Integer.parseInt(m.group(1));
+            releaseVersionMinor = Integer.parseInt(m.group(2));
+        }
+        else
+        {
+            LOGGER.warn("Failed to parse major and minor release number from '{}')", version);
+            releaseVersionMajor = -1;
+            releaseVersionMinor = -1;
+        }
 
         boolean loadFromFile = true;
         String initialProperties = System.getProperty("qpid.common_properties_file");
@@ -146,6 +167,26 @@ public class CommonProperties
     }
 
     /**
+     * Gets the product major version.
+     *
+     * @return The product major version.
+     */
+    public static int getReleaseVersionMajor()
+    {
+        return releaseVersionMajor;
+    }
+
+    /**
+     * Gets the product minor version.
+     *
+     * @return The product version.
+     */
+    public static int getReleaseVersionMinor()
+    {
+        return releaseVersionMinor;
+    }
+
+    /**
      * Gets the source code revision.
      *
      * @return The source code revision.
@@ -195,13 +236,13 @@ public class CommonProperties
                 }
                 catch (IOException e)
                 {
-                    LOGGER.warn("Could not load properties file '" + resourceLocation + "'.", e);
+                    LOGGER.warn("Could not load properties file '{}'.", resourceLocation, e);
                 }
             }
         }
         catch (MalformedURLException e)
         {
-            LOGGER.warn("Could not open properties file '" + resourceLocation + "'.", e);
+            LOGGER.warn("Could not open properties file '{}'.", resourceLocation, e);
         }
     }
 

@@ -28,14 +28,6 @@ import java.util.Enumeration;
 
 public class QpidConnectionMetaData implements ConnectionMetaData
 {
-
-    private AMQConnection con;
-
-    QpidConnectionMetaData(AMQConnection conn)
-    {
-        this.con = conn;
-    }
-
     public int getJMSMajorVersion() throws JMSException
     {
         return 1;
@@ -63,34 +55,28 @@ public class QpidConnectionMetaData implements ConnectionMetaData
 
     public int getProviderMajorVersion() throws JMSException
     {
-        return con.getProtocolVersion().getMajorVersion();
+        return CommonProperties.getReleaseVersionMajor();
     }
 
     public int getProviderMinorVersion() throws JMSException
     {
-        return con.getProtocolVersion().getMinorVersion();
+        return CommonProperties.getReleaseVersionMinor();
     }
 
     public String getProviderVersion() throws JMSException
     {
-        return CommonProperties.getProductName() + " (Client: [" + getClientVersion() + "] ; Broker [" + getBrokerVersion() + "] ; Protocol: [ "
-               + getProtocolVersion() + "] )";
-    }
-
-    private String getProtocolVersion()
-    {
-        return con.getProtocolVersion().toString();
+        return CommonProperties.getProductName()
+               + " (Client: [" + CommonProperties.getReleaseVersion() + "])";
     }
 
     public String getBrokerVersion()
     {
-        // TODO - get broker version
-        return "<unkown>";
+        return "<unknown>";
     }
 
     public String getClientVersion()
     {
-        return CommonProperties.getBuildVersion();
+        return CommonProperties.getReleaseVersion();
     }
 
 

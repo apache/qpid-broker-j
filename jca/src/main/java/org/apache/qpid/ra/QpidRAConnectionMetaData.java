@@ -41,9 +41,6 @@ public class QpidRAConnectionMetaData implements ConnectionMetaData
    /** The logger */
    private static final Logger _log = LoggerFactory.getLogger(QpidRAConnectionMetaData.class);
 
-   private static final String PROVIDER_VERSION ;
-   private static final int PROVIDER_MAJOR ;
-   private static final int PROVIDER_MINOR ;
    private static final String[] JMSX_PROPERTY_NAMES ;
 
    /**
@@ -124,7 +121,7 @@ public class QpidRAConnectionMetaData implements ConnectionMetaData
          _log.trace("getProviderVersion()");
       }
 
-      return PROVIDER_VERSION ;
+      return CommonProperties.getReleaseVersion() ;
    }
 
    /**
@@ -138,7 +135,7 @@ public class QpidRAConnectionMetaData implements ConnectionMetaData
          _log.trace("getProviderMajorVersion()");
       }
 
-      return PROVIDER_MAJOR ;
+      return CommonProperties.getReleaseVersionMajor() ;
    }
 
    /**
@@ -152,7 +149,7 @@ public class QpidRAConnectionMetaData implements ConnectionMetaData
          _log.trace("getProviderMinorVersion()");
       }
 
-      return PROVIDER_MINOR ;
+      return CommonProperties.getReleaseVersionMinor() ;
    }
 
    /**
@@ -167,22 +164,6 @@ public class QpidRAConnectionMetaData implements ConnectionMetaData
 
    static
    {
-	   final String version = CommonProperties.getReleaseVersion() ;
-	   int major = -1 ;
-	   int minor = -1 ;
-	   if (version != null)
-	   {
-		   final int separator = version.indexOf('.') ;
-		   if (separator != -1)
-		   {
-			   major = parseInt(version.substring(0, separator), "major") ;
-			   minor = parseInt(version.substring(separator+1, version.length()), "minor") ;
-		   }
-	   }
-	   PROVIDER_VERSION = version ;
-	   PROVIDER_MAJOR = major ;
-	   PROVIDER_MINOR = minor ;
-
       final CustomJMSXProperty[] properties = CustomJMSXProperty.values();
       final String[] names = new String[properties.length] ;
       int count = 0 ;
@@ -191,18 +172,5 @@ public class QpidRAConnectionMetaData implements ConnectionMetaData
           names[count++] = property.toString() ;
       }
 	   JMSX_PROPERTY_NAMES = names ;
-   }
-
-   private static int parseInt(final String value, final String name)
-   {
-	   try
-	   {
-		   return Integer.parseInt(value) ;
-	   }
-	   catch (final NumberFormatException nfe)
-	   {
-		   _log.warn("Failed to parse " + name + ": " + value) ;
-		   return -1 ;
-	   }
    }
 }

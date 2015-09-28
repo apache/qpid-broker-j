@@ -20,7 +20,10 @@
  */
 package org.apache.qpid.test.unit.client.connection;
 
+import java.util.Enumeration;
+
 import javax.jms.Connection;
+import javax.jms.ConnectionMetaData;
 import javax.jms.QueueSession;
 import javax.jms.TopicSession;
 
@@ -189,7 +192,7 @@ public class ConnectionTest extends QpidBrokerTestCase
         {
             if (!(amqe instanceof AMQUnresolvedAddressException))
             {
-                fail("Correct exception not thrown. Excpected 'AMQUnresolvedAddressException' got: " + amqe);
+                fail("Correct exception not thrown. Expected 'AMQUnresolvedAddressException' got: " + amqe);
             }
         }
         finally
@@ -216,7 +219,7 @@ public class ConnectionTest extends QpidBrokerTestCase
         {
             if (!(amqe instanceof AMQConnectionFailureException))
             {
-                fail("Correct exception not thrown. Excpected 'AMQConnectionFailureException' got: " + amqe);
+                fail("Correct exception not thrown. Expected 'AMQConnectionFailureException' got: " + amqe);
             }
         }
         finally
@@ -337,7 +340,8 @@ public class ConnectionTest extends QpidBrokerTestCase
         }
         catch (Exception e)
         {
-            fail("Unexpected exception thrown, client id was not unique but usernames were different! " + e.getMessage());
+            fail("Unexpected exception thrown, client id was not unique but usernames were different! "
+                 + e.getMessage());
         }
     }
 
@@ -368,5 +372,22 @@ public class ConnectionTest extends QpidBrokerTestCase
                 fail("Incorrect Exception thrown! The exception thrown is : " + e.getMessage());
             }
         }
+    }
+
+    public void testConnectionMetadata() throws Exception
+    {
+        Connection con = getConnection();
+        ConnectionMetaData metaData = con.getMetaData();
+        assertNotNull(metaData);
+
+        assertNotNull("Provider version unexpectedly null", metaData.getProviderVersion());
+        assertTrue("Provider version unexpectedly empty", metaData.getProviderVersion().length() > 0);
+
+        assertTrue("Provider major version has unexpected value", metaData.getProviderMajorVersion() > -1);
+        assertTrue("Provider minor version has unexpected value", metaData.getProviderMinorVersion() > -1);
+
+        Enumeration names = metaData.getJMSXPropertyNames();
+        assertNotNull("JMSXPropertyNames unexpectedly null", names);
+        assertTrue("JMSXPropertyNames should have at least one name", names.hasMoreElements());
     }
 }

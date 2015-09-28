@@ -474,7 +474,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             makeConnection();
         }
 
-        _connectionMetaData = new QpidConnectionMetaData(this);
+        _connectionMetaData = new QpidConnectionMetaData();
     }
 
     private void makeConnection() throws QpidException
