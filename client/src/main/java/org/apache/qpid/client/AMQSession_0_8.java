@@ -636,13 +636,16 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         getProtocolHandler().syncWrite(exchangeDeclare, ExchangeDeclareOkBody.class);
     }
 
-    public void sendExchangeDelete(final String name) throws QpidException, FailoverException
+    @Override
+    public void sendExchangeDelete(final String name, boolean nowait) throws QpidException, FailoverException
     {
+        //The 'nowait' parameter is only used on the 0-10 path, it is ignored on the 0-8/0-9/0-9-1 path
+
         ExchangeDeleteBody body =
                 getMethodRegistry().createExchangeDeleteBody(getTicket(), name, false, false);
-        AMQFrame exchangeDeclare = body.generateFrame(getChannelId());
+        AMQFrame exchangeDelete = body.generateFrame(getChannelId());
 
-        getProtocolHandler().syncWrite(exchangeDeclare, ExchangeDeclareOkBody.class);
+        getProtocolHandler().syncWrite(exchangeDelete, ExchangeDeleteOkBody.class);
     }
 
     private void sendQueueDeclare(final AMQDestination amqd, boolean passive) throws QpidException, FailoverException
@@ -679,7 +682,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     protected String declareQueue(final AMQDestination amqd, final boolean noLocal,
                                   final boolean nowait, final boolean passive) throws QpidException
     {
-        //The 'noWait' parameter is only used on the 0-10 path, it is ignored on the 0-8/0-9/0-9-1 path
+        //The 'nowait' parameter is only used on the 0-10 path, it is ignored on the 0-8/0-9/0-9-1 path
 
         final AMQProtocolHandler protocolHandler = getProtocolHandler();
         return new FailoverNoopSupport<String, QpidException>(
@@ -706,7 +709,7 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
                                                                          queueName,
                                                                          false,
                                                                          false,
-                                                                         true);
+                                                                         false);
         AMQFrame queueDeleteFrame = body.generateFrame(getChannelId());
 
         getProtocolHandler().syncWrite(queueDeleteFrame, QueueDeleteOkBody.class);
@@ -1280,12 +1283,11 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         {
             if (isExchangeExist(dest,false))
             {
-
                 new FailoverNoopSupport<Object, QpidException>(new FailoverProtectedOperation<Object, QpidException>()
                 {
                     public Object execute() throws QpidException, FailoverException
                     {
-                        sendExchangeDelete(dest.getAddressName());
+                        sendExchangeDelete(dest.getAddressName(), false);
                         return null;
                     }
                 }, getAMQConnection()).execute();
@@ -1296,7 +1298,6 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
         {
             if (isQueueExist(dest,false))
             {
-
                 new FailoverNoopSupport<Object, QpidException>(new FailoverProtectedOperation<Object, QpidException>()
                 {
                     public Object execute() throws QpidException, FailoverException

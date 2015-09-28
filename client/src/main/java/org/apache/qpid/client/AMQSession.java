@@ -1588,6 +1588,28 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         declareExchange(name, type, nowait, false, false, false);
     }
 
+    @Override
+    public void deleteExchange(final String exchangeName) throws JMSException
+    {
+        try
+        {
+            new FailoverRetrySupport<>(new FailoverProtectedOperation<Object, QpidException>()
+            {
+                public Object execute() throws QpidException, FailoverException
+                {
+                    sendExchangeDelete(exchangeName, false);
+                    return null;
+                }
+            }, _connection).execute();
+        }
+        catch (QpidException e)
+        {
+            throw toJMSException("The exchange deletion failed: " + e.getMessage(), e);
+        }
+    }
+
+    abstract void sendExchangeDelete(final String name, final boolean nowait) throws QpidException, FailoverException;
+
     abstract public void sync() throws QpidException;
 
     public int getAcknowledgeMode()
@@ -2918,9 +2940,9 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
      * @param queueName The name of the queue to delete.
      *
      * @throws JMSException If the queue could not be deleted for any reason.
-     * TODO  Be aware of possible changes to parameter order as versions change.
      */
-    protected void deleteQueue(final String queueName) throws JMSException
+    @Override
+    public void deleteQueue(final String queueName) throws JMSException
     {
         try
         {

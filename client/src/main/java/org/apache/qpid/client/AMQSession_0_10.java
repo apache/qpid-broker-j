@@ -801,8 +801,6 @@ public class AMQSession_0_10 extends AMQSession<BasicMessageConsumer_0_10, Basic
     public void sendQueueDelete(final String queueName) throws QpidException, FailoverException
     {
         getQpidSession().queueDelete(queueName);
-        // ifEmpty --> false
-        // ifUnused --> false
         // We need to sync so that we get notify of an error.
         sync();
     }

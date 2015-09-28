@@ -64,7 +64,7 @@ public class QueueDeclareTest extends QpidBrokerTestCase
         AMQDestination durable = (AMQDestination) _session.createQueue(String.format(format, getTestQueueName(), true));
         AMQDestination nondurable = (AMQDestination) _session.createQueue(String.format(format, getTestQueueName(), false));
 
-        verifyDurabiltyIgnoreIfQueueExists(durable, nondurable);
+        verifyDurabilityIgnoreIfQueueExists(durable, nondurable);
     }
 
     public void testDeclareIgnoresDurableFlagIfNonDurableQueueAlreadyExists() throws Exception
@@ -73,10 +73,11 @@ public class QueueDeclareTest extends QpidBrokerTestCase
         AMQDestination nondurable = (AMQDestination) _session.createQueue(String.format(format, getTestQueueName(), false));
         AMQDestination durable = (AMQDestination) _session.createQueue(String.format(format, getTestQueueName(), true));
 
-        verifyDurabiltyIgnoreIfQueueExists(nondurable, durable);
+        verifyDurabilityIgnoreIfQueueExists(nondurable, durable);
     }
 
-    private void verifyDurabiltyIgnoreIfQueueExists(final AMQDestination firstDeclare, final AMQDestination secondDeclare) throws Exception
+    private void verifyDurabilityIgnoreIfQueueExists(final AMQDestination firstDeclare,
+                                                     final AMQDestination secondDeclare) throws Exception
     {
         _session.declareAndBind(firstDeclare);
 

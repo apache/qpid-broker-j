@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 import javax.security.sasl.SaslException;
@@ -161,6 +162,15 @@ public class AMQPConnection_0_8
     private volatile boolean _closeWhenNoRoute;
     private boolean _compressionSupported;
     private int _messageCompressionThreshold;
+
+    /**
+     * QPID-6744 - Older queue clients (<=0.32) incorrectly set the nowait flag false on the queue.delete method
+     * and then await regardless.  If we detect an old Qpid client, we send the queue.delete-ok response
+     * regardless of the queue.delete flag request made by the client.
+     */
+    private volatile boolean _sendQueueDeleteOkRegardless = true;
+    private final Pattern _connectionQueueDeleteNoWaitVerRegexp;
+
     private int _currentClassId;
     private int _currentMethodId;
     private int _binaryDataLimit;
@@ -183,6 +193,9 @@ public class AMQPConnection_0_8
         _binaryDataLimit = getBroker().getContextKeys(false).contains(BROKER_DEBUG_BINARY_DATA_LENGTH)
                 ? getBroker().getContextValue(Integer.class, BROKER_DEBUG_BINARY_DATA_LENGTH)
                 : DEFAULT_DEBUG_BINARY_DATA_LENGTH;
+        String queueDeleteNoWaitRegexp = getBroker().getContextKeys(false).contains(Broker.CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP)
+                ? getBroker().getContextValue(String.class, Broker.CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP): "";
+        _connectionQueueDeleteNoWaitVerRegexp = Pattern.compile(queueDeleteNoWaitRegexp);
 
         int maxMessageSize = port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
         _maxMessageSize = (maxMessageSize > 0) ? (long) maxMessageSize : Long.MAX_VALUE;
@@ -680,7 +693,7 @@ public class AMQPConnection_0_8
     @Override
     public String toString()
     {
-        return _network.getRemoteAddress() + "(" + (getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName() + ")");
+        return _network.getRemoteAddress() + "(" + ((getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName()) + ")");
     }
 
     private String getLocalFQDN()
@@ -706,6 +719,16 @@ public class AMQPConnection_0_8
         _saslServer = saslServer;
     }
 
+    public boolean isSendQueueDeleteOkRegardless()
+    {
+        return _sendQueueDeleteOkRegardless;
+    }
+
+    void setSendQueueDeleteOkRegardless(boolean sendQueueDeleteOkRegardless)
+    {
+        _sendQueueDeleteOkRegardless = sendQueueDeleteOkRegardless;
+    }
+
     private void setClientProperties(FieldTable clientProperties)
     {
         if (clientProperties != null)
@@ -714,26 +737,35 @@ public class AMQPConnection_0_8
             if (closeWhenNoRoute != null)
             {
                 _closeWhenNoRoute = Boolean.parseBoolean(closeWhenNoRoute);
-                if(_logger.isDebugEnabled())
-                {
-                    _logger.debug("Client set closeWhenNoRoute=" + _closeWhenNoRoute + " for protocol engine " + this);
-                }
+                _logger.debug("Client set closeWhenNoRoute={} for connection {}", _closeWhenNoRoute, this);
             }
             String compressionSupported = clientProperties.getString(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED);
             if (compressionSupported != null)
             {
                 _compressionSupported = Boolean.parseBoolean(compressionSupported);
-                if(_logger.isDebugEnabled())
-                {
-                    _logger.debug("Client set compressionSupported=" + _compressionSupported + " for protocol engine " + this);
-                }
+                _logger.debug("Client set compressionSupported={} for connection {}", _compressionSupported, this);
             }
 
             String clientId = clientProperties.getString(ConnectionStartProperties.CLIENT_ID_0_8);
+            String clientVersion = clientProperties.getString(ConnectionStartProperties.VERSION_0_8);
+            String clientProduct = clientProperties.getString(ConnectionStartProperties.PRODUCT);
+            String remoteProcessPid = clientProperties.getString(ConnectionStartProperties.PID);
 
-            setClientVersion(clientProperties.getString(ConnectionStartProperties.VERSION_0_8));
-            setClientProduct(clientProperties.getString(ConnectionStartProperties.PRODUCT));
-            setRemoteProcessPid(clientProperties.getString(ConnectionStartProperties.PID));
+            boolean mightBeQpidClient = clientProduct == null ||
+                                        clientProduct.toLowerCase().contains("qpid") ||
+                                        clientProduct.toLowerCase().equals("unknown");
+            boolean sendQueueDeleteOkRegardless = mightBeQpidClient && (clientVersion == null || _connectionQueueDeleteNoWaitVerRegexp.matcher(clientVersion).matches());
+
+            setSendQueueDeleteOkRegardless(sendQueueDeleteOkRegardless);
+            if (sendQueueDeleteOkRegardless)
+            {
+                _logger.debug("Peer is an older Qpid client, queue delete-ok response will be sent"
+                              + " regardless for connection {}", this);
+            }
+
+            setClientVersion(clientVersion);
+            setClientProduct(clientProduct);
+            setRemoteProcessPid(remoteProcessPid);
             setClientId(clientId == null ? UUID.randomUUID().toString() : clientId);
 
             getEventLogger().message(ConnectionMessages.OPEN(getClientId(),

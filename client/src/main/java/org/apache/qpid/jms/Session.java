@@ -83,7 +83,7 @@ public interface Session extends TopicSession, QueueSession
 
     /**
      * Create a producer
-     * @param destination     
+     * @param destination
      * @param immediate the value of the immediate flag used by default on the producer
      * @return
      * @throws JMSException
@@ -100,4 +100,24 @@ public interface Session extends TopicSession, QueueSession
     String getTemporaryQueueExchangeName();
 
     ListMessage createListMessage() throws JMSException;
+
+    /**
+     * Deletes the queue identified by the given name. If the queue does not exist
+     * a JMSException with error code 404 will be thrown and this Session will be closed.
+     *
+     * @param queueName name of the queue
+     *
+     * @throws JMSException
+     */
+    void deleteQueue(String queueName) throws JMSException;
+
+    /**
+     * Deletes the exchange identified by the given name. If the exchange does not exist
+     * a JMSException with error code 404 will be thrown and this Session will be closed.
+     *
+     * @param exchangeName name of the exchange
+     *
+     * @throws JMSException
+     */
+    void deleteExchange(String exchangeName) throws JMSException;
 }

@@ -21,8 +21,6 @@
 package org.apache.qpid.server.model;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -138,6 +136,10 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String MESSAGE_COMPRESSION_THRESHOLD_SIZE = "connection.messageCompressionThresholdSize";
     @ManagedContextDefault(name = MESSAGE_COMPRESSION_THRESHOLD_SIZE)
     int DEFAULT_MESSAGE_COMPRESSION_THRESHOLD_SIZE = 102400;
+
+    String CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP = "connection.queueDeleteNoWaitVersionRegexp";
+    @ManagedContextDefault(name = CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP)
+    String DEFAULT_CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP = "^0\\..*$";
 
     String BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE = "broker.directByteBufferPoolSize";
     @ManagedContextDefault(name = BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE)

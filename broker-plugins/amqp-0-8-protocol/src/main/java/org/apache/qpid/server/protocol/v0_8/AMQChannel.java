@@ -3106,7 +3106,10 @@ public class AMQChannel
 
                         ExchangeDeleteOkBody responseBody = _connection.getMethodRegistry().createExchangeDeleteOkBody();
 
-                        _connection.writeFrame(responseBody.generateFrame(getChannelId()));
+                        if (!nowait)
+                        {
+                            _connection.writeFrame(responseBody.generateFrame(getChannelId()));
+                        }
                     }
                     catch (ExchangeIsAlternateException e)
                     {
@@ -3485,9 +3488,12 @@ public class AMQChannel
                     {
                         int purged = virtualHost.removeQueue(queue);
 
-                        MethodRegistry methodRegistry = _connection.getMethodRegistry();
-                        QueueDeleteOkBody responseBody = methodRegistry.createQueueDeleteOkBody(purged);
-                        _connection.writeFrame(responseBody.generateFrame(getChannelId()));
+                        if (!nowait || _connection.isSendQueueDeleteOkRegardless())
+                        {
+                            MethodRegistry methodRegistry = _connection.getMethodRegistry();
+                            QueueDeleteOkBody responseBody = methodRegistry.createQueueDeleteOkBody(purged);
+                            _connection.writeFrame(responseBody.generateFrame(getChannelId()));
+                        }
                     }
                     catch (AccessControlException e)
                     {
