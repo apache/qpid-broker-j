@@ -64,15 +64,20 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
 
     private boolean incrementReference()
     {
-        if(_refCountUpdater.incrementAndGet(this) <= 0)
+        do
         {
-            _refCountUpdater.decrementAndGet(this);
-            return false;
+            int count = _refCountUpdater.get(this);
+
+            if (count < 0)
+            {
+                return false;
+            }
+            else if (_refCountUpdater.compareAndSet(this, count, count + 1))
+            {
+                return true;
+            }
         }
-        else
-        {
-            return true;
-        }
+        while (true);
     }
 
     /**
@@ -82,34 +87,37 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
      */
     private void decrementReference()
     {
-        int count = _refCountUpdater.decrementAndGet(this);
-
-        // note that the operation of decrementing the reference count and then removing the message does not
-        // have to be atomic since the ref count starts at 1 and the exchange itself decrements that after
-        // the message has been passed to all queues. i.e. we are
-        // not relying on the all the increments having taken place before the delivery manager decrements.
-        if (count == 0)
+        boolean updated;
+        do
         {
-            // set the reference count way below 0 so that we can detect that the message has been deleted
-            // this is to guard against the message being spontaneously recreated (from the mgmt console)
-            // by copying from other queues at the same time as it is being removed.
-            _refCountUpdater.set(this,Integer.MIN_VALUE/2);
+            int count = _refCountUpdater.get(this);
+            int newCount = count - 1;
 
-            // must check if the handle is null since there may be cases where we decide to throw away a message
-            // and the handle has not yet been constructed
-            if (_handle != null)
+            if (newCount > 0)
             {
-                _handle.remove();
+                updated = _refCountUpdater.compareAndSet(this, count, newCount);
             }
-        }
-        else
-        {
-            if (count < 0)
+            else if (newCount == 0)
+            {
+                // set the reference count below 0 so that we can detect that the message has been deleted
+                updated = _refCountUpdater.compareAndSet(this, count, -1);
+                if (updated)
+                {
+                    // must check if the handle is null since there may be cases where we decide to throw away a message
+                    // and the handle has not yet been constructed
+                    if (_handle != null)
+                    {
+                        _handle.remove();
+                    }
+                }
+            }
+            else
             {
                 throw new ServerScopedRuntimeException("Reference count for message id " + debugIdentity()
-                                                        + " has gone below 0.");
+                                                       + " has gone below 0.");
             }
         }
+        while (!updated);
     }
 
     public String debugIdentity()
