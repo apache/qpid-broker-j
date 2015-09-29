@@ -137,9 +137,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedContextDefault(name = MESSAGE_COMPRESSION_THRESHOLD_SIZE)
     int DEFAULT_MESSAGE_COMPRESSION_THRESHOLD_SIZE = 102400;
 
-    String CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP = "connection.queueDeleteNoWaitVersionRegexp";
-    @ManagedContextDefault(name = CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP)
-    String DEFAULT_CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP = "^0\\..*$";
+    String SEND_QUEUE_DELETE_OK_REGARDLESS_CLIENT_VER_REGEXP = "connection.sendQueueDeleteOkRegardlessClientVerRegexp";
+    @ManagedContextDefault(name = SEND_QUEUE_DELETE_OK_REGARDLESS_CLIENT_VER_REGEXP)
+    String DEFAULT_SEND_QUEUE_DELETE_OK_REGARDLESS_CLIENT_VER_REGEXP = "^0\\..*$";
 
     String BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE = "broker.directByteBufferPoolSize";
     @ManagedContextDefault(name = BROKER_DIRECT_BYTE_BUFFER_POOL_SIZE)

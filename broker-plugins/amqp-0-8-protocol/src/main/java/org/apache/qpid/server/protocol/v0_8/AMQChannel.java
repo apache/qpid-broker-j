@@ -3104,10 +3104,10 @@ public class AMQChannel
                     {
                         exchange.delete();
 
-                        ExchangeDeleteOkBody responseBody = _connection.getMethodRegistry().createExchangeDeleteOkBody();
 
                         if (!nowait)
                         {
+                            ExchangeDeleteOkBody responseBody = _connection.getMethodRegistry().createExchangeDeleteOkBody();
                             _connection.writeFrame(responseBody.generateFrame(getChannelId()));
                         }
                     }

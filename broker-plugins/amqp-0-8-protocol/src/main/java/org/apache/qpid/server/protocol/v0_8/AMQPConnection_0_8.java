@@ -164,12 +164,12 @@ public class AMQPConnection_0_8
     private int _messageCompressionThreshold;
 
     /**
-     * QPID-6744 - Older queue clients (<=0.32) incorrectly set the nowait flag false on the queue.delete method
-     * and then await regardless.  If we detect an old Qpid client, we send the queue.delete-ok response
-     * regardless of the queue.delete flag request made by the client.
+     * QPID-6744 - Older queue clients (<=0.32) set the nowait flag false on the queue.delete method and then
+     * incorrectly await regardless.  If we detect an old Qpid client, we send the queue.delete-ok response regardless
+     * of the queue.delete flag request made by the client.
      */
-    private volatile boolean _sendQueueDeleteOkRegardless = true;
-    private final Pattern _connectionQueueDeleteNoWaitVerRegexp;
+    private volatile boolean _sendQueueDeleteOkRegardless;
+    private final Pattern _sendQueueDeleteOkRegardlessClientVerRegexp;
 
     private int _currentClassId;
     private int _currentMethodId;
@@ -193,9 +193,9 @@ public class AMQPConnection_0_8
         _binaryDataLimit = getBroker().getContextKeys(false).contains(BROKER_DEBUG_BINARY_DATA_LENGTH)
                 ? getBroker().getContextValue(Integer.class, BROKER_DEBUG_BINARY_DATA_LENGTH)
                 : DEFAULT_DEBUG_BINARY_DATA_LENGTH;
-        String queueDeleteNoWaitRegexp = getBroker().getContextKeys(false).contains(Broker.CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP)
-                ? getBroker().getContextValue(String.class, Broker.CONNECTION_QUEUE_DELETE_NOWAIT_VERSION_REGEXP): "";
-        _connectionQueueDeleteNoWaitVerRegexp = Pattern.compile(queueDeleteNoWaitRegexp);
+        String sendQueueDeleteOkRegardlessRegexp = getBroker().getContextKeys(false).contains(Broker.SEND_QUEUE_DELETE_OK_REGARDLESS_CLIENT_VER_REGEXP)
+                ? getBroker().getContextValue(String.class, Broker.SEND_QUEUE_DELETE_OK_REGARDLESS_CLIENT_VER_REGEXP): "";
+        _sendQueueDeleteOkRegardlessClientVerRegexp = Pattern.compile(sendQueueDeleteOkRegardlessRegexp);
 
         int maxMessageSize = port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
         _maxMessageSize = (maxMessageSize > 0) ? (long) maxMessageSize : Long.MAX_VALUE;
@@ -751,10 +751,10 @@ public class AMQPConnection_0_8
             String clientProduct = clientProperties.getString(ConnectionStartProperties.PRODUCT);
             String remoteProcessPid = clientProperties.getString(ConnectionStartProperties.PID);
 
-            boolean mightBeQpidClient = clientProduct == null ||
-                                        clientProduct.toLowerCase().contains("qpid") ||
-                                        clientProduct.toLowerCase().equals("unknown");
-            boolean sendQueueDeleteOkRegardless = mightBeQpidClient && (clientVersion == null || _connectionQueueDeleteNoWaitVerRegexp.matcher(clientVersion).matches());
+            boolean mightBeQpidClient = clientProduct != null &&
+                                        (clientProduct.toLowerCase().contains("qpid") || clientProduct.toLowerCase() .equals("unknown"));
+            boolean sendQueueDeleteOkRegardless = mightBeQpidClient &&(clientVersion == null || _sendQueueDeleteOkRegardlessClientVerRegexp
+                    .matcher(clientVersion).matches());
 
             setSendQueueDeleteOkRegardless(sendQueueDeleteOkRegardless);
             if (sendQueueDeleteOkRegardless)
