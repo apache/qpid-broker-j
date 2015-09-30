@@ -112,7 +112,7 @@ public class SASLSender extends SASLEncryptor implements ByteBufferSender
     public void securityLayerEstablished()
     {
         appData = new byte[getSendBuffSize()];
-       LOGGER.debug("SASL Security Layer Established");
+        LOGGER.debug("SASL Security Layer Established");
     }
 
 }
