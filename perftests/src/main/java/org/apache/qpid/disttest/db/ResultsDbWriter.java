@@ -413,7 +413,7 @@ public class ResultsDbWriter implements ResultsWriter
             statement.setDouble(columnIndex++, participantResult.getLatencyStandardDeviation());
             statement.setDouble(columnIndex++, participantResult.getMessageThroughput());
             statement.setString(columnIndex++, participantResult.getProviderVersion());
-            statement.setString(columnIndex++, participantResult.getProviderVersion());
+            statement.setString(columnIndex++, participantResult.getProtocolVersion());
 
             statement.setString(columnIndex++, _runId);
             statement.setTimestamp(columnIndex++, new Timestamp(_clock.currentTimeMillis()));
