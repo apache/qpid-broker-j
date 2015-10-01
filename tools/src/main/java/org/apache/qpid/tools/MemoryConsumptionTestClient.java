@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.tools;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.jms.BytesMessage;
@@ -41,10 +43,15 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanException;
 import javax.management.MBeanServerConnection;
+import javax.management.MalformedObjectNameException;
 import javax.management.Notification;
 import javax.management.NotificationListener;
 import javax.management.ObjectName;
+import javax.management.ReflectionException;
 import javax.management.openmbean.CompositeData;
 import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
@@ -53,7 +60,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
-import com.sun.management.GarbageCollectionNotificationInfo;
 import org.apache.qpid.client.AMQConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +102,7 @@ public class MemoryConsumptionTestClient
     private static final String JMX_PORT_DEFAULT = "8999";
     private static final String JMX_GARBAGE_COLLECTOR_MBEAN = "gc";
 
-    public static void main(String[] args)
+    public static void main(String[] args) throws Exception
     {
         Map<String,String> options = new HashMap<>();
         options.put(CONNECTIONS_ARG, CONNECTIONS_DEFAULT);
@@ -144,7 +150,7 @@ public class MemoryConsumptionTestClient
     }
 
 
-    private void runTest(Map<String,String> options)
+    private void runTest(Map<String,String> options) throws Exception
     {
         int numConnections = Integer.parseInt(options.get(CONNECTIONS_ARG));
         int numSessions = Integer.parseInt(options.get(SESSIONS_ARG));
@@ -158,28 +164,22 @@ public class MemoryConsumptionTestClient
 
         LOGGER.info("Using options: " + options);
 
-        try
-        {
-            // Load JNDI properties
-            Properties properties = new Properties();
-            try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("stress-test-client.properties"))
-            {
-                properties.load(is);
-            }
 
-            ConnectionFactory conFac = createConnectionFactory(properties);
-            Destination destination = ensureQueueCreated(queueString, conFac);
-            Map<Connection, List<Session>> connectionsAndSessions = openConnectionsAndSessions(numConnections, numSessions, transacted, conFac);
-            publish(numMessage, messageSize, numProducers, deliveryMode, destination, connectionsAndSessions);
-            MemoryStatistic memoryStatistics = collectMemoryStatistics(options);
-            generateCSV(memoryStatistics, numConnections, numSessions, transacted, numMessage, messageSize, numProducers, deliveryMode);
-            purgeQueue(conFac, queueString, receiveTimeout);
-            closeConnections(connectionsAndSessions.keySet());
-        }
-        catch (Exception e)
+        // Load JNDI properties
+        Properties properties = new Properties();
+        try(InputStream is = this.getClass().getClassLoader().getResourceAsStream("stress-test-client.properties"))
         {
-            LOGGER.error("Exception on running the test", e);
+            properties.load(is);
         }
+
+        ConnectionFactory conFac = createConnectionFactory(properties);
+        Destination destination = ensureQueueCreated(queueString, conFac);
+        Map<Connection, List<Session>> connectionsAndSessions = openConnectionsAndSessions(numConnections, numSessions, transacted, conFac);
+        publish(numMessage, messageSize, numProducers, deliveryMode, destination, connectionsAndSessions);
+        MemoryStatistic memoryStatistics = collectMemoryStatistics(options);
+        generateCSV(memoryStatistics, numConnections, numSessions, transacted, numMessage, messageSize, numProducers, deliveryMode);
+        purgeQueue(conFac, queueString, receiveTimeout);
+        closeConnections(connectionsAndSessions.keySet());
     }
 
     private void generateCSV(MemoryStatistic memoryStatistics, int numConnections, int numSessions, boolean transacted, int numMessage, int messageSize, int numProducers, int deliveryMode)
@@ -334,7 +334,6 @@ public class MemoryConsumptionTestClient
 
         if (!"".equals(host) && !"".equals(port) && !"".equals(user) && !"".equals(password))
         {
-            final MemoryStatistic memoryStatistics = new MemoryStatistic();
             Map<String, Object> environment = Collections.<String, Object>singletonMap(JMXConnector.CREDENTIALS, new String[]{user, password});
             JMXConnector jmxConnector = JMXConnectorFactory.newJMXConnector(new JMXServiceURL("rmi", "", 0, "/jndi/rmi://" + host + ":" + port + "/jmxrmi"), environment);
             jmxConnector.connect();
@@ -342,56 +341,92 @@ public class MemoryConsumptionTestClient
             {
                 final MBeanServerConnection mBeanServerConnection = jmxConnector.getMBeanServerConnection();
                 final ObjectName memoryMBean = new ObjectName("java.lang:type=Memory");
-                ObjectName gcMBean = new ObjectName(options.get(JMX_GARBAGE_COLLECTOR_MBEAN));
-                final CountDownLatch notificationReceived = new CountDownLatch(1);
-                mBeanServerConnection.addNotificationListener(gcMBean, new NotificationListener()
+                String gcCollectorMBeanName = options.get(JMX_GARBAGE_COLLECTOR_MBEAN);
+                if (gcCollectorMBeanName.equals(""))
                 {
-                    @Override
-                    public void handleNotification(Notification notification, Object handback)
+                    mBeanServerConnection.invoke(memoryMBean, "gc", null, null);
+                    MemoryStatistic memoryStatistics = new MemoryStatistic();
+                    collectMemoryStatistics(memoryStatistics, mBeanServerConnection, memoryMBean);
+                    return memoryStatistics;
+                }
+                else
+                {
+                    ObjectName gcMBean = new ObjectName(gcCollectorMBeanName);
+                    if (mBeanServerConnection.isRegistered(gcMBean))
                     {
-                        if (notification.getType().equals(GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION))
-                        {
-                            GarbageCollectionNotificationInfo info = GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData());
-                            String gcCause = info.getGcCause();
-                            if (gcCause.equals("System.gc()") && info.getGcAction().contains("end of major GC"))
-                            {
-                                try
-                                {
-                                    Object heapMemoryUsage = mBeanServerConnection.getAttribute(memoryMBean, "HeapMemoryUsage");
-                                    Object used = ((CompositeData) heapMemoryUsage).get("used");
-                                    Object directMemoryTotalCapacity = mBeanServerConnection.getAttribute(new ObjectName("java.nio:type=BufferPool,name=direct"), "TotalCapacity");
-
-                                    memoryStatistics.setHeapUsage(Long.parseLong(String.valueOf(used)));
-                                    memoryStatistics.setDirectMemoryUsage(Long.parseLong(String.valueOf(directMemoryTotalCapacity)));
-                                }
-                                catch (Exception e)
-                                {
-                                    e.printStackTrace();
-                                }
-                                finally
-                                {
-                                    notificationReceived.countDown();
-                                }
-                            }
-                        }
+                        return collectMemoryStatisticsAfterGCNotification(mBeanServerConnection, gcMBean);
                     }
-                }, null, null );
-
-                mBeanServerConnection.invoke(memoryMBean, "gc", null, null);
-                notificationReceived.await(5, TimeUnit.SECONDS);
-
+                    else
+                    {
+                        Set<ObjectName> existingGCs = mBeanServerConnection.queryNames(new ObjectName("java.lang:type=GarbageCollector,name=*"), null);
+                        throw new IllegalArgumentException("MBean '" +gcCollectorMBeanName + "' does not exists! Registered GC MBeans :" + existingGCs);
+                    }
+                }
             }
             finally
             {
                 jmxConnector.close();
             }
 
-            return memoryStatistics;
         }
-        else
+        return null;
+    }
+
+    private MemoryStatistic collectMemoryStatisticsAfterGCNotification(final MBeanServerConnection mBeanServerConnection, ObjectName gcMBean)
+            throws MalformedObjectNameException, IOException, InstanceNotFoundException, ReflectionException, MBeanException, InterruptedException
+    {
+        final MemoryStatistic memoryStatistics = new MemoryStatistic();
+        final CountDownLatch notificationReceived = new CountDownLatch(1);
+        final ObjectName memoryMBean = new ObjectName("java.lang:type=Memory");
+        mBeanServerConnection.addNotificationListener(gcMBean, new NotificationListener()
         {
-            return null;
+            @Override
+            public void handleNotification(Notification notification, Object handback)
+            {
+                if (notification.getType().equals("com.sun.management.gc.notification"))
+                {
+                    CompositeData userData = (CompositeData) notification.getUserData();
+                    try
+                    {
+                        Object gcAction = userData.get("gcAction");
+                        Object gcCause = userData.get("gcCause");
+                        if ("System.gc()".equals(gcCause) && String.valueOf(gcAction).contains("end of major GC"))
+                        {
+                            try
+                            {
+                                collectMemoryStatistics(memoryStatistics, mBeanServerConnection, memoryMBean);
+                            }
+                            finally
+                            {
+                                notificationReceived.countDown();
+                            }
+
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                        notificationReceived.countDown();
+                    }
+                }
+            }
+        }, null, null);
+
+        mBeanServerConnection.invoke(memoryMBean, "gc", null, null);
+        if (!notificationReceived.await(5, TimeUnit.SECONDS))
+        {
+            throw new RuntimeException("GC notification was not sent in timely manner");
         }
+        return memoryStatistics;
+    }
+
+    private void collectMemoryStatistics(MemoryStatistic memoryStatistics, MBeanServerConnection mBeanServerConnection, ObjectName memoryMBean) throws MBeanException, AttributeNotFoundException, InstanceNotFoundException, ReflectionException, IOException, MalformedObjectNameException
+    {
+        Object heapMemoryUsage = mBeanServerConnection.getAttribute(memoryMBean, "HeapMemoryUsage");
+        Object used = ((CompositeData) heapMemoryUsage).get("used");
+        Object directMemoryTotalCapacity = mBeanServerConnection.getAttribute(new ObjectName("java.nio:type=BufferPool,name=direct"), "TotalCapacity");
+        memoryStatistics.setHeapUsage(Long.parseLong(String.valueOf(used)));
+        memoryStatistics.setDirectMemoryUsage(Long.parseLong(String.valueOf(directMemoryTotalCapacity)));
     }
 
     private String toUserFriendlyName(Object intValue)
