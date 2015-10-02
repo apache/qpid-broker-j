@@ -31,6 +31,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>joramtests</artifactId>
+    <name>Qpid Joram JMS Tests</name>
+    <description>Integration test suite utilising the Joram JMS test suite.</description>
+
     <properties>
         <joram-jms-tests-version>1.0</joram-jms-tests-version>
         <httpclient-version>4.4</httpclient-version>
@@ -54,6 +57,11 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j-version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
