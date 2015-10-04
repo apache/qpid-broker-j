@@ -60,9 +60,20 @@ public class ContentBody implements AMQBody
 
     public void writePayload(DataOutput buffer) throws IOException
     {
-        byte[] data = new byte[_payload.remaining()];
-        _payload.copyTo(data);
-        buffer.write(data);
+        if (_payload.hasArray())
+        {
+            int start = _payload.arrayOffset() + _payload.position();
+            buffer.write(_payload.array(),
+                         start,
+                         _payload.remaining());
+            _payload.position(_payload.position() + _payload.remaining());
+        }
+        else
+        {
+            byte[] data = new byte[_payload.remaining()];
+            _payload.copyTo(data);
+            buffer.write(data);
+        }
     }
 
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
