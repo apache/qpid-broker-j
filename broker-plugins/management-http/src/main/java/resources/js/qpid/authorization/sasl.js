@@ -49,11 +49,11 @@ var decodeUTF8 = function decodeUTF8(byteArray)
 
 var errorHandler = function errorHandler(error)
 {
-    if(error.status == 401)
+    if(error.response.status == 401)
     {
         alert("Authentication Failed");
     }
-    else if(error.status == 403)
+    else if(error.response.status == 403)
     {
         alert("Authorization Failed");
     }
