@@ -508,7 +508,7 @@ public final class QpidByteBuffer
             }
             while(remaining > buf.remaining())
             {
-                buffers.add(buf);
+                buffers.add(buf  == _cachedBuffer.get() ? buf.view(0, buf.remaining()) : buf);
                 remaining -= buf.remaining();
                 buf = allocateDirect(_pooledBufferSize);
             }
