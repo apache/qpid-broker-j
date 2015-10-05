@@ -479,8 +479,7 @@ public final class QpidByteBuffer
                 QpidByteBuffer rVal = buf.view(0, size);
                 buf.position(buf.position() + size);
 
-                _cachedBuffer.set(buf.slice());
-                buf.dispose();
+                _cachedBuffer.set(buf);
                 return rVal;
             }
         }
@@ -516,8 +515,15 @@ public final class QpidByteBuffer
             buffers.add(buf.view(0, remaining));
             buf.position(buf.position() + remaining);
 
-            _cachedBuffer.set(buf.hasRemaining() ? buf.slice() : allocateDirect(_pooledBufferSize));
-            buf.dispose();
+            if (buf.hasRemaining())
+            {
+                _cachedBuffer.set(buf);
+            }
+            else
+            {
+                _cachedBuffer.set(allocateDirect(_pooledBufferSize));
+                buf.dispose();
+            }
             return buffers;
         }
     }
