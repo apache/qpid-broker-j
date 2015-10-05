@@ -74,7 +74,7 @@
           property</ulink>. Sort order is alpha-numeric and the property value must have a type
         java.lang.String.</para>
       <para>Messages sent to a sorted queue without the specified JMS message property will be
-        inserted into the 'last' position in the queue.</para>
+        put at the head of the queue.</para>
     </section>
     <section id="Java-Broker-Concepts-Queues-Types-LVQ">
       <title>Last Value Queues (LVQ)</title>
