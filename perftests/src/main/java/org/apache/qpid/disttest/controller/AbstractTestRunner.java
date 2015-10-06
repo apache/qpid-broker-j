@@ -27,9 +27,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,23 +64,28 @@ public abstract class AbstractTestRunner implements ITestRunner
     private final long _testResultTimeout;
     private CountDownLatch _testResultsLatch;
     protected ControllerJmsDelegate _jmsDelegate;
-    private final Thread _removeQueuesShutdownHook = new Thread()
+    private volatile SettableFuture<Object> _testCleanupComplete;
+    private final Thread _removeQueuesShutdownHook = new Thread("shutdown-hook")
     {
         @Override
         public void run()
         {
             LOGGER.info("Shutdown intercepted: deleting test queues");
+            SettableFuture cleanupComplete = _testCleanupComplete;
             try
             {
-                deleteQueues();
+                cleanupComplete.get(30, TimeUnit.SECONDS);
+                LOGGER.info("Test queues deleted");
             }
-            catch (Exception t)
+            catch (InterruptedException| TimeoutException | ExecutionException e)
             {
-                LOGGER.error("Failed to delete test queues during shutdown", t);
+                LOGGER.warn("Failed to delete test queues during shutdown."
+                            + "Manual clean-up of queues may be required.", e);
             }
         }
     };
     private volatile CountDownLatch _commandResponseLatch = null;
+
     protected AbstractTestRunner(ParticipatingClients participatingClients,
                                  long commandResponseTimeout,
                                  TestInstance testInstance,
@@ -221,7 +229,7 @@ public abstract class AbstractTestRunner implements ITestRunner
         setOriginalTestDetailsOn(result);
 
         testResult.addParticipantResult(result);
-        LOGGER.debug("Received result " + result);
+        LOGGER.debug("Received result {}", result);
 
         _testResultsLatch.countDown();
         checkForResponseError(result);
@@ -308,8 +316,10 @@ public abstract class AbstractTestRunner implements ITestRunner
 
         try
         {
+            _testCleanupComplete = SettableFuture.create();
             createQueues();
             queuesCreated = true;
+
             Runtime.getRuntime().addShutdownHook(_removeQueuesShutdownHook);
 
             sendTestSetupCommands();
@@ -327,9 +337,16 @@ public abstract class AbstractTestRunner implements ITestRunner
         finally
         {
 
-            if (queuesCreated)
+            try
             {
-                deleteQueues();
+                if (queuesCreated)
+                {
+                    deleteQueues();
+                }
+            }
+            finally
+            {
+                _testCleanupComplete.set(null);
             }
 
             Runtime.getRuntime().removeShutdownHook(_removeQueuesShutdownHook);
