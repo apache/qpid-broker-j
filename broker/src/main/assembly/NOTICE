@@ -1,5 +1,5 @@
 Qpid Java Broker
-Copyright 2006-2014 The Apache Software Foundation
+Copyright 2006-2015 The Apache Software Foundation
 
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
@@ -7,7 +7,7 @@ The Apache Software Foundation (http://www.apache.org/).
 ###############################################
 
 Apache Derby
-Copyright 2004-2011 The Apache Software Foundation
+Copyright 2004-2014 The Apache Software Foundation
 
 Portions of Derby were originally developed by
 International Business Machines Corporation and are
@@ -58,12 +58,12 @@ granted provided that the copyright notice appears in all copies.
 ###############################################
 
 Geronimo Servlet Spec 3.0
-Copyright 2003-2010 The Apache Software Foundation
+Copyright (c) 2003-2010 The Apache Software Foundation
 
 This product includes software developed by
 The W3C Consortium (http://www.w3.org/).
 
-Copyright © 1994-2002 World Wide Web Consortium,
+Copyright (C) 1994-2002 World Wide Web Consortium,
 (Massachusetts Institute of Technology, Institut National
 de Recherche en Informatique et en Automatique, Keio
 University). All Rights Reserved.
@@ -72,22 +72,44 @@ http://www.w3.org/Consortium/Legal/
 ###############################################
 
 Apache Commons Codec
-Copyright 2002-2013 The Apache Software Foundation
+Copyright (c) 2002-2013 The Apache Software Foundation
 
 ###############################################
 
 Apache Commons CLI
-Copyright 2001-2009 The Apache Software Foundation
+Copyright (c) 2001-2009 The Apache Software Foundation
 
 ###############################################
 
-Apache Commons Lang
-Copyright 2001-2011 The Apache Software Foundation
+Apache Commons BCEL
+Copyright (c) 2004-2015 The Apache Software Foundation
 
 ###############################################
 
-Apache log4j
-Copyright 2007 The Apache Software Foundation
+Jackson JSON processor
+Copyright (c) 2009-2011 FasterXML, LLC. All rights reserved
 
 ###############################################
 
+Google Core Libraries for Java
+Copyright (c) 2008-2014 The Guava Authors
+
+###############################################
+
+BoneCP Core Library
+Copyright (c) 2009-2011 Wallace Wadge
+
+###############################################
+
+Dojo Toolkit
+Copyright (c) 2005-2015, The Dojo Foundation
+
+###############################################
+
+slf4j-api
+Copyright (c) 2004-2014 QOS.ch
+
+###############################################
+
+Logback
+Copyright (c) 1999-2012, QOS.ch

@@ -19,9 +19,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.qpid</groupId>
-    <artifactId>qpid-parent</artifactId>
-    <version>1.0</version>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>16</version>
   </parent>
 
   <groupId>org.apache.qpid</groupId>
@@ -30,7 +30,36 @@
   <packaging>pom</packaging>
 
   <name>Qpid Java Build</name>
-  <description>Apache Qpid Java Build POM</description>
+  <url>http://qpid.apache.org/components</url>
+  <description>Apache Qpid Java Components</description>
+  <inceptionYear>2006</inceptionYear>
+
+  <issueManagement>
+    <system>JIRA</system>
+    <url>https://issues.apache.org/jira/browse/QPID</url>
+  </issueManagement>
+
+  <ciManagement>
+    <system>Jenkins</system>
+    <url>https://builds.apache.org/view/M-R/view/Qpid/</url>
+  </ciManagement>
+
+  <mailingLists>
+    <mailingList>
+      <name>Apache Qpid Users</name>
+      <subscribe>users-subscribe@qpid.apache.org</subscribe>
+      <unsubscribe>users-unsubscribe@qpid.apache.org</unsubscribe>
+      <post>users@qpid.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/qpid-users/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Apache Qpid Developers</name>
+      <subscribe>dev-subscribe@qpid.apache.org</subscribe>
+      <unsubscribe>dev-unsubscribe@qpid.apache.org</unsubscribe>
+      <post>dev@qpid.apache.org</post>
+      <archive>http://mail-archives.apache.org/mod_mbox/qpid-dev/</archive>
+    </mailingList>
+  </mailingLists>
 
   <scm>
     <connection>scm:svn:http://svn.apache.org/repos/asf/qpid/java/trunk</connection>
@@ -46,6 +75,11 @@
   </distributionManagement>
 
   <properties>
+    <minimum-maven-version>3.0.0</minimum-maven-version>
+    <minimum-java-version>1.7.0</minimum-java-version>
+    <java.source>1.7</java.source>
+    <java.target>1.7</java.target>
+
     <!-- enforcer plugin config properties -->
     <supported-test-profiles-regex>(java-mms.0-9|java-mms.0-9-1|java-mms.0-10|java-bdb.0-9|java-bdb.0-9-1|java-bdb.0-10|java-dby.0-9|java-dby.0-9-1|java-dby.0-10|java-dby-mem.0-9|java-dby-mem.0-9-1|java-dby-mem.0-10|cpp|java-json.0-9-1|java-json.0-10)</supported-test-profiles-regex>
 
@@ -85,7 +119,44 @@
     <slf4j-version>1.7.12</slf4j-version>
     <jetty-version>8.1.17.v20150415</jetty-version>
 
+    <!-- dependency version numbers -->
+    <bonecp-version>0.7.1.RELEASE</bonecp-version>
+    <commons-cli-version>1.2</commons-cli-version>
+    <commons-codec-version>1.9</commons-codec-version>
+    <commons-collections-version>3.2.1</commons-collections-version>
+    <commons-lang-version>2.6</commons-lang-version>
+
+    <geronimo-jms-1-1-version>1.1.1</geronimo-jms-1-1-version>
+    <geronimo-jta-version>1.1.1</geronimo-jta-version>
+    <geronimo-servlet-version>1.0</geronimo-servlet-version>
+    <geronimo-j2ee-connector-version>2.0.0</geronimo-j2ee-connector-version>
+    <geronimo-ejb-version>1.0.1</geronimo-ejb-version>
+    <geronimo-kernel-version>2.2.1</geronimo-kernel-version>
+    <bcel-version>5.2</bcel-version>
+
+    <velocity-version>1.4</velocity-version>
+    <jython-version>2.5.3</jython-version>
+    <csvjdbc-version>1.0.8</csvjdbc-version>
+    <jfreechart-version>1.0.13</jfreechart-version>
+
+    <!-- test dependency version numbers -->
+    <junit-version>4.11</junit-version>
+    <mockito-version>1.9.5</mockito-version>
+    <hamcrest-version>1.3</hamcrest-version>
+
     <exec-maven-plugin-version>1.3.2</exec-maven-plugin-version>
+    <javacc-maven-plugin-version>2.6</javacc-maven-plugin-version>
+    <maven-rar-plugin-version>2.3</maven-rar-plugin-version>
+    <license-maven-plugin-version>1.6</license-maven-plugin-version>
+    <jacoco-plugin-version>0.7.0.201403182114</jacoco-plugin-version>
+    <maven-jxr-plugin-version>2.3</maven-jxr-plugin-version>
+    <findbugs-maven-plugin-version>2.5.2</findbugs-maven-plugin-version>
+    <jacoco-plugin-version>0.7.5.201505241946</jacoco-plugin-version>
+    <apache-rat-plugin-version>0.11</apache-rat-plugin-version>
+
+    <!-- These versions needs to be kept in sync with versions in parent pom-->
+    <maven-project-info-reports-plugin-version>2.8</maven-project-info-reports-plugin-version>
+    <maven-failsafe-and-surefire-plugins-version>2.18.1</maven-failsafe-and-surefire-plugins-version>
   </properties>
 
   <modules>
@@ -164,11 +235,64 @@
   </dependencyManagement>
 
   <build>
+
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>${java.source}</source>
+            <target>${java.target}</target>
+            <optimize>true</optimize>
+            <showDeprecation>true</showDeprecation>
+            <showWarnings>true</showWarnings>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${jacoco-plugin-version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>${license-maven-plugin-version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jxr-plugin</artifactId>
+          <version>${maven-jxr-plugin-version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-rar-plugin</artifactId>
+          <version>${maven-rar-plugin-version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>findbugs-maven-plugin</artifactId>
+          <version>${findbugs-maven-plugin-version}</version>
+        </plugin>
+
+        <!-- REMOVE 2 PLUGINS BELOW AFTER CHANGING APACHE PARENT TO V 17 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>${maven-project-info-reports-plugin-version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-report-plugin</artifactId>
+          <version>${maven-failsafe-and-surefire-plugins-version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-antrun-plugin</artifactId>
-        <!--version specified in pluginManagement -->
         <executions>
           <execution>
             <id>output-test-properties</id>
@@ -211,7 +335,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <!--version specified in pluginManagement -->
         <configuration>
           <includes>
             <include>**/*Test.java</include>
@@ -265,8 +388,24 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <!--version specified in pluginManagement -->
         <executions>
+          <execution>
+            <id>enforce-minimum-versions</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>${minimum-java-version}</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>${minimum-maven-version}</version>
+                </requireMavenVersion>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
           <execution>
             <id>enforce-versions-standard-properties</id>
             <goals>
@@ -741,6 +880,142 @@
       </build>
     </profile>
 
+    <profile>
+      <id>dependency-check</id>
+      <!-- Use this profile with the packaging phase, to perform some checks on the module dependencies.
+
+           Verifies that only the explicitly included licences have been used for any compile or runtime dependencies,
+           and additionally for any modules that set 'dependency-change-verification' true also checks for a change in
+           dependencies against a previous reference output that might signal need for updates to LICENSE and/or NOTICE
+           files included in their binary assembly files.
+      -->
+      <properties>
+        <license-maven-plugin-output-dir>${project.build.directory}/license-maven-plugin</license-maven-plugin-output-dir>
+        <dependency-verification-output-dir>${project.build.directory}/dependency-change-verification</dependency-verification-output-dir>
+        <dependency-verification-generated-file>${dependency-verification-output-dir}/PROCESSED_DEPENDENCIES_INFO</dependency-verification-generated-file>
+        <dependency-verification-reference-file>${basedir}/src/main/assembly/dependency-verification/DEPENDENCIES_REFERENCE</dependency-verification-reference-file>
+        <dependency-change-verification>false</dependency-change-verification>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <!-- version specified in pluginManagement -->
+            <configuration>
+              <failIfWarning>true</failIfWarning>
+              <excludedScopes>provided</excludedScopes>
+              <outputDirectory>${license-maven-plugin-output-dir}</outputDirectory>
+              <!-- Exclude logback from being checked, it is dual licensed and lists both licenses in META-INF Bundle-License   -->
+              <!-- Exclude BCEL from being checked, it is ALv2 but doesnt have the necessary metadata -->
+              <excludedGroups>org.apache.bcel|ch.qos.logback</excludedGroups>
+              <includedLicenses>
+                <includedLicense>Apache Software License, Version 2.0</includedLicense>
+                <includedLicense>The MIT License</includedLicense>
+                <includedLicense>BSD License</includedLicense>
+                <includedLicense>Eclipse Public License - Version 1.0</includedLicense>
+                <includedLicense>Common Public License Version 1.0</includedLicense>
+                <includedLicense>Academic Free License v2.1</includedLicense>
+              </includedLicenses>
+              <licenseMerges>
+                <licenseMerge>Apache Software License, Version 2.0|The Apache Software License, Version 2.0|Apache Software License - Version 2.0|Apache v2|Apache 2|Apache License, Version 2.0</licenseMerge>
+                <licenseMerge>The MIT License|MIT License</licenseMerge>
+                <licenseMerge>BSD License|New BSD|New BSD License</licenseMerge>
+                <licenseMerge>Eclipse Public License - Version 1.0|Eclipse Public License - v 1.0</licenseMerge>
+              </licenseMerges>
+            </configuration>
+            <executions>
+              <execution>
+                <id>check-third-party-licensing</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>add-third-party</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <!--version specified in pluginManagement -->
+            <executions>
+              <execution>
+                <id>dependency-change-verification</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target if="${dependency-change-verification}">
+                    <!-- Set the output location for the generated file -->
+                    <condition property="dependency-verification-output-file" value="${dependency-verification-reference-file}" else="${dependency-verification-generated-file}">
+                      <istrue value="${update-dependency-reference}" />
+                    </condition>
+                    <!--  Output the ALv2 header and a title, then append the DEPENDENCIES file contents,
+                          processing to strip out the qpid module version info -->
+                    <echo>Generating dependency info at: ${dependency-verification-output-file}</echo>
+                    <concat destfile="${dependency-verification-output-file}" append="false">
+                      <header filtering="no" trimleading="yes">
+                        #
+                        # Licensed to the Apache Software Foundation (ASF) under one
+                        # or more contributor license agreements.  See the NOTICE file
+                        # distributed with this work for additional information
+                        # regarding copyright ownership.  The ASF licenses this file
+                        # to you under the Apache License, Version 2.0 (the
+                        # "License"); you may not use this file except in compliance
+                        # with the License.  You may obtain a copy of the License at
+                        #
+                        #   http://www.apache.org/licenses/LICENSE-2.0
+                        #
+                        # Unless required by applicable law or agreed to in writing,
+                        # software distributed under the License is distributed on an
+                        # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+                        # KIND, either express or implied.  See the License for the
+                        # specific language governing permissions and limitations
+                        # under the License.
+                        #
+
+                        #// ------------------------------------------------------------------
+                        # TRIMMED 3RD PARTY DEPENDENCY INFORMATION FOR MODIFICATION CHECKS
+                        #
+                      </header>
+                      <path path="${project.build.outputDirectory}/META-INF/DEPENDENCIES" />
+                    </concat>
+
+                    <replaceregexp file="${dependency-verification-output-file}" flags="gm" replace="">
+                      <regexp id="stripqpidcontentheader" pattern="^\/\/\ .*\n|^Qpid\ .*\n" />
+                    </replaceregexp>
+                    <replaceregexp file="${dependency-verification-output-file}" flags="gm">
+                      <regexp id="stripqpidcontentversions" pattern="(^.*org.apache.qpid:.*:.*):.*" />
+                      <substitution expression="\1" />
+                    </replaceregexp>
+                    <!-- Ensure the reference file is present -->
+                    <fail message="Dependency info reference file was not present at: ${dependency-verification-reference-file}. You can generate an initial reference file by running again with -Dupdate-dependency-reference.">
+                      <condition>
+                        <not>
+                          <available file="${dependency-verification-reference-file}" />
+                        </not>
+                      </condition>
+                    </fail>
+                    <!--  Compare output to the reference file to check they are the same, fail if they arent -->
+                    <echo>Comparing to against reference info at: ${dependency-verification-reference-file}</echo>
+                    <fail message="Generated dependency info does not match the reference. Ensure LICENCE and NOTICE files are correct and then update the reference by running again with -Dupdate-dependency-reference. Generated file: '${dependency-verification-output-file}'. Reference file: '${dependency-verification-reference-file}'.">
+                      <condition>
+                        <not>
+                          <filesmatch file1="${dependency-verification-output-file}" file2="${dependency-verification-reference-file}" textfile="true" />
+                        </not>
+                      </condition>
+                    </fail>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
 
