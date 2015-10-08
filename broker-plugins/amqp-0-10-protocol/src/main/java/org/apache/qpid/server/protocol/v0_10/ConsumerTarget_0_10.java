@@ -20,13 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -139,6 +135,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
             releaseSendLock();
         }
 
+        for (ConsumerImpl consumer : _consumers)
+        {
+            consumer.close();
+        }
         return closed;
 
     }

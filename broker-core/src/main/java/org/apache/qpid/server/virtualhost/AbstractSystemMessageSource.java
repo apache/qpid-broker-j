@@ -26,9 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
@@ -54,9 +52,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     protected final UUID _id;
     protected final String _name;
     protected final VirtualHost<?, ?, ?> _virtualHost;
-    private final CopyOnWriteArrayList<ConsumerRegistrationListener<? super MessageSource>>
-            _consumerRegistrationListeners =
-            new CopyOnWriteArrayList<>();
     private List<Consumer> _consumers = new CopyOnWriteArrayList<>();
 
     public AbstractSystemMessageSource(
@@ -98,10 +93,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         final Consumer consumer = new Consumer(consumerName, target);
         target.consumerAdded(consumer);
         _consumers.add(consumer);
-        for (ConsumerRegistrationListener<? super MessageSource> listener : _consumerRegistrationListeners)
-        {
-            listener.consumerAdded(this, consumer);
-        }
         return consumer;
     }
 
@@ -109,18 +100,6 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     public Collection<Consumer> getConsumers()
     {
         return new ArrayList<>(_consumers);
-    }
-
-    @Override
-    public void addConsumerRegistrationListener(final ConsumerRegistrationListener<? super MessageSource> listener)
-    {
-        _consumerRegistrationListeners.add(listener);
-    }
-
-    @Override
-    public void removeConsumerRegistrationListener(final ConsumerRegistrationListener<? super MessageSource> listener)
-    {
-        _consumerRegistrationListeners.remove(listener);
     }
 
     @Override

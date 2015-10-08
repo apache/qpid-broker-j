@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -106,9 +105,6 @@ class ManagementNode implements MessageSource, MessageDestination
     private final VirtualHostImpl _virtualHost;
 
     private final UUID _id;
-
-    private final CopyOnWriteArrayList<ConsumerRegistrationListener<? super MessageSource>> _consumerRegistrationListeners =
-            new CopyOnWriteArrayList<ConsumerRegistrationListener<? super MessageSource>>();
 
     private final SystemNodeCreator.SystemNodeRegistry _registry;
     private final ConfiguredObject<?> _managedObject;
@@ -967,10 +963,6 @@ class ManagementNode implements MessageSource, MessageDestination
         final ManagementNodeConsumer managementNodeConsumer = new ManagementNodeConsumer(consumerName,this, target);
         target.consumerAdded(managementNodeConsumer);
         _consumers.put(consumerName, managementNodeConsumer);
-        for(ConsumerRegistrationListener<? super MessageSource> listener : _consumerRegistrationListeners)
-        {
-            listener.consumerAdded(this, managementNodeConsumer);
-        }
         return managementNodeConsumer;
     }
 
@@ -978,18 +970,6 @@ class ManagementNode implements MessageSource, MessageDestination
     public synchronized Collection<ManagementNodeConsumer> getConsumers()
     {
         return new ArrayList<ManagementNodeConsumer>(_consumers.values());
-    }
-
-    @Override
-    public void addConsumerRegistrationListener(final ConsumerRegistrationListener<? super MessageSource> listener)
-    {
-        _consumerRegistrationListeners.add(listener);
-    }
-
-    @Override
-    public void removeConsumerRegistrationListener(final ConsumerRegistrationListener listener)
-    {
-        _consumerRegistrationListeners.remove(listener);
     }
 
     @Override

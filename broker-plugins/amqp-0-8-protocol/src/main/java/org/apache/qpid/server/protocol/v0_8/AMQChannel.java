@@ -831,6 +831,10 @@ public class AMQChannel
      */
     public boolean unsubscribeConsumer(AMQShortString consumerTag)
     {
+        if (_logger.isDebugEnabled())
+        {
+            _logger.debug("Unsubscribing consumer '{}' on channel {}", consumerTag, this);
+        }
 
         ConsumerTarget_0_8 target = _tag2SubscriptionTargetMap.remove(consumerTag);
         Collection<ConsumerImpl> subs = target == null ? null : target.getConsumers();
@@ -907,25 +911,11 @@ public class AMQChannel
             }
         }
 
-        for (Map.Entry<AMQShortString, ConsumerTarget_0_8> me : _tag2SubscriptionTargetMap.entrySet())
+        Set<AMQShortString> subscriptionTags = new HashSet<>(_tag2SubscriptionTargetMap.keySet());
+        for (AMQShortString tag : subscriptionTags)
         {
-            if (_logger.isDebugEnabled())
-            {
-                _logger.debug("Unsubscribing consumer '" + me.getKey() + "' on channel " + toString());
-            }
-
-            Collection<ConsumerImpl> subs = me.getValue().getConsumers();
-
-            if(subs != null)
-            {
-                for(ConsumerImpl sub : subs)
-                {
-                    sub.close();
-                }
-            }
+            unsubscribeConsumer(tag);
         }
-
-        _tag2SubscriptionTargetMap.clear();
     }
 
     /**

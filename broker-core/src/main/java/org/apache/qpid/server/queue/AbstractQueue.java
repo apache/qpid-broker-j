@@ -77,7 +77,6 @@ import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
-import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
@@ -247,9 +246,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private int _maximumDeliveryAttempts;
 
     private MessageGroupManager _messageGroupManager;
-
-    private final Collection<ConsumerRegistrationListener<? super MessageSource>> _consumerListeners =
-            new ArrayList<ConsumerRegistrationListener<? super MessageSource>>();
 
     private QueueNotificationListener  _notificationListener;
     private final long[] _lastNotificationTimes = new long[NotificationCheck.values().length];
@@ -891,14 +887,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         if (!isDeleted())
         {
-            synchronized (_consumerListeners)
-            {
-                for(ConsumerRegistrationListener<? super MessageSource> listener : _consumerListeners)
-                {
-                    listener.consumerAdded(this, consumer);
-                }
-            }
-
             _consumerList.add(consumer);
 
             if (isDeleted())
@@ -955,14 +943,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 resetSubPointersForGroups(consumer);
             }
 
-            synchronized (_consumerListeners)
-            {
-                for(ConsumerRegistrationListener<? super MessageSource> listener : _consumerListeners)
-                {
-                    listener.consumerRemoved(this, consumer);
-                }
-            }
-
             // auto-delete queues must be deleted if there are no remaining subscribers
 
             if(!consumer.isTransient()
@@ -1004,22 +984,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
         return consumers;
 
-    }
-
-    public void addConsumerRegistrationListener(final ConsumerRegistrationListener<? super MessageSource> listener)
-    {
-        synchronized (_consumerListeners)
-        {
-            _consumerListeners.add(listener);
-        }
-    }
-
-    public void removeConsumerRegistrationListener(final ConsumerRegistrationListener<? super MessageSource> listener)
-    {
-        synchronized (_consumerListeners)
-        {
-            _consumerListeners.remove(listener);
-        }
     }
 
     public void resetSubPointersForGroups(QueueConsumer<?> consumer)

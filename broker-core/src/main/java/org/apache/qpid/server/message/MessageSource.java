@@ -39,17 +39,7 @@ public interface MessageSource extends TransactionLogResource, MessageNode
 
     Collection<? extends ConsumerImpl> getConsumers();
 
-    void addConsumerRegistrationListener(ConsumerRegistrationListener<? super MessageSource> listener);
-
-    void removeConsumerRegistrationListener(ConsumerRegistrationListener<? super MessageSource> listener);
-
     boolean verifySessionAccess(AMQSessionModel<?> session);
-
-    interface ConsumerRegistrationListener<Q extends MessageSource>
-    {
-        void consumerAdded(Q source, ConsumerImpl consumer);
-        void consumerRemoved(Q queue, ConsumerImpl consumer);
-    }
 
     /**
      * ExistingExclusiveConsumer signals a failure to create a consumer, because an exclusive consumer
