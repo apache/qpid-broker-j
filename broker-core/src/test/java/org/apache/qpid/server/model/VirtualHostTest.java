@@ -56,6 +56,8 @@ import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.store.DurableConfigurationStore;
+import org.apache.qpid.server.store.Event;
+import org.apache.qpid.server.store.EventListener;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
@@ -381,6 +383,16 @@ public class VirtualHostTest extends QpidTestCase
         }
 
         verify(_configStore, never()).remove(matchesRecord(virtualHost.getId(), virtualHost.getType()));
+    }
+
+    public void testExistingConnectionBlocking()
+    {
+        VirtualHost<?,?,?> host = createVirtualHost(getTestName());
+        AbstractAMQPConnection connection = mock(AbstractAMQPConnection.class);
+        when(connection.getUnderlyingConnection()).thenReturn(connection);
+        host.registerConnection(connection);
+        ((EventListener)host).event(Event.PERSISTENT_MESSAGE_SIZE_OVERFULL);
+        verify(connection).block();
     }
 
     private VirtualHost<?,?,?> createVirtualHost(final String virtualHostName)

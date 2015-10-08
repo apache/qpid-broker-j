@@ -1062,7 +1062,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         synchronized (_connections)
         {
             _blockingReasons.add(blockingType);
-            if(!_blocked.compareAndSet(false,true))
+            if(_blocked.compareAndSet(false,true))
             {
                 for(Connection<?> conn : _connections)
                 {
