@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v0_10;
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
 import static org.apache.qpid.util.Serial.gt;
 
+import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -74,7 +75,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.queue.AMQQueue;
-import org.apache.qpid.server.security.AuthorizationHolder;
+import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -128,6 +129,7 @@ public class ServerSession extends Session
 
     private final UUID _id = UUID.randomUUID();
     private final Subject _subject = new Subject();
+    private final AccessControlContext _accessControllerContext;
     private long _createTime = System.currentTimeMillis();
 
     private final Set<Object> _blockingEntities = Collections.synchronizedSet(new HashSet<Object>());
@@ -189,6 +191,7 @@ public class ServerSession extends Session
 
         _subject.getPrincipals().addAll(((ServerConnection) connection).getAuthorizedSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
+        _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
 
         _transactionTimeoutHelper = new TransactionTimeoutHelper(_logSubject, new CloseAction()
         {
@@ -203,6 +206,11 @@ public class ServerSession extends Session
                                                                   Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT);
         _maxUncommittedInMemorySize = getVirtualHost().getContextValue(Long.class, org.apache.qpid.server.model.Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
 
+    }
+
+    public AccessControlContext getAccessControllerContext()
+    {
+        return _accessControllerContext;
     }
 
     protected void setState(final State state)
@@ -233,7 +241,7 @@ public class ServerSession extends Session
 
     private <T> T runAsSubject(final PrivilegedAction<T> privilegedAction)
     {
-        return Subject.doAs(getAuthorizedSubject(), privilegedAction);
+        return AccessController.doPrivileged(privilegedAction, getAccessControllerContext());
     }
 
     private boolean runningAsSubject()

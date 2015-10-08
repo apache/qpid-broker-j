@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.virtualhostnode;
 
+import java.security.AccessControlContext;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,8 +58,6 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
-
-import javax.security.auth.Subject;
 
 @ManagedObject( category = false, type = RedirectingVirtualHostImpl.TYPE, register = false )
 class RedirectingVirtualHostImpl
@@ -134,7 +133,7 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public void executeTask(Runnable task, Subject subject)
+    public void executeTask(final String name, Runnable task, AccessControlContext context)
     {
         throwUnsupportedForRedirector();
     }

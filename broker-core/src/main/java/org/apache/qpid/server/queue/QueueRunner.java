@@ -20,17 +20,14 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.security.Principal;
+import java.security.AccessControlContext;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.security.auth.Subject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.TransportException;
 
@@ -56,12 +53,12 @@ public class QueueRunner implements Runnable
 
     private final AtomicLong _lastRunAgain = new AtomicLong();
     private final AtomicLong _lastRunTime = new AtomicLong();
-    private final Subject _subject;
+    private final AccessControlContext _context;
 
-    public QueueRunner(AbstractQueue queue, Principal principal)
+    public QueueRunner(AbstractQueue queue, AccessControlContext context)
     {
         _queue = queue;
-        _subject = SecurityManager.getSystemTaskSubject("Queue Delivery", principal);
+        _context = context;
     }
 
     @Override
@@ -97,7 +94,7 @@ public class QueueRunner implements Runnable
                 {
                     if(_scheduled.compareAndSet(IDLE, SCHEDULED))
                     {
-                        _queue.execute(QueueRunner.this, _subject);
+                        _queue.execute("Queue Runner["+ _queue.getName()+"]", QueueRunner.this, _context);
                     }
                 }
             }
@@ -115,7 +112,7 @@ public class QueueRunner implements Runnable
         _stateChange.set(true);
         if(_scheduled.compareAndSet(IDLE, SCHEDULED))
         {
-            _queue.execute(this, _subject);
+            _queue.execute("Queue Runner["+ _queue.getName()+"]", this, _context);
         }
     }
 

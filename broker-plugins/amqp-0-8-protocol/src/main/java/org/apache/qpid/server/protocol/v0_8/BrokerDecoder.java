@@ -21,6 +21,8 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import java.io.IOException;
+import java.security.AccessControlContext;
+import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 
@@ -58,21 +60,21 @@ public class BrokerDecoder extends ServerDecoder
         {
             startTime = System.currentTimeMillis();
         }
-        Subject subject;
+        AccessControlContext context;
         AMQChannel channel = _connection.getChannel(channelId);
         if(channel == null)
         {
-            subject = _connection.getSubject();
+            context = _connection.getAccessControllerContext();
         }
         else
         {
             _connection.channelRequiresSync(channel);
 
-            subject = channel.getSubject();
+            context = channel.getAccessControllerContext();
         }
         try
         {
-            Subject.doAs(subject, new PrivilegedExceptionAction<Object>()
+            AccessController.doPrivileged(new PrivilegedExceptionAction<Object>()
             {
                 @Override
                 public Void run() throws IOException, AMQFrameDecodingException
@@ -80,7 +82,8 @@ public class BrokerDecoder extends ServerDecoder
                     doProcessFrame(channelId, type, bodySize, in);
                     return null;
                 }
-            });
+            }, context);
+
             if(_logger.isDebugEnabled())
             {
                 _logger.debug("Frame handled in " + (System.currentTimeMillis() - startTime) + " ms.");

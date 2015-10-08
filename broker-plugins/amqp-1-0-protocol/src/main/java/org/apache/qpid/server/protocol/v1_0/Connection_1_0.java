@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
 
+import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.text.MessageFormat;
@@ -154,6 +155,7 @@ public class Connection_1_0 implements ConnectionEventListener
                 setUserPrincipal(user);
             }
             _amqpConnection.getSubject().getPrincipals().add(_vhost.getPrincipal());
+            _amqpConnection.updateAccessControllerContext();
             if(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_amqpConnection.getSubject()) == null)
             {
                 final Error err = new Error();
@@ -175,6 +177,7 @@ public class Connection_1_0 implements ConnectionEventListener
         _amqpConnection.getSubject().getPrincipals().addAll(authSubject.getPrincipals());
         _amqpConnection.getSubject().getPublicCredentials().addAll(authSubject.getPublicCredentials());
         _amqpConnection.getSubject().getPrivateCredentials().addAll(authSubject.getPrivateCredentials());
+        _amqpConnection.updateAccessControllerContext();
     }
 
     public void remoteSessionCreation(SessionEndpoint endpoint)
@@ -189,7 +192,7 @@ public class Connection_1_0 implements ConnectionEventListener
                 @Override
                 public void remoteLinkCreation(final LinkEndpoint endpoint)
                 {
-                    Subject.doAs(session.getSubject(), new PrivilegedAction<Object>()
+                    AccessController.doPrivileged(new PrivilegedAction<Object>()
                     {
                         @Override
                         public Object run()
@@ -197,13 +200,13 @@ public class Connection_1_0 implements ConnectionEventListener
                             session.remoteLinkCreation(endpoint);
                             return null;
                         }
-                    });
+                    }, session.getAccessControllerContext());
                 }
 
                 @Override
                 public void remoteEnd(final End end)
                 {
-                    Subject.doAs(session.getSubject(), new PrivilegedAction<Object>()
+                    AccessController.doPrivileged(new PrivilegedAction<Object>()
                     {
                         @Override
                         public Object run()
@@ -211,7 +214,7 @@ public class Connection_1_0 implements ConnectionEventListener
                             session.remoteEnd(end);
                             return null;
                         }
-                    });
+                    }, session.getAccessControllerContext());
                 }
             });
         }

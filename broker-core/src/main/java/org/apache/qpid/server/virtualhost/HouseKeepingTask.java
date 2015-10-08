@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import java.security.AccessControlContext;
+import java.security.AccessController;
 import java.security.PrivilegedAction;
-
-import javax.security.auth.Subject;
 
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.SecurityManager;
@@ -30,23 +30,23 @@ import org.apache.qpid.server.security.SecurityManager;
 public abstract class HouseKeepingTask implements Runnable
 {
     private final String _name;
-    private final Subject _subject;
+    private final AccessControlContext _accessControlContext;
 
     public HouseKeepingTask(VirtualHost vhost)
     {
-        this(vhost, null);
+        this(null, vhost, null);
     }
 
-    public HouseKeepingTask(VirtualHost vhost, Subject subject)
+    public HouseKeepingTask(String name, VirtualHost vhost, AccessControlContext context)
     {
-        _name = vhost.getName() + ":" + this.getClass().getSimpleName();
-        if (subject == null)
+        _name = name == null ? vhost.getName() + ":" + this.getClass().getSimpleName() : name;
+        if (context == null)
         {
-            _subject = SecurityManager.getSystemTaskSubject(_name, vhost.getPrincipal());
+            _accessControlContext = SecurityManager.getSystemTaskControllerContext(_name, vhost.getPrincipal());
         }
         else
         {
-            _subject = subject;
+            _accessControlContext = context;
         }
     }
 
@@ -57,7 +57,7 @@ public abstract class HouseKeepingTask implements Runnable
 
         try
         {
-            Subject.doAs(_subject, new PrivilegedAction<Object>()
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
             {
                 @Override
                 public Object run()
@@ -65,7 +65,7 @@ public abstract class HouseKeepingTask implements Runnable
                     execute();
                     return null;
                 }
-            });
+            }, _accessControlContext);
         }
         finally
         {

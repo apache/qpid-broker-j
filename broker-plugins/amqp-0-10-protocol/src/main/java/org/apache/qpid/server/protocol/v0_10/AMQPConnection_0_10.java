@@ -23,6 +23,7 @@ package org.apache.qpid.server.protocol.v0_10;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.List;
@@ -109,23 +110,25 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         _connection.addFrameSizeObserver(_inputHandler);
         _network = network;
 
-        Subject.doAs(getSubject(), new PrivilegedAction<Object>()
+        AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             @Override
             public Object run()
             {
-                _connection.getEventLogger().message(ConnectionMessages.OPEN(null, null, null, null, false, false, false, false));
+                _connection.getEventLogger()
+                        .message(ConnectionMessages.OPEN(null, null, null, null, false, false, false, false));
 
                 _connection.setNetworkConnection(_network);
                 _disassembler = new ServerDisassembler(wrapSender(_network.getSender()), Constant.MIN_MAX_FRAME_SIZE);
                 _connection.setSender(_disassembler);
                 _connection.addFrameSizeObserver(_disassembler);
                 // FIXME Two log messages to maintain compatibility with earlier protocol versions
-                _connection.getEventLogger().message(ConnectionMessages.OPEN(null, "0-10", null, null, false, true, false, false));
+                _connection.getEventLogger()
+                        .message(ConnectionMessages.OPEN(null, "0-10", null, null, false, true, false, false));
 
                 return null;
             }
-        });
+        }, getAccessControllerContext());
     }
 
     @Override
@@ -189,7 +192,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
     public void received(final QpidByteBuffer buf)
     {
-        Subject.doAs(_connection.getAuthorizedSubject(), new PrivilegedAction<Object>()
+        AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             @Override
             public Object run()
@@ -217,7 +220,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                 }
                 return null;
             }
-        });
+        }, getAccessControllerContext());
     }
 
     @Override
@@ -232,16 +235,16 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
     public void readerIdle()
     {
-        Subject.doAs(_connection.getAuthorizedSubject(), new PrivilegedAction<Object>()
+        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        {
+            @Override
+            public Object run()
             {
-                @Override
-                public Object run()
-                {
-                    _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
-                    _network.close();
-                    return null;
-                }
-            });
+                _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
+                _network.close();
+                return null;
+            }
+        }, getAccessControllerContext());
 
     }
 
@@ -255,7 +258,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     {
         try
         {
-            Subject.doAs(_connection.getAuthorizedSubject(), new PrivilegedAction<Void>()
+            AccessController.doPrivileged(new PrivilegedAction<Void>()
             {
                 @Override
                 public Void run()
@@ -267,7 +270,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                     }
                     return null;
                 }
-            });
+            }, getAccessControllerContext());
         }
         finally
         {

@@ -22,7 +22,9 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CHANNEL_FORMAT;
 
+import java.security.AccessControlContext;
 import java.security.AccessControlException;
+import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -85,6 +87,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -99,6 +102,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     private static final Logger _logger = LoggerFactory.getLogger(Session_1_0.class);
     private static final Symbol LIFETIME_POLICY = Symbol.valueOf("lifetime-policy");
     private final SessionEndpoint _endpoint;
+    private final AccessControlContext _accessControllerContext;
     private AutoCommitTransaction _transaction;
 
     private final LinkedHashMap<Integer, ServerTransaction> _openTransactions =
@@ -126,6 +130,12 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
         _connection = connection;
         _subject.getPrincipals().addAll(connection.getSubject().getPrincipals());
         _subject.getPrincipals().add(new SessionPrincipal(this));
+        _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
+    }
+
+    public AccessControlContext getAccessControllerContext()
+    {
+        return _accessControllerContext;
     }
 
     public void remoteLinkCreation(final LinkEndpoint endpoint)
@@ -800,7 +810,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
         @Override
         public void messageTransfer(final Transfer xfr)
         {
-            Subject.doAs(_subject, new PrivilegedAction<Object>()
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
             {
                 @Override
                 public Object run()
@@ -808,13 +818,13 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                     _linkListener.messageTransfer(xfr);
                     return null;
                 }
-            });
+            }, _accessControllerContext);
         }
 
         @Override
         public void remoteDetached(final LinkEndpoint endpoint, final Detach detach)
         {
-            Subject.doAs(_subject, new PrivilegedAction<Object>()
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
             {
                 @Override
                 public Object run()
@@ -822,7 +832,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                     _linkListener.remoteDetached(endpoint, detach);
                     return null;
                 }
-            });
+            }, _accessControllerContext);
         }
     }
 
@@ -838,7 +848,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
         @Override
         public void flowStateChanged()
         {
-            Subject.doAs(_subject, new PrivilegedAction<Object>()
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
             {
                 @Override
                 public Object run()
@@ -846,13 +856,13 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                     _previousLink.flowStateChanged();
                     return null;
                 }
-            });
+            }, _accessControllerContext);
         }
 
         @Override
         public void remoteDetached(final LinkEndpoint endpoint, final Detach detach)
         {
-            Subject.doAs(_subject, new PrivilegedAction<Object>()
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
             {
                 @Override
                 public Object run()
@@ -860,7 +870,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                     _previousLink.remoteDetached(endpoint, detach);
                     return null;
                 }
-            });
+            }, _accessControllerContext);
         }
     }
 

@@ -27,9 +27,11 @@ import static org.apache.qpid.server.security.access.Operation.ACCESS_LOGS;
 import static org.apache.qpid.server.security.access.Operation.PUBLISH;
 import static org.apache.qpid.server.security.access.Operation.PURGE;
 
+import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.Principal;
+import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -37,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.security.auth.Subject;
+import javax.security.auth.SubjectDomainCombiner;
 
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.Binding;
@@ -113,6 +116,25 @@ public class SecurityManager
         return getSystemSubject(new TaskPrincipal(taskName));
     }
 
+    public static AccessControlContext getSystemTaskControllerContext(String taskName, Principal principal)
+    {
+        final Subject subject = getSystemTaskSubject(taskName, principal);
+        final AccessControlContext acc = AccessController.getContext();
+        return AccessController.doPrivileged
+                (new PrivilegedAction<AccessControlContext>()
+                {
+                    public AccessControlContext run()
+                    {
+                        if (subject == null)
+                            return new AccessControlContext(acc, null);
+                        else
+                            return new AccessControlContext
+                                    (acc,
+                                     new SubjectDomainCombiner(subject));
+                    }
+                });
+    }
+
     public static Subject getSystemTaskSubject(String taskName, Principal principal)
     {
         return getSystemSubject(new TaskPrincipal(taskName), principal);
@@ -159,6 +181,24 @@ public class SecurityManager
             user = null;
         }
         return user;
+    }
+
+    public static AccessControlContext getAccessControlContextFromSubject(final Subject subject)
+    {
+        final AccessControlContext acc = AccessController.getContext();
+        return AccessController.doPrivileged
+                (new PrivilegedAction<AccessControlContext>()
+                {
+                    public AccessControlContext run()
+                    {
+                        if (subject == null)
+                            return new AccessControlContext(acc, null);
+                        else
+                            return new AccessControlContext
+                                    (acc,
+                                     new SubjectDomainCombiner(subject));
+                    }
+                });
     }
 
 

@@ -23,6 +23,7 @@ package org.apache.qpid.server.virtualhost;
 import static java.util.Collections.newSetFromMap;
 
 import java.io.File;
+import java.security.AccessControlContext;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -109,6 +110,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final Set<AMQPConnection<?>> _connections = newSetFromMap(new ConcurrentHashMap<AMQPConnection<?>, Boolean>());
     private final Set<VirtualHostConnectionListener> _connectionAssociationListeners = new CopyOnWriteArraySet<>();
+    private final AccessControlContext _housekeepingJobContext;
+    private final AccessControlContext _fileSystemSpaceCheckerJobContext;
 
     private static enum BlockingType { STORE, FILESYSTEM };
 
@@ -222,6 +225,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _messagesReceived = new StatisticsCounter("messages-received-" + getName());
         _dataReceived = new StatisticsCounter("bytes-received-" + getName());
         _principal = new VirtualHostPrincipal(this);
+
+        _housekeepingJobContext = SecurityManager.getSystemTaskControllerContext("Housekeeping["+getName()+"]", _principal);
+        _fileSystemSpaceCheckerJobContext = SecurityManager.getSystemTaskControllerContext("FileSystemSpaceChecker["+getName()+"]", _principal);
+
         _fileSystemSpaceChecker = new FileSystemSpaceChecker();
 
         addChangeListener(new TargetSizeAssigningListener());
@@ -617,9 +624,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public void executeTask(final Runnable task, Subject subject)
+    public void executeTask(final String name, final Runnable task, AccessControlContext context)
     {
-        _houseKeepingTaskExecutor.execute(new HouseKeepingTask(this, subject)
+        _houseKeepingTaskExecutor.execute(new HouseKeepingTask(name, this, context)
         {
             @Override
             public void execute()
@@ -1198,7 +1205,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         public VirtualHostHouseKeepingTask()
         {
-            super(AbstractVirtualHost.this);
+            super("Housekeeping["+AbstractVirtualHost.this.getName()+"]",AbstractVirtualHost.this,_housekeepingJobContext);
         }
 
         public void execute()
@@ -2073,8 +2080,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
         public FileSystemSpaceChecker()
         {
-            super(AbstractVirtualHost.this);
-
+            super("FileSystemSpaceChecker["+AbstractVirtualHost.this.getName()+"]",AbstractVirtualHost.this,_fileSystemSpaceCheckerJobContext);
         }
 
         @Override

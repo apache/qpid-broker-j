@@ -22,7 +22,9 @@ package org.apache.qpid.server.protocol.v0_8;
 
 import static org.apache.qpid.transport.util.Functions.hex;
 
+import java.security.AccessControlContext;
 import java.security.AccessControlException;
+import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -57,7 +59,6 @@ import org.apache.qpid.framing.*;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.TransactionTimeoutHelper;
 import org.apache.qpid.server.TransactionTimeoutHelper.CloseAction;
-import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
@@ -137,6 +138,7 @@ public class AMQChannel
 
     private final Pre0_10CreditManager _creditManager;
     private final FlowCreditManager _noAckCreditManager;
+    private final AccessControlContext _accessControllerContext;
 
     /**
      * The delivery tag is unique per channel. This is pre-incremented before putting into the deliver frame so that
@@ -203,7 +205,7 @@ public class AMQChannel
 
     private final CapacityCheckAction _capacityCheckAction = new CapacityCheckAction();
     private final ImmediateAction _immediateAction = new ImmediateAction();
-    private Subject _subject;
+    private final Subject _subject;
     private final CopyOnWriteArrayList<Consumer<?>> _consumers = new CopyOnWriteArrayList<Consumer<?>>();
     private final ConfigurationChangeListener _consumerClosedListener = new ConsumerClosedListener();
     private final CopyOnWriteArrayList<ConsumerListener> _consumerListeners = new CopyOnWriteArrayList<ConsumerListener>();
@@ -239,6 +241,9 @@ public class AMQChannel
                                connection.getAuthorizedSubject().getPublicCredentials(),
                                connection.getAuthorizedSubject().getPrivateCredentials());
         _subject.getPrincipals().add(new SessionPrincipal(this));
+
+        _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
+
         _maxUncommittedInMemorySize = connection.getVirtualHost().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
         _messageAuthorizationRequired = connection.getVirtualHost().getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH);
         _logSubject = new ChannelLogSubject(this);
@@ -267,7 +272,7 @@ public class AMQChannel
             }
         }, getVirtualHost());
 
-        Subject.doAs(_subject, new PrivilegedAction<Object>()
+        AccessController.doPrivileged((new PrivilegedAction<Object>()
         {
             @Override
             public Object run()
@@ -276,8 +281,13 @@ public class AMQChannel
 
                 return null;
             }
-        });
+        }),_accessControllerContext);
 
+    }
+
+    public AccessControlContext getAccessControllerContext()
+    {
+        return _accessControllerContext;
     }
 
     private boolean performGet(final MessageSource queue,

@@ -27,6 +27,7 @@ import java.lang.reflect.Proxy;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.AccessControlException;
+import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -62,6 +63,7 @@ import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
+import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
@@ -76,7 +78,6 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.store.StoreException;
@@ -188,6 +189,8 @@ public class AMQPConnection_0_8
                               AggregateTicker aggregateTicker)
     {
         super(broker, network, port, transport, protocol, connectionId, aggregateTicker);
+
+
         _maxNoOfChannels = broker.getConnection_sessionCountLimit();
         _decoder = new BrokerDecoder(this);
         _binaryDataLimit = getBroker().getContextKeys(false).contains(BROKER_DEBUG_BINARY_DATA_LENGTH)
@@ -250,7 +253,7 @@ public class AMQPConnection_0_8
 
     private <T> T runAsSubject(PrivilegedAction<T> action)
     {
-        return Subject.doAs(getAuthorizedSubject(), action);
+        return AccessController.doPrivileged(action, getAccessControllerContext());
     }
 
     @Override
@@ -292,7 +295,7 @@ public class AMQPConnection_0_8
 
     public void received(final QpidByteBuffer msg)
     {
-        Subject.doAs(getSubject(), new PrivilegedAction<Void>()
+        AccessController.doPrivileged(new PrivilegedAction<Void>()
         {
             @Override
             public Void run()
@@ -322,7 +325,7 @@ public class AMQPConnection_0_8
                 }
                 return null;
             }
-        });
+        }, getAccessControllerContext());
 
     }
 
@@ -823,6 +826,8 @@ public class AMQPConnection_0_8
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
         getSubject().getPrincipals().add(virtualHost.getPrincipal());
+
+        updateAccessControllerContext();
     }
 
     public ProtocolOutputConverter getProtocolOutputConverter()
@@ -840,6 +845,8 @@ public class AMQPConnection_0_8
         getSubject().getPrincipals().addAll(authorizedSubject.getPrincipals());
         getSubject().getPrivateCredentials().addAll(authorizedSubject.getPrivateCredentials());
         getSubject().getPublicCredentials().addAll(authorizedSubject.getPublicCredentials());
+
+        updateAccessControllerContext();
 
     }
 
@@ -915,7 +922,7 @@ public class AMQPConnection_0_8
 
     public void readerIdle()
     {
-        Subject.doAs(getSubject(), new PrivilegedAction<Object>()
+        AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             @Override
             public Object run()
@@ -924,7 +931,7 @@ public class AMQPConnection_0_8
                 _network.close();
                 return null;
             }
-        });
+        }, getAccessControllerContext());
     }
 
     public synchronized void writerIdle()

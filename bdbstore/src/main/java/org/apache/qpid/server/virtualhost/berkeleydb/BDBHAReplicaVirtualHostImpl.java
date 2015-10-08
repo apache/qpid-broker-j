@@ -19,6 +19,7 @@
 
 package org.apache.qpid.server.virtualhost.berkeleydb;
 
+import java.security.AccessControlContext;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,8 +57,6 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.*;
-
-import javax.security.auth.Subject;
 
 /**
   Object that represents the VirtualHost whilst the VirtualHostNode is in the replica role.  The
@@ -133,7 +132,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public void executeTask(Runnable task, Subject subject)
+    public void executeTask(final String name, Runnable task, AccessControlContext context)
     {
         throwUnsupportedForReplica();
     }

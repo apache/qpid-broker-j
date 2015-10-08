@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.security.AccessControlContext;
+import java.security.AccessController;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -219,7 +221,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
                                          ConsumerImpl.Option.SEES_REQUEUES));
 
         // process queue
-        testQueue.processQueue(new QueueRunner(testQueue, mock(Principal.class))
+        testQueue.processQueue(new QueueRunner(testQueue, AccessController.getContext())
         {
             public void run()
             {

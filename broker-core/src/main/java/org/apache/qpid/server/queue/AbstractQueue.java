@@ -21,6 +21,7 @@ package org.apache.qpid.server.queue;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.Principal;
@@ -141,6 +142,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private final VirtualHostImpl _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();
+
+    private final AccessControlContext _immediateDeliveryContext;
 
     @ManagedAttributeField( beforeSet = "preSetAlternateExchange", afterSet = "postSetAlternateExchange")
     private Exchange _alternateExchange;
@@ -282,8 +285,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         super(parentsMap(virtualHost), attributes);
 
+
         _virtualHost = virtualHost;
-        _queueRunner = new QueueRunner(this, _virtualHost.getPrincipal());
+        _immediateDeliveryContext = SecurityManager.getSystemTaskControllerContext("Immediate Delivery", virtualHost.getPrincipal());
+
+        _queueRunner = new QueueRunner(this, SecurityManager.getSystemTaskControllerContext("Queue Delivery",
+                                                                                            virtualHost.getPrincipal()));
     }
 
     @Override
@@ -554,13 +561,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     // ------ Getters and Setters
 
-    public void execute(Runnable runnable, Subject subject)
+    public void execute(final String name, Runnable runnable, AccessControlContext context)
     {
         try
         {
             if (_virtualHost.getState() != State.UNAVAILABLE)
             {
-                _virtualHost.executeTask(runnable, subject);
+                _virtualHost.executeTask(name, runnable, context);
             }
         }
         catch (RejectedExecutionException ree)
@@ -1151,17 +1158,16 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             if (action != null || (exclusiveSub == null  && _queueRunner.isIdle()))
             {
-                Subject.doAs(SecurityManager.getSystemTaskSubject("Immediate Delivery", _virtualHost.getPrincipal()),
-                             new PrivilegedAction<Void>()
-                             {
-                                 @Override
-                                 public Void run()
-                                 {
-                                     tryDeliverStraightThrough(entry);
-                                     return null;
-                                 }
-                             }
-                            );
+                AccessController.doPrivileged(
+                        new PrivilegedAction<Void>()
+                        {
+                            @Override
+                            public Void run()
+                            {
+                                tryDeliverStraightThrough(entry);
+                                return null;
+                            }
+                        }, _immediateDeliveryContext);
             }
 
             if (entry.isAvailable())

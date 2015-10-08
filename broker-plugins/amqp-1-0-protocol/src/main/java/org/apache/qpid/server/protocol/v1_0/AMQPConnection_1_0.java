@@ -22,6 +22,7 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.LinkedHashMap;
@@ -444,7 +445,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 case FRAME:
                     if (msg.hasRemaining())
                     {
-                        Subject.doAs(_connection.getSubject(), new PrivilegedAction<Void>()
+                        AccessController.doPrivileged(new PrivilegedAction<Void>()
                         {
                             @Override
                             public Void run()
@@ -452,7 +453,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                                 _frameHandler = _frameHandler.parse(msg);
                                 return null;
                             }
-                        });
+                        }, getAccessControllerContext());
 
                     }
             }

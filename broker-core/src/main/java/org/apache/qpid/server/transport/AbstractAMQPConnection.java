@@ -21,6 +21,7 @@
 package org.apache.qpid.server.transport;
 
 import java.net.SocketAddress;
+import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -95,6 +96,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final AtomicBoolean _modelClosing = new AtomicBoolean();
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
+    private volatile AccessControlContext _accessControllerContext;
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   NetworkConnection network,
@@ -114,6 +116,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _connectionId = connectionId;
         _aggregateTicker = aggregateTicker;
         _subject.getPrincipals().add(new ConnectionPrincipal(this));
+        updateAccessControllerContext();
+
         _messagesDelivered = new StatisticsCounter("messages-delivered-" + getConnectionId());
         _dataDelivered = new StatisticsCounter("data-delivered-" + getConnectionId());
         _messagesReceived = new StatisticsCounter("messages-received-" + getConnectionId());
@@ -503,6 +507,17 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     public long getMessagesOut()
     {
         return getMessageDeliveryStatistics().getTotal();
+    }
+
+    public AccessControlContext getAccessControllerContext()
+    {
+        return _accessControllerContext;
+    }
+
+    public final void updateAccessControllerContext()
+    {
+        _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(
+                getSubject());
     }
 
     public abstract List<? extends AMQSessionModel<?>> getSessionModels();

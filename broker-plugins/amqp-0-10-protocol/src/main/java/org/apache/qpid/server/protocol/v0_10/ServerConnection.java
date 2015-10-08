@@ -26,6 +26,8 @@ import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.USER_FORM
 import static org.apache.qpid.transport.Connection.State.CLOSING;
 
 import java.net.SocketAddress;
+import java.security.AccessControlContext;
+import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.text.MessageFormat;
@@ -191,6 +193,7 @@ public class ServerConnection extends Connection implements AuthorizationHolder
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
         _amqpConnection.getSubject().getPrincipals().add(_virtualHost.getPrincipal());
+        _amqpConnection.updateAccessControllerContext();
     }
 
     public AmqpPort<?> getPort()
@@ -258,27 +261,27 @@ public class ServerConnection extends Connection implements AuthorizationHolder
     public void received(final ProtocolEvent event)
     {
         _lastIoTime.set(System.currentTimeMillis());
-        Subject subject;
+        AccessControlContext context;
         if (event.isConnectionControl())
         {
-            subject = _amqpConnection.getSubject();
+            context = _amqpConnection.getAccessControllerContext();
         }
         else
         {
             ServerSession channel = (ServerSession) getSession(event.getChannel());
             if (channel != null)
             {
-                subject = channel.getAuthorizedSubject();
+                context = channel.getAccessControllerContext();
             }
             else
             {
-                subject = _amqpConnection.getSubject();
+                context = _amqpConnection.getAccessControllerContext();
             }
         }
 
         if(!_ignoreAllButConnectionCloseOk || (event instanceof ConnectionCloseOk))
         {
-            Subject.doAs(subject, new PrivilegedAction<Void>()
+            AccessController.doPrivileged(new PrivilegedAction<Void>()
             {
                 @Override
                 public Void run()
@@ -286,7 +289,7 @@ public class ServerConnection extends Connection implements AuthorizationHolder
                     ServerConnection.super.received(event);
                     return null;
                 }
-            });
+            }, context);
         }
     }
 
@@ -441,7 +444,7 @@ public class ServerConnection extends Connection implements AuthorizationHolder
         else
         {
             getAuthorizedSubject().getPrincipals().addAll(authorizedSubject.getPrincipals());
-
+            _amqpConnection.updateAccessControllerContext();
             _authorizedPrincipal = AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(authorizedSubject);
         }
     }

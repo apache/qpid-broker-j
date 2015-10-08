@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
+import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.Principal;
 import java.util.Collection;
@@ -136,7 +137,7 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     @ManagedContextDefault( name = "virtualhost.enabledConnectionValidators")
     String DEFAULT_ENABLED_VALIDATORS = "[]";
 
-    void executeTask(Runnable task, Subject subject);
+    void executeTask(String name, Runnable task, AccessControlContext context);
 
     @ManagedAttribute( defaultValue = "${virtualhost.enabledConnectionValidators}")
     List<String> getEnabledConnectionValidators();
