@@ -23,6 +23,8 @@ package org.apache.qpid.server.store.berkeleydb.logging;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -36,6 +38,8 @@ import org.slf4j.LoggerFactory;
 
 public class Slf4jLoggingHandler extends Handler
 {
+    private final ConcurrentMap<String,Logger> _loggers = new ConcurrentHashMap<>();
+
     public Slf4jLoggingHandler(final String prefix)
     {
         setFormatter(new Formatter()
@@ -151,7 +155,7 @@ public class Slf4jLoggingHandler extends Handler
     public void publish(final LogRecord record)
     {
         MappedLevel level = convertLevel(record);
-        final Logger logger = LoggerFactory.getLogger(record.getLoggerName());
+        final Logger logger = getLogger(record.getLoggerName());
         if (level.isEnabled(logger))
         {
 
@@ -176,6 +180,17 @@ public class Slf4jLoggingHandler extends Handler
         }
     }
 
+    private Logger getLogger(String loggerName)
+    {
+        Logger logger = _loggers.get(loggerName);
+        if(logger == null)
+        {
+            logger = LoggerFactory.getLogger(loggerName);
+            _loggers.putIfAbsent(loggerName, logger);
+        }
+        return logger;
+    }
+
     private MappedLevel convertLevel(LogRecord record)
     {
         if (record.getLevel() == Level.SEVERE && record.getLoggerName().equals(Cleaner.class.getName()) && record.getMessage().startsWith("Average cleaner backlog has grown from"))
@@ -191,7 +206,7 @@ public class Slf4jLoggingHandler extends Handler
     {
         MappedLevel mappedLevel = convertLevel(record.getLevel());
 
-        return mappedLevel.isEnabled(LoggerFactory.getLogger(record.getLoggerName()));
+        return mappedLevel.isEnabled(getLogger(record.getLoggerName()));
     }
 
     private MappedLevel convertLevel(final Level level)
