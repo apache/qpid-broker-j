@@ -71,7 +71,7 @@ public class SeriesPainter
         final BasicStroke stroke;
         if (dashed)
         {
-            stroke = new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[] {5.0f, 3.0f}, 0.0f);
+            stroke = new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[] {3.0f, 3.0f}, 0.0f);
         }
         else
         {
