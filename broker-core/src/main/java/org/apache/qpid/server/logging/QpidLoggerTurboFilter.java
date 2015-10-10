@@ -23,7 +23,6 @@ package org.apache.qpid.server.logging;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -36,15 +35,10 @@ import org.slf4j.Marker;
 public final class QpidLoggerTurboFilter extends TurboFilter
 {
     private final CopyOnWriteArrayList<EffectiveLevelFilter> _filters = new CopyOnWriteArrayList<>();
-    private final AtomicReference<ConcurrentMap<Logger, Level>> _effectiveLevels =
-            new AtomicReference<>();
-
-    public QpidLoggerTurboFilter()
-    {
-        clearCachedResults();
-    }
-
-
+    private final ConcurrentMap<Logger, Integer> _effectiveLevels = new ConcurrentHashMap<>();
+    private volatile int _minimumLogLevel = Level.OFF.levelInt;
+    /** Ensures writes to _minimumLogLevel are single threaded */
+    private final Object _minimumLevelLock = new Object();
 
     @Override
     public FilterReply decide(final Marker marker,
@@ -54,25 +48,28 @@ public final class QpidLoggerTurboFilter extends TurboFilter
                               final Object[] params,
                               final Throwable t)
     {
-        final ConcurrentMap<Logger, Level> effectiveLevels = _effectiveLevels.get();
-        Level effectiveLoggerLevel = effectiveLevels.get(logger);
+        if (level.levelInt  < _minimumLogLevel)
+        {
+            // Optimisation - no filters accept an event with this level
+            return FilterReply.DENY;
+        }
 
+        Integer effectiveLoggerLevel = _effectiveLevels.get(logger);
         if(effectiveLoggerLevel == null)
         {
-            effectiveLoggerLevel = Level.OFF;
-            for(EffectiveLevelFilter filter : _filters)
+            effectiveLoggerLevel = Level.OFF.levelInt;
+            for (EffectiveLevelFilter filter : _filters)
             {
-                Level loggerLevel = filter.getEffectiveLevel(logger);
-                if(effectiveLoggerLevel.isGreaterOrEqual(loggerLevel))
+                Integer loggerLevel = filter.getEffectiveLevel(logger).levelInt;
+                if (effectiveLoggerLevel >= loggerLevel)
                 {
                     effectiveLoggerLevel = loggerLevel;
                 }
             }
-            effectiveLevels.putIfAbsent(logger, effectiveLoggerLevel);
+            _effectiveLevels.putIfAbsent(logger, effectiveLoggerLevel);
         }
 
-
-        return level.isGreaterOrEqual(effectiveLoggerLevel) ? FilterReply.ACCEPT : FilterReply.DENY;
+        return level.levelInt >= effectiveLoggerLevel ? FilterReply.ACCEPT : FilterReply.DENY;
     }
 
     public void filterAdded(EffectiveLevelFilter filter)
@@ -81,11 +78,6 @@ public final class QpidLoggerTurboFilter extends TurboFilter
         {
             clearCachedResults();
         }
-    }
-
-    private void clearCachedResults()
-    {
-        _effectiveLevels.set(new ConcurrentHashMap<Logger, Level>());
     }
 
     public void filterRemoved(EffectiveLevelFilter filter)
@@ -101,6 +93,19 @@ public final class QpidLoggerTurboFilter extends TurboFilter
         if(_filters.contains(filter))
         {
             clearCachedResults();
+        }
+    }
+
+    private void clearCachedResults()
+    {
+        _effectiveLevels.clear();
+        synchronized (_minimumLevelLock)
+        {
+            _minimumLogLevel = Level.OFF.levelInt;
+            for (EffectiveLevelFilter filter : _filters)
+            {
+                _minimumLogLevel = Math.min(filter.getLevel().levelInt, _minimumLogLevel);
+            }
         }
     }
 
@@ -133,11 +138,6 @@ public final class QpidLoggerTurboFilter extends TurboFilter
         return filter;
     }
 
-
-    public static QpidLoggerTurboFilter installIfNecessaryToRootContext()
-    {
-        return installIfNecessary(getRootContext());
-    }
 
     public static void uninstallFromRootContext()
     {
