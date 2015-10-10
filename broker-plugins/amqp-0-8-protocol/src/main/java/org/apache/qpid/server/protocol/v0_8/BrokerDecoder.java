@@ -21,12 +21,9 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import java.io.IOException;
-import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
-
-import javax.security.auth.Subject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,58 +53,62 @@ public class BrokerDecoder extends ServerDecoder
             throws AMQFrameDecodingException, IOException
     {
         long startTime = 0;
-        if (_logger.isDebugEnabled())
-        {
-            startTime = System.currentTimeMillis();
-        }
-        AccessControlContext context;
-        AMQChannel channel = _connection.getChannel(channelId);
-        if(channel == null)
-        {
-            context = _connection.getAccessControllerContext();
-        }
-        else
-        {
-            _connection.channelRequiresSync(channel);
-
-            context = channel.getAccessControllerContext();
-        }
         try
         {
-            AccessController.doPrivileged(new PrivilegedExceptionAction<Object>()
+            if (_logger.isDebugEnabled())
             {
-                @Override
-                public Void run() throws IOException, AMQFrameDecodingException
-                {
-                    doProcessFrame(channelId, type, bodySize, in);
-                    return null;
-                }
-            }, context);
+                startTime = System.currentTimeMillis();
+            }
+            AMQChannel channel = _connection.getChannel(channelId);
+            if(channel == null)
+            {
+                doProcessFrame(channelId, type, bodySize, in);
+            }
+            else
+            {
+                _connection.channelRequiresSync(channel);
 
+                try
+                {
+                    AccessController.doPrivileged(new PrivilegedExceptionAction<Object>()
+                    {
+                        @Override
+                        public Void run() throws IOException, AMQFrameDecodingException
+                        {
+                            doProcessFrame(channelId, type, bodySize, in);
+                            return null;
+                        }
+                    }, channel.getAccessControllerContext());
+                }
+                catch (PrivilegedActionException e)
+                {
+                    Throwable cause = e.getCause();
+                    if(cause instanceof IOException)
+                    {
+                        throw (IOException) cause;
+                    }
+                    else if(cause instanceof AMQFrameDecodingException)
+                    {
+                        throw (AMQFrameDecodingException) cause;
+                    }
+                    else if(cause instanceof RuntimeException)
+                    {
+                        throw (RuntimeException) cause;
+                    }
+                    else
+                    {
+                        throw new ServerScopedRuntimeException(cause);
+                    }
+                }
+            }
+        }
+        finally
+        {
             if(_logger.isDebugEnabled())
             {
-                _logger.debug("Frame handled in " + (System.currentTimeMillis() - startTime) + " ms.");
+                _logger.debug("Frame handled in {} ms.", (System.currentTimeMillis() - startTime));
             }
-
         }
-        catch (PrivilegedActionException e)
-        {
-            Throwable cause = e.getCause();
-            if(cause instanceof IOException)
-            {
-                throw (IOException) cause;
-            }
-            else if(cause instanceof AMQFrameDecodingException)
-            {
-                throw (AMQFrameDecodingException) cause;
-            }
-            else if(cause instanceof RuntimeException)
-            {
-                throw (RuntimeException) cause;
-            }
-            else throw new ServerScopedRuntimeException(cause);
-        }
-
     }
 
 
