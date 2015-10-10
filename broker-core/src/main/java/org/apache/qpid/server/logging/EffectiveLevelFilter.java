@@ -25,7 +25,5 @@ import ch.qos.logback.classic.Logger;
 
 public interface EffectiveLevelFilter
 {
-    Level getLevel();
-
     Level getEffectiveLevel(Logger logger);
 }

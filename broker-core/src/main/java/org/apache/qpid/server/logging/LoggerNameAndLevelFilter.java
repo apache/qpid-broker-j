@@ -50,7 +50,6 @@ public class LoggerNameAndLevelFilter extends Filter<ILoggingEvent> implements E
         _level = level;
     }
 
-    @Override
     public Level getLevel()
     {
         return _level;
