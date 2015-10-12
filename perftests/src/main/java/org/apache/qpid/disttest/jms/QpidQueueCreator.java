@@ -146,17 +146,42 @@ public class QpidQueueCreator implements QueueCreator
     @Override
     public void deleteQueues(Connection connection, Session session, List<QueueConfig> configs)
     {
-        AMQSession<?, ?> amqSession = (AMQSession<?, ?>)session;
-        for (QueueConfig queueConfig : configs)
+        AMQSession<?, ?> noAckSession = null;
+        try
         {
-            AMQDestination destination = createAMQDestination(amqSession, queueConfig);
+            noAckSession =
+                    (AMQSession<?, ?>) connection.createSession(false, org.apache.qpid.jms.Session.NO_ACKNOWLEDGE);
 
-            // drainQueue method is added because deletion of queue with a lot
-            // of messages takes time and might cause the timeout exception
-            drainQueue(connection, destination);
+            for (QueueConfig queueConfig : configs)
+            {
+                AMQDestination destination = createAMQDestination(noAckSession, queueConfig);
 
-            deleteQueue(amqSession, destination);
+                // drainQueue method is added because deletion of queue with a lot
+                // of messages takes time and might cause the timeout exception
+                drainQueue(noAckSession, destination);
+
+                deleteQueue(noAckSession, destination);
+            }
         }
+        catch (Exception e)
+        {
+            throw new DistributedTestException("Failed to delete queues", e);
+        }
+        finally
+        {
+            if (noAckSession != null)
+            {
+                try
+                {
+                    noAckSession.close();
+                }
+                catch (JMSException e)
+                {
+                    throw new DistributedTestException("Failed to close n/a session:" + noAckSession, e);
+                }
+            }
+        }
+
     }
 
     private AMQDestination createAMQDestination(AMQSession<?, ?> amqSession, QueueConfig queueConfig)
@@ -184,16 +209,15 @@ public class QpidQueueCreator implements QueueCreator
         }
     }
 
-    private void drainQueue(Connection connection, AMQDestination destination)
+    private void drainQueue(Session noAckSession, AMQDestination destination)
     {
-        Session noAckSession = null;
+        MessageConsumer messageConsumer = null;
         try
         {
             LOGGER.debug("About to drain the queue {}", destination.getQueueName());
-            noAckSession = connection.createSession(false, org.apache.qpid.jms.Session.NO_ACKNOWLEDGE);
-            MessageConsumer messageConsumer = noAckSession.createConsumer(destination);
+            messageConsumer = noAckSession.createConsumer(destination);
 
-            long currentQueueDepth = getQueueDepth((AMQSession<?,?>)noAckSession, destination);
+            long currentQueueDepth = getQueueDepth((AMQSession<?,?>) noAckSession, destination);
             int counter = 0;
             while (currentQueueDepth > 0)
             {
@@ -204,10 +228,9 @@ public class QpidQueueCreator implements QueueCreator
                     counter++;
                 }
 
-                currentQueueDepth = getQueueDepth((AMQSession<?,?>)noAckSession, destination);
+                currentQueueDepth = getQueueDepth((AMQSession<?,?>) noAckSession, destination);
             }
             LOGGER.info("Drained {} message(s) from queue {} ", counter, destination.getQueueName());
-            messageConsumer.close();
         }
         catch (Exception e)
         {
@@ -215,15 +238,14 @@ public class QpidQueueCreator implements QueueCreator
         }
         finally
         {
-            if (noAckSession != null)
+            if (messageConsumer != null)
             {
                 try
                 {
-                    noAckSession.close();
+                    messageConsumer.close();
                 }
                 catch (JMSException e)
                 {
-                    throw new DistributedTestException("Failed to close n/a session:" + noAckSession, e);
                 }
             }
         }
@@ -283,7 +305,13 @@ public class QpidQueueCreator implements QueueCreator
                 EMPTY_QUEUE_BIND_ARGUMENTS : FieldTable.convertToFieldTable(EMPTY_QUEUE_BIND_ARGUMENTS);
         Object exchangeName = invokeByReflection(destination, _getExchangeName);
 
-        invokeByReflection(session, _bindQueue, amqQueueName, routingKey, bindArguments, exchangeName, destination);
+        // Don't try and bind the queue to the default exchange
+        if (exchangeName != null &&
+            !"".equals(exchangeName) &&
+            !AMQShortString.EMPTY_STRING.equals(exchangeName))
+        {
+            invokeByReflection(session, _bindQueue, amqQueueName, routingKey, bindArguments, exchangeName, destination);
+        }
     }
 
     private Object invokeByReflection(Object target, Method method, Object... parameters)

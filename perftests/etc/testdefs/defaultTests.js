@@ -106,7 +106,7 @@ function createTest(name, acknowledgeMode, deliveryMode, transport)
   {
     var queueName = "testQueue_" + i;
     var destination = "BURL:direct:////" + queueName + "?durable='true'";
-    test._queues.push({"_name": queueName, "_durable": true});
+    test._queues.push({"_name": destination, "_durable": true});
 
     test._clients[0]._connections.push(createProducerConnection(i, connectionFactory, destination, acknowledgeMode, deliveryMode));
     test._clients[1]._connections.push(createConsumerConnection(i, connectionFactory, destination, acknowledgeMode));
