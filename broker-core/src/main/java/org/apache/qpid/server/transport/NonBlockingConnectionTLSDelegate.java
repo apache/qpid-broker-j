@@ -178,9 +178,16 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
         else
         {
             QpidByteBuffer currentBuffer = _applicationBuffer;
-            int newBufSize = (currentBuffer.capacity() < _networkBufferSize)
-                    ? _networkBufferSize
-                    : currentBuffer.capacity() + _networkBufferSize;
+            int newBufSize;
+            if (currentBuffer.capacity() < _networkBufferSize)
+            {
+                newBufSize = _networkBufferSize;
+            }
+            else
+            {
+                newBufSize = currentBuffer.capacity() + _networkBufferSize;
+                _parent.reportUnexpectedByteBufferSizeUsage();
+            }
 
             _applicationBuffer = QpidByteBuffer.allocateDirect(newBufSize);
             _applicationBuffer.put(currentBuffer);

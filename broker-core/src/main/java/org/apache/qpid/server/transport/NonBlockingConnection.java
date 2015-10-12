@@ -64,6 +64,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private boolean _partialRead = false;
 
     private final AmqpPort _port;
+    private boolean _unexpectedByteBufferSizeUsed;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -471,4 +472,13 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         LOGGER.debug("Identified transport encryption as " + transportEncryption);
     }
 
+    void reportUnexpectedByteBufferSizeUsage()
+    {
+        if (!_unexpectedByteBufferSizeUsed)
+        {
+            LOGGER.info("At least one frame unexpectedly does not fit into default byte buffer size ({}B) on a connection {}.",
+                    _port.getNetworkBufferSize(), this.toString());
+            _unexpectedByteBufferSizeUsed = true;
+        }
+    }
 }

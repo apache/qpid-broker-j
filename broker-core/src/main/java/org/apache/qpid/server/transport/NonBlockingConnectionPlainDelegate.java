@@ -78,9 +78,17 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
         else
         {
             QpidByteBuffer currentBuffer = _netInputBuffer;
-            int newBufSize = (currentBuffer.capacity() < _networkBufferSize)
-                    ? _networkBufferSize
-                    : currentBuffer.capacity() + _networkBufferSize;
+            int newBufSize;
+
+            if (currentBuffer.capacity() < _networkBufferSize)
+            {
+                newBufSize = _networkBufferSize;
+            }
+            else
+            {
+                newBufSize = currentBuffer.capacity() + _networkBufferSize;
+                _parent.reportUnexpectedByteBufferSizeUsage();
+            }
 
             _netInputBuffer = QpidByteBuffer.allocateDirect(newBufSize);
             _netInputBuffer.put(currentBuffer);

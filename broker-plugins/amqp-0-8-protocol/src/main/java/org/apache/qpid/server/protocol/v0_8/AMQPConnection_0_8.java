@@ -283,6 +283,15 @@ public class AMQPConnection_0_8
         return _maxFrameSize;
     }
 
+    private int getDefaultMaxFrameSize()
+    {
+        Broker<?> broker = getBroker();
+
+        // QPID-6784 : Some old clients send payload with size equals to max frame size
+        // we want to fit those frames into the network buffer
+        return broker.getNetworkBufferSize() - AMQFrame.getFrameOverhead();
+    }
+
     public boolean isClosing()
     {
         return _orderlyClose.get();
@@ -317,8 +326,7 @@ public class AMQPConnection_0_8
                     if (_virtualHost.getState() == State.ACTIVE)
                     {
                         throw new ServerScopedRuntimeException(e);
-                    }
-                    else
+                    } else
                     {
                         throw new ConnectionScopedRuntimeException(e);
                     }
@@ -1249,7 +1257,7 @@ public class AMQPConnection_0_8
             case SUCCESS:
                 _logger.debug("Connected as: {} ", authResult.getSubject());
 
-                int frameMax = broker.getNetworkBufferSize();
+                int frameMax = getDefaultMaxFrameSize();
 
                 if (frameMax <= 0)
                 {
@@ -1356,7 +1364,7 @@ public class AMQPConnection_0_8
                         _logger.debug("Connected as: {}", authResult.getSubject());
                         setAuthorizedSubject(authResult.getSubject());
 
-                        int frameMax = broker.getNetworkBufferSize();
+                        int frameMax = getDefaultMaxFrameSize();
 
                         if (frameMax <= 0)
                         {
@@ -1399,7 +1407,7 @@ public class AMQPConnection_0_8
 
         initHeartbeats(heartbeat);
 
-        int brokerFrameMax = getBroker().getNetworkBufferSize();
+        int brokerFrameMax = getDefaultMaxFrameSize();
         if (brokerFrameMax <= 0)
         {
             brokerFrameMax = Integer.MAX_VALUE;

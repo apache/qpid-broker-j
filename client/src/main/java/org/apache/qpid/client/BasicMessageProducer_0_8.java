@@ -396,7 +396,7 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
         else
         {
 
-            final long framePayloadMax = getSession().getAMQConnection().getMaximumFrameSize() - 1;
+            final long framePayloadMax = getMaximumPayloadSize();
             long remaining = payload.remaining();
             for (int i = offset; i < frames.length; i++)
             {
@@ -424,12 +424,17 @@ public class BasicMessageProducer_0_8 extends BasicMessageProducer
         else
         {
             int dataLength = payload.remaining();
-            final long framePayloadMax = getSession().getAMQConnection().getMaximumFrameSize() - 1;
+            final long framePayloadMax = getMaximumPayloadSize();
             int lastFrame = ((dataLength % framePayloadMax) > 0) ? 1 : 0;
             frameCount = (int) (dataLength / framePayloadMax) + lastFrame;
         }
 
         return frameCount;
+    }
+
+    private long getMaximumPayloadSize()
+    {
+        return getSession().getAMQConnection().getMaximumFrameSize() - 8;
     }
 
     @Override
