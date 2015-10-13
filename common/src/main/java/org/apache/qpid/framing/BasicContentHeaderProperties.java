@@ -493,9 +493,7 @@ public class BasicContentHeaderProperties
     {
         if(useEncodedForm())
         {
-            final QpidByteBuffer duplicate = _encodedForm.duplicate();
-            buffer.put(duplicate);
-            duplicate.dispose();
+            buffer.putCopyOf(_encodedForm);
             return _encodedForm.remaining();
         }
         else
