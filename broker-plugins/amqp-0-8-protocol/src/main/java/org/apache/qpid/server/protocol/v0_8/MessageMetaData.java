@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,7 +39,6 @@ import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
-import org.apache.qpid.server.util.ByteBufferOutputStream;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
 
@@ -53,7 +50,7 @@ public class MessageMetaData implements StorableMessageMetaData
 {
     private final MessagePublishInfo _messagePublishInfo;
 
-    private ContentHeaderBody _contentHeaderBody;
+    private final ContentHeaderBody _contentHeaderBody;
 
 
     private long _arrivalTime;
@@ -110,17 +107,17 @@ public class MessageMetaData implements StorableMessageMetaData
     }
 
 
-    public int writeToBuffer(QpidByteBuffer dest)
+    public int writeToBuffer(final QpidByteBuffer dest)
     {
         int oldPosition = dest.position();
         try
         {
 
-            DataOutput dataOutputStream = dest.asDataOutput();
-            EncodingUtils.writeInteger(dataOutputStream, _contentHeaderBody.getSize());
-            _contentHeaderBody.writePayload(dataOutputStream);
-            EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getExchange());
-            EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getRoutingKey());
+            dest.putInt(_contentHeaderBody.getSize());
+            _contentHeaderBody.writePayload(dest);
+
+            EncodingUtils.writeShortStringBytes(dest, _messagePublishInfo.getExchange());
+            EncodingUtils.writeShortStringBytes(dest, _messagePublishInfo.getRoutingKey());
             byte flags = 0;
             if(_messagePublishInfo.isMandatory())
             {
@@ -173,9 +170,8 @@ public class MessageMetaData implements StorableMessageMetaData
                                                 }
                                             });
             buf = QpidByteBuffer.allocateDirect(9+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getExchange())+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getRoutingKey()));
-            DataOutput dataOutputStream = buf.asDataOutput();
-            EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getExchange());
-            EncodingUtils.writeShortStringBytes(dataOutputStream, _messagePublishInfo.getRoutingKey());
+            EncodingUtils.writeShortStringBytes(buf, _messagePublishInfo.getExchange());
+            EncodingUtils.writeShortStringBytes(buf, _messagePublishInfo.getRoutingKey());
             byte flags = 0;
             if(_messagePublishInfo.isMandatory())
             {

@@ -23,8 +23,10 @@ package org.apache.qpid.server.store;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
+import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
@@ -88,6 +90,58 @@ public class PersistentStoreTest extends QpidBrokerTestCase
         killBroker();
         startBroker();
         confirmBrokerStillHasCommittedMessages();
+    }
+
+    public void testHeaderPersistence() throws Exception
+    {
+        _con.start();
+        _session = _con.createSession(true, Session.SESSION_TRANSACTED);
+        _destination = _session.createQueue(getTestQueueName());
+        Destination replyTo = _session.createQueue(getTestQueueName() + "_reply");
+        MessageConsumer consumer = _session.createConsumer(_destination);
+        MessageProducer producer = _session.createProducer(_destination);
+
+        final long expiration = System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1);
+        final int priority = 3;
+        final String propertyKey = "mystring";
+        final String propertyValue = "string";
+
+        Message msg = _session.createMessage();
+        msg.setStringProperty(propertyKey, propertyValue);
+        msg.setJMSExpiration(expiration);
+        msg.setJMSReplyTo(replyTo);
+
+        producer.send(msg, DeliveryMode.PERSISTENT, priority, expiration);
+        _session.commit();
+
+        final String sentMessageId = msg.getJMSMessageID();
+
+        Message receivedMessage = consumer.receive(1000);
+        long receivedJmsExpiration = receivedMessage.getJMSExpiration();
+        assertEquals("Unexpected JMS message id", sentMessageId, receivedMessage.getJMSMessageID());
+        assertEquals("Unexpected JMS replyto", replyTo, receivedMessage.getJMSReplyTo());
+        assertEquals("Unexpected JMS priority", priority, receivedMessage.getJMSPriority());
+        assertTrue("Expecting expiration to be in the future", receivedJmsExpiration > 0);
+        assertTrue("Expecting user property to be present", receivedMessage.propertyExists(propertyKey));
+        assertEquals("Unexpected user property", propertyValue, receivedMessage.getStringProperty(propertyKey));
+        // Do not commit message so we can re-receive after Broker restart
+
+        stopBroker();
+        startBroker();
+
+        _con = getConnection();
+        _con.start();
+        _session = _con.createSession(true, Session.SESSION_TRANSACTED);
+        consumer = _session.createConsumer(_destination);
+
+        Message rereceivedMessage = consumer.receive(1000);
+        assertEquals("Unexpected JMS message id", sentMessageId, rereceivedMessage.getJMSMessageID());
+        assertEquals("Unexpected JMS replyto", replyTo, rereceivedMessage.getJMSReplyTo());
+        assertEquals("Unexpected JMS priority", priority, rereceivedMessage.getJMSPriority());
+        assertEquals("Expecting expiration to be unchanged", receivedJmsExpiration, rereceivedMessage.getJMSExpiration());
+        assertTrue("Expecting user property to be present", rereceivedMessage.propertyExists(propertyKey));
+        assertEquals("Unexpected user property", propertyValue, rereceivedMessage.getStringProperty(propertyKey));
+        _session.commit();
     }
 
     private void sendAndCommitMessages() throws Exception

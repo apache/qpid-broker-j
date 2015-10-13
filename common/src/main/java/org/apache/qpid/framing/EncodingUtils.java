@@ -245,6 +245,19 @@ public class EncodingUtils
         }
     }
 
+    public static void writeShortStringBytes(QpidByteBuffer buffer, AMQShortString s) throws IOException
+    {
+        if (s != null)
+        {
+            s.writeToBuffer(buffer);
+        }
+        else
+        {
+            // really writing out unsigned byte
+            buffer.put((byte) 0);
+        }
+    }
+
     public static void writeLongStringBytes(DataOutput buffer, String s) throws IOException
     {
         if (s != null)

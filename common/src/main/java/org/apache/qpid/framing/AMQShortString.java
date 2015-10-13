@@ -33,6 +33,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+
 /**
  * A short string is a representation of an AMQ Short String
  * Short strings differ from the Java String class by being limited to on ASCII characters (0-127)
@@ -207,6 +209,13 @@ public final class AMQShortString implements Comparable<AMQShortString>
         buffer.writeByte(size);
         buffer.write(_data, _offset, size);
 
+    }
+
+    public void writeToBuffer(QpidByteBuffer buffer) throws IOException
+    {
+        final int size = length();
+        buffer.put((byte)size);
+        buffer.put(_data, _offset, size);
     }
 
 

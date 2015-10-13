@@ -114,6 +114,15 @@ public class ContentHeaderBody implements AMQBody
         return HEADER_SIZE + _properties.writePropertyListPayload(sender);
     }
 
+    public long writePayload(final QpidByteBuffer buf) throws IOException
+    {
+        EncodingUtils.writeUnsignedShort(buf, CLASS_ID);
+        EncodingUtils.writeUnsignedShort(buf, 0);
+        buf.putLong(_bodySize);
+        EncodingUtils.writeUnsignedShort(buf, _properties.getPropertyFlags());
+        return HEADER_SIZE + _properties.writePropertyListPayload(buf);
+    }
+
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
             throws QpidException
     {

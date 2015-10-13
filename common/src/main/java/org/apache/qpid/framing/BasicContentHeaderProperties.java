@@ -489,6 +489,24 @@ public class BasicContentHeaderProperties
 
     }
 
+    public synchronized long writePropertyListPayload(final QpidByteBuffer buffer) throws IOException
+    {
+        if(useEncodedForm())
+        {
+            final QpidByteBuffer duplicate = _encodedForm.duplicate();
+            buffer.put(duplicate);
+            duplicate.dispose();
+            return _encodedForm.remaining();
+        }
+        else
+        {
+            int propertyListSize = getPropertyListSize();
+            writePropertyListPayload(buffer.asDataOutput());
+            return propertyListSize;
+        }
+
+    }
+
     public synchronized void populatePropertiesFromBuffer(MarkableDataInput buffer, int propertyFlags, int size) throws AMQFrameDecodingException, IOException
     {
         _propertyFlags = propertyFlags;
@@ -936,12 +954,14 @@ public class BasicContentHeaderProperties
         nullEncodedForm();
     }
 
+    @Override
     public String toString()
     {
         return "reply-to = " + _replyTo + ",propertyFlags = " + _propertyFlags + ",ApplicationID = " + _appId
             + ",ClusterID = " + _clusterId + ",UserId = " + _userId + ",JMSMessageID = " + _messageId
             + ",JMSCorrelationID = " + _correlationId + ",JMSDeliveryMode = " + _deliveryMode + ",JMSExpiration = "
-            + _expiration + ",JMSPriority = " + _priority + ",JMSTimestamp = " + _timestamp + ",JMSType = " + _type;
+            + _expiration + ",JMSPriority = " + _priority + ",JMSTimestamp = " + _timestamp + ",JMSType = " + _type
+            + ",contentType = " + _contentType;
     }
 
     private synchronized boolean useEncodedForm()
