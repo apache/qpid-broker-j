@@ -25,7 +25,7 @@
   <para>The Broker can be managed over a number of different channels.</para>
   <itemizedlist>
     <listitem>
-      <para>HTTP - The primary channel for management. The HTTP interface comprises of a Web
+      <para>HTTP - The primary channel for management. The HTTP interface comprises a Web
         Console and a REST API.</para>
     </listitem>
     <listitem>
