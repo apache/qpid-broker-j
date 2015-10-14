@@ -28,8 +28,19 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.read.ListAppender;
+import ch.qos.logback.core.spi.FilterReply;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -46,6 +57,8 @@ import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.util.FileUtils;
 
 public class AbstractVirtualHostTest extends QpidTestCase
 {
@@ -256,5 +269,56 @@ public class AbstractVirtualHostTest extends QpidTestCase
         host.start();
         assertEquals("Unexpected state", State.ACTIVE, host.getState());
         host.close();
+    }
+
+    // This indirectly tests QPID-6283
+    public void testFileSystemCheckWarnsWhenFileSystemDoesNotExist() throws Exception
+    {
+        Map<String,Object> attributes = Collections.<String, Object>singletonMap(AbstractVirtualHost.NAME,
+                                                                                 getTestName());
+        final MessageStore store = mock(MessageStore.class);
+        when(store.newMessageStoreReader()).thenReturn(mock(MessageStore.MessageStoreReader.class));
+        File nonExistingFile = TestFileUtils.createTempFile(this);
+        FileUtils.delete(nonExistingFile, false);
+        when(store.getStoreLocationAsFile()).thenReturn(nonExistingFile);
+        setTestSystemProperty("virtualhost.housekeepingCheckPeriod", "1");
+
+        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        {
+            @Override
+            protected MessageStore createMessageStore()
+            {
+                return  store;
+            }
+        };
+
+        final CountDownLatch warningReceivedLatch = new CountDownLatch(1);
+        String loggerName = AbstractVirtualHost.class.getName();
+        Level logLevel = Level.WARN;
+        watchForLogMessage(warningReceivedLatch, loggerName, logLevel);
+        host.open();
+        assertTrue("Did not receive warning", warningReceivedLatch.await(2, TimeUnit.SECONDS));
+    }
+
+    private void watchForLogMessage(final CountDownLatch warningReceivedLatch,
+                                    final String loggerName,
+                                    final Level logLevel)
+    {
+        ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.addFilter(new Filter<ILoggingEvent>()
+        {
+            @Override
+            public FilterReply decide(final ILoggingEvent event)
+            {
+                if (event.getLoggerName().equals(loggerName) && event.getLevel().equals(logLevel))
+                {
+                    warningReceivedLatch.countDown();
+                }
+                return FilterReply.NEUTRAL;
+            }
+        });
+        appender.start();
+        rootLogger.addAppender(appender);
     }
 }

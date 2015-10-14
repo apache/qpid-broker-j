@@ -2086,6 +2086,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         @Override
         public void execute()
         {
+            if (!_fileSystem.exists())
+            {
+                _logger.warn("Cannot check file system for disk space because store path '{}' does not exist", _fileSystem.getPath());
+                return;
+            }
             long totalSpace = _fileSystem.getTotalSpace();
             long freeSpace = _fileSystem.getFreeSpace();
 
