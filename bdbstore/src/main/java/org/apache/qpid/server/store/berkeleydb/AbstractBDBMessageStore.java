@@ -1040,7 +1040,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 {
                     checkMessageStoreOpen();
                     metaData = (T) getMessageMetaData(_messageId);
-                    _messageDataRef = new MessageDataSoftRef<>(metaData, null);
+                    _messageDataRef = new MessageDataSoftRef<>(metaData, _messageDataRef.getData());
                 }
                 return metaData;
             }
@@ -1078,8 +1078,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public synchronized int getContent(int offsetInMessage, final ByteBuffer dst)
+        public synchronized int getContent(final ByteBuffer dst)
         {
+            // These do not need to be disposed of because getContentAsByteBuffer() retains a reference
             Collection<QpidByteBuffer> allContent = getContentAsByteBuffer();
             int length = 0;
             for(QpidByteBuffer contentChunk : allContent)
@@ -1090,6 +1091,9 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             return length;
         }
 
+        /**
+         * returns QBBs containing the content. The caller must not dispose of them because we keep a reference in _messageDataRef.
+         */
         private Collection<QpidByteBuffer> getContentAsByteBuffer()
         {
             Collection<QpidByteBuffer> data = _messageDataRef == null ? Collections.<QpidByteBuffer>emptyList() : _messageDataRef.getData();
@@ -1099,16 +1103,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 {
                     checkMessageStoreOpen();
                     data = AbstractBDBMessageStore.this.getAllContent(_messageId);
-                    T metaData = _messageDataRef.getMetaData();
-                    if (metaData == null)
-                    {
-                        metaData = (T) getMessageMetaData(_messageId);
-                        _messageDataRef = new MessageDataSoftRef<T>(metaData, data);
-                    }
-                    else
-                    {
-                        _messageDataRef.setData(data);
-                    }
+                    _messageDataRef.setData(data);
                 }
                 else
                 {
@@ -1119,44 +1114,14 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public synchronized Collection<QpidByteBuffer> getContent(final int offsetInMessage, final int size)
+        public synchronized Collection<QpidByteBuffer> getContent()
         {
-            int pos = 0;
-            int added = 0;
-
             Collection<QpidByteBuffer> bufs = getContentAsByteBuffer();
-            List<QpidByteBuffer> content = new ArrayList<>(bufs.size());
-            for(QpidByteBuffer buf : bufs)
+            Collection<QpidByteBuffer> content = new ArrayList<>(bufs.size());
+            for (QpidByteBuffer buf : bufs)
             {
-                if(pos < offsetInMessage)
-                {
-                    final int remaining = buf.remaining();
-                    if(pos+ remaining >=offsetInMessage)
-                    {
-                        buf = buf.view(offsetInMessage-pos,size);
-
-                        content.add(buf);
-                        added += buf.remaining();
-                    }
-                    pos+= remaining;
-
-                }
-                else
-                {
-                    buf = buf.slice();
-                    if(buf.remaining() > (size-added))
-                    {
-                        buf.limit(size-added);
-                    }
-                    content.add(buf);
-                    added += buf.remaining();
-                }
-                if(added >= size)
-                {
-                    break;
-                }
+                content.add(buf.duplicate());
             }
-
             return content;
         }
 

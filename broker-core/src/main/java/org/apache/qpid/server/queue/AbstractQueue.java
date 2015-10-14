@@ -3463,7 +3463,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             _size = message.getSize();
                             _content = new byte[(int) _size];
                             _found = true;
-                            message.getContent(ByteBuffer.wrap(_content), 0);
+                            message.getContent(ByteBuffer.wrap(_content));
                         }
                         finally
                         {

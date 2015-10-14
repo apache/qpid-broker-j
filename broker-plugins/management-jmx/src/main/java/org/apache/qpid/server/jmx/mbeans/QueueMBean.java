@@ -403,7 +403,7 @@ public class QueueMBean extends AMQManagedObject implements ManagedQueue, QueueN
         byte[] msgContent = new byte[bodySize];
 
         ByteBuffer buf = ByteBuffer.wrap(msgContent);
-        int stored = serverMsg.getContent(buf, 0);
+        int stored = serverMsg.getContent(buf);
 
         if(bodySize != stored)
         {

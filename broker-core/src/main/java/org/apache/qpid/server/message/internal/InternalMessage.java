@@ -65,7 +65,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     {
         super(msg, null);
         _contentSize = msg.getMetaData().getContentSize();
-        Collection<QpidByteBuffer> bufs = msg.getContent(0, _contentSize);
+        Collection<QpidByteBuffer> bufs = msg.getContent();
 
         try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
         {
@@ -224,24 +224,21 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     }
 
                     @Override
-                    public int getContent(final int offsetInMessage, final ByteBuffer dst)
+                    public int getContent(final ByteBuffer dst)
                     {
-                        ByteBuffer buffer = ByteBuffer.wrap(bytes);
-                        buffer.position(offsetInMessage);
-                        buffer = buffer.slice();
-                        if (dst.remaining() < buffer.remaining())
+                        int size = bytes.length;
+                        if (dst.remaining() < size)
                         {
-                            buffer.limit(dst.remaining());
+                            size = dst.remaining();
                         }
-                        int pos = dst.position();
-                        dst.put(buffer);
-                        return dst.position() - pos;
+                        dst.put(bytes, 0 ,size);
+                        return size;
                     }
 
                     @Override
-                    public Collection<QpidByteBuffer> getContent(final int offsetInMessage, final int size)
+                    public Collection<QpidByteBuffer> getContent()
                     {
-                        return Collections.singleton(QpidByteBuffer.wrap(bytes, offsetInMessage, size));
+                        return Collections.singleton(QpidByteBuffer.wrap(bytes));
                     }
 
                     @Override

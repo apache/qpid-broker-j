@@ -100,13 +100,13 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
-        public int getContent(ByteBuffer buf, int offset)
+        public int getContent(ByteBuffer buf)
         {
             return 0;
         }
 
         @Override
-        public Collection<QpidByteBuffer> getContent(int offset, int size)
+        public Collection<QpidByteBuffer> getContent()
         {
             return null;
         }

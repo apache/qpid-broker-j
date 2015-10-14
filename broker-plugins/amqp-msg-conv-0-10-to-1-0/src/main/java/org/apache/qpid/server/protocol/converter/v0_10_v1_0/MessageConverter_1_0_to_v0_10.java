@@ -90,22 +90,21 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
             }
 
             @Override
-            public int getContent(int offsetInMessage, ByteBuffer dst)
+            public int getContent(ByteBuffer dst)
             {
-                int size = messageContent.length - offsetInMessage;
+                int size = messageContent.length;
                 if(dst.remaining() < size)
                 {
                     size = dst.remaining();
                 }
-                ByteBuffer buf = ByteBuffer.wrap(messageContent, offsetInMessage, size);
-                dst.put(buf);
+                dst.put(messageContent, 0, size);
                 return size;
             }
 
             @Override
-            public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
+            public Collection<QpidByteBuffer> getContent()
             {
-                return Collections.singleton(QpidByteBuffer.wrap(messageContent, offsetInMessage, size));
+                return Collections.singleton(QpidByteBuffer.wrap(messageContent));
             }
 
             @Override

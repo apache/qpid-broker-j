@@ -61,7 +61,7 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
-        serverMessage.getContent(ByteBuffer.wrap(data), 0);
+        serverMessage.getContent(ByteBuffer.wrap(data));
 
         Object body = convertMessageBody(mimeType, data);
         MessageProperties messageProps = serverMessage.getHeader().getMessageProperties();

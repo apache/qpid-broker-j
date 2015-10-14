@@ -445,18 +445,15 @@ public class QueueMBeanTest extends QpidTestCase
                 Object[] args = invocation.getArguments();
 
                 //verify the arg types / expected values
-                assertEquals(2, args.length);
+                assertEquals(1, args.length);
                 assertTrue(args[0] instanceof ByteBuffer);
-                assertTrue(args[1] instanceof Integer);
 
                 ByteBuffer dest = (ByteBuffer) args[0];
-                int offset = (Integer) args[1];
-                assertEquals(0, offset);
 
                 dest.put(content);
                 return messageContentSize;
             }
-        }).when(serverMessage).getContent(Matchers.any(ByteBuffer.class), Matchers.anyInt());
+        }).when(serverMessage).getContent(Matchers.any(ByteBuffer.class));
 
         final QueueEntry entry = mock(QueueEntry.class);
         when(entry.getMessage()).thenReturn(serverMessage);

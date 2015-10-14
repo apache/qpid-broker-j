@@ -208,7 +208,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
-        serverMessage.getContent(ByteBuffer.wrap(data), 0);
+        serverMessage.getContent(ByteBuffer.wrap(data));
         byte[] uncompressed;
 
         if(Symbol.valueOf(GZIPUtils.GZIP_CONTENT_ENCODING).equals(metaData.getPropertiesSection().getContentEncoding())
@@ -238,13 +238,12 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         }
 
                         @Override
-                        public int getContent(int offsetInMessage, ByteBuffer dst)
+                        public int getContent(ByteBuffer dst)
                         {
                             QpidByteBuffer buf = allData.duplicate();
-                            buf.position(offsetInMessage);
-                            buf = buf.slice();
+                            buf.position(0);
                             int size;
-                            if(dst.remaining()<buf.remaining())
+                            if (dst.remaining() < buf.remaining())
                             {
                                 buf.limit(dst.remaining());
                                 size = dst.remaining();
@@ -253,16 +252,15 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                             {
                                 size = buf.remaining();
                             }
-                            buf.copyTo(dst);
+                            buf.get(dst);
                             buf.dispose();
                             return size;
                         }
 
                         @Override
-                        public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
+                        public Collection<QpidByteBuffer> getContent()
                         {
-                            QpidByteBuffer buf = allData.view(offsetInMessage, Math.min(size,allData.remaining()-offsetInMessage));
-                            return Collections.singleton(buf);
+                            return Collections.singleton(allData.duplicate());
                         }
 
                         @Override

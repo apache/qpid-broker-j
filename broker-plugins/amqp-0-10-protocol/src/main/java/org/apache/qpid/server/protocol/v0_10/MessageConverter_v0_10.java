@@ -26,7 +26,6 @@ import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -86,15 +85,15 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
-                    public int getContent(int offsetInMessage, ByteBuffer dst)
+                    public int getContent(ByteBuffer dst)
                     {
-                        return serverMsg.getContent(dst, offsetInMessage);
+                        return serverMsg.getContent(dst);
                     }
 
                     @Override
-                    public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
+                    public Collection<QpidByteBuffer> getContent()
                     {
-                        return serverMsg.getContent(offsetInMessage, size);
+                        return serverMsg.getContent();
                     }
 
                     @Override

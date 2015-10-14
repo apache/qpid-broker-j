@@ -28,8 +28,8 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public interface MessageContentSource
 {
-    int getContent(ByteBuffer buf, int offset);
-    Collection<QpidByteBuffer> getContent(int offset, int size);
+    int getContent(ByteBuffer buf);
+    Collection<QpidByteBuffer> getContent();
 
     long getSize();
 }

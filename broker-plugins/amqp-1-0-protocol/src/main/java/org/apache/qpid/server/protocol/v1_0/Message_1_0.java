@@ -71,8 +71,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 
     private static Collection<QpidByteBuffer> restoreFragments(StoredMessage<MessageMetaData_1_0> storedMessage)
     {
-        return storedMessage.getContent(0, Integer.MAX_VALUE);
-
+        return storedMessage.getContent();
     }
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage,

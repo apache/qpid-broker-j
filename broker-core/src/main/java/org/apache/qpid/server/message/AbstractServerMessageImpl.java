@@ -169,15 +169,39 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     }
 
     @Override
-    final public int getContent(ByteBuffer buf, int offset)
+    final public int getContent(ByteBuffer buf)
     {
-        return getStoredMessage().getContent(offset, buf);
+        StoredMessage<T> storedMessage = getStoredMessage();
+        boolean wasInMemory = storedMessage.isInMemory();
+        try
+        {
+            return storedMessage.getContent(buf);
+        }
+        finally
+        {
+            if (!wasInMemory)
+            {
+                storedMessage.flowToDisk();
+            }
+        }
     }
 
     @Override
-    final public Collection<QpidByteBuffer> getContent(int offset, int size)
+    final public Collection<QpidByteBuffer> getContent()
     {
-        return getStoredMessage().getContent(offset, size);
+        StoredMessage<T> storedMessage = getStoredMessage();
+        boolean wasInMemory = storedMessage.isInMemory();
+        try
+        {
+            return storedMessage.getContent();
+        }
+        finally
+        {
+            if (!wasInMemory)
+            {
+                storedMessage.flowToDisk();
+            }
+        }
     }
 
     final public Object getConnectionReference()

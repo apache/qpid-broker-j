@@ -84,7 +84,7 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return this;
     }
 
-    public int getContent(int offset, ByteBuffer dst)
+    public int getContent(ByteBuffer dst)
     {
         if(_content == null)
         {
@@ -92,12 +92,10 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         }
         QpidByteBuffer src = _content.duplicate();
 
-        int oldPosition = src.position();
-
-        src.position(oldPosition + offset);
+        src.position(0);
 
         int length = dst.remaining() < src.remaining() ? dst.remaining() : src.remaining();
-        src.limit(oldPosition + length);
+        src.limit(length);
 
         src.get(dst);
 
@@ -105,23 +103,14 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return length;
     }
 
-
-    public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
+    @Override
+    public Collection<QpidByteBuffer> getContent()
     {
         if(_content == null)
         {
             return null;
         }
-        QpidByteBuffer buf = _content.duplicate();
-
-        if(offsetInMessage != 0)
-        {
-            buf.position(offsetInMessage);
-            buf = buf.slice();
-        }
-
-        buf.limit(Math.min(size,buf.remaining()));
-        return Collections.singleton(buf);
+        return Collections.singleton(_content.duplicate());
     }
 
     public T getMetaData()

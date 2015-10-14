@@ -83,15 +83,15 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
             }
 
             @Override
-            public int getContent(int offsetInMessage, ByteBuffer dst)
+            public int getContent(ByteBuffer dst)
             {
-                return message_0_8.getContent(dst, offsetInMessage);
+                return message_0_8.getContent(dst);
             }
 
             @Override
-            public Collection<QpidByteBuffer> getContent(int offsetInMessage, int size)
+            public Collection<QpidByteBuffer> getContent()
             {
-                return message_0_8.getContent(offsetInMessage, size);
+                return message_0_8.getContent();
             }
 
             @Override

@@ -49,11 +49,13 @@ class MockServerMessage implements ServerMessage
         this.persistent = persistent;
     }
 
+    @Override
     public boolean isPersistent()
     {
         return persistent;
     }
 
+    @Override
     public MessageReference newReference()
     {
         throw new UnsupportedOperationException();
@@ -77,38 +79,44 @@ class MockServerMessage implements ServerMessage
         return false;
     }
 
+    @Override
     public long getSize()
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public String getInitialRoutingAddress()
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public AMQMessageHeader getMessageHeader()
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public StoredMessage getStoredMessage()
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public long getExpiration()
     {
         throw new UnsupportedOperationException();
     }
 
-    public int getContent(ByteBuffer buf, int offset)
+    @Override
+    public int getContent(ByteBuffer buf)
     {
         throw new UnsupportedOperationException();
     }
 
-
-    public Collection<QpidByteBuffer> getContent(int offset, int size)
+    @Override
+    public Collection<QpidByteBuffer> getContent()
     {
         throw new UnsupportedOperationException();
     }
@@ -119,11 +127,13 @@ class MockServerMessage implements ServerMessage
         return null;
     }
 
+    @Override
     public long getArrivalTime()
     {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public long getMessageNumber()
     {
         return 0L;

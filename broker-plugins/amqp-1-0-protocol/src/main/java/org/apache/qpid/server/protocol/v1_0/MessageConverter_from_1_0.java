@@ -62,7 +62,7 @@ public class MessageConverter_from_1_0
     public static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
         byte[] data = new byte[(int) serverMessage.getSize()];
-        serverMessage.getStoredMessage().getContent(0, ByteBuffer.wrap(data));
+        serverMessage.getStoredMessage().getContent(ByteBuffer.wrap(data));
 
         SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY);
 
