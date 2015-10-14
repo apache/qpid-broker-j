@@ -135,7 +135,7 @@ public final class BBDecoder extends AbstractDecoder
 		return in.get();
 	}
 
-	public byte[] readReaminingBytes()
+	public byte[] readRemainingBytes()
 	{
       byte[] result = new byte[in.limit() - in.position()];
       get(result);

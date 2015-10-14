@@ -83,3 +83,6 @@ org.apache.qpid.client.failover.AddressBasedFailoverBehaviourTest#testConnection
 
 // This test does not make sense because on 0-10 maxFrameSize is 64kB and the Java Broker sets the networkBufferSize to a minimum of 64kB.
 org.apache.qpid.transport.MaxFrameSizeTest#testTooLargeFrameSize
+
+org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame
+org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_08091

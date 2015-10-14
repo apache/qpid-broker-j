@@ -25,15 +25,15 @@ import java.util.List;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.codec.AbstractDecoder;
 
-public final class ServerDecoder extends AbstractDecoder
+final class ServerDecoder extends AbstractDecoder
 {
-    private List<QpidByteBuffer> _underlying;
+    private final List<QpidByteBuffer> _underlying;
     private int _bufferIndex;
 
-
-    public void init(List<QpidByteBuffer> in)
+    ServerDecoder(List<QpidByteBuffer> in)
     {
         _underlying = in;
+        _bufferIndex = 0;
     }
 
     private void advanceIfNecessary()
@@ -111,12 +111,6 @@ public final class ServerDecoder extends AbstractDecoder
         return _underlying.get(_bufferIndex);
     }
 
-
-    public void releaseBuffer()
-    {
-        _underlying = null;
-    }
-
     protected byte doGet()
     {
         return getBuffer(1).get();
@@ -191,7 +185,7 @@ public final class ServerDecoder extends AbstractDecoder
 		return getBuffer(1).get();
 	}
 
-	public byte[] readReaminingBytes()
+	public byte[] readRemainingBytes()
 	{
       byte[] result = new byte[available()];
       get(result);

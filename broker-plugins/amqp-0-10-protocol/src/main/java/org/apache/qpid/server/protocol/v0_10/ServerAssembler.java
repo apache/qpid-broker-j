@@ -65,7 +65,6 @@ public class ServerAssembler
     private final Map<Integer, Method> _incompleteMethodMap = new HashMap<>();
 
     private final Map<Integer,List<ServerFrame>> _segments;
-    private final ServerDecoder _decoder = new ServerDecoder();
 
     public ServerAssembler(ServerConnection connection)
     {
@@ -183,8 +182,7 @@ public class ServerAssembler
 
     private void assemble(ServerFrame frame, List<QpidByteBuffer> frameBuffers)
     {
-        ServerDecoder dec = _decoder;
-        dec.init(frameBuffers);
+        ServerDecoder dec = new ServerDecoder(frameBuffers);
 
         int channel = frame.getChannel();
         Method command;
@@ -259,7 +257,6 @@ public class ServerAssembler
                 throw new IllegalStateException("unknown frame type: " + frame.getType());
         }
 
-        dec.releaseBuffer();
         for(QpidByteBuffer buf : frameBuffers)
         {
             buf.dispose();

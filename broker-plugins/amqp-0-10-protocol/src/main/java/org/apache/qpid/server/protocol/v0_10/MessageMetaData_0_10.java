@@ -248,8 +248,7 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
     {
         public MessageMetaData_0_10 createMetaData(QpidByteBuffer buf)
         {
-            ServerDecoder decoder = new ServerDecoder();
-            decoder.init(Collections.singletonList(buf));
+            ServerDecoder decoder = new ServerDecoder(Collections.singletonList(buf));
 
             long arrivalTime = decoder.readInt64();
             int bodySize = decoder.readInt32();

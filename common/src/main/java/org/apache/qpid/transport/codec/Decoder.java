@@ -271,7 +271,7 @@ public interface Decoder
      * 
      * @return the remaining bytes on the underlying buffer.
      */
-    byte[] readReaminingBytes ();
+    byte[] readRemainingBytes();
     
     /**
      * Reads the given number of bytes.

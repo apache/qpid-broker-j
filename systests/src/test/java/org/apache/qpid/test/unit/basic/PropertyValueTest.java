@@ -33,12 +33,14 @@ import javax.jms.Connection;
 import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.Message;
+import javax.jms.MessageConsumer;
 import javax.jms.MessageFormatException;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import com.google.common.base.Strings;
 import org.junit.Assert;
 
 import org.apache.qpid.client.AMQConnection;
@@ -55,13 +57,11 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
 
     private AMQConnection _connection;
     private Destination _destination;
-    private AMQSession _session;
+    private Session _session;
     private final List<JMSTextMessage> received = new ArrayList<JMSTextMessage>();
     private final List<String> messages = new ArrayList<String>();
     private Map<String, Destination> _replyToDestinations;
     private int _count = 1;
-    public String _connectionString = "vm://:1";
-    private static final String USERNAME = "guest";
 
     protected void setUp() throws Exception
     {
@@ -164,6 +164,102 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
         runBatch(50);
     }
 
+    /*
+    QPID-6786
+    */
+    public void testLargeHeader_010_HeadersFillContentHeaderFrame() throws Exception
+    {
+        _connection = (AMQConnection) getConnection();
+        int maximumFrameSize = (int) _connection.getMaximumFrameSize();
+        String propertyName = "string";
+        String propertyValue = generateLongString((int) maximumFrameSize *2);
+        sendReceiveMessageWithHeader(_connection, propertyName, propertyValue);
+    }
+
+    public void testLargeHeader_08091_HeadersFillContentHeaderFrame() throws Exception
+    {
+        _connection = (AMQConnection) getConnection();
+        int maximumFrameSize = (int) _connection.getMaximumFrameSize();
+        String propertyName = "string";
+        int overhead = calculateOverHead_08091_FrameWithHeader(propertyName);
+
+        String propertyValue = generateLongString(maximumFrameSize - overhead);
+        sendReceiveMessageWithHeader(_connection, propertyName, propertyValue);
+    }
+
+    public void testOverlyLargeHeaderRejected_08091() throws Exception
+    {
+        _connection = (AMQConnection) getConnection();
+        _session = _connection.createSession(true, Session.SESSION_TRANSACTED);
+        MessageProducer producer = _session.createProducer(_session.createQueue(getTestQueueName()));
+
+        int maximumFrameSize = (int) _connection.getMaximumFrameSize();
+        String propertyName = "string";
+        int overhead = calculateOverHead_08091_FrameWithHeader(propertyName);
+
+        String propertyValue = generateLongString(maximumFrameSize - overhead + 1);
+        try
+        {
+            Message m = _session.createMessage();
+            m.setStringProperty(propertyName, propertyValue);
+            producer.send(m);
+            fail("Exception not thrown");
+        }
+        catch (JMSException je)
+        {
+            assertTrue("Unexpected message " + je.getMessage(), je.getMessage().contains("Unable to send message as the headers are too large"));
+            // PASS
+        }
+    }
+
+
+    private int calculateOverHead_08091_FrameWithHeader(final String propertyName)
+    {
+        int frame = 1 + 2 + 4 + 1;
+        int body = 2 + 2 + 8 + 2;
+        int properties = GUEST_USERNAME.length() + 1  // Username + length
+                         + 1 // DeliveryMode byte
+                         + 1 // Priority byte
+                         + "application/octet-stream".length() + 1 // Encoding + length
+                         + 4  // Headers field table
+                         + "JMS_QPID_DESTTYPE".length() + 1 + 1 + 4
+                         + propertyName.length() + 1 + 1 + 4;
+        return frame + body + properties;
+    }
+
+    private String generateLongString(final int count)
+    {
+        String pattern = "abcde";
+        String str = Strings.repeat(pattern, count / pattern.length()) + pattern.substring(0, count % pattern.length());
+        assertEquals(count, str.length());
+        return str;
+    }
+
+    private void sendReceiveMessageWithHeader(Connection connection,
+                                              final String propName, final String propValue) throws Exception
+    {
+        connection.start();
+        Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        Destination destination = session.createQueue(getTestQueueName());
+
+        Message message = session.createMessage();
+        message.setStringProperty(propName, propValue);
+
+        MessageConsumer consumer = session.createConsumer(destination);
+
+        MessageProducer producer = session.createProducer(destination);
+        producer.setDisableMessageID(true);
+        producer.setDisableMessageTimestamp(true);
+        producer.send(message);
+        session.commit();
+
+        Message receivedMessage = consumer.receive(1000);
+        assertNotNull("Message not received", receivedMessage);
+        assertEquals("Message has unexpected property value", propValue, receivedMessage.getStringProperty(propName));
+        session.commit();
+    }
+
     private void runBatch(int runSize)
     {
         try
@@ -174,12 +270,12 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
                 _logger.error("Run Number:" + run++);
                 try
                 {
-                    init( (AMQConnection) getConnection("guest", "guest"));
+                    init( (AMQConnection) getConnection());
                 }
                 catch (Exception e)
                 {
                     _logger.error("exception:", e);
-                    fail("Unable to initialilse connection: " + e);
+                    fail("Unable to initialise connection: " + e);
                 }
 
                 int count = _count;
@@ -188,7 +284,6 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
                 check();
                 _logger.info("Completed without failure");
 
-                Thread.sleep(10);
                 _connection.close();
 
                 _logger.error("End Run Number:" + (run - 1));
@@ -303,7 +398,7 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
             //JMSXUserID
             if (m.getStringProperty("JMSXUserID") != null)
             {
-                Assert.assertEquals("Check 'JMSXUserID' is supported ", USERNAME,
+                Assert.assertEquals("Check 'JMSXUserID' is supported ", QpidBrokerTestCase.GUEST_USERNAME,
                                     m.getStringProperty("JMSXUserID"));
             }
         }
@@ -366,21 +461,4 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
         return in + System.currentTimeMillis();
     }
 
-    public static void main(String[] argv) throws Exception
-    {
-        PropertyValueTest test = new PropertyValueTest();
-        test._connectionString = (argv.length == 0) ? "vm://:1" : argv[0];
-        test.setUp();
-        if (argv.length > 1)
-        {
-            test._count = Integer.parseInt(argv[1]);
-        }
-
-        test.testOnce();
-    }
-
-    public static junit.framework.Test suite()
-    {
-        return new junit.framework.TestSuite(PropertyValueTest.class);
-    }
 }
