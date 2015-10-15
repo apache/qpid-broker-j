@@ -46,6 +46,7 @@ public class BrokerAdapterTest extends QpidTestCase
 
     private TaskExecutorImpl _taskExecutor;
     private SystemConfig _systemConfig;
+    private BrokerAdapter _brokerAdapter;
 
     @Override
     public void setUp() throws Exception
@@ -66,12 +67,18 @@ public class BrokerAdapterTest extends QpidTestCase
     @Override
     public void tearDown() throws Exception
     {
-       try
+        try
         {
+            if (_brokerAdapter != null)
+            {
+                _brokerAdapter.close();
+            }
+
             if (_taskExecutor != null)
             {
                 _taskExecutor.stopImmediately();
             }
+
         }
         finally
         {
@@ -112,11 +119,14 @@ public class BrokerAdapterTest extends QpidTestCase
 
         // testing unsuccessful case
         attributes.put(Broker.CONTEXT, Collections.singletonMap(Broker.NETWORK_BUFFER_SIZE, Broker.MINIMUM_NETWORK_BUFFER_SIZE - 1));
-        BrokerAdapter brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
-        brokerAdapter.open();
-        assertEquals("Broker open should fail with network buffer size less then minimum", State.ERRORED, brokerAdapter.getState());
-        assertEquals("Unexpected buffer size", Broker.DEFAULT_NETWORK_BUFFER_SIZE, brokerAdapter.getNetworkBufferSize());
-        brokerAdapter.close();
+        _brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
+        _brokerAdapter.open();
+        assertEquals("Broker open should fail with network buffer size less then minimum",
+                     State.ERRORED,
+                     _brokerAdapter.getState());
+        assertEquals("Unexpected buffer size",
+                     Broker.DEFAULT_NETWORK_BUFFER_SIZE,
+                     _brokerAdapter.getNetworkBufferSize());
     }
 
     private void doAssignTargetSizeTest(final long[] virtualHostQueueSizes, final long flowToDiskThreshold)
@@ -124,16 +134,16 @@ public class BrokerAdapterTest extends QpidTestCase
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("name", "Broker");
         attributes.put("context", Collections.singletonMap(Broker.BROKER_FLOW_TO_DISK_THRESHOLD, flowToDiskThreshold));
-        BrokerAdapter brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
-        brokerAdapter.open();
+        _brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
+        _brokerAdapter.open();
 
         for(int i=0; i < virtualHostQueueSizes.length; i++)
         {
-            createVhnWithVh(brokerAdapter, i, virtualHostQueueSizes[i]);
+            createVhnWithVh(_brokerAdapter, i, virtualHostQueueSizes[i]);
         }
 
         long totalAssignedTargetSize = 0;
-        for(VirtualHostNode<?> vhn : brokerAdapter.getVirtualHostNodes())
+        for(VirtualHostNode<?> vhn : _brokerAdapter.getVirtualHostNodes())
         {
             long targetSize = vhn.getVirtualHost().getTargetSize();
             assertTrue("A virtualhost's target size cannot be zero", targetSize > 0);
@@ -141,7 +151,7 @@ public class BrokerAdapterTest extends QpidTestCase
         }
 
         long diff = Math.abs(flowToDiskThreshold - totalAssignedTargetSize);
-        long tolerance = brokerAdapter.getVirtualHostNodes().size() * 2;
+        long tolerance = _brokerAdapter.getVirtualHostNodes().size() * 2;
         assertTrue(String.format("Assigned target size not within expected tolerance. Diff %d Tolerance %d", diff, tolerance), diff < tolerance);
     }
 

@@ -31,7 +31,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
@@ -56,37 +58,47 @@ class SelectorThread extends Thread
 
     private final Selector _selector;
     private final AtomicBoolean _closed = new AtomicBoolean();
+    private final AtomicBoolean _selecting = new AtomicBoolean();
     private final NetworkConnectionScheduler _scheduler;
     private long _nextTimeout;
 
+    private final BlockingQueue<Runnable> _workQueue = new LinkedBlockingQueue<>();
+
+    private Runnable _selectionTask = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            performSelect();
+        }
+    };
+
     SelectorThread(final NetworkConnectionScheduler scheduler) throws IOException
     {
-        super("Selector-" + scheduler.getName());
-
         _selector = Selector.open();
         _scheduler = scheduler;
+        _workQueue.add(_selectionTask);
     }
 
     public void addAcceptingSocket(final ServerSocketChannel socketChannel,
                                    final NonBlockingNetworkTransport nonBlockingNetworkTransport)
     {
         _tasks.add(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
+        {
+            @Override
+            public void run()
+            {
 
-                            try
-                            {
-                                socketChannel.register(_selector, SelectionKey.OP_ACCEPT, nonBlockingNetworkTransport);
-                            }
-                            catch (IllegalStateException | ClosedChannelException e)
-                            {
-                                // TODO Communicate condition back to model object to make it go into the ERROR state
-                                LOGGER.error("Failed to register selector on accepting port", e);
-                            }
-                        }
-                    });
+                try
+                {
+                    socketChannel.register(_selector, SelectionKey.OP_ACCEPT, nonBlockingNetworkTransport);
+                }
+                catch (IllegalStateException | ClosedChannelException e)
+                {
+                    // TODO Communicate condition back to model object to make it go into the ERROR state
+                    LOGGER.error("Failed to register selector on accepting port", e);
+                }             }
+        });
         _selector.wakeup();
     }
 
@@ -98,63 +110,13 @@ class SelectorThread extends Thread
             public void run()
             {
                 SelectionKey selectionKey = socketChannel.keyFor(_selector);
-                if(selectionKey != null)
+                if (selectionKey != null)
                 {
                     selectionKey.cancel();
                 }
             }
         });
         _selector.wakeup();
-    }
-
-    @Override
-    public void run()
-    {
-
-        _nextTimeout = 0;
-
-        try
-        {
-            while (!_closed.get())
-            {
-
-                try
-                {
-                    _selector.select(_nextTimeout);
-                }
-                catch (IOException e)
-                {
-                    // TODO Inform the model object
-                    LOGGER.error("Failed to trying to select()",e );
-                    break;
-                }
-
-                runTasks();
-
-                List<NonBlockingConnection> toBeScheduled = processSelectionKeys();
-
-                toBeScheduled.addAll(reregisterUnregisteredConnections());
-
-                toBeScheduled.addAll(processUnscheduledConnections());
-
-                for (NonBlockingConnection connection : toBeScheduled)
-                {
-                    _scheduler.schedule(connection);
-                }
-            }
-        }
-        finally
-        {
-            try
-            {
-                _selector.close();
-            }
-            catch (IOException e)
-            {
-                LOGGER.debug("Failed to close selector", e);
-            }
-        }
-
     }
 
     private List<NonBlockingConnection> processUnscheduledConnections()
@@ -191,6 +153,139 @@ class SelectorThread extends Thread
         }
 
         return toBeScheduled;
+    }
+
+    @Override
+    public void run()
+    {
+
+        final String name = Thread.currentThread().getName();
+        try
+        {
+            do
+            {
+                Thread.currentThread().setName(name);
+                Runnable task = _workQueue.take();
+                task.run();
+
+            } while (!_closed.get());
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+
+    }
+
+    private void closeSelector()
+    {
+        try
+        {
+            if(_selector.isOpen())
+            {
+                _selector.close();
+            }
+        }
+        catch (IOException e)
+
+        {
+            LOGGER.debug("Failed to close selector", e);
+        }
+    }
+
+    private static final class ConnectionProcessor implements Runnable
+    {
+
+        private final NetworkConnectionScheduler _scheduler;
+        private final NonBlockingConnection _connection;
+        private AtomicBoolean _running = new AtomicBoolean();
+
+        public ConnectionProcessor(final NetworkConnectionScheduler scheduler, final NonBlockingConnection connection)
+        {
+            _scheduler = scheduler;
+            _connection = connection;
+        }
+
+        @Override
+        public void run()
+        {
+            if(_running.compareAndSet(false,true))
+            {
+                _scheduler.processConnection(_connection);
+            }
+        }
+    }
+
+    private void performSelect()
+    {
+        while(!_closed.get())
+        {
+            if(_selecting.compareAndSet(false,true))
+            {
+                List<ConnectionProcessor> connections = new ArrayList<>();
+                try
+                {
+                    if (!_closed.get())
+                    {
+                        Thread.currentThread().setName("Selector-" + _scheduler.getName());
+                        try
+                        {
+                             _selector.select(_nextTimeout);
+                        }
+                        catch (IOException e)
+                        {
+                            // TODO Inform the model object
+                            LOGGER.error("Failed to trying to select()", e);
+                            closeSelector();
+                            return;
+                        }
+                        runTasks();
+                        for (NonBlockingConnection connection : processSelectionKeys())
+                        {
+                            if(connection.setScheduled())
+                            {
+                                connections.add(new ConnectionProcessor(_scheduler, connection));
+                            }
+                        }
+                        for (NonBlockingConnection connection : reregisterUnregisteredConnections())
+                        {
+                            if(connection.setScheduled())
+                            {
+                                connections.add(new ConnectionProcessor(_scheduler, connection));
+                            }
+                        }
+                        for (NonBlockingConnection connection : processUnscheduledConnections())
+                        {
+                            if(connection.setScheduled())
+                            {
+                                connections.add(new ConnectionProcessor(_scheduler, connection));
+                            }
+                        }
+
+                    }
+                }
+                finally
+                {
+                    _selecting.set(false);
+                }
+                _workQueue.add(_selectionTask);
+                _workQueue.addAll(connections);
+                for(ConnectionProcessor connectionProcessor : connections)
+                {
+                    connectionProcessor.run();
+                }
+
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if(_closed.get() && _selecting.compareAndSet(false,true))
+        {
+            closeSelector();
+        }
     }
 
     private void unregisterConnection(final NonBlockingConnection connection) throws ClosedChannelException
@@ -318,8 +413,32 @@ class SelectorThread extends Thread
 
     public void close()
     {
+        Runnable goodNight = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                // Make sure take awakes so it can observe _closed
+            }
+        };
         _closed.set(true);
+
+        int count = _scheduler.getPoolSizeMaximum();
+        while(count-- > 0)
+        {
+            _workQueue.offer(goodNight);
+        }
+
         _selector.wakeup();
+
     }
 
+     public void addToWork(final NonBlockingConnection connection)
+     {
+         if(connection.setScheduled())
+         {
+             _workQueue.add(new ConnectionProcessor(_scheduler, connection));
+         }
+
+     }
 }

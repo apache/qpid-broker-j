@@ -25,15 +25,16 @@ import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
 import java.security.Principal;
 import java.security.cert.Certificate;
-import java.util.*;
+import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.model.port.AmqpPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -492,4 +493,5 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             _unexpectedByteBufferSizeUsed = true;
         }
     }
+
 }

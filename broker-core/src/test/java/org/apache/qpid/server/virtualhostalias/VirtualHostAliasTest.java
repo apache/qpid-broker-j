@@ -88,6 +88,10 @@ public class VirtualHostAliasTest extends QpidTestCase
     protected void tearDown() throws Exception
     {
         _port.close();
+        for (VirtualHost vhost : _vhosts.values())
+        {
+            vhost.close();
+        }
         super.tearDown();
     }
 

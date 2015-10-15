@@ -38,13 +38,13 @@ public class NetworkConnectionScheduler
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NetworkConnectionScheduler.class);
     private final ThreadFactory _factory;
-    private volatile SelectorThread _selectorThread;
     private volatile ThreadPoolExecutor _executor;
     private final AtomicInteger _running = new AtomicInteger();
     private final int _poolSizeMinimum;
     private final int _poolSizeMaximum;
     private final long _threadKeepAliveTimeout;
     private final String _name;
+    private SelectorThread _selectorThread;
 
     public NetworkConnectionScheduler(final String name,
                                       int threadPoolSizeMinimum,
@@ -84,12 +84,15 @@ public class NetworkConnectionScheduler
         try
         {
             _selectorThread = new SelectorThread(this);
-            _selectorThread.start();
-            _executor = new ThreadPoolExecutor(_poolSizeMinimum, _poolSizeMaximum,
+            _executor = new ThreadPoolExecutor(_poolSizeMaximum, _poolSizeMaximum,
                                                _threadKeepAliveTimeout, TimeUnit.MINUTES,
                                                new LinkedBlockingQueue<Runnable>(), _factory);
             _executor.prestartAllCoreThreads();
             _executor.allowCoreThreadTimeOut(true);
+            for(int i = 0 ; i < _poolSizeMaximum; i++)
+            {
+                _executor.execute(_selectorThread);
+            }
         }
         catch (IOException e)
         {
@@ -97,45 +100,10 @@ public class NetworkConnectionScheduler
         }
     }
 
-    public void schedule(final NonBlockingConnection connection)
+    void processConnection(final NonBlockingConnection connection)
     {
-        if(connection.setScheduled())
-        {
-            _executor.execute(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    String currentName = Thread.currentThread().getName();
-                    try
-                    {
-                        Thread.currentThread().setName(
-                                SelectorThread.IO_THREAD_NAME_PREFIX + connection.getRemoteAddress().toString());
-                        processConnection(connection);
-                    }
-                    finally
-                    {
-                        Thread.currentThread().setName(currentName);
-                    }
-                }
-            });
-
-            increaseCorePoolPoolSizeIfNecessary();
-        }
-    }
-
-    private void increaseCorePoolPoolSizeIfNecessary()
-    {
-        int currentPoolSize;
-        while((currentPoolSize = _executor.getCorePoolSize()) < _poolSizeMaximum && !_executor.getQueue().isEmpty())
-        {
-            // Currently we do not shrink the core pool size back to its original value
-            _executor.setCorePoolSize(currentPoolSize + 1);
-        }
-    }
-
-    private void processConnection(final NonBlockingConnection connection)
-    {
+        Thread.currentThread().setName(
+                SelectorThread.IO_THREAD_NAME_PREFIX + connection.getRemoteAddress().toString());
         try
         {
             _running.incrementAndGet();
@@ -165,7 +133,8 @@ public class NetworkConnectionScheduler
                         connection.clearScheduled();
                         if(connection.isStateChanged())
                         {
-                            schedule(connection);
+                            connection.clearScheduled();
+                            _selectorThread.addToWork(connection);
                         }
                         else
                         {
@@ -186,6 +155,7 @@ public class NetworkConnectionScheduler
         {
             _running.decrementAndGet();
         }
+
     }
 
     public void close()
@@ -230,5 +200,15 @@ public class NetworkConnectionScheduler
     public void removeConnection(final NonBlockingConnection connection)
     {
         _selectorThread.removeConnection(connection);
+    }
+
+    int getPoolSizeMaximum()
+    {
+        return _poolSizeMaximum;
+    }
+
+    public void schedule(final NonBlockingConnection connection)
+    {
+        _selectorThread.addToWork(connection);
     }
 }

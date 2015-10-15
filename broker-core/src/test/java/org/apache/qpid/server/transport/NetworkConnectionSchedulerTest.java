@@ -19,11 +19,11 @@
 
 package org.apache.qpid.server.transport;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.TransportEncryption;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,7 +33,11 @@ import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.EnumSet;
 
-import static org.mockito.Mockito.*;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.transport.network.TransportEncryption;
 
 public class NetworkConnectionSchedulerTest extends QpidTestCase
 {
@@ -57,7 +61,7 @@ public class NetworkConnectionSchedulerTest extends QpidTestCase
         when(verboseEngine.getAggregateTicker()).thenReturn(new AggregateTicker());
         when(timidEngine.getAggregateTicker()).thenReturn(new AggregateTicker());
 
-        final NetworkConnectionScheduler scheduler = new NetworkConnectionScheduler(getName(), 1, 1, 1000);
+        final NetworkConnectionScheduler scheduler = new NetworkConnectionScheduler(getName(), 2, 2, 1000);
         scheduler.start();
         NonBlockingNetworkTransport transport = new NonBlockingNetworkTransport(engineFactory, EnumSet.of(TransportEncryption.NONE),
                                                                                 scheduler, port);
