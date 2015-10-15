@@ -66,7 +66,7 @@ public class RuleSet implements EventLoggerProvider
 
     private final SortedMap<Integer, Rule> _rules = new TreeMap<Integer, Rule>();
     private final Map<Subject, Map<Operation, Map<ObjectType, List<Rule>>>> _cache =
-                        new WeakHashMap<Subject, Map<Operation, Map<ObjectType, List<Rule>>>>();
+                        Collections.synchronizedMap(new WeakHashMap<Subject, Map<Operation, Map<ObjectType, List<Rule>>>>());
     private final Map<String, Boolean> _config = new HashMap<String, Boolean>();
     private final EventLoggerProvider _eventLogger;
 
@@ -414,7 +414,7 @@ public class RuleSet implements EventLoggerProvider
         Map<Operation, Map<ObjectType, List<Rule>>> operations = _cache.get(subject);
         if (operations == null)
         {
-            operations = new EnumMap<Operation, Map<ObjectType, List<Rule>>>(Operation.class);
+            operations = Collections.synchronizedMap(new EnumMap<Operation, Map<ObjectType, List<Rule>>>(Operation.class));
             _cache.put(subject, operations);
         }
 
@@ -422,7 +422,7 @@ public class RuleSet implements EventLoggerProvider
         Map<ObjectType, List<Rule>> objects = operations.get(operation);
         if (objects == null)
         {
-            objects = new EnumMap<ObjectType, List<Rule>>(ObjectType.class);
+            objects = Collections.synchronizedMap(new EnumMap<ObjectType, List<Rule>>(ObjectType.class));
             operations.put(operation, objects);
         }
         return objects;
