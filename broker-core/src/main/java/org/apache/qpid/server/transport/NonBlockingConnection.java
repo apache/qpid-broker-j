@@ -399,7 +399,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             _closed.set(true);
         }
 
-        _partialRead = !buffer.hasRemaining();
+        _partialRead = read != 0;
 
         if (LOGGER.isDebugEnabled())
         {
