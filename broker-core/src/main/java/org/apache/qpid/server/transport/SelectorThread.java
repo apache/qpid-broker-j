@@ -20,6 +20,7 @@
 package org.apache.qpid.server.transport;
 
 import java.io.IOException;
+import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -268,10 +269,31 @@ class SelectorThread extends Thread
         }
     }
 
+    private boolean selectionInterestRequiresUpdate(NonBlockingConnection connection)
+    {
+        final SelectionKey selectionKey = connection.getSocketChannel().keyFor(_selector);
+        int expectedOps = connection.canRead() ? SelectionKey.OP_READ : 0;
+        if(connection.waitingForWrite())
+        {
+            expectedOps |= SelectionKey.OP_WRITE;
+        }
+        try
+        {
+            return selectionKey == null || !selectionKey.isValid() || selectionKey.interestOps() != expectedOps;
+        }
+        catch (CancelledKeyException e)
+        {
+            return true;
+        }
+    }
+
     public void addConnection(final NonBlockingConnection connection)
     {
-        _unregisteredConnections.add(connection);
-        _selector.wakeup();
+        if(selectionInterestRequiresUpdate(connection))
+        {
+            _unregisteredConnections.add(connection);
+            _selector.wakeup();
+        }
 
     }
 

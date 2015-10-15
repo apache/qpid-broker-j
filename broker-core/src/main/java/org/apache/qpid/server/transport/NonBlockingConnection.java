@@ -64,6 +64,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private boolean _partialRead = false;
 
     private final AmqpPort _port;
+    private final AtomicBoolean _scheduled = new AtomicBoolean();
     private boolean _unexpectedByteBufferSizeUsed;
 
     public NonBlockingConnection(SocketChannel socketChannel,
@@ -87,7 +88,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             @Override
             public void performAction(final ProtocolEngine object)
             {
-                _scheduler.wakeup();
+                _scheduler.schedule(NonBlockingConnection.this);
             }
         });
 
@@ -470,6 +471,16 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             src.dispose();
         }
         LOGGER.debug("Identified transport encryption as " + transportEncryption);
+    }
+
+    public boolean setScheduled()
+    {
+        return _scheduled.compareAndSet(false,true);
+    }
+
+    public void clearScheduled()
+    {
+        _scheduled.set(false);
     }
 
     void reportUnexpectedByteBufferSizeUsage()

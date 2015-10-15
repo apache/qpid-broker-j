@@ -99,26 +99,29 @@ public class NetworkConnectionScheduler
 
     public void schedule(final NonBlockingConnection connection)
     {
-        _executor.execute(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                String currentName = Thread.currentThread().getName();
-                                try
-                                {
-                                    Thread.currentThread().setName(
-                                            SelectorThread.IO_THREAD_NAME_PREFIX + connection.getRemoteAddress().toString());
-                                    processConnection(connection);
-                                }
-                                finally
-                                {
-                                    Thread.currentThread().setName(currentName);
-                                }
-                            }
-                        });
+        if(connection.setScheduled())
+        {
+            _executor.execute(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    String currentName = Thread.currentThread().getName();
+                    try
+                    {
+                        Thread.currentThread().setName(
+                                SelectorThread.IO_THREAD_NAME_PREFIX + connection.getRemoteAddress().toString());
+                        processConnection(connection);
+                    }
+                    finally
+                    {
+                        Thread.currentThread().setName(currentName);
+                    }
+                }
+            });
 
-        increaseCorePoolPoolSizeIfNecessary();
+            increaseCorePoolPoolSizeIfNecessary();
+        }
     }
 
     private void increaseCorePoolPoolSizeIfNecessary()
@@ -149,6 +152,7 @@ public class NetworkConnectionScheduler
                     {
                         if (_running.get() == _poolSizeMaximum)
                         {
+                            connection.clearScheduled();
                             schedule(connection);
                         }
                         else
@@ -158,12 +162,21 @@ public class NetworkConnectionScheduler
                     }
                     else
                     {
-                        _selectorThread.addConnection(connection);
+                        connection.clearScheduled();
+                        if(connection.isStateChanged())
+                        {
+                            schedule(connection);
+                        }
+                        else
+                        {
+                            _selectorThread.addConnection(connection);
+                        }
                     }
                 }
                 else if(connection.getScheduler() != this)
                 {
                     removeConnection(connection);
+                    connection.clearScheduled();
                     connection.getScheduler().addConnection(connection);
                 }
 
