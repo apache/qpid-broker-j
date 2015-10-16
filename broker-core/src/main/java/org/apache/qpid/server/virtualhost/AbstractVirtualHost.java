@@ -359,6 +359,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected void onExceptionInOpen(RuntimeException e)
     {
         super.onExceptionInOpen(e);
+        shutdownHouseKeeping();
+        closeNetworkConnectionScheduler();
         closeMessageStore();
     }
 
@@ -604,6 +606,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         for (final Runnable runnable : taskQueue)
         {
             _houseKeepingTaskExecutor.remove(runnable);
+        }
+    }
+
+    private void closeNetworkConnectionScheduler()
+    {
+        if(_networkConnectionScheduler != null)
+        {
+            _networkConnectionScheduler.close();
+            _networkConnectionScheduler = null;
         }
     }
 
@@ -921,11 +932,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _dtxRegistry.close();
         closeMessageStore();
         shutdownHouseKeeping();
-        if(_networkConnectionScheduler != null)
-        {
-            _networkConnectionScheduler.close();
-            _networkConnectionScheduler = null;
-        }
+        closeNetworkConnectionScheduler();
         _eventLogger.message(VirtualHostMessages.CLOSED(getName()));
 
         stopLogging(_virtualHostLoggersToClose);
@@ -1507,11 +1514,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             public void run()
             {
                 shutdownHouseKeeping();
-                if (_networkConnectionScheduler != null)
-                {
-                    _networkConnectionScheduler.close();
-                    _networkConnectionScheduler = null;
-                }
+                closeNetworkConnectionScheduler();
                 closeMessageStore();
                 setState(State.STOPPED);
 

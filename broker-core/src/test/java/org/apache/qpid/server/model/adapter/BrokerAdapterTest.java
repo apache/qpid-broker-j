@@ -133,9 +133,12 @@ public class BrokerAdapterTest extends QpidTestCase
     {
         Map<String, Object> attributes = new HashMap<>();
         attributes.put("name", "Broker");
+        attributes.put(Broker.MODEL_VERSION, BrokerModel.MODEL_VERSION);
+        attributes.put(Broker.DURABLE, true);
         attributes.put("context", Collections.singletonMap(Broker.BROKER_FLOW_TO_DISK_THRESHOLD, flowToDiskThreshold));
         _brokerAdapter = new BrokerAdapter(attributes, _systemConfig);
         _brokerAdapter.open();
+        assertEquals("Unexpected broker state", State.ACTIVE, _brokerAdapter.getState());
 
         for(int i=0; i < virtualHostQueueSizes.length; i++)
         {

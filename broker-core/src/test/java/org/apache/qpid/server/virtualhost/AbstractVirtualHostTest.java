@@ -301,6 +301,7 @@ public class AbstractVirtualHostTest extends QpidTestCase
                 host.open();
             }
         }, loggerName, Level.WARN, "Cannot check file system for disk space");
+        host.close();
     }
 
     private void assertActionProducesLogMessage(final Runnable action, final String loggerName,
