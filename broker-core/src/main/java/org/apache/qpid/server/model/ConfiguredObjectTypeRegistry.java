@@ -39,6 +39,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -56,6 +58,9 @@ public class ConfiguredObjectTypeRegistry
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredObjectTypeRegistry.class);
 
     private static Map<String,Integer> STANDARD_FIRST_FIELDS_ORDER = new HashMap<>();
+
+    private static final ConcurrentMap<Class<?>, Class<? extends ConfiguredObject>> CATEGORY_CACHE = new ConcurrentHashMap<>();
+
     static
     {
         int i = 0;
@@ -372,6 +377,20 @@ public class ConfiguredObjectTypeRegistry
     }
 
     public static Class<? extends ConfiguredObject> getCategory(final Class<?> clazz)
+    {
+        Class<? extends ConfiguredObject> category = CATEGORY_CACHE.get(clazz);
+        if(category == null)
+        {
+            category = calculateCategory(clazz);
+            if(category != null)
+            {
+                CATEGORY_CACHE.putIfAbsent(clazz, category);
+            }
+        }
+        return category;
+    }
+
+    private static Class<? extends ConfiguredObject> calculateCategory(final Class<?> clazz)
     {
         ManagedObject annotation = clazz.getAnnotation(ManagedObject.class);
         if(annotation != null && annotation.category())
