@@ -37,7 +37,6 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -50,22 +49,6 @@ import org.apache.qpid.server.util.StateChangeListener;
  */
 public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implements FlowCreditManager.FlowCreditManagerListener
 {
-
-    private final StateChangeListener<MessageInstance, MessageInstance.State> _entryReleaseListener =
-            new StateChangeListener<MessageInstance, MessageInstance.State>()
-            {
-                @Override
-                public void stateChanged(final MessageInstance entry,
-                                         final MessageInstance.State oldSate,
-                                         final MessageInstance.State newState)
-                {
-                    if (oldSate == QueueEntry.State.ACQUIRED && newState != QueueEntry.State.ACQUIRED)
-                    {
-                        restoreCredit(entry.getMessage());
-                    }
-                    entry.removeStateChangeListener(this);
-                }
-            };
 
     private final ClientDeliveryMethod _deliveryMethod;
     private final RecordDeliveryMethod _recordMethod;
@@ -289,7 +272,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
 
                 addUnacknowledgedMessage(entry);
                 recordMessageDelivery(consumer, entry, deliveryTag);
-                entry.addStateChangeListener(getReleasedStateChangeListener());
                 long size = sendToClient(consumer, entry.getMessage(), entry.getInstanceProperties(), deliveryTag);
                 entry.incrementDeliveryCount();
             }
@@ -459,11 +441,6 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         _creditManager.restoreCredit(1, message.getSize());
     }
 
-    protected final StateChangeListener<MessageInstance, MessageInstance.State> getReleasedStateChangeListener()
-    {
-        return _entryReleaseListener;
-    }
-
     public void creditStateChanged(boolean hasCredit)
     {
 
@@ -551,18 +528,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
         final long size = entry.getMessage().getSize();
         _unacknowledgedBytes.addAndGet(size);
         _unacknowledgedCount.incrementAndGet();
-        entry.addStateChangeListener(new StateChangeListener<MessageInstance, MessageInstance.State>()
-        {
-            public void stateChanged(MessageInstance entry, MessageInstance.State oldState, MessageInstance.State newState)
-            {
-                if(oldState.equals(MessageInstance.State.ACQUIRED) && !newState.equals(MessageInstance.State.ACQUIRED))
-                {
-                    _unacknowledgedBytes.addAndGet(-size);
-                    _unacknowledgedCount.decrementAndGet();
-                    entry.removeStateChangeListener(this);
-                }
-            }
-        });
+        entry.addStateChangeListener(_unacknowledgedMessageListener);
     }
 
     @Override
@@ -579,4 +545,23 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     {
         return _unacknowledgedCount.longValue();
     }
+
+    private final StateChangeListener<MessageInstance, MessageInstance.State> _unacknowledgedMessageListener = new StateChangeListener<MessageInstance, MessageInstance.State>()
+    {
+
+        public void stateChanged(MessageInstance entry, MessageInstance.State oldState, MessageInstance.State newState)
+        {
+            if(oldState == MessageInstance.State.ACQUIRED && newState != MessageInstance.State.ACQUIRED)
+            {
+                final long _size = entry.getMessage().getSize();
+                _unacknowledgedBytes.addAndGet(-_size);
+                _unacknowledgedCount.decrementAndGet();
+
+                _creditManager.restoreCredit(1, _size);
+
+                entry.removeStateChangeListener(this);
+            }
+
+        }
+    };
 }
