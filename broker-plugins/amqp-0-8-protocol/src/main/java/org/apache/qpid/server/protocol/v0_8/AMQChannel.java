@@ -411,7 +411,7 @@ public class AMQChannel
         VirtualHostImpl virtualHost = getVirtualHost();
         SecurityManager securityManager = virtualHost.getSecurityManager();
 
-        securityManager.authorisePublish(info.isImmediate(), routingKey, e.getName(), virtualHost.getName());
+        securityManager.authorisePublish(info.isImmediate(), routingKey, e.getName(), virtualHost.getName(), _subject);
 
         _currentMessage = new IncomingMessage(info);
         _currentMessage.setMessageDestination(e);

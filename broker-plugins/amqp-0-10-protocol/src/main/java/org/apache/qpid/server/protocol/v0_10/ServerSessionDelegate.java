@@ -416,7 +416,8 @@ public class ServerSessionDelegate extends SessionDelegate
                             .authorisePublish(messageMetaData.isImmediate(),
                                               messageMetaData.getRoutingKey(),
                                               destination.getName(),
-                                              virtualHost.getName());
+                                              virtualHost.getName(),
+                                              serverSession.getAuthorizedSubject());
                 }
                 catch (AccessControlException e)
                 {

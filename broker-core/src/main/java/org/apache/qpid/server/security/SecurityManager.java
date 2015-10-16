@@ -157,6 +157,11 @@ public class SecurityManager
     public static boolean isSystemProcess()
     {
         Subject subject = Subject.getSubject(AccessController.getContext());
+        return isSystemSubject(subject);
+    }
+
+    public static boolean isSystemSubject(final Subject subject)
+    {
         return !(subject == null  || subject.getPrincipals(SystemPrincipal.class).isEmpty());
     }
 
@@ -222,8 +227,14 @@ public class SecurityManager
 
     private boolean checkAllPlugins(AccessCheck checker)
     {
+        return checkAllPlugins(checker, Subject.getSubject(AccessController.getContext()));
+
+    }
+
+    private boolean checkAllPlugins(AccessCheck checker, Subject subject)
+    {
         // If we are running as SYSTEM then no ACL checking
-        if(isSystemProcess() || _managementMode)
+        if(isSystemSubject(subject) || _managementMode)
         {
             return true;
         }
@@ -646,6 +657,22 @@ public class SecurityManager
             throw new AccessControlException("Permission denied, publish to: exchange-name '" + exchangeName + "'");
         }
     }
+
+    public void authorisePublish(final boolean immediate, String routingKey, String exchangeName, String virtualHostName, Subject currentSubject)
+    {
+        PublishAccessCheckCacheEntry key = new PublishAccessCheckCacheEntry(immediate, routingKey, exchangeName, virtualHostName);
+        PublishAccessCheck check = _publishAccessCheckCache.get(key);
+        if (check == null)
+        {
+            check = new PublishAccessCheck(new ObjectProperties(virtualHostName, exchangeName, routingKey, immediate));
+            _publishAccessCheckCache.putIfAbsent(key, check);
+        }
+        if(!checkAllPlugins(check))
+        {
+            throw new AccessControlException("Permission denied, publish to: exchange-name '" + exchangeName + "'");
+        }
+    }
+
 
     public void authorisePurge(final Queue queue)
     {
