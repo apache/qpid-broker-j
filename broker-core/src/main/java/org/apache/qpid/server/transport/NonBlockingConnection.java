@@ -66,7 +66,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     private final AmqpPort _port;
     private final AtomicBoolean _scheduled = new AtomicBoolean();
-    private boolean _unexpectedByteBufferSizeUsed;
+    private volatile boolean _unexpectedByteBufferSizeReported;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -486,11 +486,11 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     void reportUnexpectedByteBufferSizeUsage()
     {
-        if (!_unexpectedByteBufferSizeUsed)
+        if (!_unexpectedByteBufferSizeReported)
         {
             LOGGER.info("At least one frame unexpectedly does not fit into default byte buffer size ({}B) on a connection {}.",
                     _port.getNetworkBufferSize(), this.toString());
-            _unexpectedByteBufferSizeUsed = true;
+            _unexpectedByteBufferSizeReported = true;
         }
     }
 
