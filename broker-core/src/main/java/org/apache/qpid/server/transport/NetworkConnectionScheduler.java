@@ -102,8 +102,7 @@ public class NetworkConnectionScheduler
 
     void processConnection(final NonBlockingConnection connection)
     {
-        Thread.currentThread().setName(
-                SelectorThread.IO_THREAD_NAME_PREFIX + connection.getRemoteAddress().toString());
+        Thread.currentThread().setName( connection.getThreadName() );
         try
         {
             _running.incrementAndGet();

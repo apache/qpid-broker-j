@@ -67,6 +67,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private final AmqpPort _port;
     private final AtomicBoolean _scheduled = new AtomicBoolean();
     private volatile boolean _unexpectedByteBufferSizeReported;
+    private final String _threadName;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -83,6 +84,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
         _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
         _port = port;
+        _threadName = SelectorThread.IO_THREAD_NAME_PREFIX + _remoteSocketAddress.toString();
 
         protocolEngine.setWorkListener(new Action<ProtocolEngine>()
         {
@@ -102,6 +104,11 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             _delegate = new NonBlockingConnectionUndecidedDelegate(this);
         }
 
+    }
+
+    String getThreadName()
+    {
+        return _threadName;
     }
 
     public boolean isPartialRead()
