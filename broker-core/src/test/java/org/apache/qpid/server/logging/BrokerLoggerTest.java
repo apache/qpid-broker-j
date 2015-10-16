@@ -21,7 +21,6 @@
 package org.apache.qpid.server.logging;
 
 import static org.apache.qpid.server.util.LoggerTestHelper.assertLoggedEvent;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,6 +34,9 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.Context;
 import ch.qos.logback.core.read.ListAppender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.model.Broker;
@@ -45,8 +47,6 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BrokerLoggerTest extends QpidTestCase
 {
@@ -110,11 +110,7 @@ public class BrokerLoggerTest extends QpidTestCase
 
     public void testAddNewLogInclusionRule()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("loggerName", "org.apache.qpid");
-        attributes.put("level", LogLevel.INFO);
-        attributes.put("name", "test");
-        attributes.put("type", BrokerNameAndLevelLogInclusionRule.TYPE);
+        Map<String, Object> attributes = createBrokerNameAndLevelLogInclusionRuleAttributes("org.apache.qpid", LogLevel.INFO);
 
         Collection<BrokerLogInclusionRule> rulesBefore = _brokerLogger.getChildren(BrokerLogInclusionRule.class);
         assertEquals("Unexpected number of rules before creation", 0, rulesBefore.size());
@@ -138,11 +134,7 @@ public class BrokerLoggerTest extends QpidTestCase
 
     public void testRemoveExistingRule()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("loggerName", "org.apache.qpid");
-        attributes.put("level", LogLevel.INFO);
-        attributes.put("name", "test");
-        attributes.put("type", BrokerNameAndLevelLogInclusionRule.TYPE);
+        Map<String, Object> attributes = createBrokerNameAndLevelLogInclusionRuleAttributes("org.apache.qpid", LogLevel.INFO);
         BrokerLogInclusionRule<?> createdRule = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
         Logger logger = LoggerFactory.getLogger("org.apache.qpid");
 
@@ -175,11 +167,7 @@ public class BrokerLoggerTest extends QpidTestCase
         {
             logger.open();
 
-            Map<String, Object> filterAttributes = new HashMap<>();
-            filterAttributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "1");
-            filterAttributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, LogLevel.ALL);
-            filterAttributes.put(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, "");
-            filterAttributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+            Map<String, Object> filterAttributes = createBrokerNameAndLevelLogInclusionRuleAttributes("", LogLevel.ALL);
             logger.createChild(BrokerLogInclusionRule.class, filterAttributes);
 
             Logger messageLogger = LoggerFactory.getLogger("org.apache.qpid.test");
@@ -210,19 +198,16 @@ public class BrokerLoggerTest extends QpidTestCase
 
     public void testStatistics()
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put("loggerName", "org.apache.qpid.*");
-        attributes.put("level", LogLevel.WARN);
-        attributes.put("name", "test");
-        attributes.put("type", BrokerNameAndLevelLogInclusionRule.TYPE);
-
-
-        final BrokerLogInclusionRule filter = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
+        Map<String, Object> attributes;
+        String loggerName = getTestName();
+        Logger messageLogger = LoggerFactory.getLogger(loggerName);
 
         assertEquals(0l, _brokerLogger.getWarnCount());
         assertEquals(0l, _brokerLogger.getErrorCount());
 
-        Logger messageLogger = LoggerFactory.getLogger("org.apache.qpid.test");
+        attributes = createBrokerNameAndLevelLogInclusionRuleAttributes(loggerName, LogLevel.WARN);
+        BrokerLogInclusionRule warnFilter = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
+
         messageLogger.warn("warn");
         assertEquals(1l, _brokerLogger.getWarnCount());
         assertEquals(0l, _brokerLogger.getErrorCount());
@@ -231,16 +216,10 @@ public class BrokerLoggerTest extends QpidTestCase
         assertEquals(1l, _brokerLogger.getWarnCount());
         assertEquals(1l, _brokerLogger.getErrorCount());
 
-        filter.delete();
+        warnFilter.delete();
 
-        attributes = new HashMap<>();
-        attributes.put("loggerName", "org.apache.qpid.*");
-        attributes.put("level", LogLevel.ERROR);
-        attributes.put("name", "test");
-        attributes.put("type", BrokerNameAndLevelLogInclusionRule.TYPE);
-
-
-        _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
+        attributes = createBrokerNameAndLevelLogInclusionRuleAttributes(loggerName, LogLevel.ERROR);
+        BrokerLogInclusionRule errorFilter = _brokerLogger.createChild(BrokerLogInclusionRule.class, attributes);
 
         messageLogger.warn("warn");
         assertEquals(1l, _brokerLogger.getWarnCount());
@@ -249,9 +228,20 @@ public class BrokerLoggerTest extends QpidTestCase
         assertEquals(1l, _brokerLogger.getWarnCount());
         assertEquals(2l, _brokerLogger.getErrorCount());
 
-
-
+        errorFilter.delete();
     }
+
+    private Map<String, Object> createBrokerNameAndLevelLogInclusionRuleAttributes(final String loggerName,
+                                                                                   final LogLevel logLevel)
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, loggerName);
+        attributes.put(BrokerNameAndLevelLogInclusionRule.LEVEL, logLevel);
+        attributes.put(BrokerNameAndLevelLogInclusionRule.NAME, "test");
+        attributes.put(ConfiguredObject.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+        return attributes;
+    }
+
     private LogRecord findLogRecord(String message, Collection<LogRecord> logRecords)
     {
         for (LogRecord record: logRecords)
