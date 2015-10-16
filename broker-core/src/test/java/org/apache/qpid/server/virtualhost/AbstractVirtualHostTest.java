@@ -281,9 +281,9 @@ public class AbstractVirtualHostTest extends QpidTestCase
         File nonExistingFile = TestFileUtils.createTempFile(this);
         FileUtils.delete(nonExistingFile, false);
         when(store.getStoreLocationAsFile()).thenReturn(nonExistingFile);
-        setTestSystemProperty("virtualhost.housekeepingCheckPeriod", "1");
+        setTestSystemProperty("virtualhost.housekeepingCheckPeriod", "100");
 
-        AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
+        final AbstractVirtualHost host = new AbstractVirtualHost(attributes, _node)
         {
             @Override
             protected MessageStore createMessageStore()
@@ -292,18 +292,21 @@ public class AbstractVirtualHostTest extends QpidTestCase
             }
         };
 
-        final CountDownLatch warningReceivedLatch = new CountDownLatch(1);
         String loggerName = AbstractVirtualHost.class.getName();
-        Level logLevel = Level.WARN;
-        watchForLogMessage(warningReceivedLatch, loggerName, logLevel);
-        host.open();
-        assertTrue("Did not receive warning", warningReceivedLatch.await(2, TimeUnit.SECONDS));
+        assertActionProducesLogMessage(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                host.open();
+            }
+        }, loggerName, Level.WARN, "Cannot check file system for disk space");
     }
 
-    private void watchForLogMessage(final CountDownLatch warningReceivedLatch,
-                                    final String loggerName,
-                                    final Level logLevel)
+    private void assertActionProducesLogMessage(final Runnable action, final String loggerName,
+                                                final Level logLevel, final String message) throws Exception
     {
+        final CountDownLatch logMessageReceivedLatch = new CountDownLatch(1);
         ch.qos.logback.classic.Logger rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.addFilter(new Filter<ILoggingEvent>()
@@ -311,14 +314,18 @@ public class AbstractVirtualHostTest extends QpidTestCase
             @Override
             public FilterReply decide(final ILoggingEvent event)
             {
-                if (event.getLoggerName().equals(loggerName) && event.getLevel().equals(logLevel))
+                if (event.getLoggerName().equals(loggerName) && event.getLevel().equals(logLevel) && event.getFormattedMessage().contains(message))
                 {
-                    warningReceivedLatch.countDown();
+                    logMessageReceivedLatch.countDown();
                 }
                 return FilterReply.NEUTRAL;
             }
         });
+        appender.setContext(rootLogger.getLoggerContext());
         appender.start();
         rootLogger.addAppender(appender);
+
+        action.run();
+        assertTrue("Did not receive expected log message", logMessageReceivedLatch.await(2, TimeUnit.SECONDS));
     }
 }
