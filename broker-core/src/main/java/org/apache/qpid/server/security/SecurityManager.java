@@ -667,7 +667,7 @@ public class SecurityManager
             check = new PublishAccessCheck(new ObjectProperties(virtualHostName, exchangeName, routingKey, immediate));
             _publishAccessCheckCache.putIfAbsent(key, check);
         }
-        if(!checkAllPlugins(check))
+        if(!checkAllPlugins(check, currentSubject))
         {
             throw new AccessControlException("Permission denied, publish to: exchange-name '" + exchangeName + "'");
         }
