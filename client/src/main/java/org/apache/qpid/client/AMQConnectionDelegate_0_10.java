@@ -55,12 +55,13 @@ import org.apache.qpid.transport.ConnectionCloseCode;
 import org.apache.qpid.transport.ConnectionException;
 import org.apache.qpid.transport.ConnectionListener;
 import org.apache.qpid.transport.ConnectionSettings;
+import org.apache.qpid.transport.FrameSizeObserver;
 import org.apache.qpid.transport.ProtocolVersionException;
 import org.apache.qpid.transport.SessionDetachCode;
 import org.apache.qpid.transport.SessionException;
 import org.apache.qpid.transport.TransportException;
 
-public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, ConnectionListener
+public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, ConnectionListener, FrameSizeObserver
 {
     private static final int DEFAULT_PORT = 5672;
 
@@ -86,6 +87,7 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         _conn = conn;
         _qpidConnection = new Connection();
         _qpidConnection.addConnectionListener(this);
+        _qpidConnection.addFrameSizeObserver(this);
     }
 
     /**
@@ -610,6 +612,12 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
     public boolean isVirtualHostPropertiesSupported()
     {
         return _qpidConnection.isVirtualHostPropertiesSupported();
+    }
+
+    @Override
+    public void setMaxFrameSize(final int frameSize)
+    {
+        _conn.setMaximumFrameSize(frameSize);
     }
 
     private class RedirectConnectionException extends ConnectionException

@@ -39,6 +39,7 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.naming.InitialContext;
 
 import com.google.common.base.Strings;
 import org.junit.Assert;
@@ -164,16 +165,69 @@ public class PropertyValueTest extends QpidBrokerTestCase implements MessageList
         runBatch(50);
     }
 
+
+    /**
+     * This fails because of QPID-6793
+     */
     /*
-    QPID-6786
-    */
-    public void testLargeHeader_010_HeadersFillContentHeaderFrame() throws Exception
+    public void testLargeHeader_010_HeaderLargerThan16Bit() throws Exception
     {
         _connection = (AMQConnection) getConnection();
         int maximumFrameSize = (int) _connection.getMaximumFrameSize();
         String propertyName = "string";
-        String propertyValue = generateLongString((int) maximumFrameSize *2);
+        String propertyValue = generateLongString(1<<16);
         sendReceiveMessageWithHeader(_connection, propertyName, propertyValue);
+    }
+    */
+
+    /**
+     * Test QPID-6786
+     */
+    public void testLargeHeader_010_HeadersFillContentHeaderFrame() throws Exception
+    {
+        _connection = (AMQConnection) getConnection();
+        int maximumFrameSize = (int) _connection.getMaximumFrameSize();
+        Map<String, String> headerProperties = new HashMap<>();
+        int headerPropertySize = ((1<<16) - 1);
+        int i = 0;
+        do
+        {
+            String propertyName = "string_" + i;
+            String propertyValue = generateLongString((1<<16) - 1);
+            headerProperties.put(propertyName, propertyValue);
+            ++i;
+        }
+        while (headerProperties.size() * headerPropertySize < 2 * maximumFrameSize);
+
+        _connection.start();
+        Session session = _connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        Destination destination = session.createQueue(getTestQueueName());
+
+        Message message = session.createMessage();
+        for (Map.Entry<String, String> propertyEntry : headerProperties.entrySet())
+        {
+            message.setStringProperty(propertyEntry.getKey(), propertyEntry.getValue());
+        }
+
+        MessageConsumer consumer = session.createConsumer(destination);
+
+        MessageProducer producer = session.createProducer(destination);
+        producer.setDisableMessageID(true);
+        producer.setDisableMessageTimestamp(true);
+        producer.send(message);
+        session.commit();
+
+        Message receivedMessage = consumer.receive(1000);
+        assertNotNull("Message not received", receivedMessage);
+        for (Map.Entry<String, String> propertyEntry : headerProperties.entrySet())
+        {
+            assertEquals("Message has unexpected property value",
+                         propertyEntry.getValue(),
+                         receivedMessage.getStringProperty(propertyEntry.getKey()));
+        }
+        session.commit();
+
     }
 
     public void testLargeHeader_08091_HeadersFillContentHeaderFrame() throws Exception
