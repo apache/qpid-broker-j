@@ -133,7 +133,6 @@ public class NetworkConnectionScheduler
                         connection.clearScheduled();
                         if(connection.isStateChanged())
                         {
-                            connection.clearScheduled();
                             _selectorThread.addToWork(connection);
                         }
                         else
