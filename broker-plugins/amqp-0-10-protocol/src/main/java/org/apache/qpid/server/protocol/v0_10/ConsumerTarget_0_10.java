@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +28,9 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
@@ -61,6 +65,7 @@ import org.apache.qpid.util.GZIPUtils;
 
 public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowCreditManager.FlowCreditManagerListener
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsumerTarget_0_10.class);
 
     private static final Option[] BATCHED = new Option[] { Option.BATCH };
 
@@ -271,56 +276,50 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         boolean msgCompressed = messageProps != null && GZIPUtils.GZIP_CONTENT_ENCODING.equals(messageProps.getContentEncoding());
 
 
-        Collection<QpidByteBuffer> body = msg.getBody();
+        Collection<QpidByteBuffer> bodyBuffers = msg.getBody();
 
         boolean compressionSupported = _session.getConnection().getConnectionDelegate().isCompressionSupported();
 
-        if(msgCompressed && !compressionSupported)
+        if(msgCompressed && !compressionSupported && bodyBuffers != null)
         {
-            byte[] uncompressed = GZIPUtils.uncompressBufferToArray(ByteBufferUtils.combine(body));
-            if(uncompressed != null)
+            Collection<QpidByteBuffer> uncompressedBuffers = inflateIfPossible(bodyBuffers);
+            messageProps.setContentEncoding(null);
+            for (QpidByteBuffer buf : bodyBuffers)
             {
-                messageProps.setContentEncoding(null);
-                for (QpidByteBuffer buf : body)
-                {
-                    buf.dispose();
-                }
-                body = Collections.singleton(QpidByteBuffer.wrap(uncompressed));
+                buf.dispose();
             }
+            bodyBuffers = uncompressedBuffers;
         }
         else if(!msgCompressed
                 && compressionSupported
-                && (messageProps == null || messageProps.getContentEncoding()==null)
-                && body != null
-                && ByteBufferUtils.remaining(body) > _session.getConnection().getMessageCompressionThreshold())
+                && (messageProps == null || messageProps.getContentEncoding() == null)
+                && bodyBuffers != null
+                && ByteBufferUtils.remaining(bodyBuffers) > _session.getConnection().getMessageCompressionThreshold())
         {
-            byte[] compressed = GZIPUtils.compressBufferToArray(ByteBufferUtils.combine(body));
-            if(compressed != null)
+            Collection<QpidByteBuffer> compressedBuffers = deflateIfPossible(bodyBuffers);
+            if(messageProps == null)
             {
-                if(messageProps == null)
-                {
-                    messageProps = new MessageProperties();
-                }
-                messageProps.setContentEncoding(GZIPUtils.GZIP_CONTENT_ENCODING);
-                for (QpidByteBuffer buf : body)
-                {
-                    buf.dispose();
-                }
-                body = Collections.singleton(QpidByteBuffer.wrap(compressed));
+                messageProps = new MessageProperties();
             }
+            messageProps.setContentEncoding(GZIPUtils.GZIP_CONTENT_ENCODING);
+            for (QpidByteBuffer buf : bodyBuffers)
+            {
+                buf.dispose();
+            }
+            bodyBuffers = compressedBuffers;
         }
 
         Header header = new Header(deliveryProps, messageProps, msg.getHeader() == null ? null : msg.getHeader().getNonStandardProperties());
 
-        xfr = batch ? new MessageTransfer(_name,_acceptMode,_acquireMode,header, body, BATCHED)
-                    : new MessageTransfer(_name,_acceptMode,_acquireMode,header, body);
-        if (body != null)
+        xfr = batch ? new MessageTransfer(_name,_acceptMode,_acquireMode,header, bodyBuffers, BATCHED)
+                    : new MessageTransfer(_name,_acceptMode,_acquireMode,header, bodyBuffers);
+        if (bodyBuffers != null)
         {
-            for (QpidByteBuffer buf : body)
+            for (QpidByteBuffer buf : bodyBuffers)
             {
                 buf.dispose();
             }
-            body = null;
+            bodyBuffers = null;
         }
         if(_acceptMode == MessageAcceptMode.NONE && _acquireMode != MessageAcquireMode.PRE_ACQUIRED)
         {
@@ -712,4 +711,32 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     {
         return "ConsumerTarget_0_10[name=" + _name + ", session=" + _session.toLogString() + "]";
     }
+
+
+    private Collection<QpidByteBuffer> deflateIfPossible(final Collection<QpidByteBuffer> buffers)
+    {
+        try
+        {
+            return QpidByteBuffer.deflate(buffers);
+        }
+        catch (IOException e)
+        {
+            LOGGER.warn("Unable to compress message payload for consumer with gzip, message will be sent as is", e);
+            return null;
+        }
+    }
+
+    private Collection<QpidByteBuffer> inflateIfPossible(final Collection<QpidByteBuffer> buffers)
+    {
+        try
+        {
+            return QpidByteBuffer.inflate(buffers);
+        }
+        catch (IOException e)
+        {
+            LOGGER.warn("Unable to decompress message payload for consumer with gzip, message will be sent as is", e);
+            return null;
+        }
+    }
+
 }

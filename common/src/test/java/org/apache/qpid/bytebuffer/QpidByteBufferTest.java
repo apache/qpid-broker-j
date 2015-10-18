@@ -20,13 +20,20 @@
 
 package org.apache.qpid.bytebuffer;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+
+import org.junit.Assert;
+
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class QpidByteBufferTest extends QpidTestCase
 {
 
-    public static final int BUFFER_SIZE = 1;
-    public static final int POOL_SIZE = 1   ;
+    public static final int BUFFER_SIZE = 10;
+    public static final int POOL_SIZE = 20;
 
     @Override
     protected void setUp() throws Exception
@@ -99,4 +106,50 @@ public class QpidByteBufferTest extends QpidTestCase
             // pass
         }
     }
+
+    public void testDeflateInflate() throws Exception
+    {
+        byte[] input = "aaabbbcccddddeeeffff".getBytes();
+        QpidByteBuffer original = QpidByteBuffer.wrap(input);
+
+        Collection<QpidByteBuffer> deflated = QpidByteBuffer.deflate(Collections.singleton(original));
+        assertNotNull(deflated);
+
+        Collection<QpidByteBuffer> inflated = QpidByteBuffer.inflate(deflated);
+        assertNotNull(inflated);
+        assertEquals("Inflated to an unexpected number of inflated buffers", 2, inflated.size());
+
+        Iterator<QpidByteBuffer> bufItr = inflated.iterator();
+        QpidByteBuffer buf1 = bufItr.next();
+        QpidByteBuffer buf2 = bufItr.next();
+
+        assertEquals("Unexpected total remaining", input.length, buf1.remaining() + buf2.remaining());
+
+        byte[] bytes1 = new byte[buf1.remaining()];
+        buf1.get(bytes1);
+        Assert.assertArrayEquals("Inflated buf1 has unexpected content", Arrays.copyOf(input, bytes1.length), bytes1);
+
+        byte[] bytes2 = new byte[buf2.remaining()];
+        buf2.get(bytes2);
+        Assert.assertArrayEquals("Inflated buf2 has unexpected content", Arrays.copyOfRange(input,
+                                                                                            bytes1.length,
+                                                                                            input.length), bytes2);
+    }
+
+    public void testInflatingUncompressedBytes_ThrowsZipException() throws Exception
+    {
+        byte[] input = "not_a_compressed_stream".getBytes();
+        QpidByteBuffer original = QpidByteBuffer.wrap(input);
+
+        try
+        {
+            QpidByteBuffer.inflate(Collections.singleton(original));
+            fail("Exception not thrown");
+        }
+        catch(java.util.zip.ZipException ze)
+        {
+            // PASS
+        }
+    }
+
 }

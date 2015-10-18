@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.bytebuffer;
 
+import java.io.BufferedOutputStream;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +35,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
@@ -44,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.streams.CompositeInputStream;
 
 public final class QpidByteBuffer
 {
@@ -573,6 +577,69 @@ public final class QpidByteBuffer
         return engine.wrap(src, dest._buffer);
     }
 
+    public static Collection<QpidByteBuffer> inflate(Collection<QpidByteBuffer> compressedBuffers) throws IOException
+    {
+        if (compressedBuffers == null)
+        {
+            throw new IllegalArgumentException("buffer cannot be null");
+        }
+
+        boolean isDirect = false;
+        Collection<InputStream> streams = new ArrayList<>(compressedBuffers.size());
+        for (QpidByteBuffer buffer : compressedBuffers)
+        {
+            isDirect = isDirect || buffer.isDirect();
+            streams.add(buffer.asInputStream());
+        }
+
+        Collection<QpidByteBuffer> uncompressedBuffers = new ArrayList<>();
+        try (GZIPInputStream gzipInputStream = new GZIPInputStream(new CompositeInputStream(streams)))
+        {
+            byte[] buf = new byte[_pooledBufferSize];
+            int read;
+            while ((read = gzipInputStream.read(buf)) != -1)
+            {
+                QpidByteBuffer output = isDirect ? allocateDirect(read) : allocate(read);
+                output.put(buf, 0, read);
+                output.flip();
+                uncompressedBuffers.add(output);
+            }
+            return uncompressedBuffers;
+        }
+    }
+
+    public static Collection<QpidByteBuffer> deflate(Collection<QpidByteBuffer> uncompressedBuffers) throws IOException
+    {
+        if (uncompressedBuffers == null)
+        {
+            throw new IllegalArgumentException("buffer cannot be null");
+        }
+
+        boolean isDirect = false;
+        Collection<InputStream> streams = new ArrayList<>(uncompressedBuffers.size());
+        for (QpidByteBuffer buffer : uncompressedBuffers)
+        {
+            isDirect = isDirect || buffer.isDirect();
+            streams.add(buffer.asInputStream());
+        }
+
+        QpidByteBufferOutputStream compressedOutput = new QpidByteBufferOutputStream(isDirect, _pooledBufferSize);
+
+        try(InputStream compressedInput = new CompositeInputStream(streams);
+            GZIPOutputStream gzipStream = new GZIPOutputStream(new BufferedOutputStream(compressedOutput, _pooledBufferSize)))
+        {
+            byte[] buf = new byte[16384];
+            int read;
+            while ((read = compressedInput.read(buf)) > -1)
+            {
+                gzipStream.write(buf, 0, read);
+            }
+        }
+
+        // output pipeline will be already flushed and closed
+
+        return compressedOutput.fetchAccumulatedBuffers();
+    }
 
     public static long write(GatheringByteChannel channel, Collection<QpidByteBuffer> buffers) throws IOException
     {

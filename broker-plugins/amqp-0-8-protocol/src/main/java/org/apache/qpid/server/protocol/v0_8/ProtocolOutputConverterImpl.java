@@ -24,7 +24,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -106,53 +105,55 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
         int bodySize = (int) message.getSize();
         boolean msgCompressed = isCompressed(contentHeaderBody);
-        byte[] modifiedContent;
+        Collection<QpidByteBuffer> modifiedContentBuffers = null;
 
-        // straight through case
         boolean compressionSupported = _connection.isCompressionSupported();
 
-        Collection<QpidByteBuffer> buffers = message.getContent();
+        Collection<QpidByteBuffer> contentBuffers = message.getContent();
 
         long length;
         if(msgCompressed
            && !compressionSupported
-           && (buffers != null)
-           && (modifiedContent = GZIPUtils.uncompressBufferToArray(
-                ByteBufferUtils.combine(buffers))) != null)
+           && (contentBuffers != null)
+           && (modifiedContentBuffers = inflateIfPossible(contentBuffers)) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
             modifiedProps.setEncoding((String)null);
 
-            writeMessageDeliveryModified(channelId, deliverBody, modifiedProps, modifiedContent);
-
-            length = modifiedContent.length;
-        }
+            length = writeMessageDeliveryModified(modifiedContentBuffers, channelId, deliverBody, modifiedProps);
+       }
         else if(!msgCompressed
                 && compressionSupported
                 && contentHeaderBody.getProperties().getEncoding()==null
                 && bodySize > _connection.getMessageCompressionThreshold()
-                && (buffers != null)
-                && (modifiedContent = GZIPUtils.compressBufferToArray(ByteBufferUtils.combine(buffers))) != null)
+                && (contentBuffers != null)
+                && (modifiedContentBuffers = deflateIfPossible(contentBuffers)) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
             modifiedProps.setEncoding(GZIP_ENCODING);
 
-            writeMessageDeliveryModified(channelId, deliverBody, modifiedProps, modifiedContent);
-
-            length = modifiedContent.length;
+            length = writeMessageDeliveryModified(modifiedContentBuffers, channelId, deliverBody, modifiedProps);
         }
         else
         {
-            writeMessageDeliveryUnchanged(buffers, contentHeaderBody, channelId, deliverBody, bodySize);
+            writeMessageDeliveryUnchanged(contentBuffers, channelId, deliverBody, contentHeaderBody, bodySize);
 
             length = bodySize;
         }
 
-        if (buffers != null)
+        if (contentBuffers != null)
         {
-            for (QpidByteBuffer buf : buffers)
+            for (QpidByteBuffer buf : contentBuffers)
+            {
+                buf.dispose();
+            }
+        }
+
+        if (modifiedContentBuffers != null)
+        {
+            for(QpidByteBuffer buf : modifiedContentBuffers)
             {
                 buf.dispose();
             }
@@ -161,25 +162,45 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         return length;
     }
 
-    private int writeMessageDeliveryModified(final int channelId,
-                                             final AMQBody deliverBody,
-                                             final BasicContentHeaderProperties modifiedProps,
-                                             final byte[] content)
+    private Collection<QpidByteBuffer> deflateIfPossible(final Collection<QpidByteBuffer> buffers)
     {
-        final int bodySize;
-        bodySize = content.length;
-        ContentHeaderBody modifiedHeaderBody =
-                new ContentHeaderBody(modifiedProps, bodySize);
-        writeMessageDeliveryUnchanged(Collections.singleton(QpidByteBuffer.wrap(content)),
-                                      modifiedHeaderBody, channelId, deliverBody, bodySize);
+        try
+        {
+            return QpidByteBuffer.deflate(buffers);
+        }
+        catch (IOException e)
+        {
+            LOGGER.warn("Unable to compress message payload for consumer with gzip, message will be sent as is", e);
+            return null;
+        }
+    }
+
+    private Collection<QpidByteBuffer> inflateIfPossible(final Collection<QpidByteBuffer> buffers)
+    {
+        try
+        {
+            return QpidByteBuffer.inflate(buffers);
+        }
+        catch (IOException e)
+        {
+            LOGGER.warn("Unable to decompress message payload for consumer with gzip, message will be sent as is", e);
+            return null;
+        }
+    }
+
+    private int writeMessageDeliveryModified(final Collection<QpidByteBuffer> contentBuffers, final int channelId,
+                                             final AMQBody deliverBody,
+                                             final BasicContentHeaderProperties modifiedProps)
+    {
+        final int bodySize = ByteBufferUtils.remaining(contentBuffers);
+        ContentHeaderBody modifiedHeaderBody = new ContentHeaderBody(modifiedProps, bodySize);
+        writeMessageDeliveryUnchanged(contentBuffers, channelId, deliverBody, modifiedHeaderBody, bodySize);
         return bodySize;
     }
 
 
-    private void writeMessageDeliveryUnchanged(Collection<QpidByteBuffer> messageBuffers,
-                                               ContentHeaderBody contentHeaderBody,
-                                               int channelId,
-                                               AMQBody deliverBody,
+    private void writeMessageDeliveryUnchanged(Collection<QpidByteBuffer> contentBuffers,
+                                               int channelId, AMQBody deliverBody, ContentHeaderBody contentHeaderBody,
                                                int bodySize)
     {
         if (bodySize == 0)
@@ -198,7 +219,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
             int writtenSize = capacity;
 
-            AMQBody firstContentBody = new MessageContentSourceBody(messageBuffers, 0, capacity);
+            AMQBody firstContentBody = new MessageContentSourceBody(contentBuffers, 0, capacity);
 
             CompositeAMQBodyBlock
                     compositeBlock =
@@ -208,7 +229,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             while (writtenSize < bodySize)
             {
                 capacity = bodySize - writtenSize > maxBodySize ? maxBodySize : bodySize - writtenSize;
-                AMQBody body = new MessageContentSourceBody(messageBuffers, writtenSize, capacity);
+                AMQBody body = new MessageContentSourceBody(contentBuffers, writtenSize, capacity);
                 writtenSize += capacity;
 
                 writeFrame(new AMQFrame(channelId, body));
