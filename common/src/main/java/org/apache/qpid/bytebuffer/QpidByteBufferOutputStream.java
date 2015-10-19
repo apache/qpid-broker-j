@@ -44,10 +44,14 @@ public class QpidByteBufferOutputStream extends OutputStream
     private final int _maximumBufferSize;
     private boolean _closed;
 
-    public QpidByteBufferOutputStream(final boolean isDirect, final int size)
+    public QpidByteBufferOutputStream(final boolean isDirect, final int maximumBufferSize)
     {
+        if (maximumBufferSize <= 0)
+        {
+            throw new IllegalArgumentException("Negative or zero maximumBufferSize illegal : " + maximumBufferSize);
+        }
         _isDirect = isDirect;
-        _maximumBufferSize = size;
+        _maximumBufferSize = maximumBufferSize;
     }
 
     @Override
@@ -92,9 +96,7 @@ public class QpidByteBufferOutputStream extends OutputStream
 
         int size = Math.min(_maximumBufferSize, len);
 
-        final QpidByteBuffer current =
-                _isDirect ? QpidByteBuffer.allocate(size) : QpidByteBuffer.allocateDirect(
-                        _maximumBufferSize);
+        QpidByteBuffer current = _isDirect ? QpidByteBuffer.allocateDirect(len) : QpidByteBuffer.allocate(len);
         current.put(data, offset, size);
         current.flip();
         _buffers.add(current);

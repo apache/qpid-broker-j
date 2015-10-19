@@ -20,6 +20,7 @@
 
 package org.apache.qpid.bytebuffer;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import org.junit.Assert;
 
 import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.util.ByteBufferUtils;
 
 public class QpidByteBufferTest extends QpidTestCase
 {
@@ -107,33 +109,30 @@ public class QpidByteBufferTest extends QpidTestCase
         }
     }
 
-    public void testDeflateInflate() throws Exception
+    public void testDeflateInflateDirect() throws Exception
     {
         byte[] input = "aaabbbcccddddeeeffff".getBytes();
-        QpidByteBuffer original = QpidByteBuffer.wrap(input);
+        Collection<QpidByteBuffer> inputBufs = QpidByteBuffer.allocateDirectCollection(input.length);
 
-        Collection<QpidByteBuffer> deflated = QpidByteBuffer.deflate(Collections.singleton(original));
-        assertNotNull(deflated);
+        int offset = 0;
+        for (QpidByteBuffer buf : inputBufs)
+        {
+            int len = buf.remaining();
+            buf.put(input, offset, len);
+            buf.flip();
+            offset += len;
+        }
+        assertEquals(input.length, ByteBufferUtils.remaining(inputBufs));
 
-        Collection<QpidByteBuffer> inflated = QpidByteBuffer.inflate(deflated);
-        assertNotNull(inflated);
-        assertEquals("Inflated to an unexpected number of inflated buffers", 2, inflated.size());
+        doDeflateInflate(input, inputBufs, true);
+    }
 
-        Iterator<QpidByteBuffer> bufItr = inflated.iterator();
-        QpidByteBuffer buf1 = bufItr.next();
-        QpidByteBuffer buf2 = bufItr.next();
+    public void testDeflateInflateHeap() throws Exception
+    {
+        byte[] input = "aaabbbcccddddeeeffff".getBytes();
+        Collection<QpidByteBuffer> inputBufs = Collections.singleton(QpidByteBuffer.wrap(input));
 
-        assertEquals("Unexpected total remaining", input.length, buf1.remaining() + buf2.remaining());
-
-        byte[] bytes1 = new byte[buf1.remaining()];
-        buf1.get(bytes1);
-        Assert.assertArrayEquals("Inflated buf1 has unexpected content", Arrays.copyOf(input, bytes1.length), bytes1);
-
-        byte[] bytes2 = new byte[buf2.remaining()];
-        buf2.get(bytes2);
-        Assert.assertArrayEquals("Inflated buf2 has unexpected content", Arrays.copyOfRange(input,
-                                                                                            bytes1.length,
-                                                                                            input.length), bytes2);
+        doDeflateInflate(input, inputBufs, false);
     }
 
     public void testInflatingUncompressedBytes_ThrowsZipException() throws Exception
@@ -150,6 +149,37 @@ public class QpidByteBufferTest extends QpidTestCase
         {
             // PASS
         }
+    }
+
+    private void doDeflateInflate(byte[] input,
+                                  Collection<QpidByteBuffer> inputBufs,
+                                  boolean direct) throws IOException
+    {
+        Collection<QpidByteBuffer> deflatedBufs = QpidByteBuffer.deflate(inputBufs);
+        assertNotNull(deflatedBufs);
+
+        Collection<QpidByteBuffer> inflated = QpidByteBuffer.inflate(deflatedBufs);
+        assertNotNull(inflated);
+        assertEquals("Inflated to an unexpected number of inflated buffers", 2, inflated.size());
+
+        Iterator<QpidByteBuffer> bufItr = inflated.iterator();
+        QpidByteBuffer buf1 = bufItr.next();
+        QpidByteBuffer buf2 = bufItr.next();
+
+        assertEquals("Inflated buf1 is of wrong type", direct, buf1.isDirect());
+        assertEquals("Inflated buf2 is of wrong type", direct, buf2.isDirect());
+
+        assertEquals("Unexpected total remaining", input.length, buf1.remaining() + buf2.remaining());
+
+        byte[] bytes1 = new byte[buf1.remaining()];
+        buf1.get(bytes1);
+        byte[] expected1 = Arrays.copyOf(input, bytes1.length);
+        Assert.assertArrayEquals("Inflated buf1 has unexpected content", expected1, bytes1);
+
+        byte[] bytes2 = new byte[buf2.remaining()];
+        buf2.get(bytes2);
+        byte[] expected2 = Arrays.copyOfRange(input, bytes1.length, input.length);
+        Assert.assertArrayEquals("Inflated buf2 has unexpected content", expected2, bytes2);
     }
 
 }

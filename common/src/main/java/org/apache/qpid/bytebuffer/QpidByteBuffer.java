@@ -583,6 +583,10 @@ public final class QpidByteBuffer
         {
             throw new IllegalArgumentException("buffer cannot be null");
         }
+        if (!_isPoolInitialized)
+        {
+            throw new IllegalStateException("Inflate cannot be used before pool is initialised.");
+        }
 
         boolean isDirect = false;
         Collection<InputStream> streams = new ArrayList<>(compressedBuffers.size());
@@ -613,6 +617,10 @@ public final class QpidByteBuffer
         if (uncompressedBuffers == null)
         {
             throw new IllegalArgumentException("buffer cannot be null");
+        }
+        if (!_isPoolInitialized)
+        {
+            throw new IllegalStateException("Inflate cannot be used before pool is initialised.");
         }
 
         boolean isDirect = false;
@@ -686,6 +694,11 @@ public final class QpidByteBuffer
                             _pooledBufferSize, _bufferPool.getMaxSize(), bufferSize, maxPoolSize);
             throw new IllegalStateException(errorMessage);
         }
+        if (bufferSize <= 0)
+        {
+            throw new IllegalArgumentException("Negative or zero bufferSize illegal : " + bufferSize);
+        }
+
 
         _bufferPool = new BufferPool(maxPoolSize);
         _pooledBufferSize = bufferSize;

@@ -31,7 +31,8 @@ public class QpidByteBufferOutputStreamTest extends TestCase
 {
     public void testWriteByteByByte() throws Exception
     {
-        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(false, 3);
+        boolean direct = false;
+        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3);
         stream.write('a');
         stream.write('b');
 
@@ -40,15 +41,17 @@ public class QpidByteBufferOutputStreamTest extends TestCase
         Iterator<QpidByteBuffer> bufItr = bufs.iterator();
 
         QpidByteBuffer buf1 = bufItr.next();
-        assertBufferContent("1st buffer", buf1, "a".getBytes());
+        assertBufferContent("1st buffer", buf1, "a".getBytes(), direct);
+
 
         QpidByteBuffer buf2 = bufItr.next();
-        assertBufferContent("2nd buffer", buf2, "b".getBytes());
+        assertBufferContent("2nd buffer", buf2, "b".getBytes(), direct);
     }
 
     public void testWriteByteArrays() throws Exception
     {
-        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(false, 8);
+        boolean direct = false;
+        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8);
         stream.write("abcd".getBytes(), 0, 4);
         stream.write("_ef_".getBytes(), 1, 2);
 
@@ -57,15 +60,35 @@ public class QpidByteBufferOutputStreamTest extends TestCase
         Iterator<QpidByteBuffer> bufItr = bufs.iterator();
 
         QpidByteBuffer buf1 = bufItr.next();
-        assertBufferContent("1st buffer", buf1, "abcd".getBytes());
+        assertBufferContent("1st buffer", buf1, "abcd".getBytes(), direct);
 
         QpidByteBuffer buf2 = bufItr.next();
-        assertBufferContent("2nd buffer", buf2, "ef".getBytes());
+        assertBufferContent("2nd buffer", buf2, "ef".getBytes(), direct);
     }
+
+    public void testWriteMixed() throws Exception
+    {
+        boolean direct = true;
+        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 3);
+        stream.write('a');
+        stream.write("bcd".getBytes());
+
+        Collection<QpidByteBuffer> bufs = stream.fetchAccumulatedBuffers();
+        assertEquals("Unexpected number of buffers", 2, bufs.size());
+        Iterator<QpidByteBuffer> bufItr = bufs.iterator();
+
+        QpidByteBuffer buf1 = bufItr.next();
+        assertBufferContent("1st buffer", buf1, "a".getBytes(), direct);
+
+        QpidByteBuffer buf2 = bufItr.next();
+        assertBufferContent("2nd buffer", buf2, "bcd".getBytes(), direct);
+    }
+
 
     public void testWriteByteArrays_ArrayTooLargeForSingleBuffer() throws Exception
     {
-        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(false, 8);
+        boolean direct = false;
+        QpidByteBufferOutputStream stream = new QpidByteBufferOutputStream(direct, 8);
         stream.write("abcdefghi".getBytes());
 
         Collection<QpidByteBuffer> bufs = stream.fetchAccumulatedBuffers();
@@ -73,18 +96,19 @@ public class QpidByteBufferOutputStreamTest extends TestCase
         Iterator<QpidByteBuffer> bufItr = bufs.iterator();
 
         QpidByteBuffer buf1 = bufItr.next();
-        assertBufferContent("1st buffer", buf1, "abcdefgh".getBytes());
+        assertBufferContent("1st buffer", buf1, "abcdefgh".getBytes(), direct);
 
         QpidByteBuffer buf2 = bufItr.next();
-        assertBufferContent("2nd buffer", buf2, "i".getBytes());
+        assertBufferContent("2nd buffer", buf2, "i".getBytes(), direct);
     }
 
-    private void assertBufferContent(String bufName, QpidByteBuffer buf, byte[] expectedBytes)
+    private void assertBufferContent(String bufName, QpidByteBuffer buf, byte[] expectedBytes, final boolean direct)
     {
         assertEquals(bufName + " has unexpected number of bytes", expectedBytes.length, buf.remaining());
         byte[] copy = new byte[buf.remaining()];
         buf.get(copy);
         Assert.assertArrayEquals(bufName + " has unexpected content", expectedBytes, copy);
+        assertEquals(bufName + " has unexpected type", direct, buf.isDirect());
     }
 
 }
