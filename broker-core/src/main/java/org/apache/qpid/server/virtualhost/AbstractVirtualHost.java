@@ -362,6 +362,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         shutdownHouseKeeping();
         closeNetworkConnectionScheduler();
         closeMessageStore();
+        stopLogging(new ArrayList<>(getChildren(VirtualHostLogger.class)));
     }
 
     @Override
