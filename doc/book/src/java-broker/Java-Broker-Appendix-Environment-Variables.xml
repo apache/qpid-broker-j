@@ -98,15 +98,18 @@
         <row id="Java-Broker-Appendix-Environment-Variables-Qpid-Java-Mem">
           <entry>QPID_JAVA_MEM</entry>
           <entry>
-            <literal>-Xmx2g</literal>
+            <literal>-Xmx512m -XX:MaxDirectMemorySize=1536m</literal>
           </entry>
           <entry>
-            <para>This is the preferred mechanism for customising the size of the JVM's heap memory.
+            <para>This is the preferred mechanism for customising the size of the JVM's heap and
+              direct memory.
               The value should contain valid memory option(s) for the target JVM. Oracle JVMs
-              understand <literal>-Xmx</literal> to specify a maximum heap size and
-                <literal>-Xms</literal> an initial size.</para>
-            <para>For example, <code>QPID_JAVA_MEM=-Xmx6g</code> would set a maximum heap size of
-              6GB.</para>
+              understand <literal>-Xmx</literal> to specify a maximum heap size,
+               <literal>-Xms</literal> an initial size, and
+               <literal>-XX:MaxDirectMemorySize</literal> for the maximum amount of direct
+               memory.</para>
+            <para>For example, <code>QPID_JAVA_MEM="-Xmx6g -XX:MaxDirectMemorySize=12g"</code> would
+              set a maximum heap size of 6GB and 12GB of direct memory.</para>
             <para>Refer to the JVM's documentation for details.</para>
           </entry>
         </row>

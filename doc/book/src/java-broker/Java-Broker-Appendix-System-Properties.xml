@@ -100,13 +100,6 @@
             <para>Feature names should be comma separated.</para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Frame-Size">
-          <entry>qpid.broker_frame_size</entry>
-          <entry>65536</entry>
-          <entry>
-            <para>Maximum AMQP frame size supported by the Broker.</para>
-          </entry>
-        </row>
         <row id="Java-Broker-Appendix-System-Properties-Jmx-Method-Rights">
           <entry>qpid.broker_jmx_method_rights_infer_all_access</entry>
           <entry>true</entry>
