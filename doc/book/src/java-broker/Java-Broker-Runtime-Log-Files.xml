@@ -20,56 +20,240 @@
 
 -->
 
-<section id="Java-Broker-Runtime-Log-Files">
- <title>Log Files</title>
- <para> The Broker uses the <ulink url="http://logging.apache.org/log4j/1.2/">Apache Log4J</ulink>
-  Logging Framework for all logging activity. </para>
- <para> In the Broker's shipped configuration, all logging is directed to log file <literal><link
-    linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Work"
-   >${QPID_WORK}</link>/log/qpid.log</literal>. The log file is not rotated and will be overwritten
-  when the Broker restarts. Logging levels are configured in such a way that the log will comprise
-  of:</para>
- <itemizedlist>
-  <listitem>
-   <para>Opertional Log Events. These report key events in the lifecycle of objects (Broker
-    start-up, Queue creation, Queue deletion etc) within the Broker. See <xref
-     linkend="Java-Broker-Appendix-Operation-Logging"/> for details of the formation of these
-    messages.</para>
-  </listitem>
-  <listitem>
-   <para>Queue Alert Events. These report when the queue thresholds have been breached. See <xref
-    linkend="Java-Broker-Appendix-Queue-Alerts"/> for details.</para>
-  </listitem>
-  <listitem>
-   <para>Any Error and Warning conditions.</para>
-  </listitem>
- </itemizedlist>
- <para>Logging can be reconfigured either by changing the logging configuration file <literal><link
-    linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Home"
-   >${QPID_HOME}</link>/etc/log4j.xml</literal> or at runtime using the Logging Management MBean,
-  see <xref linkend="Java-Broker-Management-Channel-JMX-MBeans"/> for
-  details.</para>
- <section id="Java-Broker-Runtime-Log-Files-Enable-Debug">
-  <title>Enabling Debug</title>
-  <para>It can be helpful to enable debug within the Broker in order to understand a problem more
-   clearly. If this is required, debug can be enabled at runtime (without restarting the Broker)
-   using the Logging Management MBean. The change can also be made by changing the log configuration
-   file and restarting the Broker. Whichever mechanism is chosen, change the appender associated
-   with <literal>org.apache.qpid</literal> from <literal>WARN</literal> to
-   <literal>DEBUG</literal>.</para>
-  <example>
-   <title>Changing the log4j.xml configuration file to enable debug</title>
-   <screen><![CDATA[
-...
-<logger additivity="true" name="org.apache.qpid">
-    <level value="debug"/> <!-- change the level value from warn to debug -->
-</logger>
-...]]></screen>
-  </example>
-  <important>
-   <para>Running a production system at <literal>DEBUG</literal> level can have performance
-    implications by slowing the Broker down. It can also generate large log files. Take care to
-    revert the logging level back to <literal>WARN</literal> after the analysis is performed.</para>
-  </important>
- </section>
+<section id="Java-Broker-Runtime-Logging">
+  <title>Logging</title>
+  <para>This section describes the flexible logging capabilities of the Java Broker.</para>
+  <para>
+    <itemizedlist>
+      <listitem>
+        <para>The Broker is capable of sending logging events to a variety of destinations including
+          plain files, remote syslog daemons, and an in-memory buffer (viewable from Management).
+          The system is also open for extension meaning it is possible to produce a plugin to log to
+          a bespoke destination.</para>
+      </listitem>
+      <listitem>
+        <para>Logging can be dynamically configured at runtime. For instance, it is possible to
+          temporarily increase the logging verbosity of the system whilst a probem is investigated
+          and then reverted later, all without the need to restart the Broker.</para>
+      </listitem>
+      <listitem>
+        <para>Logging can be configured to generate a spearate log for each virtualhost, and Broker
+          can either be inclusive of virtualhost events or exclusive.</para>
+      </listitem>
+      <listitem>
+        <para>Logs are accessible over Management, removing the need for those operating the Broker
+          to have shell level access.</para>
+      </listitem>
+    </itemizedlist>
+  </para>
+  <para>In the remainder of this section you will first find a decription the concepts used in the
+    logging subsystem. Next you find a description of the default configuration. The section
+    concludes with a in-depth description of the loggers themselves and how they many be
+    configured.</para>
+  <section id="Java-Broker-Runtime-Logging-Concepts">
+    <title>Concepts</title>
+
+    <para>The logging subsystem uses two concepts:</para>
+    <para>
+      <itemizedlist>
+        <listitem>
+          <para>A <emphasis>Logger</emphasis> is responsible for production of a log. The Broker
+            ships a variety of loggers, for instance, file logger, which is capable of writing a log
+            file to the file system, a Syslog Logger capable of writing to a remote syslog daemon
+            and console logger capable of writing to stdout or stderr.</para>
+          <para>Loggers are attached at two points within the Broker Model; the Broker itself and
+            the Virtualhosts. Loggers attached at the Broker can capture log events for the system
+            as a whole. Loggers attached to a Virtualhost capture log events relating to that
+            virtualhost only.</para>
+          <para>The Broker and Virtualhosts can have zero or more Loggers.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>InclusionRules</emphasis> govern what appears within a log. Inclusion
+            rules are associated with Loggers. This means it is possible for different Logger to
+            have different contents. A Logger with no inclusion rules will produce an empty
+            log.</para>
+        </listitem>
+      </itemizedlist>
+    </para>
+  </section>
+  <section id="Java-Broker-Runtime-Logging-Default-Configuration">
+    <title>Default Configuration</title>
+    <para>The default configuration is designed to be suitable for use without change in small
+      production environments. It has the following characteristics:</para>
+    <para>
+      <itemizedlist>
+        <listitem>
+          <para>The Broker generates a single log file <literal>qpid.log</literal>. This logfile is
+            rolled automatically when the file reaches 100MB. A maximum history of one file is
+            retained. On restart the the log will be appended to.</para>
+          <para>The log contains: <itemizedlist>
+              <listitem><para>All operational logging events. See <xref
+                    linkend="Java-Broker-Appendix-Operation-Logging"/>.</para></listitem>
+              <listitem><para>Log events from Qpid itself deemed informational or
+                higher.</para></listitem>
+              <listitem><para>Log events from Qpid's dependencies (such as Derby or Jetty) that are
+                  deemed warning or higher.</para></listitem>
+            </itemizedlist>
+          </para>
+          <para>The default location for the log file
+            <literal>${QPID_WORK}/log/qpid.log</literal>.</para>
+        </listitem>
+        <listitem>
+          <para>The Broker also caches the last 4096 log events in a memory cache. The log contains:
+            all operational logging events, events from Qpid itself that are deemed informational or
+            higher.</para>
+        </listitem>
+      </itemizedlist>
+    </para>
+    <para>The default configuration can be customised at runtime using Management. This makes it
+      possible to investigate ususual conditions <emphasis>without</emphasis> the need to restart
+      the Broker. For instance, you may alter the logging level so that a verbose log is produced
+      whilst an investigation is in progress and revert the setting later, all without the need to
+      restart the Broker.</para>
+  </section>
+  <section id="Java-Broker-Runtime-Logging-Loggers">
+    <title>Loggers</title>
+    <para>Loggers are responsible for the writing a log and include log events that match a Logger's
+      inclusion rules.</para>
+    <para>Loggers are associated with either the Broker or a Virtualhost. Virtualhost logger write
+      only log events related to that virtualhost. Broker Loggers write log events from the Broker
+      as a whole. Optionally a Broker Logger can be configured to exclude log events coming from
+      Virtualhosts. This abilities can be useful exploited together in managed service
+      scenarios.</para>
+    <para>Loggers can be added or removed, or incluision rules added, removed or changed, at runtime
+      without restarting the Broker, but changes to configuration such as filenames and rolling
+      options don't take effect until next restart.</para>
+    <para>All logger allow the log event layout to be customised. Loggers understand <ulink
+        url="http://logback.qos.ch/manual/layouts.html#ClassicPatternLayout"> Logback Classic
+        Pattern Layouts</ulink>. </para>
+    <para>The following sections describes each Logger implementation in detail.</para>
+    <section id="Java-Broker-Runtime-Logging-Loggers-FileLogger">
+      <title>FileLogger</title>
+      <para>A <emphasis>FileLogger</emphasis> - writes a log file to the filesystem. The name and
+        location of the log file, the rolling configuration, and compression options can be
+        configured.</para>
+      <para>The <emphasis>roll daily</emphasis>, if enabled, the log file will be rolled at midnight
+        local time each day. The rolled over file will have a suffix in the form
+          <literal>yyyy-mm-dd</literal>. In roll daily mode, <emphasis>maximum number of rolled
+          files</emphasis> governs the number of days logs that will be retained.</para>
+      <para>The <emphasis>maximum file size</emphasis> limits the size of any one log file. Once a
+        log file reaches the given size, it will be rolled. The rolled over file will have the
+        numeric suffix, beginning at <literal>1</literal>. If the log file rolls again, first, the
+        exitsing file with the suffix <literal>.1</literal> is renamed to <literal>.2</literal> and
+        so forth. If roll daily is not in use, <emphasis>maximum number of rolled files</emphasis>
+        governs the number of rolled files that will be retained.</para>
+      <para><emphasis>Roll on restart</emphasis> governs whether the log file is rolled when the Broker
+        is restrted. If not ticked, the Broker will append to the existing log file until it needs
+        to be rolled.</para>
+    </section>
+    <section id="Java-Broker-Runtime-Logging-Loggers-ConsoleLogger">
+      <title>ConsoleLogger</title>
+      <para><emphasis>ConsoleLogger</emphasis> - writes a log file standard out or standard
+        error.</para>
+    </section>
+    <section id="Java-Broker-Runtime-Logging-Loggers-SyslogLogger">
+      <title>SyslogLogger</title>
+      <para><emphasis>SyslogLogger</emphasis> - writes a log file to a syslog daemon using the
+          <literal>USER</literal> facility. The hostname and port number of the syslog daemon can be
+        configured.</para>
+      <para>Log entries can be prefixed with a string. This string defaults to include the word
+          <literal>Qpid</literal> and the name of the Broker or Virtualhost. This serves to
+        distinguish the logging generated by this Qpid instance, from other Qpid instances, or other
+        applications using the <literal>USER</literal>.</para>
+    </section>
+    <section id="Java-Broker-Runtime-Logging-Loggers-MemoryLogger">
+      <title>MemoryLogger</title>
+      <para><emphasis>MemoryLogger</emphasis> - writes a log file to a circular in-memory buffer. By
+        default the circular buffer holds the last 4096 log events. The contents of the buffer can
+        be viewed via Management.</para>
+    </section>
+  </section>
+  <section id="Java-Broker-Runtime-Logging-InclusionRules">
+    <title>Inclusion Rules</title>
+    <para>A <emphasis>Logger</emphasis> has one or more <emphasis>inclusion rules</emphasis>. These
+      govern what appears in the log.  A Logger with no inclusion rules will log nothing.</para>
+    <para>Inclusion rules can be added, remove or changed at runtime. Changes take place
+      immediately.</para>
+    <para>
+      <itemizedlist>
+        <listitem>
+          <para>The <emphasis>Name And Level</emphasis> inclusion rule allows log events that match
+            a given logger name and have a level that equals or exceeds the specified value.</para>
+          <para>The logger name refers to the logger name declared in the Qpid source itself. Logger
+            names permit a trailing wild card <literal>*</literal>. For instance
+              <literal>org.apache.qpid.*</literal> will match all Qpid loggers that begin
+              <literal>org.apache.qpid</literal>. </para>
+          <para>The <emphasis>Level</emphasis> governs the level of the events that will be included
+            in the log. It may take a one of the following value: FATAL, ERROR, WARN, INFO, DEBUG,
+            TRACE where FATAL is considered the highest and TRACE the lowest. When consider whether
+            a logging event should be include in the log, the logging event must have a level that
+            matches that of the inclusion rule or by higher, otherwise the log event will not appear
+            in the log. </para>
+        </listitem>
+      </itemizedlist>
+    </para>
+  </section>
+  <section id="Java-Broker-Runtime-Logging-Management">
+    <title>Logging Management</title>
+    <para>The logging subsystem can be completed managed from the Web Management Console or the REST
+      API. You can: <itemizedlist>
+        <listitem><para>Add, remove or change the configuration of Loggers.</para></listitem>
+        <listitem><para>Add, remove or change the Inclusion Rules.</para></listitem>
+        <listitem><para>For FileLoggers, download the log file and rolled log files associated with
+            the Logger.</para></listitem>
+        <listitem><para>For MemoryLoggers, view the last <literal>n</literal> log
+          events</para></listitem>
+      </itemizedlist>
+    </para>
+    <para>
+      The figure that follows shows the a FileLogger. The attributes area shows the configuration of the Logger.  The inclusion
+      rule tables shows the rules that are associated with the Logger.  The area towards the bottom of the tab allow the
+      log files to be downloaded to the browser.
+      
+      <figure id="Java-Broker-Runtime-Logging-Management-FileLogger">
+        <title>Viewing a file logger</title>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Management-Web-Logging-FileLogger.png" format="PNG"
+              scalefit="1"/>
+          </imageobject>
+          <textobject>
+            <phrase>Viewing a file logger</phrase>
+          </textobject>
+        </mediaobject>
+      </figure>
+    </para>
+    <para>
+      The figure below shows the editing of the level of an inclusion rule.
+      <figure id="Java-Broker-Runtime-Logging-Management-InclusionRule">
+        <title>Editing an inclusion rule</title>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Management-Web-Logging-InclusionRule.png" format="PNG"
+              scalefit="1"/>
+          </imageobject>
+          <textobject>
+            <phrase>Editing an inclusion rule</phrase>
+          </textobject>
+        </mediaobject>
+      </figure>
+    </para>
+    <para>
+      The figure below shows a Memory Logger.  Note that the Memory Logger provides accessed to the cached message via the viewer
+      towards the bottom on the tab.
+      <figure id="Java-Broker-Runtime-Logging-Management-MemoryLogger">
+        <title>Viewing a memory logger</title>
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/Management-Web-Logging-MemoryLogger.png" format="PNG"
+              scalefit="1"/>
+          </imageobject>
+          <textobject>
+            <phrase>Viewing a memory logger</phrase>
+          </textobject>
+        </mediaobject>
+      </figure>
+    </para>
+
+  </section>
 </section>

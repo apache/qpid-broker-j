@@ -243,8 +243,8 @@
         <row>
           <entry><command>ACCESS_LOGS</command> </entry>
           <entry><para>Allows/denies to the specific user an operation to download broker log file(s) over REST interfaces</para> </entry>
-          <entry><para>BROKER</para></entry>
-          <entry><para> </para></entry>
+          <entry><para>BROKER, VIRTUALHOST</para></entry>
+          <entry><para>name (for VIRTUALHOST only)</para></entry>
         </row>
       </tbody>
     </tgroup>
@@ -270,7 +270,7 @@
         <row>
           <entry> <command>VIRTUALHOST</command> </entry>
           <entry> <para>A virtualhost</para> </entry>
-          <entry><para>ALL, CREATE, UPDATE, DELETE, ACCESS</para> </entry>
+          <entry><para>ALL, CREATE, UPDATE, DELETE, ACCESS, ACCESS_LOGS</para> </entry>
           <entry><para>name</para> </entry>
         </row>
         <row>

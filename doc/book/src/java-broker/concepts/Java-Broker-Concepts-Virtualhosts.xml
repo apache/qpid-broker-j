@@ -44,6 +44,7 @@
   <para>A <emphasis>Session</emphasis> represents a context for the production or consumption of
     messages. A Connection can have many Sessions.</para>
   <para>A <emphasis>Consumer</emphasis> represents a live consumer that is attached to queue.</para>
+  <para>A <emphasis>Logger</emphasis> is responsible for producing log for this virtualhost.</para>
   <para> The following diagram depicts the Virtualhost model: <figure>
       <title>Virtualhost Model</title>
       <mediaobject>

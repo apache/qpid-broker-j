@@ -348,6 +348,20 @@
           </row>
           <row>
             <entry>
+              <itemizedlist>
+                <listitem><para>/api/latest/(broker|virtualhost)logger</para></listitem>
+                <listitem><para>/api/&lt;version&gt;/(broker|virtualhost)logger</para></listitem>
+                <listitem><para>/api/latest/(broker|virtualhost)logger/&lt;logger name&gt;</para></listitem>
+                <listitem><para>/api/&lt;version&gt;/(broker|virtualhost)logger/&lt;logger name&gt;</para></listitem>
+              </itemizedlist>
+            </entry>
+            <entry>
+              <para>Manages(creates/deletes/updates) Broker or Virtualhost Loggers(s) and provides the information about current values of the attributes. Some implementatiions have operations
+              that allow the names of log files and log content to be retrieved.</para>
+            </entry>
+          </row>
+          <row>
+            <entry>
               <para>/service/sasl</para>
             </entry>
             <entry>Sasl authentication. Retrieves user current authentication status and broker supported SASL mechanisms (GET). Authenticates user using supported SASL mechanisms (PUT requests)</entry>

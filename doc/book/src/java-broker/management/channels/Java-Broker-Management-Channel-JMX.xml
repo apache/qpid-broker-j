@@ -307,11 +307,10 @@ managedBroker.createNewQueue("myqueue", null, true);</programlisting>
                     </row>
                     <row>
                         <entry>
-                            <para>MBean permitting control of the Broker's logging. Exposes
-                                operations allow the logging level to be controlled at runtime
-                                (without restarting the Broker) and others that allow changes to be
-                                written back to the log4j.xml logging configuration file, or the
-                                contents of the log4.xml file to be re-read at runtime.</para>
+                            <para>MBean permitting basic control of first configured Broker FileLogger only.  If
+                                no FileLoggers are associated with the Broker, this Mbean will be absent.  It is 
+                                recommended that new applications use the Web Management or REST API to control
+                                logging. See <xref linkend="Java-Broker-Runtime-Logging"/>.</para>
                         </entry>
                     </row>
                 </tbody>

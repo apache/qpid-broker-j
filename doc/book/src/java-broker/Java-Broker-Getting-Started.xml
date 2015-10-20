@@ -47,7 +47,6 @@
     <programlisting><![CDATA[bin\qpid-server.bat]]></programlisting>
     <para>Output similar to the following will be seen:</para>
     <screen>[Broker] BRK-1006 : Using configuration : C:\qpidwork\config.json
-[Broker] BRK-1007 : Using logging configuration : C:\qpid\&windowsExtractedBrokerDirName;\etc\log4j.xml
 [Broker] BRK-1001 : Startup : Version: &qpidCurrentRelease; Build: 1478262
 [Broker] BRK-1010 : Platform : JVM : Oracle Corporation version: 1.7.0_21-b11 OS : Windows 7 version: 6.1 arch: x86
 [Broker] BRK-1011 : Maximum Memory : 1,060,372,480 bytes
@@ -73,7 +72,6 @@
     <programlisting><![CDATA[bin/qpid-server]]></programlisting>
     <para>Output similar to the following will be seen:</para>
     <screen>[Broker] BRK-1006 : Using configuration : /var/qpidwork/config.json
-[Broker] BRK-1007 : Using logging configuration : /usr/local/qpid/&unixExtractedBrokerDirName;/etc/log4j.xml
 [Broker] BRK-1001 : Startup : Version: &qpidCurrentRelease; Build: exported
 [Broker] BRK-1010 : Platform : JVM : Sun Microsystems Inc. version: 1.6.0_32-b05 OS : Linux version: 3.6.10-2.fc16.x86_64 arch: amd64
 [Broker] BRK-1011 : Maximum Memory : 1,065,025,536 bytes
@@ -92,13 +90,13 @@
         <command>bin/qpid.stop</command> script, use <command>kill -TERM &lt;pid&gt;</command>, or
       the Shutdown MBean from the <link linkend="Java-Broker-Management-Channel-JMX">JMX management plugin</link>.</para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-LogFile">
+  <section role="h2" id="Java-Broker-Getting-Started-Logging">
     <title>Log file</title>
     <para>The Java Broker writes a log file to record both details of its normal operation and any exceptional
       conditions.  By default the log file is written within the log subdirectory beneath the work directory
       - <computeroutput>$QPID_WORK/log/qpid.log</computeroutput> (UNIX) and
       <computeroutput>%QPID_WORK%\log\qpid.log</computeroutput> (Windows).</para>
-    <para>For details of how to control the logging, see <xref linkend="Java-Broker-Runtime-Log-Files"/></para>
+    <para>For details of how to control the logging, see <xref linkend="Java-Broker-Runtime-Logging"/></para>
   </section>
   <section role="h2" id="Java-Broker-Getting-Started-CommandLine">
     <title>Using the command line</title>
@@ -125,11 +123,6 @@
  -icp  <path>                                   Set the location of initial JSON config
  --initial-config-path <path>                   to use when creating/overwriting a
                                                 broker configuration store
-
- -l <file>                                      Use the specified log4j xml configuration
- --logconfig <file>                             file. By default looks for a file named
-                                                etc/log4j.xml in the same directory as
-                                                the configuration file
 
  -mm                                            Start broker in management mode,
  --management-mode                              disabling the AMQP ports

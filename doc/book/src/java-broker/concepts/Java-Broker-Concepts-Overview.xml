@@ -48,6 +48,8 @@
   <para><emphasis>Remote Replication Nodes</emphasis> are used when the high availability feature is
     in use. It is the remote representation of other virtualhost nodes that form part of the same
     group.</para>
+  <para><emphasis>Loggers</emphasis> are responsible for the production of a log for either
+    the Broker.</para>
   <para>These concepts will be developed over the forthcoming pages. The diagrams below also help
     put these entities in context of one and other.</para>
   <para><figure>

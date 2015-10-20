@@ -49,10 +49,16 @@
 
     <section id="Java-Broker-Concepts-Truststores">
         <title>Truststores</title>
-        <para><emphasis>Truststores </emphasis> are used to configure details of keystores holding SSL certificates
+        <para><emphasis>Truststores</emphasis> are used to configure details of keystores holding SSL certificates
         for trusting Client Certificate on SSL ports.
         </para>
         <para>Truststore configuration and management is covered in <xref linkend="Java-Broker-Management-Managing-Truststores"/>.</para>
     </section>
-
+    
+    <section id="Java-Broker-Concepts-Loggers">
+        <title>Loggers</title>
+        <para><emphasis>Loggers</emphasis> are responsible for producing a log of events from either the Broker as a whole, or
+            an individual Virtualhost. These are described in <xref linkend="Java-Broker-Runtime-Logging"/>.</para>
+    </section>
+    
 </section>
