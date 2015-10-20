@@ -581,11 +581,7 @@ public final class QpidByteBuffer
     {
         if (compressedBuffers == null)
         {
-            throw new IllegalArgumentException("buffer cannot be null");
-        }
-        if (!_isPoolInitialized)
-        {
-            throw new IllegalStateException("Inflate cannot be used before pool is initialised.");
+            throw new IllegalArgumentException("compressedBuffers cannot be null");
         }
 
         boolean isDirect = false;
@@ -595,11 +591,12 @@ public final class QpidByteBuffer
             isDirect = isDirect || buffer.isDirect();
             streams.add(buffer.asInputStream());
         }
+        final int bufferSize = (isDirect && _pooledBufferSize > 0) ? _pooledBufferSize : 65536;
 
         Collection<QpidByteBuffer> uncompressedBuffers = new ArrayList<>();
         try (GZIPInputStream gzipInputStream = new GZIPInputStream(new CompositeInputStream(streams)))
         {
-            byte[] buf = new byte[_pooledBufferSize];
+            byte[] buf = new byte[bufferSize];
             int read;
             while ((read = gzipInputStream.read(buf)) != -1)
             {
@@ -616,11 +613,7 @@ public final class QpidByteBuffer
     {
         if (uncompressedBuffers == null)
         {
-            throw new IllegalArgumentException("buffer cannot be null");
-        }
-        if (!_isPoolInitialized)
-        {
-            throw new IllegalStateException("Inflate cannot be used before pool is initialised.");
+            throw new IllegalArgumentException("uncompressedBuffers cannot be null");
         }
 
         boolean isDirect = false;
@@ -630,11 +623,12 @@ public final class QpidByteBuffer
             isDirect = isDirect || buffer.isDirect();
             streams.add(buffer.asInputStream());
         }
+        final int bufferSize = (isDirect && _pooledBufferSize > 0) ? _pooledBufferSize : 65536;
 
-        QpidByteBufferOutputStream compressedOutput = new QpidByteBufferOutputStream(isDirect, _pooledBufferSize);
+        QpidByteBufferOutputStream compressedOutput = new QpidByteBufferOutputStream(isDirect, bufferSize);
 
         try(InputStream compressedInput = new CompositeInputStream(streams);
-            GZIPOutputStream gzipStream = new GZIPOutputStream(new BufferedOutputStream(compressedOutput, _pooledBufferSize)))
+            GZIPOutputStream gzipStream = new GZIPOutputStream(new BufferedOutputStream(compressedOutput, bufferSize)))
         {
             byte[] buf = new byte[16384];
             int read;
