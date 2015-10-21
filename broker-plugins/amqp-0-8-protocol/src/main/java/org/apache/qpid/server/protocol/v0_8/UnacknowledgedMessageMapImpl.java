@@ -21,7 +21,9 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -146,18 +148,38 @@ public class UnacknowledgedMessageMapImpl implements UnacknowledgedMessageMap
 
     public Collection<MessageInstance> acknowledge(long deliveryTag, boolean multiple)
     {
-        Map<Long, MessageInstance> ackedMessageMap = new LinkedHashMap<Long,MessageInstance>();
-        collect(deliveryTag, multiple, ackedMessageMap);
-        remove(ackedMessageMap);
-        List<MessageInstance> acknowledged = new ArrayList<>();
-        for(MessageInstance instance : ackedMessageMap.values())
+        if(multiple)
         {
-            if(instance.lockAcquisition())
+            Map<Long, MessageInstance> ackedMessageMap = new LinkedHashMap<Long, MessageInstance>();
+            collect(deliveryTag, multiple, ackedMessageMap);
+            remove(ackedMessageMap);
+            List<MessageInstance> acknowledged = new ArrayList<>();
+            for (MessageInstance instance : ackedMessageMap.values())
             {
-                acknowledged.add(instance);
+                if (instance.lockAcquisition())
+                {
+                    acknowledged.add(instance);
+                }
             }
+            return acknowledged;
         }
-        return acknowledged;
+        else
+        {
+            MessageInstance instance;
+            synchronized (_lock)
+            {
+                instance = remove(deliveryTag);
+            }
+            if(instance != null && instance.lockAcquisition())
+            {
+                return Collections.singleton(instance);
+            }
+            else
+            {
+                return Collections.emptySet();
+            }
+
+        }
     }
 
     private void collect(long key, Map<Long, MessageInstance> msgs)

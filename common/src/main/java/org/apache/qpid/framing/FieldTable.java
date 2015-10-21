@@ -52,7 +52,7 @@ public class FieldTable
     private static final boolean STRICT_AMQP = Boolean.valueOf(System.getProperty(STRICT_AMQP_NAME, "false"));
 
     private QpidByteBuffer _encodedForm;
-    private LinkedHashMap<AMQShortString, AMQTypedValue> _properties = null;
+    private Map<AMQShortString, AMQTypedValue> _properties = null;
     private long _encodedSize;
     private static final int INITIAL_HASHMAP_CAPACITY = 16;
     private static final int INITIAL_ENCODED_FORM_SIZE = 256;
@@ -966,7 +966,7 @@ public class FieldTable
             {
                 if (_encodedForm != null)
                 {
-                    _properties = new LinkedHashMap<>();
+                    _properties = Collections.emptyMap();
                 }
             }
 

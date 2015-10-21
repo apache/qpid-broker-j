@@ -54,11 +54,13 @@ public class QueueRunner implements Runnable
     private final AtomicLong _lastRunAgain = new AtomicLong();
     private final AtomicLong _lastRunTime = new AtomicLong();
     private final AccessControlContext _context;
+    private final String _taskName;
 
     public QueueRunner(AbstractQueue queue, AccessControlContext context)
     {
         _queue = queue;
         _context = context;
+        _taskName = "Queue Runner[" + _queue.getName() + "]";
     }
 
     @Override
@@ -94,7 +96,7 @@ public class QueueRunner implements Runnable
                 {
                     if(_scheduled.compareAndSet(IDLE, SCHEDULED))
                     {
-                        _queue.execute("Queue Runner["+ _queue.getName()+"]", QueueRunner.this, _context);
+                        _queue.execute(_taskName, QueueRunner.this, _context);
                     }
                 }
             }
@@ -112,7 +114,7 @@ public class QueueRunner implements Runnable
         _stateChange.set(true);
         if(_scheduled.compareAndSet(IDLE, SCHEDULED))
         {
-            _queue.execute("Queue Runner["+ _queue.getName()+"]", this, _context);
+            _queue.execute(_taskName, this, _context);
         }
     }
 

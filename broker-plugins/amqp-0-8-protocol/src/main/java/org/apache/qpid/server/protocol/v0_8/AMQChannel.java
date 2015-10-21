@@ -1608,7 +1608,7 @@ public class AMQChannel
 
     private class MessageAcknowledgeAction implements ServerTransaction.Action
     {
-        private final Collection<MessageInstance> _ackedMessages;
+        private Collection<MessageInstance> _ackedMessages;
 
         public MessageAcknowledgeAction(Collection<MessageInstance> ackedMessages)
         {
@@ -1626,7 +1626,7 @@ public class AMQChannel
             }
             finally
             {
-                _ackedMessages.clear();
+                _ackedMessages = Collections.emptySet();
             }
 
         }
@@ -1653,7 +1653,7 @@ public class AMQChannel
                 }
                 finally
                 {
-                    _ackedMessages.clear();
+                    _ackedMessages = Collections.emptySet();
                 }
             }
 

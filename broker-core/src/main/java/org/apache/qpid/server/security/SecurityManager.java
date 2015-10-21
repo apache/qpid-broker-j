@@ -78,8 +78,9 @@ import org.apache.qpid.server.transport.AMQPConnection;
 public class SecurityManager
 {
 
+    private static final SystemPrincipal SYSTEM_PRINCIPAL = new SystemPrincipal();
     private static final Subject SYSTEM = new Subject(true,
-                                                     Collections.singleton(new SystemPrincipal()),
+                                                     Collections.singleton(SYSTEM_PRINCIPAL),
                                                      Collections.emptySet(),
                                                      Collections.emptySet());
 
@@ -162,7 +163,7 @@ public class SecurityManager
 
     public static boolean isSystemSubject(final Subject subject)
     {
-        return !(subject == null  || subject.getPrincipals(SystemPrincipal.class).isEmpty());
+        return subject != null  && subject.getPrincipals().contains(SYSTEM_PRINCIPAL);
     }
 
     public static AuthenticatedPrincipal getCurrentUser()
