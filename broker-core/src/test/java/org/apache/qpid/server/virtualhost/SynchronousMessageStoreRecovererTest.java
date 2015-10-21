@@ -144,7 +144,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
 
         verify(queue, never()).enqueue(any(ServerMessage.class), any(Action.class), any(MessageEnqueueRecord.class));
         verify(transaction).dequeueMessage(argThat(new MessageEnqueueRecordMatcher(queue.getId(), messageId)));
-        verify(transaction, times(1)).commitTranAsync();
+        verify(transaction, times(1)).commitTranAsync((Void) null);
     }
 
     public void testRecoveryOfMessageInstanceForNonExistingQueue()
@@ -182,7 +182,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         recoverer.recover(_virtualHost);
 
         verify(transaction).dequeueMessage(argThat(new MessageEnqueueRecordMatcher(queueId,messageId)));
-        verify(transaction, times(1)).commitTranAsync();
+        verify(transaction, times(1)).commitTranAsync((Void) null);
     }
 
     public void testRecoveryDeletesOrphanMessages()

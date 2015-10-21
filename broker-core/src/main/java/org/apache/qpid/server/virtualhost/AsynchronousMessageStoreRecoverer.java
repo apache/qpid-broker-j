@@ -466,7 +466,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                                      + " is unknown, entry will be discarded");
                         Transaction txn = _store.newTransaction();
                         txn.dequeueMessage(record);
-                        txn.commitTranAsync();
+                        txn.commitTranAsync((Void) null);
                     }
                     return _continueRecovery.get();
                 }

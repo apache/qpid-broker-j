@@ -760,20 +760,35 @@ public abstract class AbstractBDBMessageStore implements MessageStore
      *
      * @throws org.apache.qpid.server.store.StoreException If the operation fails for any reason.
      */
-    private ListenableFuture<Void> commitTranImpl(final Transaction tx, boolean syncCommit) throws StoreException
+    private void commitTranImpl(final Transaction tx, boolean syncCommit) throws StoreException
     {
         if (tx == null)
         {
             throw new StoreException("Fatal internal error: transactional is null at commitTran");
         }
 
-        ListenableFuture<Void> result = getEnvironmentFacade().commit(tx, syncCommit);
+        getEnvironmentFacade().commit(tx, syncCommit);
 
         getLogger().debug("commitTranImpl completed {} transaction {}",
                           syncCommit ? "synchronous" : "asynchronous", tx);
 
+
+    }
+
+    private <X> ListenableFuture<X> commitTranAsyncImpl(final Transaction tx, X val) throws StoreException
+    {
+        if (tx == null)
+        {
+            throw new StoreException("Fatal internal error: transactional is null at commitTran");
+        }
+
+        ListenableFuture<X> result = getEnvironmentFacade().commitAsync(tx, val);
+
+        getLogger().debug("commitTranAsynImpl completed transaction {}", tx);
+
         return result;
     }
+
 
     /**
      * Abandons all operations performed within a given transaction.
@@ -1148,7 +1163,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             }
         }
 
-        synchronized ListenableFuture<Void> flushToStore()
+        synchronized void flushToStore()
         {
             if (_messageDataRef != null)
             {
@@ -1166,11 +1181,10 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                         throw getEnvironmentFacade().handleDatabaseException("failed to begin transaction", e);
                     }
                     store(txn);
-                    getEnvironmentFacade().commit(txn, true);
+                    getEnvironmentFacade().commit(txn, false);
 
                 }
             }
-            return Futures.immediateFuture(null);
         }
 
         @Override
@@ -1312,12 +1326,12 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
 
         @Override
-        public ListenableFuture<Void> commitTranAsync() throws StoreException
+        public <X> ListenableFuture<X> commitTranAsync(final X val) throws StoreException
         {
             checkMessageStoreOpen();
             doPreCommitActions();
             AbstractBDBMessageStore.this.storedSizeChangeOccurred(_storeSizeIncrease);
-            ListenableFuture<Void> futureResult = AbstractBDBMessageStore.this.commitTranImpl(_txn, false);
+            ListenableFuture<X> futureResult = AbstractBDBMessageStore.this.commitTranAsyncImpl(_txn, val);
             doPostCommitActions();
             return futureResult;
         }

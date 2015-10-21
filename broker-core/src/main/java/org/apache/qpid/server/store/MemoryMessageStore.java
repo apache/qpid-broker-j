@@ -62,9 +62,9 @@ public class MemoryMessageStore implements MessageStore
         private Set<Xid> _localDistributedTransactionsRemoves = new HashSet<Xid>();
 
         @Override
-        public ListenableFuture<Void> commitTranAsync()
+        public <X> ListenableFuture<X> commitTranAsync(final X val)
         {
-            return Futures.immediateFuture(null);
+            return Futures.immediateFuture(val);
         }
 
         @Override

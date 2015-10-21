@@ -26,15 +26,9 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ForwardingListenableFuture;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +58,7 @@ public class LocalTransaction implements ServerTransaction
     private final MessageStore _transactionLog;
     private volatile long _txnStartTime = 0L;
     private volatile long _txnUpdateTime = 0l;
-    private ListenableFuture<Void> _asyncTran;
+    private ListenableFuture<Runnable> _asyncTran;
 
     public LocalTransaction(MessageStore transactionLog)
     {
@@ -384,50 +378,25 @@ public class LocalTransaction implements ServerTransaction
         sync();
         if(_transaction != null)
         {
-            final ListenableFuture<Void> underlying = _transaction.commitTranAsync();
 
-            /*
-              Note that this future is not a general purpose future and makes assumptions about the fact that get() is
-              only called once (which is enforced by how sync() works.  The post transaction actions must be performed
-              in the connection thread (i.e. the thread that the sync() is called from - not the commit thread which is
-              where the actions would occur if we added a listener to the underlying future
-             */
-            _asyncTran = new ForwardingListenableFuture<Void>()
-            {
+            Runnable action = new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        try
+                                        {
+                                            doPostTransactionActions();
+                                            deferred.run();
+                                        }
+                                        finally
+                                        {
+                                            resetDetails();
+                                        }
 
-                @Override
-                protected ListenableFuture<Void> delegate()
-                {
-                    return underlying;
-                }
-
-                @Override
-                public Void get(final long timeout, final TimeUnit unit)
-                        throws InterruptedException, TimeoutException, ExecutionException
-                {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public Void get() throws InterruptedException, ExecutionException
-                {
-                    final Void rval;
-                    try
-                    {
-                        rval = super.get();
-                        doPostTransactionActions();
-                        deferred.run();
-                    }
-                    finally
-                    {
-                        resetDetails();
-                    }
-                    return rval;
-                }
-
-
-
-            };
+                                    }
+                                };
+            _asyncTran = _transaction.commitTranAsync(action);
 
         }
         else
@@ -491,7 +460,7 @@ public class LocalTransaction implements ServerTransaction
                 {
                     try
                     {
-                        _asyncTran.get();
+                        _asyncTran.get().run();
                         break;
                     }
                     catch (InterruptedException e)

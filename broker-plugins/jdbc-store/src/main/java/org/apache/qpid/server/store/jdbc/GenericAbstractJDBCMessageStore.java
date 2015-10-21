@@ -133,11 +133,11 @@ public abstract class GenericAbstractJDBCMessageStore extends org.apache.qpid.se
         }
 
         @Override
-        public ListenableFuture<Void> commitTranAsync()
+        public <X> ListenableFuture<X> commitTranAsync(final X val)
         {
             try
             {
-                return super.commitTranAsync();
+                return super.commitTranAsync(val);
             }
             finally
             {

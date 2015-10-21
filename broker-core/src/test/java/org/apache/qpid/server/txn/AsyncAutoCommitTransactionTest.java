@@ -22,7 +22,6 @@ import static org.mockito.Mockito.*;
 
 import java.util.Collections;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
@@ -54,7 +53,7 @@ public class AsyncAutoCommitTransactionTest extends QpidTestCase
         super.setUp();
 
         when(_messageStore.newTransaction()).thenReturn(_storeTransaction);
-        when(_storeTransaction.commitTranAsync()).thenReturn(_future);
+        when(_storeTransaction.commitTranAsync((Void) null)).thenReturn(_future);
         when(_queue.isDurable()).thenReturn(true);
         when(_queue.getMessageDurability()).thenReturn(MessageDurability.DEFAULT);
     }

@@ -47,8 +47,9 @@ public interface Transaction
     /**
      * Commits all operations performed within a given transactional context.
      *
+     * @param val
      */
-    ListenableFuture<Void> commitTranAsync();
+    <X> ListenableFuture<X> commitTranAsync(final X val);
 
     /**
      * Abandons all operations performed within a given transactional context.

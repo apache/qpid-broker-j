@@ -271,7 +271,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     }
 
     @Override
-    public ListenableFuture<Void> commit(final Transaction tx, boolean syncCommit)
+    public void commit(final Transaction tx, boolean syncCommit)
     {
         try
         {
@@ -287,9 +287,31 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
                 && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
         {
-            return _coalescingCommiter.commit(tx, syncCommit);
+            _coalescingCommiter.commit(tx, syncCommit);
         }
-        return Futures.immediateFuture(null);
+
+    }
+
+    @Override
+    public <X> ListenableFuture<X> commitAsync(final Transaction tx, final X val)
+    {
+        try
+        {
+            // Using commit() instead of commitNoSync() for the HA store to allow
+            // the HA durability configuration to influence resulting behaviour.
+            tx.commit(_realMessageStoreDurability);
+        }
+        catch (DatabaseException de)
+        {
+            throw handleDatabaseException("Got DatabaseException on commit, closing environment", de);
+        }
+
+        if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
+            && _messageStoreDurability.getLocalSync() == SyncPolicy.SYNC)
+        {
+            return _coalescingCommiter.commitAsync(tx, val);
+        }
+        return Futures.immediateFuture(val);
     }
 
     @Override

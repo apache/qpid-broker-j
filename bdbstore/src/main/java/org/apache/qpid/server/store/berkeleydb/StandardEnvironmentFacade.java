@@ -134,7 +134,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     }
 
     @Override
-    public ListenableFuture<Void> commit(com.sleepycat.je.Transaction tx, boolean syncCommit)
+    public void commit(com.sleepycat.je.Transaction tx, boolean syncCommit)
     {
         try
         {
@@ -148,7 +148,25 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
 
             throw handleDatabaseException("Got DatabaseException on commit", de);
         }
-        return _committer.commit(tx, syncCommit);
+        _committer.commit(tx, syncCommit);
+    }
+
+    @Override
+    public <X> ListenableFuture<X> commitAsync(final Transaction tx, final X val)
+    {
+        try
+        {
+            tx.commitNoSync();
+        }
+        catch (DatabaseException de)
+        {
+            LOGGER.error("Got DatabaseException on commit, closing environment", de);
+
+            closeEnvironmentSafely();
+
+            throw handleDatabaseException("Got DatabaseException on commit", de);
+        }
+        return _committer.commitAsync(tx, val);
     }
 
     @Override

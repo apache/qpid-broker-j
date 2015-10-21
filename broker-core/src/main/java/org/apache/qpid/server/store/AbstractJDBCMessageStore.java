@@ -797,9 +797,9 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
     }
 
-    private ListenableFuture<Void> commitTranAsync(final ConnectionWrapper connWrapper) throws StoreException
+    private <X> ListenableFuture<X> commitTranAsync(final ConnectionWrapper connWrapper, final X val) throws StoreException
     {
-        final SettableFuture<Void> future = SettableFuture.create();
+        final SettableFuture<X> future = SettableFuture.create();
         _executor.submit(new Runnable()
                         {
                             @Override
@@ -808,7 +808,7 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
                                 try
                                 {
                                     commitTran(connWrapper);
-                                    future.set(null);
+                                    future.set(val);
                                 }
                                 catch (RuntimeException e)
                                 {
@@ -1172,11 +1172,11 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public ListenableFuture<Void> commitTranAsync()
+        public <X> ListenableFuture<X> commitTranAsync(final X val)
         {
             checkMessageStoreOpen();
             doPreCommitActions();
-            ListenableFuture<Void> futureResult = AbstractJDBCMessageStore.this.commitTranAsync(_connWrapper);
+            ListenableFuture<X> futureResult = AbstractJDBCMessageStore.this.commitTranAsync(_connWrapper, val);
             storedSizeChange(_storeSizeIncrease);
             doPostCommitActions();
             return futureResult;

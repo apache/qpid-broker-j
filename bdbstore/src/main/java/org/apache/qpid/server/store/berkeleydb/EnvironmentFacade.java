@@ -55,7 +55,8 @@ public interface EnvironmentFacade
 
     Transaction beginTransaction(TransactionConfig transactionConfig);
 
-    ListenableFuture<Void> commit(com.sleepycat.je.Transaction tx, boolean sync);
+    void commit(Transaction tx, boolean sync);
+    <X> ListenableFuture<X> commitAsync(Transaction tx, X val);
 
     RuntimeException handleDatabaseException(String contextMessage, RuntimeException e);
 
@@ -69,4 +70,5 @@ public interface EnvironmentFacade
     void flushLog();
 
     void setCacheSize(long cacheSize);
+
 }

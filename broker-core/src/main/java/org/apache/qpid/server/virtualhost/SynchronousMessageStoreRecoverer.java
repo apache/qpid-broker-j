@@ -207,7 +207,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                     _logger.warn("Message id " + messageId + " referenced in log as enqueued in queue " + queueName + " is unknown, entry will be discarded");
                     Transaction txn = _store.newTransaction();
                     txn.dequeueMessage(record);
-                    txn.commitTranAsync();
+                    txn.commitTranAsync((Void) null);
                 }
             }
             else
@@ -215,7 +215,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 _logger.warn("Message id " + messageId + " in log references queue with id " + queueId + " which is not in the configuration, entry will be discarded");
                 Transaction txn = _store.newTransaction();
                 txn.dequeueMessage(record);
-                txn.commitTranAsync();
+                txn.commitTranAsync((Void) null);
             }
             return true;
         }

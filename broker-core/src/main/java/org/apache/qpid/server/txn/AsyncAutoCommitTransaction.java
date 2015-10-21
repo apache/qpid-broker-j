@@ -101,7 +101,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
 
                 txn = _messageStore.newTransaction();
                 txn.dequeueMessage(record);
-                future = txn.commitTranAsync();
+                future = txn.commitTranAsync((Void) null);
 
                 txn = null;
             }
@@ -177,7 +177,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             ListenableFuture<Void> future;
             if(txn != null)
             {
-                future = txn.commitTranAsync();
+                future = txn.commitTranAsync((Void) null);
                 txn = null;
             }
             else
@@ -208,7 +208,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
 
                 txn = _messageStore.newTransaction();
                 enqueueRecord = txn.enqueueMessage(queue, message);
-                future = txn.commitTranAsync();
+                future = txn.commitTranAsync((Void) null);
                 txn = null;
             }
             else
@@ -286,7 +286,7 @@ public class AsyncAutoCommitTransaction implements ServerTransaction
             ListenableFuture<Void> future;
             if (txn != null)
             {
-                future = txn.commitTranAsync();
+                future = txn.commitTranAsync((Void) null);
                 txn = null;
             }
             else

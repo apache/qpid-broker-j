@@ -103,9 +103,9 @@ class MockStoreTransaction implements Transaction
         _state = TransactionState.COMMITTED;
     }
 
-    public ListenableFuture<Void> commitTranAsync()
+    public <X> ListenableFuture<X> commitTranAsync(final X val)
     {
-        return Futures.immediateFuture(null);
+        return Futures.immediateFuture(val);
     }
 
     public void abortTran()

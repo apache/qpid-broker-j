@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.store.berkeleydb;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -30,14 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.Environment;
 import com.sleepycat.je.Transaction;
-import org.apache.qpid.server.store.StoreException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.apache.qpid.server.store.StoreException;
 
 public class CoalescingCommiter implements Committer
 {
@@ -73,98 +70,55 @@ public class CoalescingCommiter implements Committer
     }
 
     @Override
-    public ListenableFuture<Void> commit(Transaction tx, boolean syncCommit)
+    public void commit(Transaction tx, boolean syncCommit)
     {
-        ThreadNotifyingSettableFuture future = new ThreadNotifyingSettableFuture();
-        BDBCommitFutureResult commitFuture = new BDBCommitFutureResult(_commitThread, tx, syncCommit, future);
-        commitFuture.commit();
+        if(syncCommit)
+        {
+            SynchronousCommitThreadJob job = new SynchronousCommitThreadJob();
+            _commitThread.addJob(job, true);
+            job.awaitCompletion();
+        }
+
+    }
+
+    @Override
+    public <X> ListenableFuture<X> commitAsync(Transaction tx, X val)
+    {
+        ThreadNotifyingSettableFuture<X> future = new ThreadNotifyingSettableFuture<X>();
+        BDBCommitFutureResult<X> commitFuture = new BDBCommitFutureResult<X>(val, future);
+        _commitThread.addJob(commitFuture, false);
         return future;
     }
 
-    private static final class BDBCommitFutureResult
+
+    private static final class BDBCommitFutureResult<X> implements CommitThreadJob
     {
-        private static final Logger LOGGER = LoggerFactory.getLogger(BDBCommitFutureResult.class);
+        private final X _value;
+        private final ThreadNotifyingSettableFuture<X> _future;
 
-        private final CommitThread _commitThread;
-        private final Transaction _tx;
-        private final boolean _syncCommit;
-        private final ThreadNotifyingSettableFuture _future;
-
-        public BDBCommitFutureResult(CommitThread commitThread,
-                                     Transaction tx,
-                                     boolean syncCommit,
-                                     final ThreadNotifyingSettableFuture future)
+        public BDBCommitFutureResult(X value,
+                                     final ThreadNotifyingSettableFuture<X> future)
         {
-            _commitThread = commitThread;
-            _tx = tx;
-            _syncCommit = syncCommit;
+            _value = value;
             _future = future;
         }
 
         public void complete()
         {
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("complete() called for transaction " + _tx);
-            }
-            _future.set(null);
+            _future.set(_value);
         }
 
         public void abort(RuntimeException databaseException)
         {
             _future.setException(databaseException);
         }
+    }
 
-        public void commit() throws DatabaseException
-        {
-            _commitThread.addJob(this, _syncCommit);
+    private interface CommitThreadJob
+    {
+        void complete();
 
-            if(!_syncCommit)
-            {
-                if(LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("CommitAsync was requested, returning immediately.");
-                }
-                return;
-            }
-
-            boolean interrupted = false;
-            try
-            {
-                while (true)
-                {
-                    try
-                    {
-                        _future.get();
-                        break;
-                    }
-                    catch (InterruptedException e)
-                    {
-                        interrupted = true;
-                    }
-                }
-                if (interrupted)
-                {
-                    Thread.currentThread().interrupt();
-                }
-
-            }
-            catch (ExecutionException e)
-            {
-                if(e.getCause() instanceof RuntimeException)
-                {
-                    throw (RuntimeException)e.getCause();
-                }
-                else if(e.getCause() instanceof Error)
-                {
-                    throw (Error)e.getCause();
-                }
-                else
-                {
-                    throw new StoreException(e.getCause());
-                }
-            }
-        }
+        void abort(RuntimeException e);
     }
 
     /**
@@ -178,11 +132,14 @@ public class CoalescingCommiter implements Committer
     private static class CommitThread extends Thread
     {
         private static final Logger LOGGER = LoggerFactory.getLogger(CommitThread.class);
+        private static final int JOB_QUEUE_NOTIFY_THRESHOLD = 8;
 
         private final AtomicBoolean _stopped = new AtomicBoolean(false);
-        private final Queue<BDBCommitFutureResult> _jobQueue = new ConcurrentLinkedQueue<BDBCommitFutureResult>();
+        private final Queue<CommitThreadJob> _jobQueue = new ConcurrentLinkedQueue<>();
         private final Object _lock = new Object();
         private final EnvironmentFacade _environmentFacade;
+
+        private final List<CommitThreadJob> _inProcessJobs = new ArrayList<>(256);
 
         public CommitThread(String name, EnvironmentFacade environmentFacade)
         {
@@ -210,7 +167,7 @@ public class CoalescingCommiter implements Committer
                         {
                             // Periodically wake up and check, just in case we
                             // missed a notification. Don't want to lock the broker hard.
-                            _lock.wait(1000);
+                            _lock.wait(500);
                         }
                         catch (InterruptedException e)
                         {
@@ -223,8 +180,13 @@ public class CoalescingCommiter implements Committer
 
         private void processJobs()
         {
-            int size = _jobQueue.size();
+            CommitThreadJob job;
+            while((job = _jobQueue.poll()) != null)
+            {
+                _inProcessJobs.add(job);
+            }
 
+            int completedJobsIndex = 0;
             try
             {
                 long startTime = 0;
@@ -241,14 +203,10 @@ public class CoalescingCommiter implements Committer
                     LOGGER.debug("flushLog completed in " + duration  + " ms");
                 }
 
-                for(int i = 0; i < size; i++)
+                while(completedJobsIndex < _inProcessJobs.size())
                 {
-                    BDBCommitFutureResult commit = _jobQueue.poll();
-                    if (commit == null)
-                    {
-                        break;
-                    }
-                    commit.complete();
+                    _inProcessJobs.get(completedJobsIndex).complete();
+                    completedJobsIndex++;
                 }
 
             }
@@ -258,13 +216,9 @@ public class CoalescingCommiter implements Committer
                 {
                     LOGGER.error("Exception during environment log flush", e);
 
-                    for(int i = 0; i < size; i++)
+                    for(; completedJobsIndex < _inProcessJobs.size(); completedJobsIndex++)
                     {
-                        BDBCommitFutureResult commit = _jobQueue.poll();
-                        if (commit == null)
-                        {
-                            break;
-                        }
+                        CommitThreadJob commit = _inProcessJobs.get(completedJobsIndex);
                         commit.abort(e);
                     }
                 }
@@ -282,6 +236,10 @@ public class CoalescingCommiter implements Committer
                     }
                 }
             }
+            finally
+            {
+                _inProcessJobs.clear();
+            }
         }
 
         private boolean hasJobs()
@@ -289,14 +247,14 @@ public class CoalescingCommiter implements Committer
             return !_jobQueue.isEmpty();
         }
 
-        public void addJob(BDBCommitFutureResult commit, final boolean sync)
+        public void addJob(CommitThreadJob commit, final boolean sync)
         {
             if (_stopped.get())
             {
                 throw new IllegalStateException("Commit thread is stopped");
             }
             _jobQueue.add(commit);
-            if(sync)
+            if(sync || _jobQueue.size() >= JOB_QUEUE_NOTIFY_THRESHOLD)
             {
                 synchronized (_lock)
                 {
@@ -310,7 +268,7 @@ public class CoalescingCommiter implements Committer
             synchronized (_lock)
             {
                 _stopped.set(true);
-                BDBCommitFutureResult commit;
+                CommitThreadJob commit;
 
                 try
                 {
@@ -340,25 +298,31 @@ public class CoalescingCommiter implements Committer
         }
     }
 
-    private final class ThreadNotifyingSettableFuture extends AbstractFuture<Void>
+    private final class ThreadNotifyingSettableFuture<X> extends AbstractFuture<X>
     {
         @Override
-        public Void get(final long timeout, final TimeUnit unit)
+        public X get(final long timeout, final TimeUnit unit)
                 throws InterruptedException, TimeoutException, ExecutionException
         {
-            _commitThread.explicitNotify();
+            if(!isDone())
+            {
+                _commitThread.explicitNotify();
+            }
             return super.get(timeout, unit);
         }
 
         @Override
-        public Void get() throws InterruptedException, ExecutionException
+        public X get() throws InterruptedException, ExecutionException
         {
-            _commitThread.explicitNotify();
+            if(!isDone())
+            {
+                _commitThread.explicitNotify();
+            }
             return super.get();
         }
 
         @Override
-        protected boolean set(final Void value)
+        protected boolean set(final X value)
         {
             return super.set(value);
         }
@@ -375,5 +339,52 @@ public class CoalescingCommiter implements Committer
             super.addListener(listener, exec);
             _commitThread.explicitNotify();
         }
+    }
+
+    private class SynchronousCommitThreadJob implements CommitThreadJob
+    {
+        private boolean _done;
+        private RuntimeException _exception;
+
+        @Override
+        public synchronized void complete()
+        {
+            _done = true;
+            notifyAll();
+        }
+
+        @Override
+        public synchronized void abort(final RuntimeException e)
+        {
+            _done = true;
+            _exception = e;
+            notifyAll();
+        }
+
+
+        public synchronized void awaitCompletion()
+        {
+            boolean interrupted = false;
+            while(!_done)
+            {
+                try
+                {
+                    wait();
+                }
+                catch (InterruptedException e)
+                {
+                    interrupted = true;
+                }
+            }
+            if(interrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
+            if(_exception != null)
+            {
+                throw _exception;
+            }
+        }
+
     }
 }

@@ -27,7 +27,8 @@ public interface Committer
 {
     void start();
 
-    ListenableFuture<Void> commit(Transaction tx, boolean syncCommit);
+    void commit(Transaction tx, boolean syncCommit);
+    <X> ListenableFuture<X> commitAsync(Transaction tx, X val);
 
     void stop();
 }
