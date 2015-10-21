@@ -93,9 +93,15 @@
     <section>
       <title>Messages</title>
       <para>
-        Messages are obviously the largest consumer of memory in Qpid.
-        Except for some moderate overhead (≈1 kB) which is kept in heap the message and its headers are kept in direct memory.
+        Messages and their headers are kept in direct memory and have an additional overhead of approximately 1 kB heap memory each.
         This means that most brokers will want to have more direct memory than heap memory.
+        When many small messages accumulate on the broker the 1 kB heap memory overhead can become a <link linkend="Java-Broker-Runtime-Memory-Low-Memory-Heap">limiting factor</link>.
+      </para>
+      <para>
+        When the broker is <link linkend="Java-Broker-Runtime-Memory-Low-Memory-Direct">running low on direct memory</link> it will evict messages from memory and flow them to disk.
+        For persistent messages this only means freeing the direct memory representation because they always have an on-disk representation to guard against unexpected failure (e.g., a power cut).
+        For transient messages this implies additional disk I/O.
+        After being flown to disk messages need to be re-read from disk before delivery.
       </para>
     </section>
     <section id="Java-Broker-Runtime-Memory-Usage-BDB">
@@ -125,13 +131,13 @@
       <title>HTTP Management</title>
       <para>
         Qpid uses Jetty for the HTTP Management (both REST and Web Management Console).
-        When the management plugin is loaded it will allocate the memory it needs and should not require more memeory during operation and can thus be largely ignored.
+        When the management plugin is loaded it will allocate the memory it needs and should not require more memory during operation and can thus be largely ignored.
       </para>
     </section>
   </section>
   <section id="Java-Broker-Runtime-Memory-Low-Memory">
     <title>Low Memory Conditions</title>
-    <section>
+    <section id="Java-Broker-Runtime-Memory-Low-Memory-Heap">
       <title>Low on Heap Memory</title>
       <para>
         When the broker runs low on heap memory performance will degrade because the JVM will trigger full garbage collection (GC) events in a struggle to free memory.
@@ -140,7 +146,7 @@
         Should the heap memory demands rise even further the JVM will eventually throw an OutOfMemoryError which will cause the broker to shut down.
       </para>
     </section>
-    <section>
+    <section id="Java-Broker-Runtime-Memory-Low-Memory-Direct">
       <title>Low on Direct Memory</title>
       <para>
         When the broker detects that it uses 40% of available direct memory it will start flowing incoming transient messages to disk and reading them back before delivery.
