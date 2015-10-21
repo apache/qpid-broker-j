@@ -241,6 +241,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private boolean _noLocal;
 
     private final AtomicBoolean _overfull = new AtomicBoolean(false);
+    private final FlowToDiskChecker _flowToDiskChecker = new FlowToDiskChecker();
     private final CopyOnWriteArrayList<BindingImpl> _bindings = new CopyOnWriteArrayList<BindingImpl>();
     private Map<String, Object> _arguments;
 
@@ -1065,10 +1066,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         incrementQueueCount();
         incrementQueueSize(message);
 
-        if((_atomicQueueSize.get() + _atomicQueueCount.get()*1024l) > _targetQueueSize.get() && message.getStoredMessage().isInMemory())
-        {
-            message.getStoredMessage().flowToDisk();
-        }
+        _flowToDiskChecker.flowToDiskAndReportIfNecessary(message.getStoredMessage());
 
         _totalMessagesReceived.incrementAndGet();
 
@@ -2444,8 +2442,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     {
         QueueEntryIterator queueListIterator = getEntries().iterator();
 
-        long totalSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD) * getQueueDepthMessages();
-        long targetSize = _targetQueueSize.get();
+        long cumulativeQueueSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD) * getQueueDepthMessages();
+        _flowToDiskChecker.reportFlowToDiskStatusIfNecessary();
 
         while (queueListIterator.advance())
         {
@@ -2483,18 +2481,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                     if (msg != null)
                     {
-                        totalSize += msg.getSize();
-                        StoredMessage storedMessage = msg.getStoredMessage();
-                        if(totalSize > targetSize && storedMessage.isInMemory())
-                        {
-                            storedMessage.flowToDisk();
-                        }
+                        cumulativeQueueSize += msg.getSize();
+                        _flowToDiskChecker.flowToDiskIfNecessary(msg.getStoredMessage(), cumulativeQueueSize);
                         checkForNotification(msg);
                     }
                 }
             }
         }
-
     }
 
     @Override
@@ -3549,4 +3542,56 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    private class FlowToDiskChecker
+    {
+        AtomicBoolean _lastReportedFlowToDiskStatus = new AtomicBoolean(false);
+
+        void flowToDiskIfNecessary(StoredMessage<?> storedMessage, long estimatedQueueSize)
+        {
+            long targetQueueSize = _targetQueueSize.get();
+            if ((estimatedQueueSize > targetQueueSize) && storedMessage.isInMemory())
+            {
+                storedMessage.flowToDisk();
+            }
+        }
+
+        void flowToDiskAndReportIfNecessary(StoredMessage<?> storedMessage)
+        {
+            long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
+            flowToDiskIfNecessary(storedMessage, estimatedQueueSize);
+            reportFlowToDiskStatusIfNecessary();
+        }
+
+        void reportFlowToDiskStatusIfNecessary()
+        {
+            long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
+            long targetQueueSize = _targetQueueSize.get();
+            if (estimatedQueueSize > targetQueueSize)
+            {
+                reportFlowToDiskActiveIfNecessary(estimatedQueueSize, targetQueueSize);
+            }
+            else
+            {
+                reportFlowToDiskInactiveIfNecessary(estimatedQueueSize, targetQueueSize);
+            }
+        }
+
+        private void reportFlowToDiskActiveIfNecessary(long estimatedQueueSize, long targetQueueSize)
+        {
+            if (!_lastReportedFlowToDiskStatus.getAndSet(true))
+            {
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize,
+                                                                                        targetQueueSize));
+            }
+        }
+
+        private void reportFlowToDiskInactiveIfNecessary(long estimatedQueueSize, long targetQueueSize)
+        {
+            if (_lastReportedFlowToDiskStatus.getAndSet(false))
+            {
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize,
+                                                                                          targetQueueSize));
+            }
+        }
+    }
 }
