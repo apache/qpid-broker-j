@@ -68,6 +68,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private final AtomicBoolean _scheduled = new AtomicBoolean();
     private volatile boolean _unexpectedByteBufferSizeReported;
     private final String _threadName;
+    private volatile SelectorThread.SelectionTask _selectionTask;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -144,7 +145,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         if(_closed.compareAndSet(false,true))
         {
             _protocolEngine.notifyWork();
-            _scheduler.wakeup();
+            _selectionTask.wakeup();
         }
     }
 
@@ -501,4 +502,13 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         }
     }
 
+    public SelectorThread.SelectionTask getSelectionTask()
+    {
+        return _selectionTask;
+    }
+
+    public void setSelectionTask(final SelectorThread.SelectionTask selectionTask)
+    {
+        _selectionTask = selectionTask;
+    }
 }

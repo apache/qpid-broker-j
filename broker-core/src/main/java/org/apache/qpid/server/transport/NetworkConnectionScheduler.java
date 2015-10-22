@@ -190,11 +190,6 @@ public class NetworkConnectionScheduler
         _selectorThread.addConnection(connection);
     }
 
-    public void wakeup()
-    {
-        _selectorThread.wakeup();
-    }
-
     public void removeConnection(final NonBlockingConnection connection)
     {
         _selectorThread.removeConnection(connection);
