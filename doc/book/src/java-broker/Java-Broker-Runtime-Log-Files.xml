@@ -121,7 +121,7 @@
       as a whole. Optionally a Broker Logger can be configured to exclude log events coming from
       virtualhosts. These abilities can be usefully exploited together in managed service scenarios
       to produce separate logs for separate user groups.</para>
-    <para>Loggers can be added or removed at runtime, which restarting the Broker. However changes
+    <para>Loggers can be added or removed at runtime, without restarting the Broker. However changes
       to a Logger's configuration such as filenames and rolling options don't take effect until the
       next restart. Changes to a Logger's inclusion rules take effect immediately.</para>
     <para>All loggers allow the log event layout to be customised. Loggers understand <ulink
@@ -143,7 +143,7 @@
         the numeric suffix, beginning at <literal>1</literal>. If the log file rolls again, first
         the existing file with the suffix <literal>.1</literal> is renamed to <literal>.2</literal>
         and so forth. If roll daily is not in use, <emphasis>maximum number of rolled
-          files</emphasis> governs the <emphasis>number</emphasis> of rolled files that will be
+          files</emphasis> governs the number of rolled <emphasis>files</emphasis> that will be
         retained.</para>
       <para><emphasis>Roll on restart</emphasis> governs whether the log file is rolled when the
         Broker is restarted. If not ticked, the Broker will append to the existing log file until it
@@ -184,10 +184,11 @@
           <para>The <emphasis>Name And Level</emphasis> inclusion rule accepts log events that match
             a given <emphasis>log event source name</emphasis> and have a level that equals or
             exceeds the specified value.</para>
-          <para>The log event source name refers to the logger name declared in the Qpid source code
-            itself. These names permit a trailing wild card <literal>.*</literal>. For instance a
-            source name of <literal>org.apache.qpid.*</literal> will match all events from classes
-            in the package <literal>org.apache.qpid</literal> and any sub packages beneath.</para>
+          <para>The log event source name refers to the fully qualified class name from which the
+            event originates. These names permit a trailing wild card <literal>.*</literal>. For
+            instance a source name of <literal>org.apache.qpid.*</literal> will match all events
+            from classes in the package <literal>org.apache.qpid</literal> and any sub packages
+            beneath.</para>
           <para>The <emphasis>Level</emphasis> governs the level of the events that will be included
             in the log. It may take one of the following values: ERROR, WARN, INFO, DEBUG, TRACE
             where ERROR is considered the highest and TRACE the lowest. In addition, there are two
@@ -213,7 +214,7 @@
     </para>
     <para> The figure that follows shows a FileLogger. The attributes area shows the configuration
       of the Logger. The inclusion rule table shows the rules that are associated with the Logger.
-      The area towards the bottom of the tab allow the log files to be downloaded to the browser.
+      The area towards the bottom of the tab allows the log files to be downloaded to the browser.
         <figure id="Java-Broker-Runtime-Logging-Management-FileLogger">
         <title>Viewing a file logger</title>
         <mediaobject>
