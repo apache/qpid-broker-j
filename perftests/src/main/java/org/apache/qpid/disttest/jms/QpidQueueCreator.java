@@ -18,11 +18,22 @@
  */
 package org.apache.qpid.disttest.jms;
 
+import static java.util.concurrent.Executors.newFixedThreadPool;
+import static org.apache.qpid.jms.Session.NO_ACKNOWLEDGE;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
@@ -59,7 +70,10 @@ public class QpidQueueCreator implements QueueCreator
     private static final String GET_EXCHANGE_NAME = "getExchangeName";
 
     private static final Map<String,Object> EMPTY_QUEUE_BIND_ARGUMENTS = Collections.emptyMap();
-    private static int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
+    private static final int _drainPollTimeout = Integer.getInteger(QUEUE_CREATOR_DRAIN_POLL_TIMEOUT, 500);
+    private static final boolean _drainQueueBeforeDelete = Boolean.parseBoolean(System.getProperty(
+            QUEUE_CREATOR_DRAIN_QUEUE_BEFORE_DELETE, "true"));
+    private static final int _threadPoolSize = Integer.getInteger(QUEUE_CREATOR_THREAD_POOL_SIZE, 4);
 
     // Methods on AMQSession
     private final Method _createQueue;
@@ -70,6 +84,8 @@ public class QpidQueueCreator implements QueueCreator
     private final Method _getAMQQueueName;
     private final Method _getRoutingKey;
     private final Method _getExchangeName;
+
+    private final AtomicInteger _threadCount = new AtomicInteger();
 
     public QpidQueueCreator()
     {
@@ -134,54 +150,124 @@ public class QpidQueueCreator implements QueueCreator
     }
 
     @Override
-    public void createQueues(Connection connection, Session session, List<QueueConfig> configs)
+    public void createQueues(final Connection connection, Session session, final List<QueueConfig> configs)
     {
-        AMQSession<?, ?> amqSession = (AMQSession<?, ?>)session;
-        for (QueueConfig queueConfig : configs)
+        final Map<Thread, AMQSession<?,?>> sessionMap = new ConcurrentHashMap<>();
+        ExecutorService executorService = newFixedThreadPool(_threadPoolSize, new JmsJobThreadFactory(connection, sessionMap));
+
+        try
         {
-            createQueue(amqSession, queueConfig);
+            List<Future<Void>> createQueueFutures = new ArrayList<>(configs.size());
+
+            for (final QueueConfig queueConfig : configs)
+            {
+                Future<Void> f = executorService.submit(new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        AMQSession<?, ?> session = sessionMap.get(Thread.currentThread());
+                        createQueue(session, queueConfig);
+                        return null;
+                    }
+                });
+
+                createQueueFutures.add(f);
+            }
+
+            for(Future<Void> queueCreateFuture : createQueueFutures)
+            {
+                queueCreateFuture.get();
+            }
+
+            closeAllSessions(sessionMap);
+        }
+        catch (InterruptedException e)
+        {
+            throw new DistributedTestException(e);
+        }
+        catch (ExecutionException e)
+        {
+            throw new DistributedTestException(e.getCause());
+        }
+        finally
+        {
+            executorService.shutdown();
         }
     }
 
     @Override
-    public void deleteQueues(Connection connection, Session session, List<QueueConfig> configs)
+    public void deleteQueues(final Connection connection, Session session, List<QueueConfig> configs)
     {
-        AMQSession<?, ?> noAckSession = null;
+        final Map<Thread, AMQSession<?,?>> sessionMap = new ConcurrentHashMap<>();
+        ExecutorService executorService = newFixedThreadPool(_threadPoolSize,
+                                                             new JmsJobThreadFactory(connection, sessionMap));
+
         try
         {
-            noAckSession =
-                    (AMQSession<?, ?>) connection.createSession(false, org.apache.qpid.jms.Session.NO_ACKNOWLEDGE);
+            List<Future<Void>> deleteQueueFutures = new ArrayList<>(configs.size());
 
-            for (QueueConfig queueConfig : configs)
+            for (final QueueConfig queueConfig : configs)
             {
-                AMQDestination destination = createAMQDestination(noAckSession, queueConfig);
 
-                // drainQueue method is added because deletion of queue with a lot
-                // of messages takes time and might cause the timeout exception
-                drainQueue(noAckSession, destination);
+                Future<Void> f = executorService.submit(new Callable<Void>()
+                {
+                    @Override
+                    public Void call() throws Exception
+                    {
+                        AMQSession<?, ?> session = sessionMap.get(Thread.currentThread());
+                        AMQDestination destination = createAMQDestination(session, queueConfig);
 
-                deleteQueue(noAckSession, destination);
+                        // drainQueue method is added because deletion of queue with a lot
+                        // of messages takes time and might cause the timeout exception
+                        if (_drainQueueBeforeDelete)
+                        {
+                            drainQueue(session, destination);
+                        }
+
+                        deleteQueue(session, destination);
+                        return null;
+                    }
+                });
+
+                deleteQueueFutures.add(f);
             }
+
+            for(Future<Void> queueCreateFuture : deleteQueueFutures)
+            {
+                queueCreateFuture.get();
+            }
+
+            closeAllSessions(sessionMap);
         }
-        catch (Exception e)
+        catch (InterruptedException e)
         {
-            throw new DistributedTestException("Failed to delete queues", e);
+            throw new DistributedTestException(e);
+        }
+        catch (ExecutionException e)
+        {
+            throw new DistributedTestException(e.getCause());
         }
         finally
         {
-            if (noAckSession != null)
-            {
-                try
-                {
-                    noAckSession.close();
-                }
-                catch (JMSException e)
-                {
-                    throw new DistributedTestException("Failed to close n/a session:" + noAckSession, e);
-                }
-            }
+            executorService.shutdown();
         }
 
+    }
+
+    private void closeAllSessions(final Map<Thread, AMQSession<?, ?>> sessionMap)
+    {
+        for(Session s : sessionMap.values())
+        {
+            try
+            {
+                s.close();
+            }
+            catch (JMSException e)
+            {
+                // Ignore
+            }
+        }
     }
 
     private AMQDestination createAMQDestination(AMQSession<?, ?> amqSession, QueueConfig queueConfig)
@@ -253,6 +339,7 @@ public class QpidQueueCreator implements QueueCreator
 
     private void createQueue(AMQSession<?, ?> session, QueueConfig queueConfig)
     {
+
         try
         {
             AMQDestination destination = (AMQDestination) session.createQueue(queueConfig.getName());
@@ -338,4 +425,31 @@ public class QpidQueueCreator implements QueueCreator
         }
     }
 
+    private static class JmsJobThreadFactory implements ThreadFactory
+    {
+        private final Connection _connection;
+        private final Map<Thread, AMQSession<?, ?>> _sessionMap;
+
+        public JmsJobThreadFactory(final Connection connection, final Map<Thread, AMQSession<?, ?>> sessionMap)
+        {
+            _connection = connection;
+            _sessionMap = sessionMap;
+        }
+
+        @Override
+        public Thread newThread(final Runnable runnable)
+        {
+            try
+            {
+                AMQSession<?, ?> session = (AMQSession<?, ?>) _connection.createSession(false, NO_ACKNOWLEDGE);
+                Thread jobThread = new Thread(runnable);
+                _sessionMap.put(jobThread, session);
+                return jobThread;
+            }
+            catch (JMSException e)
+            {
+                throw new DistributedTestException("Failed to create session for queue creation", e);
+            }
+        }
+    }
 }

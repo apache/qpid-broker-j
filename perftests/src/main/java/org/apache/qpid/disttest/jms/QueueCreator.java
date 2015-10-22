@@ -28,6 +28,8 @@ import org.apache.qpid.disttest.controller.config.QueueConfig;
 public interface QueueCreator
 {
     String QUEUE_CREATOR_DRAIN_POLL_TIMEOUT = "qpid.disttest.queue.creator.drainPollTime";
+    String QUEUE_CREATOR_DRAIN_QUEUE_BEFORE_DELETE = "qpid.disttest.queue.creator.drainQueueBeforeDelete";
+    String QUEUE_CREATOR_THREAD_POOL_SIZE = "qpid.disttest.queue.creator.threadPoolSize";
 
     void createQueues(Connection connection, Session session, List<QueueConfig> configs);
     void deleteQueues(Connection connection, Session session, List<QueueConfig> configs);
