@@ -1067,10 +1067,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         incrementQueueCount();
         incrementQueueSize(message);
 
-        long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * _estimatedAverageMessageHeaderSize;
-        _flowToDiskChecker.flowToDiskAndReportIfNecessary(message.getStoredMessage(), estimatedQueueSize,
-                                                          _targetQueueSize.get());
-
         _totalMessagesReceived.incrementAndGet();
 
         if(_recovering.get() != RECOVERED)
@@ -1104,6 +1100,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             doEnqueue(message, action, enqueueRecord);
         }
 
+        long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * _estimatedAverageMessageHeaderSize;
+        _flowToDiskChecker.flowToDiskAndReportIfNecessary(message.getStoredMessage(), estimatedQueueSize,
+                                                          _targetQueueSize.get());
     }
 
     public final void recover(ServerMessage message, final MessageEnqueueRecord enqueueRecord)
