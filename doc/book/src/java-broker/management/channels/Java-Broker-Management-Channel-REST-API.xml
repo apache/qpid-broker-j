@@ -356,7 +356,7 @@
               </itemizedlist>
             </entry>
             <entry>
-              <para>Manages(creates/deletes/updates) Broker or Virtualhost Loggers(s) and provides the information about current values of the attributes. Some implementatiions have operations
+              <para>Manages(creates/deletes/updates) Broker or Virtualhost Loggers(s) and provides the information about current values of the attributes. Some implementations have operations
               that allow the names of log files and log content to be retrieved.</para>
             </entry>
           </row>

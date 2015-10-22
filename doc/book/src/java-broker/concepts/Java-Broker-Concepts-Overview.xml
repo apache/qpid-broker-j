@@ -21,9 +21,9 @@
 -->
 <section id="Java-Broker-Concepts-Overview">
   <title>Overview</title>
-  <para>The Broker comprises of a number of entities. This section summaries the purpose of
-    each of the entities and describes the relationships between them. These details are developed
-    further in the sub-sections that follow.</para>
+  <para>The Broker comprises of a number of entities. This section summaries the purpose of each of
+    the entities and describes the relationships between them. These details are developed further
+    in the sub-sections that follow.</para>
   <para>The most important entity is the <emphasis>Virtualhost</emphasis>. A virtualhost is an
     independent namespace in which messaging is performed. A <emphasis>virtualhost</emphasis> exists
     in a container called a <emphasis>virtualhost node</emphasis>. A virtualhost node has exactly
@@ -48,11 +48,12 @@
   <para><emphasis>Remote Replication Nodes</emphasis> are used when the high availability feature is
     in use. It is the remote representation of other virtualhost nodes that form part of the same
     group.</para>
-  <para><emphasis>Loggers</emphasis> are responsible for the production of a log for either
-    the Broker.</para>
+  <para><emphasis>Loggers</emphasis>, at this point in the hierarchy, are responsible for the
+    production of a log for the Broker.</para>
   <para>These concepts will be developed over the forthcoming pages. The diagrams below also help
     put these entities in context of one and other.</para>
-  <para><figure>
+  <para>
+    <figure>
       <title>Message Flow through Key Entities</title>
       <mediaobject>
         <imageobject>
@@ -62,8 +63,10 @@
           <phrase>Message Flow through the Key Entities of the Broker</phrase>
         </textobject>
       </mediaobject>
-    </figure></para>
-  <para><figure>
+    </figure>
+  </para>
+  <para>
+    <figure>
       <title>Broker Structure</title>
       <mediaobject>
         <imageobject>
