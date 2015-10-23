@@ -220,6 +220,7 @@ class SelectorThread extends Thread
                         if (!_closed.get())
                         {
                             Thread.currentThread().setName("Selector-" + _scheduler.getName());
+                            _inSelect.set(true);
                             try
                             {
                                 if(_wakeups.getAndSet(0) > 0)
@@ -228,13 +229,8 @@ class SelectorThread extends Thread
                                 }
                                 else
                                 {
-                                    _inSelect.set(true);
-
                                     _selector.select(_nextTimeout);
-
-                                    _inSelect.set(false);
                                 }
-
                             }
                             catch (IOException e)
                             {
@@ -242,6 +238,10 @@ class SelectorThread extends Thread
                                 LOGGER.error("Failed to trying to select()", e);
                                 closeSelector();
                                 return;
+                            }
+                            finally
+                            {
+                                _inSelect.set(false);
                             }
                             runTasks();
                             for (NonBlockingConnection connection : processSelectionKeys())
@@ -346,13 +346,20 @@ class SelectorThread extends Thread
 
                 try
                 {
+                    if (LOGGER.isDebugEnabled())
+                    {
+                        LOGGER.debug("Registering selector on accepting port {} ",
+                                     socketChannel.socket().getLocalSocketAddress());
+                    }
                     socketChannel.register(_selectionTasks[0].getSelector(), SelectionKey.OP_ACCEPT, nonBlockingNetworkTransport);
                 }
                 catch (IllegalStateException | ClosedChannelException e)
                 {
                     // TODO Communicate condition back to model object to make it go into the ERROR state
-                    LOGGER.error("Failed to register selector on accepting port", e);
-                }             }
+                    LOGGER.error("Failed to register selector on accepting port {} ",
+                                 socketChannel.socket().getLocalSocketAddress(), e);
+                }
+            }
         });
         _selectionTasks[0].wakeup();
     }

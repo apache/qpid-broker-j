@@ -106,6 +106,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
 
         final AmqpPort<?> port = mock(AmqpPort.class);
         when(port.getPort()).thenReturn(0);
+        when(port.getName()).thenReturn("testAmqp");
         when(port.getNetworkBufferSize()).thenReturn(64*1024);
         when(port.canAcceptNewConnection(any(SocketAddress.class))).thenReturn(true);
         when(port.getThreadPoolMinimum()).thenReturn(2);
