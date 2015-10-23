@@ -112,21 +112,13 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingThreadCount}")
     int getHousekeepingThreadCount();
 
-    String VIRTUALHOST_CONNECTION_THREAD_POOL_MAXIMUM = "virtualhost.connectionThreadPool.maximum";
+    String VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE = "virtualhost.connectionThreadPool.size";
     @SuppressWarnings("unused")
-    @ManagedContextDefault( name = VIRTUALHOST_CONNECTION_THREAD_POOL_MAXIMUM)
-    long DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_MAXIMUM = Math.max(Runtime.getRuntime().availableProcessors() * 2, 64);
+    @ManagedContextDefault( name = VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE)
+    long DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE = Math.max(Runtime.getRuntime().availableProcessors() * 2, 64);
 
-    @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_CONNECTION_THREAD_POOL_MAXIMUM + "}")
-    int getConnectionThreadPoolMaximum();
-
-    String VIRTUALHOST_CONNECTION_THREAD_POOL_MINIMUM = "virtualhost.connectionThreadPool.minimum";
-    @SuppressWarnings("unused")
-    @ManagedContextDefault( name = VIRTUALHOST_CONNECTION_THREAD_POOL_MINIMUM)
-    long DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_MINIMUM = Math.min(Runtime.getRuntime().availableProcessors(), 8);
-
-    @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_CONNECTION_THREAD_POOL_MINIMUM + "}")
-    int getConnectionThreadPoolMinimum();
+    @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE + "}")
+    int getConnectionThreadPoolSize();
 
     @ManagedContextDefault( name = "virtualhost.awaitAttainmentTimeout")
     public static final int DEFAULT_AWAIT_ATTAINMENT_TIMEOUT = 5000;

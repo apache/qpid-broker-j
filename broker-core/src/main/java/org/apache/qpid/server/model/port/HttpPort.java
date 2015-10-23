@@ -31,10 +31,12 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 
 @ManagedObject( category = false, type = "HTTP")
-public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X>, PortWithThreadPool
+public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X>
 {
     String DEFAULT_HTTP_NEED_CLIENT_AUTH = "false";
     String DEFAULT_HTTP_WANT_CLIENT_AUTH = "false";
+    String THREAD_POOL_MINIMUM = "threadPoolMinimum";
+    String THREAD_POOL_MAXIMUM = "threadPoolMaximum";
 
     @ManagedAttribute(defaultValue = "*")
     String getBindingAddress();
@@ -66,7 +68,6 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
     @ManagedContextDefault( name = PORT_HTTP_THREAD_POOL_MAXIMUM )
     long DEFAULT_PORT_HTTP_THREAD_POOL_MAXIMUM = 24;
 
-    @Override
     @ManagedAttribute( defaultValue = "${" + PORT_HTTP_THREAD_POOL_MAXIMUM + "}")
     int getThreadPoolMaximum();
 
@@ -75,7 +76,6 @@ public interface HttpPort<X extends HttpPort<X>> extends ClientAuthCapablePort<X
     @ManagedContextDefault( name = PORT_HTTP_THREAD_POOL_MINIMUM )
     long DEFAULT_PORT_HTTP_THREAD_POOL_MINIMUM = 8;
 
-    @Override
     @ManagedAttribute( defaultValue = "${" + PORT_HTTP_THREAD_POOL_MINIMUM + "}")
     int getThreadPoolMinimum();
 

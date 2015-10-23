@@ -323,7 +323,7 @@ class SelectorThread extends Thread
     SelectorThread(final NetworkConnectionScheduler scheduler) throws IOException
     {
         _scheduler = scheduler;
-        int selectors = Math.max(scheduler.getPoolSizeMaximum()/8,1);
+        int selectors = Math.max(scheduler.getPoolSize()/8,1);
         _selectionTasks = new SelectionTask[selectors];
         for(int i = 0; i < selectors; i++)
         {
@@ -516,7 +516,7 @@ class SelectorThread extends Thread
         };
         _closed.set(true);
 
-        int count = _scheduler.getPoolSizeMaximum();
+        int count = _scheduler.getPoolSize();
         while(count-- > 0)
         {
             _workQueue.offer(goodNight);

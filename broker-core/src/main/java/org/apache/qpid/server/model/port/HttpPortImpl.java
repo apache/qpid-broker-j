@@ -92,7 +92,7 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public void onValidate()
     {
         super.onValidate();
-        PortWithThreadPoolValidator.validate(this);
+        validateThreadPoolSettings(this);
 
         final double additionalInternalThreads = getContextValue(Integer.class, HttpPort.PORT_HTTP_ADDITIONAL_INTERNAL_THREADS);
         if (additionalInternalThreads < 1)
@@ -126,7 +126,23 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         HttpPort changed = (HttpPort) proxyForValidation;
         if (changedAttributes.contains(THREAD_POOL_MAXIMUM) || changedAttributes.contains(THREAD_POOL_MINIMUM))
         {
-            PortWithThreadPoolValidator.validate(changed);
+            validateThreadPoolSettings(changed);
+        }
+    }
+
+    private void validateThreadPoolSettings(HttpPort<?> httpPort)
+    {
+        if (httpPort.getThreadPoolMaximum() < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool maximum %d is too small. Must be greater than zero.", httpPort.getThreadPoolMaximum()));
+        }
+        if (httpPort.getThreadPoolMinimum() < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool minimum %d is too small. Must be greater than zero.", httpPort.getThreadPoolMinimum()));
+        }
+        if (httpPort.getThreadPoolMinimum() > httpPort.getThreadPoolMaximum())
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool minimum %d cannot be greater than thread pool maximum %d.", httpPort.getThreadPoolMinimum() , httpPort.getThreadPoolMaximum()));
         }
     }
 }

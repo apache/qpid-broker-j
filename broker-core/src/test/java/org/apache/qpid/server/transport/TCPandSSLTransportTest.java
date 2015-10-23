@@ -109,8 +109,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
         when(port.getName()).thenReturn("testAmqp");
         when(port.getNetworkBufferSize()).thenReturn(64*1024);
         when(port.canAcceptNewConnection(any(SocketAddress.class))).thenReturn(true);
-        when(port.getThreadPoolMinimum()).thenReturn(2);
-        when(port.getThreadPoolMaximum()).thenReturn(2);
+        when(port.getThreadPoolSize()).thenReturn(2);
         when(port.getSSLContext()).thenReturn(sslContext);
         when(port.getContextValue(Long.class, AmqpPort.PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT)).thenReturn(1l);
 

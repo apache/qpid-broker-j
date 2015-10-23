@@ -115,10 +115,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private int _maxOpenConnections;
 
     @ManagedAttributeField
-    private int _threadPoolMaximum;
-
-    @ManagedAttributeField
-    private int _threadPoolMinimum;
+    private int _threadPoolSize;
 
     private final AtomicInteger _connectionCount = new AtomicInteger();
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
@@ -137,15 +134,9 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     }
 
     @Override
-    public int getThreadPoolMaximum()
+    public int getThreadPoolSize()
     {
-        return _threadPoolMaximum;
-    }
-
-    @Override
-    public int getThreadPoolMinimum()
-    {
-        return _threadPoolMinimum;
+        return _threadPoolSize;
     }
 
     @Override
@@ -331,7 +322,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public void onValidate()
     {
         super.onValidate();
-        PortWithThreadPoolValidator.validate(this);
+        validateThreadPoolSize(this);
     }
 
     @Override
@@ -339,9 +330,17 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         super.validateChange(proxyForValidation, changedAttributes);
         AmqpPort changed = (AmqpPort) proxyForValidation;
-        if (changedAttributes.contains(THREAD_POOL_MAXIMUM)  || changedAttributes.contains(THREAD_POOL_MINIMUM) )
+        if (changedAttributes.contains(THREAD_POOL_SIZE))
         {
-            PortWithThreadPoolValidator.validate(changed);
+            validateThreadPoolSize(changed);
+        }
+    }
+
+    private void validateThreadPoolSize(final AmqpPort changed)
+    {
+        if (changed.getThreadPoolSize() < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Thread pool size %d is too small. Must be greater than zero.", changed.getThreadPoolSize()));
         }
     }
 

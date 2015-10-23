@@ -20,28 +20,18 @@
 
 package org.apache.qpid.server.model.port;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.LogMessage;
-import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -83,13 +73,15 @@ public class HttpPortImplTest extends QpidTestCase
 
     public void testCreateWithIllegalThreadPoolValues() throws Exception
     {
+        int threadPoolMinimumSize = 37;
+        int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
+
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(HttpPort.PORT, 10000);
         attributes.put(HttpPort.NAME, getTestName());
-        attributes.put(HttpPort.THREAD_POOL_MINIMUM, 51);
-        attributes.put(HttpPort.THREAD_POOL_MAXIMUM, 50);
+        attributes.put(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize);
+        attributes.put(HttpPort.THREAD_POOL_MAXIMUM, invalidThreadPoolMaximumSize);
         attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
-
 
         HttpPortImpl port = new HttpPortImpl(attributes, _broker);
         try
@@ -103,20 +95,22 @@ public class HttpPortImplTest extends QpidTestCase
         }
     }
 
-    public void testChangeWithIllegalThreadPoolValues() throws Exception
+    public void testIllegalChangeWithMaxThreadPoolSizeSmallerThanMinThreadPoolSize() throws Exception
     {
+        int threadPoolMinimumSize = 37;
+        int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
+
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(HttpPort.PORT, 10000);
         attributes.put(HttpPort.NAME, getTestName());
         attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
 
-
         HttpPortImpl port = new HttpPortImpl(attributes, _broker);
         port.create();
 
         final Map<String, Object> updates = new HashMap<>();
-        updates.put(HttpPort.THREAD_POOL_MINIMUM, 51);
-        updates.put(HttpPort.THREAD_POOL_MAXIMUM, 50);
+        updates.put(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize);
+        updates.put(HttpPort.THREAD_POOL_MAXIMUM, invalidThreadPoolMaximumSize);
         try
         {
             port.setAttributes(updates);
@@ -126,6 +120,54 @@ public class HttpPortImplTest extends QpidTestCase
         {
             // PASS
         }
+    }
+
+    public void testIllegalChangeWithNegativeThreadPoolSize() throws Exception
+    {
+        int illegalThreadPoolMinimumSize = -1;
+        int threadPoolMaximumSize = 1;
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(HttpPort.PORT, 10000);
+        attributes.put(HttpPort.NAME, getTestName());
+        attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
+
+        HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+        port.create();
+
+        final Map<String, Object> updates = new HashMap<>();
+        updates.put(HttpPort.THREAD_POOL_MINIMUM, illegalThreadPoolMinimumSize);
+        updates.put(HttpPort.THREAD_POOL_MAXIMUM, threadPoolMaximumSize);
+        try
+        {
+            port.setAttributes(updates);
+            fail("Change should fail due to validation check");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // PASS
+        }
+    }
+
+    public void testChangeWithLegalThreadPoolValues() throws Exception
+    {
+        int threadPoolMinimumSize = 37;
+        int threadPoolMaximumSize = threadPoolMinimumSize + 1;
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(HttpPort.PORT, 10000);
+        attributes.put(HttpPort.NAME, getTestName());
+        attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
+
+        HttpPortImpl port = new HttpPortImpl(attributes, _broker);
+        port.create();
+
+        final Map<String, Object> updates = new HashMap<>();
+        updates.put(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize);
+        updates.put(HttpPort.THREAD_POOL_MAXIMUM, threadPoolMaximumSize);
+        port.setAttributes(updates);
+        assertEquals("Port did not pickup changes to minimum thread pool size", port.getThreadPoolMinimum(), threadPoolMinimumSize);
+        assertEquals("Port did not pickup changes to maximum thread pool size", port.getThreadPoolMaximum(), threadPoolMaximumSize);
     }
 
 }

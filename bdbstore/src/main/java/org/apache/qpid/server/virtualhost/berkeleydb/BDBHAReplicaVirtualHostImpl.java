@@ -88,11 +88,9 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     private long _storeTransactionOpenTimeoutWarn;
     @ManagedAttributeField
     private int _housekeepingThreadCount;
-    @ManagedAttributeField
-    private int _connectionThreadPoolMinimum;
 
     @ManagedAttributeField
-    private int _connectionThreadPoolMaximum;
+    private int _connectionThreadPoolSize;
 
     @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
@@ -239,13 +237,7 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public int getConnectionThreadPoolMaximum()
-    {
-        return 0;
-    }
-
-    @Override
-    public int getConnectionThreadPoolMinimum()
+    public int getConnectionThreadPoolSize()
     {
         return 0;
     }

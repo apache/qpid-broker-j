@@ -182,10 +182,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private int _housekeepingThreadCount;
 
     @ManagedAttributeField
-    private int _connectionThreadPoolMaximum;
-
-    @ManagedAttributeField
-    private int _connectionThreadPoolMinimum;
+    private int _connectionThreadPoolSize;
 
     @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
@@ -314,17 +311,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private void validateConnectionThreadPoolSettings(VirtualHost<?,?,?> virtualHost)
     {
-        if (virtualHost.getConnectionThreadPoolMaximum() < 1)
+        if (virtualHost.getConnectionThreadPoolSize() < 1)
         {
-            throw new IllegalConfigurationException(String.format("Thread pool maximum %d is too small. Must be greater than zero.", virtualHost.getConnectionThreadPoolMaximum()));
-        }
-        if (virtualHost.getConnectionThreadPoolMinimum() < 1)
-        {
-            throw new IllegalConfigurationException(String.format("Thread pool minimum %d is too small. Must be greater than zero.", virtualHost.getConnectionThreadPoolMinimum()));
-        }
-        if (virtualHost.getConnectionThreadPoolMinimum() > virtualHost.getConnectionThreadPoolMaximum())
-        {
-            throw new IllegalConfigurationException(String.format("Thread pool minimum %d cannot be greater than thread pool maximum %d.", virtualHost.getConnectionThreadPoolMinimum() , virtualHost.getConnectionThreadPoolMaximum()));
+            throw new IllegalConfigurationException(String.format("Thread pool size %d is too small. Must be greater than zero.", virtualHost.getConnectionThreadPoolSize()));
         }
     }
 
@@ -1485,17 +1474,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _housekeepingThreadCount;
     }
 
-
     @Override
-    public int getConnectionThreadPoolMaximum()
+    public int getConnectionThreadPoolSize()
     {
-        return _connectionThreadPoolMaximum;
-    }
-
-    @Override
-    public int getConnectionThreadPoolMinimum()
-    {
-        return _connectionThreadPoolMinimum;
+        return _connectionThreadPoolSize;
     }
 
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )
@@ -1909,8 +1891,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                                           SecurityManager.getSystemTaskSubject("IO Pool", getPrincipal()));
 
         _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool",
-                                                                     getConnectionThreadPoolMinimum(),
-                                                                     getConnectionThreadPoolMaximum(),
+                                                                     getConnectionThreadPoolSize(),
                                                                      threadPoolKeepAliveTimeout,
                                                                      connectionThreadFactory);
         _networkConnectionScheduler.start();

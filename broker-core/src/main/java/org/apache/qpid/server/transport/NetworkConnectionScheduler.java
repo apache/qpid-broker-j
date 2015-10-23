@@ -40,18 +40,16 @@ public class NetworkConnectionScheduler
     private final ThreadFactory _factory;
     private volatile ThreadPoolExecutor _executor;
     private final AtomicInteger _running = new AtomicInteger();
-    private final int _poolSizeMinimum;
-    private final int _poolSizeMaximum;
+    private final int _poolSize;
     private final long _threadKeepAliveTimeout;
     private final String _name;
     private SelectorThread _selectorThread;
 
     public NetworkConnectionScheduler(final String name,
-                                      int threadPoolSizeMinimum,
-                                      int threadPoolSizeMaximum,
+                                      int threadPoolSize,
                                       long threadKeepAliveTimeout)
     {
-        this(name, threadPoolSizeMinimum, threadPoolSizeMaximum, threadKeepAliveTimeout, new ThreadFactory()
+        this(name, threadPoolSize, threadKeepAliveTimeout, new ThreadFactory()
                                     {
                                         final AtomicInteger _count = new AtomicInteger();
 
@@ -66,14 +64,12 @@ public class NetworkConnectionScheduler
     }
 
     public NetworkConnectionScheduler(String name,
-                                      int threadPoolSizeMinimum,
-                                      int threadPoolSizeMaximum,
+                                      int threadPoolSize,
                                       long threadKeepAliveTimeout,
                                       ThreadFactory factory)
     {
         _name = name;
-        _poolSizeMaximum = threadPoolSizeMaximum;
-        _poolSizeMinimum = threadPoolSizeMinimum;
+        _poolSize = threadPoolSize;
         _threadKeepAliveTimeout = threadKeepAliveTimeout;
         _factory = factory;
     }
@@ -84,12 +80,12 @@ public class NetworkConnectionScheduler
         try
         {
             _selectorThread = new SelectorThread(this);
-            _executor = new ThreadPoolExecutor(_poolSizeMaximum, _poolSizeMaximum,
+            _executor = new ThreadPoolExecutor(_poolSize, _poolSize,
                                                _threadKeepAliveTimeout, TimeUnit.MINUTES,
                                                new LinkedBlockingQueue<Runnable>(), _factory);
             _executor.prestartAllCoreThreads();
             _executor.allowCoreThreadTimeOut(true);
-            for(int i = 0 ; i < _poolSizeMaximum; i++)
+            for(int i = 0 ; i < _poolSize; i++)
             {
                 _executor.execute(_selectorThread);
             }
@@ -117,7 +113,7 @@ public class NetworkConnectionScheduler
 
                     if (connection.isStateChanged() || connection.isPartialRead())
                     {
-                        if (_running.get() == _poolSizeMaximum)
+                        if (_running.get() == _poolSize)
                         {
                             connection.clearScheduled();
                             schedule(connection);
@@ -195,9 +191,9 @@ public class NetworkConnectionScheduler
         _selectorThread.removeConnection(connection);
     }
 
-    int getPoolSizeMaximum()
+    int getPoolSize()
     {
-        return _poolSizeMaximum;
+        return _poolSize;
     }
 
     public void schedule(final NonBlockingConnection connection)
