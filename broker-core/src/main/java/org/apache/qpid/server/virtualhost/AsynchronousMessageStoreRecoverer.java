@@ -81,6 +81,8 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
     private static class AsynchronousRecoverer
     {
+        private static final Logger LOGGER = LoggerFactory.getLogger(AsynchronousRecoverer.class);
+
         public static final int THREAD_POOL_SHUTDOWN_TIMEOUT = 5000;
         private final VirtualHostImpl<?, ?, ?> _virtualHost;
         private final EventLogger _eventLogger;
@@ -420,9 +422,29 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 {
                     recoverQueue(_queue);
                 }
+                catch (Throwable e)
+                {
+                    handleUncaughtException(e);
+                }
                 finally
                 {
                     Thread.currentThread().setName(originalThreadName);
+                }
+            }
+
+            private void handleUncaughtException(Throwable e)
+            {
+                LOGGER.error("Unexpected exception", e);
+                Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+                if (uncaughtExceptionHandler != null)
+                {
+                    uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
+                }
+                else
+                {
+                    // it should never happen as we set default UncaughtExceptionHandler in main
+                    e.printStackTrace();
+                    Runtime.getRuntime().halt(1);
                 }
             }
         }
