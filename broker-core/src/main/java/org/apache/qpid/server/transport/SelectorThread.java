@@ -26,6 +26,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -111,11 +112,16 @@ class SelectorThread extends Thread
 
         private List<NonBlockingConnection> processUnscheduledConnections()
         {
+            _nextTimeout = Integer.MAX_VALUE;
+            if (getUnscheduledConnections().isEmpty())
+            {
+                return Collections.emptyList();
+            }
+
             List<NonBlockingConnection> toBeScheduled = new ArrayList<>();
 
             long currentTime = System.currentTimeMillis();
             Iterator<NonBlockingConnection> iterator = getUnscheduledConnections().iterator();
-            _nextTimeout = Integer.MAX_VALUE;
             while (iterator.hasNext())
             {
                 NonBlockingConnection connection = iterator.next();
@@ -147,9 +153,13 @@ class SelectorThread extends Thread
 
         private List<NonBlockingConnection> processSelectionKeys()
         {
-            List<NonBlockingConnection> toBeScheduled = new ArrayList<>();
-
             Set<SelectionKey> selectionKeys = _selector.selectedKeys();
+            if (selectionKeys.isEmpty())
+            {
+                return Collections.emptyList();
+            }
+
+            List<NonBlockingConnection> toBeScheduled = new ArrayList<>();
             for (SelectionKey key : selectionKeys)
             {
                 if(key.isAcceptable())
@@ -185,6 +195,10 @@ class SelectorThread extends Thread
 
         private List<NonBlockingConnection> reregisterUnregisteredConnections()
         {
+            if (getUnregisteredConnections().isEmpty())
+            {
+                return Collections.emptyList();
+            }
             List<NonBlockingConnection> unregisterableConnections = new ArrayList<>();
 
             NonBlockingConnection unregisteredConnection;
