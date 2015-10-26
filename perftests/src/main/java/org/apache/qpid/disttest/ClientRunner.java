@@ -19,6 +19,9 @@
  */
 package org.apache.qpid.disttest;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import javax.naming.Context;
 import javax.naming.NamingException;
 
@@ -30,10 +33,11 @@ import org.slf4j.LoggerFactory;
 public class ClientRunner extends AbstractRunner
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientRunner.class);
-
     public static final String NUM_OF_CLIENTS_PROP = "number-of-clients";
 
     public static final String NUM_OF_CLIENTS_DEFAULT = "1";
+    private static final int AWAIT_SHUTDOWN_TIMEOUT = 30000;
+    private Collection<Thread> _clientThreads = new ArrayList<>();
 
     public ClientRunner()
     {
@@ -67,32 +71,55 @@ public class ClientRunner extends AbstractRunner
 
         for(int i = 1; i <= numClients; i++)
         {
-            createBackgroundClient(context);
+            Thread clientThread = createBackgroundClient(context);
+            _clientThreads.add(clientThread);
         }
     }
 
-    private void createBackgroundClient(Context context)
+    private Thread createBackgroundClient(Context context)
     {
         try
         {
             final Client client = new Client(new ClientJmsDelegate(context));
 
-            final Thread clientThread = new Thread(new Runnable()
+            Thread clientThread = new Thread(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    LOGGER.info("Starting client " + client.getClientName());
+                    LOGGER.info("Starting client {}", client.getClientName());
                     client.start();
                     client.waitUntilStopped();
-                    LOGGER.info("Stopped client " + client.getClientName());
+                    LOGGER.info("Stopped client {}", client.getClientName());
                 }
             });
             clientThread.start();
+            return clientThread;
+
         }
         catch (NamingException e)
         {
             throw new DistributedTestException("Exception while creating client instance", e);
+        }
+    }
+
+    public void awaitShutdown()
+    {
+        for (Thread thread : _clientThreads)
+        {
+            try
+            {
+                thread.join(AWAIT_SHUTDOWN_TIMEOUT);
+                if (thread.isAlive())
+                {
+                    LOGGER.warn("Client thread {} failed to shutdown within timeout {} ms",
+                                thread, AWAIT_SHUTDOWN_TIMEOUT);
+                }
+            }
+            catch (InterruptedException e)
+            {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

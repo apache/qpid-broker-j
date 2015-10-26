@@ -22,6 +22,8 @@ package org.apache.qpid.disttest;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import javax.naming.Context;
@@ -34,7 +36,6 @@ import org.apache.qpid.disttest.db.ResultsDbWriter;
 import org.apache.qpid.disttest.jms.ControllerJmsDelegate;
 import org.apache.qpid.disttest.results.CompositeResultsWriter;
 import org.apache.qpid.disttest.results.ResultsCsvWriter;
-import org.apache.qpid.disttest.results.ResultsWriter;
 import org.apache.qpid.disttest.results.ResultsXmlWriter;
 import org.apache.qpid.disttest.results.aggregation.Aggregator;
 import org.slf4j.Logger;
@@ -114,13 +115,19 @@ public class ControllerRunner extends AbstractRunner
                                                    DistributedTestConstants.REGISTRATION_TIMEOUT,
                                                    DistributedTestConstants.COMMAND_RESPONSE_TIMEOUT,
                                                    getCliOptions());
+
+            String testConfigPath = getCliOptions().get(ControllerRunner.TEST_CONFIG_PROP);
+            List<String> testConfigFiles = _configFileHelper.getTestConfigFiles(testConfigPath);
+            Collection<ClientRunner> clients = createClientsIfNotDistributed(testConfigFiles);
+
             try
             {
-                runTests(controller);
+                runTests(controller, testConfigFiles);
             }
             finally
             {
                 controller.stopAllRegisteredClients();
+                awaitClientShutdown(clients);
             }
         }
         finally
@@ -160,12 +167,9 @@ public class ControllerRunner extends AbstractRunner
         _resultsWriter.end();
     }
 
-    private void runTests(Controller controller)
+    private void runTests(Controller controller, List<String> testConfigFiles)
     {
         boolean testError = false;
-        String testConfigPath = getCliOptions().get(ControllerRunner.TEST_CONFIG_PROP);
-        List<String> testConfigFiles = _configFileHelper.getTestConfigFiles(testConfigPath);
-        createClientsIfNotDistributed(testConfigFiles);
 
         try
         {
@@ -212,7 +216,7 @@ public class ControllerRunner extends AbstractRunner
         return resultsForAllTests;
     }
 
-    private void createClientsIfNotDistributed(final List<String> testConfigFiles)
+    private Collection<ClientRunner> createClientsIfNotDistributed(final List<String> testConfigFiles)
     {
         if(!isDistributed())
         {
@@ -225,12 +229,25 @@ public class ControllerRunner extends AbstractRunner
             }
 
             //we must create the required test clients, running in single-jvm mode
+            Collection<ClientRunner> runners = new ArrayList<>(maxNumberOfClients);
             for (int i = 1; i <= maxNumberOfClients; i++)
             {
                 ClientRunner clientRunner = new ClientRunner();
                 clientRunner.setJndiPropertiesFileLocation(getJndiConfig());
                 clientRunner.runClients();
+                runners.add(clientRunner);
+
             }
+            return runners;
+        }
+        return Collections.emptyList();
+    }
+
+    private void awaitClientShutdown(final Collection<ClientRunner> clients)
+    {
+        for(ClientRunner client: clients)
+        {
+            client.awaitShutdown();
         }
     }
 
