@@ -26,11 +26,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.base.Function;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,11 +67,11 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private AsynchronousRecoverer _asynchronousRecoverer;
 
     @Override
-    public void recover(final VirtualHostImpl virtualHost)
+    public ListenableFuture<Void> recover(final VirtualHostImpl virtualHost)
     {
         _asynchronousRecoverer = new AsynchronousRecoverer(virtualHost);
 
-        _asynchronousRecoverer.recover();
+        return _asynchronousRecoverer.recover();
     }
 
     @Override
@@ -92,7 +96,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Set<AMQQueue<?>> _recoveringQueues = new CopyOnWriteArraySet<>();
         private final AtomicBoolean _recoveryComplete = new AtomicBoolean();
         private final Map<Long, MessageReference<? extends ServerMessage<?>>> _recoveredMessages = new HashMap<>();
-        private final ExecutorService _queueRecoveryExecutor = Executors.newCachedThreadPool();
+        private final ListeningExecutorService _queueRecoveryExecutor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
         private final MessageStore.MessageStoreReader _storeReader;
         private AtomicBoolean _continueRecovery = new AtomicBoolean(true);
 
@@ -109,14 +113,25 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
         }
 
-        public void recover()
+        public ListenableFuture<Void> recover()
         {
             getStoreReader().visitDistributedTransactions(new DistributedTransactionVisitor());
 
+            List<ListenableFuture<Void>> queueRecoveryFutures = new ArrayList<>();
             for(AMQQueue<?> queue : _recoveringQueues)
             {
-                _queueRecoveryExecutor.submit(new QueueRecoveringTask(queue));
+                ListenableFuture<Void> result = _queueRecoveryExecutor.submit(new QueueRecoveringTask(queue), null);
+                queueRecoveryFutures.add(result);
             }
+            ListenableFuture<List<Void>> combinedFuture = Futures.allAsList(queueRecoveryFutures);
+            return Futures.transform(combinedFuture, new Function<List<?>, Void>()
+            {
+                @Override
+                public Void apply(List<?> voids)
+                {
+                    return null;
+                }
+            });
         }
 
         public VirtualHostImpl<?, ?, ?> getVirtualHost()
@@ -422,31 +437,12 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 {
                     recoverQueue(_queue);
                 }
-                catch (Throwable e)
-                {
-                    handleUncaughtException(e);
-                }
                 finally
                 {
                     Thread.currentThread().setName(originalThreadName);
                 }
             }
 
-            private void handleUncaughtException(Throwable e)
-            {
-                LOGGER.error("Unexpected exception", e);
-                Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-                if (uncaughtExceptionHandler != null)
-                {
-                    uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), e);
-                }
-                else
-                {
-                    // it should never happen as we set default UncaughtExceptionHandler in main
-                    e.printStackTrace();
-                    Runtime.getRuntime().halt(1);
-                }
-            }
         }
 
         private class MessageInstanceVisitor implements MessageInstanceHandler

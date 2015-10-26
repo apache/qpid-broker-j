@@ -27,7 +27,11 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.queue.AMQQueue;
@@ -57,24 +61,34 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         when(_store.newMessageStoreReader()).thenReturn(_storeReader);
     }
 
-    public void testExceptionDuringRecoveryShutsDownBroker() throws Exception
+    public void testExceptionOnRecovery() throws Exception
     {
-        final CountDownLatch uncaughtExceptionHandlerCalledLatch = new CountDownLatch(1);
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
-        {
-            @Override
-            public void uncaughtException(final Thread t, final Throwable e)
-            {
-                uncaughtExceptionHandlerCalledLatch.countDown();
-            }
-        });
-        doThrow(ServerScopedRuntimeException.class).when(_storeReader).visitMessageInstances(any(TransactionLogResource.class),
+        ServerScopedRuntimeException exception = new ServerScopedRuntimeException("test");
+        doThrow(exception).when(_storeReader).visitMessageInstances(any(TransactionLogResource.class),
                                                                                              any(MessageInstanceHandler.class));
         AMQQueue queue = mock(AMQQueue.class);
         when(_virtualHost.getQueues()).thenReturn(Collections.singleton(queue));
 
         AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
-        recoverer.recover(_virtualHost);
-        assertTrue("UncaughtExceptionHandler was not called", uncaughtExceptionHandlerCalledLatch.await(1000, TimeUnit.MILLISECONDS));
+        ListenableFuture<Void> result = recoverer.recover(_virtualHost);
+        try
+        {
+            result.get();
+            fail("ServerScopedRuntimeException should be rethrown");
+        }
+        catch(ExecutionException e)
+        {
+            assertEquals("Unexpected cause", exception, e.getCause());
+        }
+    }
+
+    public void testRecoveryEmptyQueue() throws Exception
+    {
+        AMQQueue queue = mock(AMQQueue.class);
+        when(_virtualHost.getQueues()).thenReturn(Collections.singleton(queue));
+
+        AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
+        ListenableFuture<Void> result = recoverer.recover(_virtualHost);
+        assertNull(result.get());
     }
 }

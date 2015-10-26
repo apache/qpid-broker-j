@@ -51,13 +51,13 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import org.apache.qpid.server.configuration.updater.Task;
-import org.apache.qpid.server.model.Connection;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.pool.SuppressingInheritedAccessControlContextThreadFactory;
+import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.exchange.DefaultDestination;
@@ -101,6 +101,7 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.MapValueConverter;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
         implements VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, EventListener
@@ -1858,13 +1859,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                         _logger.debug("Housekeeping task got cancelled");
                         // Ignore cancellation of task
                     }
-                    catch (ExecutionException ee)
+                    catch (ExecutionException | UncheckedExecutionException ee)
                     {
                         t = ee.getCause();
                     }
                     catch (InterruptedException ie)
                     {
                         Thread.currentThread().interrupt(); // ignore/reset
+                    }
+                    catch (Throwable t1)
+                    {
+                        t = t1;
                     }
                 }
                 if (t != null)
@@ -1940,8 +1945,17 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
            _messageStoreRecoverer = new SynchronousMessageStoreRecoverer();
         }
-        _messageStoreRecoverer.recover(this);
 
+        // propagate any exception thrown during recovery into HouseKeepingTaskExecutor to handle them accordingly
+        final ListenableFuture<Void> recoveryResult = _messageStoreRecoverer.recover(this);
+        recoveryResult.addListener(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Futures.getUnchecked(recoveryResult);
+            }
+        }, _houseKeepingTaskExecutor);
 
         State finalState = State.ERRORED;
         try
