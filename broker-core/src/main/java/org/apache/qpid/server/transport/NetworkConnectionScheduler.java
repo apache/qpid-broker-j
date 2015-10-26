@@ -43,13 +43,14 @@ public class NetworkConnectionScheduler
     private final int _poolSize;
     private final long _threadKeepAliveTimeout;
     private final String _name;
+    private final int _numberOfSelectors;
     private SelectorThread _selectorThread;
 
     public NetworkConnectionScheduler(final String name,
-                                      int threadPoolSize,
+                                      final int numberOfSelectors, int threadPoolSize,
                                       long threadKeepAliveTimeout)
     {
-        this(name, threadPoolSize, threadKeepAliveTimeout, new ThreadFactory()
+        this(name, numberOfSelectors, threadPoolSize, threadKeepAliveTimeout, new ThreadFactory()
                                     {
                                         final AtomicInteger _count = new AtomicInteger();
 
@@ -64,7 +65,7 @@ public class NetworkConnectionScheduler
     }
 
     public NetworkConnectionScheduler(String name,
-                                      int threadPoolSize,
+                                      final int numberOfSelectors, int threadPoolSize,
                                       long threadKeepAliveTimeout,
                                       ThreadFactory factory)
     {
@@ -72,6 +73,7 @@ public class NetworkConnectionScheduler
         _poolSize = threadPoolSize;
         _threadKeepAliveTimeout = threadKeepAliveTimeout;
         _factory = factory;
+        _numberOfSelectors = numberOfSelectors;
     }
 
 
@@ -79,7 +81,7 @@ public class NetworkConnectionScheduler
     {
         try
         {
-            _selectorThread = new SelectorThread(this);
+            _selectorThread = new SelectorThread(this, _numberOfSelectors);
             _executor = new ThreadPoolExecutor(_poolSize, _poolSize,
                                                _threadKeepAliveTimeout, TimeUnit.MINUTES,
                                                new LinkedBlockingQueue<Runnable>(), _factory);

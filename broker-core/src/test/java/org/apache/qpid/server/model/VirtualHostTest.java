@@ -50,6 +50,7 @@ import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.StoreConfigurationChangeListener;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
@@ -261,15 +262,17 @@ public class VirtualHostTest extends QpidTestCase
 
         AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
         assertEquals("Unexpected number of connections before connection registered",
-                0,
-                virtualHost.getConnectionCount());
+                     0,
+                     virtualHost.getConnectionCount());
 
         AMQPConnection modelConnection = mock(AMQPConnection.class);
         when(modelConnection.getUnderlyingConnection()).thenReturn(connection);
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         virtualHost.registerConnection(modelConnection);
 
-        assertEquals("Unexpected number of connections after connection registered", 1, virtualHost.getConnectionCount());
+        assertEquals("Unexpected number of connections after connection registered",
+                     1,
+                     virtualHost.getConnectionCount());
 
         virtualHost.delete();
         assertEquals("Unexpected state", State.DELETED, virtualHost.getState());
@@ -295,7 +298,7 @@ public class VirtualHostTest extends QpidTestCase
         assertNotNull(queue.getId());
         assertEquals(queueName, queue.getName());
 
-        verify(_configStore).update(eq(true),matchesRecord(queue.getId(), queue.getType()));
+        verify(_configStore).update(eq(true), matchesRecord(queue.getId(), queue.getType()));
     }
 
     public void testCreateNonDurableQueue()
@@ -324,7 +327,8 @@ public class VirtualHostTest extends QpidTestCase
         String virtualHostName = getName();
         VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(virtualHost);
+        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(
+                virtualHost);
 
         assertNull(virtualHost.getDescription());
 
@@ -348,7 +352,8 @@ public class VirtualHostTest extends QpidTestCase
         String virtualHostName = getName();
         VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(virtualHost);
+        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(
+                virtualHost);
 
         try
         {
@@ -370,7 +375,8 @@ public class VirtualHostTest extends QpidTestCase
         String virtualHostName = getName();
         VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
 
-        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseDelete(virtualHost);
+        doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseDelete(
+                virtualHost);
 
         try
         {
@@ -395,13 +401,83 @@ public class VirtualHostTest extends QpidTestCase
         verify(connection).block();
     }
 
+    public void testCreateValidation() throws Exception
+    {
+        try
+        {
+            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, "-1"));
+            fail("Exception not thrown for negative number of selectors");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+        try
+        {
+            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(VirtualHost.CONNECTION_THREAD_POOL_SIZE, "-1"));
+            fail("Exception not thrown for negative connection thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+        try
+        {
+            createVirtualHost(getTestName(), Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, VirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
+            fail("Exception not thrown for number of selectors equal to connection thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testChangeValidation() throws Exception
+    {
+        VirtualHost<?,?,?> virtualHost = createVirtualHost(getTestName());
+        try
+        {
+            virtualHost.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, "-1"));
+            fail("Exception not thrown for negative number of selectors");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+        try
+        {
+            virtualHost.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.CONNECTION_THREAD_POOL_SIZE,
+                                                                               "-1"));
+            fail("Exception not thrown for negative connection thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+        try
+        {
+            virtualHost.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, VirtualHost.DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE));
+            fail("Exception not thrown for number of selectors equal to connection thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
     private VirtualHost<?,?,?> createVirtualHost(final String virtualHostName)
     {
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHost.NAME, virtualHostName);
-        attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
+        return createVirtualHost(virtualHostName, Collections.<String, Object>emptyMap());
+    }
 
-        TestMemoryVirtualHost host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
+    private VirtualHost<?,?,?> createVirtualHost(final String virtualHostName, Map<String,Object> attributes)
+    {
+        Map<String, Object> vhAttributes = new HashMap<>();
+        vhAttributes.put(VirtualHost.NAME, virtualHostName);
+        vhAttributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
+        vhAttributes.putAll(attributes);
+
+        TestMemoryVirtualHost host = new TestMemoryVirtualHost(vhAttributes, _virtualHostNode);
         host.addChangeListener(_storeConfigurationChangeListener);
         host.create();
         // Fire the child added event on the node

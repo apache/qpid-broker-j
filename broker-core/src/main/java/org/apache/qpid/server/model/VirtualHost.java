@@ -59,6 +59,7 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     String GLOBAL_ADDRESS_DOMAINS               = "globalAddressDomains";
     String VIRTUALHOST_WORK_DIR_VAR             = "virtualhost.work_dir";
     String VIRTUALHOST_WORK_DIR_VAR_EXPRESSION  = "${qpid.work_dir}${file.separator}${ancestor:virtualhost:name}";
+    String NUMBER_OF_SELECTORS                  = "numberOfSelectors";
     String CONNECTION_THREAD_POOL_SIZE          = "connectionThreadPoolSize";
     String CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "connectionThreadPoolKeepAliveTimeout";
 
@@ -118,6 +119,14 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE + "}")
     int getConnectionThreadPoolSize();
+
+    String VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS = "virtualhost.connectionThreadPool.numberOfSelectors";
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS)
+    long DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS = Math.max(DEFAULT_VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE/8, 1);
+
+    @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_CONNECTION_THREAD_POOL_NUMBER_OF_SELECTORS + "}")
+    int getNumberOfSelectors();
 
     @ManagedContextDefault( name = "virtualhost.awaitAttainmentTimeout")
     public static final int DEFAULT_AWAIT_ATTAINMENT_TIMEOUT = 5000;

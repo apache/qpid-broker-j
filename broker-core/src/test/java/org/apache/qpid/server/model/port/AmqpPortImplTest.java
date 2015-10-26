@@ -45,6 +45,7 @@ import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -53,7 +54,6 @@ public class AmqpPortImplTest extends QpidTestCase
     private static final String AUTHENTICATION_PROVIDER_NAME = "test";
     private TaskExecutor _taskExecutor;
     private Broker _broker;
-    private ServerSocket _socket;
     private AmqpPortImpl _port;
 
     @Override
@@ -84,10 +84,6 @@ public class AmqpPortImplTest extends QpidTestCase
     {
         try
         {
-            if (_socket != null)
-            {
-                _socket.close();
-            }
             _taskExecutor.stop();
         }
         finally
@@ -104,26 +100,104 @@ public class AmqpPortImplTest extends QpidTestCase
         }
     }
 
-    public void testValidateOnCreate() throws Exception
+    public void testOnCreateValidation() throws Exception
     {
-        _socket = openSocket();
-
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(AmqpPort.PORT, _socket.getLocalPort());
-        attributes.put(AmqpPort.NAME, getTestName());
-        attributes.put(AmqpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
-        _port = new AmqpPortImpl(attributes, _broker);
+        ServerSocket socket = openSocket();
         try
         {
-            _port.create();
+            createPort(getTestName(), Collections.<String,Object>singletonMap(AmqpPort.PORT, socket.getLocalPort()));
             fail("Creation should fail due to validation check");
         }
         catch (IllegalConfigurationException e)
         {
             assertEquals("Unexpected exception message",
-                    String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
-                        _socket.getLocalPort(), "*"), e.getMessage());
+                         String.format("Cannot bind to port %d and binding address '%s'. Port is already is use.",
+                                       socket.getLocalPort(), "*"), e.getMessage());
         }
+        finally
+        {
+            socket.close();
+        }
+
+        try
+        {
+            createPort(getTestName(), Collections.<String, Object>singletonMap(AmqpPort.NUMBER_OF_SELECTORS, "-1"));
+            fail("Exception not thrown for negative number of selectors");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+        try
+        {
+            createPort(getTestName(), Collections.<String, Object>singletonMap(AmqpPort.THREAD_POOL_SIZE, "-1"));
+            fail("Exception not thrown for negative thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+        try
+        {
+            createPort(getTestName(),
+                       Collections.<String, Object>singletonMap(AmqpPort.NUMBER_OF_SELECTORS,
+                                                                AmqpPort.DEFAULT_PORT_AMQP_THREAD_POOL_SIZE));
+            fail("Exception not thrown for number of selectors equal to thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    public void testOnChangeThreadPoolValidation() throws Exception
+    {
+        _port = createPort(getTestName());
+        try
+        {
+            _port.setAttributes(Collections.<String, Object>singletonMap(AmqpPort.NUMBER_OF_SELECTORS, "-1"));
+            fail("Exception not thrown for negative number of selectors");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+        try
+        {
+            _port.setAttributes(Collections.<String, Object>singletonMap(AmqpPort.THREAD_POOL_SIZE, "-1"));
+            fail("Exception not thrown for negative thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+        try
+        {
+            _port.setAttributes(Collections.<String, Object>singletonMap(AmqpPort.NUMBER_OF_SELECTORS,
+                                                                         AmqpPort.DEFAULT_PORT_AMQP_THREAD_POOL_SIZE));
+            fail("Exception not thrown for number of selectors equal to thread pool size");
+        }
+        catch (IllegalConfigurationException e)
+        {
+            // pass
+        }
+    }
+
+    private AmqpPortImpl createPort(final String portName)
+    {
+        return createPort(portName, Collections.<String, Object>emptyMap());
+    }
+
+    private AmqpPortImpl createPort(final String portName, final Map<String, Object> attributes)
+    {
+        Map<String, Object> portAttributes = new HashMap<>();
+        portAttributes.put(AmqpPort.PORT, 0);
+        portAttributes.put(AmqpPort.NAME, portName);
+        portAttributes.put(AmqpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
+        portAttributes.putAll(attributes);
+        AmqpPortImpl port = new AmqpPortImpl(portAttributes, _broker);
+        port.create();
+        return port;
     }
 
     private ServerSocket openSocket() throws IOException

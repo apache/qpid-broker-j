@@ -49,11 +49,14 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
 
     String MAX_OPEN_CONNECTIONS = "maxOpenConnections";
     String THREAD_POOL_SIZE = "threadPoolSize";
+    String NUMBER_OF_SELECTORS = "numberOfSelectors";
 
     String DEFAULT_AMQP_PROTOCOLS = "qpid.port.default_amqp_protocols";
 
-    String PORT_AMQP_THREAD_POOL_SIZE = "port.amqp.threadPool.size";
-    String PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "port.amqp.threadPool.keep_alive_timeout";
+    String PORT_AMQP_THREAD_POOL_SIZE = "qpid.port.amqp.threadPool.size";
+    String PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "qpid.port.amqp.threadPool.keep_alive_timeout";
+
+    String PORT_AMQP_NUMBER_OF_SELECTORS = "qpid.port.amqp.threadPool.numberOfSelectors";
 
     @ManagedContextDefault(name = DEFAULT_AMQP_PROTOCOLS)
     String INSTALLED_PROTOCOLS = AmqpPortImpl.getInstalledProtocolsAsString();
@@ -70,6 +73,10 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @SuppressWarnings("unused")
     @ManagedContextDefault(name = PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT)
     long DEFAULT_PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT = 60; // Minutes
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault( name = PORT_AMQP_NUMBER_OF_SELECTORS)
+    long DEFAULT_PORT_AMQP_NUMBER_OF_SELECTORS = Math.max(DEFAULT_PORT_AMQP_THREAD_POOL_SIZE / 8, 1);
 
     String PORT_MAX_MESSAGE_SIZE = "qpid.port.max_message_size";
 
@@ -92,6 +99,9 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
 
     @ManagedAttribute( defaultValue = "${" + PORT_AMQP_THREAD_POOL_SIZE + "}")
     int getThreadPoolSize();
+
+    @ManagedAttribute( defaultValue = "${" + PORT_AMQP_NUMBER_OF_SELECTORS + "}")
+    int getNumberOfSelectors();
 
     @ManagedAttribute( defaultValue = DEFAULT_AMQP_NEED_CLIENT_AUTH )
     boolean getNeedClientAuth();

@@ -334,12 +334,11 @@ class SelectorThread extends Thread
 
     private SelectionTask[] _selectionTasks;
 
-    SelectorThread(final NetworkConnectionScheduler scheduler) throws IOException
+    SelectorThread(final NetworkConnectionScheduler scheduler, final int numberOfSelectors) throws IOException
     {
         _scheduler = scheduler;
-        int selectors = Math.max(scheduler.getPoolSize()/8,1);
-        _selectionTasks = new SelectionTask[selectors];
-        for(int i = 0; i < selectors; i++)
+        _selectionTasks = new SelectionTask[numberOfSelectors];
+        for(int i = 0; i < numberOfSelectors; i++)
         {
             _selectionTasks[i] = new SelectionTask();
         }

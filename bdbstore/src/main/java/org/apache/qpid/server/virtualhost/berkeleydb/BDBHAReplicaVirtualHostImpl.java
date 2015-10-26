@@ -243,6 +243,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
+    public int getNumberOfSelectors()
+    {
+        return 0;
+    }
+
+    @Override
     public long getQueueCount()
     {
         return 0;

@@ -117,6 +117,9 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     @ManagedAttributeField
     private int _threadPoolSize;
 
+    @ManagedAttributeField
+    private int _numberOfSelectors;
+
     private final AtomicInteger _connectionCount = new AtomicInteger();
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
 
@@ -138,6 +141,13 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         return _threadPoolSize;
     }
+
+    @Override
+    public int getNumberOfSelectors()
+    {
+        return _numberOfSelectors;
+    }
+
 
     @Override
     public SSLContext getSSLContext()
@@ -322,7 +332,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public void onValidate()
     {
         super.onValidate();
-        validateThreadPoolSize(this);
+        validateThreadPoolSettings(this);
     }
 
     @Override
@@ -330,17 +340,25 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         super.validateChange(proxyForValidation, changedAttributes);
         AmqpPort changed = (AmqpPort) proxyForValidation;
-        if (changedAttributes.contains(THREAD_POOL_SIZE))
+        if (changedAttributes.contains(THREAD_POOL_SIZE) || changedAttributes.contains(NUMBER_OF_SELECTORS))
         {
-            validateThreadPoolSize(changed);
+            validateThreadPoolSettings(changed);
         }
     }
 
-    private void validateThreadPoolSize(final AmqpPort changed)
+    private void validateThreadPoolSettings(final AmqpPort changed)
     {
         if (changed.getThreadPoolSize() < 1)
         {
-            throw new IllegalConfigurationException(String.format("Thread pool size %d is too small. Must be greater than zero.", changed.getThreadPoolSize()));
+            throw new IllegalConfigurationException(String.format("Thread pool size %d on Port %s must be greater than zero.", changed.getThreadPoolSize(), getName()));
+        }
+        if (changed.getNumberOfSelectors() < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Number of Selectors %d on Port %s must be greater than zero.", changed.getNumberOfSelectors(), getName()));
+        }
+        if (changed.getThreadPoolSize() <= changed.getNumberOfSelectors())
+        {
+            throw new IllegalConfigurationException(String.format("Number of Selectors %d on Port %s must be greater than the thread pool size %d.", changed.getNumberOfSelectors(), getName(), changed.getThreadPoolSize()));
         }
     }
 

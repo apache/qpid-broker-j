@@ -101,7 +101,6 @@ import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.MapValueConverter;
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
         implements VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, EventListener
@@ -184,6 +183,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     @ManagedAttributeField
     private int _connectionThreadPoolSize;
+
+    @ManagedAttributeField
+    private int _numberOfSelectors;
 
     @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
@@ -282,7 +284,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
         }
 
-        if (changedAttributes.contains(CONNECTION_THREAD_POOL_SIZE))
+        if (changedAttributes.contains(CONNECTION_THREAD_POOL_SIZE) || changedAttributes.contains(NUMBER_OF_SELECTORS))
         {
             validateConnectionThreadPoolSettings(virtualHost);
         }
@@ -314,7 +316,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         if (virtualHost.getConnectionThreadPoolSize() < 1)
         {
-            throw new IllegalConfigurationException(String.format("Thread pool size %d is too small. Must be greater than zero.", virtualHost.getConnectionThreadPoolSize()));
+            throw new IllegalConfigurationException(String.format("Thread pool size %d on VirtualHost %s must be greater than zero.", virtualHost.getConnectionThreadPoolSize(), getName()));
+        }
+        if (virtualHost.getNumberOfSelectors() < 1)
+        {
+            throw new IllegalConfigurationException(String.format("Number of Selectors %d on VirtualHost %s must be greater than zero.", virtualHost.getNumberOfSelectors(), getName()));
+        }
+        if (virtualHost.getConnectionThreadPoolSize() <= virtualHost.getNumberOfSelectors())
+        {
+            throw new IllegalConfigurationException(String.format("Number of Selectors %d on VirtualHost %s must be greater than the connection pool size %d.", virtualHost.getNumberOfSelectors(), getName(), virtualHost.getConnectionThreadPoolSize()));
         }
     }
 
@@ -1481,6 +1491,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _connectionThreadPoolSize;
     }
 
+    @Override
+    public int getNumberOfSelectors()
+    {
+        return _numberOfSelectors;
+    }
+
     @StateTransition( currentState = { State.UNINITIALIZED, State.ACTIVE, State.ERRORED }, desiredState = State.STOPPED )
     protected ListenableFuture<Void> doStop()
     {
@@ -1833,7 +1849,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return total;
     }
 
-    @StateTransition( currentState = { State.UNINITIALIZED,State.ERRORED }, desiredState = State.ACTIVE )
+    @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     private ListenableFuture<Void> onActivate()
     {
         final SuppressingInheritedAccessControlContextThreadFactory housekeepingThreadFactory =
@@ -1896,6 +1912,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                                                           SecurityManager.getSystemTaskSubject("IO Pool", getPrincipal()));
 
         _networkConnectionScheduler = new NetworkConnectionScheduler("virtualhost-" + getName() + "-iopool",
+                                                                     getNumberOfSelectors(),
                                                                      getConnectionThreadPoolSize(),
                                                                      threadPoolKeepAliveTimeout,
                                                                      connectionThreadFactory);

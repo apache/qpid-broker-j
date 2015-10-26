@@ -243,6 +243,12 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
+    public int getNumberOfSelectors()
+    {
+        return 0;
+    }
+
+    @Override
     public long getQueueCount()
     {
         return 0;
