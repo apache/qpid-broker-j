@@ -176,7 +176,7 @@
                 </div>
             </div>
 
-            <div id="formAddPort:threadPoolSettings" >
+            <div id="formAddPort:threadPoolMinMaxSettings" >
                 <div class="clear">
                     <div class="formLabel-labelCell">
                         <label for="formAddPort.transports">Minimum number of connection threads:</label>
@@ -203,6 +203,23 @@
                             placeHolder: 'maximum number of connection threads',
                             promptMessage: 'Maximum number of connection threads used to serve client connections on this port.',
                             title: 'Enter a maximum number of connection threads'"/>
+                    </div>
+                </div>
+            </div>
+
+            <div id="formAddPort:threadPoolSizeSettings" >
+                <div class="clear">
+                    <div class="formLabel-labelCell">
+                        <label for="formAddPort.transports">Number of connection threads:</label>
+                    </div>
+                    <div class="formLabel-controlCell">
+                        <input id="formAddPort.threadPoolSize" type="text"
+                               data-dojo-type="dijit.form.ValidationTextBox"
+                               data-dojo-props="
+                            name: 'threadPoolSize',
+                            placeHolder: 'number of connection threads',
+                            promptMessage: 'Number of connection threads used to serve client connections on this port.',
+                            title: 'Enter a number of connection threads'"/>
                     </div>
                 </div>
             </div>

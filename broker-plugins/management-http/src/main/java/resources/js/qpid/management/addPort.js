@@ -87,10 +87,15 @@ define(["dojo/dom",
             dom.byId("formAddPort:maxOpenConnections").style.display = "maxOpenConnections" in typeMetaData.attributes ? "block" : "none";
 
             //threadPoolSettings
-            var hasThreadPoolSettings = "threadPoolMinimum" in typeMetaData.attributes;
-            dom.byId("formAddPort:threadPoolSettings").style.display = hasThreadPoolSettings ? "block" : "none";
-            registry.byId("formAddPort.threadPoolMinimum").set("disabled", !hasThreadPoolSettings);
-            registry.byId("formAddPort.threadPoolMaximum").set("disabled", !hasThreadPoolSettings);
+            var hasThreadPoolMinMaxSettings = "threadPoolMinimum" in typeMetaData.attributes;
+            dom.byId("formAddPort:threadPoolMinMaxSettings").style.display = hasThreadPoolMinMaxSettings ? "block" : "none";
+            registry.byId("formAddPort.threadPoolMinimum").set("disabled", !hasThreadPoolMinMaxSettings);
+            registry.byId("formAddPort.threadPoolMaximum").set("disabled", !hasThreadPoolMinMaxSettings);
+
+            //threadPoolSettings
+            var hasThreadPoolSizeSettings = "threadPoolSize" in typeMetaData.attributes;
+            dom.byId("formAddPort:threadPoolSizeSettings").style.display = hasThreadPoolSizeSettings ? "block" : "none";
+            registry.byId("formAddPort.threadPoolSize").set("disabled", !hasThreadPoolSizeSettings);
 
             //transports
             var transportsMultiSelect = dom.byId("formAddPort.transports");
@@ -437,18 +442,23 @@ define(["dojo/dom",
                        registry.byId("formAddPort.needClientAuth").set("checked", port.needClientAuth);
                        registry.byId("formAddPort.wantClientAuth").set("checked", port.wantClientAuth);
 
-                       //threadPoolSettings
-                       var hasThreadPoolSettings = "threadPoolMinimum" in typeMetaData.attributes;
-                       function initThreadPoolSettingWidget(name)
+                       //threadPoolMinMaxSettings
+                       var hasThreadPoolMinMaxSettings = "threadPoolMinimum" in typeMetaData.attributes;
+                       function initThreadPoolSettingWidget(name, disabled)
                        {
                            var widget = registry.byId("formAddPort." + name);
                            widget.set("regExpGen", util.signedOrContextVarRegexp);
                            widget.set("value",  port[name] ? port[name] : "");
-                           widget.set("disabled", !hasThreadPoolSettings);
+                           widget.set("disabled", disabled);
                        }
-                       initThreadPoolSettingWidget("threadPoolMaximum");
-                       initThreadPoolSettingWidget("threadPoolMinimum");
-                       dom.byId("formAddPort:threadPoolSettings").style.display = hasThreadPoolSettings ? "block" : "none";
+                       initThreadPoolSettingWidget("threadPoolMaximum", !hasThreadPoolMinMaxSettings);
+                       initThreadPoolSettingWidget("threadPoolMinimum", !hasThreadPoolMinMaxSettings);
+                       dom.byId("formAddPort:threadPoolMinMaxSettings").style.display = hasThreadPoolMinMaxSettings ? "block" : "none";
+
+                       //threadPoolSizeSettings
+                       var hasThreadPoolSizeSettings = "threadPoolSize" in typeMetaData.attributes;
+                       initThreadPoolSettingWidget("threadPoolSize", !hasThreadPoolSizeSettings);
+                       dom.byId("formAddPort:threadPoolSizeSettings").style.display = hasThreadPoolSizeSettings ? "block" : "none";
 
                        keystoreWidget.initialValue = port.keyStore;
                        truststoreWidget.initialValue = port.trustStores;

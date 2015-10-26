@@ -59,8 +59,7 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     String GLOBAL_ADDRESS_DOMAINS               = "globalAddressDomains";
     String VIRTUALHOST_WORK_DIR_VAR             = "virtualhost.work_dir";
     String VIRTUALHOST_WORK_DIR_VAR_EXPRESSION  = "${qpid.work_dir}${file.separator}${ancestor:virtualhost:name}";
-    String CONNECTION_THREAD_POOL_MINIMUM       = "connectionThreadPoolMinimum";
-    String CONNECTION_THREAD_POOL_MAXIMUM       = "connectionThreadPoolMaximum";
+    String CONNECTION_THREAD_POOL_SIZE          = "connectionThreadPoolSize";
     String CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "connectionThreadPoolKeepAliveTimeout";
 
     @ManagedContextDefault( name = VIRTUALHOST_WORK_DIR_VAR)

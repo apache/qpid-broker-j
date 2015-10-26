@@ -281,7 +281,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             }
         }
 
-        if (changedAttributes.contains(CONNECTION_THREAD_POOL_MAXIMUM) || changedAttributes.contains(CONNECTION_THREAD_POOL_MINIMUM))
+        if (changedAttributes.contains(CONNECTION_THREAD_POOL_SIZE))
         {
             validateConnectionThreadPoolSettings(virtualHost);
         }

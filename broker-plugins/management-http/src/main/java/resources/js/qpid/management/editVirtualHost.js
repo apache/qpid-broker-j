@@ -45,13 +45,13 @@ define(["dojox/html/entities",
         "dojo/domReady!"],
   function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
   {
-    var fields = [ "name", "connectionThreadPoolMaximum", "connectionThreadPoolMinimum", "queue.deadLetterQueueEnabled",
+    var fields = [ "name", "connectionThreadPoolSize", "queue.deadLetterQueueEnabled",
                    "storeTransactionIdleTimeoutWarn", "storeTransactionIdleTimeoutClose", "storeTransactionOpenTimeoutWarn",
                    "storeTransactionOpenTimeoutClose", "housekeepingCheckPeriod", "housekeepingThreadCount"];
     var numericFieldNames = ["storeTransactionIdleTimeoutWarn", "storeTransactionIdleTimeoutClose",
                              "storeTransactionOpenTimeoutWarn", "storeTransactionOpenTimeoutClose",
                              "housekeepingCheckPeriod", "housekeepingThreadCount",
-                             "connectionThreadPoolMaximum", "connectionThreadPoolMinimum"];
+                             "connectionThreadPoolSize"];
 
 
     var virtualHostEditor =
