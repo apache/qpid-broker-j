@@ -90,6 +90,9 @@ class RedirectingVirtualHostImpl
     private int _housekeepingThreadCount;
 
     @ManagedAttributeField
+    private int _numberOfSelectors;
+
+    @ManagedAttributeField
     private int _connectionThreadPoolSize;
 
     @ManagedAttributeField

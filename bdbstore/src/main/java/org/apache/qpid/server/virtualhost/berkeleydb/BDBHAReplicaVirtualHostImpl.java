@@ -93,6 +93,9 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     private int _connectionThreadPoolSize;
 
     @ManagedAttributeField
+    private int _numberOfSelectors;
+
+    @ManagedAttributeField
     private List<String> _enabledConnectionValidators;
 
     @ManagedAttributeField
