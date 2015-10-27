@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.bind.tuple.LongBinding;
 import com.sleepycat.je.Cursor;
@@ -101,6 +100,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
 
     private boolean _limitBusted;
     private long _totalStoreSize;
+    private final Random _lockConflictRandom = new Random();
 
     @Override
     public void upgradeStoreStructure() throws StoreException
@@ -216,8 +216,6 @@ public abstract class AbstractBDBMessageStore implements MessageStore
     {
         boolean complete = false;
         Transaction tx = null;
-
-        Random rand = null;
         int attempts = 0;
         try
         {
@@ -274,30 +272,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                                                                              + messageId, e);
                     }
 
-
-                    getLogger().warn("Lock timeout exception. Retrying (attempt {} of {} ", (attempts + 1), LOCK_RETRY_ATTEMPTS,  e);
-
-                    if(++attempts < LOCK_RETRY_ATTEMPTS)
-                    {
-                        if(rand == null)
-                        {
-                            rand = new Random();
-                        }
-
-                        try
-                        {
-                            Thread.sleep(500l + (long)(500l * rand.nextDouble()));
-                        }
-                        catch (InterruptedException e1)
-                        {
-
-                        }
-                    }
-                    else
-                    {
-                        // rethrow the lock conflict exception since we could not solve by retrying
-                        throw getEnvironmentFacade().handleDatabaseException("Cannot remove messages", e);
-                    }
+                    sleepOrThrowOnLockConflict(attempts++, "Cannot remove messages", e);
                 }
             }
             while(!complete);
@@ -446,17 +421,30 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             DatabaseEntry value = new DatabaseEntry();
             MessageMetaDataBinding valueBinding = MessageMetaDataBinding.getInstance();
 
-            while (cursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
+            int attempts = 0;
+            boolean completed = false;
+            do
             {
-                long messageId = LongBinding.entryToLong(key);
-                StorableMessageMetaData metaData = valueBinding.entryToObject(value);
-                StoredBDBMessage message = new StoredBDBMessage(messageId, metaData, true);
-
-                if (!handler.handle(message))
+                try
                 {
-                    break;
+                    while (cursor.getNext(key, value, LockMode.RMW) == OperationStatus.SUCCESS)
+                    {
+                        long messageId = LongBinding.entryToLong(key);
+                        StorableMessageMetaData metaData = valueBinding.entryToObject(value);
+                        StoredBDBMessage message = new StoredBDBMessage(messageId, metaData, true);
+                        if (!handler.handle(message))
+                        {
+                            break;
+                        }
+                    }
+                    completed = true;
+                }
+                catch (LockConflictException e)
+                {
+                    sleepOrThrowOnLockConflict(attempts++, "Cannot visit messages", e);
                 }
             }
+            while (!completed);
         }
         catch (RuntimeException e)
         {
@@ -478,6 +466,26 @@ public abstract class AbstractBDBMessageStore implements MessageStore
         }
     }
 
+    private void sleepOrThrowOnLockConflict(int attempts, String throwMessage, LockConflictException cause)
+    {
+        if (attempts < LOCK_RETRY_ATTEMPTS)
+        {
+            getLogger().info("Lock conflict exception. Retrying (attempt {} of {})", attempts, LOCK_RETRY_ATTEMPTS);
+            try
+            {
+                Thread.sleep(500l + (long)(500l * _lockConflictRandom.nextDouble()));
+            }
+            catch (InterruptedException ie)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
+        else
+        {
+            // rethrow the lock conflict exception since we could not solve by retrying
+            throw getEnvironmentFacade().handleDatabaseException(throwMessage, cause);
+        }
+    }
 
     private StoredBDBMessage<?> getMessageInternal(long messageId, EnvironmentFacade environmentFacade)
     {
@@ -1487,26 +1495,45 @@ public abstract class AbstractBDBMessageStore implements MessageStore
                 QueueEntryBinding keyBinding = QueueEntryBinding.getInstance();
                 keyBinding.objectToEntry(new QueueEntryKey(queue.getId(),0l), key);
 
-                if(cursor.getSearchKeyRange(key,value,LockMode.DEFAULT) == OperationStatus.SUCCESS)
+                boolean searchCompletedSuccessfully = false;
+                int attempts = 0;
+                boolean completed = false;
+                do
                 {
-                    QueueEntryKey entry = keyBinding.entryToObject(key);
-                    if(entry.getQueueId().equals(queue.getId()))
+                    try
                     {
-                        entries.add(entry);
+                        if (!searchCompletedSuccessfully && (searchCompletedSuccessfully = cursor.getSearchKeyRange(key,value, LockMode.DEFAULT) == OperationStatus.SUCCESS))
+                        {
+                            QueueEntryKey entry = keyBinding.entryToObject(key);
+                            if(entry.getQueueId().equals(queue.getId()))
+                            {
+                                entries.add(entry);
+                            }
+                        }
+
+                        if (searchCompletedSuccessfully)
+                        {
+                            while(cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+                            {
+                                QueueEntryKey entry = keyBinding.entryToObject(key);
+                                if(entry.getQueueId().equals(queue.getId()))
+                                {
+                                    entries.add(entry);
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                        completed = true;
                     }
-                    while (cursor.getNext(key, value, LockMode.DEFAULT) == OperationStatus.SUCCESS)
+                    catch (LockConflictException e)
                     {
-                        entry = keyBinding.entryToObject(key);
-                        if(entry.getQueueId().equals(queue.getId()))
-                        {
-                            entries.add(entry);
-                        }
-                        else
-                        {
-                            break;
-                        }
+                        sleepOrThrowOnLockConflict(attempts++, "Cannot visit messages", e);
                     }
                 }
+                while (!completed);
             }
             catch (RuntimeException e)
             {

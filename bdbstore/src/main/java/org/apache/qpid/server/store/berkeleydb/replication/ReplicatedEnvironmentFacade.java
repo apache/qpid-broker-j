@@ -454,7 +454,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 return new ConnectionScopedRuntimeException("Underlying JE environment is being restarted", dbe);
             }
         }
-        return new StoreException("Unexpected exception occurred in replicated environment", dbe);
+        return new StoreException(contextMessage, dbe);
     }
 
     private void tryToRestartEnvironment(final DatabaseException dbe)

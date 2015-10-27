@@ -351,7 +351,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         {
             return e;
         }
-        return new StoreException("Unexpected exception occurred on store operation", e);
+        return new StoreException(contextMessage, e);
     }
 
     @Override
