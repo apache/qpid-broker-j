@@ -75,21 +75,12 @@ function createConsumerConnection(i, connectionFactory, destination, acknowledge
   };
 }
 
-function createTest(name, acknowledgeMode, deliveryMode, transport)
+function createTest(name, numberOfParticipantPairs, acknowledgeMode, deliveryMode, transport)
 {
   var test = {
     "_name": name,
     "_queues": [],
-    "_clients": [
-      {
-        "_name": "producingClient",
-        "_connections": []
-      },
-      {
-        "_name": "consumingClient",
-        "_connections": []
-      }
-    ]
+    "_clients": []
   }
 
   var connectionFactory;
@@ -108,8 +99,10 @@ function createTest(name, acknowledgeMode, deliveryMode, transport)
     var destination = "BURL:direct:////" + queueName + "?durable='true'";
     test._queues.push({"_name": destination, "_durable": true});
 
-    test._clients[0]._connections.push(createProducerConnection(i, connectionFactory, destination, acknowledgeMode, deliveryMode));
-    test._clients[1]._connections.push(createConsumerConnection(i, connectionFactory, destination, acknowledgeMode));
+    test._clients.push({"_name": "producingClient_" + i,
+                        "_connections": [ createProducerConnection(i, connectionFactory, destination, acknowledgeMode, deliveryMode) ]});
+    test._clients.push({"_name": "consumingClient_" + i,
+                        "_connections": [ createConsumerConnection(i, connectionFactory, destination, acknowledgeMode) ]});
   }
 
   return test;
@@ -117,9 +110,10 @@ function createTest(name, acknowledgeMode, deliveryMode, transport)
 
 
 var jsonObject = {
-  _tests: [createTest("persistent_transaction_plain", ACKNOWLEDGE_MODE_SESSION_TRANSACTED, DELIVERY_MODE_PERSISTENT, "PLAIN"),
-           createTest("transient_autoack_plain", ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT, "PLAIN"),
-           createTest("persistent_transaction_ssl", ACKNOWLEDGE_MODE_SESSION_TRANSACTED, DELIVERY_MODE_PERSISTENT, "SSL"),
-           createTest("transient_autoack_ssl", ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT, "SSL")]
+  _tests: [createTest("persistent_transaction_plain", numberOfParticipantPairs, ACKNOWLEDGE_MODE_SESSION_TRANSACTED, DELIVERY_MODE_PERSISTENT, "PLAIN"),
+           createTest("transient_autoack_plain", numberOfParticipantPairs, ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT, "PLAIN"),
+           createTest("persistent_transaction_ssl", numberOfParticipantPairs, ACKNOWLEDGE_MODE_SESSION_TRANSACTED, DELIVERY_MODE_PERSISTENT, "SSL"),
+           createTest("transient_autoack_ssl", numberOfParticipantPairs, ACKNOWLEDGE_MODE_AUTO_ACKNOWLEDGE, DELIVERY_MODE_TRANSIENT, "SSL")
+  ]
 };
 

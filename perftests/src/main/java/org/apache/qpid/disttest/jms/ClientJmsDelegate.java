@@ -399,6 +399,10 @@ public class ClientJmsDelegate
         try
         {
             final Session session = _testSessions.get(sessionName);
+            if (session == null)
+            {
+                throw new DistributedTestException("No test session found called: " + sessionName);
+            }
             return session.getAcknowledgeMode();
         }
         catch (final JMSException jmse)
