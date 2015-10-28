@@ -208,7 +208,7 @@ class SelectorThread extends Thread
 
 
                 final int ops = (unregisteredConnection.canRead() ? SelectionKey.OP_READ : 0)
-                                | (unregisteredConnection.waitingForWrite() ? SelectionKey.OP_WRITE : 0);
+                                | (unregisteredConnection.canWrite() ? SelectionKey.OP_WRITE : 0);
                 try
                 {
                     unregisteredConnection.getSocketChannel().register(_selector, ops, unregisteredConnection);
@@ -460,11 +460,9 @@ class SelectorThread extends Thread
         if(selectionTask != null)
         {
             final SelectionKey selectionKey = connection.getSocketChannel().keyFor(selectionTask.getSelector());
-            int expectedOps = connection.canRead() ? SelectionKey.OP_READ : 0;
-            if (connection.waitingForWrite())
-            {
-                expectedOps |= SelectionKey.OP_WRITE;
-            }
+            int expectedOps = (connection.canRead() ? SelectionKey.OP_READ : 0)
+                              | (connection.canWrite() ? SelectionKey.OP_WRITE : 0);
+
             try
             {
                 return selectionKey == null || !selectionKey.isValid() || selectionKey.interestOps() != expectedOps;

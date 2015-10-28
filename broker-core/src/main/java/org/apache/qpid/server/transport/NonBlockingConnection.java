@@ -199,10 +199,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     public boolean canRead()
     {
-        return true;
+        return _fullyWritten;
     }
 
-    public boolean waitingForWrite()
+    public boolean canWrite()
     {
         return !_fullyWritten;
     }
@@ -228,20 +228,28 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
                 _protocolEngine.setMessageAssignmentSuspended(true);
 
-                _protocolEngine.processPending();
-
-                _protocolEngine.setTransportBlockedForWriting(!doWrite());
-                boolean dataRead = doRead();
-                _fullyWritten = doWrite();
-                _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
-
-                if (dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0))
+                if (!_fullyWritten)
                 {
-                    _protocolEngine.notifyWork();
+                    _fullyWritten = doWrite();
                 }
 
-                // tell all consumer targets that it is okay to accept more
-                _protocolEngine.setMessageAssignmentSuspended(false);
+                if (_fullyWritten)
+                {
+                    _protocolEngine.processPending();
+
+                    _protocolEngine.setTransportBlockedForWriting(!doWrite());
+                    boolean dataRead = doRead();
+                    _fullyWritten = doWrite();
+                    _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
+
+                    if (dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0))
+                    {
+                        _protocolEngine.notifyWork();
+                    }
+
+                    // tell all consumer targets that it is okay to accept more
+                    _protocolEngine.setMessageAssignmentSuspended(false);
+                }
             }
             catch (IOException | ConnectionScopedRuntimeException e)
             {
