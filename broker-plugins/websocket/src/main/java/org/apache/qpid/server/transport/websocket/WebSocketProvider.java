@@ -257,6 +257,8 @@ class WebSocketProvider implements AcceptingTransport
 
             _protocolEngine = _factory.newProtocolEngine(_remoteAddress);
 
+            connection.setMaxBinaryMessageSize(0);
+
             _connectionWrapper =
                     new ConnectionWrapper(connection, _localAddress, _remoteAddress, _protocolEngine);
             _connectionWrapper.setPeerCertificate(_userCertificate);
@@ -417,13 +419,16 @@ class WebSocketProvider implements AcceptingTransport
                 tmp.dispose();
                 offset += remaining;
             }
-            try
+            if(size > 0)
             {
-                _connection.sendMessage(data,0,size);
-            }
-            catch (IOException e)
-            {
-                close();
+                try
+                {
+                    _connection.sendMessage(data, 0, size);
+                }
+                catch (IOException e)
+                {
+                    close();
+                }
             }
         }
 

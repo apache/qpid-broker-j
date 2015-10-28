@@ -272,7 +272,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
-        ((NonBlockingConnection)_network).changeScheduler(networkConnectionScheduler);
+        if(_network instanceof NonBlockingConnection)
+        {
+            ((NonBlockingConnection) _network).changeScheduler(networkConnectionScheduler);
+        }
     }
 
     public String getClientProduct()
