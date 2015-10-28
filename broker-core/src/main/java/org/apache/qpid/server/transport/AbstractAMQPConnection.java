@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
@@ -55,6 +56,7 @@ import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.adapter.SessionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -410,6 +412,20 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     public void virtualHostAssociated()
     {
         getVirtualHost().registerConnection(this);
+    }
+
+    @Override
+    public TaskExecutor getChildExecutor()
+    {
+        VirtualHost virtualHost = getVirtualHost();
+        if (virtualHost == null)
+        {
+            return super.getChildExecutor();
+        }
+        else
+        {
+            return virtualHost.getTaskExecutor();
+        }
     }
 
     @Override

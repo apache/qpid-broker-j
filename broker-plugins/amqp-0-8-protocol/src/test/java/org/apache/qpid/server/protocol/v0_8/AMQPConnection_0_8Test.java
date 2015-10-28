@@ -118,6 +118,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_virtualHost.getModel()).thenReturn(model);
         when(_virtualHost.getCategoryClass()).thenReturn(VirtualHost.class);
         when(_virtualHost.getState()).thenReturn(State.ACTIVE);
+        when(_virtualHost.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHost.getPrincipal()).thenReturn(virtualHostPrincipal);
         when(_virtualHost.getContextValue(Integer.class, Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE)).thenReturn(1024);
         when(_virtualHost.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(1024l);
