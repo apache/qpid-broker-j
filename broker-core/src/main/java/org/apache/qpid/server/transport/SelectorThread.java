@@ -490,6 +490,21 @@ class SelectorThread extends Thread
 
     }
 
+    public void returnConnectionToSelector(final NonBlockingConnection connection)
+    {
+        if(selectionInterestRequiresUpdate(connection))
+        {
+            SelectionTask selectionTask = connection.getSelectionTask();
+            if(selectionTask == null)
+            {
+                throw new IllegalStateException("returnConnectionToSelector should only be called with connections that are currently assigned a selector task");
+            }
+            selectionTask.getUnregisteredConnections().add(connection);
+            selectionTask.wakeup();
+        }
+
+    }
+
     private SelectionTask getNextSelectionTask()
     {
         int index;

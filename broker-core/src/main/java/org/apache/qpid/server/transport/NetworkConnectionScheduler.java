@@ -134,7 +134,7 @@ public class NetworkConnectionScheduler
                         }
                         else
                         {
-                            _selectorThread.addConnection(connection);
+                            _selectorThread.returnConnectionToSelector(connection);
                         }
                     }
                 }
