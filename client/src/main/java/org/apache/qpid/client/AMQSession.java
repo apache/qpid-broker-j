@@ -2225,9 +2225,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
     /**
      * Called to mark the session as being closed. Useful when the session needs to be made invalid, e.g. after failover
-     * when the client has veoted resubscription.
-     * <p>
-     * The caller of this method must already hold the failover mutex.
+     * when the client has vetoed resubscription.
      */
     void markClosed()
     {

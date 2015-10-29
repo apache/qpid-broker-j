@@ -27,10 +27,13 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
-import javax.naming.NamingException;
+import javax.jms.Queue;
 import org.apache.qpid.AMQConnectionClosedException;
 import org.apache.qpid.AMQDisconnectedException;
 import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.client.BasicMessageConsumer;
+import org.apache.qpid.client.BasicMessageProducer;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.transport.ConnectionException;
 
@@ -49,6 +52,8 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
     private boolean _isExternalBroker;
     private final RecordingExceptionListener _recordingExceptionListener = new RecordingExceptionListener();
     private Session _session;
+    private MessageConsumer _consumer;
+    private MessageProducer _producer;
 
     @Override
     protected void setUp() throws Exception
@@ -56,8 +61,12 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
         super.setUp();
 
         _connection = getConnection();
+        _connection.start();
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _connection.setExceptionListener(_recordingExceptionListener);
+        Queue queue = _session.createTemporaryQueue();
+        _consumer = _session.createConsumer(queue);
+        _producer = _session.createProducer(queue);
 
         _isExternalBroker = isExternalBroker();
     }
@@ -66,13 +75,13 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
     {
         final Class<? extends Exception> expectedLinkedException = isBroker010() ? ConnectionException.class : AMQConnectionClosedException.class;
 
-        assertConnectionOpen();
+        assertJmsObjectsOpen();
 
         stopBroker();
 
         JMSException exception = _recordingExceptionListener.awaitException(10000);
         assertConnectionCloseWasReported(exception, expectedLinkedException);
-        assertConnectionClosed();
+        assertJmsObjectsClosed();
 
         ensureCanCloseWithoutException();
     }
@@ -86,13 +95,13 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
             return;
         }
 
-        assertConnectionOpen();
+        assertJmsObjectsOpen();
 
         killBroker();
 
         JMSException exception = _recordingExceptionListener.awaitException(10000);
         assertConnectionCloseWasReported(exception, expectedLinkedException);
-        assertConnectionClosed();
+        assertJmsObjectsClosed();
 
         ensureCanCloseWithoutException();
     }
@@ -117,14 +126,20 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
         assertEquals("Unexpected linked exception", linkedExceptionClass, exception.getLinkedException().getClass());
     }
 
-    private void assertConnectionClosed()
+    private void assertJmsObjectsClosed()
     {
-        assertTrue("Connection should be marked as closed", ((AMQConnection)_connection).isClosed());
+        assertTrue("Connection should be marked as closed", ((AMQConnection) _connection).isClosed());
+        assertTrue("Session should be marked as closed", ((AMQSession) _session).isClosed());
+        assertTrue("Producer should be marked as closed", ((BasicMessageProducer) _producer).isClosed());
+        assertTrue("Consumer should be marked as closed", ((BasicMessageConsumer) _consumer).isClosed());
     }
 
-    private void assertConnectionOpen()
+    private void assertJmsObjectsOpen()
     {
-        assertFalse("Connection should not be marked as closed", ((AMQConnection)_connection).isClosed());
+        assertFalse("Connection should not be marked as closed", ((AMQConnection) _connection).isClosed());
+        assertFalse("Session should not be marked as closed", ((AMQSession) _session).isClosed());
+        assertFalse("Producer should not be marked as closed", ((BasicMessageProducer) _producer).isClosed());
+        assertFalse("Consumer should not be marked as closed", ((BasicMessageConsumer) _consumer).isClosed());
     }
 
     private final class RecordingExceptionListener implements ExceptionListener
@@ -162,7 +177,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
         }
     }
 
-    public void testNoDeliveryAfterBrokerClose() throws JMSException, NamingException, InterruptedException
+    public void testNoDeliveryAfterBrokerClose() throws Exception
     {
 
         Listener listener = new Listener();

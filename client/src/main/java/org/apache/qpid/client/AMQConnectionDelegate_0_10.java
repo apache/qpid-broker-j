@@ -365,6 +365,10 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
 
         }
 
+        for(AMQSession<?,?> session :  _conn.getSessions().values())
+        {
+            session.markClosed();
+        }
 
         _conn.setClosed();
 
