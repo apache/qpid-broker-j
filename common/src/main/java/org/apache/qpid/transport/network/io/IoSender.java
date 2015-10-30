@@ -95,11 +95,11 @@ public final class IoSender implements Runnable, ByteBufferSender
         }
         catch(Exception e)
         {
-            throw new Error("Error creating IOSender thread",e);
+            throw new RuntimeException("Error creating IOSender thread", e);
         }
 
         senderThread.setDaemon(true);
-        senderThread.setName(String.format("IoSndr-%s", _remoteSocketAddress));
+        senderThread.setName(String.format("IoSndr-%d-%s", socket.getLocalPort(), _remoteSocketAddress));
     }
 
     public void initiate()

@@ -79,14 +79,21 @@ public class IoNetworkTransport
 
                 if (LOGGER.isDebugEnabled())
                 {
-                    LOGGER.debug("SO_RCVBUF : " + socket.getReceiveBufferSize());
-                    LOGGER.debug("SO_SNDBUF : " + socket.getSendBufferSize());
-                    LOGGER.debug("TCP_NODELAY : " + socket.getTcpNoDelay());
+                    LOGGER.debug("Socket options SO_RCVBUF : {}, SO_SNDBUF : {}, TCP_NODELAY : {}",
+                                 socket.getReceiveBufferSize(),
+                                 socket.getSendBufferSize(),
+                                 socket.getTcpNoDelay());
                 }
 
                 InetAddress address = InetAddress.getByName(settings.getHost());
 
-                socket.connect(new InetSocketAddress(address, settings.getPort()), settings.getConnectTimeout());
+                InetSocketAddress socketAddress = new InetSocketAddress(address, settings.getPort());
+                socket.connect(socketAddress, settings.getConnectTimeout());
+
+                LOGGER.debug("Socket connection to {} established. Local port {}",
+                             socket.getRemoteSocketAddress(),
+                             socket.getLocalPort());
+
             }
             catch (IOException e)
             {
