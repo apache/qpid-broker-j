@@ -20,6 +20,7 @@
 package org.apache.qpid.server.transport;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -164,9 +165,44 @@ class SelectorThread extends Thread
             {
                 if(key.isAcceptable())
                 {
-                    NonBlockingNetworkTransport transport = (NonBlockingNetworkTransport) key.attachment();
-                    // todo - should we schedule this rather than running in this thread?
-                    transport.acceptSocketChannel((ServerSocketChannel)key.channel());
+                    final NonBlockingNetworkTransport transport = (NonBlockingNetworkTransport) key.attachment();
+                    final ServerSocketChannel channel = (ServerSocketChannel) key.channel();
+                    final SocketAddress localSocketAddress = channel.socket().getLocalSocketAddress();
+
+                    try
+                    {
+                        channel.register(_selector, 0);
+                    }
+                    catch (ClosedChannelException e)
+                    {
+                        LOGGER.error("Failed to register selector on accepting port {} ",
+                                     localSocketAddress, e);
+                    }
+
+                    _workQueue.add(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            try
+                            {
+                                transport.acceptSocketChannel(channel);
+                            }
+                            finally
+                            {
+                                try
+                                {
+                                    channel.register(_selector, SelectionKey.OP_ACCEPT, transport);
+                                    wakeup();
+                                }
+                                catch (ClosedChannelException e)
+                                {
+                                    LOGGER.error("Failed to register selector on accepting port {}",
+                                                 localSocketAddress, e);
+                                }
+                            }
+                        }
+                    });
                 }
                 else
                 {

@@ -22,6 +22,7 @@ package org.apache.qpid.server.transport;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -131,58 +132,61 @@ public class NonBlockingNetworkTransport
         boolean success = false;
         try
         {
-            socketChannel = serverSocketChannel.accept();
 
-            final MultiVersionProtocolEngine engine =
-                    _factory.newProtocolEngine(socketChannel.socket().getRemoteSocketAddress());
-
-            if(engine != null)
+            while ((socketChannel = serverSocketChannel.accept()) != null)
             {
-                socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, _port.isTcpNoDelay());
-                socketChannel.socket().setSoTimeout(1000 * HANDSHAKE_TIMEOUT);
+                SocketAddress remoteSocketAddress = socketChannel.socket().getRemoteSocketAddress();
+                final MultiVersionProtocolEngine engine =
+                        _factory.newProtocolEngine(remoteSocketAddress);
 
-                final int bufferSize = _port.getNetworkBufferSize();
+                if (engine != null)
+                {
+                    socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, _port.isTcpNoDelay());
+                    socketChannel.socket().setSoTimeout(1000 * HANDSHAKE_TIMEOUT);
 
-                socketChannel.setOption(StandardSocketOptions.SO_SNDBUF, bufferSize);
-                socketChannel.setOption(StandardSocketOptions.SO_RCVBUF, bufferSize);
+                    final int bufferSize = _port.getNetworkBufferSize();
 
-                socketChannel.configureBlocking(false);
+                    socketChannel.setOption(StandardSocketOptions.SO_SNDBUF, bufferSize);
+                    socketChannel.setOption(StandardSocketOptions.SO_RCVBUF, bufferSize);
 
-                AggregateTicker aggregateTicker = engine.getAggregateTicker();
+                    socketChannel.configureBlocking(false);
 
-                final IdleTimeoutTicker idleTimeoutTicker = new IdleTimeoutTicker(engine, _timeout);
-                aggregateTicker.addTicker(idleTimeoutTicker);
+                    AggregateTicker aggregateTicker = engine.getAggregateTicker();
 
-                NonBlockingConnection connection =
-                        new NonBlockingConnection(socketChannel,
-                                                  engine,
-                                                  _encryptionSet,
-                                                  new Runnable()
-                                                  {
+                    final IdleTimeoutTicker idleTimeoutTicker = new IdleTimeoutTicker(engine, _timeout);
+                    aggregateTicker.addTicker(idleTimeoutTicker);
 
-                                                      @Override
-                                                      public void run()
+                    NonBlockingConnection connection =
+                            new NonBlockingConnection(socketChannel,
+                                                      engine,
+                                                      _encryptionSet,
+                                                      new Runnable()
                                                       {
-                                                          engine.encryptedTransport();
-                                                      }
-                                                  },
-                                                  _scheduler,
-                                                  _port);
 
-                engine.setNetworkConnection(connection);
-                connection.setMaxReadIdle(HANDSHAKE_TIMEOUT);
+                                                          @Override
+                                                          public void run()
+                                                          {
+                                                              engine.encryptedTransport();
+                                                          }
+                                                      },
+                                                      _scheduler,
+                                                      _port);
 
-                idleTimeoutTicker.setConnection(connection);
+                    engine.setNetworkConnection(connection);
+                    connection.setMaxReadIdle(HANDSHAKE_TIMEOUT);
 
-                connection.start();
+                    idleTimeoutTicker.setConnection(connection);
 
-                _scheduler.addConnection(connection);
+                    connection.start();
 
-                success = true;
-            }
-            else
-            {
-                LOGGER.error("No Engine available.");
+                    _scheduler.addConnection(connection);
+
+                    success = true;
+                }
+                else
+                {
+                    LOGGER.error("No Engine available.");
+                }
             }
         }
         catch (IOException e)
