@@ -478,6 +478,7 @@ public abstract class AbstractBDBMessageStore implements MessageStore
             catch (InterruptedException ie)
             {
                 Thread.currentThread().interrupt();
+                throw getEnvironmentFacade().handleDatabaseException(throwMessage, cause);
             }
         }
         else
