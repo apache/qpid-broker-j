@@ -90,9 +90,9 @@ public class IoNetworkTransport
                 InetSocketAddress socketAddress = new InetSocketAddress(address, settings.getPort());
                 socket.connect(socketAddress, settings.getConnectTimeout());
 
-                LOGGER.debug("Socket connection to {} established. Local port {}",
-                             socket.getRemoteSocketAddress(),
-                             socket.getLocalPort());
+                LOGGER.debug("Socket connection from {} to {} established",
+                             socket.getLocalSocketAddress(),
+                             socket.getRemoteSocketAddress());
 
             }
             catch (IOException e)

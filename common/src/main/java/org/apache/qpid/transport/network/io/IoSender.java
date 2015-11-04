@@ -62,7 +62,7 @@ public final class IoSender implements Runnable, ByteBufferSender
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final Thread senderThread;
     private IoReceiver _receiver;
-    private final String _remoteSocketAddress;
+    private final String _socketEndpointDescription;
     private static final boolean shutdownBroken;
 
     static
@@ -77,7 +77,7 @@ public final class IoSender implements Runnable, ByteBufferSender
         this.socket = socket;
         this.buffer = new byte[pof2(bufferSize)]; // buffer size must be a power of 2
         this.timeout = timeout;
-        _remoteSocketAddress = socket.getRemoteSocketAddress().toString();
+        _socketEndpointDescription = String.format("%s-%s", socket.getLocalSocketAddress(), socket.getRemoteSocketAddress());
 
         try
         {
@@ -99,7 +99,7 @@ public final class IoSender implements Runnable, ByteBufferSender
         }
 
         senderThread.setDaemon(true);
-        senderThread.setName(String.format("IoSndr-%d-%s", socket.getLocalPort(), _remoteSocketAddress));
+        senderThread.setName(String.format("IoSndr-%s", _socketEndpointDescription));
     }
 
     public void initiate()
@@ -123,7 +123,8 @@ public final class IoSender implements Runnable, ByteBufferSender
 
         if(!senderThread.isAlive())
         {
-            throw new SenderException(String.format("sender thread for socket %s is not alive", _remoteSocketAddress));
+            throw new SenderException(String.format("sender thread for socket %s is not alive",
+                                                    _socketEndpointDescription));
         }
 
         final int size = buffer.length;
@@ -160,8 +161,10 @@ public final class IoSender implements Runnable, ByteBufferSender
                     {
                         try
                         {
-                            LOGGER.error("write timed out for socket {}: head {}, tail {}", _remoteSocketAddress, head, tail);
-                            throw new SenderException(String.format("write timed out for socket %s: head %d, tail %d",  _remoteSocketAddress, head, tail));
+                            LOGGER.error("write timed out for socket {}: head {}, tail {}",
+                                         _socketEndpointDescription, head, tail);
+                            throw new SenderException(String.format("write timed out for socket %s: head %d, tail %d",
+                                                                    _socketEndpointDescription, head, tail));
                         }
                         finally
                         {
@@ -249,7 +252,7 @@ public final class IoSender implements Runnable, ByteBufferSender
             }
             catch(RuntimeException e)
             {
-                LOGGER.error("Exception closing receiver for socket {}", _remoteSocketAddress, e);
+                LOGGER.error("Exception closing receiver for socket {}", _socketEndpointDescription, e);
                 throw new SenderException(e.getMessage(), e);
             }
         }
@@ -311,7 +314,7 @@ public final class IoSender implements Runnable, ByteBufferSender
             }
             catch (IOException e)
             {
-                LOGGER.info("Exception in thread sending to '{}' : {}", _remoteSocketAddress, e.getMessage());
+                LOGGER.info("Exception in thread sending for socket '{}' : {}", _socketEndpointDescription, e.getMessage());
                 exception = e;
                 close(false, false);
                 break;
@@ -353,13 +356,15 @@ public final class IoSender implements Runnable, ByteBufferSender
                 senderThread.join(timeout);
                 if (senderThread.isAlive())
                 {
-                    LOGGER.error("join timed out for socket {} to stop", _remoteSocketAddress);
-                    throw new SenderException(String.format("join timed out for socket %s to stop", _remoteSocketAddress));
+                    LOGGER.error("join timed out for socket {} to stop", _socketEndpointDescription);
+                    throw new SenderException(String.format("join timed out for socket %s to stop",
+                                                            _socketEndpointDescription));
                 }
             }
             catch (InterruptedException e)
             {
-                LOGGER.error("interrupted whilst waiting for sender thread for socket {} to stop", _remoteSocketAddress);
+                LOGGER.error("interrupted whilst waiting for sender thread for socket {} to stop",
+                             _socketEndpointDescription);
                 throw new SenderException(e);
             }
         }
@@ -369,7 +374,7 @@ public final class IoSender implements Runnable, ByteBufferSender
     {
         if (closed.get())
         {
-            throw new SenderClosedException(String.format("sender for socket %s is closed", _remoteSocketAddress), exception);
+            throw new SenderClosedException(String.format("sender for socket %s is closed", _socketEndpointDescription), exception);
         }
     }
 }
