@@ -52,7 +52,7 @@ public class StateChangeListenerEntry<T, E extends Enum>
 
     public void add(final StateChangeListenerEntry<T, E> entry)
     {
-        if(!entry.equals(_listener) && !NEXT.compareAndSet(this, null, entry))
+        if(!entry.getListener().equals(_listener) && !NEXT.compareAndSet(this, null, entry))
         {
             NEXT.get(this).add(entry);
         }
