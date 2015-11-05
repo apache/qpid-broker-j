@@ -122,4 +122,7 @@ public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparabl
 
     void addTicker(Ticker ticker);
     void removeTicker(Ticker ticker);
+
+    void notifyConsumerTargetCurrentStates();
+    void ensureConsumersNoticedStateChange();
 }

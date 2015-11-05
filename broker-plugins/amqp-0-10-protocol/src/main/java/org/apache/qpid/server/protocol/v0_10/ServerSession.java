@@ -546,7 +546,7 @@ public class ServerSession extends Session
                              });
     }
 
-    public Collection<ConsumerTarget_0_10> getSubscriptions()
+    Collection<ConsumerTarget_0_10> getSubscriptions()
     {
         return _subscriptions.values();
     }
@@ -1232,6 +1232,33 @@ public class ServerSession extends Session
     public void removeTicker(final Ticker ticker)
     {
         getConnection().getAmqpConnection().getAggregateTicker().removeTicker(ticker);
+    }
+
+    @Override
+    public void notifyConsumerTargetCurrentStates()
+    {
+        Collection<ConsumerTarget_0_10> consumerTargets = getSubscriptions();
+        for(ConsumerTarget_0_10 consumerTarget: consumerTargets)
+        {
+            consumerTarget.notifyCurrentState();
+        }
+    }
+
+    @Override
+    public void ensureConsumersNoticedStateChange()
+    {
+        Collection<ConsumerTarget_0_10> consumerTargets = getSubscriptions();
+        for(ConsumerTarget_0_10 consumerTarget: consumerTargets)
+        {
+            try
+            {
+                consumerTarget.getSendLock();
+            }
+            finally
+            {
+                consumerTarget.releaseSendLock();
+            }
+        }
     }
 
 

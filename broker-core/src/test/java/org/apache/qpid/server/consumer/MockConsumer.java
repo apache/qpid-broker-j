@@ -499,6 +499,18 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
+        public void notifyConsumerTargetCurrentStates()
+        {
+
+        }
+
+        @Override
+        public void ensureConsumersNoticedStateChange()
+        {
+
+        }
+
+        @Override
         public int compareTo(final AMQSessionModel o)
         {
             return 0;

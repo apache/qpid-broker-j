@@ -45,9 +45,7 @@ import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -69,9 +67,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     private final ServerConnection _connection;
 
     private volatile boolean _transportBlockedForWriting;
-
-    private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
-
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
     private ServerDisassembler _disassembler;
@@ -125,38 +120,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
                 return null;
             }
         }, getAccessControllerContext());
-    }
-
-    @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        Thread lock = _messageAssignmentSuspended.get();
-        return lock != null && _messageAssignmentSuspended.get() != Thread.currentThread();
-    }
-
-    @Override
-    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
-    {
-        _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
-
-        for(AMQSessionModel<?> session : _connection.getSessionModels())
-        {
-            for (Consumer<?> consumer : session.getConsumers())
-            {
-                ConsumerImpl consumerImpl = (ConsumerImpl) consumer;
-                if (!messageAssignmentSuspended)
-                {
-                    consumerImpl.getTarget().notifyCurrentState();
-                }
-                else
-                {
-                    // ensure that by the time the method returns, no consumer can be in the process of
-                    // delivering a message.
-                    consumerImpl.getSendLock();
-                    consumerImpl.releaseSendLock();
-                }
-            }
-        }
     }
 
 

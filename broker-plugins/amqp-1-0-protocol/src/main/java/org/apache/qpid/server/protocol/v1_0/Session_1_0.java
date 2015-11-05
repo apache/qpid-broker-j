@@ -87,7 +87,6 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.queue.AMQQueue;
-import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -961,6 +960,32 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     public void removeTicker(final Ticker ticker)
     {
         getConnection().getAmqpConnection().getAggregateTicker().removeTicker(ticker);
+    }
+
+    @Override
+    public void notifyConsumerTargetCurrentStates()
+    {
+        for(SendingLink_1_0 link : _sendingLinks)
+        {
+            link.getConsumerTarget().notifyCurrentState();
+        }
+    }
+
+    @Override
+    public void ensureConsumersNoticedStateChange()
+    {
+        for(SendingLink_1_0 link : _sendingLinks)
+        {
+            ConsumerTarget_1_0 consumerTarget = link.getConsumerTarget();
+            try
+            {
+                consumerTarget.getSendLock();
+            }
+            finally
+            {
+                consumerTarget.releaseSendLock();
+            }
+        }
     }
 
     private void consumerAdded(Consumer<?> consumer)

@@ -1181,7 +1181,7 @@ public class AMQChannel
             if (wasSuspended)
             {
                 // may need to deliver queued messages
-                for (ConsumerTarget_0_8 s : _tag2SubscriptionTargetMap.values())
+                for (ConsumerTarget_0_8 s : getConsumerTargets())
                 {
                     for(ConsumerImpl sub : s.getConsumers())
                     {
@@ -1200,17 +1200,7 @@ public class AMQChannel
             if (!wasSuspended)
             {
                 // may need to deliver queued messages
-                for (ConsumerTarget_0_8 s : _tag2SubscriptionTargetMap.values())
-                {
-                    try
-                    {
-                        s.getSendLock();
-                    }
-                    finally
-                    {
-                        s.releaseSendLock();
-                    }
-                }
+                ensureConsumersNoticedStateChange();
             }
 
 
@@ -1281,11 +1271,7 @@ public class AMQChannel
         // message assignment suspended logic in NBC.
 
         // ensure all subscriptions have seen the change to the channel state
-        for(ConsumerTarget_0_8 sub : _tag2SubscriptionTargetMap.values())
-        {
-            sub.getSendLock();
-            sub.releaseSendLock();
-        }
+        ensureConsumersNoticedStateChange();
 
         try
         {
@@ -1320,7 +1306,7 @@ public class AMQChannel
         if(requiresSuspend)
         {
             _suspended.set(false);
-            for(ConsumerTarget_0_8 target : _tag2SubscriptionTargetMap.values())
+            for(ConsumerTarget_0_8 target : getConsumerTargets())
             {
                 for(ConsumerImpl sub : target.getConsumers())
                 {
@@ -3776,7 +3762,7 @@ public class AMQChannel
         boolean consumerListNeedsRefreshing;
         if(_consumersWithPendingWork.isEmpty())
         {
-            _consumersWithPendingWork.addAll(_tag2SubscriptionTargetMap.values());
+            _consumersWithPendingWork.addAll(getConsumerTargets());
             consumerListNeedsRefreshing = false;
         }
         else
@@ -3812,5 +3798,35 @@ public class AMQChannel
     public void removeTicker(final Ticker ticker)
     {
         getConnection().getAggregateTicker().removeTicker(ticker);
+    }
+
+    @Override
+    public void notifyConsumerTargetCurrentStates()
+    {
+        for(ConsumerTarget_0_8 consumerTarget : getConsumerTargets())
+        {
+            consumerTarget.notifyCurrentState();
+        }
+    }
+
+    @Override
+    public void ensureConsumersNoticedStateChange()
+    {
+        for (ConsumerTarget_0_8 consumerTarget : getConsumerTargets())
+        {
+            try
+            {
+                consumerTarget.getSendLock();
+            }
+            finally
+            {
+                consumerTarget.releaseSendLock();
+            }
+        }
+    }
+
+    private Collection<ConsumerTarget_0_8> getConsumerTargets()
+    {
+        return _tag2SubscriptionTargetMap.values();
     }
 }

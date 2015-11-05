@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
 
@@ -99,6 +100,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
     private volatile AccessControlContext _accessControllerContext;
+
+    private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   NetworkConnection network,
@@ -551,6 +554,31 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     public AbstractAMQPConnection<?> getUnderlyingConnection()
     {
         return this;
+    }
+
+    @Override
+    public boolean isMessageAssignmentSuspended()
+    {
+        Thread lock = _messageAssignmentSuspended.get();
+        return lock != null && _messageAssignmentSuspended.get() != Thread.currentThread();
+    }
+
+    @Override
+    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
+    {
+        _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
+
+        for(AMQSessionModel<?> session : getSessionModels())
+        {
+            if (messageAssignmentSuspended)
+            {
+                session.ensureConsumersNoticedStateChange();
+            }
+            else
+            {
+                session.notifyConsumerTargetCurrentStates();
+            }
+        }
     }
 
     protected void markTransportClosed()

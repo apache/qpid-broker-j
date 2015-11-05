@@ -178,8 +178,6 @@ public class AMQPConnection_0_8
     private long _maxMessageSize;
     private volatile boolean _transportBlockedForWriting;
 
-    private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
-
     public AMQPConnection_0_8(Broker<?> broker,
                               NetworkConnection network,
                               AmqpPort<?> port,
@@ -218,37 +216,6 @@ public class AMQPConnection_0_8
             }
         });
         _closeWhenNoRoute = getBroker().getConnection_closeWhenNoRoute();
-    }
-
-    @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        Thread lock = _messageAssignmentSuspended.get();
-        return lock != null && _messageAssignmentSuspended.get() != Thread.currentThread();
-    }
-
-    @Override
-    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
-    {
-        _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
-        for(AMQSessionModel<?> session : getSessionModels())
-        {
-            for (Consumer<?> consumer : session.getConsumers())
-            {
-                ConsumerImpl consumerImpl = (ConsumerImpl) consumer;
-                if (!messageAssignmentSuspended)
-                {
-                    consumerImpl.getTarget().notifyCurrentState();
-                }
-                else
-                {
-                    // ensure that by the time the method returns, no consumer can be in the process of
-                    // delivering a message.
-                    consumerImpl.getSendLock();
-                    consumerImpl.releaseSendLock();
-                }
-            }
-        }
     }
 
     private <T> T runAsSubject(PrivilegedAction<T> action)

@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.security.auth.Subject;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
@@ -61,9 +60,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -144,10 +141,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
        }
 
     private State _state = State.A;
-
-    private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
-
-
 
 
     public AMQPConnection_1_0(final Broker<?> broker, final NetworkConnection network,
@@ -269,39 +262,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         headerResponse = SASL_LAYER_HEADER;
         return headerResponse;
     }
-
-    @Override
-    public boolean isMessageAssignmentSuspended()
-    {
-        Thread lock = _messageAssignmentSuspended.get();
-        return lock != null && _messageAssignmentSuspended.get() != Thread.currentThread();
-    }
-
-    @Override
-    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
-    {
-        _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
-
-        for(AMQSessionModel<?> session : _connection.getSessionModels())
-        {
-            for(Consumer<?> consumer : session.getConsumers())
-            {
-                ConsumerImpl consumerImpl = (ConsumerImpl) consumer;
-                if (!messageAssignmentSuspended)
-                {
-                    consumerImpl.getTarget().notifyCurrentState();
-                }
-                else
-                {
-                    // ensure that by the time the method returns, no consumer can be in the process of
-                    // delivering a message.
-                    consumerImpl.getSendLock();
-                    consumerImpl.releaseSendLock();
-                }
-            }
-        }
-    }
-
 
     public void writerIdle()
     {
