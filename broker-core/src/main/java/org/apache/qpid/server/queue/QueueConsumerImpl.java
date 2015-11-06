@@ -95,7 +95,7 @@ class QueueConsumerImpl
     private final ConsumerTarget _target;
     private final StateChangeListener<ConsumerTarget, ConsumerTarget.State> _listener;
     private volatile QueueContext _queueContext;
-    private StateChangeListener<? super QueueConsumerImpl, State> _stateListener = new StateChangeListener<QueueConsumerImpl, State>()
+    private volatile StateChangeListener<? super QueueConsumerImpl, State> _stateListener = new StateChangeListener<QueueConsumerImpl, State>()
     {
         public void stateChanged(QueueConsumerImpl sub, State oldState, State newState)
         {
