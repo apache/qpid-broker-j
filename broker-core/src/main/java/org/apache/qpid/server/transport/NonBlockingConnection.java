@@ -274,8 +274,17 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             }
             catch (IOException | ConnectionScopedRuntimeException e)
             {
-                LOGGER.info("Exception performing I/O for thread '" + _remoteSocketAddress + "': " + e);
-                LOGGER.debug("Closing " + _remoteSocketAddress);
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.debug("Exception performing I/O for connection '{}'",
+                                 _remoteSocketAddress, e);
+                }
+                else
+                {
+                    LOGGER.info("Exception performing I/O for connection '{}' : {}",
+                                _remoteSocketAddress, e.getMessage());
+                }
+
                 if(_closed.compareAndSet(false,true))
                 {
                     _protocolEngine.notifyWork();

@@ -72,7 +72,6 @@ import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.OldPrepar
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.OldRecordImpl;
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.UpgradeConfiguredObjectRecord;
 import org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeFrom5To6.UpgradeUUIDBinding;
-import org.apache.qpid.server.util.MapJsonSerializer;
 
 public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
 {
@@ -276,7 +275,7 @@ public class UpgradeFrom5To6Test extends AbstractUpgradeTestCase
         assertDatabaseRecordCount(NEW_CONTENT_DB_NAME, 13);
     }
 
-    private void assertConfiguredObjects()
+    private void assertConfiguredObjects() throws Exception
     {
         Map<UUID, UpgradeConfiguredObjectRecord> configuredObjects = loadConfiguredObjects();
         assertEquals("Unexpected number of configured objects", 21, configuredObjects.size());

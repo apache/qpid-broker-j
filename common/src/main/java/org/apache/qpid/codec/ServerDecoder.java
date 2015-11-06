@@ -21,7 +21,6 @@
 package org.apache.qpid.codec;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.*;

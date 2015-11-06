@@ -74,7 +74,7 @@ public class QueueRunner implements Runnable
             {
                 runAgain = _queue.processQueue(QueueRunner.this);
             }
-            catch (ConnectionScopedRuntimeException | TransportException  e)
+            catch (ConnectionScopedRuntimeException e)
             {
                 final String errorMessage = "Problem during asynchronous delivery by " + toString();
                 if(_logger.isDebugEnabled())

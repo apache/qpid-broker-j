@@ -73,6 +73,7 @@ import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -417,10 +418,14 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                     }
             }
         }
+        catch(ConnectionScopedRuntimeException e)
+        {
+            throw e;
+        }
         catch(RuntimeException e)
         {
-            LOGGER.error("Exception while processing incoming data", e);
-            getNetwork().close();
+            LOGGER.error("Unexpected exception while processing incoming data", e);
+            throw new ConnectionScopedRuntimeException("Unexpected exception while processing incoming data", e);
         }
         finally
         {

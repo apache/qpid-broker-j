@@ -18,7 +18,7 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.util;
+package org.apache.qpid.server.store.berkeleydb.upgrade;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,9 +36,9 @@ public class MapJsonSerializerTest extends QpidTestCase
 
     }
 
-    public void testSerializeDeserialize()
+    public void testSerializeDeserialize() throws Exception
     {
-        Map<String, Object> testMap = new HashMap<String, Object>();
+        Map<String, Object> testMap = new HashMap<>();
         testMap.put("string", "Test String");
         testMap.put("integer", new Integer(10));
         testMap.put("long", new Long(Long.MAX_VALUE));

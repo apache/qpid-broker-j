@@ -21,30 +21,21 @@
 package org.apache.qpid.server.util;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ConnectionScopedRuntimeException extends RuntimeException
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionScopedRuntimeException.class);
-
-
     public ConnectionScopedRuntimeException(final String message)
     {
         super(message);
-        LOGGER.error(message);
     }
 
     public ConnectionScopedRuntimeException(final String message, final Throwable cause)
     {
         super(message, cause);
-        LOGGER.error(message,cause);
     }
 
     public ConnectionScopedRuntimeException(final Throwable cause)
     {
         super(cause);
-        LOGGER.error("Exception occurred", cause);
     }
 
 }

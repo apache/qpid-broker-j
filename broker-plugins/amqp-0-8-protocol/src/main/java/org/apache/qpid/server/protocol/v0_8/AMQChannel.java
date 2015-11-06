@@ -261,14 +261,7 @@ public class AMQChannel
             @Override
             public void doTimeoutAction(String reason)
             {
-                try
-                {
-                    closeConnection(reason);
-                }
-                catch (QpidException e)
-                {
-                    throw new ConnectionScopedRuntimeException(e);
-                }
+                _connection.sendConnectionCloseAsync(AMQConstant.RESOURCE_ERROR, reason);
             }
         }, getVirtualHost());
 
@@ -1773,15 +1766,6 @@ public class AMQChannel
     public void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose)
     {
         _transactionTimeoutHelper.checkIdleOrOpenTimes(_transaction, openWarn, openClose, idleWarn, idleClose);
-    }
-
-    /**
-     * Typically called from the HouseKeepingThread instead of the main receiver thread,
-     * therefore uses a lock to close the connection in a thread-safe manner.
-     */
-    private void closeConnection(String reason) throws QpidException
-    {
-        _connection.sendConnectionCloseAsync(AMQConstant.RESOURCE_ERROR, reason);
     }
 
     public void deadLetter(long deliveryTag)

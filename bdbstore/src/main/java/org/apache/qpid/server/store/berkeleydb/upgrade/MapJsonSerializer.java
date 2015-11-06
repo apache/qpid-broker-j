@@ -18,8 +18,9 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.util;
+package org.apache.qpid.server.store.berkeleydb.upgrade;
 
+import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Map;
 
@@ -33,38 +34,23 @@ public class MapJsonSerializer
     {
     };
 
-    private ObjectMapper _mapper;
+    private final ObjectMapper _mapper;
 
     public MapJsonSerializer()
     {
         _mapper = new ObjectMapper();
     }
 
-    public String serialize(Map<String, Object> attributeMap)
+    public String serialize(Map<String, Object> attributeMap) throws IOException
     {
         StringWriter stringWriter = new StringWriter();
-        try
-        {
-            _mapper.writeValue(stringWriter, attributeMap);
-        }
-        catch (Exception e)
-        {
-            throw new ConnectionScopedRuntimeException("Failure to serialize map:" + attributeMap, e);
-        }
+        _mapper.writeValue(stringWriter, attributeMap);
         return stringWriter.toString();
     }
 
-    public Map<String, Object> deserialize(String json)
+    public Map<String, Object> deserialize(String json) throws IOException
     {
-        Map<String, Object> attributesMap = null;
-        try
-        {
-            attributesMap = _mapper.readValue(json, MAP_TYPE_REFERENCE);
-        }
-        catch (Exception e)
-        {
-            throw new ConnectionScopedRuntimeException("Failure to deserialize json:" + json, e);
-        }
+        Map<String, Object> attributesMap = _mapper.readValue(json, MAP_TYPE_REFERENCE);
         return attributesMap;
     }
 }

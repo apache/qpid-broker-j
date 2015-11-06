@@ -35,7 +35,6 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.util.MapJsonSerializer;
 
 import com.sleepycat.bind.tuple.TupleBinding;
 import com.sleepycat.bind.tuple.TupleInput;
@@ -123,7 +122,7 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
     }
 
 
-    private void assertConfiguredObjects()
+    private void assertConfiguredObjects() throws Exception
     {
         Map<UUID, UpgradeConfiguredObjectRecord> configuredObjects = loadConfiguredObjects();
         assertEquals("Unexpected number of configured objects", 11, configuredObjects.size());

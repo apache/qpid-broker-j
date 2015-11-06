@@ -282,7 +282,7 @@ public class AMQPConnection_0_8
                     _decoder.decodeBuffer(msg);
                     receivedCompleteAllChannels();
                 }
-                catch (TransportException | AMQFrameDecodingException | IOException e)
+                catch (AMQFrameDecodingException | IOException e)
                 {
                     _logger.error("Unexpected exception", e);
                     throw new ConnectionScopedRuntimeException(e);

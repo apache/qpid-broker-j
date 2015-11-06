@@ -24,6 +24,7 @@ import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeInteraction
 import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeInteractionResponse.NO;
 import static org.apache.qpid.server.store.berkeleydb.upgrade.UpgradeInteractionResponse.YES;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -63,7 +64,6 @@ import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.AMQShortStringEncoding;
 import org.apache.qpid.server.store.berkeleydb.FieldTableEncoding;
-import org.apache.qpid.server.util.MapJsonSerializer;
 
 public class UpgradeFrom5To6 extends AbstractStoreUpgrade
 {
@@ -522,7 +522,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
     {
         Map<String, Object> attributesMap = buildQueueArgumentMap(queueName,
                 owner, exclusive, arguments);
-        String json = _serializer.serialize(attributesMap);
+        String json = serialiseMap(attributesMap);
         UpgradeConfiguredObjectRecord configuredObject = new UpgradeConfiguredObjectRecord(Queue.class.getName(), json);
         return configuredObject;
     }
@@ -573,7 +573,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
         attributesMap.put(Exchange.TYPE, exchangeType);
         attributesMap.put(Exchange.LIFETIME_POLICY, autoDelete ? "AUTO_DELETE"
                 : LifetimePolicy.PERMANENT.name());
-        String json = _serializer.serialize(attributesMap);
+        String json = serialiseMap(attributesMap);
         UpgradeConfiguredObjectRecord configuredObject = new UpgradeConfiguredObjectRecord(Exchange.class.getName(), json);
         return configuredObject;
     }
@@ -589,7 +589,7 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
         {
             attributesMap.put(Binding.ARGUMENTS, FieldTable.convertToMap(arguments));
         }
-        String json = _serializer.serialize(attributesMap);
+        String json = serialiseMap(attributesMap);
         UpgradeConfiguredObjectRecord configuredObject = new UpgradeConfiguredObjectRecord(Binding.class.getName(), json);
         return configuredObject;
     }
@@ -600,6 +600,18 @@ public class UpgradeFrom5To6 extends AbstractStoreUpgrade
         if (status != OperationStatus.SUCCESS)
         {
             throw new StoreException("Cannot add record into " + database.getDatabaseName() + ":" + status);
+        }
+    }
+
+    private String serialiseMap(final Map<String, Object> attributesMap)
+    {
+        try
+        {
+            return _serializer.serialize(attributesMap);
+        }
+        catch (IOException e)
+        {
+            throw new IllegalArgumentException("Failed to serialise map " + attributesMap + " as JSON", e);
         }
     }
 
