@@ -58,10 +58,10 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
 import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.ProtocolEngine;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 class WebSocketProvider implements AcceptingTransport
@@ -289,7 +289,7 @@ class WebSocketProvider implements AcceptingTransport
         }
     }
 
-    private class ConnectionWrapper implements NetworkConnection, ByteBufferSender
+    private class ConnectionWrapper implements ServerNetworkConnection, ByteBufferSender
     {
         private final WebSocket.Connection _connection;
         private final SocketAddress _localAddress;
@@ -391,6 +391,12 @@ class WebSocketProvider implements AcceptingTransport
         public int getMaxWriteIdle()
         {
             return _maxWriteIdle;
+        }
+
+        @Override
+        public void reserveOutboundMessageSpace(final long size)
+        {
+            // TODO
         }
 
         void setPeerCertificate(final Certificate certificate)

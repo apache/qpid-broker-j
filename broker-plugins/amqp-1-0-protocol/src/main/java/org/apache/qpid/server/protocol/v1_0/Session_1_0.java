@@ -919,6 +919,11 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     @Override
     public boolean processPending()
     {
+        if (!getAMQPConnection().isIOThread())
+        {
+            return false;
+        }
+
         boolean consumerListNeedsRefreshing;
         if(_consumersWithPendingWork.isEmpty())
         {

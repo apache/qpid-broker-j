@@ -73,7 +73,6 @@ import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -81,6 +80,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.store.StoreException;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -88,7 +88,6 @@ import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 public class AMQPConnection_0_8
         extends AbstractAMQPConnection<AMQPConnection_0_8>
@@ -154,7 +153,7 @@ public class AMQPConnection_0_8
     private int _maxFrameSize;
     private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
-    private final NetworkConnection _network;
+    private final ServerNetworkConnection _network;
     private final ByteBufferSender _sender;
 
     private volatile boolean _deferFlush;
@@ -179,7 +178,7 @@ public class AMQPConnection_0_8
     private volatile boolean _transportBlockedForWriting;
 
     public AMQPConnection_0_8(Broker<?> broker,
-                              NetworkConnection network,
+                              ServerNetworkConnection network,
                               AmqpPort<?> port,
                               Transport transport,
                               Protocol protocol,
@@ -1554,6 +1553,11 @@ public class AMQPConnection_0_8
     @Override
     public void processPending()
     {
+        if (!isIOThread())
+        {
+            return;
+        }
+
         List<? extends AMQSessionModel<?>> sessionsWithPending = new ArrayList<>(getSessionModels());
         while(!sessionsWithPending.isEmpty())
         {

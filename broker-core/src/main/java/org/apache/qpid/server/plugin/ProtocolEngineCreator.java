@@ -24,15 +24,15 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 public interface ProtocolEngineCreator extends Pluggable
 {
     Protocol getVersion();
     byte[] getHeaderIdentifier();
     ProtocolEngine newProtocolEngine(Broker<?> broker,
-                                     NetworkConnection network,
+                                     ServerNetworkConnection network,
                                      AmqpPort<?> port,
                                      Transport transport,
                                      long id,

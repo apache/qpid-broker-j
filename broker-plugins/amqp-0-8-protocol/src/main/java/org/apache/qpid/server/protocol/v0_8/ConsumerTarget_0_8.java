@@ -364,7 +364,7 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     }
 
     @Override
-    public boolean doIsSuspended()
+    public boolean isFlowSuspended()
     {
         return getState()!=State.ACTIVE || _channel.isSuspended() || _deleted.get() || _channel.getAMQPConnection().isConnectionStopped();
     }

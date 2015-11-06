@@ -42,9 +42,11 @@ public interface ProtocolEngine extends TransportActivity
 
    // Called when the NetworkEngine has not written data for the specified period of time (will trigger a
    // heartbeat)
+   @Override
    void writerIdle();
 
    // Called when the NetworkEngine has not read data for the specified period of time (will close the connection)
+   @Override
    void readerIdle();
 
    Subject getSubject();
@@ -73,4 +75,5 @@ public interface ProtocolEngine extends TransportActivity
 
    void received(QpidByteBuffer msg);
 
+   void setIOThread(Thread ioThread);
 }

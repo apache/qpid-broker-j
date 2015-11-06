@@ -46,7 +46,6 @@ import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 public class MultiVersionProtocolEngine implements ProtocolEngine
 {
@@ -63,7 +62,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     private Set<Protocol> _supported;
     private String _fqdn;
     private final Broker<?> _broker;
-    private NetworkConnection _network;
+    private ServerNetworkConnection _network;
     private ByteBufferSender _sender;
     private final Protocol _defaultSupportedReply;
 
@@ -141,6 +140,12 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         _delegate.received(msg);
     }
 
+    @Override
+    public void setIOThread(final Thread ioThread)
+    {
+        _delegate.setIOThread(ioThread);
+    }
+
     public long getConnectionId()
     {
         return _id;
@@ -164,7 +169,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         _delegate.setTransportBlockedForWriting(blocked);
     }
 
-    public void setNetworkConnection(NetworkConnection network)
+    public void setNetworkConnection(ServerNetworkConnection network)
     {
         _network = network;
         SocketAddress address = _network.getLocalAddress();
@@ -278,6 +283,12 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         {
             _logger.debug("Error processing incoming data, could not negotiate a common protocol");
             msg.position(msg.limit());
+        }
+
+        @Override
+        public void setIOThread(final Thread ioThread)
+        {
+
         }
 
         @Override
@@ -517,6 +528,12 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
             }
 
 
+
+        }
+
+        @Override
+        public void setIOThread(final Thread ioThread)
+        {
 
         }
 

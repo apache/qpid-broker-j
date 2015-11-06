@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.StateChangeListener;
 
 public abstract class AbstractConsumerTarget implements ConsumerTarget
@@ -58,6 +59,10 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     @Override
     public boolean processPending()
     {
+        if (!getSessionModel().getAMQPConnection().isIOThread())
+        {
+            return false;
+        }
         if(hasMessagesToSend())
         {
             sendNextMessage();
@@ -88,10 +93,10 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     @Override
     public final boolean isSuspended()
     {
-        return getSessionModel().getAMQPConnection().isMessageAssignmentSuspended() || doIsSuspended();
+        return getSessionModel().getAMQPConnection().isMessageAssignmentSuspended() || isFlowSuspended();
     }
 
-    protected abstract boolean doIsSuspended();
+    protected abstract boolean isFlowSuspended();
 
     public final State getState()
     {
@@ -184,8 +189,10 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     @Override
     public final long send(final ConsumerImpl consumer, MessageInstance entry, boolean batch)
     {
+        AMQPConnection<?> amqpConnection = getSessionModel().getAMQPConnection();
+        amqpConnection.reserveOutboundMessageSpace(entry.getMessage().getSize());
         _queue.add(new ConsumerMessageInstancePair(consumer, entry, batch));
-        getSessionModel().getAMQPConnection().notifyWork();
+        amqpConnection.notifyWork();
         return entry.getMessage().getSize();
     }
 

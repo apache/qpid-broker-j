@@ -27,8 +27,8 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 @PluggableService
 public class ProtocolEngineCreator_0_9_1 implements ProtocolEngineCreator
@@ -61,7 +61,7 @@ public class ProtocolEngineCreator_0_9_1 implements ProtocolEngineCreator
     }
 
     public ProtocolEngine newProtocolEngine(Broker<?> broker,
-                                            NetworkConnection network,
+                                            ServerNetworkConnection network,
                                             AmqpPort<?> port,
                                             Transport transport,
                                             long id, final AggregateTicker aggregateTicker)

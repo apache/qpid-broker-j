@@ -112,7 +112,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     }
 
     @Override
-    public boolean doIsSuspended()
+    public boolean isFlowSuspended()
     {
         return getState()!=State.ACTIVE || _deleted.get() || _session.isClosing() || _session.getAMQPConnection().isConnectionStopped(); // TODO check for Session suspension
     }
@@ -385,7 +385,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
     public void flushCreditState(boolean strict)
     {
-        if(strict || !isSuspended() || _deferredMessageCredit >= 200
+        if(strict || !isFlowSuspended() || _deferredMessageCredit >= 200
           || !(_creditManager instanceof WindowCreditManager)
           || ((WindowCreditManager)_creditManager).getMessageCreditLimit() < 400 )
         {

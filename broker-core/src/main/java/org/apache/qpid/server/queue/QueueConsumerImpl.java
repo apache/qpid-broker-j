@@ -57,6 +57,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.StateChangeListener;
 
 class QueueConsumerImpl
@@ -342,13 +343,28 @@ class QueueConsumerImpl
     @Override
     public final void flush()
     {
-        _queue.flushConsumer(this);
-        _target.processPending();
+        AMQPConnection<?> connection = _target.getSessionModel().getAMQPConnection();
+        try
+        {
+            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
+            _queue.flushConsumer(this);
+            _target.processPending();
+        }
+        finally
+        {
+            connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
+        }
+
     }
 
     public boolean resend(final QueueEntry entry)
     {
-        return getQueue().resend(entry, this);
+        boolean messageWasResent = getQueue().resend(entry, this);
+        if (messageWasResent)
+        {
+            _target.processPending();
+        }
+        return messageWasResent;
     }
 
     public final long getConsumerNumber()

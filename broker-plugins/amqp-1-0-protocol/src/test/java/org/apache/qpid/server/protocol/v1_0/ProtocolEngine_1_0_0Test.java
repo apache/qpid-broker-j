@@ -44,6 +44,7 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -64,17 +65,15 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManagerFactory;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
-import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 public class ProtocolEngine_1_0_0Test extends QpidTestCase
 {
     private AMQPConnection_1_0 _protocolEngine_1_0_0;
-    private NetworkConnection _networkConnection;
+    private ServerNetworkConnection _networkConnection;
     private Broker<?> _broker;
     private AmqpPort _port;
     private SubjectCreator _subjectCreator;
@@ -88,7 +87,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        _networkConnection = mock(NonBlockingConnection.class);
+        _networkConnection = mock(ServerNetworkConnection.class);
         _broker = mock(Broker.class);
         when(_broker.getModel()).thenReturn(BrokerModel.getInstance());
         final TaskExecutor taskExecutor = new TaskExecutorImpl();

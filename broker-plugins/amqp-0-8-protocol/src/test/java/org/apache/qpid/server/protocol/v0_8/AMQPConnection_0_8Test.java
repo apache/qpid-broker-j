@@ -56,12 +56,12 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 public class AMQPConnection_0_8Test extends QpidTestCase
 {
@@ -75,7 +75,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
     private VirtualHostNode _virtualHostNode;
     private VirtualHostImpl _virtualHost;
     private AmqpPort _port;
-    private NetworkConnection _network;
+    private ServerNetworkConnection _network;
     private Transport _transport;
     private Protocol _protocol;
     private AggregateTicker _ticker;
@@ -151,7 +151,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
 
         _sender = mock(ByteBufferSender.class);
 
-        _network = mock(NetworkConnection.class);
+        _network = mock(ServerNetworkConnection.class);
         when(_network.getSender()).thenReturn(_sender);
         when(_network.getLocalAddress()).thenReturn(new InetSocketAddress("localhost", 12345));
 

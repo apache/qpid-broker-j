@@ -1177,6 +1177,11 @@ public class ServerSession extends Session
     @Override
     public boolean processPending()
     {
+        if (!getAMQPConnection().isIOThread())
+        {
+            return false;
+        }
+
         boolean desiredBlockingState = _blocking.get();
         if (desiredBlockingState != _wireBlockingState)
         {

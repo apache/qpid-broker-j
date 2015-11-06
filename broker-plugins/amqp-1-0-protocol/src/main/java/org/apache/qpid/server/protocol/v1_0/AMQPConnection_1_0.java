@@ -71,11 +71,11 @@ import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManag
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.transport.NonBlockingConnection;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_0>
         implements FrameOutputHandler
@@ -142,8 +142,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     private State _state = State.A;
 
-
-    public AMQPConnection_1_0(final Broker<?> broker, final NetworkConnection network,
+    public AMQPConnection_1_0(final Broker<?> broker, final ServerNetworkConnection network,
                               AmqpPort<?> port, Transport transport, long id,
                               final AggregateTicker aggregateTicker,
                               final boolean useSASL)
@@ -173,7 +172,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     }
 
     public static Connection_1_0 createConnection(final Broker<?> broker,
-                                                  final NetworkConnection network,
+                                                  final ServerNetworkConnection network,
                                                   final AmqpPort<?> port,
                                                   final Transport transport,
                                                   final long id,
@@ -279,7 +278,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     }
 
     private static SaslServerProvider asSaslServerProvider(final SubjectCreator subjectCreator,
-                                                           final NetworkConnection network)
+                                                           final ServerNetworkConnection network)
     {
         return new SaslServerProvider()
         {
@@ -555,8 +554,10 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     @Override
     public void processPending()
     {
-        _connection.processPending();
-
+        if (isIOThread())
+        {
+            _connection.processPending();
+        }
     }
 
     @Override

@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
+import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
@@ -76,7 +77,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private static final Logger _logger = LoggerFactory.getLogger(AbstractAMQPConnection.class);
 
     private final Broker<?> _broker;
-    private final NetworkConnection _network;
+    private final ServerNetworkConnection _network;
     private final AmqpPort<?> _port;
     private final Transport _transport;
     private final Protocol _protocol;
@@ -87,6 +88,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
             new CopyOnWriteArrayList<>();
 
     private final LogSubject _logSubject;
+    private final AtomicReference<Thread> _messageAssignmentAllowedThread = new AtomicReference<>();
+    private final AtomicBoolean _messageAssignmentSuspended = new AtomicBoolean();
     private String _clientProduct;
     private String _clientVersion;
     private String _remoteProcessPid;
@@ -100,11 +103,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
     private volatile AccessControlContext _accessControllerContext;
-
-    private final AtomicReference<Thread> _messageAssignmentSuspended = new AtomicReference<>();
+    private volatile Thread _ioThread;
 
     public AbstractAMQPConnection(Broker<?> broker,
-                                  NetworkConnection network,
+                                  ServerNetworkConnection network,
                                   AmqpPort<?> port,
                                   Transport transport,
                                   Protocol protocol,
@@ -387,6 +389,60 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _clientId = clientId;
     }
 
+    @Override
+    public boolean isMessageAssignmentSuspended()
+    {
+        Thread currentThread = Thread.currentThread();
+        if (_messageAssignmentAllowedThread.get() == currentThread && currentThread == _ioThread)
+        {
+            return false;
+        }
+        return _messageAssignmentSuspended.get();
+    }
+
+    @Override
+    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
+    {
+        _messageAssignmentSuspended.set(messageAssignmentSuspended);
+
+        for(AMQSessionModel<?> session : getSessionModels())
+        {
+            if (messageAssignmentSuspended)
+            {
+                session.ensureConsumersNoticedStateChange();
+            }
+            else
+            {
+                session.notifyConsumerTargetCurrentStates();
+            }
+        }
+    }
+
+    @Override
+    public void alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(boolean allowed)
+    {
+        if (allowed)
+        {
+            _messageAssignmentAllowedThread.set(Thread.currentThread());
+        }
+        else
+        {
+            _messageAssignmentAllowedThread.set(null);
+        }
+    }
+
+    @Override
+    public void setIOThread(final Thread ioThread)
+    {
+        _ioThread = ioThread;
+    }
+
+    @Override
+    public boolean isIOThread()
+    {
+        return Thread.currentThread() == _ioThread;
+    }
+
     private <T> T runAsSubject(PrivilegedAction<T> action)
     {
         return Subject.doAs(_subject, action);
@@ -557,28 +613,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public boolean isMessageAssignmentSuspended()
+    public void reserveOutboundMessageSpace(final long size)
     {
-        Thread lock = _messageAssignmentSuspended.get();
-        return lock != null && _messageAssignmentSuspended.get() != Thread.currentThread();
-    }
-
-    @Override
-    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
-    {
-        _messageAssignmentSuspended.set(messageAssignmentSuspended ? Thread.currentThread() : null);
-
-        for(AMQSessionModel<?> session : getSessionModels())
-        {
-            if (messageAssignmentSuspended)
-            {
-                session.ensureConsumersNoticedStateChange();
-            }
-            else
-            {
-                session.notifyConsumerTargetCurrentStates();
-            }
-        }
+        _network.reserveOutboundMessageSpace(size);
     }
 
     protected void markTransportClosed()

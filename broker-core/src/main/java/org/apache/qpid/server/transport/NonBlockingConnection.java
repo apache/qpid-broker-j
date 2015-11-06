@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,12 +39,11 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.Ticker;
 import org.apache.qpid.transport.network.TransportEncryption;
 import org.apache.qpid.util.SystemUtils;
 
-public class NonBlockingConnection implements NetworkConnection, ByteBufferSender
+public class NonBlockingConnection implements ServerNetworkConnection, ByteBufferSender
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingConnection.class);
 
@@ -56,6 +56,8 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
     private final AtomicBoolean _closed = new AtomicBoolean(false);
     private final ProtocolEngine _protocolEngine;
     private final Runnable _onTransportEncryptionAction;
+    private final AtomicLong _usedOutboundMessageSpace = new AtomicLong();
+    private final long _outboundMessageBufferLimit;
 
     private volatile int _maxReadIdle;
     private volatile int _maxWriteIdle;
@@ -86,6 +88,9 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         _remoteSocketAddress = _socketChannel.socket().getRemoteSocketAddress().toString();
         _port = port;
         _threadName = SelectorThread.IO_THREAD_NAME_PREFIX + _remoteSocketAddress.toString();
+
+        _outboundMessageBufferLimit = (long) _port.getContextValue(Long.class,
+                                                                   AmqpPort.PORT_AMQP_OUTBOUND_MESSAGE_BUFFER_SIZE);
 
         protocolEngine.setWorkListener(new Action<ProtocolEngine>()
         {
@@ -197,6 +202,15 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
         return _maxWriteIdle;
     }
 
+    @Override
+    public void reserveOutboundMessageSpace(long size)
+    {
+        if (_usedOutboundMessageSpace.addAndGet(size) > _outboundMessageBufferLimit)
+        {
+            _protocolEngine.setMessageAssignmentSuspended(true);
+        }
+    }
+
     public boolean canRead()
     {
         return _fullyWritten;
@@ -226,11 +240,12 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                     getTicker().tick(currentTime);
                 }
 
+                _protocolEngine.setIOThread(Thread.currentThread());
                 _protocolEngine.setMessageAssignmentSuspended(true);
 
                 if (!_fullyWritten)
                 {
-                    _fullyWritten = doWrite();
+                    doWrite();
                 }
 
                 if (_fullyWritten)
@@ -239,17 +254,23 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
                     _protocolEngine.setTransportBlockedForWriting(!doWrite());
                     boolean dataRead = doRead();
-                    _fullyWritten = doWrite();
-                    _protocolEngine.setTransportBlockedForWriting(!_fullyWritten);
+                    _protocolEngine.setTransportBlockedForWriting(!doWrite());
 
-                    if (dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0))
+                    if (!_fullyWritten || dataRead || (_delegate.needsWork() && _delegate.getNetInputBuffer().position() != 0))
                     {
                         _protocolEngine.notifyWork();
                     }
 
-                    // tell all consumer targets that it is okay to accept more
-                    _protocolEngine.setMessageAssignmentSuspended(false);
+                    if (_fullyWritten)
+                    {
+                        _protocolEngine.setMessageAssignmentSuspended(false);
+                    }
                 }
+                else
+                {
+                    _protocolEngine.notifyWork();
+                }
+
             }
             catch (IOException | ConnectionScopedRuntimeException e)
             {
@@ -259,6 +280,10 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
                 {
                     _protocolEngine.notifyWork();
                 }
+            }
+            finally
+            {
+                _protocolEngine.setIOThread(null);
             }
         }
 
@@ -390,7 +415,7 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
 
     private boolean doWrite() throws IOException
     {
-        final boolean result = _delegate.doWrite(_buffers);
+        _fullyWritten = _delegate.doWrite(_buffers);
         while(!_buffers.isEmpty())
         {
             QpidByteBuffer buf = _buffers.peek();
@@ -401,7 +426,11 @@ public class NonBlockingConnection implements NetworkConnection, ByteBufferSende
             _buffers.poll();
             buf.dispose();
         }
-        return result;
+        if (_fullyWritten)
+        {
+            _usedOutboundMessageSpace.set(0);
+        }
+        return _fullyWritten;
 
     }
 

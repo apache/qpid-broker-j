@@ -47,6 +47,7 @@ import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -54,7 +55,6 @@ import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionDelegate;
 import org.apache.qpid.transport.Constant;
 import org.apache.qpid.transport.network.AggregateTicker;
-import org.apache.qpid.transport.network.NetworkConnection;
 
 
 public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0_10>
@@ -63,17 +63,18 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     private final ServerInputHandler _inputHandler;
 
 
-    private final NetworkConnection _network;
+    private final ServerNetworkConnection _network;
     private final ServerConnection _connection;
 
     private volatile boolean _transportBlockedForWriting;
+
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
     private ServerDisassembler _disassembler;
 
 
     public AMQPConnection_0_10(final Broker<?> broker,
-                               NetworkConnection network,
+                               ServerNetworkConnection network,
                                final AmqpPort<?> port,
                                final Transport transport,
                                final long id,
@@ -121,7 +122,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
             }
         }, getAccessControllerContext());
     }
-
 
     private ByteBufferSender wrapSender(final ByteBufferSender sender)
     {
@@ -259,7 +259,10 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     @Override
     public void processPending()
     {
-        _connection.processPending();
+        if (isIOThread())
+        {
+            _connection.processPending();
+        }
     }
 
     @Override

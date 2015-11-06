@@ -32,6 +32,8 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 {
     boolean isMessageAssignmentSuspended();
 
+    void alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(boolean override);
+
     long getConnectionId();
 
     Principal getAuthorizedPrincipal();
@@ -64,4 +66,7 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     void sendConnectionCloseAsync(AMQConstant connectionForced, String reason);
 
+    void reserveOutboundMessageSpace(long size);
+
+    boolean isIOThread();
 }

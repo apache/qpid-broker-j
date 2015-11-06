@@ -38,6 +38,9 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 import javax.xml.bind.DatatypeConverter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -45,6 +48,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class TCPandSSLTransportTest extends QpidTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TCPandSSLTransportTest.class);
 
     public void testNoSSLv3SupportOnSSLOnlyPort() throws Exception
     {
@@ -82,9 +86,8 @@ public class TCPandSSLTransportTest extends QpidTestCase
         }
         catch(SSLHandshakeException e)
         {
-            // pass
+            LOGGER.error("Should be able to connect using TLSv1.1", e);
             fail("Should be able to connect using TLSv1.1");
-
         }
     }
 
@@ -113,6 +116,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
         when(port.getNumberOfSelectors()).thenReturn(1);
         when(port.getSSLContext()).thenReturn(sslContext);
         when(port.getContextValue(Long.class, AmqpPort.PORT_AMQP_THREAD_POOL_KEEP_ALIVE_TIMEOUT)).thenReturn(1l);
+        when(port.getContextValue(Long.class, AmqpPort.PORT_AMQP_OUTBOUND_MESSAGE_BUFFER_SIZE)).thenReturn(AmqpPort.DEFAULT_PORT_AMQP_OUTBOUND_MESSAGE_BUFFER_SIZE);
 
         TCPandSSLTransport transport = new TCPandSSLTransport(new HashSet<>(Arrays.asList(transports)),
                                                               port,
