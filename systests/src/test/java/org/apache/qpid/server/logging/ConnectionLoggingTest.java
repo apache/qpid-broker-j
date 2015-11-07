@@ -24,8 +24,8 @@ import javax.jms.Connection;
 
 import org.apache.qpid.configuration.CommonProperties;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 
 public class ConnectionLoggingTest extends AbstractTestLogging
@@ -43,7 +43,7 @@ public class ConnectionLoggingTest extends AbstractTestLogging
      * 1. Running Broker
      * 2. Connecting client
      * Output:
-     * <date> CON-1001 : Open : Client ID {0}[ : Protocol Version : {1}] <version>
+     * <date> CON-1001 : Open ....
      *
      * Validation Steps:
      * 1. The CON ID is correct
@@ -69,69 +69,81 @@ public class ConnectionLoggingTest extends AbstractTestLogging
 
         List<String> results = waitAndFindMatches("CON-1001");
 
-        // MESSAGE [con:1(/127.0.0.1:46927)] CON-1001 : Open
-        // MESSAGE [con:1(/127.0.0.1:46927)] CON-1001 : Open : Protocol Version : 0-9
-        // MESSAGE [con:1(/127.0.0.1:46927)] CON-1001 : Open : Client ID : clientid : Protocol Version : 0-9 : Client Version : 1.2.3_4
-        // MESSAGE [con:0(/127.0.0.1:46927)] CON-1002 : Close
+        // MESSAGE [con:1(/127.0.0.1:46927)] CON-1001 : Open : Destination : amqp(127.0.0.1:15672) : Protocol Version : 0-10
+        // MESSAGE [con:1(guest@/127.0.0.1:46927/test)] CON-1001 : Open : Destination : amqp(127.0.0.1:15672) : Protocol Version : 0-10 : Client ID : clientid : Client Version : 6.0.0-SNAPSHOT : Client Product : qpid
+        // MESSAGE [con:1(guest@/127.0.0.1:46927/test)] CON-1002 : Close
 
-        HashMap<Integer, List<String>> connectionData = splitResultsOnConnectionID(results);
+        Map<Integer, List<String>> connectionData = splitResultsOnConnectionID(results);
 
         // Get the last Integer from keySet of the ConnectionData
-        int connectionID = new TreeSet<Integer>(connectionData.keySet()).last();
+        int connectionID = new TreeSet<>(connectionData.keySet()).last();
 
         //Use just the data from the last connection for the test
         results = connectionData.get(connectionID);
 
-	    assertEquals("Unexpected CON-1001 messages count", 3, results.size());
+	    assertEquals("Unexpected CON-1001 messages count", 2, results.size());
 
-        String log = getLogMessage(results, 0);
-        //  MESSAGE [con:1(/127.0.0.1:52540)] CON-1001 : Open
-        //1 & 2
-        validateMessageID("CON-1001",log);
+        // validate the two CON-1001 messages.
+        // MESSAGE [con:1(guest@/127.0.0.1:46927/test)] CON-1001 : Open : Destination : amqp(127.0.0.1:15672) : Protocol Version : 0-10 : Client ID : clientid : Client Version : 6.0.0-SNAPSHOT : Client Product : qpid
+        validateConnectionOpen(results, 0,
+                               true, getBrokerProtocol().getProtocolVersion(),
+                               true, clientid,
+                               true, CommonProperties.getReleaseVersion(),
+                               true, CommonProperties.getProductName());
 
-        // validate the last three CON-1001 messages.
-        //  MESSAGE [con:1(/127.0.0.1:52540)] CON-1001 : Open : Client ID : clientid : Protocol Version : 0-9 : Client Version : 1.2.3_4 : Client Product : product
-        validateConnectionOpen(results, 0, true, true, clientid, true, CommonProperties.getReleaseVersion(), true, CommonProperties.getProductName());
-
-        //  MESSAGE [con:1(/127.0.0.1:52540)] CON-1001 : Open : Protocol Version : 0-9
-        validateConnectionOpen(results, 1, true, false, null, false, null, false, null);
-
-        //  MESSAGE [con:1(/127.0.0.1:52540)] CON-1001 : Open
-        validateConnectionOpen(results, 2, false, false, null, false, null, false, null);
+        // MESSAGE [con:1(/127.0.0.1:46927)] CON-1001 : Open : Destination : amqp(127.0.0.1:15672) : Protocol Version : 0-10
+        validateConnectionOpen(results, 1,
+                               true, getBrokerProtocol().getProtocolVersion(),
+                               false, null,
+                               false, null,
+                               false, null);
     }
     
     private void validateConnectionOpen(List<String> results, int positionFromEnd,
-                 boolean protocolVersionPresent, boolean clientIdOptionPresent, String clientIdValue,
-                 boolean clientVersionPresent, String clientVersionValue, boolean clientProductPresent, String clientProductValue)
+                                        boolean protocolVersionPresent, final String protocolVersionValue,
+                                        boolean clientIdOptionPresent, String clientIdValue,
+                                        boolean clientVersionPresent, String clientVersionValue,
+                                        boolean clientProductPresent, String clientProductValue)
     {
         String log = getLogMessageFromEnd(results, positionFromEnd);
         
-        validateMessageID("CON-1001",log);
-        
-        assertEquals("unexpected Client ID option state", clientIdOptionPresent, fromMessage(log).contains("Client ID :"));
-        
+        validateMessageID("CON-1001", log);
+
+        String message = fromMessage(log);
+
+        assertTrue("Destination not present", message.contains("Destination :"));
+
+        assertEquals("unexpected Protocol Version option state",
+                     protocolVersionPresent, message.contains("Protocol Version :"));
+        if(protocolVersionPresent && protocolVersionValue != null)
+        {
+            assertTrue("Protocol Version value is not present: " + protocolVersionValue, message.contains(protocolVersionValue));
+        }
+
+        assertEquals("unexpected Client ID option state", clientIdOptionPresent, message.contains("Client ID :"));
+
         if(clientIdOptionPresent && clientIdValue != null)
         {
-            assertTrue("Client ID value is not present: " + clientIdValue, fromMessage(log).contains(clientIdValue));
+            assertTrue("Client ID value is not present: " + clientIdValue, message.contains(clientIdValue));
         }
-        
-        assertEquals("unexpected Protocol Version option state", 
-                protocolVersionPresent, fromMessage(log).contains("Protocol Version :"));
-        //fixme there is no way currently to find out the negotiated protocol version
-        // The delegate is the versioned class ((AMQConnection)connection)._delegate
 
-        assertEquals("unexpected Client Version option state", clientVersionPresent, fromMessage(log).contains("Client Version :"));
+
+        assertEquals("unexpected Client Version option state", clientVersionPresent, message.contains(
+                "Client Version :"));
 
         if(clientVersionPresent && clientVersionValue != null)
         {
-            assertTrue("Client version value is not present: " + clientVersionValue, fromMessage(log).contains(clientVersionValue));
+            assertTrue("Client version value is not present: " + clientVersionValue, message.contains(
+                    clientVersionValue));
         }
 
-        assertEquals("unexpected Client Product option state", clientVersionPresent, fromMessage(log).contains("Client Product :"));
+        assertEquals("unexpected Client Product option state", clientVersionPresent, message.contains(
+                "Client Product :"));
 
         if(clientProductPresent && clientProductValue != null)
         {
-            assertTrue("Client product value is not present: " + clientProductValue, fromMessage(log).contains(clientProductValue));
+            assertTrue("Client product value is not present: " + clientProductValue, message.contains(
+                    clientProductValue));
         }
     }
 
@@ -170,8 +182,7 @@ public class ConnectionLoggingTest extends AbstractTestLogging
 
         // Validation
 
-        // We should have at least four messages
-        assertTrue("CON messages not logged:" + results.size(), results.size() >= 4);
+        assertEquals("CON messages not logged:" + results.size(), 3, results.size());
 
         // Validate Close message occurs
         String log = getLogMessageFromEnd(results, 0);

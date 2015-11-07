@@ -107,20 +107,14 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
             @Override
             public Object run()
             {
-                _connection.getEventLogger()
-                        .message(ConnectionMessages.OPEN(null, null, null, null, false, false, false, false));
-
                 _connection.setNetworkConnection(_network);
                 _disassembler = new ServerDisassembler(wrapSender(_network.getSender()), Constant.MIN_MAX_FRAME_SIZE);
                 _connection.setSender(_disassembler);
                 _connection.addFrameSizeObserver(_disassembler);
-                // FIXME Two log messages to maintain compatibility with earlier protocol versions
-                _connection.getEventLogger()
-                        .message(ConnectionMessages.OPEN(null, "0-10", null, null, false, true, false, false));
-
                 return null;
             }
         }, getAccessControllerContext());
+        logConnectionOpen();
     }
 
     private ByteBufferSender wrapSender(final ByteBufferSender sender)
@@ -350,4 +344,9 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return _connection.getEventLogger();
     }
 
+    @Override
+    public void logConnectionOpen()
+    {
+        super.logConnectionOpen();
+    }
 }

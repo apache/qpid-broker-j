@@ -20,25 +20,30 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.Collection;
-import java.util.EnumSet;
-
 public enum Protocol
 {
-    AMQP_0_8(ProtocolType.AMQP),
-    AMQP_0_9(ProtocolType.AMQP),
-    AMQP_0_9_1(ProtocolType.AMQP),
-    AMQP_0_10(ProtocolType.AMQP),
-    AMQP_1_0(ProtocolType.AMQP),
+    AMQP_0_8(ProtocolType.AMQP, "0-8"),
+    AMQP_0_9(ProtocolType.AMQP, "0-9"),
+    AMQP_0_9_1(ProtocolType.AMQP, "0-9-1"),
+    AMQP_0_10(ProtocolType.AMQP, "0-10"),
+    AMQP_1_0(ProtocolType.AMQP, "1.0"),
     JMX_RMI(ProtocolType.JMX),
     HTTP(ProtocolType.HTTP),
     RMI(ProtocolType.RMI);
 
     private final ProtocolType _protocolType;
 
-    private Protocol(ProtocolType type)
+    private final String _protocolVersion;
+
+    Protocol(ProtocolType type)
+    {
+        this(type, null);
+    }
+
+    Protocol(ProtocolType type, String version)
     {
         _protocolType =  type;
+        _protocolVersion = version;
     }
 
     public ProtocolType getProtocolType()
@@ -46,46 +51,17 @@ public enum Protocol
         return _protocolType;
     }
 
+    public String getProtocolVersion()
+    {
+        return _protocolVersion;
+    }
+
     public boolean isAMQP()
     {
         return _protocolType == ProtocolType.AMQP;
     }
 
-    public static Protocol valueOfObject(Object protocolObject)
-    {
-        Protocol protocol;
-        if (protocolObject instanceof Protocol)
-        {
-            protocol = (Protocol) protocolObject;
-        }
-        else
-        {
-            try
-            {
-                protocol = Protocol.valueOf(String.valueOf(protocolObject));
-            }
-            catch (Exception e)
-            {
-                throw new IllegalArgumentException("Can't convert '" + protocolObject
-                        + "' to one of the supported protocols: " + EnumSet.allOf(Protocol.class), e);
-            }
-        }
-        return protocol;
-    }
-
-    public static boolean hasAmqpProtocol(Collection<Protocol> protocols)
-    {
-        for (Protocol protocol : protocols)
-        {
-            if (protocol.isAMQP())
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static enum ProtocolType
+    public enum ProtocolType
     {
         AMQP, HTTP, JMX, RMI
     }

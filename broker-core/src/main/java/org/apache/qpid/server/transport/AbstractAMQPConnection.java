@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.transport;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.AccessControlContext;
 import java.security.AccessController;
@@ -443,7 +444,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return Thread.currentThread() == _ioThread;
     }
 
-    private <T> T runAsSubject(PrivilegedAction<T> action)
+    protected <T> T runAsSubject(PrivilegedAction<T> action)
     {
         return Subject.doAs(_subject, action);
     }
@@ -596,6 +597,39 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(
                 getSubject());
+    }
+
+    protected void logConnectionOpen()
+    {
+        runAsSubject(new PrivilegedAction<Object>()
+        {
+            @Override
+            public Object run()
+            {
+                SocketAddress localAddress = _network.getLocalAddress();
+                final String localAddressStr;
+                if (localAddress instanceof InetSocketAddress)
+                {
+                    InetSocketAddress inetAddress = (InetSocketAddress) localAddress;
+                    localAddressStr = inetAddress.getAddress().getHostAddress() + ":" + inetAddress.getPort();
+                }
+                else
+                {
+                    localAddressStr = localAddress.toString();
+                }
+                getEventLogger().message(ConnectionMessages.OPEN(getPort().getName(),
+                                                                 localAddressStr,
+                                                                 getProtocol().getProtocolVersion(),
+                                                                 getClientId(),
+                                                                 getClientVersion(),
+                                                                 getClientProduct(),
+                                                                 getTransport().isSecure(),
+                                                                 getClientId() != null,
+                                                                 getClientVersion() != null,
+                                                                 getClientProduct() != null));
+                return null;
+            }
+        });
     }
 
     public abstract List<? extends AMQSessionModel<?>> getSessionModels();

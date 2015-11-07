@@ -140,15 +140,7 @@ public class ServerConnection extends Connection implements AuthorizationHolder
 
         if (state == State.OPEN)
         {
-            getEventLogger().message(ConnectionMessages.OPEN(getClientId(),
-                    "0-10",
-                    getClientVersion(),
-                    getClientProduct(),
-                    true,
-                    true,
-                    true,
-                    true));
-
+            _amqpConnection.logConnectionOpen();
             _amqpConnection.virtualHostAssociated();
         }
 

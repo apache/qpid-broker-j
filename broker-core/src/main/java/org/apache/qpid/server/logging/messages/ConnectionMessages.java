@@ -69,12 +69,12 @@ public class ConnectionMessages
 
     /**
      * Log a Connection message of the Format:
-     * <pre>CON-1001 : Open[ : Client ID : {0}][ : Protocol Version : {1}][ : Client Version : {2}][ : Client Product : {3}]</pre>
+     * <pre>CON-1001 : Open : Port : {0}({1}) Protocol Version {2}[ : SSL][ : Client ID : {3}][ : Client Version : {4}][ : Client Product : {5}]</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage OPEN(String param1, String param2, String param3, String param4, boolean opt1, boolean opt2, boolean opt3, boolean opt4)
+    public static LogMessage OPEN(String param1, String param2, String param3, String param4, String param5, String param6, boolean opt1, boolean opt2, boolean opt3, boolean opt4)
     {
         String rawMessage = _messages.getString("OPEN");
         StringBuffer msg = new StringBuffer();
@@ -88,7 +88,7 @@ public class ConnectionMessages
         if (parts.length > 1)
         {
 
-            // Add Option : : Client ID : {0}.
+            // Add Option : : SSL.
             end = parts[1].indexOf(']');
             if (opt1)
             {
@@ -98,7 +98,7 @@ public class ConnectionMessages
             // Use 'end + 1' to remove the ']' from the output
             msg.append(parts[1].substring(end + 1));
 
-            // Add Option : : Protocol Version : {1}.
+            // Add Option : : Client ID : {3}.
             end = parts[2].indexOf(']');
             if (opt2)
             {
@@ -108,7 +108,7 @@ public class ConnectionMessages
             // Use 'end + 1' to remove the ']' from the output
             msg.append(parts[2].substring(end + 1));
 
-            // Add Option : : Client Version : {2}.
+            // Add Option : : Client Version : {4}.
             end = parts[3].indexOf(']');
             if (opt3)
             {
@@ -118,7 +118,7 @@ public class ConnectionMessages
             // Use 'end + 1' to remove the ']' from the output
             msg.append(parts[3].substring(end + 1));
 
-            // Add Option : : Client Product : {3}.
+            // Add Option : : Client Product : {5}.
             end = parts[4].indexOf(']');
             if (opt4)
             {
@@ -131,7 +131,7 @@ public class ConnectionMessages
 
         rawMessage = msg.toString();
 
-        final Object[] messageArguments = {param1, param2, param3, param4};
+        final Object[] messageArguments = {param1, param2, param3, param4, param5, param6};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);

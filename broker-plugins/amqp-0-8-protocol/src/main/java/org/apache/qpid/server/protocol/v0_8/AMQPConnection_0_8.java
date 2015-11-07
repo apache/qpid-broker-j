@@ -202,24 +202,9 @@ public class AMQPConnection_0_8
 
         _network = network;
         _sender = network.getSender();
-        runAsSubject(new PrivilegedAction<Void>()
-        {
-
-            @Override
-            public Void run()
-            {
-
-                getEventLogger().message(ConnectionMessages.OPEN(null, null, null, null, false, false, false, false));
-
-                return null;
-            }
-        });
         _closeWhenNoRoute = getBroker().getConnection_closeWhenNoRoute();
-    }
 
-    private <T> T runAsSubject(PrivilegedAction<T> action)
-    {
-        return AccessController.doPrivileged(action, getAccessControllerContext());
+        logConnectionOpen();
     }
 
     @Override
@@ -344,18 +329,7 @@ public class AMQPConnection_0_8
         _decoder.setExpectProtocolInitiation(false);
         try
         {
-            // Log incoming protocol negotiation request
-            getEventLogger().message(ConnectionMessages.OPEN(null,
-                                                             pi.getProtocolMajor() + "-" + pi.getProtocolMinor(),
-                                                             null,
-                                                             null,
-                                                             false,
-                                                             true,
-                                                             false,
-                                                             false));
-
             ProtocolVersion pv = pi.checkVersion(); // Fails if not correct
-
             setProtocolVersion(pv);
 
             StringBuilder mechanismBuilder = new StringBuilder();
@@ -744,15 +718,6 @@ public class AMQPConnection_0_8
             setClientProduct(clientProduct);
             setRemoteProcessPid(remoteProcessPid);
             setClientId(clientId == null ? UUID.randomUUID().toString() : clientId);
-
-            getEventLogger().message(ConnectionMessages.OPEN(getClientId(),
-                                                             _protocolVersion.toString(),
-                                                             getClientVersion(),
-                                                             getClientProduct(),
-                                                             true,
-                                                             true,
-                                                             true,
-                                                             true));
         }
     }
 
@@ -802,6 +767,7 @@ public class AMQPConnection_0_8
         getSubject().getPrincipals().add(virtualHost.getPrincipal());
 
         updateAccessControllerContext();
+        logConnectionOpen();
     }
 
     public ProtocolOutputConverter getProtocolOutputConverter()
