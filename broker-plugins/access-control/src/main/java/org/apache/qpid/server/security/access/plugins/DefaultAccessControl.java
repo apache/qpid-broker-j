@@ -115,7 +115,7 @@ public class DefaultAccessControl implements AccessControl
                 }
                 catch (MalformedURLException notAFile)
                 {
-                    throw new IllegalConfigurationException("Cannot convert " + urlString + " to a readable resource");
+                    throw new IllegalConfigurationException("Cannot convert " + urlString + " to a readable resource", notAFile);
                 }
 
             }
@@ -123,7 +123,7 @@ public class DefaultAccessControl implements AccessControl
         }
         catch (IOException e)
         {
-            throw new IllegalConfigurationException("Cannot convert " + urlString + " to a readable resource");
+            throw new IllegalConfigurationException("Cannot convert " + urlString + " to a readable resource", e);
         }
     }
 
