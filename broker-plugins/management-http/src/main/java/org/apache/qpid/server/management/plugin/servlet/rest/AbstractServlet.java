@@ -79,7 +79,7 @@ public abstract class AbstractServlet extends HttpServlet
     }
 
     @Override
-    protected final void doGet(final HttpServletRequest request, final HttpServletResponse resp)
+    protected final void doGet(final HttpServletRequest request, final HttpServletResponse resp) throws ServletException, IOException
     {
         doWithSubjectAndActor(
             new PrivilegedExceptionAction<Void>()
@@ -107,7 +107,7 @@ public abstract class AbstractServlet extends HttpServlet
 
 
     @Override
-    protected final void doPost(final HttpServletRequest request, final HttpServletResponse resp)
+    protected final void doPost(final HttpServletRequest request, final HttpServletResponse resp) throws ServletException, IOException
     {
         doWithSubjectAndActor(
             new PrivilegedExceptionAction<Void>()
@@ -134,7 +134,7 @@ public abstract class AbstractServlet extends HttpServlet
     }
 
     @Override
-    protected final void doPut(final HttpServletRequest request, final HttpServletResponse resp)
+    protected final void doPut(final HttpServletRequest request, final HttpServletResponse resp) throws ServletException, IOException
     {
         doWithSubjectAndActor(
             new PrivilegedExceptionAction<Void>()
@@ -197,7 +197,7 @@ public abstract class AbstractServlet extends HttpServlet
     private void doWithSubjectAndActor(
                     PrivilegedExceptionAction<Void> privilegedExceptionAction,
                     final HttpServletRequest request,
-                    final HttpServletResponse resp)
+                    final HttpServletResponse resp) throws IOException
     {
         Subject subject;
         try
@@ -221,13 +221,26 @@ public abstract class AbstractServlet extends HttpServlet
         }
         catch (PrivilegedActionException e)
         {
-            LOGGER.error("Unable to perform action", e);
             Throwable cause = e.getCause();
+
+            // Jetty uses it EofException to signal an EOF from the peer (e.g. broken pipe etc). It arises in
+            // situations such as abnormal browser termination etc.
+            if (cause instanceof org.eclipse.jetty.io.EofException)
+            {
+                if (LOGGER.isDebugEnabled())
+                {
+                    String message = cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage();
+                    LOGGER.debug("IO error : {}", message);
+                }
+                throw (IOException)cause;
+            }
+
+            LOGGER.error("Unable to perform action", e);
             if(cause instanceof RuntimeException)
             {
                 throw (RuntimeException)cause;
             }
-            if(cause instanceof Error)
+            else if(cause instanceof Error)
             {
                 throw (Error)cause;
             }
