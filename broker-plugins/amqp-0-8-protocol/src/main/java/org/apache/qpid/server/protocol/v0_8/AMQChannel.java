@@ -3780,6 +3780,8 @@ public class AMQChannel
     public void addTicker(final Ticker ticker)
     {
         getConnection().getAggregateTicker().addTicker(ticker);
+        // trigger a wakeup to ensure the ticker will be taken into account
+        getAMQPConnection().notifyWork();
     }
 
     @Override

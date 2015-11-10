@@ -959,6 +959,8 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     public void addTicker(final Ticker ticker)
     {
         getConnection().getAmqpConnection().getAggregateTicker().addTicker(ticker);
+        // trigger a wakeup to ensure the ticker will be taken into account
+        getAMQPConnection().notifyWork();
     }
 
     @Override
