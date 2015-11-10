@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.amqp_1_0.codec;
 
-import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.util.concurrent.ConcurrentHashMap;
@@ -70,7 +69,9 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor
         else
         {
             byte[] b = new byte[in.remaining()];
-            in.duplicate().get(b);
+            QpidByteBuffer dup = in.duplicate();
+            dup.get(b);
+            dup.dispose();
             binaryStr = new BinaryString(b, 0, b.length);
         }
 
@@ -80,12 +81,9 @@ public class SymbolTypeConstructor extends VariableWidthTypeConstructor
             QpidByteBuffer dup = in.duplicate();
             dup.limit(in.position()+size);
             CharBuffer charBuf = dup.decode(ASCII);
-
+            dup.dispose();
 
             symbolVal = Symbol.getSymbol(charBuf.toString());
-
-
-
 
             byte[] data = new byte[size];
             in.get(data);

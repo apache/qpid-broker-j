@@ -315,6 +315,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 QpidByteBuffer dup = msg.duplicate();
                 byte[] data = new byte[dup.remaining()];
                 dup.get(data);
+                dup.dispose();
                 Binary bin = new Binary(data);
                 RAW_LOGGER.debug("RECV[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
             }
@@ -497,29 +498,35 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
             _frameWriter.setValue(amqFrame);
 
-            QpidByteBuffer dup = QpidByteBuffer.allocateDirect(_endpoint.getMaxFrameSize());
+            QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(_endpoint.getMaxFrameSize());
 
-            int size = _frameWriter.writeToBuffer(dup);
-            if (size > _endpoint.getMaxFrameSize())
+            try
             {
-                throw new OversizeFrameException(amqFrame, size);
+                int size = _frameWriter.writeToBuffer(buffer);
+                if (size > _endpoint.getMaxFrameSize())
+                {
+                    throw new OversizeFrameException(amqFrame, size);
+                }
+
+                buffer.flip();
+
+                if (RAW_LOGGER.isDebugEnabled())
+                {
+                    QpidByteBuffer dup = buffer.duplicate();
+                    byte[] data = new byte[dup.remaining()];
+                    dup.get(data);
+                    dup.dispose();
+                    Binary bin = new Binary(data);
+                    RAW_LOGGER.debug("SEND[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
+                }
+
+                getSender().send(buffer);
+                getSender().flush();
             }
-
-            dup.flip();
-
-            if (RAW_LOGGER.isDebugEnabled())
+            finally
             {
-                QpidByteBuffer dup2 = dup.duplicate();
-                byte[] data = new byte[dup2.remaining()];
-                dup2.get(data);
-                Binary bin = new Binary(data);
-                RAW_LOGGER.debug("SEND[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
+                buffer.dispose();
             }
-
-            getSender().send(dup);
-            getSender().flush();
-
-
         }
     }
 

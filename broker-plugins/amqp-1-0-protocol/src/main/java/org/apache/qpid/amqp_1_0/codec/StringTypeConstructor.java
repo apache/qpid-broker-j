@@ -64,19 +64,22 @@ public class StringTypeConstructor extends VariableWidthTypeConstructor
         try
         {
             dup.limit(dup.position()+size);
+            CharBuffer charBuf = dup.decode(_charSet);
+
+            String str = charBuf.toString();
+
+            in.position(origPosition + size);
+
+            return str;
         }
         catch(IllegalArgumentException e)
         {
             throw new IllegalArgumentException("position: " + dup.position() + "size: " + size + " capacity: " + dup.capacity());
         }
-        CharBuffer charBuf = dup.decode(_charSet);
-
-        String str = charBuf.toString();
-
-        in.position(origPosition+size);
-
-        return str;
-
+        finally
+        {
+            dup.dispose();
+        }
     }
 
 }

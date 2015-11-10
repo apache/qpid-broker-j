@@ -695,32 +695,35 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
             int size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
             QpidByteBuffer payloadDup = payload == null ? null : payload.duplicate();
             int payloadSent = getMaxFrameSize() - (size + 9);
-            if (payloadSent < (payload == null ? 0 : payload.remaining()))
+            try
             {
-
-                if (body instanceof Transfer)
+                if (payloadSent < (payload == null ? 0 : payload.remaining()))
                 {
-                    ((Transfer) body).setMore(Boolean.TRUE);
-                }
 
-                writer = _describedTypeRegistry.getValueWriter(body);
-                size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
-                payloadSent = getMaxFrameSize() - (size + 9);
+                    if (body instanceof Transfer)
+                    {
+                        ((Transfer) body).setMore(Boolean.TRUE);
+                    }
 
-                try
-                {
+                    writer = _describedTypeRegistry.getValueWriter(body);
+                    size = writer.writeToBuffer(EMPTY_BYTE_BUFFER);
+                    payloadSent = getMaxFrameSize() - (size + 9);
+
                     payloadDup.limit(payloadDup.position() + payloadSent);
                 }
-                catch (NullPointerException npe)
+                else
                 {
-                    throw npe;
+                    payloadSent = payload == null ? 0 : payload.remaining();
+                }
+                _frameOutputHandler.send(AMQFrame.createAMQFrame(channel, body, payloadDup));
+            }
+            finally
+            {
+                if (payloadDup != null)
+                {
+                    payloadDup.dispose();
                 }
             }
-            else
-            {
-                payloadSent = payload == null ? 0 : payload.remaining();
-            }
-            _frameOutputHandler.send(AMQFrame.createAMQFrame(channel, body, payloadDup));
             return payloadSent;
         }
         else

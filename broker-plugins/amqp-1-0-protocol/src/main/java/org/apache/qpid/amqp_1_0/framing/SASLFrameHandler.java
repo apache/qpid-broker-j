@@ -150,10 +150,10 @@ public class SASLFrameHandler implements ProtocolHandler
                         {
                             QpidByteBuffer dup = in.duplicate();
                             dup.limit(dup.position()+_buffer.remaining());
-                            int i = _buffer.remaining();
-                            int d = dup.remaining();
                             in.position(in.position()+_buffer.remaining());
                             _buffer.put(dup);
+                            dup.dispose();
+
                             oldIn = in;
                             _buffer.flip();
                             in = _buffer;
@@ -239,9 +239,6 @@ public class SASLFrameHandler implements ProtocolHandler
                         {
                             _connection.receive((short)channel,val);
                             reset();
-                            in = oldIn;
-                            oldIn = null;
-                            _buffer = null;
                             state = State.SIZE_0;
                             break;
                         }
@@ -253,6 +250,14 @@ public class SASLFrameHandler implements ProtocolHandler
                         state = State.ERROR;
                         frameParsingError = ex.getError();
                     }
+                    finally
+                    {
+                        in.dispose();
+
+                        in = oldIn;
+                        oldIn = null;
+                        _buffer = null;
+                    }
             }
 
         }
@@ -263,6 +268,11 @@ public class SASLFrameHandler implements ProtocolHandler
         if(_state == State.ERROR)
         {
             _connection.handleError(frameParsingError);
+            if (_buffer != null)
+            {
+                _buffer.dispose();
+                _buffer = null;
+            }
         }
             if(_connection.isSASLComplete())
             {

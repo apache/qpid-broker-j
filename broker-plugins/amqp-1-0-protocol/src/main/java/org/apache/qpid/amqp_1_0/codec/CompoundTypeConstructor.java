@@ -171,10 +171,6 @@ public class CompoundTypeConstructor extends VariableWidthTypeConstructor
             count = in.getInt();
         }
 
-        QpidByteBuffer inDup = in.slice();
-
-        inDup.limit(size-getSize());
-
         CompoundTypeAssembler assembler = _assemblerFactory.newInstance();
 
         assembler.init(count);

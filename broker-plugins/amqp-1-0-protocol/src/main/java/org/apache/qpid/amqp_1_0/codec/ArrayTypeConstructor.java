@@ -41,20 +41,29 @@ public abstract class ArrayTypeConstructor implements TypeConstructor<Object[]>
                                          size, in.remaining());
         }
         QpidByteBuffer dup = in.slice();
-        dup.limit(size);
-        in.position(in.position()+size);
-        int count = read(dup);
-        TypeConstructor t = handler.readConstructor(dup);
-        List rval = new ArrayList(count);
-        for(int i = 0; i < count; i++)
+
+        List rval;
+        try
         {
-            rval.add(t.construct(dup, handler));
+            dup.limit(size);
+            in.position(in.position()+size);
+            int count = read(dup);
+            TypeConstructor t = handler.readConstructor(dup);
+            rval = new ArrayList(count);
+            for(int i = 0; i < count; i++)
+            {
+                rval.add(t.construct(dup, handler));
+            }
+            if(dup.hasRemaining())
+            {
+                throw new AmqpErrorException(AmqpError.DECODE_ERROR,
+                                             "Array incorrectly encoded, %d bytes remaining after decoding %d elements",
+                                             dup.remaining(), count);
+            }
         }
-        if(dup.hasRemaining())
+        finally
         {
-            throw new AmqpErrorException(AmqpError.DECODE_ERROR,
-                                         "Array incorrectly encoded, %d bytes remaining after decoding %d elements",
-                                         dup.remaining(), count);
+            dup.dispose();
         }
         if(rval.size() == 0)
         {

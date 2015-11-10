@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -90,14 +89,15 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
 
         List<QpidByteBuffer> fragments = null;
 
-
+        org.apache.qpid.amqp_1_0.type.DeliveryState xfrState = xfr.getState();
+        final Binary deliveryTag = xfr.getDeliveryTag();
 
         if(Boolean.TRUE.equals(xfr.getMore()) && _incompleteMessage == null)
         {
             _incompleteMessage = new ArrayList<Transfer>();
             _incompleteMessage.add(xfr);
             _resumedMessage = Boolean.TRUE.equals(xfr.getResume());
-            _messageDeliveryTag = xfr.getDeliveryTag();
+            _messageDeliveryTag = deliveryTag;
             return;
         }
         else if(_incompleteMessage != null)
@@ -110,9 +110,11 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
             }
 
             fragments = new ArrayList<QpidByteBuffer>(_incompleteMessage.size());
+
             for(Transfer t : _incompleteMessage)
             {
-                fragments.add(t.getPayload());
+                fragments.add(t.getPayload().duplicate());
+                t.dispose();
             }
             _incompleteMessage=null;
 
@@ -120,8 +122,9 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
         else
         {
             _resumedMessage = Boolean.TRUE.equals(xfr.getResume());
-            _messageDeliveryTag = xfr.getDeliveryTag();
-            fragments = Collections.singletonList(xfr.getPayload());
+            _messageDeliveryTag = deliveryTag;
+            fragments = Collections.singletonList(xfr.getPayload().duplicate());
+            xfr.dispose();
         }
 
         if(_resumedMessage)
@@ -151,19 +154,25 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
             mmd = new MessageMetaData_1_0(fragments.toArray(new QpidByteBuffer[fragments.size()]),
                     _sectionDecoder,
                     immutableSections);
-
             MessageHandle<MessageMetaData_1_0> handle = _vhost.getMessageStore().addMessage(mmd);
 
             for(QpidByteBuffer bareMessageBuf : immutableSections)
             {
-                handle.addContent(bareMessageBuf.duplicate());
+                handle.addContent(bareMessageBuf);
             }
             final StoredMessage<MessageMetaData_1_0> storedMessage = handle.allContentAdded();
-            Message_1_0 message = new Message_1_0(storedMessage, fragments, getSession().getConnection().getReference());
+            Message_1_0 message = new Message_1_0(storedMessage, getSession().getConnection().getReference());
+
+
+            for(QpidByteBuffer fragment: fragments)
+            {
+                fragment.dispose();
+            }
+            fragments = null;
+
             MessageReference<Message_1_0> reference = message.newReference();
 
             Binary transactionId = null;
-            org.apache.qpid.amqp_1_0.type.DeliveryState xfrState = xfr.getState();
             if(xfrState != null)
             {
                 if(xfrState instanceof TransactionalState)
@@ -202,8 +211,6 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
 
 
             boolean settled = transaction instanceof AutoCommitTransaction && ReceiverSettleMode.FIRST.equals(getReceivingSettlementMode());
-
-            final Binary deliveryTag = xfr.getDeliveryTag();
 
             if(!settled)
             {

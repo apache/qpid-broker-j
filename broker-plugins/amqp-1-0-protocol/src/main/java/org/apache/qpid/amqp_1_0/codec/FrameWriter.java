@@ -84,10 +84,12 @@ public class FrameWriter implements ValueWriter<AMQFrame>
                     {
                         _typeWriter.setValue(_frame.getFrameBody());
 
+                        QpidByteBuffer qpidByteBuffer = remaining > 8
+                                ? buffer.duplicate().position(buffer.position() + 8)
+                                : QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY);
 
-                        _size = _typeWriter.writeToBuffer(remaining > 8
-                                                          ? buffer.duplicate().position(buffer.position()+8)
-                                                          : QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY)) + 8 + payloadLength;
+                        _size = _typeWriter.writeToBuffer(qpidByteBuffer) + 8 + payloadLength;
+                        qpidByteBuffer.dispose();
                     }
                     else
                     {
@@ -118,6 +120,7 @@ public class FrameWriter implements ValueWriter<AMQFrame>
                                     int payloadUsed = buffer.remaining();
                                     dup.limit(payloadUsed);
                                     buffer.put(dup);
+                                    dup.dispose();
                                     _payload.position(_payload.position()+payloadUsed);
                                 }
                                 _state = State.PAYLOAD;
@@ -129,7 +132,17 @@ public class FrameWriter implements ValueWriter<AMQFrame>
                                 if(payloadLength > 0)
                                 {
                                     buffer.put(_payload);
+
                                 }
+
+                                if (_payload != null)
+                                {
+                                    _payload.dispose();
+                                    _payload = null;
+                                }
+
+                                _frame = null;
+                                _typeWriter = null;
                                 _state = State.DONE;
                             }
 
@@ -217,6 +230,10 @@ public class FrameWriter implements ValueWriter<AMQFrame>
                         _state = State.DONE;
                         _frame = null;
                         _typeWriter = null;
+                        if (_payload != null)
+                        {
+                            _payload.dispose();
+                        }
                         _payload = null;
 
                     }
@@ -228,12 +245,14 @@ public class FrameWriter implements ValueWriter<AMQFrame>
                             _state = State.DONE;
                             _frame = null;
                             _typeWriter = null;
+                            _payload.dispose();
                             _payload = null;
                         }
                     }
 
             }
         }
+
         if(_size == -1)
         {
             _size =  _typeWriter.writeToBuffer(QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY)) + 8 + (_payload == null ? 0 : _payload.remaining());

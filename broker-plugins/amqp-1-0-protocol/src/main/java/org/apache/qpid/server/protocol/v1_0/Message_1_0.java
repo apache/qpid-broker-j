@@ -21,7 +21,6 @@
 package org.apache.qpid.server.protocol.v1_0;
 
 
-import java.lang.ref.SoftReference;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -42,7 +41,6 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
             .registerSecurityLayer();
     public static final MessageMetaData_1_0 DELETED_MESSAGE_METADATA = new MessageMetaData_1_0(Collections.<Section>emptyList(), new SectionEncoderImpl(DESCRIBED_TYPE_REGISTRY));
 
-    private volatile SoftReference<Collection<QpidByteBuffer>> _fragmentsRef;
     private long _arrivalTime;
     private final long _size;
 
@@ -50,37 +48,14 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage)
     {
         super(storedMessage, null);
-        final Collection<QpidByteBuffer> fragments = restoreFragments(getStoredMessage());
-        _fragmentsRef = new SoftReference<>(fragments);
-        _size = calculateSize(fragments);
-    }
-
-    private long calculateSize(final Collection<QpidByteBuffer> fragments)
-    {
-
-        long size = 0l;
-        if(fragments != null)
-        {
-            for(QpidByteBuffer buf : fragments)
-            {
-                size += buf.remaining();
-            }
-        }
-        return size;
-    }
-
-    private static Collection<QpidByteBuffer> restoreFragments(StoredMessage<MessageMetaData_1_0> storedMessage)
-    {
-        return storedMessage.getContent();
+        _size = storedMessage.getMetaData().getContentSize();
     }
 
     public Message_1_0(final StoredMessage<MessageMetaData_1_0> storedMessage,
-                       final Collection<QpidByteBuffer> fragments,
                        final Object connectionReference)
     {
         super(storedMessage, connectionReference);
-        _fragmentsRef = new SoftReference<>(fragments);
-        _size = calculateSize(fragments);
+        _size = storedMessage.getMetaData().getContentSize();
         _arrivalTime = System.currentTimeMillis();
     }
 
@@ -125,14 +100,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 
     public Collection<QpidByteBuffer> getFragments()
     {
-
-        Collection<QpidByteBuffer> fragments = _fragmentsRef.get();
-        if(fragments == null)
-        {
-            fragments = restoreFragments(getStoredMessage());
-            _fragmentsRef = new SoftReference<>(fragments);
-        }
-        return fragments;
+        return getContent();
     }
 
 }

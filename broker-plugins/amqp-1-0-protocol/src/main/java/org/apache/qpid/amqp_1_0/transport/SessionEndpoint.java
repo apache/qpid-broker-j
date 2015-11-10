@@ -644,18 +644,25 @@ public class SessionEndpoint
             if(payload != null && payloadSent < payload.remaining() && payloadSent >= 0)
             {
                 payload = payload.duplicate();
-                payload.position(payload.position()+payloadSent);
+                try
+                {
+                    payload.position(payload.position()+payloadSent);
 
-                Transfer secondTransfer = new Transfer();
+                    Transfer secondTransfer = new Transfer();
 
-                secondTransfer.setDeliveryTag(xfr.getDeliveryTag());
-                secondTransfer.setHandle(xfr.getHandle());
-                secondTransfer.setSettled(xfr.getSettled());
-                secondTransfer.setState(xfr.getState());
-                secondTransfer.setMessageFormat(xfr.getMessageFormat());
-                secondTransfer.setPayload(payload);
+                    secondTransfer.setDeliveryTag(xfr.getDeliveryTag());
+                    secondTransfer.setHandle(xfr.getHandle());
+                    secondTransfer.setSettled(xfr.getSettled());
+                    secondTransfer.setState(xfr.getState());
+                    secondTransfer.setMessageFormat(xfr.getMessageFormat());
+                    secondTransfer.setPayload(payload);
 
-                sendTransfer(secondTransfer, endpoint, false);
+                    sendTransfer(secondTransfer, endpoint, false);
+                }
+                finally
+                {
+                    payload.dispose();
+                }
 
             }
         }

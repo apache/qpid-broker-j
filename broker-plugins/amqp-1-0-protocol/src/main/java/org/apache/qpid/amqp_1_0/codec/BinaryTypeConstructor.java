@@ -56,26 +56,9 @@ public class BinaryTypeConstructor extends VariableWidthTypeConstructor
             size = in.getInt();
         }
 
-        QpidByteBuffer inDup = in.slice();
-        inDup.limit(inDup.position()+size);
-
-        Binary binary;
-/*        if(isCopy && inDup.hasArray())
-        {
-            binary= new Binary(inDup.array(), inDup.arrayOffset()+inDup.position(),size);
-        }
-        else
-        {*/
-            byte[] buf = new byte[size];
-            inDup.get(buf);
-            binary = new Binary(buf);
-  /*      }*/
-
-        in.position(in.position()+size);
-
-
-        return binary;
-
+        byte[] buf = new byte[size];
+        in.get(buf);
+        return new Binary(buf);
     }
 
 }

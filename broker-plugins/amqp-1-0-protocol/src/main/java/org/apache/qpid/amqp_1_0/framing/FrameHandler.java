@@ -144,7 +144,8 @@ public class FrameHandler implements ProtocolHandler
                 case BUFFERING:
                     if(_buffer != null)
                     {
-                        if(in.remaining() < _buffer.remaining())
+                        final int bufferRemaining = _buffer.remaining();
+                        if(in.remaining() < bufferRemaining)
                         {
                             _buffer.put(in);
                             break;
@@ -152,12 +153,14 @@ public class FrameHandler implements ProtocolHandler
                         else
                         {
                             QpidByteBuffer dup = in.duplicate();
-                            dup.limit(dup.position()+_buffer.remaining());
-                            int i = _buffer.remaining();
-                            int d = dup.remaining();
-                            in.position(in.position()+_buffer.remaining());
+                            dup.limit(dup.position() + bufferRemaining);
+
                             _buffer.put(dup);
+                            dup.dispose();
+
+                            in.position(in.position() + bufferRemaining);
                             oldIn = in;
+
                             _buffer.flip();
                             in = _buffer;
                             state = State.PARSING;
@@ -240,14 +243,10 @@ public class FrameHandler implements ProtocolHandler
                         }
 
                         _connection.receive((short)channel,val);
+
                         reset();
-                        in = oldIn;
-                        oldIn = null;
-                        _buffer = null;
                         state = State.SIZE_0;
                         break;
-
-
                     }
                     catch (AmqpErrorException ex)
                     {
@@ -260,6 +259,14 @@ public class FrameHandler implements ProtocolHandler
                         in.limit(inLimit);
                         throw e;
                     }
+                    finally
+                    {
+                        in.dispose();
+
+                        in = oldIn;
+                        oldIn = null;
+                        _buffer = null;
+                    }
             }
 
         }
@@ -270,6 +277,12 @@ public class FrameHandler implements ProtocolHandler
         if(_state == State.ERROR)
         {
             _connection.handleError(frameParsingError);
+
+            if (_buffer != null)
+            {
+                _buffer.dispose();
+                _buffer = null;
+            }
         }
         }
         catch(RuntimeException e)

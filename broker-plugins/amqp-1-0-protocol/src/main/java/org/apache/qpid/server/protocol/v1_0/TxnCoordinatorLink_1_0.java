@@ -34,7 +34,7 @@ import org.apache.qpid.amqp_1_0.transport.LinkEndpoint;
 import org.apache.qpid.amqp_1_0.transport.ReceivingLinkEndpoint;
 import org.apache.qpid.amqp_1_0.transport.ReceivingLinkListener;
 import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
-import org.apache.qpid.amqp_1_0.type.DeliveryState;
+import org.apache.qpid.amqp_1_0.type.Binary;
 import org.apache.qpid.amqp_1_0.type.Section;
 import org.apache.qpid.amqp_1_0.type.UnsignedInteger;
 import org.apache.qpid.amqp_1_0.type.messaging.Accepted;
@@ -80,6 +80,7 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
 
         QpidByteBuffer payload = null;
 
+        final Binary deliveryTag = xfr.getDeliveryTag();
 
         if(Boolean.TRUE.equals(xfr.getMore()) && _incompleteMessage == null)
         {
@@ -104,6 +105,7 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
             for(Transfer t : _incompleteMessage)
             {
                 payload.put(t.getPayload().duplicate());
+                t.dispose();
             }
             payload.flip();
             _incompleteMessage=null;
@@ -111,9 +113,9 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
         }
         else
         {
-            payload = xfr.getPayload();
+            payload = xfr.getPayload().duplicate();
+            xfr.dispose();
         }
-
 
         // Only interested int he amqp-value section that holds the message to the coordinator
         try
@@ -125,6 +127,7 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
                 if(section instanceof AmqpValue)
                 {
                     Object command = ((AmqpValue) section).getValue();
+
 
                     if(command instanceof Declare)
                     {
@@ -143,16 +146,15 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
 
 
                         state.setTxnId(_session.integerToBinary(txnId));
-                        _endpoint.updateDisposition(xfr.getDeliveryTag(), state, true);
+                        _endpoint.updateDisposition(deliveryTag, state, true);
 
                     }
                     else if(command instanceof Discharge)
                     {
                         Discharge discharge = (Discharge) command;
 
-                        DeliveryState state = xfr.getState();
                         discharge(_session.binaryToInteger(discharge.getTxnId()), discharge.getFail());
-                        _endpoint.updateDisposition(xfr.getDeliveryTag(), new Accepted(), true);
+                        _endpoint.updateDisposition(deliveryTag, new Accepted(), true);
 
                     }
                 }
@@ -163,6 +165,13 @@ public class TxnCoordinatorLink_1_0 implements ReceivingLinkListener, Link_1_0
         {
             //TODO
             _logger.error("AMQP error", e);
+        }
+        finally
+        {
+            if (payload != null)
+            {
+                payload.dispose();
+            }
         }
 
     }

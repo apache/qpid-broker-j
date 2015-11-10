@@ -70,7 +70,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     private Map _appProperties;
     private Map _footer;
 
-    private List<QpidByteBuffer> _encodedSections = new ArrayList<>(3);
+    private volatile List<QpidByteBuffer> _encodedSections = new ArrayList<>(3);
 
     private volatile QpidByteBuffer _encoded;
     private MessageHeader_1_0 _messageHeader;
@@ -180,7 +180,9 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             src = QpidByteBuffer.allocateDirect(size);
             for(QpidByteBuffer buf : fragments)
             {
-                src.put(buf.duplicate());
+                QpidByteBuffer duplicate = buf.duplicate();
+                src.put(duplicate);
+                duplicate.dispose();
             }
             src.flip();
 
@@ -273,26 +275,9 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             }
 
 
-            int pos = 0;
             for(QpidByteBuffer buf : fragments)
             {
-/*
-                if(pos < startBarePos)
-                {
-                    if(pos + buf.remaining() > startBarePos)
-                    {
-                        ByteBuffer dup = buf.duplicate();
-                        dup.position(dup.position()+startBarePos-pos);
-                        dup.slice();
-                        encodedSections.add(dup);
-                    }
-                }
-                else
-*/
-                {
-                    encodedSections.add(buf.duplicate());
-                }
-                pos += buf.remaining();
+                encodedSections.add(buf.duplicate());
             }
 
             return sections;
@@ -301,6 +286,10 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         {
             _logger.error("Decoding read section error", e);
             throw new IllegalArgumentException(e);
+        }
+        finally
+        {
+            src.dispose();
         }
     }
 
@@ -329,7 +318,9 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
 
         for(QpidByteBuffer bin : _encodedSections)
         {
-            buf.put(bin.duplicate());
+            QpidByteBuffer duplicate = bin.duplicate();
+            buf.put(duplicate);
+            duplicate.dispose();
         }
 
         return buf;
@@ -402,6 +393,11 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
     @Override
     public void dispose()
     {
+        for(QpidByteBuffer bin : _encodedSections)
+        {
+            bin.dispose();
+        }
+        _encodedSections = null;
         _encoded.dispose();
         _encoded = null;
     }

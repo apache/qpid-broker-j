@@ -137,141 +137,146 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         }
 
         Transfer transfer = new Transfer();
-        //TODO
-
-        Collection<QpidByteBuffer> fragments = message.getFragments();
-        QpidByteBuffer payload;
-        if(fragments.size() == 1)
+        try
         {
-            payload = fragments.iterator().next();
-        }
-        else
-        {
-            int size = 0;
-            for(QpidByteBuffer fragment : fragments)
+            QpidByteBuffer payload = null;
+            //TODO
+            Collection<QpidByteBuffer> fragments = message.getFragments();
+            if(fragments.size() == 1)
             {
-                size += fragment.remaining();
-            }
-
-            payload = QpidByteBuffer.allocateDirect(size);
-
-            for(QpidByteBuffer fragment : fragments)
-            {
-                payload.put(fragment.duplicate());
-            }
-
-            payload.flip();
-        }
-
-        if(entry.getDeliveryCount() != 0)
-        {
-            payload = payload.duplicate();
-            ValueHandler valueHandler = new ValueHandler(_typeRegistry);
-
-            Header oldHeader = null;
-            try
-            {
-                Object value = valueHandler.parse(payload);
-                if(value instanceof Header)
-                {
-                    oldHeader = (Header) value;
-                }
-                else
-                {
-                    payload.position(0);
-                }
-            }
-            catch (AmqpErrorException e)
-            {
-                //TODO
-                throw new ConnectionScopedRuntimeException(e);
-            }
-
-            Header header = new Header();
-            if(oldHeader != null)
-            {
-                header.setDurable(oldHeader.getDurable());
-                header.setPriority(oldHeader.getPriority());
-                header.setTtl(oldHeader.getTtl());
-            }
-            header.setDeliveryCount(UnsignedInteger.valueOf(entry.getDeliveryCount()));
-            _sectionEncoder.reset();
-            _sectionEncoder.encodeObject(header);
-            Binary encodedHeader = _sectionEncoder.getEncoding();
-
-            QpidByteBuffer oldPayload = payload;
-            payload = QpidByteBuffer.allocateDirect(oldPayload.remaining() + encodedHeader.getLength());
-            payload.put(encodedHeader.getArray(),encodedHeader.getArrayOffset(),encodedHeader.getLength());
-            payload.put(oldPayload);
-            payload.flip();
-        }
-
-        transfer.setPayload(payload);
-        byte[] data = new byte[8];
-        ByteBuffer.wrap(data).putLong(_deliveryTag++);
-        final Binary tag = new Binary(data);
-
-        transfer.setDeliveryTag(tag);
-
-        synchronized(_link.getLock())
-        {
-            if(_link.isAttached())
-            {
-                if(SenderSettleMode.SETTLED.equals(getEndpoint().getSendingSettlementMode()))
-                {
-                    transfer.setSettled(true);
-                }
-                else
-                {
-                    UnsettledAction action = _acquires
-                                             ? new DispositionAction(tag, entry)
-                                             : new DoNothingAction(tag, entry);
-
-                    _link.addUnsettled(tag, action, entry);
-                }
-
-                if(_transactionId != null)
-                {
-                    TransactionalState state = new TransactionalState();
-                    state.setTxnId(_transactionId);
-                    transfer.setState(state);
-                }
-                // TODO - need to deal with failure here
-                if(_acquires && _transactionId != null)
-                {
-                    ServerTransaction txn = _link.getTransaction(_transactionId);
-                    if(txn != null)
-                    {
-                        txn.addPostTransactionAction(new ServerTransaction.Action(){
-
-                            public void postCommit()
-                            {
-                                //To change body of implemented methods use File | Settings | File Templates.
-                            }
-
-                            public void onRollback()
-                            {
-                                if(entry.isAcquiredBy(getConsumer()))
-                                {
-                                    entry.release();
-                                    _link.getEndpoint().updateDisposition(tag, (DeliveryState)null, true);
-
-
-                                }
-                            }
-                        });
-                    }
-
-                }
-                getSession().getAMQPConnection().registerMessageDelivered(message.getSize());
-                getEndpoint().transfer(transfer);
+                payload = fragments.iterator().next();
             }
             else
             {
-                entry.release();
+                int size = 0;
+                for(QpidByteBuffer fragment : fragments)
+                {
+                    size += fragment.remaining();
+                }
+
+                payload = QpidByteBuffer.allocateDirect(size);
+
+                for(QpidByteBuffer fragment : fragments)
+                {
+                    payload.put(fragment);
+                    fragment.dispose();
+                }
+
+                payload.flip();
+            }
+
+            if(entry.getDeliveryCount() != 0)
+            {
+                ValueHandler valueHandler = new ValueHandler(_typeRegistry);
+
+                Header oldHeader = null;
+                try
+                {
+                    Object value = valueHandler.parse(payload);
+                    if(value instanceof Header)
+                    {
+                        oldHeader = (Header) value;
+                    }
+                    else
+                    {
+                        payload.position(0);
+                    }
+                }
+                catch (AmqpErrorException e)
+                {
+                    //TODO
+                    throw new ConnectionScopedRuntimeException(e);
+                }
+
+                Header header = new Header();
+                if(oldHeader != null)
+                {
+                    header.setDurable(oldHeader.getDurable());
+                    header.setPriority(oldHeader.getPriority());
+                    header.setTtl(oldHeader.getTtl());
+                }
+                header.setDeliveryCount(UnsignedInteger.valueOf(entry.getDeliveryCount()));
+                _sectionEncoder.reset();
+                _sectionEncoder.encodeObject(header);
+                Binary encodedHeader = _sectionEncoder.getEncoding();
+
+                QpidByteBuffer oldPayload = payload;
+                payload = QpidByteBuffer.allocateDirect(oldPayload.remaining() + encodedHeader.getLength());
+                payload.put(encodedHeader.getArray(),encodedHeader.getArrayOffset(),encodedHeader.getLength());
+                payload.put(oldPayload);
+                oldPayload.dispose();
+                payload.flip();
+            }
+
+            transfer.setPayload(payload);
+            byte[] data = new byte[8];
+            ByteBuffer.wrap(data).putLong(_deliveryTag++);
+            final Binary tag = new Binary(data);
+
+            transfer.setDeliveryTag(tag);
+
+            synchronized(_link.getLock())
+            {
+                if(_link.isAttached())
+                {
+                    if(SenderSettleMode.SETTLED.equals(getEndpoint().getSendingSettlementMode()))
+                    {
+                        transfer.setSettled(true);
+                    }
+                    else
+                    {
+                        UnsettledAction action = _acquires
+                                                 ? new DispositionAction(tag, entry)
+                                                 : new DoNothingAction(tag, entry);
+
+                        _link.addUnsettled(tag, action, entry);
+                    }
+
+                    if(_transactionId != null)
+                    {
+                        TransactionalState state = new TransactionalState();
+                        state.setTxnId(_transactionId);
+                        transfer.setState(state);
+                    }
+                    // TODO - need to deal with failure here
+                    if(_acquires && _transactionId != null)
+                    {
+                        ServerTransaction txn = _link.getTransaction(_transactionId);
+                        if(txn != null)
+                        {
+                            txn.addPostTransactionAction(new ServerTransaction.Action(){
+
+                                public void postCommit()
+                                {
+                                }
+
+                                public void onRollback()
+                                {
+                                    if(entry.isAcquiredBy(getConsumer()))
+                                    {
+                                        entry.release();
+                                        _link.getEndpoint().updateDisposition(tag, (DeliveryState)null, true);
+
+
+                                    }
+                                }
+                            });
+                        }
+
+                    }
+                    getSession().getAMQPConnection().registerMessageDelivered(message.getSize());
+                    getEndpoint().transfer(transfer);
+                }
+                else
+                {
+                    entry.release();
+                }
             }
         }
-
+        finally
+        {
+            transfer.dispose();
+        }
     }
 
     public void flushBatched()

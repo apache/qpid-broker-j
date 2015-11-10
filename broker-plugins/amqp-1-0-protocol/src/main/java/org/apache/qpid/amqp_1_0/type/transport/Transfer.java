@@ -38,7 +38,7 @@ public class Transfer
   {
 
 
-    private QpidByteBuffer _payload;
+    private volatile QpidByteBuffer _payload;
 
     private UnsignedInteger _handle;
 
@@ -296,5 +296,12 @@ public class Transfer
         return _payload;
     }
 
-
+    public void dispose()
+    {
+        if (_payload != null)
+        {
+            _payload.dispose();
+            _payload = null;
+        }
+    }
   }

@@ -215,8 +215,6 @@ public abstract class CompoundWriter<V> implements ValueWriter<V>
     {
 
         State state = State.FORMAT_CODE;
-        /*ByteBuffer origBuffer = buffer;
-        buffer = buffer.duplicate();*/
         int origPosition = buffer.position();
         int length ;
 
