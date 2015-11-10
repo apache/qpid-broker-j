@@ -2215,7 +2215,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         //QPID-1187 - Treat the consumer as suspended for this message
                         // and wait for the message to be removed to continue delivery.
                         subActive = false;
-                        node.addStateChangeListener(new QueueEntryListener(sub));
+                        sub.awaitCredit(node);
+
                     }
                 }
 
@@ -2622,34 +2623,6 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         public boolean filterComplete()
         {
             return false;
-        }
-    }
-
-    private final class QueueEntryListener implements StateChangeListener<MessageInstance, QueueEntry.State>
-    {
-
-        private final QueueConsumer<?> _sub;
-
-        public QueueEntryListener(final QueueConsumer<?> sub)
-        {
-            _sub = sub;
-        }
-
-        public boolean equals(Object o)
-        {
-            return o instanceof AbstractQueue.QueueEntryListener
-                    && _sub == ((QueueEntryListener) o)._sub;
-        }
-
-        public int hashCode()
-        {
-            return System.identityHashCode(_sub);
-        }
-
-        public void stateChanged(MessageInstance entry, QueueEntry.State oldSate, QueueEntry.State newState)
-        {
-            entry.removeStateChangeListener(this);
-            deliverAsync();
         }
     }
 

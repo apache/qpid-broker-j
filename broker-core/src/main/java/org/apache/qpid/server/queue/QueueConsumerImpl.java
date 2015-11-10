@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,7 @@ class QueueConsumerImpl
     private final long _consumerNumber;
     private final long _createTime = System.currentTimeMillis();
     private final MessageInstance.ConsumerAcquiredState<QueueConsumerImpl> _owningState = new MessageInstance.ConsumerAcquiredState<QueueConsumerImpl>(this);
+    private final WaitingOnCreditMessageListener _waitingOnCreditMessageListener = new WaitingOnCreditMessageListener();
     private final boolean _acquires;
     private final boolean _seesRequeues;
     private final boolean _isTransient;
@@ -235,6 +237,12 @@ class QueueConsumerImpl
     }
 
     @Override
+    public void awaitCredit(final QueueEntry node)
+    {
+        _waitingOnCreditMessageListener.update(node);
+    }
+
+    @Override
     public void externalStateChange()
     {
         _queue.deliverAsync();
@@ -278,6 +286,7 @@ class QueueConsumerImpl
             _target.getSendLock();
             try
             {
+                _waitingOnCreditMessageListener.remove();
                 _target.consumerRemoved(this);
                 _target.removeStateChangeListener(_listener);
                 _queue.unregisterConsumer(this);
@@ -616,5 +625,45 @@ class QueueConsumerImpl
     private EventLogger getEventLogger()
     {
         return _queue.getEventLogger();
+    }
+
+    public class WaitingOnCreditMessageListener implements StateChangeListener<MessageInstance, QueueEntry.State>
+    {
+        private final AtomicReference<MessageInstance> _entry = new AtomicReference<>();
+
+        public WaitingOnCreditMessageListener()
+        {
+        }
+
+        public void update(final MessageInstance entry)
+        {
+            remove();
+            // this only happens under send lock so only one thread can be setting to a non null value at any time
+            _entry.set(entry);
+            entry.addStateChangeListener(this);
+            if(!entry.isAvailable())
+            {
+                _queue.deliverAsync();
+                remove();
+            }
+        }
+
+        public void remove()
+        {
+            MessageInstance instance;
+            if((instance = _entry.getAndSet(null)) != null)
+            {
+                instance.removeStateChangeListener(this);
+            }
+
+        }
+
+        public void stateChanged(MessageInstance entry, QueueEntry.State oldSate, QueueEntry.State newState)
+        {
+            entry.removeStateChangeListener(this);
+            _entry.compareAndSet(entry, null);
+            _queue.deliverAsync();
+        }
+
     }
 }

@@ -51,4 +51,5 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends ConsumerImpl,
 
     QueueContext getQueueContext();
 
+    void awaitCredit(QueueEntry entry);
 }
