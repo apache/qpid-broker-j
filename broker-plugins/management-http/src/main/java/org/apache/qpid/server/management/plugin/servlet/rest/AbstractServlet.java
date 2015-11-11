@@ -223,15 +223,10 @@ public abstract class AbstractServlet extends HttpServlet
         {
             Throwable cause = e.getCause();
 
-            // Jetty uses it EofException to signal an EOF from the peer (e.g. broken pipe etc). It arises in
+            // Jetty uses EofException to signal an EOF from the peer (e.g. broken pipe etc). It arises in
             // situations such as abnormal browser termination etc.
             if (cause instanceof org.eclipse.jetty.io.EofException)
             {
-                if (LOGGER.isDebugEnabled())
-                {
-                    String message = cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage();
-                    LOGGER.debug("IO error : {}", message);
-                }
                 throw (IOException)cause;
             }
 
