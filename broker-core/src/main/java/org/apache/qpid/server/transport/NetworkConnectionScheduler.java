@@ -103,7 +103,7 @@ public class NetworkConnectionScheduler
         Thread.currentThread().setName( connection.getThreadName() );
         try
         {
-            _running.incrementAndGet();
+            incrementRunningCount();
             boolean rerun;
             do
             {
@@ -149,9 +149,19 @@ public class NetworkConnectionScheduler
         }
         finally
         {
-            _running.decrementAndGet();
+            decrementRunningCount();
         }
 
+    }
+
+    void decrementRunningCount()
+    {
+        _running.decrementAndGet();
+    }
+
+    void incrementRunningCount()
+    {
+        _running.incrementAndGet();
     }
 
     public void close()

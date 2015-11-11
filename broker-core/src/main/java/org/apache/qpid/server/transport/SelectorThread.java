@@ -186,6 +186,7 @@ class SelectorThread extends Thread
                         {
                             try
                             {
+                                _scheduler.incrementRunningCount();
                                 transport.acceptSocketChannel(channel);
                             }
                             finally
@@ -199,6 +200,10 @@ class SelectorThread extends Thread
                                 {
                                     LOGGER.error("Failed to register selector on accepting port {}",
                                                  localSocketAddress, e);
+                                }
+                                finally
+                                {
+                                    _scheduler.decrementRunningCount();
                                 }
                             }
                         }
@@ -260,85 +265,93 @@ class SelectorThread extends Thread
 
         private void performSelect()
         {
-            while(!_closed.get())
+            _scheduler.incrementRunningCount();
+            try
             {
-                if(acquireSelecting())
+                while (!_closed.get())
                 {
-                    List<ConnectionProcessor> connections = new ArrayList<>();
-                    try
+                    if (acquireSelecting())
                     {
-                        if (!_closed.get())
+                        List<ConnectionProcessor> connections = new ArrayList<>();
+                        try
                         {
-                            Thread.currentThread().setName("Selector-" + _scheduler.getName());
-                            _inSelect.set(true);
-                            try
+                            if (!_closed.get())
                             {
-                                if(_wakeups.getAndSet(0) > 0)
+                                Thread.currentThread().setName("Selector-" + _scheduler.getName());
+                                _inSelect.set(true);
+                                try
                                 {
-                                    _selector.selectNow();
+                                    if (_wakeups.getAndSet(0) > 0)
+                                    {
+                                        _selector.selectNow();
+                                    }
+                                    else
+                                    {
+                                        _selector.select(_nextTimeout);
+                                    }
                                 }
-                                else
+                                catch (IOException e)
                                 {
-                                    _selector.select(_nextTimeout);
+                                    // TODO Inform the model object
+                                    LOGGER.error("Failed to trying to select()", e);
+                                    closeSelector();
+                                    return;
                                 }
-                            }
-                            catch (IOException e)
-                            {
-                                // TODO Inform the model object
-                                LOGGER.error("Failed to trying to select()", e);
-                                closeSelector();
-                                return;
-                            }
-                            finally
-                            {
-                                _inSelect.set(false);
-                            }
-                            runTasks();
-                            for (NonBlockingConnection connection : processSelectionKeys())
-                            {
-                                if(connection.setScheduled())
+                                finally
                                 {
-                                    connections.add(new ConnectionProcessor(_scheduler, connection));
+                                    _inSelect.set(false);
                                 }
-                            }
-                            for (NonBlockingConnection connection : reregisterUnregisteredConnections())
-                            {
-                                if(connection.setScheduled())
+                                runTasks();
+                                for (NonBlockingConnection connection : processSelectionKeys())
                                 {
-                                    connections.add(new ConnectionProcessor(_scheduler, connection));
+                                    if (connection.setScheduled())
+                                    {
+                                        connections.add(new ConnectionProcessor(_scheduler, connection));
+                                    }
                                 }
-                            }
-                            for (NonBlockingConnection connection : processUnscheduledConnections())
-                            {
-                                if(connection.setScheduled())
+                                for (NonBlockingConnection connection : reregisterUnregisteredConnections())
                                 {
-                                    connections.add(new ConnectionProcessor(_scheduler, connection));
+                                    if (connection.setScheduled())
+                                    {
+                                        connections.add(new ConnectionProcessor(_scheduler, connection));
+                                    }
                                 }
-                            }
+                                for (NonBlockingConnection connection : processUnscheduledConnections())
+                                {
+                                    if (connection.setScheduled())
+                                    {
+                                        connections.add(new ConnectionProcessor(_scheduler, connection));
+                                    }
+                                }
 
+                            }
                         }
-                    }
-                    finally
-                    {
-                        clearSelecting();
-                    }
-                    _workQueue.add(this);
-                    _workQueue.addAll(connections);
-                    for(ConnectionProcessor connectionProcessor : connections)
-                    {
-                        connectionProcessor.run();
-                    }
+                        finally
+                        {
+                            clearSelecting();
+                        }
+                        _workQueue.addAll(connections);
+                        _workQueue.add(this);
+                        for (ConnectionProcessor connectionProcessor : connections)
+                        {
+                            connectionProcessor.run();
+                        }
 
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
-                else
+
+                if (_closed.get() && acquireSelecting())
                 {
-                    break;
+                    closeSelector();
                 }
             }
-
-            if(_closed.get() && acquireSelecting())
+            finally
             {
-                closeSelector();
+                _scheduler.decrementRunningCount();
             }
         }
 
