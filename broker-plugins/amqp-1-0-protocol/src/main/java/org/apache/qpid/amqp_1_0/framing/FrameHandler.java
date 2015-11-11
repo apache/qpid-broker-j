@@ -235,10 +235,7 @@ public class FrameHandler implements ProtocolHandler
                         {
                             if(val instanceof Transfer)
                             {
-                                QpidByteBuffer buf = QpidByteBuffer.allocateDirect(in.remaining());
-                                buf.put(in);
-                                buf.flip();
-                                ((Transfer)val).setPayload(buf);
+                                ((Transfer)val).setPayload(in.slice());
                             }
                         }
 

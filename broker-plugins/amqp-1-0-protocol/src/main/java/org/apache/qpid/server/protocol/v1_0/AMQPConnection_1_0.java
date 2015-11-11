@@ -498,7 +498,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
             _frameWriter.setValue(amqFrame);
 
-            QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(_endpoint.getMaxFrameSize());
+            QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(_frameWriter.getSize());
 
             try
             {

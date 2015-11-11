@@ -24,8 +24,6 @@ package org.apache.qpid.amqp_1_0.codec;
 import org.apache.qpid.amqp_1_0.framing.AMQFrame;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
-import java.nio.ByteBuffer;
-
 public class FrameWriter implements ValueWriter<AMQFrame>
 {
     private Registry _registry;
@@ -82,7 +80,7 @@ public class FrameWriter implements ValueWriter<AMQFrame>
 
                     if(_typeWriter!=null)
                     {
-                        _typeWriter.setValue(_frame.getFrameBody());
+
 
                         QpidByteBuffer qpidByteBuffer = remaining > 8
                                 ? buffer.duplicate().position(buffer.position() + 8)
@@ -253,10 +251,6 @@ public class FrameWriter implements ValueWriter<AMQFrame>
             }
         }
 
-        if(_size == -1)
-        {
-            _size =  _typeWriter.writeToBuffer(QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY)) + 8 + (_payload == null ? 0 : _payload.remaining());
-        }
         return _size;
     }
 
@@ -264,17 +258,26 @@ public class FrameWriter implements ValueWriter<AMQFrame>
     {
         _frame = frame;
         _state = State.SIZE_0;
-        _size = -1;
-        _payload = null;
+        _payload = frame.getPayload() == null ? null : frame.getPayload().duplicate();
+
+        final int payloadLength = _payload == null ? 0 : _payload.remaining();
         final Object frameBody = frame.getFrameBody();
-        if(frameBody!=null)
+
+        _typeWriter = frameBody == null ? null : _registry.getValueWriter(frameBody);
+        if (_typeWriter == null)
         {
-            _typeWriter = _registry.getValueWriter(frameBody);
+            _size = 8 + payloadLength;
         }
         else
         {
-            _typeWriter = null;
+            _typeWriter.setValue(_frame.getFrameBody());
+            QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(EMPTY_BYTE_ARRAY);
+            _size = _typeWriter.writeToBuffer(qpidByteBuffer) + 8 + payloadLength;
         }
-        _payload = frame.getPayload() == null ? null : frame.getPayload().duplicate();
+    }
+
+    public int getSize()
+    {
+        return _size;
     }
 }
