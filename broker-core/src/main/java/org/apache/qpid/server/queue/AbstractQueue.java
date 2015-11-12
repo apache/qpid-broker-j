@@ -1320,7 +1320,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         }
                         else
                         {
-                            deliverMessage(sub, entry, false);
+                            deliverMessage(sub, entry, false, true);
                         }
                     }
                     finally
@@ -1401,9 +1401,15 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         getAtomicQueueCount().incrementAndGet();
     }
 
-    private void deliverMessage(final QueueConsumer<?> sub, final QueueEntry entry, boolean batch)
+    private void deliverMessage(final QueueConsumer<?> sub,
+                                final QueueEntry entry,
+                                boolean batch,
+                                final boolean updateLastSeen)
     {
-        setLastSeenEntry(sub, entry);
+        if(updateLastSeen)
+        {
+            setLastSeenEntry(sub, entry);
+        }
 
         _deliveredMessages.incrementAndGet();
 
@@ -1506,7 +1512,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             if (!consumer.isClosed())
             {
-                deliverMessage(consumer, entry, false);
+                deliverMessage(consumer, entry, false, false);
                 return true;
             }
             else
@@ -2199,7 +2205,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                             }
                             else
                             {
-                                deliverMessage(sub, node, batch);
+                                deliverMessage(sub, node, batch, true);
                             }
                         }
                         finally
