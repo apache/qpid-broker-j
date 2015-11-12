@@ -24,6 +24,8 @@ package org.apache.qpid.server.transport;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.cert.Certificate;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -197,9 +199,9 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     }
 
     @Override
-    public void processPending()
+    public Iterator<Runnable> processPendingIterator()
     {
-        _delegate.processPending();
+        return _delegate.processPendingIterator();
     }
 
     @Override
@@ -249,9 +251,9 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         }
 
         @Override
-        public void processPending()
+        public Iterator<Runnable> processPendingIterator()
         {
-
+            return Collections.emptyIterator();
         }
 
         @Override
@@ -370,9 +372,9 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         }
 
         @Override
-        public void processPending()
+        public Iterator<Runnable> processPendingIterator()
         {
-
+            return Collections.emptyIterator();
         }
 
         @Override

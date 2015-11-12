@@ -20,13 +20,12 @@
  */
 package org.apache.qpid.server.transport;
 
-import java.nio.ByteBuffer;
+import java.util.Iterator;
 
 import javax.security.auth.Subject;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.transport.ByteBufferReceiver;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.TransportActivity;
 
@@ -37,43 +36,43 @@ import org.apache.qpid.transport.network.TransportActivity;
 public interface ProtocolEngine extends TransportActivity
 {
 
-   // Called by the NetworkDriver when the socket has been closed for reading
-   void closed();
+    // Called by the NetworkDriver when the socket has been closed for reading
+    void closed();
 
-   // Called when the NetworkEngine has not written data for the specified period of time (will trigger a
-   // heartbeat)
-   @Override
-   void writerIdle();
+    // Called when the NetworkEngine has not written data for the specified period of time (will trigger a
+    // heartbeat)
+    @Override
+    void writerIdle();
 
-   // Called when the NetworkEngine has not read data for the specified period of time (will close the connection)
-   @Override
-   void readerIdle();
+    // Called when the NetworkEngine has not read data for the specified period of time (will close the connection)
+    @Override
+    void readerIdle();
 
-   Subject getSubject();
+    Subject getSubject();
 
-   boolean isTransportBlockedForWriting();
+    boolean isTransportBlockedForWriting();
 
-   void setTransportBlockedForWriting(boolean blocked);
+    void setTransportBlockedForWriting(boolean blocked);
 
-   void setMessageAssignmentSuspended(boolean value);
+    void setMessageAssignmentSuspended(boolean value);
 
-   boolean isMessageAssignmentSuspended();
+    boolean isMessageAssignmentSuspended();
 
-   void processPending();
+    Iterator<Runnable> processPendingIterator();
 
-   boolean hasWork();
+    boolean hasWork();
 
-   void clearWork();
+    void clearWork();
 
-   void notifyWork();
+    void notifyWork();
 
-   void setWorkListener(Action<ProtocolEngine> listener);
+    void setWorkListener(Action<ProtocolEngine> listener);
 
-   AggregateTicker getAggregateTicker();
+    AggregateTicker getAggregateTicker();
 
-   void encryptedTransport();
+    void encryptedTransport();
 
-   void received(QpidByteBuffer msg);
+    void received(QpidByteBuffer msg);
 
-   void setIOThread(Thread ioThread);
+    void setIOThread(Thread ioThread);
 }

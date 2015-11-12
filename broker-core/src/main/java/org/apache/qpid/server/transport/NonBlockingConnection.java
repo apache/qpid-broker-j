@@ -26,6 +26,7 @@ import java.nio.channels.SocketChannel;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,6 +72,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private volatile boolean _unexpectedByteBufferSizeReported;
     private final String _threadName;
     private volatile SelectorThread.SelectionTask _selectionTask;
+    private Iterator<Runnable> _pendingItertor;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -211,12 +213,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         }
     }
 
-    public boolean canRead()
+    public boolean wantsRead()
     {
         return _fullyWritten;
     }
 
-    public boolean canWrite()
+    public boolean wantsWrite()
     {
         return !_fullyWritten;
     }
@@ -243,16 +245,33 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 _protocolEngine.setIOThread(Thread.currentThread());
                 _protocolEngine.setMessageAssignmentSuspended(true);
 
-                if (!_fullyWritten)
+                if(_pendingItertor == null)
                 {
-                    doWrite();
+                    _pendingItertor = _protocolEngine.processPendingIterator();
                 }
 
-                if (_fullyWritten)
+                while(_pendingItertor.hasNext())
                 {
-                    _protocolEngine.processPending();
+                    long size = getBufferedSize();
+                    if(size >= _port.getNetworkBufferSize())
+                    {
+                        doWrite();
+                        if((size - getBufferedSize()) < (_port.getNetworkBufferSize()/2))
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        final Runnable task = _pendingItertor.next();
+                        task.run();
+                    }
+                }
 
-                    _protocolEngine.setTransportBlockedForWriting(!doWrite());
+                if (!_pendingItertor.hasNext())
+                {
+                    _pendingItertor = null;
+                    _protocolEngine.setTransportBlockedForWriting(false);
                     boolean dataRead = doRead();
                     _protocolEngine.setTransportBlockedForWriting(!doWrite());
 
@@ -304,6 +323,16 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
         return closed;
 
+    }
+
+    private long getBufferedSize()
+    {
+        long totalSize = 0l;
+        for(QpidByteBuffer buf : _buffers)
+        {
+            totalSize += buf.remaining();
+        }
+        return totalSize;
     }
 
     private void shutdown()

@@ -25,6 +25,8 @@ import java.net.SocketAddress;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -246,16 +248,23 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     @Override
     public void setTransportBlockedForWriting(final boolean blocked)
     {
-        _transportBlockedForWriting = blocked;
-        _connection.transportStateChanged();
+        if(_transportBlockedForWriting != blocked)
+        {
+            _transportBlockedForWriting = blocked;
+            _connection.transportStateChanged();
+        }
     }
 
     @Override
-    public void processPending()
+    public Iterator<Runnable> processPendingIterator()
     {
         if (isIOThread())
         {
-            _connection.processPending();
+            return _connection.processPendingIterator();
+        }
+        else
+        {
+            return Collections.emptyIterator();
         }
     }
 

@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -378,29 +379,72 @@ public class Connection_1_0 implements ConnectionEventListener
         _amqpConnection.notifyWork();
     }
 
-    public void processPending()
+    public Iterator<Runnable> processPendingIterator()
     {
-        List<? extends AMQSessionModel<?>> sessionsWithPending = new ArrayList<>(getSessionModels());
-        while(!sessionsWithPending.isEmpty())
+        return new ProcessPendingIterator();
+    }
+
+    private class ProcessPendingIterator implements Iterator<Runnable>
+    {
+        private final List<? extends AMQSessionModel<?>> _sessionsWithPending;
+        private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
+        private ProcessPendingIterator()
         {
-            final Iterator<? extends AMQSessionModel<?>> iter = sessionsWithPending.iterator();
-            AMQSessionModel<?> session;
-            while(iter.hasNext())
+            _sessionsWithPending = new ArrayList<>(getSessionModels());
+            _sessionIterator = _sessionsWithPending.iterator();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return !(_sessionsWithPending.isEmpty() && _asyncTaskList.isEmpty());
+        }
+
+        @Override
+        public Runnable next()
+        {
+            if(!_sessionsWithPending.isEmpty())
             {
-                session = iter.next();
-                if(!session.processPending())
+                if(!_sessionIterator.hasNext())
                 {
-                    iter.remove();
+                    _sessionIterator = _sessionsWithPending.iterator();
                 }
+                final AMQSessionModel<?> session = _sessionIterator.next();
+                return new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if(!session.processPending())
+                        {
+                            _sessionIterator.remove();
+                        }
+                    }
+                };
+            }
+            else if(!_asyncTaskList.isEmpty())
+            {
+                final Action<? super Connection_1_0> asyncAction = _asyncTaskList.poll();
+                return new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        asyncAction.performAction(Connection_1_0.this);
+                    }
+                };
+            }
+            else
+            {
+                throw new NoSuchElementException();
             }
         }
 
-        while(_asyncTaskList.peek() != null)
+        @Override
+        public void remove()
         {
-            Action<? super Connection_1_0> asyncAction = _asyncTaskList.poll();
-            asyncAction.performAction(this);
+            throw new UnsupportedOperationException();
         }
-
     }
 
     @Override

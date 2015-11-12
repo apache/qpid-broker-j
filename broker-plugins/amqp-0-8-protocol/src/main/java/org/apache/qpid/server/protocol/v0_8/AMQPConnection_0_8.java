@@ -31,11 +31,13 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
@@ -216,10 +218,13 @@ public class AMQPConnection_0_8
     @Override
     public void setTransportBlockedForWriting(final boolean blocked)
     {
-        _transportBlockedForWriting = blocked;
-        for(AMQChannel channel : _channelMap.values())
+        if(_transportBlockedForWriting != blocked)
         {
-            channel.transportStateChanged();
+            _transportBlockedForWriting = blocked;
+            for (AMQChannel channel : _channelMap.values())
+            {
+                channel.transportStateChanged();
+            }
         }
     }
 
@@ -277,7 +282,8 @@ public class AMQPConnection_0_8
                     if (_virtualHost.getState() == State.ACTIVE)
                     {
                         throw new ServerScopedRuntimeException(e);
-                    } else
+                    }
+                    else
                     {
                         throw new ConnectionScopedRuntimeException(e);
                     }
@@ -1517,37 +1523,6 @@ public class AMQPConnection_0_8
     }
 
     @Override
-    public void processPending()
-    {
-        if (!isIOThread())
-        {
-            return;
-        }
-
-        List<? extends AMQSessionModel<?>> sessionsWithPending = new ArrayList<>(getSessionModels());
-        while(!sessionsWithPending.isEmpty())
-        {
-            final Iterator<? extends AMQSessionModel<?>> iter = sessionsWithPending.iterator();
-            AMQSessionModel<?> session;
-            while(iter.hasNext())
-            {
-                session = iter.next();
-                if(!session.processPending())
-                {
-                    iter.remove();
-                }
-            }
-        }
-
-        while(_asyncTaskList.peek() != null)
-        {
-            Action<? super AMQPConnection_0_8> asyncAction = _asyncTaskList.poll();
-            asyncAction.performAction(this);
-        }
-
-    }
-
-    @Override
     public boolean hasWork()
     {
         return _stateChanged.get();
@@ -1576,5 +1551,78 @@ public class AMQPConnection_0_8
     public void setWorkListener(final Action<ProtocolEngine> listener)
     {
         _workListener.set(listener);
+    }
+
+    @Override
+    public Iterator<Runnable> processPendingIterator()
+    {
+        if (!isIOThread())
+        {
+            return Collections.emptyIterator();
+        }
+        return new ProcessPendingIterator();
+    }
+
+    private class ProcessPendingIterator implements Iterator<Runnable>
+    {
+        private final List<? extends AMQSessionModel<?>> _sessionsWithPending;
+        private Iterator<? extends AMQSessionModel<?>> _sessionIterator;
+        private ProcessPendingIterator()
+        {
+            _sessionsWithPending = new ArrayList<>(getSessionModels());
+            _sessionIterator = _sessionsWithPending.iterator();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return !(_sessionsWithPending.isEmpty() && _asyncTaskList.isEmpty());
+        }
+
+        @Override
+        public Runnable next()
+        {
+            if(!_sessionsWithPending.isEmpty())
+            {
+                if(!_sessionIterator.hasNext())
+                {
+                    _sessionIterator = _sessionsWithPending.iterator();
+                }
+                final AMQSessionModel<?> session = _sessionIterator.next();
+                return new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        if(!session.processPending())
+                        {
+                            _sessionIterator.remove();
+                        }
+                    }
+                };
+            }
+            else if(!_asyncTaskList.isEmpty())
+            {
+                final Action<? super AMQPConnection_0_8> asyncAction = _asyncTaskList.poll();
+                return new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        asyncAction.performAction(AMQPConnection_0_8.this);
+                    }
+                };
+            }
+            else
+            {
+                throw new NoSuchElementException();
+            }
+        }
+
+        @Override
+        public void remove()
+        {
+            throw new UnsupportedOperationException();
+        }
     }
 }

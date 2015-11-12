@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -545,7 +547,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     public void close()
     {
-        getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis()+ CLOSE_RESPONSE_TIMEOUT,
+        getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_RESPONSE_TIMEOUT,
                                                                    getNetwork()));
 
     }
@@ -558,17 +560,24 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     @Override
     public void setTransportBlockedForWriting(final boolean blocked)
     {
-        _transportBlockedForWriting = blocked;
-        _connection.transportStateChanged();
+        if(_transportBlockedForWriting != blocked)
+        {
+            _transportBlockedForWriting = blocked;
+            _connection.transportStateChanged();
+        }
 
     }
 
     @Override
-    public void processPending()
+    public Iterator<Runnable> processPendingIterator()
     {
         if (isIOThread())
         {
-            _connection.processPending();
+            return _connection.processPendingIterator();
+        }
+        else
+        {
+            return Collections.emptyIterator();
         }
     }
 

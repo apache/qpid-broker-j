@@ -28,6 +28,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -236,8 +237,11 @@ class WebSocketProvider implements AcceptingTransport
 
                 _protocolEngine.clearWork();
                 _protocolEngine.setMessageAssignmentSuspended(true);
-
-                _protocolEngine.processPending();
+                Iterator<Runnable> iter = _protocolEngine.processPendingIterator();
+                while(iter.hasNext())
+                {
+                    iter.next().run();
+                }
 
                 QpidByteBuffer buffer = QpidByteBuffer.allocateDirect(length);
                 buffer.put(data,offset,length);
@@ -443,7 +447,11 @@ class WebSocketProvider implements AcceptingTransport
             _protocolEngine.clearWork();
             _protocolEngine.setMessageAssignmentSuspended(true);
 
-            _protocolEngine.processPending();
+            Iterator<Runnable> iter = _protocolEngine.processPendingIterator();
+            while(iter.hasNext())
+            {
+                iter.next().run();
+            }
 
             doWrite();
 
