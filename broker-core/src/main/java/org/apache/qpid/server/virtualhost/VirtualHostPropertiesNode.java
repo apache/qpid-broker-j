@@ -32,15 +32,16 @@ import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.message.internal.InternalMessageHeader;
+import org.apache.qpid.server.model.VirtualHost;
 
 public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
 {
 
-    public VirtualHostPropertiesNode(final VirtualHostImpl virtualHost)
+    public VirtualHostPropertiesNode(final VirtualHost<?, ?, ?> virtualHost)
     {
         this(virtualHost, "$virtualhostProperties");
     }
-    public VirtualHostPropertiesNode(final VirtualHostImpl virtualHost, String name)
+    public VirtualHostPropertiesNode(final VirtualHost<?, ?, ?> virtualHost, String name)
     {
         super(name, virtualHost);
     }

@@ -43,6 +43,7 @@ import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
@@ -55,7 +56,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
     private List<Consumer> _consumers = new CopyOnWriteArrayList<>();
 
     public AbstractSystemMessageSource(
-            String name, final VirtualHostImpl virtualHost)
+            String name, final VirtualHost<?, ?, ?> virtualHost)
     {
         _name = name;
         _id = UUID.nameUUIDFromBytes((getClass().getSimpleName() + "/" + virtualHost.getName() + "/" + name).getBytes(
@@ -244,7 +245,17 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         @Override
         public void flush()
         {
-
+            AMQPConnection<?> connection = getSessionModel().getAMQPConnection();
+            try
+            {
+                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(true);
+                deliverMessages();
+                _target.processPending();
+            }
+            finally
+            {
+                connection.alwaysAllowMessageAssignmentInThisThreadIfItIsIOThread(false);
+            }
         }
 
 

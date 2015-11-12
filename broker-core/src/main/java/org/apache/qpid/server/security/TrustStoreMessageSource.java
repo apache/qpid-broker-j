@@ -48,7 +48,6 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.virtualhost.AbstractSystemMessageSource;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class TrustStoreMessageSource extends AbstractSystemMessageSource implements MessageSource
 {
@@ -59,7 +58,7 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
     private final VirtualHost<?, ?, ?> _virtualHost;
 
 
-    public TrustStoreMessageSource(final TrustStore<?> trustStore, final VirtualHostImpl virtualHost)
+    public TrustStoreMessageSource(final TrustStore<?> trustStore, final VirtualHost<?, ?, ?> virtualHost)
     {
         super(getSourceNameFromTrustStore(trustStore), virtualHost);
         _virtualHost = virtualHost;
