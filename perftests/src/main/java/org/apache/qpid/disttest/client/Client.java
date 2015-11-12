@@ -40,7 +40,7 @@ import org.apache.qpid.disttest.message.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Client
+public class Client implements ResultReporter
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Client.class);
 
@@ -182,7 +182,7 @@ public class Client
                 _clientJmsDelegate.startConnections();
                 for (final ParticipantExecutor executor : _participantRegistry.executors())
                 {
-                    executor.start(this);
+                    executor.start(getClientName(), this);
                 }
             }
             catch (final Exception e)
@@ -210,6 +210,10 @@ public class Client
         if (_state.compareAndSet(ClientState.RUNNING_TEST, ClientState.READY))
         {
             LOGGER.debug("Tearing down test on client: " + _clientJmsDelegate.getClientName());
+            for (Participant participant : _participants)
+            {
+                participant.stopTest();
+            }
 
             _clientJmsDelegate.tearDownTest();
         }
@@ -222,7 +226,8 @@ public class Client
         _participants.clear();
     }
 
-    public void sendResults(ParticipantResult testResult)
+    @Override
+    public void reportResult(final ParticipantResult testResult)
     {
         _clientJmsDelegate.sendResponseMessage(testResult);
         LOGGER.debug("Sent test results " + testResult);

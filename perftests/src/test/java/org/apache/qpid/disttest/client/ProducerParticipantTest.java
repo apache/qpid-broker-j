@@ -21,22 +21,17 @@ package org.apache.qpid.disttest.client;
 import static org.apache.qpid.disttest.client.ParticipantTestHelper.assertExpectedProducerResults;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import javax.jms.DeliveryMode;
 import javax.jms.Message;
 import javax.jms.Session;
 
-import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.jms.ClientJmsDelegate;
 import org.apache.qpid.disttest.message.CreateProducerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.mockito.InOrder;
 
 public class ProducerParticipantTest extends QpidTestCase
 {
@@ -79,11 +74,28 @@ public class ProducerParticipantTest extends QpidTestCase
 
     public void testSendMessagesForDuration() throws Exception
     {
-
         _producer.startDataCollection();
-        ParticipantResult result = _producer.doIt(CLIENT_NAME);
-        assertExpectedProducerResults(result, PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,
-                                      Session.AUTO_ACKNOWLEDGE, null, null, PAYLOAD_SIZE_PER_MESSAGE, null, (long) MAXIMUM_DURATION);
+        final ParticipantResult[] result = new ParticipantResult[1];
+        ResultReporter resultReporter = new ResultReporter()
+        {
+            @Override
+            public void reportResult(final ParticipantResult theResult)
+            {
+                result[0] = theResult;
+                _producer.stopTest();
+            }
+        };
+        _producer.startTest(CLIENT_NAME, resultReporter);
+        assertExpectedProducerResults(result[0],
+                                      PARTICIPANT_NAME1,
+                                      CLIENT_NAME,
+                                      _testStartTime,
+                                      Session.AUTO_ACKNOWLEDGE,
+                                      null,
+                                      null,
+                                      PAYLOAD_SIZE_PER_MESSAGE,
+                                      null,
+                                      (long) MAXIMUM_DURATION);
 
         verify(_delegate, atLeastOnce()).sendNextMessage(isA(CreateProducerCommand.class));
         verify(_delegate, atLeastOnce()).calculatePayloadSizeFrom(_mockMessage);

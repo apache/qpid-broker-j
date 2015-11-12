@@ -23,7 +23,6 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.disttest.message.ParticipantResult;
 
 public class ParticipantExecutor
 {
@@ -33,7 +32,8 @@ public class ParticipantExecutor
     private final Participant _participant;
     private final ParticipantResultFactory _factory;
 
-    private Client _client;
+    private String _clientName;
+    private ResultReporter _resultReporter;
 
     public ParticipantExecutor(Participant participant, Executor executor)
     {
@@ -44,10 +44,13 @@ public class ParticipantExecutor
 
     /**
      * Schedules the test participant to be run in a background thread.
+     * @param clientName
+     * @param resultReporter
      */
-    public void start(Client client)
+    public void start(String clientName, ResultReporter resultReporter)
     {
-        _client = client;
+        _clientName = clientName;
+        _resultReporter = resultReporter;
 
         LOGGER.debug("Starting test participant in background thread: {} ", this);
         _executor.execute(new ParticipantRunnable());
@@ -79,20 +82,19 @@ public class ParticipantExecutor
 
         private void runParticipantAndSendResults()
         {
-            ParticipantResult result = null;
             try
             {
                 if (LOGGER.isDebugEnabled())
                 {
                     LOGGER.debug("About to run participant " + _participant);
                 }
-                result = _participant.doIt(_client.getClientName());
+                _participant.startTest(_clientName, _resultReporter);
             }
             catch (Exception t)
             {
                 String errorMessage = "Unhandled error: " + t.getMessage();
                 LOGGER.error(errorMessage, t);
-                result = _factory.createForError(_participant.getName(), _client.getClientName(), errorMessage);
+                _resultReporter.reportResult(_factory.createForError(_participant.getName(), _clientName, errorMessage));
             }
             finally
             {
@@ -104,8 +106,6 @@ public class ParticipantExecutor
                 {
                     LOGGER.error("Participant " + _participant + " unable to release resources", e);
                 }
-
-                _client.sendResults(result);
             }
         }
     }
@@ -115,7 +115,7 @@ public class ParticipantExecutor
     {
         return "ParticipantExecutor[" +
                "participantName=" + _participant.getName() +
-               ", client=" + _client +
+               ", client=" + _clientName +
                ']';
     }
 }

@@ -19,21 +19,21 @@
 
 package org.apache.qpid.disttest.client;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
+
+import org.mockito.ArgumentMatcher;
+import org.mockito.InOrder;
 
 import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.mockito.ArgumentMatcher;
-import org.mockito.InOrder;
 
 public class ParticipantExecutorTest extends QpidTestCase
 {
@@ -41,66 +41,41 @@ public class ParticipantExecutorTest extends QpidTestCase
     private static final String CLIENT_NAME = "CLIENT_NAME";
     private static final String PARTICIPANT_NAME = "PARTICIPANT_NAME";
     private ParticipantExecutor _participantExecutor = null;
-    private Client _client = null;
     private Participant _participant = null;
-    private ParticipantResult _mockResult;
+    private ResultReporter _resultReporter;
 
     @Override
     protected void setUp() throws Exception
     {
         super.setUp();
 
-        _client = mock(Client.class);
-        when(_client.getClientName()).thenReturn(CLIENT_NAME);
         _participant = mock(Participant.class);
 
         _participantExecutor = new ParticipantExecutor(_participant, new SynchronousExecutor());
 
-        _mockResult = mock(ParticipantResult.class);
+        _resultReporter = mock(ResultReporter.class);
     }
 
     public void testStart() throws Exception
     {
-        when(_participant.doIt(CLIENT_NAME)).thenReturn(_mockResult);
+        _participantExecutor.start(CLIENT_NAME, _resultReporter);
+        InOrder inOrder = inOrder(_participant);
 
-        _participantExecutor.start(_client);
-
-        InOrder inOrder = inOrder(_participant, _client);
-
-        inOrder.verify(_participant).doIt(CLIENT_NAME);
+        inOrder.verify(_participant).startTest(CLIENT_NAME, _resultReporter);
         inOrder.verify(_participant).releaseResources();
-        inOrder.verify(_client).sendResults(_mockResult);
     }
 
     public void testParticipantThrowsException() throws Exception
     {
-        when(_participant.doIt(CLIENT_NAME)).thenThrow(DistributedTestException.class);
+        doThrow(DistributedTestException.class).when(_participant).startTest(CLIENT_NAME, _resultReporter);
+        _participantExecutor.start(CLIENT_NAME, _resultReporter);
 
-        _participantExecutor.start(_client);
+        InOrder inOrder = inOrder(_participant, _resultReporter);
 
-        InOrder inOrder = inOrder(_participant, _client);
-
-        inOrder.verify(_participant).doIt(CLIENT_NAME);
+        inOrder.verify(_participant).startTest(CLIENT_NAME, _resultReporter);
+        inOrder.verify(_resultReporter).reportResult(argThat(HAS_ERROR));
         inOrder.verify(_participant).releaseResources();
-        inOrder.verify(_client).sendResults(argThat(HAS_ERROR));
     }
-
-    public void testReleaseResourcesThrowsException() throws Exception
-    {
-        when(_participant.doIt(CLIENT_NAME)).thenReturn(_mockResult);
-        doThrow(DistributedTestException.class).when(_participant).releaseResources();
-
-        _participantExecutor.start(_client);
-
-        InOrder inOrder = inOrder(_participant, _client);
-
-        inOrder.verify(_participant).doIt(CLIENT_NAME);
-        inOrder.verify(_participant).releaseResources();
-
-        // check that sendResults is called even though releaseResources threw an exception
-        inOrder.verify(_client).sendResults(_mockResult);
-    }
-
 
     /** avoids our unit test needing to use multiple threads */
     private final class SynchronousExecutor implements Executor

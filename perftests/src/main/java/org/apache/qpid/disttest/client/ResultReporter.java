@@ -16,17 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.qpid.disttest.client;
 
+import org.apache.qpid.disttest.message.ParticipantResult;
 
-public interface Participant
+interface ResultReporter
 {
-    void startTest(String registeredClientName, ResultReporter resultReporter) throws Exception;
-    void stopTest();
-
-    void releaseResources();
-
-    String getName();
-
-    void startDataCollection();
+    void reportResult(ParticipantResult result);
 }

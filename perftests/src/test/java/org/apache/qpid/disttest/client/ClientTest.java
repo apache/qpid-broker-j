@@ -20,6 +20,7 @@
 package org.apache.qpid.disttest.client;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -115,7 +116,7 @@ public class ClientTest extends QpidTestCase
 
         InOrder inOrder = Mockito.inOrder(_delegate, _participantExecutor);
         inOrder.verify(_delegate).startConnections();
-        inOrder.verify(_participantExecutor).start(_client);
+        inOrder.verify(_participantExecutor).start(eq(_client.getClientName()), any(ResultReporter.class));
     }
 
     public void testTearDownTest() throws Exception
@@ -135,7 +136,7 @@ public class ClientTest extends QpidTestCase
     public void testResults() throws Exception
     {
         ParticipantResult testResult = mock(ParticipantResult.class);
-        _client.sendResults(testResult);
+        _client.reportResult(testResult);
         verify(_delegate).sendResponseMessage(testResult);
     }
 

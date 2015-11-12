@@ -84,7 +84,7 @@ public class ConsumerParticipant implements Participant
     }
 
     @Override
-    public ParticipantResult doIt(String registeredClientName) throws Exception
+    public void startTest(String registeredClientName, ResultReporter resultReporter) throws Exception
     {
         final int acknowledgeMode = _jmsDelegate.getAcknowledgeMode(_command.getSessionName());
         final String providerVersion = _jmsDelegate.getProviderVersion(_command.getSessionName());
@@ -134,14 +134,19 @@ public class ConsumerParticipant implements Participant
                 _messageLatencies,
                 providerVersion,
                 protocolVersion);
-
-        return result;
+        resultReporter.reportResult(result);
     }
 
     @Override
     public void startDataCollection()
     {
         _collectingData.set(true);
+    }
+
+    @Override
+    public void stopTest()
+    {
+        // noop
     }
 
     private void synchronousRun()
@@ -250,7 +255,7 @@ public class ConsumerParticipant implements Participant
 
     /**
      * Intended to be called from a {@link MessageListener}. Updates {@link #_asyncRunHasFinished} if
-     * no more messages should be processed, causing {@link #doIt(String)} to exit.
+     * no more messages should be processed, causing {@link Participant#startTest(String, ResultReporter)} to exit.
      */
     public void processAsyncMessage(Message message)
     {

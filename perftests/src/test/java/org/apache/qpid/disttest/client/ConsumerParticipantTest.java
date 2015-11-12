@@ -19,28 +19,19 @@
 package org.apache.qpid.disttest.client;
 
 import static org.apache.qpid.disttest.client.ParticipantTestHelper.assertExpectedConsumerResults;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.util.Collection;
 
 import javax.jms.Message;
 import javax.jms.Session;
 
-import org.apache.qpid.disttest.DistributedTestException;
 import org.apache.qpid.disttest.jms.ClientJmsDelegate;
-import org.apache.qpid.disttest.message.ConsumerParticipantResult;
 import org.apache.qpid.disttest.message.CreateConsumerCommand;
 import org.apache.qpid.disttest.message.ParticipantResult;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.mockito.InOrder;
+
 
 public class ConsumerParticipantTest extends QpidTestCase
 {
@@ -55,7 +46,6 @@ public class ConsumerParticipantTest extends QpidTestCase
     private final CreateConsumerCommand _command = new CreateConsumerCommand();
     private ClientJmsDelegate _delegate;
     private ConsumerParticipant _consumerParticipant;
-    private InOrder _inOrder;
 
     /** used to check start/end time of results */
     private long _testStartTime;
@@ -65,7 +55,6 @@ public class ConsumerParticipantTest extends QpidTestCase
     {
         super.setUp();
         _delegate = mock(ClientJmsDelegate.class);
-        _inOrder = inOrder(_delegate);
 
         _command.setSessionName(SESSION_NAME1);
         _command.setParticipantName(PARTICIPANT_NAME1);
@@ -86,9 +75,18 @@ public class ConsumerParticipantTest extends QpidTestCase
     {
 
         _consumerParticipant.startDataCollection();
-        ParticipantResult result = _consumerParticipant.doIt(CLIENT_NAME);
+        final ParticipantResult[] result = new ParticipantResult[1];
+        _consumerParticipant.startTest(CLIENT_NAME, new ResultReporter()
+        {
+            @Override
+            public void reportResult(final ParticipantResult theResult)
+            {
+                result[0] = theResult;
+                _consumerParticipant.stopTest();
+            }
+        });
 
-        assertExpectedConsumerResults(result, PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,
+        assertExpectedConsumerResults(result[0], PARTICIPANT_NAME1, CLIENT_NAME, _testStartTime,
                                       Session.CLIENT_ACKNOWLEDGE, null, null, PAYLOAD_SIZE_PER_MESSAGE, null, MAXIMUM_DURATION);
 
         verify(_delegate, atLeastOnce()).consumeMessage(PARTICIPANT_NAME1, RECEIVE_TIMEOUT);

@@ -44,12 +44,14 @@ public class ProducerParticipant implements Participant
 
     private final ParticipantResultFactory _resultFactory;
 
-    private final CountDownLatch _collectingDataLatch = new CountDownLatch(1);
+    private final CountDownLatch _startDataCollectionLatch = new CountDownLatch(1);
+    private final CountDownLatch _stopTestLatch = new CountDownLatch(1);
     private final long _maximumDuration;
     private final long _numberOfMessages;
     private final int _batchSize;
     private final int _acknowledgeMode;
     private final RateLimiter _rateLimiter;
+    private volatile boolean _collectData = false;
 
     public ProducerParticipant(final ClientJmsDelegate jmsDelegate, final CreateProducerCommand command)
     {
@@ -65,10 +67,8 @@ public class ProducerParticipant implements Participant
     }
 
     @Override
-    public ParticipantResult doIt(String registeredClientName) throws Exception
+    public void startTest(String registeredClientName, ResultReporter resultReporter) throws Exception
     {
-        final String providerVersion = _jmsDelegate.getProviderVersion(_command.getSessionName());
-        final String protocolVersion = _jmsDelegate.getProtocolVersion(_command.getSessionName());
 
         long startTime = 0;
         Message lastPublishedMessage = null;
@@ -79,14 +79,14 @@ public class ProducerParticipant implements Participant
         LOGGER.debug("Producer {} about to send messages. Duration limit: {} ms Message Limit : {}",
                     getName(), _maximumDuration, _numberOfMessages);
 
-        while (true)
+        while (_stopTestLatch.getCount() != 0)
         {
             if (_rateLimiter != null)
             {
                 _rateLimiter.acquire();
             }
 
-            if (_collectingDataLatch.getCount() == 0)
+            if (_collectData)
             {
                 if (startTime == 0)
                 {
@@ -96,7 +96,13 @@ public class ProducerParticipant implements Participant
                 if ((_maximumDuration > 0 && System.currentTimeMillis() - startTime >= _maximumDuration) ||
                     (_numberOfMessages > 0 && numberOfMessagesSent >= _numberOfMessages))
                 {
-                    break;
+                    ParticipantResult result = finaliseResults(registeredClientName,
+                                                               startTime,
+                                                               numberOfMessagesSent,
+                                                               totalPayloadSizeOfAllMessagesSent,
+                                                               allProducedPayloadSizes);
+                    resultReporter.reportResult(result);
+                    _collectData = false;
                 }
 
                 lastPublishedMessage = _jmsDelegate.sendNextMessage(_command);
@@ -133,14 +139,21 @@ public class ProducerParticipant implements Participant
                 }
                 if (_rateLimiter == null && _maximumDuration == 0)
                 {
-                    if (!_collectingDataLatch.await(1, TimeUnit.SECONDS))
+                    if (!_startDataCollectionLatch.await(1, TimeUnit.SECONDS))
                     {
                         LOGGER.debug("Producer {} still waiting for collectingData command from coordinator", getName());
                     }
                 }
             }
         }
+    }
 
+    private ParticipantResult finaliseResults(final String registeredClientName,
+                                              final long startTime,
+                                              final int numberOfMessagesSent,
+                                              final long totalPayloadSizeOfAllMessagesSent,
+                                              final NavigableSet<Integer> allProducedPayloadSizes)
+    {
         // commit the remaining batch messages
         if (_batchSize > 0 && numberOfMessagesSent % _batchSize != 0)
         {
@@ -153,6 +166,8 @@ public class ProducerParticipant implements Participant
                     getName(), numberOfMessagesSent);
 
         Date start = new Date(startTime);
+        String providerVersion = _jmsDelegate.getProviderVersion(_command.getSessionName());
+        String protocolVersion = _jmsDelegate.getProtocolVersion(_command.getSessionName());
         int payloadSize = getPayloadSizeForResultIfConstantOrZeroOtherwise(allProducedPayloadSizes);
 
         return _resultFactory.createForProducer(
@@ -172,7 +187,14 @@ public class ProducerParticipant implements Participant
     @Override
     public void startDataCollection()
     {
-        _collectingDataLatch.countDown();
+        _collectData = true;
+        _startDataCollectionLatch.countDown();
+    }
+
+    @Override
+    public void stopTest()
+    {
+        _stopTestLatch.countDown();
     }
 
     private int getPayloadSizeForResultIfConstantOrZeroOtherwise(NavigableSet<Integer> allPayloadSizes)
