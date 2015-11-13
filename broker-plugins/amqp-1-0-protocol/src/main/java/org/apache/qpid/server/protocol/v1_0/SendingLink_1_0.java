@@ -492,7 +492,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                 xfr.setDeliveryTag(dt);
                 xfr.setState(accepted);
                 xfr.setResume(Boolean.TRUE);
-                getEndpoint().transfer(xfr);
+                getEndpoint().transfer(xfr, true);
             }
 
         }

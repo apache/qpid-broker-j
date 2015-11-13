@@ -81,27 +81,18 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
         return Role.SENDER;
     }
 
-    public boolean transfer(final Transfer xfr)
+    public boolean transfer(final Transfer xfr, final boolean decrementCredit)
     {
         SessionEndpoint s = getSession();
-        int transferCount;
-        transferCount = _lastDeliveryTag == null ? 1 : 1;
         xfr.setMessageFormat(UnsignedInteger.ZERO);
         synchronized(getLock())
         {
-
-            final int currentCredit = getLinkCredit().intValue() - transferCount;
-
-            if(currentCredit < 0)
+            if(decrementCredit)
             {
-                return false;
-            }
-            else
-            {
-                setLinkCredit(UnsignedInteger.valueOf((int)currentCredit));
+                setLinkCredit(getLinkCredit().subtract(UnsignedInteger.ONE));
             }
 
-            setDeliveryCount(UnsignedInteger.valueOf((getDeliveryCount().intValue() + transferCount)));
+            setDeliveryCount(UnsignedInteger.valueOf((getDeliveryCount().intValue() + 1)));
 
             xfr.setHandle(getLocalHandle());
 

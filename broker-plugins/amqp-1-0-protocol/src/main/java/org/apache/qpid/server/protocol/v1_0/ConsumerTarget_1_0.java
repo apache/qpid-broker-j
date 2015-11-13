@@ -265,7 +265,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
                     }
                     getSession().getAMQPConnection().registerMessageDelivered(message.getSize());
-                    getEndpoint().transfer(transfer);
+                    getEndpoint().transfer(transfer, false);
                 }
                 else
                 {
@@ -307,7 +307,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
             {
                 suspend();
             }
-
+            SendingLinkEndpoint linkEndpoint = _link.getEndpoint();
+            linkEndpoint.setLinkCredit(linkEndpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
             return hasCredit;
         }
     }
@@ -324,7 +325,11 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     public void restoreCredit(final ServerMessage message)
     {
-        //TODO
+        synchronized (_link.getLock())
+        {
+            final SendingLinkEndpoint endpoint = _link.getEndpoint();
+            endpoint.setLinkCredit(endpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
+        }
     }
 
     public void queueEmpty()
