@@ -245,31 +245,9 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 _protocolEngine.setIOThread(Thread.currentThread());
                 _protocolEngine.setMessageAssignmentSuspended(true);
 
-                if(_pendingIterator == null)
-                {
-                    _pendingIterator = _protocolEngine.processPendingIterator();
-                }
+                boolean processPendingComplete = processPending();
 
-                while(_pendingIterator.hasNext())
-                {
-                    long size = getBufferedSize();
-                    if(size >= _port.getNetworkBufferSize())
-                    {
-                        doWrite();
-                        long bytesWritten = size - getBufferedSize();
-                        if(bytesWritten < (_port.getNetworkBufferSize()/2))
-                        {
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        final Runnable task = _pendingIterator.next();
-                        task.run();
-                    }
-                }
-
-                if (!_pendingIterator.hasNext())
+                if(processPendingComplete)
                 {
                     _pendingIterator = null;
                     _protocolEngine.setTransportBlockedForWriting(false);
@@ -324,6 +302,43 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
         return closed;
 
+    }
+
+    private boolean processPending() throws IOException
+    {
+        if(_pendingIterator == null)
+        {
+            _pendingIterator = _protocolEngine.processPendingIterator();
+        }
+
+        final int networkBufferSize = _port.getNetworkBufferSize();
+
+        while(_pendingIterator.hasNext())
+        {
+            long size = getBufferedSize();
+            if(size >= networkBufferSize)
+            {
+                doWrite();
+                long bytesWritten = size - getBufferedSize();
+                if(bytesWritten < (networkBufferSize /2))
+                {
+                    break;
+                }
+            }
+            else
+            {
+                final Runnable task = _pendingIterator.next();
+                task.run();
+            }
+        }
+
+        boolean processPendingAndReads = !_pendingIterator.hasNext();
+        if (getBufferedSize() >= networkBufferSize)
+        {
+            doWrite();
+            processPendingAndReads &= getBufferedSize() < networkBufferSize /2;
+        }
+        return processPendingAndReads;
     }
 
     private long getBufferedSize()
