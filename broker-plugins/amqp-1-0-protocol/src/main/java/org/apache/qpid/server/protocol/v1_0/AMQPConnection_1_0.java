@@ -441,17 +441,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     {
         try
         {
-            try
-            {
-                _endpoint.inputClosed();
-            }
-            finally
-            {
-                if (_endpoint != null && _endpoint.getConnectionEventListener() != null)
-                {
-                    ((Connection_1_0) _endpoint.getConnectionEventListener()).closed();
-                }
-            }
+            _endpoint.inputClosed();
+
         }
         catch(RuntimeException e)
         {

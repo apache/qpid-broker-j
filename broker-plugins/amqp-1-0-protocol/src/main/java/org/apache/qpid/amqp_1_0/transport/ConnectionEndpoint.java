@@ -32,6 +32,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -454,46 +455,50 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
         }
     }
 
-    public synchronized void inputClosed()
+    public void inputClosed()
     {
-        if (!_closedForInput)
-        {
-            _closedForInput = true;
-            _logger.received(_remoteAddress,(short)-1,"Underlying connection closed");
-            switch (_state)
-            {
-                case UNOPENED:
-                case AWAITING_OPEN:
-                case CLOSE_SENT:
-                    _state = ConnectionState.CLOSED;
-                    closeSender();
-                    break;
-                case OPEN:
-                    _state = ConnectionState.CLOSE_RECEIVED;
-                case CLOSED:
-                    // already sent our close - too late to do anything more
-                    break;
-                default:
-            }
-            if (_receivingSessions != null)
-            {
-                for (int i = 0; i < _receivingSessions.length; i++)
-                {
-                    if (_receivingSessions[i] != null)
-                    {
-                        _receivingSessions[i].end();
-                        _receivingSessions[i] = null;
+        List<Runnable> postLockActions;
 
-                    }
-                }
-            }
-            if(_connectionEventListener != null)
+        synchronized (this)
+        {
+            if (!_closedForInput)
             {
-                _connectionEventListener.closeReceived();
+                _closedForInput = true;
+                _logger.received(_remoteAddress, (short) -1, "Underlying connection closed");
+                switch (_state)
+                {
+                    case UNOPENED:
+                    case AWAITING_OPEN:
+                    case CLOSE_SENT:
+                        _state = ConnectionState.CLOSED;
+                        closeSender();
+                        break;
+                    case OPEN:
+                        _state = ConnectionState.CLOSE_RECEIVED;
+                    case CLOSED:
+                        // already sent our close - too late to do anything more
+                        break;
+                    default:
+                }
+                if (_connectionEventListener != null)
+                {
+                    _connectionEventListener.closeReceived();
+                }
+                postLockActions = _postLockActions;
+                _postLockActions = new ArrayList<>();
             }
+            else
+            {
+                postLockActions = Collections.emptyList();
+            }
+            notifyAll();
         }
-        notifyAll();
-    }
+        for(Runnable action : postLockActions)
+        {
+            action.run();
+        }
+
+}
 
     private void sendClose(Close closeToSend)
     {
