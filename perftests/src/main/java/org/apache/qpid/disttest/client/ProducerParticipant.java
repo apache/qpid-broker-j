@@ -46,6 +46,7 @@ public class ProducerParticipant implements Participant
 
     private final CountDownLatch _startDataCollectionLatch = new CountDownLatch(1);
     private final CountDownLatch _stopTestLatch = new CountDownLatch(1);
+    private final CountDownLatch _hasStoppedLatch = new CountDownLatch(1);
     private final long _maximumDuration;
     private final long _numberOfMessages;
     private final int _batchSize;
@@ -146,6 +147,7 @@ public class ProducerParticipant implements Participant
                 }
             }
         }
+        _hasStoppedLatch.countDown();
     }
 
     private ParticipantResult finaliseResults(final String registeredClientName,
@@ -193,6 +195,22 @@ public class ProducerParticipant implements Participant
 
     @Override
     public void stopTest()
+    {
+        stopTestAsync();
+        try
+        {
+            while (!_hasStoppedLatch.await(1, TimeUnit.SECONDS))
+            {
+                LOGGER.debug("Producer {} still waiting for shutdown", getName());
+            }
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    void stopTestAsync()
     {
         _stopTestLatch.countDown();
     }

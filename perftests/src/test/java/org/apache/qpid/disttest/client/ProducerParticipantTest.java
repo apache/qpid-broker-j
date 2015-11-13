@@ -82,7 +82,7 @@ public class ProducerParticipantTest extends QpidTestCase
             public void reportResult(final ParticipantResult theResult)
             {
                 result[0] = theResult;
-                _producer.stopTest();
+                _producer.stopTestAsync();
             }
         };
         _producer.startTest(CLIENT_NAME, resultReporter);
