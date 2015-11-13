@@ -139,6 +139,10 @@ public class Connection_1_0 implements ConnectionEventListener
             }
             _amqpConnection.setClientId(_connectionEndpoint.getRemoteContainerId());
         }
+        // TODO implement AMQP 1.0 heartbeating
+        _amqpConnection.getNetwork().setMaxReadIdle(0);
+        _amqpConnection.getNetwork().setMaxWriteIdle(0);
+
         _vhost = ((AmqpPort)_port).getVirtualHost(host);
         if(_vhost == null)
         {
