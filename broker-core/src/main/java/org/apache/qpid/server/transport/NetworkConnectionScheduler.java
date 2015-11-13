@@ -100,57 +100,49 @@ public class NetworkConnectionScheduler
 
     void processConnection(final NonBlockingConnection connection)
     {
-        Thread.currentThread().setName( connection.getThreadName() );
-        try
+        Thread.currentThread().setName(connection.getThreadName());
+        boolean rerun;
+        do
         {
-            incrementRunningCount();
-            boolean rerun;
-            do
+            rerun = false;
+            boolean closed = connection.doWork();
+
+            if (!closed && connection.getScheduler() == this)
             {
-                rerun = false;
-                boolean closed = connection.doWork();
 
-                if (!closed && connection.getScheduler() == this)
+                if (connection.isStateChanged() || connection.isPartialRead())
                 {
-
-                    if (connection.isStateChanged() || connection.isPartialRead())
+                    if (_running.get() == _poolSize)
                     {
-                        if (_running.get() == _poolSize)
-                        {
-                            connection.clearScheduled();
-                            schedule(connection);
-                        }
-                        else
-                        {
-                            rerun = true;
-                        }
+                        connection.clearScheduled();
+                        schedule(connection);
                     }
                     else
                     {
-                        connection.clearScheduled();
-                        if(connection.isStateChanged())
-                        {
-                            _selectorThread.addToWork(connection);
-                        }
-                        else
-                        {
-                            _selectorThread.returnConnectionToSelector(connection);
-                        }
+                        rerun = true;
                     }
                 }
-                else if(connection.getScheduler() != this)
+                else
                 {
-                    removeConnection(connection);
                     connection.clearScheduled();
-                    connection.getScheduler().addConnection(connection);
+                    if (connection.isStateChanged())
+                    {
+                        _selectorThread.addToWork(connection);
+                    }
+                    else
+                    {
+                        _selectorThread.returnConnectionToSelector(connection);
+                    }
                 }
+            }
+            else if (connection.getScheduler() != this)
+            {
+                removeConnection(connection);
+                connection.clearScheduled();
+                connection.getScheduler().addConnection(connection);
+            }
 
-            } while (rerun);
-        }
-        finally
-        {
-            decrementRunningCount();
-        }
+        } while (rerun);
 
     }
 

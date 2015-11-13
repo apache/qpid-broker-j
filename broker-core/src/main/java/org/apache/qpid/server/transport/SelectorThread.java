@@ -334,7 +334,7 @@ class SelectorThread extends Thread
                         _workQueue.add(this);
                         for (ConnectionProcessor connectionProcessor : connections)
                         {
-                            connectionProcessor.run();
+                            connectionProcessor.processConnection();
                         }
 
                     }
@@ -481,7 +481,20 @@ class SelectorThread extends Thread
         @Override
         public void run()
         {
-            if(_running.compareAndSet(false,true))
+            _scheduler.incrementRunningCount();
+            try
+            {
+                processConnection();
+            }
+            finally
+            {
+                _scheduler.decrementRunningCount();
+            }
+        }
+
+        public void processConnection()
+        {
+            if (_running.compareAndSet(false, true))
             {
                 _scheduler.processConnection(_connection);
             }
