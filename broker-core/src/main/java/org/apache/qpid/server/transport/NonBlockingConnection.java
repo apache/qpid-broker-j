@@ -72,7 +72,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private volatile boolean _unexpectedByteBufferSizeReported;
     private final String _threadName;
     private volatile SelectorThread.SelectionTask _selectionTask;
-    private Iterator<Runnable> _pendingItertor;
+    private Iterator<Runnable> _pendingIterator;
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -213,12 +213,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         }
     }
 
-    public boolean wantsRead()
+    boolean wantsRead()
     {
         return _fullyWritten;
     }
 
-    public boolean wantsWrite()
+    boolean wantsWrite()
     {
         return !_fullyWritten;
     }
@@ -245,32 +245,33 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                 _protocolEngine.setIOThread(Thread.currentThread());
                 _protocolEngine.setMessageAssignmentSuspended(true);
 
-                if(_pendingItertor == null)
+                if(_pendingIterator == null)
                 {
-                    _pendingItertor = _protocolEngine.processPendingIterator();
+                    _pendingIterator = _protocolEngine.processPendingIterator();
                 }
 
-                while(_pendingItertor.hasNext())
+                while(_pendingIterator.hasNext())
                 {
                     long size = getBufferedSize();
                     if(size >= _port.getNetworkBufferSize())
                     {
                         doWrite();
-                        if((size - getBufferedSize()) < (_port.getNetworkBufferSize()/2))
+                        long bytesWritten = size - getBufferedSize();
+                        if(bytesWritten < (_port.getNetworkBufferSize()/2))
                         {
                             break;
                         }
                     }
                     else
                     {
-                        final Runnable task = _pendingItertor.next();
+                        final Runnable task = _pendingIterator.next();
                         task.run();
                     }
                 }
 
-                if (!_pendingItertor.hasNext())
+                if (!_pendingIterator.hasNext())
                 {
-                    _pendingItertor = null;
+                    _pendingIterator = null;
                     _protocolEngine.setTransportBlockedForWriting(false);
                     boolean dataRead = doRead();
                     _protocolEngine.setTransportBlockedForWriting(!doWrite());
