@@ -104,7 +104,6 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
             return comparison;
         }
     };
-
     @ManagedAttributeField
     private boolean _tcpNoDelay;
 
@@ -124,9 +123,10 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private final AtomicBoolean _connectionCountWarningGiven = new AtomicBoolean();
 
     private final Broker<?> _broker;
-    private AcceptingTransport _transport;
+    private final int _connectionWarnCount;
     private final AtomicBoolean _closing = new AtomicBoolean();
     private final SettableFuture _noConnectionsRemain = SettableFuture.create();
+    private AcceptingTransport _transport;
     private SSLContext _sslContext;
 
     @ManagedObjectFactoryConstructor
@@ -134,6 +134,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         super(attributes, broker);
         _broker = broker;
+        _connectionWarnCount = getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT);
     }
 
     @Override
@@ -229,7 +230,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
             Collection<Transport> transports = getTransports();
 
             TransportProvider transportProvider = null;
-            final HashSet<Transport> transportSet = new HashSet<Transport>(transports);
+            final HashSet<Transport> transportSet = new HashSet<>(transports);
             for (TransportProviderFactory tpf : (new QpidServiceLoader()).instancesOf(TransportProviderFactory.class))
             {
                 if (tpf.getSupportedTransports().contains(transports))
@@ -391,7 +392,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
             }
             else
             {
-                Collection<TrustManager> trustManagerList = new ArrayList<TrustManager>();
+                Collection<TrustManager> trustManagerList = new ArrayList<>();
                 final QpidMultipleTrustManager mulTrustManager = new QpidMultipleTrustManager();
 
                 for(TrustStore ts : trustStores)
@@ -564,12 +565,12 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         int openConnections = _connectionCount.incrementAndGet();
         int maxOpenConnections = getMaxOpenConnections();
         if(maxOpenConnections > 0
-           && openConnections > (maxOpenConnections * getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT)) / 100
+           && openConnections > (maxOpenConnections * _connectionWarnCount) / 100
            && _connectionCountWarningGiven.compareAndSet(false, true))
         {
             _broker.getEventLogger().message(new PortLogSubject(this),
                                              PortMessages.CONNECTION_COUNT_WARN(openConnections,
-                                                                                getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT),
+                                                                                _connectionWarnCount,
                                                                                 maxOpenConnections));
         }
         return openConnections;
@@ -582,7 +583,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         int maxOpenConnections = getMaxOpenConnections();
 
         if(maxOpenConnections > 0
-           && openConnections < (maxOpenConnections * square(getContextValue(Integer.class, OPEN_CONNECTIONS_WARN_PERCENT))) / 10000)
+           && openConnections < (maxOpenConnections * square(_connectionWarnCount)) / 10000)
         {
            _connectionCountWarningGiven.compareAndSet(true,false);
         }
@@ -603,7 +604,24 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     @Override
     public boolean canAcceptNewConnection(final SocketAddress remoteSocketAddress)
     {
-        return !_closing.get() && ( _maxOpenConnections < 0 || _connectionCount.get() < _maxOpenConnections );
+        String addressString = remoteSocketAddress.toString();
+        if (_closing.get())
+        {
+            _broker.getEventLogger().message(new PortLogSubject(this),
+                                             PortMessages.CONNECTION_REJECTED_CLOSED(addressString));
+            return false;
+        }
+        else if (_maxOpenConnections > 0 && _connectionCount.get() >= _maxOpenConnections)
+        {
+            _broker.getEventLogger().message(new PortLogSubject(this),
+                                             PortMessages.CONNECTION_REJECTED_TOO_MANY(addressString,
+                                                                                       _maxOpenConnections));
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
 
     @Override

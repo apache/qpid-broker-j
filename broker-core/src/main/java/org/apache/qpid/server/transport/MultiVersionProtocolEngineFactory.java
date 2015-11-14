@@ -30,8 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.logging.messages.PortMessages;
-import org.apache.qpid.server.logging.subjects.PortLogSubject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
@@ -94,9 +92,6 @@ public class MultiVersionProtocolEngineFactory implements ProtocolEngineFactory
         }
         else
         {
-            _broker.getEventLogger().message(new PortLogSubject(_port),
-                                             PortMessages.CONNECTION_REJECTED(remoteSocketAddress.toString()));
-
             return null;
         }
     }
