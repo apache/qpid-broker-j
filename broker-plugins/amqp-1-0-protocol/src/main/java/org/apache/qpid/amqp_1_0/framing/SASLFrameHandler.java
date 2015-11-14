@@ -30,8 +30,13 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 import java.util.Formatter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class SASLFrameHandler implements ProtocolHandler
 {
+    public static Logger LOGGER = LoggerFactory.getLogger(SASLFrameHandler.class);
+
     private ConnectionEndpoint _connection;
     private ValueHandler _typeHandler;
 
@@ -64,138 +69,150 @@ public class SASLFrameHandler implements ProtocolHandler
     {
         try
         {
-        Error frameParsingError = null;
-        int size = _size;
-        State state = _state;
-        QpidByteBuffer oldIn = null;
+            Error frameParsingError = null;
+            int size = _size;
+            State state = _state;
+            QpidByteBuffer oldIn = null;
 
-        while(in.hasRemaining() && !_connection.isSASLComplete() && state != State.ERROR)
-        {
-
-            final int remaining = in.remaining();
-            if(remaining == 0)
+            while (in.hasRemaining() && !_connection.isSASLComplete() && state != State.ERROR)
             {
-                return this;
-            }
+
+                final int remaining = in.remaining();
+                if (remaining == 0)
+                {
+                    return this;
+                }
 
 
-            switch(state)
-            {
-                case SIZE_0:
-                    if(remaining >= 4)
-                    {
-                        size = in.getInt();
-                        state = State.PRE_PARSE;
-                        break;
-                    }
-                    else
-                    {
-                        size = (in.get() << 24) & 0xFF000000;
-                        if(!in.hasRemaining())
+                switch (state)
+                {
+                    case SIZE_0:
+                        if (remaining >= 4)
                         {
-                            state = State.SIZE_1;
-                            break;
-                        }
-                    }
-                case SIZE_1:
-                    size |= (in.get() << 16) & 0xFF0000;
-                    if(!in.hasRemaining())
-                    {
-                        state = State.SIZE_2;
-                        break;
-                    }
-                case SIZE_2:
-                    size |= (in.get() << 8) & 0xFF00;
-                    if(!in.hasRemaining())
-                    {
-                        state = State.SIZE_3;
-                        break;
-                    }
-                case SIZE_3:
-                    size |= in.get() & 0xFF;
-                    state = State.PRE_PARSE;
-
-                case PRE_PARSE:
-
-                    if(size < 8)
-                    {
-                        frameParsingError = createFramingError("specified frame size %d smaller than minimum frame header size %d", _size, 8);
-                        state = State.ERROR;
-                        break;
-                    }
-
-                    else if(size > _connection.getMaxFrameSize())
-                    {
-                        frameParsingError = createFramingError("specified frame size %d larger than maximum frame header size %d", size, _connection.getMaxFrameSize());
-                        state = State.ERROR;
-                        break;
-                    }
-
-                    if(in.remaining() < size-4)
-                    {
-                        _buffer = QpidByteBuffer.allocateDirect(size-4);
-                        _buffer.put(in);
-                        state = State.BUFFERING;
-                        break;
-                    }
-                case BUFFERING:
-                    if(_buffer != null)
-                    {
-                        if(in.remaining() < _buffer.remaining())
-                        {
-                            _buffer.put(in);
+                            size = in.getInt();
+                            state = State.PRE_PARSE;
                             break;
                         }
                         else
                         {
-                            QpidByteBuffer dup = in.duplicate();
-                            dup.limit(dup.position()+_buffer.remaining());
-                            in.position(in.position()+_buffer.remaining());
-                            _buffer.put(dup);
-                            dup.dispose();
-
-                            oldIn = in;
-                            _buffer.flip();
-                            in = _buffer;
-                            state = State.PARSING;
+                            size = (in.get() << 24) & 0xFF000000;
+                            if (!in.hasRemaining())
+                            {
+                                state = State.SIZE_1;
+                                break;
+                            }
                         }
-                    }
+                    case SIZE_1:
+                        size |= (in.get() << 16) & 0xFF0000;
+                        if (!in.hasRemaining())
+                        {
+                            state = State.SIZE_2;
+                            break;
+                        }
+                    case SIZE_2:
+                        size |= (in.get() << 8) & 0xFF00;
+                        if (!in.hasRemaining())
+                        {
+                            state = State.SIZE_3;
+                            break;
+                        }
+                    case SIZE_3:
+                        size |= in.get() & 0xFF;
+                        state = State.PRE_PARSE;
 
-                case PARSING:
+                    case PRE_PARSE:
 
-                    int dataOffset = (in.get() << 2) & 0x3FF;
+                        if (size < 8)
+                        {
+                            frameParsingError = createFramingError(
+                                    "specified frame size %d smaller than minimum frame header size %d",
+                                    _size,
+                                    8);
+                            state = State.ERROR;
+                            break;
+                        }
 
-                    if(dataOffset < 8)
-                    {
-                        frameParsingError = createFramingError("specified frame data offset %d smaller than minimum frame header size %d", dataOffset, 8);
-                        state = State.ERROR;
-                        break;
-                    }
-                    else if(dataOffset > size)
-                    {
-                        frameParsingError = createFramingError("specified frame data offset %d larger than the frame size %d", dataOffset, _size);
-                        state = State.ERROR;
-                        break;
-                    }
+                        else if (size > _connection.getMaxFrameSize())
+                        {
+                            frameParsingError = createFramingError(
+                                    "specified frame size %d larger than maximum frame header size %d",
+                                    size,
+                                    _connection.getMaxFrameSize());
+                            state = State.ERROR;
+                            break;
+                        }
 
-                    // type
+                        if (in.remaining() < size - 4)
+                        {
+                            _buffer = QpidByteBuffer.allocateDirect(size - 4);
+                            _buffer.put(in);
+                            state = State.BUFFERING;
+                            break;
+                        }
+                    case BUFFERING:
+                        if (_buffer != null)
+                        {
+                            if (in.remaining() < _buffer.remaining())
+                            {
+                                _buffer.put(in);
+                                break;
+                            }
+                            else
+                            {
+                                QpidByteBuffer dup = in.duplicate();
+                                dup.limit(dup.position() + _buffer.remaining());
+                                in.position(in.position() + _buffer.remaining());
+                                _buffer.put(dup);
+                                dup.dispose();
 
-                    int type = in.get() & 0xFF;
-                    int channel = in.getShort() & 0xFF;
+                                oldIn = in;
+                                _buffer.flip();
+                                in = _buffer;
+                                state = State.PARSING;
+                            }
+                        }
 
-                    if(type != 0 && type != 1)
-                    {
-                        frameParsingError = createFramingError("unknown frame type: %d", type);
-                        state = State.ERROR;
-                        break;
-                    }
+                    case PARSING:
 
-                    if(type != 1)
-                    {
-                        System.err.println("Wrong frame type for SASL Frame");
-                    }
+                        int dataOffset = (in.get() << 2) & 0x3FF;
 
-                    // channel
+                        if (dataOffset < 8)
+                        {
+                            frameParsingError = createFramingError(
+                                    "specified frame data offset %d smaller than minimum frame header size %d",
+                                    dataOffset,
+                                    8);
+                            state = State.ERROR;
+                            break;
+                        }
+                        else if (dataOffset > size)
+                        {
+                            frameParsingError = createFramingError(
+                                    "specified frame data offset %d larger than the frame size %d",
+                                    dataOffset,
+                                    _size);
+                            state = State.ERROR;
+                            break;
+                        }
+
+                        // type
+
+                        int type = in.get() & 0xFF;
+                        int channel = in.getShort() & 0xFF;
+
+                        if (type != 0 && type != 1)
+                        {
+                            frameParsingError = createFramingError("unknown frame type: %d", type);
+                            state = State.ERROR;
+                            break;
+                        }
+
+                        if (type != 1)
+                        {
+                            System.err.println("Wrong frame type for SASL Frame");
+                        }
+
+                        // channel
 
                     /*if(channel > _connection.getChannelMax())
                     {
@@ -206,75 +223,78 @@ public class SASLFrameHandler implements ProtocolHandler
                         state = State.ERROR;
                     }
 */
-                    // ext header
-                    if(dataOffset!=8)
-                    {
-                        in.position(in.position()+dataOffset-8);
-                    }
+                        // ext header
+                        if (dataOffset != 8)
+                        {
+                            in.position(in.position() + dataOffset - 8);
+                        }
 
-                    // oldIn null iff not working on duplicated buffer
-                    if(oldIn == null)
-                    {
-                        oldIn = in;
-                        in = in.duplicate();
-                        final int endPos = in.position() + size - dataOffset;
-                        in.limit(endPos);
-                        oldIn.position(endPos);
+                        // oldIn null iff not working on duplicated buffer
+                        if (oldIn == null)
+                        {
+                            oldIn = in;
+                            in = in.duplicate();
+                            final int endPos = in.position() + size - dataOffset;
+                            in.limit(endPos);
+                            oldIn.position(endPos);
 
-                    }
+                        }
 
 
-                    // PARSE HERE
-                    try
-                    {
-                        Object val = _typeHandler.parse(in);
+                        // PARSE HERE
+                        try
+                        {
+                            Object val = _typeHandler.parse(in);
 
-                        if(in.hasRemaining())
+                            if (in.hasRemaining())
+                            {
+                                state = State.ERROR;
+                                frameParsingError = createFramingError(
+                                        "Frame length %d larger than contained frame body %s.",
+                                        size,
+                                        val);
+
+                            }
+                            else
+                            {
+                                _connection.receive((short) channel, val);
+                                reset();
+                                state = State.SIZE_0;
+                                break;
+                            }
+
+
+                        }
+                        catch (AmqpErrorException ex)
                         {
                             state = State.ERROR;
-                            frameParsingError = createFramingError("Frame length %d larger than contained frame body %s.", size, val);
-
+                            frameParsingError = ex.getError();
                         }
-                        else
+                        finally
                         {
-                            _connection.receive((short)channel,val);
-                            reset();
-                            state = State.SIZE_0;
-                            break;
+                            in.dispose();
+
+                            in = oldIn;
+                            oldIn = null;
+                            _buffer = null;
                         }
+                }
 
-
-                    }
-                    catch (AmqpErrorException ex)
-                    {
-                        state = State.ERROR;
-                        frameParsingError = ex.getError();
-                    }
-                    finally
-                    {
-                        in.dispose();
-
-                        in = oldIn;
-                        oldIn = null;
-                        _buffer = null;
-                    }
             }
 
-        }
+            _state = state;
+            _size = size;
 
-        _state = state;
-        _size = size;
-
-        if(_state == State.ERROR)
-        {
-            _connection.handleError(frameParsingError);
-            if (_buffer != null)
+            if (_state == State.ERROR)
             {
-                _buffer.dispose();
-                _buffer = null;
+                _connection.handleError(frameParsingError);
+                if (_buffer != null)
+                {
+                    _buffer.dispose();
+                    _buffer = null;
+                }
             }
-        }
-            if(_connection.isSASLComplete())
+            if (_connection.isSASLComplete())
             {
                 return new ProtocolHeaderHandler(_connection);
             }
@@ -283,9 +303,9 @@ public class SASLFrameHandler implements ProtocolHandler
                 return this;
             }
         }
-        catch(RuntimeException e)
+        catch (RuntimeException e)
         {
-            e.printStackTrace();
+            LOGGER.warn("Exception handling frame", e);
             throw e;
         }
     }
