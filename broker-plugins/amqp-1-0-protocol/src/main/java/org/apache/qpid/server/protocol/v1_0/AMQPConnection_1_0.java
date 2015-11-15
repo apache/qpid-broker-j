@@ -127,7 +127,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     private byte _major;
     private byte _minor;
     private byte _revision;
-    private Connection_1_0 _connection;
+    private final Connection_1_0 _connection;
     private volatile boolean _transportBlockedForWriting;
 
 
@@ -442,7 +442,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         try
         {
             _endpoint.inputClosed();
-
         }
         catch(RuntimeException e)
         {
@@ -450,7 +449,14 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         }
         finally
         {
-            markTransportClosed();
+            try
+            {
+                _connection.closed();
+            }
+            finally
+            {
+                markTransportClosed();
+            }
         }
     }
 
