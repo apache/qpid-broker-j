@@ -319,7 +319,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             {
                 doWrite();
                 long bytesWritten = size - getBufferedSize();
-                if(bytesWritten < (networkBufferSize /2))
+                if(bytesWritten < (networkBufferSize / 2))
                 {
                     break;
                 }
@@ -331,13 +331,13 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             }
         }
 
-        boolean processPendingAndReads = !_pendingIterator.hasNext();
+        boolean complete = !_pendingIterator.hasNext();
         if (getBufferedSize() >= networkBufferSize)
         {
             doWrite();
-            processPendingAndReads &= getBufferedSize() < networkBufferSize /2;
+            complete &= getBufferedSize() < networkBufferSize /2;
         }
-        return processPendingAndReads;
+        return complete;
     }
 
     private long getBufferedSize()
