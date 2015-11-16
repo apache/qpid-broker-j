@@ -44,15 +44,16 @@ public interface NetworkConnection
      */
     SocketAddress getLocalAddress();
 
-    void setMaxWriteIdle(int sec);
+    void setMaxWriteIdleMillis(long millis);
+    void setMaxReadIdleMillis(long millis);
 
-    void setMaxReadIdle(int sec);
 
     Principal getPeerPrincipal();
 
     Certificate getPeerCertificate();
 
-    int getMaxReadIdle();
+    long getMaxReadIdleMillis();
 
-    int getMaxWriteIdle();
+    long getMaxWriteIdleMillis();
+
 }

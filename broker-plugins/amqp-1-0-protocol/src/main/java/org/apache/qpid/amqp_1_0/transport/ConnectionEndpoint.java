@@ -136,7 +136,6 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
 
     private boolean _saslComplete;
 
-    private UnsignedInteger _desiredMaxFrameSize = UnsignedInteger.valueOf(DEFAULT_MAX_FRAME);
     private Runnable _onSaslCompleteTask;
 
     private SaslServerProvider _saslServerProvider;
@@ -153,6 +152,7 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
     private Principal _externalPrincipal;
     private List<Runnable> _postLockActions = new ArrayList<>();
     private Map _remoteProperties;
+    private long _desiredIdleTimeout;
 
     public ConnectionEndpoint(Container container, SaslServerProvider cbs)
     {
@@ -294,8 +294,9 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
         }
         open.setChannelMax(UnsignedShort.valueOf((short) channelMax));
         open.setContainerId(_container.getId());
-        open.setMaxFrameSize(getDesiredMaxFrameSize());
+        open.setMaxFrameSize(UnsignedInteger.valueOf(maxFrameSize));
         open.setHostname(getRemoteHostname());
+        open.setIdleTimeOut(UnsignedInteger.valueOf(_desiredIdleTimeout));
         if (_properties != null)
         {
             open.setProperties(_properties);
@@ -303,18 +304,6 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
 
         send(CONNECTION_CONTROL_CHANNEL, open);
     }
-
-    public UnsignedInteger getDesiredMaxFrameSize()
-    {
-        return _desiredMaxFrameSize;
-    }
-
-
-    public void setDesiredMaxFrameSize(UnsignedInteger size)
-    {
-        _desiredMaxFrameSize = size;
-    }
-
 
     private void closeSender()
     {
@@ -363,12 +352,8 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
             _receivingSessions = new SessionEndpoint[_channelMax + 1];
             _sendingSessions = new SessionEndpoint[_channelMax + 1];
         }
-        UnsignedInteger remoteDesiredMaxFrameSize =
-                open.getMaxFrameSize() == null ? UnsignedInteger.valueOf(DEFAULT_MAX_FRAME) : open.getMaxFrameSize();
 
-        _maxFrameSize = (remoteDesiredMaxFrameSize.compareTo(_desiredMaxFrameSize) < 0
-                ? remoteDesiredMaxFrameSize
-                : _desiredMaxFrameSize).intValue();
+        _maxFrameSize = open.getMaxFrameSize() == null ? DEFAULT_MAX_FRAME : open.getMaxFrameSize().intValue();
 
         _remoteContainerId = open.getContainerId();
         _localHostname = open.getHostname();
@@ -390,11 +375,7 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
                 // TODO bad stuff (connection already open)
 
         }
-        /*if(_state == ConnectionState.AWAITING_OPEN)
-        {
-            _state = ConnectionState.OPEN;
-        }
-*/
+
         notifyAll();
     }
 
@@ -774,6 +755,16 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
     public void setExternalPrincipal(final Principal externalPrincipal)
     {
         _externalPrincipal = externalPrincipal;
+    }
+
+    public void setDesiredIdleTimeout(final long desiredIdleTimeout)
+    {
+        _desiredIdleTimeout = desiredIdleTimeout;
+    }
+
+    public long getDesiredIdleTimeout()
+    {
+        return _desiredIdleTimeout;
     }
 
     public static interface FrameReceiptLogger

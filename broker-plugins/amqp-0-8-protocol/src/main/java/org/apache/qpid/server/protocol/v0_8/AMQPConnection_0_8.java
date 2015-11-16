@@ -550,13 +550,13 @@ public class AMQPConnection_0_8
     {
         if (delay > 0)
         {
-            _network.setMaxWriteIdle(delay);
-            _network.setMaxReadIdle(BrokerProperties.HEARTBEAT_TIMEOUT_FACTOR * delay);
+            _network.setMaxWriteIdleMillis(1000L * delay);
+            _network.setMaxReadIdleMillis(1000L * BrokerProperties.HEARTBEAT_TIMEOUT_FACTOR * delay);
         }
         else
         {
-            _network.setMaxWriteIdle(0);
-            _network.setMaxReadIdle(0);
+            _network.setMaxWriteIdleMillis(0);
+            _network.setMaxReadIdleMillis(0);
         }
     }
 

@@ -45,6 +45,7 @@ import org.apache.qpid.amqp_1_0.framing.AMQFrame;
 import org.apache.qpid.amqp_1_0.framing.FrameHandler;
 import org.apache.qpid.amqp_1_0.framing.OversizeFrameException;
 import org.apache.qpid.amqp_1_0.framing.SASLFrameHandler;
+import org.apache.qpid.amqp_1_0.framing.TransportFrame;
 import org.apache.qpid.amqp_1_0.transport.ConnectionEndpoint;
 import org.apache.qpid.amqp_1_0.transport.Container;
 import org.apache.qpid.amqp_1_0.transport.FrameOutputHandler;
@@ -52,11 +53,14 @@ import org.apache.qpid.amqp_1_0.transport.SaslServerProvider;
 import org.apache.qpid.amqp_1_0.type.Binary;
 import org.apache.qpid.amqp_1_0.type.FrameBody;
 import org.apache.qpid.amqp_1_0.type.Symbol;
+import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
+import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
@@ -157,6 +161,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         _connection.setAmqpConnection(this);
         _endpoint = _connection.getConnectionEndpoint();
         _endpoint.setConnectionEventListener(_connection);
+        _endpoint.setDesiredIdleTimeout(1000L * broker.getConnection_heartBeatDelay());
         _endpoint.setFrameOutputHandler(this);
         final List<String> mechanisms = port.getAuthenticationProvider().getSubjectCreator(transport.isSecure()).getMechanisms();
         ByteBuffer headerResponse = useSASL ? initiateSasl() : initiateNonSasl(mechanisms);
@@ -265,14 +270,25 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         return headerResponse;
     }
 
+    @Override
     public void writerIdle()
     {
-        //Todo
+        send(TransportFrame.createAMQFrame((short)0,null));
     }
 
+    @Override
     public void readerIdle()
     {
-        //Todo
+        AccessController.doPrivileged(new PrivilegedAction<Object>()
+        {
+            @Override
+            public Object run()
+            {
+                getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
+                getNetwork().close();
+                return null;
+            }
+        }, getAccessControllerContext());
     }
 
     @Override

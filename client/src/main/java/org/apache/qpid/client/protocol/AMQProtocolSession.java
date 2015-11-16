@@ -154,9 +154,9 @@ public class AMQProtocolSession implements AMQVersionAwareProtocolSession
         if (delay > 0)
         {
             NetworkConnection network = getProtocolHandler().getNetworkConnection();
-            network.setMaxWriteIdle(delay);
+            network.setMaxWriteIdleMillis(1000L*delay);
             int readerIdle = (int)(delay * timeoutFactor);
-            network.setMaxReadIdle(readerIdle);
+            network.setMaxReadIdleMillis(1000L * readerIdle);
         }
     }
 

@@ -37,10 +37,10 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
     private long _lastReadTime;
     private long _lastWriteTime;
     private long _currentTime;
-    private int _maxWriteIdle;
-    private int _maxReadIdle;
     private boolean _readerIdle;
     private boolean _writerIdle;
+    private long _maxReadIdleMillis;
+    private long _maxWriteIdleMillis;
 
     @Override
     public void setUp() throws Exception
@@ -52,14 +52,14 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
         _writerIdle = false;
         _lastReadTime = 0l;
         _lastWriteTime = 0l;
-        _maxReadIdle = 0;
-        _maxWriteIdle = 0;
+        _maxReadIdleMillis = 0;
+        _maxWriteIdleMillis = 0;
     }
 
     public void testNoIdle() throws Exception
     {
-        _maxReadIdle = 4;
-        _maxWriteIdle = 2;
+        _maxReadIdleMillis = 4000;
+        _maxWriteIdleMillis = 2000;
         _lastReadTime = 0;
         _lastWriteTime = 1500;
         _currentTime = 3000;
@@ -82,13 +82,13 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
         assertFalse("Incorrectly caused reader idle", _readerIdle);
         assertFalse("Incorrectly caused writer idle", _writerIdle);
 
-        _maxReadIdle = 0;
+        _maxReadIdleMillis = 0;
         nextTime = _ticker.tick(_currentTime);
         assertEquals("Incorrect next tick calculation", 1700l, nextTime);
         assertFalse("Incorrectly caused reader idle", _readerIdle);
         assertFalse("Incorrectly caused writer idle", _writerIdle);
 
-        _maxWriteIdle = 0;
+        _maxWriteIdleMillis = 0;
         nextTime = _ticker.tick(_currentTime);
         assertEquals("Incorrect next tick calculation", DEFAULT_TIMEOUT, nextTime);
         assertFalse("Incorrectly caused reader idle", _readerIdle);
@@ -98,8 +98,8 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
 
     public void testReaderIdle() throws Exception
     {
-        _maxReadIdle = 4;
-        _maxWriteIdle = 0;
+        _maxReadIdleMillis = 4000;
+        _maxWriteIdleMillis = 0;
         _lastReadTime = 0;
         _lastWriteTime = 2500;
         _currentTime = 4000;
@@ -113,7 +113,7 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
         _readerIdle = false;
 
         // last write = 2.5s, max write idle = 2s, should check in 0.5s
-        _maxWriteIdle = 2;
+        _maxWriteIdleMillis = 2000;
         nextTime = _ticker.tick(_currentTime);
         assertTrue(_readerIdle);
         assertFalse(_writerIdle);
@@ -131,8 +131,8 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
 
     public void testWriterIdle() throws Exception
     {
-        _maxReadIdle = 0;
-        _maxWriteIdle = 2;
+        _maxReadIdleMillis = 0;
+        _maxWriteIdleMillis = 2000;
         _lastReadTime = 0;
         _lastWriteTime = 1500;
         _currentTime = 4000;
@@ -146,7 +146,7 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
 
         _writerIdle = false;
         _lastWriteTime = 1500;
-        _maxReadIdle = 5;
+        _maxReadIdleMillis = 5000;
 
         nextTime = _ticker.tick(_currentTime);
 
@@ -219,15 +219,15 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
     }
 
     @Override
-    public void setMaxWriteIdle(int sec)
+    public void setMaxWriteIdleMillis(final long millis)
     {
-        _maxWriteIdle = sec;
+        _maxWriteIdleMillis = millis;
     }
 
     @Override
-    public void setMaxReadIdle(int sec)
+    public void setMaxReadIdleMillis(final long millis)
     {
-        _maxReadIdle = sec;
+        _maxReadIdleMillis = millis;
     }
 
     @Override
@@ -243,14 +243,14 @@ public class IdleTimeoutTickerTest extends QpidTestCase implements TransportActi
     }
 
     @Override
-    public int getMaxReadIdle()
+    public long getMaxReadIdleMillis()
     {
-        return _maxReadIdle;
+        return _maxReadIdleMillis;
     }
 
     @Override
-    public int getMaxWriteIdle()
+    public long getMaxWriteIdleMillis()
     {
-        return _maxWriteIdle;
+        return _maxWriteIdleMillis;
     }
 }

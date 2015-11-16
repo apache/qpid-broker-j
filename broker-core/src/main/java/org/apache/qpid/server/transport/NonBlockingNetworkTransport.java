@@ -173,7 +173,7 @@ public class NonBlockingNetworkTransport
                                                       _port);
 
                     engine.setNetworkConnection(connection);
-                    connection.setMaxReadIdle(HANDSHAKE_TIMEOUT);
+                    connection.setMaxReadIdleMillis(1000L * HANDSHAKE_TIMEOUT);
 
                     idleTimeoutTicker.setConnection(connection);
 

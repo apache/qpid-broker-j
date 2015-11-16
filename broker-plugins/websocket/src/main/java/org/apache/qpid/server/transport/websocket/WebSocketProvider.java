@@ -318,8 +318,8 @@ class WebSocketProvider implements AcceptingTransport
         private final AtomicLong _usedOutboundMessageSpace = new AtomicLong();
 
         private Certificate _certificate;
-        private int _maxWriteIdle;
-        private int _maxReadIdle;
+        private long _maxWriteIdleMillis;
+        private long _maxReadIdleMillis;
 
         public ConnectionWrapper(final WebSocket.Connection connection,
                                  final SocketAddress localAddress,
@@ -378,15 +378,15 @@ class WebSocketProvider implements AcceptingTransport
         }
 
         @Override
-        public void setMaxWriteIdle(final int sec)
+        public void setMaxWriteIdleMillis(final long millis)
         {
-            _maxWriteIdle = sec;
+            _maxWriteIdleMillis = millis;
         }
 
         @Override
-        public void setMaxReadIdle(final int sec)
+        public void setMaxReadIdleMillis(final long millis)
         {
-            _maxReadIdle = sec;
+            _maxReadIdleMillis = millis;
         }
 
         @Override
@@ -402,15 +402,15 @@ class WebSocketProvider implements AcceptingTransport
         }
 
         @Override
-        public int getMaxReadIdle()
+        public long getMaxReadIdleMillis()
         {
-            return _maxReadIdle;
+            return _maxReadIdleMillis;
         }
 
         @Override
-        public int getMaxWriteIdle()
+        public long getMaxWriteIdleMillis()
         {
-            return _maxWriteIdle;
+            return _maxWriteIdleMillis;
         }
 
         @Override

@@ -283,14 +283,14 @@ public class ServerConnectionDelegate extends ServerDelegate
                 heartbeat = 0;
             }
 
-            networkConnection.setMaxReadIdle(2 * heartbeat);
-            networkConnection.setMaxWriteIdle(heartbeat);
+            networkConnection.setMaxReadIdleMillis(2000L * heartbeat);
+            networkConnection.setMaxWriteIdleMillis(1000L * heartbeat);
 
         }
         else
         {
-            networkConnection.setMaxReadIdle(0);
-            networkConnection.setMaxWriteIdle(0);
+            networkConnection.setMaxReadIdleMillis(0);
+            networkConnection.setMaxWriteIdleMillis(0);
         }
 
         setConnectionTuneOkChannelMax(sconn, okChannelMax);

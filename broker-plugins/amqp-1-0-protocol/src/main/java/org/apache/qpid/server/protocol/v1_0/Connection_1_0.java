@@ -46,6 +46,7 @@ import org.apache.qpid.amqp_1_0.transport.SessionEndpoint;
 import org.apache.qpid.amqp_1_0.transport.SessionEventListener;
 import org.apache.qpid.amqp_1_0.type.Symbol;
 import org.apache.qpid.amqp_1_0.type.transport.AmqpError;
+import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
 import org.apache.qpid.amqp_1_0.type.transport.End;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.protocol.AMQConstant;
@@ -61,6 +62,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 public class Connection_1_0 implements ConnectionEventListener
 {
 
+    private static final long MINIMUM_SUPPORTED_IDLE_TIMEOUT = 1000L;
     private final AmqpPort<?> _port;
     private final SubjectCreator _subjectCreator;
     private AMQPConnection_1_0 _amqpConnection;
@@ -139,39 +141,56 @@ public class Connection_1_0 implements ConnectionEventListener
             }
             _amqpConnection.setClientId(_connectionEndpoint.getRemoteContainerId());
         }
-        // TODO implement AMQP 1.0 heartbeating
-        _amqpConnection.getNetwork().setMaxReadIdle(0);
-        _amqpConnection.getNetwork().setMaxWriteIdle(0);
-
-        _vhost = ((AmqpPort)_port).getVirtualHost(host);
-        if(_vhost == null)
+        _amqpConnection.getNetwork().setMaxReadIdleMillis(_connectionEndpoint.getDesiredIdleTimeout());
+        long idleTimeout = _connectionEndpoint.getIdleTimeout();
+        if(idleTimeout != 0L && idleTimeout < MINIMUM_SUPPORTED_IDLE_TIMEOUT)
         {
-            final Error err = new Error();
-            err.setCondition(AmqpError.NOT_FOUND);
-            err.setDescription("Unknown hostname in connection open: '" + host + "'");
-            _connectionEndpoint.close(err);
+            _connectionEndpoint.close(new Error(ConnectionError.CONNECTION_FORCED,
+                                                "Requested idle timeout of "
+                                                  + idleTimeout
+                                                  + " is too low. The minimum supported timeout is"
+                                                  + MINIMUM_SUPPORTED_IDLE_TIMEOUT));
+            _amqpConnection.close();
             _closedOnOpen = true;
         }
         else
         {
-            final Principal user = _connectionEndpoint.getUser();
-            if(user != null)
-            {
-                setUserPrincipal(user);
-            }
-            _amqpConnection.getSubject().getPrincipals().add(_vhost.getPrincipal());
-            _amqpConnection.updateAccessControllerContext();
-            if(AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_amqpConnection.getSubject()) == null)
+            _amqpConnection.getNetwork().setMaxWriteIdleMillis(idleTimeout / 2L);
+
+            _vhost = ((AmqpPort) _port).getVirtualHost(host);
+            if (_vhost == null)
             {
                 final Error err = new Error();
-                err.setCondition(AmqpError.NOT_ALLOWED);
-                err.setDescription("Connection has not been authenticated");
+                err.setCondition(AmqpError.NOT_FOUND);
+                err.setDescription("Unknown hostname in connection open: '" + host + "'");
                 _connectionEndpoint.close(err);
+                _amqpConnection.close();
+
                 _closedOnOpen = true;
             }
             else
             {
-                _amqpConnection.virtualHostAssociated();
+                final Principal user = _connectionEndpoint.getUser();
+                if (user != null)
+                {
+                    setUserPrincipal(user);
+                }
+                _amqpConnection.getSubject().getPrincipals().add(_vhost.getPrincipal());
+                _amqpConnection.updateAccessControllerContext();
+                if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_amqpConnection.getSubject())
+                    == null)
+                {
+                    final Error err = new Error();
+                    err.setCondition(AmqpError.NOT_ALLOWED);
+                    err.setDescription("Connection has not been authenticated");
+                    _connectionEndpoint.close(err);
+                    _amqpConnection.close();
+                    _closedOnOpen = true;
+                }
+                else
+                {
+                    _amqpConnection.virtualHostAssociated();
+                }
             }
         }
     }

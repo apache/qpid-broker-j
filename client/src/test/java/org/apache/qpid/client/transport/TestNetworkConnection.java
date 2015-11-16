@@ -58,11 +58,6 @@ public class TestNetworkConnection implements NetworkConnection
         return (_remoteAddress != null) ? _remoteAddress : new InetSocketAddress(_remoteHost, _port);
     }
 
-    public void setMaxReadIdle(int idleTime)
-    {
-
-    }
-
     @Override
     public Principal getPeerPrincipal()
     {
@@ -76,18 +71,25 @@ public class TestNetworkConnection implements NetworkConnection
     }
 
     @Override
-    public int getMaxReadIdle()
+    public long getMaxReadIdleMillis()
     {
-        return 0;
+        return 0L;
     }
 
     @Override
-    public int getMaxWriteIdle()
+    public long getMaxWriteIdleMillis()
     {
-        return 0;
+        return 0L;
     }
 
-    public void setMaxWriteIdle(int idleTime)
+    @Override
+    public void setMaxWriteIdleMillis(final long millis)
+    {
+
+    }
+
+    @Override
+    public void setMaxReadIdleMillis(final long millis)
     {
 
     }

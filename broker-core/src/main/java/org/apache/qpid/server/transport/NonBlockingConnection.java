@@ -60,9 +60,6 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final AtomicLong _usedOutboundMessageSpace = new AtomicLong();
     private final long _outboundMessageBufferLimit;
 
-    private volatile int _maxReadIdle;
-    private volatile int _maxWriteIdle;
-
     private volatile boolean _fullyWritten = true;
 
     private boolean _partialRead = false;
@@ -73,6 +70,8 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private final String _threadName;
     private volatile SelectorThread.SelectionTask _selectionTask;
     private Iterator<Runnable> _pendingIterator;
+    private final AtomicLong _maxWriteIdleMillis = new AtomicLong();
+    private final AtomicLong _maxReadIdleMillis = new AtomicLong();
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -169,15 +168,15 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     }
 
     @Override
-    public void setMaxWriteIdle(int sec)
+    public void setMaxWriteIdleMillis(final long millis)
     {
-        _maxWriteIdle = sec;
+        _maxWriteIdleMillis.set(millis);
     }
 
     @Override
-    public void setMaxReadIdle(int sec)
+    public void setMaxReadIdleMillis(final long millis)
     {
-        _maxReadIdle = sec;
+        _maxReadIdleMillis.set(millis);
     }
 
     @Override
@@ -193,15 +192,15 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     }
 
     @Override
-    public int getMaxReadIdle()
+    public long getMaxReadIdleMillis()
     {
-        return _maxReadIdle;
+        return _maxReadIdleMillis.get();
     }
 
     @Override
-    public int getMaxWriteIdle()
+    public long getMaxWriteIdleMillis()
     {
-        return _maxWriteIdle;
+        return _maxWriteIdleMillis.get();
     }
 
     @Override

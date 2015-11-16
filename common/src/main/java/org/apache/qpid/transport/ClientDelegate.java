@@ -153,8 +153,8 @@ public class ClientDelegate extends ConnectionDelegate
                               maxFrameSize,
                               actualHeartbeatInterval);
 
-        conn.getNetworkConnection().setMaxReadIdle((int)(actualHeartbeatInterval*heartbeatTimeoutFactor));
-        conn.getNetworkConnection().setMaxWriteIdle(actualHeartbeatInterval);
+        conn.getNetworkConnection().setMaxReadIdleMillis((long) (1000L * (actualHeartbeatInterval * heartbeatTimeoutFactor)));
+        conn.getNetworkConnection().setMaxWriteIdleMillis(1000L *actualHeartbeatInterval);
         conn.setMaxFrameSize(maxFrameSize == 0 ? 0xffff : maxFrameSize);
 
         int channelMax = tune.getChannelMax();

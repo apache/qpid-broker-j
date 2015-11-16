@@ -43,12 +43,12 @@ public class IoNetworkConnection implements NetworkConnection
     private final long _timeout;
     private final IoSender _ioSender;
     private final IoReceiver _ioReceiver;
-    private int _maxReadIdle;
-    private int _maxWriteIdle;
     private Principal _principal;
     private boolean _principalChecked;
     private final Object _lock = new Object();
     private Certificate _certificate;
+    private long _maxWriteIdleMillis;
+    private long _maxReadIdleMillis;
 
     public IoNetworkConnection(Socket socket, ExceptionHandlingByteBufferReceiver delegate,
             int sendBufferSize, int receiveBufferSize, long timeout, Ticker ticker)
@@ -98,14 +98,16 @@ public class IoNetworkConnection implements NetworkConnection
         return _socket.getLocalSocketAddress();
     }
 
-    public void setMaxWriteIdle(int sec)
+    @Override
+    public void setMaxWriteIdleMillis(final long millis)
     {
-        _maxWriteIdle = sec;
+        _maxWriteIdleMillis = millis;
     }
 
-    public void setMaxReadIdle(int sec)
+    @Override
+    public void setMaxReadIdleMillis(final long millis)
     {
-        _maxReadIdle = sec;
+        _maxReadIdleMillis = millis;
     }
 
     @Override
@@ -154,14 +156,14 @@ public class IoNetworkConnection implements NetworkConnection
     }
 
     @Override
-    public int getMaxReadIdle()
+    public long getMaxReadIdleMillis()
     {
-        return _maxReadIdle;
+        return _maxReadIdleMillis;
     }
 
     @Override
-    public int getMaxWriteIdle()
+    public long getMaxWriteIdleMillis()
     {
-        return _maxWriteIdle;
+        return _maxWriteIdleMillis;
     }
 }
