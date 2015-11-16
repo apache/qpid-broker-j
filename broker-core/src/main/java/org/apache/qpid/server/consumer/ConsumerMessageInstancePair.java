@@ -20,18 +20,21 @@
 package org.apache.qpid.server.consumer;
 
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.message.MessageReference;
 
 public class ConsumerMessageInstancePair
 {
     private final ConsumerImpl _consumer;
     private final MessageInstance _entry;
     private final boolean _batch;
+    private final MessageReference _reference;
 
     public ConsumerMessageInstancePair(final ConsumerImpl consumer, final MessageInstance entry, final boolean batch)
     {
         _consumer = consumer;
         _entry = entry;
         _batch = batch;
+        _reference = entry.getMessage().newReference();
 
     }
 
@@ -48,5 +51,10 @@ public class ConsumerMessageInstancePair
     public boolean isBatch()
     {
         return _batch;
+    }
+
+    public void release()
+    {
+        _reference.release();
     }
 }

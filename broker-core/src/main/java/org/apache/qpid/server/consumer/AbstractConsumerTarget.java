@@ -207,21 +207,64 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
     @Override
     public void sendNextMessage()
     {
-        ConsumerMessageInstancePair consumerMessage = _queue.peek();
+        ConsumerMessageInstancePair consumerMessage = _queue.poll();
         if (consumerMessage != null)
         {
-            _queue.poll();
-
-            ConsumerImpl consumer = consumerMessage.getConsumer();
-            MessageInstance entry = consumerMessage.getEntry();
-            boolean batch = consumerMessage.isBatch();
-            doSend(consumer, entry, batch);
-
-            if (consumer.acquires())
+            try
             {
-                entry.unlockAcquisition();
+
+                ConsumerImpl consumer = consumerMessage.getConsumer();
+                MessageInstance entry = consumerMessage.getEntry();
+                boolean batch = consumerMessage.isBatch();
+                doSend(consumer, entry, batch);
+
+                if (consumer.acquires())
+                {
+                    entry.unlockAcquisition();
+                }
+            }
+            finally
+            {
+                consumerMessage.release();
             }
         }
 
     }
+
+    final public boolean close()
+    {
+        boolean closed = false;
+        State state = getState();
+
+        getSendLock();
+        try
+        {
+            while(!closed && state != State.CLOSED)
+            {
+                closed = updateState(state, State.CLOSED);
+                if(!closed)
+                {
+                    state = getState();
+                }
+            }
+            ConsumerMessageInstancePair instance;
+            while((instance = _queue.poll()) != null)
+            {
+                instance.release();
+            }
+            doCloseInternal();
+        }
+        finally
+        {
+            releaseSendLock();
+        }
+
+        afterCloseInternal();
+        return closed;
+
+    }
+
+    protected abstract void afterCloseInternal();
+
+    protected abstract void doCloseInternal();
 }

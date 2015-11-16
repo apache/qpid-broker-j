@@ -389,32 +389,16 @@ public abstract class ConsumerTarget_0_8 extends AbstractConsumerTarget implemen
     }
 
     @Override
-    public boolean close()
+    protected void afterCloseInternal()
     {
-        boolean closed = false;
-        State state = getState();
 
-        getSendLock();
-
-        try
-        {
-            while(!closed && state != State.CLOSED)
-            {
-                closed = updateState(state, State.CLOSED);
-                if(!closed)
-                {
-                    state = getState();
-                }
-            }
-            _creditManager.removeListener(this);
-            return closed;
-        }
-        finally
-        {
-            releaseSendLock();
-        }
     }
 
+    @Override
+    protected void doCloseInternal()
+    {
+        _creditManager.removeListener(this);
+    }
 
     public boolean allocateCredit(ServerMessage msg)
     {

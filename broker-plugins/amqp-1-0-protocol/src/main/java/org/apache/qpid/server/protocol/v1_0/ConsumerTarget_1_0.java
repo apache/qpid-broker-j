@@ -97,28 +97,16 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     }
 
-    public boolean close()
+    @Override
+    protected void afterCloseInternal()
     {
-        boolean closed = false;
-        State state = getState();
 
-        getSendLock();
-        try
-        {
-            while(!closed && state != State.CLOSED)
-            {
-                closed = updateState(state, State.CLOSED);
-                if(!closed)
-                {
-                    state = getState();
-                }
-            }
-            return closed;
-        }
-        finally
-        {
-            releaseSendLock();
-        }
+    }
+
+    @Override
+    protected void doCloseInternal()
+    {
+
     }
 
     public void doSend(final ConsumerImpl consumer, final MessageInstance entry, boolean batch)

@@ -117,35 +117,20 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         return getState()!=State.ACTIVE || _deleted.get() || _session.isClosing() || _session.getAMQPConnection().isConnectionStopped(); // TODO check for Session suspension
     }
 
-    public boolean close()
+    @Override
+    protected void afterCloseInternal()
     {
-        boolean closed = false;
-        State state = getState();
-
-        getSendLock();
-        try
-        {
-            while(!closed && state != State.CLOSED)
-            {
-                closed = updateState(state, State.CLOSED);
-                if(!closed)
-                {
-                    state = getState();
-                }
-            }
-            _creditManager.removeListener(this);
-            }
-        finally
-        {
-            releaseSendLock();
-        }
 
         for (ConsumerImpl consumer : _consumers)
         {
             consumer.close();
         }
-        return closed;
+    }
 
+    @Override
+    protected void doCloseInternal()
+    {
+        _creditManager.removeListener(this);
     }
 
     public void creditStateChanged(boolean hasCredit)
