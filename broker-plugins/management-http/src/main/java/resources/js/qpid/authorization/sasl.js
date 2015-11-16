@@ -77,6 +77,7 @@ var saslPlain = function saslPlain(management, user, password, callbackFunction)
             mechanism: "PLAIN",
             response: plainResponse
         },
+        headers: {},
         method: "POST"}).then(callbackFunction, errorHandler);
 };
 
