@@ -1859,8 +1859,17 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         while (queueListIterator.advance())
         {
-            QueueEntry node = queueListIterator.getNode();
-            if (node.acquire())
+            final QueueEntry node = queueListIterator.getNode();
+            boolean acquired = node.acquireOrSteal(new Runnable()
+                                                    {
+                                                        @Override
+                                                        public void run()
+                                                        {
+                                                            dequeueEntry(node);
+                                                        }
+                                                    });
+
+            if (acquired)
             {
                 dequeueEntry(node, txn);
                 if(++count == request)
@@ -2457,23 +2466,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         long cumulativeQueueSize = 0;
         while (queueListIterator.advance())
         {
-            QueueEntry node = queueListIterator.getNode();
+            final QueueEntry node = queueListIterator.getNode();
             // Only process nodes that are not currently deleted and not dequeued
             if (!node.isDeleted())
             {
                 // If the node has expired then acquire it
                 if (node.expired())
                 {
-                    boolean acquiredForDequeueing = node.acquire();
-                    if(!acquiredForDequeueing && node.getDeliveredToConsumer())
+                    boolean acquiredForDequeueing = node.acquireOrSteal(new Runnable()
                     {
-                        QueueConsumer consumer = (QueueConsumer) node.getDeliveredConsumer();
-                        acquiredForDequeueing = node.removeAcquisitionFromConsumer(consumer);
-                        if(acquiredForDequeueing)
+                        @Override
+                        public void run()
                         {
-                            consumer.acquisitionRemoved(node);
+                            dequeueEntry(node);
                         }
-                    }
+                    });
 
                     if(acquiredForDequeueing)
                     {

@@ -67,7 +67,6 @@ import org.apache.qpid.server.logging.messages.MessageStoreMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
 import org.apache.qpid.server.message.MessageDestination;
-import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageNode;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
@@ -79,7 +78,6 @@ import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.queue.AMQQueue;
-import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
@@ -95,6 +93,7 @@ import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
+import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
@@ -1304,41 +1303,41 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     public void executeTransaction(TransactionalOperation op)
     {
-        MessageStore store = getMessageStore();
+        final MessageStore store = getMessageStore();
         final LocalTransaction txn = new LocalTransaction(store);
 
         op.withinTransaction(new Transaction()
         {
-            public void dequeue(final MessageInstance messageInstance)
+            public void dequeue(final QueueEntry messageInstance)
             {
-                boolean acquired = messageInstance.acquire();
-                if(!acquired && messageInstance instanceof QueueEntry)
+                final ServerTransaction.Action deleteAction = new ServerTransaction.Action()
                 {
-                    QueueEntry entry = (QueueEntry) messageInstance;
-                    QueueConsumer consumer = (QueueConsumer) entry.getDeliveredConsumer();
-                    acquired = messageInstance.removeAcquisitionFromConsumer(consumer);
-                    if(acquired)
+                    public void postCommit()
                     {
-                        consumer.acquisitionRemoved((QueueEntry)messageInstance);
+                        messageInstance.delete();
                     }
-                }
+
+                    public void onRollback()
+                    {
+                    }
+                };
+
+                boolean acquired = messageInstance.acquireOrSteal(new Runnable()
+                                                                    {
+                                                                        @Override
+                                                                        public void run()
+                                                                        {
+                                                                            ServerTransaction txn = new AutoCommitTransaction(store);
+                                                                            txn.dequeue(messageInstance.getEnqueueRecord(), deleteAction);
+                                                                        }
+                                                                    });
                 if(acquired)
                 {
-                    txn.dequeue(messageInstance.getEnqueueRecord(), new ServerTransaction.Action()
-                    {
-                        public void postCommit()
-                        {
-                            messageInstance.delete();
-                        }
-
-                        public void onRollback()
-                        {
-                        }
-                    });
+                    txn.dequeue(messageInstance.getEnqueueRecord(), deleteAction);
                 }
             }
 
-            public void copy(MessageInstance entry, Queue queue)
+            public void copy(QueueEntry entry, Queue queue)
             {
                 final ServerMessage message = entry.getMessage();
                 final AMQQueue toQueue = (AMQQueue)queue;
@@ -1357,7 +1356,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
             }
 
-            public void move(final MessageInstance entry, Queue queue)
+            public void move(final QueueEntry entry, Queue queue)
             {
                 final ServerMessage message = entry.getMessage();
                 final AMQQueue toQueue = (AMQQueue)queue;
@@ -1377,23 +1376,21 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                         entry.release();
                                     }
                                 });
-                    if(entry instanceof QueueEntry)
-                    {
-                        txn.dequeue(entry.getEnqueueRecord(),
-                                    new ServerTransaction.Action()
+                    txn.dequeue(entry.getEnqueueRecord(),
+                                new ServerTransaction.Action()
+                                {
+
+                                    public void postCommit()
+                                    {
+                                        entry.delete();
+                                    }
+
+                                    public void onRollback()
                                     {
 
-                                        public void postCommit()
-                                        {
-                                            entry.delete();
-                                        }
+                                    }
+                                });
 
-                                        public void onRollback()
-                                        {
-
-                                        }
-                                    });
-                    }
                 }
             }
 

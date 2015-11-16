@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostConnectionListener;
@@ -204,17 +205,17 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     void registerConnection(AMQPConnection<?> connection);
     void deregisterConnection(AMQPConnection<?> connection);
 
-    public static interface Transaction
+    interface Transaction
     {
-        void dequeue(MessageInstance entry);
+        void dequeue(QueueEntry entry);
 
-        void copy(MessageInstance entry, Queue queue);
+        void copy(QueueEntry entry, Queue queue);
 
-        void move(MessageInstance entry, Queue queue);
+        void move(QueueEntry entry, Queue queue);
 
     }
 
-    public static interface TransactionalOperation
+    interface TransactionalOperation
     {
         void withinTransaction(Transaction txn);
     }

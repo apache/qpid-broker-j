@@ -22,6 +22,7 @@ package org.apache.qpid.server.queue;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -208,6 +209,64 @@ public abstract class QueueEntryImpl implements QueueEntry
         return acquire(NON_CONSUMER_ACQUIRED_STATE);
     }
 
+    private class DelayedAcquisitionStateListener implements StateChangeListener<MessageInstance, State>
+    {
+        private final Runnable _task;
+        private final AtomicBoolean _run = new AtomicBoolean();
+
+        private DelayedAcquisitionStateListener(final Runnable task)
+        {
+            _task = task;
+        }
+
+        @Override
+        public void stateChanged(final MessageInstance object, final State oldState, final State newState)
+        {
+            if(newState == State.DELETED || newState == State.DEQUEUED)
+            {
+                QueueEntryImpl.this.removeStateChangeListener(this);
+            }
+            else if(acquireOrSteal(null))
+            {
+                runTask();
+            }
+        }
+
+        void runTask()
+        {
+            QueueEntryImpl.this.removeStateChangeListener(this);
+            if(_run.compareAndSet(false,true))
+            {
+                _task.run();
+            }
+        }
+    }
+
+    @Override
+    public boolean acquireOrSteal(final Runnable delayedAcquisitionTask)
+    {
+        boolean acquired = acquire();
+        if(!acquired)
+        {
+            QueueConsumer consumer = getDeliveredConsumer();
+            acquired = removeAcquisitionFromConsumer(consumer);
+            if(acquired)
+            {
+                consumer.acquisitionRemoved(this);
+            }
+            else if(delayedAcquisitionTask != null)
+            {
+                DelayedAcquisitionStateListener listener = new DelayedAcquisitionStateListener(delayedAcquisitionTask);
+                addStateChangeListener(listener);
+                if(acquireOrSteal(null))
+                {
+                    listener.runTask();
+                }
+            }
+        }
+        return acquired;
+    }
+
     private boolean acquire(final EntryState state)
     {
         boolean acquired = _stateUpdater.compareAndSet(this, AVAILABLE_STATE, state);
@@ -237,7 +296,13 @@ public abstract class QueueEntryImpl implements QueueEntry
         EntryState state = _state;
         if(state instanceof ConsumerAcquiredState)
         {
-            return _stateUpdater.compareAndSet(this, state, ((ConsumerAcquiredState)state).getLockedState());
+            LockedAcquiredState lockedState = ((ConsumerAcquiredState) state).getLockedState();
+            boolean updated = _stateUpdater.compareAndSet(this, state, lockedState);
+            if(updated)
+            {
+                notifyStateChange(state.getState(), lockedState.getState());
+            }
+            return updated;
         }
         return state instanceof LockedAcquiredState;
     }
@@ -248,7 +313,13 @@ public abstract class QueueEntryImpl implements QueueEntry
         EntryState state = _state;
         if(state instanceof LockedAcquiredState)
         {
-            return _stateUpdater.compareAndSet(this, state, ((LockedAcquiredState)state).getUnlockedState());
+            ConsumerAcquiredState unlockedState = ((LockedAcquiredState) state).getUnlockedState();
+            boolean updated = _stateUpdater.compareAndSet(this, state, unlockedState);
+            if(updated)
+            {
+                notifyStateChange(state.getState(),unlockedState.getState());
+            }
+            return updated;
         }
         return false;
     }
@@ -334,6 +405,7 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
 
+    @Override
     public QueueConsumer getDeliveredConsumer()
     {
         EntryState state = _state;
