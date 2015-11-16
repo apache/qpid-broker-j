@@ -41,6 +41,7 @@ import javax.management.RuntimeMBeanException;
 import javax.management.remote.MBeanServerForwarder;
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,39 +179,39 @@ public class MBeanInvocationHandlerImpl implements InvocationHandler
         }
     }
 
-    private void handleTargetException(Method method, Object[] args, Throwable targetException)
+    private void handleTargetException(Method method, Object[] args, Throwable originalException)
     {
-        Throwable error = null;
-        if (targetException instanceof RuntimeErrorException)
+        Throwable t = originalException;
+        String argsAsString = Arrays.toString(args);
+
+        // Unwrap the underlying from the special javax.management exception types
+        if (originalException instanceof RuntimeErrorException || originalException instanceof RuntimeMBeanException)
         {
-            error = ((RuntimeErrorException)targetException).getCause();
+            t = originalException.getCause();
         }
-        else if (targetException instanceof Error)
+
+        if (t instanceof ConnectionScopedRuntimeException)
         {
-            error = targetException;
-        }
-        if (error == null)
-        {
-            _logger.debug("Exception was thrown on invoking of " + method + " with arguments " + Arrays.toString(args), targetException);
+            if (_logger.isDebugEnabled())
+            {
+                _logger.debug("Exception was thrown on invoking of {} with arguments {}",
+                              method, argsAsString, t);
+            }
+            else
+            {
+                _logger.info("Exception was thrown on invoking of {} with arguments {} : {}",
+                             method, argsAsString, t.getMessage());
+            }
         }
         else
         {
-            _logger.error("Unexpected error occurred on invoking of " + method + " with arguments " + Arrays.toString(args), targetException);
+            _logger.error("Unexpected exception was thrown on invoking of {} with arguments {}",
+                          method, argsAsString, t);
         }
 
-        if (targetException instanceof ServerScopedRuntimeException)
+        if (t instanceof Error || t instanceof ServerScopedRuntimeException)
         {
-            error = targetException;
-        }
-        else if (targetException instanceof RuntimeMBeanException)
-        {
-            // unwrap RuntimeMBeanException
-            error = ((RuntimeMBeanException)targetException).getTargetException();
-        }
-
-        if (error instanceof Error || error instanceof ServerScopedRuntimeException)
-        {
-            _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), error);
+            _uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
         }
     }
 

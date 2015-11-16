@@ -216,7 +216,6 @@ public abstract class AbstractServlet extends HttpServlet
         }
         catch(RuntimeException e)
         {
-            LOGGER.error("Unable to perform action", e);
             throw e;
         }
         catch (PrivilegedActionException e)
@@ -230,7 +229,6 @@ public abstract class AbstractServlet extends HttpServlet
                 throw (IOException)cause;
             }
 
-            LOGGER.error("Unable to perform action", e);
             if(cause instanceof RuntimeException)
             {
                 throw (RuntimeException)cause;

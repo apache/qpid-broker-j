@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class ExceptionHandlingFilter implements Filter
@@ -53,6 +54,7 @@ public class ExceptionHandlingFilter implements Filter
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException
     {
+        final String requestURI = ((HttpServletRequest) servletRequest).getRequestURI();
         try
         {
             filterChain.doFilter(servletRequest, servletResponse);
@@ -67,12 +69,24 @@ public class ExceptionHandlingFilter implements Filter
         }
         catch (IOException | ServletException e)
         {
-            LOGGER.debug("Exception in servlet '{}': ", ((HttpServletRequest)servletRequest).getRequestURI(), e);
+            LOGGER.debug("Exception in servlet '{}': ", requestURI, e);
+            throw e;
+        }
+        catch (ConnectionScopedRuntimeException e)
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Exception in servlet '{}':", requestURI, e);
+            }
+            else
+            {
+                LOGGER.info("Exception in servlet '{}' : {}", requestURI, e.getMessage());
+            }
             throw e;
         }
         catch (RuntimeException e)
         {
-            LOGGER.error("Unexpected exception in servlet '{}': ", ((HttpServletRequest)servletRequest).getRequestURI(), e);
+            LOGGER.error("Unexpected exception in servlet '{}': ", requestURI, e);
             throw e;
         }
     }
