@@ -24,7 +24,7 @@ define(["qpid/common/util", "dojo/domReady!"],
     function SimpleLdapAuthenticationProvider(data)
     {
         this.fields = [];
-        var attributes = data.parenet.management.metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
+        var attributes = data.parent.management.metadata.getMetaData("AuthenticationProvider", "SimpleLDAP").attributes;
         for(var name in attributes)
         {
             this.fields.push(name);
