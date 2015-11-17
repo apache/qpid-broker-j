@@ -143,6 +143,8 @@ public class PrefetchBehaviourTest extends QpidBrokerTestCase
      */
     public void testMessagesAreDistributedBetweenConsumersWithLowPrefetch() throws Exception
     {
+        // This test is flaky. There is no guarantee that the messages have been sent to
+        // consumerA's prefetch buffer by the time consumerB calls receive().
         Queue queue = getTestQueue();
 
         setTestClientSystemProperty(ClientProperties.MAX_PREFETCH_PROP_NAME, new Integer(2).toString());
