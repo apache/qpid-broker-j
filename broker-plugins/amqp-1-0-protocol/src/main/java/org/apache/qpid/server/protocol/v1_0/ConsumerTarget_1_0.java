@@ -291,12 +291,17 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
             ProtocolEngine protocolEngine = getSession().getConnection().getAmqpConnection();
             final boolean hasCredit = _link.isAttached() && getEndpoint().hasCreditToSend() && !protocolEngine.isTransportBlockedForWriting();
-            if(!hasCredit && getState() == State.ACTIVE)
+            if (!hasCredit && getState() == State.ACTIVE)
             {
                 suspend();
             }
-            SendingLinkEndpoint linkEndpoint = _link.getEndpoint();
-            linkEndpoint.setLinkCredit(linkEndpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
+
+            if (hasCredit)
+            {
+                SendingLinkEndpoint linkEndpoint = _link.getEndpoint();
+                linkEndpoint.setLinkCredit(linkEndpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
+            }
+
             return hasCredit;
         }
     }
