@@ -316,7 +316,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
         synchronized (_link.getLock())
         {
             final SendingLinkEndpoint endpoint = _link.getEndpoint();
-            endpoint.setLinkCredit(endpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
+            endpoint.setLinkCredit(endpoint.getLinkCredit().add(UnsignedInteger.ONE));
         }
     }
 
