@@ -39,6 +39,7 @@
     <!-- Overrides for system properties understood by disttest itself -->
     <qpid.disttest.loglevel>info</qpid.disttest.loglevel>
     <qpid.disttest.duration>5000</qpid.disttest.duration>
+    <qpid.disttest.distributed>false</qpid.disttest.distributed>
 
     <!-- The following provide values for the disttest command line -->
     <qpid.disttest.test_config>${basedir}/etc/testdefs</qpid.disttest.test_config>
@@ -176,7 +177,7 @@
           <arguments>
             <argument>jndi-config=${basedir}/etc/perftests-jndi.properties</argument>
             <argument>test-config=${qpid.disttest.test_config}</argument>
-            <argument>distributed=false</argument>
+            <argument>distributed=${qpid.disttest.distributed}</argument>
             <argument>writeToDb=false</argument>
             <argument>hill-climb=${qpid.disttest.hillclimb}</argument>
             <argument>hill-climber.max-runs=${qpid.disttest.hillclimb.max_runs}</argument>
