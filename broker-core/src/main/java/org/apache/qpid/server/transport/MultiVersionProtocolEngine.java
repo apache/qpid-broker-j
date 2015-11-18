@@ -92,9 +92,9 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     }
 
     @Override
-    public void setMessageAssignmentSuspended(final boolean value)
+    public void setMessageAssignmentSuspended(final boolean value, final boolean notifyConsumers)
     {
-        _delegate.setMessageAssignmentSuspended(value);
+        _delegate.setMessageAssignmentSuspended(value, notifyConsumers);
     }
 
     @Override
@@ -239,7 +239,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
     {
 
         @Override
-        public void setMessageAssignmentSuspended(final boolean value)
+        public void setMessageAssignmentSuspended(final boolean value, final boolean notifyConsumers)
         {
 
         }
@@ -361,7 +361,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         private final AtomicBoolean _hasWork = new AtomicBoolean();
 
         @Override
-        public void setMessageAssignmentSuspended(final boolean value)
+        public void setMessageAssignmentSuspended(final boolean value, final boolean notifyConsumers)
         {
         }
 

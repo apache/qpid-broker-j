@@ -246,7 +246,7 @@ class WebSocketProvider implements AcceptingTransport
                 try
                 {
                     _protocolEngine.setIOThread(Thread.currentThread());
-                    _protocolEngine.setMessageAssignmentSuspended(true);
+                    _protocolEngine.setMessageAssignmentSuspended(true, true);
                     Iterator<Runnable> iter = _protocolEngine.processPendingIterator();
                     while(iter.hasNext())
                     {
@@ -261,7 +261,7 @@ class WebSocketProvider implements AcceptingTransport
 
                     _connectionWrapper.doWrite();
 
-                    _protocolEngine.setMessageAssignmentSuspended(false);
+                    _protocolEngine.setMessageAssignmentSuspended(false, true);
                 }
                 finally
                 {
@@ -418,7 +418,7 @@ class WebSocketProvider implements AcceptingTransport
         {
             if (_usedOutboundMessageSpace.addAndGet(size) > _outboundMessageBufferLimit)
             {
-                _protocolEngine.setMessageAssignmentSuspended(true);
+                _protocolEngine.setMessageAssignmentSuspended(true, false);
             }
         }
 
@@ -469,7 +469,7 @@ class WebSocketProvider implements AcceptingTransport
             try
             {
                 _protocolEngine.setIOThread(Thread.currentThread());
-                _protocolEngine.setMessageAssignmentSuspended(true);
+                _protocolEngine.setMessageAssignmentSuspended(true, true);
 
                 Iterator<Runnable> iter = _protocolEngine.processPendingIterator();
                 while(iter.hasNext())
@@ -479,7 +479,7 @@ class WebSocketProvider implements AcceptingTransport
 
                 doWrite();
 
-                _protocolEngine.setMessageAssignmentSuspended(false);
+                _protocolEngine.setMessageAssignmentSuspended(false, true);
             }
             finally
             {

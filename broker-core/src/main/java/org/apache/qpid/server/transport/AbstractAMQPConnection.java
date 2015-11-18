@@ -45,7 +45,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
@@ -402,19 +401,21 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended)
+    public void setMessageAssignmentSuspended(final boolean messageAssignmentSuspended, final boolean notifyConsumers)
     {
         _messageAssignmentSuspended.set(messageAssignmentSuspended);
-
-        for(AMQSessionModel<?> session : getSessionModels())
+        if(notifyConsumers)
         {
-            if (messageAssignmentSuspended)
+            for (AMQSessionModel<?> session : getSessionModels())
             {
-                session.ensureConsumersNoticedStateChange();
-            }
-            else
-            {
-                session.notifyConsumerTargetCurrentStates();
+                if (messageAssignmentSuspended)
+                {
+                    session.ensureConsumersNoticedStateChange();
+                }
+                else
+                {
+                    session.notifyConsumerTargetCurrentStates();
+                }
             }
         }
     }
