@@ -32,15 +32,21 @@ import java.util.Arrays;
 
 import javax.management.Attribute;
 import javax.management.JMException;
+import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.MBeanOperationInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
+import javax.management.OperationsException;
 import javax.management.RuntimeErrorException;
 import javax.management.RuntimeMBeanException;
 import javax.management.remote.MBeanServerForwarder;
 import javax.security.auth.Subject;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AbstractConfiguredObject;
+import org.apache.qpid.server.model.IllegalStateTransitionException;
+import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
@@ -190,7 +196,13 @@ public class MBeanInvocationHandlerImpl implements InvocationHandler
             t = originalException.getCause();
         }
 
-        if (t instanceof ConnectionScopedRuntimeException)
+        if (t instanceof ConnectionScopedRuntimeException ||
+            t instanceof AbstractConfiguredObject.DuplicateIdException ||
+            t instanceof AbstractConfiguredObject.DuplicateNameException ||
+            t instanceof IntegrityViolationException ||
+            t instanceof IllegalStateTransitionException ||
+            t instanceof OperationsException ||
+            t instanceof MBeanException)
         {
             if (_logger.isDebugEnabled())
             {
