@@ -3568,8 +3568,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             if (!_lastReportedFlowToDiskStatus.getAndSet(true))
             {
-                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize,
-                                                                                        targetQueueSize));
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_ACTIVE(estimatedQueueSize / 1024,
+                                                                                        targetQueueSize / 1024));
             }
         }
 
@@ -3577,8 +3577,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             if (_lastReportedFlowToDiskStatus.getAndSet(false))
             {
-                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize,
-                                                                                          targetQueueSize));
+                getEventLogger().message(_logSubject, QueueMessages.FLOW_TO_DISK_INACTIVE(estimatedQueueSize / 1024,
+                                                                                          targetQueueSize / 1024));
             }
         }
     }
