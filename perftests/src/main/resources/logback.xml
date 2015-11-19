@@ -24,11 +24,19 @@
             <pattern>%date %-5level [%thread] %logger{10} %msg%n</pattern>
         </encoder>
     </appender>
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <file>perftests.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%date %-5level [%thread] %logger{10} %msg%n</pattern>
+        </encoder>
+    </appender>
 
-    <logger name="org.apache.qpid" level="warn" />
+    <logger name="org.apache.qpid" level="${qpid.disttest.client.loglevel:-warn}" />
     <logger name="org.apache.qpid.disttest" level="${qpid.disttest.loglevel:-info}" />
 
     <root level="warn">
         <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
     </root>
 </configuration>
