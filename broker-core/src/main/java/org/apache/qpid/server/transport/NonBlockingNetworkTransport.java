@@ -38,14 +38,13 @@ import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.TransportEncryption;
 import org.apache.qpid.transport.network.io.IdleTimeoutTicker;
-import org.apache.qpid.transport.network.io.IoNetworkTransport;
 
 import static org.apache.qpid.transport.ConnectionSettings.WILDCARD_ADDRESS;
 
 public class NonBlockingNetworkTransport
 {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(IoNetworkTransport.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingNetworkTransport.class);
     private static final int TIMEOUT = Integer.getInteger(CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME,
                                                           CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT);
     private static final int HANDSHAKE_TIMEOUT = Integer.getInteger(CommonProperties.HANDSHAKE_TIMEOUT_PROP_NAME ,
@@ -55,13 +54,13 @@ public class NonBlockingNetworkTransport
     private final ServerSocketChannel _serverSocket;
     private final int _timeout;
     private final NetworkConnectionScheduler _scheduler;
-    private final AmqpPort _port;
+    private final AmqpPort<?> _port;
     private final InetSocketAddress _address;
 
     public NonBlockingNetworkTransport(final MultiVersionProtocolEngineFactory factory,
                                        final EnumSet<TransportEncryption> encryptionSet,
                                        final NetworkConnectionScheduler scheduler,
-                                       final AmqpPort port)
+                                       final AmqpPort<?> port)
     {
         try
         {
@@ -85,10 +84,11 @@ public class NonBlockingNetworkTransport
                 _address = new InetSocketAddress(bindingAddress, portNumber);
             }
 
+            int acceptBacklog = port.getContextValue(Integer.class, AmqpPort.PORT_AMQP_ACCEPT_BACKLOG);
             _serverSocket =  ServerSocketChannel.open();
 
             _serverSocket.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            _serverSocket.bind(_address);
+            _serverSocket.bind(_address, acceptBacklog);
             _serverSocket.configureBlocking(false);
             _encryptionSet = encryptionSet;
             _scheduler = scheduler;
@@ -99,7 +99,6 @@ public class NonBlockingNetworkTransport
         {
             throw new TransportException("Failed to start AMQP on port : " + port, e);
         }
-
     }
 
     public void start()
@@ -142,7 +141,6 @@ public class NonBlockingNetworkTransport
                 if (engine != null)
                 {
                     socketChannel.setOption(StandardSocketOptions.TCP_NODELAY, _port.isTcpNoDelay());
-                    socketChannel.socket().setSoTimeout(1000 * HANDSHAKE_TIMEOUT);
 
                     final int bufferSize = _port.getNetworkBufferSize();
 
