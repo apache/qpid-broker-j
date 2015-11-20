@@ -106,5 +106,6 @@ public class QueueDeleteTest extends QpidBrokerTestCase
         Message message = consumer.receive(RECEIVE_TIMEOUT);
         assertNotNull("Message not received", message);
         _session.commit();
+        consumer.close();
     }
 }
