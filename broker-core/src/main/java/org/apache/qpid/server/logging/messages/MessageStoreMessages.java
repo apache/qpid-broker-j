@@ -343,59 +343,6 @@ public class MessageStoreMessages
 
     /**
      * Log a MessageStore message of the Format:
-     * <pre>MST-1007 : Store Passivated</pre>
-     * Optional values are contained in [square brackets] and are numbered
-     * sequentially in the method call.
-     *
-     */
-    public static LogMessage PASSIVATE()
-    {
-        String rawMessage = _messages.getString("PASSIVATE");
-
-        final String message = rawMessage;
-
-        return new LogMessage()
-        {
-            public String toString()
-            {
-                return message;
-            }
-
-            public String getLogHierarchy()
-            {
-                return PASSIVATE_LOG_HIERARCHY;
-            }
-
-            @Override
-            public boolean equals(final Object o)
-            {
-                if (this == o)
-                {
-                    return true;
-                }
-                if (o == null || getClass() != o.getClass())
-                {
-                    return false;
-                }
-
-                final LogMessage that = (LogMessage) o;
-
-                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
-
-            }
-
-            @Override
-            public int hashCode()
-            {
-                int result = toString().hashCode();
-                result = 31 * result + getLogHierarchy().hashCode();
-                return result;
-            }
-        };
-    }
-
-    /**
-     * Log a MessageStore message of the Format:
      * <pre>MST-1001 : Created</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
