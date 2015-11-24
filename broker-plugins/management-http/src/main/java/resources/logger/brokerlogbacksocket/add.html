@@ -1,0 +1,73 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  ~
+  -->
+
+<div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Remote Host:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addLogger.remoteHost"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'remoteHost',
+                              placeHolder: 'localhost',
+                              promptMessage: 'Enter the host where the logback server is running',
+                              title: 'Enter the host where the logback server is running'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Port*:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addLogger.port"
+                   data-dojo-type="dijit/form/NumberTextBox"
+                   data-dojo-props="
+                              name: 'port',
+                              required: true,
+                              placeHolder: '6000',
+                              promptMessage: 'Enter the port number on which the logback server runs',
+                              title: 'Port number on which the logback server runs'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Reconnection delay:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addLogger.reconnectionDelay"
+                   data-dojo-type="dijit/form/NumberTextBox"
+                   data-dojo-props="
+                              name: 'reconnectionDelay',
+                              placeHolder: '100',
+                              promptMessage: 'Enter the reconnection delay',
+                              title: 'Specifies the number of milliseconds to wait before attempting to reconnect after a connection failure'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Include Caller Data:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="checkbox" id="addLogger.includeCallerData"
+                   data-dojo-type="dijit/form/CheckBox"
+                   data-dojo-props="
+                                  name: 'includeCallerData',
+                                  checked: true"/>
+            <div data-dojo-type="dijit/Tooltip"
+                 data-dojo-props="connectId: ['addLogger.includeCallerData'],
+                                      label: 'If selected, the caller data will be available to the remote host.'">
+            </div>
+        </div>
+    </div>
+</div>
