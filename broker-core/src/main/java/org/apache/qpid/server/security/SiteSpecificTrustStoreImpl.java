@@ -118,14 +118,18 @@ public class SiteSpecificTrustStoreImpl
     @Override
     public String getCertificate()
     {
-        try
+        if (_x509Certificate != null)
         {
-            return DatatypeConverter.printBase64Binary(_x509Certificate.getEncoded());
+            try
+            {
+                return DatatypeConverter.printBase64Binary(_x509Certificate.getEncoded());
+            }
+            catch (CertificateEncodingException e)
+            {
+                throw new IllegalConfigurationException("Unable to encode certificate");
+            }
         }
-        catch (CertificateEncodingException e)
-        {
-            throw new IllegalConfigurationException("Unable to encode certificate");
-        }
+        return null;
     }
 
     @Override
@@ -217,21 +221,22 @@ public class SiteSpecificTrustStoreImpl
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(new KeyManager[0], new TrustManager[] {new AlwaysTrustManager()}, null);
 
-            SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket(url.getHost(), url.getPort());
-            socket.startHandshake();
-            final Certificate[] certificateChain =
-                    socket.getSession().getPeerCertificates();
-            if(certificateChain != null && certificateChain.length != 0 && certificateChain[0] instanceof X509Certificate)
+            try(SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket(url.getHost(), url.getPort()))
             {
-                _x509Certificate = (X509Certificate) certificateChain[0];
+                socket.startHandshake();
+                final Certificate[] certificateChain = socket.getSession().getPeerCertificates();
+                if (certificateChain != null && certificateChain.length != 0 && certificateChain[0] instanceof X509Certificate)
+                {
+                    _x509Certificate = (X509Certificate) certificateChain[0];
 
-                final String certificate = getCertificate();
-                attributeSet(CERTIFICATE, certificate, certificate);
+                    final String certificate = getCertificate();
+                    attributeSet(CERTIFICATE, certificate, certificate);
 
-            }
-            else
-            {
-                LOGGER.info("No valid certificates available from " + getSiteUrl());
+                }
+                else
+                {
+                    LOGGER.info("No valid certificates available from " + getSiteUrl());
+                }
             }
 
         }
