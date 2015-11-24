@@ -908,15 +908,16 @@ public class ServerSession extends Session
         long connectionId = super.getConnection() instanceof ServerConnection
                             ? getConnection().getConnectionId()
                             : -1;
+        String authorizedPrincipal = (getAuthorizedPrincipal() == null) ? "?" : getAuthorizedPrincipal().getName();
 
         String remoteAddress = String.valueOf(getConnection().getRemoteSocketAddress());
         return "[" +
                MessageFormat.format(CHANNEL_FORMAT,
                                     connectionId,
-                                   getClientID(),
-                                   remoteAddress,
-                                   getVirtualHost().getName(),
-                                   getChannel())
+                                    authorizedPrincipal,
+                                    remoteAddress,
+                                    getVirtualHost().getName(),
+                                    getChannel())
             + "] ";
     }
 

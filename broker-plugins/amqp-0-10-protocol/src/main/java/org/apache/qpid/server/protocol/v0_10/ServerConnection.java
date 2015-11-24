@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.SOCKET_FORMAT;
-import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.USER_FORMAT;
 import static org.apache.qpid.transport.Connection.State.CLOSING;
 
 import java.net.SocketAddress;
@@ -30,9 +27,7 @@ import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
-import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -282,41 +277,6 @@ public class ServerConnection extends Connection implements AuthorizationHolder
                     return null;
                 }
             }, context);
-        }
-    }
-
-    public String toLogString()
-    {
-        boolean hasVirtualHost = (null != this.getVirtualHost());
-        boolean hasClientId = (null != getClientId());
-
-        if (hasClientId && hasVirtualHost)
-        {
-            return "[" +
-                    MessageFormat.format(CONNECTION_FORMAT,
-                                         getConnectionId(),
-                                         getClientId(),
-                                         getRemoteAddressString(),
-                                         getVirtualHost().getName())
-                 + "] ";
-        }
-        else if (hasClientId)
-        {
-            return "[" +
-                    MessageFormat.format(USER_FORMAT,
-                                         getConnectionId(),
-                                         getClientId(),
-                                         getRemoteAddressString())
-                 + "] ";
-
-        }
-        else
-        {
-            return "[" +
-                    MessageFormat.format(SOCKET_FORMAT,
-                                         getConnectionId(),
-                                         getRemoteAddressString())
-                 + "] ";
         }
     }
 

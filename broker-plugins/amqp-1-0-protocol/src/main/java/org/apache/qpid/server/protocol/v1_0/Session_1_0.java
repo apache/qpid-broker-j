@@ -743,18 +743,18 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
         return getConsumers().size();
     }
 
-
-
+    @Override
     public String toLogString()
     {
-        long connectionId = getAMQPConnection().getConnectionId();
+        final AMQPConnection<?> amqpConnection = getAMQPConnection();
+        long connectionId = amqpConnection.getConnectionId();
 
-        String remoteAddress = getAMQPConnection().getRemoteAddressString();
-
+        String remoteAddress = amqpConnection.getRemoteAddressString();
+        final String authorizedPrincipal = amqpConnection.getAuthorizedPrincipal() == null ? "?" : amqpConnection.getAuthorizedPrincipal().getName();
         return "[" +
                MessageFormat.format(CHANNEL_FORMAT,
                                     connectionId,
-                                    getClientID(),
+                                    authorizedPrincipal,
                                     remoteAddress,
                                     getVirtualHost().getName(),
                                     _endpoint.getSendingChannel())  + "] ";
