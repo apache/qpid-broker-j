@@ -97,7 +97,7 @@ public class AppenderUtils
 
     static void validateLogFilePermissions(final File file)
     {
-        if ((file.exists() && (!file.isFile() || !file.canWrite())) || !file.getParentFile().canWrite())
+        if ((file.exists() && (!file.isFile() || !file.canWrite())) || !file.getAbsoluteFile().getParentFile().canWrite())
         {
             throw new IllegalConfigurationException(String.format("Do not have the permissions to log to file '%s'.", file.getAbsolutePath()));
         }
