@@ -66,6 +66,7 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
+import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.consumer.ConsumerImpl;
@@ -127,26 +128,26 @@ public class AMQPConnection_0_8
      * Used so we know which channels we need to call {@link AMQChannel#receivedComplete()}
      * on after handling the frames.
      */
-    private final Set<AMQChannel> _channelsForCurrentMessage = new HashSet<>();
+    private final Set<AMQChannel> _channelsForCurrentMessage = Collections.newSetFromMap(new ConcurrentHashMap<AMQChannel, Boolean>());
 
     private final ServerDecoder _decoder;
 
-    private SaslServer _saslServer;
+    private volatile SaslServer _saslServer;
 
-    private long _maxNoOfChannels;
+    private volatile long _maxNoOfChannels;
 
-    private ProtocolVersion _protocolVersion = ProtocolVersion.getLatestSupportedVersion();
-    private final MethodRegistry _methodRegistry = new MethodRegistry(_protocolVersion);
+    private volatile ProtocolVersion _protocolVersion;
+    private volatile MethodRegistry _methodRegistry;
 
     private final Queue<Action<? super AMQPConnection_0_8>> _asyncTaskList =
             new ConcurrentLinkedQueue<>();
 
     private final Map<Integer, Long> _closingChannelsList = new ConcurrentHashMap<>();
-    private ProtocolOutputConverter _protocolOutputConverter;
+    private volatile ProtocolOutputConverter _protocolOutputConverter;
 
     private final Object _reference = new Object();
 
-    private int _maxFrameSize;
+    private volatile int _maxFrameSize;
     private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
     private final ServerNetworkConnection _network;
@@ -157,8 +158,8 @@ public class AMQPConnection_0_8
     private boolean _blocking;
 
     private volatile boolean _closeWhenNoRoute;
-    private boolean _compressionSupported;
-    private int _messageCompressionThreshold;
+    private volatile boolean _compressionSupported;
+    private volatile int _messageCompressionThreshold;
 
     /**
      * QPID-6744 - Older queue clients (<=0.32) set the nowait flag false on the queue.delete method and then
@@ -168,10 +169,10 @@ public class AMQPConnection_0_8
     private volatile boolean _sendQueueDeleteOkRegardless;
     private final Pattern _sendQueueDeleteOkRegardlessClientVerRegexp;
 
-    private int _currentClassId;
-    private int _currentMethodId;
-    private int _binaryDataLimit;
-    private long _maxMessageSize;
+    private volatile int _currentClassId;
+    private volatile int _currentMethodId;
+    private final int _binaryDataLimit;
+    private final long _maxMessageSize;
     private volatile boolean _transportBlockedForWriting;
 
     public AMQPConnection_0_8(Broker<?> broker,
@@ -694,8 +695,10 @@ public class AMQPConnection_0_8
 
     private void setProtocolVersion(ProtocolVersion pv)
     {
+        // TODO MultiVersionProtocolEngine takes responsibility for making the ProtocolVersion determination.
+        // These steps could be moved to construction.
         _protocolVersion = pv;
-        _methodRegistry.setProtocolVersion(_protocolVersion);
+        _methodRegistry = new MethodRegistry(_protocolVersion);
         _protocolOutputConverter = new ProtocolOutputConverterImpl(this);
     }
 
