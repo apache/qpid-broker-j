@@ -31,9 +31,12 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
+import org.apache.qpid.server.model.testmodels.TestSecurityManager;
+import org.apache.qpid.server.security.SecurityManager;
 
 public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends AbstractConfiguredObject<X> implements TestEngine<X>
 {
+    private final TestSecurityManager _securityManager;
     @ManagedAttributeField
     private ListenableFuture<Void> _beforeCloseFuture = Futures.immediateFuture(null);
 
@@ -47,6 +50,7 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
                                   final Map<String, Object> attributes)
     {
         super(parents, attributes);
+        _securityManager = new TestSecurityManager(parents.get(TestCar.class));
     }
 
     @Override
@@ -101,5 +105,19 @@ public class TestAbstractEngineImpl<X extends TestAbstractEngineImpl<X>> extends
             throw stateChangeException;
         }
         return (ListenableFuture<Void>) _stateChangeFuture;
+    }
+
+    @StateTransition(currentState = {State.ACTIVE, State.UNINITIALIZED, State.ERRORED}, desiredState = State.DELETED)
+    private ListenableFuture<Void> doDelete()
+    {
+        // to invoke ACO#unregisterChild as part of delete
+        deleted();
+        return Futures.immediateFuture(null);
+    }
+
+    @Override
+    protected SecurityManager getSecurityManager()
+    {
+        return _securityManager;
     }
 }

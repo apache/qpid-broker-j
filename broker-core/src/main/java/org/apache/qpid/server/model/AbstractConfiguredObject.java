@@ -2040,8 +2040,8 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         synchronized(_children)
         {
             _children.get(categoryClass).remove(child);
-            _childrenById.get(categoryClass).remove(child.getId());
-            _childrenByName.get(categoryClass).remove(child.getName());
+            _childrenById.get(categoryClass).remove(child.getId(), child);
+            _childrenByName.get(categoryClass).remove(child.getName(), child);
         }
     }
 
