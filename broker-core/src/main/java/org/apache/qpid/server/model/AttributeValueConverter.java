@@ -128,10 +128,11 @@ abstract class AttributeValueConverter<T>
     };
 
 
-
-
     static final AttributeValueConverter<Certificate> CERTIFICATE_CONVERTER = new AttributeValueConverter<Certificate>()
     {
+        private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----\n";
+        private static final String END_CERTIFICATE = "\n-----END CERTIFICATE-----";
+
         private final CertificateFactory _certFactory;
 
         {
@@ -164,7 +165,17 @@ abstract class AttributeValueConverter<T>
             }
             else if(value instanceof String)
             {
-                return convert(BINARY_CONVERTER.convert(AbstractConfiguredObject.interpolate(object, (String) value),object),object);
+                String strValue = AbstractConfiguredObject.interpolate(object, (String) value);
+                if(strValue.contains(BEGIN_CERTIFICATE))
+                {
+                    strValue = strValue.substring(strValue.indexOf(BEGIN_CERTIFICATE) + BEGIN_CERTIFICATE.length());
+                    if(strValue.contains(END_CERTIFICATE))
+                    {
+                        strValue = strValue.substring(0,strValue.indexOf(END_CERTIFICATE));
+                    }
+                    strValue = strValue.replaceAll("\\s","");
+                }
+                return convert(BINARY_CONVERTER.convert(strValue, object),object);
             }
             else if(value == null)
             {
