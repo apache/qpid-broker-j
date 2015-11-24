@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE entities [
+<!ENTITY %  entities SYSTEM  "../../commonEntities.xml">
+%entities;
+]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -26,13 +30,38 @@
         Port in order to SSL client authentication. Some authentication provides also use a
         truststore when connecting to authentication systems that are protected by a private issuer
         SSL certificate.</para>
+    <section id="Java-Broker-Management-Managing-Truststores-Types">
+        <title>Types</title>
+        <para>The following truststore types are supported. <itemizedlist>
+                <listitem>
+                    <para><emphasis>File Trust Store</emphasis>. This type accepts the standard JKS
+                        truststore format undertood by Java and Java tools such as <ulink
+                            url="&oracleKeytool;">keytool</ulink>.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Non Java Trust Store</emphasis>. A non java keystore accepts key
+                        material in PEM and DER file formats. </para>
+                </listitem>
+                <listitem>
+                    <para>TODO</para>
+                </listitem>
+            </itemizedlist>
+        </para>
+    </section>
     <section id="Java-Broker-Management-Managing-Truststores-Attributes">
         <title>Attributes</title>
-        <para><itemizedlist>
+        <para>
+            <itemizedlist>
                 <listitem>
                     <para><emphasis>Name the truststore</emphasis>. Used to identify the
                         truststore.</para>
                 </listitem>
+            </itemizedlist>
+        </para>
+        <para>The following attributes apply to <emphasis>File Trust Stores</emphasis> only.</para>
+        <para>
+            <itemizedlist>
+
                 <listitem>
                     <para><emphasis>Path</emphasis>. Path to truststore file</para>
                 </listitem>
@@ -58,10 +87,22 @@
                 </listitem>
                 <listitem>
                     <para><emphasis>Peers only</emphasis>. When "Peers Only" option is selected for
-                        the Truststore it will allow authenticate only those clients that present a certificate
-                        exactly matching a certificate contained within the Truststore database.</para>
+                        the Truststore it will allow authenticate only those clients that present a
+                        certificate exactly matching a certificate contained within the Truststore
+                        database.</para>
                 </listitem>
-            </itemizedlist></para>
+            </itemizedlist>
+        </para>
+        <para>The following attributes apply to <emphasis>Non Java Trust Stores</emphasis>
+            only.</para>
+        <para>
+            <itemizedlist>
+                <listitem>
+                    <para><emphasis>Certificates</emphasis>. The cerificate(s) in DER or PEM
+                        format.</para>
+                </listitem>
+            </itemizedlist>
+        </para>
     </section>
     <section id="Java-Broker-Management-Managing-Truststores-Children">
         <title>Children</title>

@@ -35,6 +35,7 @@
     the URL is <literal>/api/&lt;version&gt;</literal> where &lt;version&gt; is a major model version prefixed with "v", for example, v3.
     For convenience the alias <literal>latest</literal> (<literal>/api/latest</literal>) signifies the latest supported version.
     There are also some ancillary services under URI <literal>/service</literal>.</para>
+    <para>The remainder of this section will assume you are using the <literal>/api/latest</literal> form.</para>
   </section>
 
   <section id="Java-Broker-Management-Channel-REST-API-URI">
@@ -54,7 +55,6 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/broker</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/broker</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -65,9 +65,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/virtualhostnode</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/virtualhostnode</para></listitem>
                 <listitem><para>/api/latest/virtualhostnode/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/virtualhostnode/&lt;virtual host node name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -78,11 +76,8 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/virtualhost</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/virtualhost</para></listitem>
                 <listitem><para>/api/latest/virtualhost/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/virtualhost/&lt;virtual host node name&gt;</para></listitem>
                 <listitem><para>/api/latest/virtualhost/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/virtualhost/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -93,13 +88,9 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/queue</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/queue</para></listitem>
                 <listitem><para>/api/latest/queue/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/queue/&lt;virtual host node name&gt;</para></listitem>
                 <listitem><para>/api/latest/queue/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/queue/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
                 <listitem><para>/api/latest/queue/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;queue name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/queue/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;queue name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -110,13 +101,9 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/exchange</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/exchange</para></listitem>
                 <listitem><para>/api/latest/exchange/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/exchange/&lt;virtual host node name&gt;</para></listitem>
                 <listitem><para>/api/latest/exchange/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/exchange/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
                 <listitem><para>/api/latest/exchange/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;exchange name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/exchange/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;exchange name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -127,15 +114,10 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/binding</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/binding</para></listitem>
                 <listitem><para>/api/latest/binding/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/binding/&lt;virtual host node name&gt;</para></listitem>
                 <listitem><para>/api/latest/binding/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/binding/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
                 <listitem><para>/api/latest/binding/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;exchange name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/binding/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;exchange name&gt;</para></listitem>
                 <listitem><para>/api/latest/binding/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;exchange name&gt;/&lt;queue name&gt;/&lt;binding name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/binding/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;exchange name&gt;/&lt;queue name&gt;/&lt;binding name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -146,32 +128,19 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/connection</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/connection</para></listitem>
-                <listitem><para>/api/latest/connection/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/connection/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/latest/connection/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/connection/&lt;virtual host node name&gt;/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/latest/connection/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;connection name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/connection/&lt;virtual host node name&gt;/&lt;virtual host node name&gt;/&lt;connection name&gt;</para></listitem>
+                <listitem><para>/api/latest/connection/&lt;connection name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
-              <para>Manages (deletes) Connection(s) on VirtualHost and provides current values of Connection attributes and its Sessions</para>
+              <para>Manages (deletes) AMQP Connection(s) and provides current values of Connection attributes and its Sessions</para>
             </entry>
           </row>
           <row>
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/session</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/session</para></listitem>
-                <listitem><para>/api/latest/session/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/session/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/latest/session/&lt;virtual host node name&gt;/&lt;virtual host name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/session/&lt;virtual host node name&gt;/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/latest/session/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;connection name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/session/&lt;virtual host node name&gt;/&lt;virtual host node name&gt;/&lt;connection name</para></listitem>
-                <listitem><para>/api/latest/session/&lt;virtual host node name&gt;/&lt;virtual host name&gt;/&lt;connection name&gt;/&lt;session name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/session/&lt;virtual host node name&gt;/&lt;virtual host node name&gt;/&lt;connection name&gt;/&lt;session name&gt;</para></listitem>
+                <listitem><para>/api/latest/session/&lt;connection name&gt;</para></listitem>
+                <listitem><para>/api/latest/session/&lt;connection name&gt;/&lt;session name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -182,9 +151,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/port</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/port</para></listitem>
                 <listitem><para>/api/latest/port/&lt;port name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/port/&lt;port name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -195,9 +162,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/authenticationprovider</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/authenticationprovider</para></listitem>
                 <listitem><para>/api/latest/authenticationprovider/&lt;authentication provider name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/authenticationprovider/&lt;authentication provider name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -208,11 +173,8 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/user</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/user</para></listitem>
                 <listitem><para>/api/latest/user/&lt;authentication provider name&gt;/&lt;user name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/user/&lt;authentication provider name&gt;/&lt;user name&gt;</para></listitem>
                 <listitem><para>/api/latest/user/&lt;authentication provider name&gt;/&lt;user name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/user/&lt;authentication provider name&gt;/&lt;user name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -223,9 +185,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/accesscontrolprovider</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/accesscontrolprovider</para></listitem>
                 <listitem><para>/api/latest/accesscontrolprovider/&lt;access control provider name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/accesscontrolprovider/&lt;access control provider name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -236,9 +196,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/groupprovider</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/groupprovider</para></listitem>
                 <listitem><para>/api/latest/groupprovider/&lt;group provider name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/groupprovider/&lt;group provider name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -249,11 +207,8 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/group</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/group</para></listitem>
                 <listitem><para>/api/latest/group/&lt;group provider name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/group/&lt;group provider name&gt;</para></listitem>
                 <listitem><para>/api/latest/group/&lt;group provider name&gt;/&lt;group name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/group/&lt;group provider name&gt;/&lt;group name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -264,13 +219,9 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/groupmember</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/groupmember</para></listitem>
                 <listitem><para>/api/latest/groupmember/&lt;group provider name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/groupmember/&lt;group provider name&gt;</para></listitem>
                 <listitem><para>/api/latest/groupmember/&lt;group provider name&gt;/&lt;group name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/groupmember/&lt;group provider name&gt;/&lt;group name&gt;</para></listitem>
                 <listitem><para>/api/latest/groupmember/&lt;group provider name&gt;/&lt;group name&gt;/&lt;user name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/groupmember/&lt;group provider name&gt;/&lt;group name&gt;/&lt;user name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -281,9 +232,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/keystore</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/keystore</para></listitem>
                 <listitem><para>/api/latest/keystore/&lt;key store name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/keystore/&lt;key store name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -294,9 +243,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/truststore</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/truststore</para></listitem>
                 <listitem><para>/api/latest/truststore/&lt;trust store name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/truststore/&lt;trust store name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -307,11 +254,8 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/preferencesprovider</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/preferencesprovider</para></listitem>
-                <listitem><para>/api/latest/preferencesprovider/&lt;authentication provider name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/preferencesprovider/&lt;authentication provider name&gt;</para></listitem>
+=                <listitem><para>/api/latest/preferencesprovider/&lt;authentication provider name&gt;</para></listitem>
                 <listitem><para>/api/latest/preferencesprovider/&lt;authentication provider name&gt;/&lt;preferences provider name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/preferencesprovider/&lt;authentication provider name&gt;/&lt;preferences provider name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -322,9 +266,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/plugin</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/plugin</para></listitem>
                 <listitem><para>/api/latest/plugin/&lt;plugin name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/plugin/&lt;plugin name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -335,11 +277,8 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/remotereplicationnode</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/remotereplicationnode</para></listitem>
                 <listitem><para>/api/latest/remotereplicationnode/&lt;virtual host node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/remotereplicationnode/&lt;virtual host node name&gt;</para></listitem>
                 <listitem><para>/api/latest/remotereplicationnode/&lt;virtual host node name&gt;/&lt;replication node name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/remotereplicationnode/&lt;virtual host node name&gt;/&lt;replication node name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -350,9 +289,7 @@
             <entry>
               <itemizedlist>
                 <listitem><para>/api/latest/(broker|virtualhost)logger</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/(broker|virtualhost)logger</para></listitem>
                 <listitem><para>/api/latest/(broker|virtualhost)logger/&lt;logger name&gt;</para></listitem>
-                <listitem><para>/api/&lt;version&gt;/(broker|virtualhost)logger/&lt;logger name&gt;</para></listitem>
               </itemizedlist>
             </entry>
             <entry>
@@ -490,6 +427,18 @@
         <term>extractInitialConfig</term><listitem><para>If set to "true", the returned json can be used as initial configuration.</para></listitem>
       </varlistentry>
     </variablelist>
+  </section>
+  <section id="Java-Broker-Management-Channel-REST-API-Operations">
+    <title>Configured Object operations</title>
+    <para>Method POST is used to invoke Configured Objects operations.  Some operations
+      support parameters.  Pass parameters using a JSON request body containing a map with
+      a map entry for each parameter.
+    </para>
+    <example>
+      <title>Example of REST call to invoke the Queue clear queue operation</title>
+      <para>To clear the queue with name "my-queue" on a virtual host with name "vh".</para>
+      <screen><![CDATA[POST api/latest/queue/default/vhn/vh/my-queue/clearQueue HTTP/1.1]]></screen>
+    </example>
   </section>
   <section id="Java-Broker-Management-Channel-REST-API-Status-Codes">
     <title>HTTP status codes returned by REST interfaces</title>

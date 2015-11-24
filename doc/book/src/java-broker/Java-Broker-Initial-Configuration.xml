@@ -37,7 +37,10 @@
                     <para>Broker</para>
                 </listitem>
                 <listitem>
-                    <para>Virtual Host</para>
+                    <para>Virtual Host Nodes</para>
+                </listitem>
+                <listitem>
+                    <para>Loggers</para>
                 </listitem>
                 <listitem>
                     <para>Port</para>
@@ -129,7 +132,7 @@ $ ./qpid-server -cic ./initial-config.json
         </screen>
 
         <para> The 'Initial Configuration' JSON file shares a common format with the brokers JSON
-            Configuration Store implementation, so it is possible to use a brokers Configuration
+            Configuration Store implementation, so it is possible to use a Broker's Configuration
             Store output as an initial configuration. Typically 'Initial Configuration' files would
             not to contain IDs for the configured entities, so that IDs will be generated when the
             configuration store is initialised and prevent use of the same IDs across multiple
@@ -283,8 +286,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
             <programlisting><![CDATA[
 {
   "name": "${broker.name}",
-  "modelVersion": "2.0",
-  "defaultVirtualHost" : "default",
+  "modelVersion": "6.0",
   "authenticationproviders" : [ {
     "name" : "passwordFile",
     "type" : "PlainPasswordFile",
@@ -295,10 +297,60 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
         "path" : "${qpid.work_dir}${file.separator}user.preferences.json"
     }]
   } ],
+    "brokerloggers" : [ {
+    "name" : "logfile",
+    "type" : "File",
+    "fileName" : "${qpid.work_dir}${file.separator}log${file.separator}qpid.log",
+    "brokerloginclusionrules" : [ {
+      "name" : "Root",
+      "type" : "NameAndLevel",
+      "level" : "WARN",
+      "loggerName" : "ROOT"
+    }, {
+      "name" : "Qpid",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "org.apache.qpid.*"
+    }, {
+      "name" : "Operational",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.message.*"
+    } ]
+  }, {
+    "name" : "memory",
+    "type" : "Memory",
+    "brokerloginclusionrules" : [ {
+      "name" : "Root",
+      "type" : "NameAndLevel",
+      "level" : "WARN",
+      "loggerName" : "ROOT"
+    }, {
+      "name" : "Qpid",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "org.apache.qpid.*"
+    }, {
+      "name" : "Operational",
+      "type" : "NameAndLevel",
+      "level" : "INFO",
+      "loggerName" : "qpid.message.*"
+    } ]
+  } ],
   "ports" : [  {
     "name" : "AMQP",
     "port" : "${qpid.amqp_port}",
-    "authenticationProvider" : "passwordFile"
+    "authenticationProvider" : "passwordFile",
+    "virtualhostaliases" : [ {
+       "name" : "nameAlias",
+       "type" : "nameAlias"
+    }, {
+        "name" : "defaultAlias",
+        "type" : "defaultAlias"
+    }, {
+        "name" : "hostnameAlias",
+        "type" : "hostnameAlias"
+    } ]
   }, {
     "name" : "HTTP",
     "port" : "${qpid.http_port}",
@@ -317,7 +369,8 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
   "virtualhostnodes" : [ {
     "name" : "default",
     "type" : "JSON",
-    "virtualHostInitialConfiguration" : "{ \"type\" : \"DERBY\" }"
+    "defaultVirtualHostNode" : "true",
+    "virtualHostInitialConfiguration" : "${qpid.initial_config_virtualhost_config}"
   } ],
   "plugins" : [ {
     "type" : "MANAGEMENT-HTTP",

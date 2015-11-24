@@ -130,7 +130,12 @@
           <entry>No</entry>
           <entry>No</entry>
         </row>
-        
+        <row>
+          <entry>Loggers</entry>
+          <entry>C/U/D</entry>
+          <entry>Limited</entry>
+          <entry>No</entry>
+        </row>
       </tbody>
     </tgroup>
   </table>

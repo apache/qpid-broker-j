@@ -25,7 +25,7 @@
     <para>Ports provide TCP/IP connectivity for messaging and management. A port is defined to use a
         protocol. This can be an AMQP protocol for messaging or HTTP/JMX for management.</para>
     <para>A port is defined to have one or more transports. A transport can either be plain (TCP) or
-        SSL. When SSL is in use, the port can be configured to accept or require client
+        SSL (TLS). When SSL is in use, the port can be configured to accept or require client
         authentication.</para>
     <para>Any number of ports defined to use AMQP or HTTP protocols can be defined. JMX is limited
         to a single port instance per JMX protocol type.</para>
@@ -51,12 +51,19 @@
                 <listitem>
                     <para><emphasis>Protocol(s)</emphasis>. A list of protocols to be supported by
                         the port. For messaging choose one or more AMQP protocols. For management
-                        choose HTTP or on one the two JMX protocols.</para>
+                        choose HTTP or one the two JMX protocols.</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>Transports</emphasis>. A list of transports supported by the
                         port. For messaging or HTTP management chose TCP, SSL or both. For JMX, the
                         TCP/SSL combination is not supported.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Enabled/Disabled Cipher Suites</emphasis>. Allows cipher
+                        suites supported by the JVM to be enabled or disabled.  The cipher
+                        suite names are those understood by the JVM.
+                    </para>
+                    <para>SSLv3 is disabled by default.</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>Keystore</emphasis>. <link
@@ -78,11 +85,31 @@
                         contain an issuer certificate or the public keys of the clients themselves
                         if peers only is desired.</para>
                 </listitem>
-            </itemizedlist></para>
+                <listitem>
+                    <para><emphasis>Maximum Open Connections</emphasis>. AMQP ports only.  Limits
+                     the number of connections that may be open at any one time.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Thread pool size</emphasis>. AMQP ports only.  Number of worker threads
+                    used to process AMQP connections during connection negotiation phase.</para>
+                    <para>Defaults to 8.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Number of selectors</emphasis>. AMQP ports only.  Number of worker threads
+                    used from the thread pool to dispatch I/O activity to the worker threads.</para>
+                    <para>Defaults to one eighth of the thread pool size. Minimum 1.</para>
+                </listitem>
+        </itemizedlist></para>
     </section>
     <section id="Java-Broker-Management-Managing-Ports-Children">
         <title>Children</title>
-        <para>None</para>
+        <para>
+            <itemizedlist>
+                <listitem>
+                    <para>Connection</para>
+                </listitem>
+            </itemizedlist>
+        </para>
     </section>
     <section id="Java-Broker-Management-Managing-Ports-Lifecycle">
         <title>Lifecycle</title>
