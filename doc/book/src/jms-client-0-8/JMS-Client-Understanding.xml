@@ -469,7 +469,7 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
       <para>To enable or disable from the client, use the Connection URL option <link
           linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-CloseWhenNoRoute"
             ><literal>closeWhenNoRoute</literal></link>.</para>
-      <para>See <ulink url="&qpidJavaBrokerBook;Java-Broker-Close-Connection-When-No-Route.html">
+      <para>See <ulink url="&qpidJavaBrokerBook;Java-Broker-Runtime-Close-Connection-When-No-Route.html">
           Closing client connections on unroutable mandatory messages</ulink> within the Java Broker
         book for full details of the functioning of this feature.</para>
     </section>

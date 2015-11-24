@@ -140,7 +140,7 @@ $ ./qpid-server -cic ./initial-config.json
                 Properties</link> within 'Initial Configuration' files to allow a degree of
             customisation with an otherwise fixed file. </para>
         <para> For an example file, see <xref
-                linkend="Java-Broker-Configuring-And-Managing-Configuration-Initial-Config-Example"
+                linkend="Java-Broker-Initial-Configuration-Example"
             />
         </para>
 
@@ -252,7 +252,7 @@ $ ./qpid-server -st memory
         </para>
 
         <para> Use of these core properties can be seen in the <link
-                linkend="Java-Broker-Configuring-And-Managing-Configuration-Initial-Config-Example"
+                linkend="Java-Broker-Initial-Configuration-Example"
                 >default 'Initial Configuration' example</link>. </para>
 
         <para> Configuration Properties can be set on the command line using the
@@ -274,7 +274,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
 
     </section>
 
-    <section id="Java-Broker-Configuring-And-Managing-Configuration-Initial-Config-Example">
+    <section id="Java-Broker-Initial-Configuration-Example">
         <title>Example of JSON 'Initial Configuration'</title>
         <para> An example of the default 'Initial Configuration' JSON file the broker uses is
             provided below:</para>
