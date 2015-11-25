@@ -16,7 +16,7 @@
   -->
 
 <div class="dijitHidden">
-    <div data-dojo-type="dijit.Dialog" style="width:600px;" data-dojo-props="title:'Move/Copy Messages'" id="moveMessages">
+    <div data-dojo-type="dijit.Dialog" style="width:600px;" id="moveMessages">
         <form id="formMoveMessages" method="post" dojoType="dijit.form.Form">
             <table cellpadding="0" cellspacing="2">
                 <tr>
@@ -28,8 +28,8 @@
 
             <!-- submit buttons -->
 
-            <input type="button" value="Cancel" label="Cancel" dojoType="dijit.form.Button" class="moveMessageCancel"/>
-            <input type="submit" value="Move Messages" label="Move Messages" dojoType="dijit.form.Button" />
+            <input type="button" value="Cancel" label="Cancel" dojoType="dijit.form.Button" id="moveMessageCancel"/>
+            <input type="submit" value="Submit" dojoType="dijit.form.Button" id="moveMessageSubmit"/>
 
         </form>
     </div>
