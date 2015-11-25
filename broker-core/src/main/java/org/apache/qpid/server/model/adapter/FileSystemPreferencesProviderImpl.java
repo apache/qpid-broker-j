@@ -368,7 +368,7 @@ public class FileSystemPreferencesProviderImpl
         {
             if (!_storeFile.exists())
             {
-                File parent = _storeFile.getParentFile();
+                File parent = _storeFile.getAbsoluteFile().getParentFile();
                 if (!parent.exists() && !parent.mkdirs())
                 {
                     throw new IllegalConfigurationException(String.format("Cannot create preferences store folder at '%s'", _storeFile.getAbsolutePath()));
