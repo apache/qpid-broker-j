@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.util.HashSet;
 import java.util.Properties;
@@ -60,7 +59,6 @@ public class Broker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Broker.class);
 
-    private volatile Thread _shutdownHookThread;
     private EventLogger _eventLogger;
     private final TaskExecutor _taskExecutor = new TaskExecutorImpl();
 
@@ -88,27 +86,20 @@ public class Broker
     {
         try
         {
-            removeShutdownHook();
+            if(_systemConfig != null)
+            {
+                ListenableFuture<Void> closeResult = _systemConfig.closeAsync();
+                closeResult.get(30000l, TimeUnit.MILLISECONDS);
+            }
+
+        }
+        catch (TimeoutException | InterruptedException | ExecutionException e)
+        {
+            LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately");
         }
         finally
         {
-            try
-            {
-                if(_systemConfig != null)
-                {
-                    ListenableFuture<Void> closeResult = _systemConfig.closeAsync();
-                    closeResult.get(30000l, TimeUnit.MILLISECONDS);
-                }
-
-            }
-            catch (TimeoutException | InterruptedException | ExecutionException e)
-            {
-                LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately");
-            }
-            finally
-            {
-                cleanUp(exitStatusCode);
-            }
+            cleanUp(exitStatusCode);
         }
     }
 
@@ -200,10 +191,6 @@ public class Broker
         {
             throw new RuntimeException("Closing broker as it cannot operate due to errors");
         }
-        else
-        {
-            addShutdownHook();
-        }
     }
 
     private void closeSystemConfigAndCleanUp()
@@ -225,48 +212,6 @@ public class Broker
         finally
         {
             cleanUp(1);
-        }
-    }
-
-
-    private void addShutdownHook()
-    {
-        Thread shutdownHookThread = new Thread(new ShutdownService());
-        shutdownHookThread.setName("QpidBrokerShutdownHook");
-
-        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
-        _shutdownHookThread = shutdownHookThread;
-
-        LOGGER.debug("Added shutdown hook");
-    }
-
-    private void removeShutdownHook()
-    {
-        Thread shutdownThread = _shutdownHookThread;
-
-        //if there is a shutdown thread and we aren't it, we should remove it
-        if(shutdownThread != null && !(Thread.currentThread() == shutdownThread))
-        {
-            LOGGER.debug("Removing shutdown hook");
-
-            _shutdownHookThread = null;
-
-            boolean removed = false;
-            try
-            {
-                removed = Runtime.getRuntime().removeShutdownHook(shutdownThread);
-            }
-            catch(IllegalStateException ise)
-            {
-                //ignore, means the JVM is already shutting down
-            }
-
-            LOGGER.debug("Removed shutdown hook: {}", removed);
-
-        }
-        else
-        {
-            LOGGER.debug("Skipping shutdown hook removal as there either isn't one, or we are it.");
         }
     }
 
@@ -299,23 +244,4 @@ public class Broker
             System.setProperty(propName, props.getProperty(propName));
         }
     }
-
-
-    private class ShutdownService implements Runnable
-    {
-        public void run()
-        {
-            Subject.doAs(SecurityManager.getSystemTaskSubject("Shutdown"), new PrivilegedAction<Object>()
-            {
-                @Override
-                public Object run()
-                {
-                    LOGGER.debug("Shutdown hook running");
-                    Broker.this.shutdown();
-                    return null;
-                }
-            });
-        }
-    }
-
 }

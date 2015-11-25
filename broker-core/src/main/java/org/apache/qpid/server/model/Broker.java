@@ -163,6 +163,8 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.MESSAGES, label = "Outbound")
     long getMessagesOut();
 
+    @ManagedOperation(nonModifying = true, description = "Initiates an orderly shutdown of the Broker.")
+    void initiateShutdown();
 
     //children
     Collection<VirtualHostNode<?>> getVirtualHostNodes();

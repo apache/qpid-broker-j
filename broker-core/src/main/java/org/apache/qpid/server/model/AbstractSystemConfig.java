@@ -26,15 +26,23 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import javax.security.auth.Subject;
 
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.store.ManagementModeStoreHandler;
@@ -53,10 +61,13 @@ import org.apache.qpid.server.util.ServerScopedRuntimeException;
 public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         extends AbstractConfiguredObject<X> implements SystemConfig<X>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSystemConfig.class);
+
     private static final UUID SYSTEM_ID = new UUID(0l, 0l);
+    private static final long SHUTDOWN_TIMEOUT = 30000l;
     private final EventLogger _eventLogger;
 
-    private DurableConfigurationStore _configurationStore;
+    private volatile DurableConfigurationStore _configurationStore;
 
     @ManagedAttributeField
     private boolean _managementMode;
@@ -82,6 +93,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     @ManagedAttributeField
     private boolean _startupLoggedToSystemOut;
 
+    private final Thread _shutdownHook = new Thread(new ShutdownService(), "QpidBrokerShutdownHook");
 
     public AbstractSystemConfig(final TaskExecutor taskExecutor,
                                 final EventLogger eventLogger,
@@ -117,22 +129,35 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     @Override
     protected void onClose()
     {
+        final TaskExecutor taskExecutor = getTaskExecutor();
         try
         {
-
-            if (getTaskExecutor() != null)
+            try
             {
-                getTaskExecutor().stop();
+                boolean removed = Runtime.getRuntime().removeShutdownHook(_shutdownHook);
+                LOGGER.debug("Removed shutdown hook : {}", removed);
+            }
+            catch(IllegalStateException ise)
+            {
+                //ignore, means the JVM is already shutting down
             }
 
-            _configurationStore.closeConfigurationStore();
+            if (taskExecutor != null)
+            {
+                taskExecutor.stop();
+            }
+
+            if (_configurationStore != null)
+            {
+                _configurationStore.closeConfigurationStore();
+            }
 
         }
         finally
         {
-            if (getTaskExecutor() != null)
+            if (taskExecutor != null)
             {
-                getTaskExecutor().stopImmediately();
+                taskExecutor.stopImmediately();
             }
         }
 
@@ -157,6 +182,10 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     protected void onOpen()
     {
         super.onOpen();
+
+        Runtime.getRuntime().addShutdownHook(_shutdownHook);
+        LOGGER.debug("Added shutdown hook");
+
         _configurationStore = createStoreObject();
 
         if (isManagementMode())
@@ -176,9 +205,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         {
             throw new IllegalArgumentException(e);
         }
-
-
-
     }
 
     @StateTransition(currentState = State.UNINITIALIZED, desiredState = State.ACTIVE)
@@ -243,7 +269,7 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
         return true;
     }
 
-    abstract protected DurableConfigurationStore createStoreObject();
+    protected abstract DurableConfigurationStore createStoreObject();
 
     @Override
     public DurableConfigurationStore getConfigurationStore()
@@ -330,4 +356,31 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     {
         return _startupLoggedToSystemOut;
     }
+
+    private class ShutdownService implements Runnable
+    {
+        public void run()
+        {
+            Subject.doAs(org.apache.qpid.server.security.SecurityManager.getSystemTaskSubject("Shutdown"),
+                         new PrivilegedAction<Object>()
+                         {
+                             @Override
+                             public Object run()
+                             {
+                                 LOGGER.debug("Shutdown hook initiating close");
+                                 ListenableFuture<Void> closeResult = closeAsync();
+                                 try
+                                 {
+                                     closeResult.get(SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
+                                 }
+                                 catch (InterruptedException | ExecutionException  | TimeoutException e)
+                                 {
+                                     LOGGER.warn("Attempting to cleanly shutdown took too long, exiting immediately", e);
+                                 }
+                                 return null;
+                             }
+                         });
+        }
+    }
+
 }

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.jmx.DefaultManagedObject;
 import org.apache.qpid.server.jmx.ManagedObject;
 import org.apache.qpid.server.jmx.ManagedObjectRegistry;
+import org.apache.qpid.server.model.Broker;
 
 /**
  * Implementation of the JMX broker shutdown plugin.
@@ -49,10 +50,12 @@ public class Shutdown extends DefaultManagedObject implements ShutdownMBean
     private static final ScheduledExecutorService EXECUTOR = new ScheduledThreadPoolExecutor(THREAD_COUNT);
 
     private final Runnable _shutdown = new SystemExiter();
+    private final Broker _broker;
 
-    public Shutdown(ManagedObjectRegistry registry) throws JMException
+    public Shutdown(ManagedObjectRegistry registry, final Broker broker) throws JMException
     {
         super(ShutdownMBean.class, ShutdownMBean.TYPE, registry);
+        _broker = broker;
         register();
     }
 
@@ -126,7 +129,7 @@ public class Shutdown extends DefaultManagedObject implements ShutdownMBean
     {
         public void run()
         {
-            System.exit(0);
+            _broker.initiateShutdown();
         }
     }
 
