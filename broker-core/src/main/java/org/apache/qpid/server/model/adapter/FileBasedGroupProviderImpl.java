@@ -158,8 +158,8 @@ public class FileBasedGroupProviderImpl
         File file = new File(_path);
         if (!file.exists())
         {
-            File parent = file.getParentFile();
-            if (!parent.exists() && !file.getParentFile().mkdirs())
+            File parent = file.getAbsoluteFile().getParentFile();
+            if (!parent.exists() && !parent.mkdirs())
             {
                 throw new IllegalConfigurationException(String.format("Cannot create groups file at '%s'",_path));
             }
