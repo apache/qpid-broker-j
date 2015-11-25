@@ -354,6 +354,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                     catch (InterruptedException e)
                     {
                         _thread.interrupt();
+                        Thread.currentThread().interrupt();
                     }
                 }
             }
@@ -451,6 +452,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                     catch (InterruptedException e)
                     {
                         _thread.interrupt();
+                        Thread.currentThread().interrupt();
                     }
                 }
             }

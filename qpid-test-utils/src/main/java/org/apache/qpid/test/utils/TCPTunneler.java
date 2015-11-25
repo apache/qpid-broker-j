@@ -48,12 +48,12 @@ public class TCPTunneler
     private final TCPWorker _tcpWorker;
     private final ExecutorService _executor;
 
-    public TCPTunneler(final int localHost, final String remotetHost,
+    public TCPTunneler(final int localPort, final String remoteHost,
                        final int remotePort,
                        final int numberOfConcurrentClients)
     {
         _executor = Executors.newFixedThreadPool(numberOfConcurrentClients * 2 + 1);
-        _tcpWorker = new TCPWorker(localHost, remotetHost, remotePort, _executor);
+        _tcpWorker = new TCPWorker(localPort, remoteHost, remotePort, _executor);
     }
 
     public void start() throws IOException
@@ -99,7 +99,7 @@ public class TCPTunneler
         void clientDisconnected(InetSocketAddress clientAddress);
     }
 
-    public static class TCPWorker implements Runnable
+    private static class TCPWorker implements Runnable
     {
         private final String _remoteHost;
         private final int _remotePort;
@@ -366,7 +366,7 @@ public class TCPTunneler
 
     }
 
-    public static class SocketTunnel
+    private static class SocketTunnel
     {
         private final Socket _clientSocket;
         private final Socket _serverSocket;
@@ -475,7 +475,7 @@ public class TCPTunneler
         }
     }
 
-    public static class StreamForwarder implements Runnable
+    private static class StreamForwarder implements Runnable
     {
         private static final int BUFFER_SIZE = 4096;
 
