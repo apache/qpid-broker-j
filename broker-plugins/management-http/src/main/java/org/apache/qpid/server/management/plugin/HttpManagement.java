@@ -262,7 +262,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         addRestServlet(root, Broker.class);
 
-        ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel(), Collections.<String>emptyList()));
+        ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel()));
         final ServletHolder rewriteSerlvet = new ServletHolder(new RewriteServlet("^(.*)$", "$1/"));
         for(String path : new String[]{"/apidocs", "/apidocs/latest", "/apidocs/"+getLatestSupportedVersion()})
         {

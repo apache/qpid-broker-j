@@ -58,28 +58,28 @@ public class ApiDocsServlet extends AbstractServlet
     private static final Map<Class<? extends ConfiguredObject>, List<String>> REGISTERED_CLASSES = new TreeMap<>(CLASS_COMPARATOR);
 
 
+    public ApiDocsServlet(final Model model)
+    {
+        super();
+        _model = model;
+        _hierarchy = null;
+        _types = null;
+    }
+
     public ApiDocsServlet(final Model model, final List<String> registeredPaths, Class<? extends ConfiguredObject>... hierarchy)
     {
         super();
         _model = model;
         _hierarchy = hierarchy;
-        _types = hierarchy.length == 0 ? null : new ArrayList<>(_model.getTypeRegistry().getTypeSpecialisations(getConfiguredClass()));
-        if(_types != null)
+        _types = new ArrayList<>(_model.getTypeRegistry().getTypeSpecialisations(getConfiguredClass()));
+        Collections.sort(_types, CLASS_COMPARATOR);
+        List<String> paths = REGISTERED_CLASSES.get(getConfiguredClass());
+        if (paths == null)
         {
-            Collections.sort(_types, CLASS_COMPARATOR);
+            paths = new ArrayList<>();
+            REGISTERED_CLASSES.put(getConfiguredClass(), paths);
         }
-        if(_hierarchy.length != 0)
-        {
-            List<String> paths = REGISTERED_CLASSES.get(getConfiguredClass());
-            if(paths == null)
-            {
-                paths = new ArrayList<>();
-                REGISTERED_CLASSES.put(getConfiguredClass(), paths);
-            }
-            paths.addAll(registeredPaths);
-
-        }
-
+        paths.addAll(registeredPaths);
     }
 
     @Override
@@ -94,7 +94,7 @@ public class ApiDocsServlet extends AbstractServlet
         writePreamble(writer);
         writeHead(writer);
 
-        if(_hierarchy.length == 0)
+        if(_hierarchy == null)
         {
             writer.println("<table class=\"api\">");
             writer.println("<thead>");
@@ -160,7 +160,7 @@ public class ApiDocsServlet extends AbstractServlet
     private void writeTitle(final PrintWriter writer)
     {
         writer.print("<title>");
-        if(_hierarchy.length == 0)
+        if(_hierarchy == null)
         {
             writer.print("Qpid API");
         }
