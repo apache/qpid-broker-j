@@ -98,7 +98,8 @@
         When many small messages accumulate on the broker the 1 kB heap memory overhead can become a <link linkend="Java-Broker-Runtime-Memory-Low-Memory-Heap">limiting factor</link>.
       </para>
       <para>
-        When the broker is <link linkend="Java-Broker-Runtime-Memory-Low-Memory-Direct">running low on direct memory</link> it will evict messages from memory and flow them to disk.
+        When the broker is <link linkend="Java-Broker-Runtime-Memory-Low-Memory-Direct">running low on direct memory</link>
+        it will evict messages from memory and <link linkend="Java-Broker-Runtime-Flow-To-Disk">flow them to disk</link>.
         For persistent messages this only means freeing the direct memory representation because they always have an on-disk representation to guard against unexpected failure (e.g., a power cut).
         For transient messages this implies additional disk I/O.
         After being flown to disk messages need to be re-read from disk before delivery.

@@ -22,16 +22,17 @@
 
 <section id="Java-Broker-Runtime-Flow-To-Disk">
   <title>Flow to Disk</title>
-  <para>Flow to disk limits the amount of heap memory that can be occupied by messages. Once this
+  <para>Flow to disk limits the amount of <link linkend="Java-Broker-Runtime-Memory">direct and heap memory</link>
+    that can be occupied by messages. Once this
     limit is reached any new transient messages and all existing transient messages will be
     transferred to disk. Newly arriving transient messages will continue to go to the disk until the
     cumulative size of all messages falls below the limit once again.</para>
-  <para>By default the Broker makes 40% of the max available memory for messages. This memory is
+  <para>By default the Broker makes 40% of the max direct available memory for messages. This memory is
     divided between all the queues across all virtual hosts defined on the Broker with a percentage
     calculated according to their current queue size. These calculations are refreshed periodically
     by the housekeeping cycle.</para>
   <para>For example if there are two queues, one containing 75MB and the second 100MB messages
-    respectively and the Broker has 1GB heap memory with the default of 40% available for messages.
+    respectively and the Broker has 1GB direct memory with the default of 40% available for messages.
     The first queue will have a target size of 170MB and the second 230MB. Once 400MB is taken by
     messages, messages will begin to flow to disk. New messages will cease to flow to disk when
     their cumulative size falls beneath 400MB.</para>

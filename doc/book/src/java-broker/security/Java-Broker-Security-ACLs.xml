@@ -468,6 +468,37 @@
       </tbody>
     </tgroup>
   </table>
+  <table id="table-Java-Broker-Security-ACLs-Queue-Exchnage-Operations">
+    <title>ACL for Queue management operations invoked via REST interfaces</title>
+    <tgroup cols="2">
+      <tbody>
+        <row>
+          <entry> <command>Operation</command> </entry>
+          <entry> <para>Component</para> </entry>
+          <entry> <para>Method</para> </entry>
+          <entry> <para>Description</para> </entry>
+        </row>
+        <row>
+          <entry> <command>UPDATE</command> </entry>
+          <entry> <para>VirtualHost.Queue</para> </entry>
+          <entry> <para>copyMessages</para> </entry>
+          <entry> <para>Copy messages</para> </entry>
+        </row>
+        <row>
+          <entry> <command>UPDATE</command> </entry>
+          <entry> <para>VirtualHost.Queue</para> </entry>
+          <entry> <para>moveMessages</para> </entry>
+          <entry> <para>Move messages</para> </entry>
+        </row>
+        <row>
+          <entry> <command>UPDATE</command> </entry>
+          <entry> <para>VirtualHost.Queue</para> </entry>
+          <entry> <para>deleteMessages</para> </entry>
+          <entry> <para>Delete messages</para> </entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </table>
   <section role="h4" id="Java-Broker-Security-ACLs-WorkedExamples">
     <title>
       Worked Examples
