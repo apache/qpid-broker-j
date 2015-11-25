@@ -432,9 +432,12 @@ public class ConfiguredObjectTypeRegistry
                     }
                 }
             }
-            if(typeClass == null && typeName.equals(category.getSimpleName().toLowerCase()))
+            if(typeClass == null)
             {
-                typeClass = category;
+                if(typeName.equals(category.getSimpleName()))
+                {
+                    typeClass = category;
+                }
             }
         }
 
