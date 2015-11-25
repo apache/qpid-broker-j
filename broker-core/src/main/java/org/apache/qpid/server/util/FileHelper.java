@@ -133,7 +133,7 @@ public class FileHelper
 
     public boolean isWritableDirectory(String path)
     {
-        File storePath = new File(path);
+        File storePath = new File(path).getAbsoluteFile();
         if (storePath.exists())
         {
             if (!storePath.isDirectory())
