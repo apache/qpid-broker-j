@@ -266,10 +266,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         super.validateChange(proxyForValidation, changedAttributes);
         VirtualHost<?, ?, ?> virtualHost = (VirtualHost<?, ?, ?>) proxyForValidation;
-        if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
 
         if(changedAttributes.contains(GLOBAL_ADDRESS_DOMAINS))
         {

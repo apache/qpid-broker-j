@@ -73,6 +73,8 @@ define(["dojo/_base/lang",
                 this.loggerType = registry.byId("addLogger.type");
                 this.loggerType.on("change", function(type){that._typeChanged(type);});
 
+                this.durable = registry.byId("addLogger.durable");
+
                 this.categoryFieldsContainer = dom.byId("addLogger.categoryFields");
                 this.allFieldsContainer = dom.byId("addLogger.contentPane");
             },
@@ -90,7 +92,8 @@ define(["dojo/_base/lang",
                 this.isNew = !actualData;
                 this.name.set("disabled", !this.isNew);
                 this.loggerType.set("disabled", !this.isNew);
-                this.dialog.set("title",this.isNew ? "Add Logger" : "Edit Logger - " + actualData.name)
+                this.durable.set("disabled", !this.isNew);
+                this.dialog.set("title",this.isNew ? "Add Logger" : "Edit Logger - " + actualData.name);
 
                 if (actualData)
                 {

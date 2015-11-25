@@ -158,10 +158,6 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
         Port<?> updated = (Port<?>)proxyForValidation;
 
 

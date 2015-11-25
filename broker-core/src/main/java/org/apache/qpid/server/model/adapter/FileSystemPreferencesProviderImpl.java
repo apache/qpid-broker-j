@@ -344,14 +344,6 @@ public class FileSystemPreferencesProviderImpl
 
             }
         }
-
-        if(changedAttributes.contains(DURABLE) && !updated.isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
-
-
-
     }
 
     public static class FileSystemPreferencesStore

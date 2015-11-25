@@ -108,10 +108,6 @@ public class FileBasedGroupProviderImpl
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
         if(changedAttributes.contains(PATH))
         {
             throw new IllegalArgumentException("Cannot change the path");
@@ -381,16 +377,6 @@ public class FileBasedGroupProviderImpl
             _groupPrincipal = new GroupPrincipal(getName());
         }
 
-        @Override
-        protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
-        {
-            super.validateChange(proxyForValidation, changedAttributes);
-            if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-            {
-                throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-            }
-        }
-
         private Set<Principal> getUserPrincipalsForGroup(String group)
         {
             Set<String> users = _groupDatabase.getUsersInGroup(group);
@@ -474,18 +460,6 @@ public class FileBasedGroupProviderImpl
             {
                 super.onValidate();
                 if(!isDurable())
-                {
-                    throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-                }
-            }
-
-
-
-            @Override
-            protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
-            {
-                super.validateChange(proxyForValidation, changedAttributes);
-                if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
                 {
                     throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
                 }

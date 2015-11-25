@@ -52,16 +52,6 @@ public abstract class AbstractPluginAdapter<X extends Plugin<X>> extends Abstrac
     }
 
     @Override
-    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
-    {
-        super.validateChange(proxyForValidation, changedAttributes);
-        if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
-    }
-
-    @Override
     public <C extends ConfiguredObject> Collection<C> getChildren(Class<C> clazz)
     {
         return Collections.emptyList();
