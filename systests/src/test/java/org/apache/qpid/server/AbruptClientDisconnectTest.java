@@ -72,7 +72,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         // create queue
         consumeIgnoringLastSeenOmission(_utilityConnection, _testQueue, 1, 0, -1);
 
-        _tcpTunneler = new TCPTunneler("localhost", getPort(), getFailingPort(), 1);
+        _tcpTunneler = new TCPTunneler(getFailingPort(), "localhost", getPort(), 1);
         _tcpTunneler.start();
     }
 
@@ -112,7 +112,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         final ClientMonitor clientMonitor = new ClientMonitor();
         _tunneledConnection = createTunneledConnection(clientMonitor);
         Producer producer =
-                new Producer(_tunneledConnection, _testQueue, Session.SESSION_TRANSACTED, 0, 10, new Runnable()
+                new Producer(_tunneledConnection, _testQueue, Session.SESSION_TRANSACTED, 10, new Runnable()
                 {
                     @Override
                     public void run()
@@ -142,7 +142,6 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         final Producer producer = new Producer(_utilityConnection,
                                                _testQueue,
                                                Session.SESSION_TRANSACTED,
-                                               0,
                                                minimumNumberOfMessagesToProduce,
                                                new Runnable()
                                                {
@@ -258,7 +257,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         session.close();
     }
 
-    private class ClientMonitor extends TCPTunneler.NoopTunnelListener
+    private class ClientMonitor implements TCPTunneler.TunnelListener
     {
         private final CountDownLatch _closeLatch = new CountDownLatch(1);
         private final AtomicReference<InetSocketAddress> _clientAddress = new AtomicReference();
@@ -295,13 +294,12 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         private final Session _session;
         private final MessageProducer _messageProducer;
         private final int _numberOfMessagesToInvokeRunnableAfter;
-        private final int _delay;
         private volatile int _publishedMessageCounter;
         private volatile Exception _exception;
         private volatile Thread _thread;
         private AtomicBoolean _closed = new AtomicBoolean();
 
-        public Producer(Connection connection, Destination queue, int acknowledgeMode, int publishDelay,
+        public Producer(Connection connection, Destination queue, int acknowledgeMode,
                         int numberOfMessagesToInvokeRunnableAfter, Runnable runnableToInvoke)
                 throws JMSException
         {
@@ -309,7 +307,6 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
             _messageProducer = _session.createProducer(queue);
             _runnable = runnableToInvoke;
             _numberOfMessagesToInvokeRunnableAfter = numberOfMessagesToInvokeRunnableAfter;
-            _delay = publishDelay;
         }
 
         @Override
@@ -334,14 +331,6 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                     }
                     LOGGER.debug("Produced message with index {}", _publishedMessageCounter);
                     _publishedMessageCounter++;
-
-                    if (_delay > 0 && !_closed.get())
-                    {
-                        synchronized (this)
-                        {
-                            this.wait(_delay);
-                        }
-                    }
                 }
                 LOGGER.debug("Stopping producer gracefully");
             }
@@ -356,11 +345,6 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         {
             if (_closed.compareAndSet(false, true))
             {
-                synchronized (this)
-                {
-                    this.notify();
-                }
-
                 if (_thread != null)
                 {
                     try
