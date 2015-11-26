@@ -394,66 +394,20 @@ public class ApiDocsServlet extends AbstractServlet
     private String renderType(final ConfiguredObjectAttribute attribute)
     {
         final Class type = attribute.getType();
-        if(Enum.class.isAssignableFrom(type))
-        {
-            return "<div class=\"restriction\" title=\"enum: " + EnumSet.allOf(type) + "\">string</div>";
-        }
-        else if(ConfiguredObject.class.isAssignableFrom(type))
-        {
-            return "<div class=\"restriction\" title=\"name or id of a" + (VOWELS.contains(type.getSimpleName().toLowerCase().charAt(0)) ? "n " : " ") + type.getSimpleName() + "\">string</div>";
-        }
-        else if(UUID.class == type)
-        {
-            return "<div class=\"restriction\" title=\"must be a UUID\">string</div>";
-        }
-        else
-        {
-            boolean hasValuesRestriction = attribute instanceof ConfiguredAutomatedAttribute
-                                           && ((ConfiguredAutomatedAttribute)attribute).hasValidValues();
+        return renderType(type,
+                attribute instanceof ConfiguredAutomatedAttribute && ((ConfiguredAutomatedAttribute)attribute).hasValidValues()
+                        ?  ((ConfiguredAutomatedAttribute)attribute).validValues() : null);
 
-            StringBuilder returnVal = new StringBuilder();
-            if(hasValuesRestriction)
-            {
-                returnVal.append("<div class=\"restricted\" title=\"Valid values: " + ((ConfiguredAutomatedAttribute)attribute).validValues() + "\">");
-            }
-
-            if(Number.class.isAssignableFrom(type))
-            {
-                returnVal.append("number");
-            }
-            else if(Boolean.class == type)
-            {
-                returnVal.append("boolean");
-            }
-            else if(String.class == type)
-            {
-                returnVal.append("string");
-            }
-            else if(Collection.class.isAssignableFrom(type))
-            {
-                // TODO - generate a description of the type in the array
-                returnVal.append("array");
-            }
-            else if(Map.class.isAssignableFrom(type))
-            {
-                // TODO - generate a description of the type in the object
-                returnVal.append("object");
-            }
-            else
-            {
-                returnVal.append(type.getSimpleName());
-            }
-            if(hasValuesRestriction)
-            {
-                returnVal.append("</div>");
-            }
-            return returnVal.toString();
-        }
     }
 
     private String renderType(final OperationParameter parameter)
     {
         final Class type = parameter.getType();
+        List<String> validValues = parameter.getValidValues();
+        return renderType(type, validValues);
+    }
+
+    private String renderType(Class type, Collection<String> validValues) {
         if(Enum.class.isAssignableFrom(type))
         {
             return "<div class=\"restriction\" title=\"enum: " + EnumSet.allOf(type) + "\">string</div>";
@@ -469,10 +423,10 @@ public class ApiDocsServlet extends AbstractServlet
         else
         {
             StringBuilder returnVal = new StringBuilder();
-            final boolean hasValuesRestriction = parameter.getValidValues() != null && !parameter.getValidValues().isEmpty();
+            final boolean hasValuesRestriction = validValues != null && !validValues.isEmpty();
             if(hasValuesRestriction)
             {
-                returnVal.append("<div class=\"restricted\" title=\"Valid values: " + parameter.getValidValues() + "\">");
+                returnVal.append("<div class=\"restricted\" title=\"Valid values: " + validValues + "\">");
             }
 
             if(Number.class.isAssignableFrom(type))
