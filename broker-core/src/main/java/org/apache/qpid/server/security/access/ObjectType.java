@@ -27,6 +27,7 @@ import static org.apache.qpid.server.security.access.Operation.CREATE;
 import static org.apache.qpid.server.security.access.Operation.DELETE;
 import static org.apache.qpid.server.security.access.Operation.PUBLISH;
 import static org.apache.qpid.server.security.access.Operation.PURGE;
+import static org.apache.qpid.server.security.access.Operation.SHUTDOWN;
 import static org.apache.qpid.server.security.access.Operation.UNBIND;
 import static org.apache.qpid.server.security.access.Operation.UPDATE;
 
@@ -52,7 +53,7 @@ public enum ObjectType
     METHOD(Operation.ALL, ACCESS, UPDATE),
     USER(Operation.ALL, CREATE, DELETE, UPDATE),
     GROUP(Operation.ALL, CREATE, DELETE, UPDATE),
-    BROKER(Operation.ALL, CONFIGURE, ACCESS_LOGS);
+    BROKER(Operation.ALL, CONFIGURE, ACCESS_LOGS, SHUTDOWN);
 
     private EnumSet<Operation> _actions;
     

@@ -159,7 +159,7 @@ public class JMXManagementPluginImpl
                     createObjectMBeans(brokerLogger);
                 }
             }
-            new Shutdown(_objectRegistry);
+            new Shutdown(_objectRegistry, broker);
             new ServerInformationMBean(_objectRegistry, broker);
 
             _objectRegistry.start();

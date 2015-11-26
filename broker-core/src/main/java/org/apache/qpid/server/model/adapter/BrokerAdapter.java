@@ -46,6 +46,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
+import org.apache.qpid.server.security.access.Operation;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,6 +211,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
     }
 
+    @Override
     public void onValidate()
     {
         super.onValidate();
@@ -300,6 +302,13 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             performActivation();
             return Futures.immediateFuture(null);
         }
+    }
+
+    @Override
+    public void initiateShutdown()
+    {
+        _securityManager.authorise(Operation.SHUTDOWN, this);
+        _parent.closeAsync();
     }
 
     private void performActivation()

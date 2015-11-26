@@ -242,9 +242,15 @@
         </row>
         <row>
           <entry><command>ACCESS_LOGS</command> </entry>
-          <entry><para>Allows/denies to the specific user an operation to download broker log file(s) over REST interfaces</para> </entry>
+          <entry><para>Allows/denies the specific user to download log file(s) over REST interfaces.</para> </entry>
           <entry><para>BROKER, VIRTUALHOST</para></entry>
           <entry><para>name (for VIRTUALHOST only)</para></entry>
+        </row>
+        <row>
+          <entry><command>SHUTDOWN</command> </entry>
+          <entry><para>Allows/denies the specific user to shutdown the Broker.</para> </entry>
+          <entry><para>BROKER</para></entry>
+          <entry><para></para></entry>
         </row>
       </tbody>
     </tgroup>
