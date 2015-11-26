@@ -120,7 +120,7 @@ public class JMXManagementPluginImpl
         JmxPort connectorPort = getEligibleJmxPort(JmxPort.class, broker.getPorts(), Protocol.JMX_RMI);
         if (registryPort == null || connectorPort == null)
         {
-            LOGGER.warn("JmxManagement plugin is configured but no suitable JMX ports are available.");
+            LOGGER.debug("JmxManagement plugin is configured but no suitable JMX ports are available.");
         }
         else
         {
