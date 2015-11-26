@@ -23,6 +23,12 @@
         <div class="managedCertificatesGrid hidden"></div>
         <div class="clear">
             <button data-dojo-type="dijit.form.Button" class="removeCertificates">Remove Certificates</button>
+            <span data-dojo-attach-point="blah"></span>
+            <input name="addCertificate" type="file" id="uploader" class="addCertificate"
+                   data-dojo-attach-point="uploader"
+                   data-dojo-type="dojox/form/Uploader"
+                   data-dojo-props="label: 'Add Certificate'"/>
+
         </div>
     </div>
     <div class="clear"></div>

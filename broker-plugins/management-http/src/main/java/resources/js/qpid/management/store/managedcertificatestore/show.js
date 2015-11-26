@@ -86,18 +86,57 @@ define(["dojo/query",
                             return that.management.userPreferences.formatDateTime(val, {addOffset: true, appendTimeZone: true});
                         }
                     }
-                ], function(obj) {
-                    obj.grid.on("rowDblClick",
-                        function(evt){
-                            var idx = evt.rowIndex;
-                            var theItem = this.getItem(idx);
-                            that.download(theItem);
-                        });
-                }, gridProperties, EnhancedGrid);
+                ], null, gridProperties, EnhancedGrid);
         });
 
         this.removeButton = registry.byNode(query(".removeCertificates", containerNode)[0]);
         this.removeButton.on("click", function(e) {that.removeCertificates()} );
+
+        this.addButton = registry.byNode(query(".addCertificate", containerNode)[0]);
+        var addButton = this.addButton;
+        var that = this;
+
+        function uploadCertificate(cert) {
+            var parentModelObj = that.modelObj;
+            var modelObj = {type: parentModelObj.type, name: "addCertificate", parent: parentModelObj};
+            var url = that.management.buildObjectURL(modelObj);
+
+            that.management.post({url: url}, {certificate: cert}).then(uploadComplete, uploadError);
+        }
+
+        function uploadComplete() { addButton.set("disabled", false); }
+
+        function uploadError(error) { that.management.errorHandler(error) ; addButton.set("disabled", false);  }
+
+        function onFileSelected() {
+            if(addButton.domNode.children[0].files) {
+                addButton.set("disabled", true);
+                var file = addButton.domNode.children[0].files[0];
+                var fileReader = new FileReader();
+                fileReader.onload = function (evt) {
+                    var result = fileReader.result;
+                    if(result.indexOf("-----BEGIN CERTIFICATE-----") != -1) {
+                        uploadCertificate(result);
+
+                    } else {
+                        fileReader.onload = function (evt) {
+                            var binresult = fileReader.result;
+                            binresult = binresult.substring(binresult.indexOf(",")+1);
+                            uploadCertificate(binresult);
+                        };
+                        fileReader.readAsDataURL(file);
+                    }
+                };
+                fileReader.readAsText(file);
+            }
+        }
+
+        if( window.FileReader ) {
+            this.addButton.on("change", onFileSelected);
+        } else {
+            this.addButton.set("disabled", true);
+            this.addButton.domNode.style.display = "none";
+        }
 
     }
 

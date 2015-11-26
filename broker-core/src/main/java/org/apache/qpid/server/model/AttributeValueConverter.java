@@ -118,7 +118,16 @@ abstract class AttributeValueConverter<T>
             }
             else if(value instanceof String)
             {
-                return DatatypeConverter.parseBase64Binary(AbstractConfiguredObject.interpolate(object, (String) value));
+                String interpolated = AbstractConfiguredObject.interpolate(object,
+                                                                          (String) value);
+                try
+                {
+                    return DatatypeConverter.parseBase64Binary(interpolated);
+                }
+                catch(ArrayIndexOutOfBoundsException e)
+                {
+                    throw new IllegalArgumentException("Cannot convert string '"+ interpolated+ "'to a byte[] - it does not appear to be base64 data");
+                }
             }
             else
             {
