@@ -42,30 +42,24 @@
                 linkend="Java-Broker-Management-Channel-Web-Console">Web Management
                     Console</link> and the <link
                         linkend="Java-Broker-Management-Channel-REST-API">REST API</link>. Use the
-                Web/REST interfaces in preference to JMX whenever possible. The JMX interface may be
+                Web/REST interfaces in preference to JMX whenever possible. The JMX interface will be
                 withdrawn in a future release.</para>
         </important>
     </section>
 
     <section id="Java-Broker-Management-Channel-JMX-Plugin-DefaultConfiguration">
         <title>Default Configuration</title>
-        <para>By default, the Broker is shipped with JMX enabled.</para>
-        <para>The RMI registry port runs on port <literal>8999</literal> and the JMX connector on
-            port <literal>9099</literal>. The connector is not SSL protected. Qpid will use the
-                <ulink
-                url="&oracleJdkDocUrl;java/lang/management/ManagementFactory.html#getPlatformMBeanServer()"
-                >Platform MBeanServer</ulink>.</para>
-        <para>To change these settings, use the <link
-            linkend="Java-Broker-Management-Channel-Web-Console">Web Management
-                interface</link>.</para>
+        <para>By default, the Broker is shipped with JMX <emphasis>disabled</emphasis>.
+            To enable it, it necessary to add two ports: one serving the protocol JMX_RMI and one for
+            the RMI registry.  This can be done using the Web Management Console.
+        </para>
     </section>
 
     <section id="Java-Broker-Management-Channel-JMX-Plugin-ConnectingToJMX">
         <title>Connecting to JMX</title>
-        <para>The following example uses Jconsole to illustrates how to connect to JMX and assume
-            the defaults described above. Jconsole is a management tool that comes with the JDK. It
-            provides a very simple view of the MBeans, but requires no special configuration to be
-            used with Qpid.</para>
+        <para>The following example uses Jconsole to illustrates how to connect to JMX using jconsole.
+            Jconsole is a management tool that comes with the JDK. It provides a very simple view of the MBeans,
+            but requires no special configuration to be used with Qpid.</para>
         <para>For full details of Jconsole itself refer to Oracle's <ulink url="&oracleJconsole;"
                 >JConsole Guide</ulink>.</para>
         <para>Jconsole can be used to connect to local or remote Java processes. On startup, it

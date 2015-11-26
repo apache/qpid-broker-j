@@ -90,22 +90,13 @@
     "port" : "${qpid.http_port}",
     "authenticationProvider" : "passwordFile",
     "protocols" : [ "HTTP" ]
-  }, {
-    "name" : "RMI_REGISTRY",
-    "port" : "${qpid.rmi_port}",
-    "protocols" : [ "RMI" ]
-  }, {
-    "name" : "JMX_CONNECTOR",
-    "port" : "${qpid.jmx_port}",
-    "authenticationProvider" : "passwordFile",
-    "protocols" : [ "JMX_RMI" ]
   }],
   "virtualhostnodes" : [ {
     "name" : "default",
     "type" : "JSON",
     "defaultVirtualHostNode" : "true",
     "virtualHostInitialConfiguration" : "${qpid.initial_config_virtualhost_config}"
-  } ],
+  }],
   "plugins" : [ {
     "type" : "MANAGEMENT-HTTP",
     "name" : "httpManagement"
