@@ -553,4 +553,159 @@ curl --user admin -X PUT  -d '{}' http://localhost:8080/api/latest/binding/<vhos
     off by default). For details see <xref linkend="Java-Broker-Management-Managing-Plugin-HTTP"/>
   </para>
   </section>
+
+  <section id="Java-Broker-Management-Channel-REST-API-Docs">
+    <title>Web interfaces with REST API Documentation</title>
+    <para>Java Broker provides auxiliary web interfaces containing basic description of available REST services and their attributes.</para>
+    <para>Such services are available under /apidocs/* and can be accessed by authenticated users.</para>
+    <table>
+    <title>Rest services documentation</title>
+    <tgroup cols="2">
+    <thead>
+      <row>
+        <entry>REST Service URI</entry>
+        <entry>Description</entry>
+      </row>
+    </thead>
+    <tbody>
+    <row>
+      <entry>
+        <para>/api/latest/broker</para>
+      </entry>
+      <entry>
+        <para>Provides information about Broker REST interfaces</para>
+      </entry>
+    </row>
+    <row>
+      <entry>
+        <para>/api/latest/virtualhostnode</para>
+      </entry>
+      <entry>
+        <para>Provides information about Virtual Host Node attributes and types</para>
+      </entry>
+    </row>
+      <row>
+        <entry>
+          <para>/api/latest/virtualhost</para>
+        </entry>
+        <entry>
+          <para>Provides information about Virtual Host Node attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/port</para>
+        </entry>
+        <entry>
+          <para>Provides information about Port attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/authenticationprovider</para>
+        </entry>
+        <entry>
+          <para>Provides information about Authentication Provider  attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/accesscontrolprovider</para>
+        </entry>
+        <entry>
+          <para>Provides information about Access Control Provider  attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/keystore</para>
+        </entry>
+        <entry>
+          <para>Provides information about Keystore  attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/truststore</para>
+        </entry>
+        <entry>
+          <para>Provides information about Truststore  attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/queue</para>
+        </entry>
+        <entry>
+          <para>Provides information about Queue  attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/exchange</para>
+        </entry>
+        <entry>
+          <para>Provides information about Exchange  attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/binding</para>
+        </entry>
+        <entry>
+          <para>Provides information about Binding  attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/groupprovider</para>
+        </entry>
+        <entry>
+          <para>Provides information about Group Provider  attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/brokerlogger</para>
+        </entry>
+        <entry>
+          <para>Provides information about Broker Logger attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/virtualhostlogger</para>
+        </entry>
+        <entry>
+          <para>Provides information about Virtual Host Logger attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/group</para>
+        </entry>
+        <entry>
+          <para>Provides information about Group attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/groupmember</para>
+        </entry>
+        <entry>
+          <para>Provides information about Group Member attributes and types</para>
+        </entry>
+      </row>
+      <row>
+        <entry>
+          <para>/api/latest/user</para>
+        </entry>
+        <entry>
+          <para>Provides information about User attributes and types</para>
+        </entry>
+      </row>
+    </tbody>
+    </tgroup>
+    </table>
+  </section>
 </section>

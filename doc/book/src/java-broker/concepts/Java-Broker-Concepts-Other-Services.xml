@@ -42,16 +42,15 @@
 
     <section id="Java-Broker-Concepts-Keystores">
         <title>Keystores</title>
-        <para><emphasis>Keystores</emphasis> are used to configure details of keystores holding SSL keys and certificates
+        <para><emphasis>Keystores</emphasis> are used to configure SSL private and public keys and certificates
         for the SSL transports on Ports.</para>
         <para>Keystore configuration and management is covered in <xref linkend="Java-Broker-Management-Managing-Keystores"/>.</para>
     </section>
 
     <section id="Java-Broker-Concepts-Truststores">
         <title>Truststores</title>
-        <para><emphasis>Truststores</emphasis> are used to configure details of keystores holding SSL certificates
-        for trusting Client Certificate on SSL ports.
-        </para>
+        <para><emphasis>Truststores</emphasis> are used to configure SSL certificates for trusting Client Certificate
+            on SSL ports or making SSL connections to other external services like LDAP, etc.</para>
         <para>Truststore configuration and management is covered in <xref linkend="Java-Broker-Management-Managing-Truststores"/>.</para>
     </section>
     

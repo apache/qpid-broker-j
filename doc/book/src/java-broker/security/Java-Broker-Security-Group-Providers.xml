@@ -59,4 +59,12 @@
           </para>
      </section>
   </section>
+
+    <section role="h3" id="Java-Broker-Security-Group-Providers-ManagedGroupProvider">
+        <title>ManagedGroupProvider</title>
+        <para>
+            The <emphasis>ManagedGroupProvider</emphasis> allows specifying group membership as part of broker configuration.
+            In future version of Brokers GroupFile Provider will be replaced by this one.
+        </para>
+    </section>
 </section>

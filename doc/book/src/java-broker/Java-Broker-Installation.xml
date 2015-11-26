@@ -107,14 +107,16 @@
     <screen>
  Directory of c:\qpid\&windowsExtractedBrokerDirName;
 
-07/25/2012  11:22 PM                   .
-09/30/2012  10:51 AM                   ..
-09/30/2012  12:24 AM                   bin
-08/21/2012  11:17 PM                   etc
-07/25/2012  11:22 PM                   lib
-07/20/2012  08:10 PM            65,925 LICENSE
-07/20/2012  08:10 PM             3,858 NOTICE
-07/20/2012  08:10 PM             1,346 README.txt
+25/11/2015  11:29    &lt;DIR&gt;          .
+25/11/2015  11:29    &lt;DIR&gt;          ..
+25/11/2015  10:56    &lt;DIR&gt;          bin
+03/07/2015  08:06    &lt;DIR&gt;          etc
+25/11/2015  11:25    &lt;DIR&gt;          lib
+25/11/2015  10:56            28,143 LICENSE
+25/11/2015  10:56             3,409 NOTICE
+29/04/2015  09:13               116 README.txt
+3 File(s)         31,668 bytes
+5 Dir(s)  25,981,767,680 bytes free
 </screen>
     <section role="h3" id="Java-Broker-Installation-InstallationWindows-SettingQPIDWORK">
       <title>Setting the working directory</title>
@@ -147,15 +149,15 @@ tar xvzf &unixBrokerDownloadFileName;</programlisting>
     <para>The extraction of the broker package will have created a directory
       &unixExtractedBrokerDirName; within /usr/local/qpid</para>
     <screen>ls -la &unixExtractedBrokerDirName;/
-total 152
-drwxr-xr-x   8 qpid  qpid    272 25 Jul 23:22 .
-drwxr-xr-x  45 qpid  qpid   1530 30 Sep 10:51 ..
--rw-r--r--@  1 qpid  qpid  65925 20 Jul 20:10 LICENSE
--rw-r--r--@  1 qpid  qpid   3858 20 Jul 20:10 NOTICE
--rw-r--r--@  1 qpid  qpid   1346 20 Jul 20:10 README.txt
-drwxr-xr-x  10 qpid  qpid    340 30 Sep 00:24 bin
-drwxr-xr-x   9 qpid  qpid    306 21 Aug 23:17 etc
-drwxr-xr-x  34 qpid  qpid   1156 25 Jul 23:22 lib
+total 56
+drwxrwxr-x. 5 alex alex  4096 Nov 25 11:43 .
+drwxrwxr-x. 3 alex alex  4096 Nov 25 11:43 ..
+drwxr-xr-x. 2 alex alex  4096 Nov 24 23:38 bin
+drwxr-xr-x. 2 alex alex  4096 Nov 24 23:38 etc
+drwxrwxr-x. 2 alex alex  4096 Nov 25 11:43 lib
+-rw-r--r--. 1 alex alex 28143 Nov 24 23:38 LICENSE
+-rw-r--r--. 1 alex alex  3409 Nov 24 23:38 NOTICE
+-rw-r--r--. 1 alex alex   116 Nov 24 23:38 README.txt
     </screen>
     <section role="h3" id="Java-Broker-Installation-InstallationUnix-SettingQPIDWORK">
       <title>Setting the working directory</title>

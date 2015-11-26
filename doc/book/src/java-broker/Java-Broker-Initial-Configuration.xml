@@ -43,25 +43,25 @@
                     <para>Loggers</para>
                 </listitem>
                 <listitem>
-                    <para>Port</para>
+                    <para>Ports</para>
                 </listitem>
                 <listitem>
-                    <para>Authentication Provider</para>
+                    <para>Authentication Providers (optionally with Users for managing users Authentication Providers)</para>
                 </listitem>
                 <listitem>
-                    <para>Access Control Provider</para>
+                    <para>Access Control Providers</para>
                 </listitem>
                 <listitem>
-                    <para>Group Provider</para>
+                    <para>Group Providers (optionally with Groups and GroupMembers for managing groups Group Providers)</para>
                 </listitem>
                 <listitem>
-                    <para>Key store</para>
+                    <para>Key stores</para>
                 </listitem>
                 <listitem>
-                    <para>Trust store</para>
+                    <para>Trust stores</para>
                 </listitem>
                 <listitem>
-                    <para>Plugin</para>
+                    <para>Plugins</para>
                 </listitem>
             </itemizedlist>
         </para>
@@ -172,16 +172,38 @@ $ ./qpid-server -os -icp ./my-initial-configuration.json
 
     <section id="Java-Broker-Initial-Configuration-Type">
         <title>Configuration Store Type</title>
-        <para> There are currently two implementations of the pluggable Broker Configuration Store,
-            the default one which persists content to disk in a JSON file, and another which
-            operates only in-memory and so does not retain changes across broker restarts and always
-            relies on the current <link
-                linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
-                Configuration'</link> to provide the configuration to start the broker with. </para>
+        <para> There are currently several implementations of the pluggable Broker Configuration Store:
+            <variablelist>
+                <varlistentry>
+                    <term>JSON</term>
+                    <listitem><para>the default one which persists content to disk in a JSON file</para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>Memory</term>
+                    <listitem><para>operates only in-memory and so does not retain changes across broker
+                        restarts and always relies on the current <link
+                                linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
+                            Configuration'</link> to provide the configuration to start the broker with.
+                    </para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>DERBY</term>
+                    <listitem><para>stores configuration in embedded derby store</para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>BDB</term>
+                    <listitem><para>stores configuration in Berkeley DB store</para></listitem>
+                </varlistentry>
+                <varlistentry>
+                    <term>JDBC</term>
+                    <listitem><para>stores configuration in external RDBMS using JDBC</para></listitem>
+                </varlistentry>
+            </variablelist>
+        </para>
         <para> The command line argument <emphasis>-st</emphasis> (or
                 <emphasis>--store-type</emphasis>) can be used to override the default
                 <emphasis>json</emphasis>)configuration store type and allow choosing an alternative,
-            such as <emphasis>memory</emphasis>) </para>
+            such as <emphasis>Memory</emphasis>) </para>
         <screen>
 $ ./qpid-server -st memory
         </screen>
@@ -189,6 +211,12 @@ $ ./qpid-server -st memory
             same <link linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
                 Configuration'</link>
         </para>
+        <para>Another example of broker startup with configuration in DERBY network server</para>
+        <screen>
+$ ./qpid-server -st JDBC \
+  -prop "systemConfig.connectionUrl=jdbc:derby://localhost:1527/path/to/store;create=true" \
+  -prop "systemConfig.username=test" -prop "systemConfig.password=password"
+        </screen>
     </section>
 
     <section id="Java-Broker-Initial-Configuration-Configuration-Properties">
