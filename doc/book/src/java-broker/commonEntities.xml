@@ -24,10 +24,10 @@
 
 <!ENTITY qpidCurrentRelease "6.1.0-SNAPSHOT">
 
-<!ENTITY windowsBrokerDownloadFileName "qpid-java-broker-&qpidCurrentRelease;.zip">
-<!ENTITY windowsExtractedBrokerDirName "qpid-broker-&qpidCurrentRelease;">
-<!ENTITY unixBrokerDownloadFileName "qpid-java-broker-&qpidCurrentRelease;.tar.gz">
-<!ENTITY unixExtractedBrokerDirName "qpid-broker-&qpidCurrentRelease;">
+<!ENTITY windowsBrokerDownloadFileName "qpid-broker-&qpidCurrentRelease;-bin.zip">
+<!ENTITY windowsExtractedBrokerDirName "qpid-broker\&qpidCurrentRelease;">
+<!ENTITY unixBrokerDownloadFileName "qpid-broker-&qpidCurrentRelease;-bin.tar.gz">
+<!ENTITY unixExtractedBrokerDirName "qpid-broker/&qpidCurrentRelease;">
 
 <!-- Client doc links -->
 <!ENTITY qpidjmsdocClientConectionUrl "../../Programming-In-Apache-Qpid/html/QpidJNDI.html#section-jms-connection-url">
