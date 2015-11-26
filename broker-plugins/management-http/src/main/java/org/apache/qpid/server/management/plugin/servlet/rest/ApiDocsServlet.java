@@ -31,8 +31,10 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredAutomatedAttribute;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.OperationParameter;
 
 public class ApiDocsServlet extends AbstractServlet
 {
@@ -133,6 +135,7 @@ public class ApiDocsServlet extends AbstractServlet
             writeUsage(writer, request);
             writeTypes(writer);
             writeAttributes(writer);
+            writeOperations(writer);
         }
 
         writeFoot(writer);
@@ -265,9 +268,7 @@ public class ApiDocsServlet extends AbstractServlet
 
         for(Class<? extends ConfiguredObject> type : _types)
         {
-
-            ManagedObject typeAnnotation = type.getAnnotation(ManagedObject.class);
-            String typeName = typeAnnotation.type() == null ? _model.getTypeRegistry().getTypeClass(type).getSimpleName() : typeAnnotation.type();
+            String typeName = getTypeName(type);
             Collection<ConfiguredObjectAttribute<?, ?>> typeSpecificAttributes =
                     _model.getTypeRegistry().getTypeSpecificAttributes(type);
             if(!typeSpecificAttributes.isEmpty())
@@ -298,7 +299,7 @@ public class ApiDocsServlet extends AbstractServlet
                                + attribute.getName()
                                + "</td><td class=\"type\">"
                                + renderType(attribute)
-                               + "</td class=\"description\"><td>"
+                               + "</td><td class=\"description\">"
                                + attribute.getDescription()
                                + "</td></tr>");
             }
@@ -307,6 +308,83 @@ public class ApiDocsServlet extends AbstractServlet
 
         writer.println("</table>");
 
+    }
+
+    private void writeOperations(final PrintWriter writer)
+    {
+        writer.println("<a name=\"types\"><h2>Operations</h2></a>");
+        writer.println("<h2>Common Operations</h2>");
+
+        writeOperationsTables(writer, _model.getTypeRegistry().getOperations(getConfiguredClass()).values());
+        for(Class<? extends ConfiguredObject> type : _types)
+        {
+            String typeName = getTypeName(type);
+            final Collection<ConfiguredObjectOperation<?>> typeSpecificOperations = _model.getTypeRegistry().getOperations(type).values();
+            if(!typeSpecificOperations.isEmpty() && type != getConfiguredClass())
+            {
+                writer.println("<h2><span class=\"type\">"+typeName+"</span> Specific Operations</h2>");
+                writeOperationsTables(writer, typeSpecificOperations);
+            }
+        }
+
+    }
+
+    private void writeOperationsTables(PrintWriter writer,
+                                       Collection<ConfiguredObjectOperation<?>> operations)
+    {
+        for(ConfiguredObjectOperation<?> operation : operations)
+        {
+            writer.println("<table class=\"operation\">");
+            writer.println("<thead>");
+            writer.println("<tr><th class=\"name\">Operation Name</th><th class=\"returnType\">Return Type</th><th class=\"description\">Description</th></tr>");
+            writer.println("</thead>");
+            writer.println("<tbody>");
+
+            writer.println("<tr><td class=\"name\">"
+                           + operation.getName()
+                           + "</td><td class=\"type\">"
+                           + renderType(operation)
+                           + "</td><td class=\"description\">"
+                           + operation.getDescription()
+                           + "</td></tr>");
+            if (!operation.getParameters().isEmpty())
+            {
+                writer.println("<tr><td class=\"allparameters\" colspan=\"3\">"
+                               + renderParameters(operation.getParameters())
+                               + "</td></tr>");
+            }
+
+            writer.println("</tbody>");
+            writer.println("</table>");
+        }
+    }
+
+    private String renderParameters(final List<OperationParameter> parameters)
+    {
+        StringBuilder writer = new StringBuilder();
+
+        writer.append("<table class=\"parameters\">");
+        writer.append("<thead>");
+        writer.append(
+                "<tr><th class=\"name\">Parameter Name</th><th class=\"type\">Type</th><th class=\"description\">Description</th></tr>");
+        writer.append("</thead>");
+        writer.append("<tbody>");
+
+        for (OperationParameter param : parameters)
+        {
+            writer.append("<tr><td class=\"name\">"
+                          + param.getName()
+                          + "</td><td class=\"type\">"
+                          + renderType(param)
+                          + "</td><td class=\"description\">"
+                          + param.getDescription()
+                          + "</td></tr>");
+        }
+
+        writer.append("</tbody>");
+        writer.append("</table>");
+
+        return writer.toString();
     }
 
     private String renderType(final ConfiguredObjectAttribute attribute)
@@ -369,6 +447,71 @@ public class ApiDocsServlet extends AbstractServlet
         }
     }
 
+    private String renderType(final OperationParameter parameter)
+    {
+        final Class type = parameter.getType();
+        if(Enum.class.isAssignableFrom(type))
+        {
+            return "<div class=\"restriction\" title=\"enum: " + EnumSet.allOf(type) + "\">string</div>";
+        }
+        else if(ConfiguredObject.class.isAssignableFrom(type))
+        {
+            return "<div class=\"restriction\" title=\"name or id of a" + (VOWELS.contains(type.getSimpleName().toLowerCase().charAt(0)) ? "n " : " ") + type.getSimpleName() + "\">string</div>";
+        }
+        else if(UUID.class == type)
+        {
+            return "<div class=\"restriction\" title=\"must be a UUID\">string</div>";
+        }
+        else
+        {
+            StringBuilder returnVal = new StringBuilder();
+            final boolean hasValuesRestriction = parameter.getValidValues() != null && !parameter.getValidValues().isEmpty();
+            if(hasValuesRestriction)
+            {
+                returnVal.append("<div class=\"restricted\" title=\"Valid values: " + parameter.getValidValues() + "\">");
+            }
+
+            if(Number.class.isAssignableFrom(type))
+            {
+                returnVal.append("number");
+            }
+            else if(Boolean.class == type)
+            {
+                returnVal.append("boolean");
+            }
+            else if(String.class == type)
+            {
+                returnVal.append("string");
+            }
+            else if(Collection.class.isAssignableFrom(type))
+            {
+                // TODO - generate a description of the type in the array
+                returnVal.append("array");
+            }
+            else if(Map.class.isAssignableFrom(type))
+            {
+                // TODO - generate a description of the type in the object
+                returnVal.append("object");
+            }
+            else
+            {
+                returnVal.append(type.getSimpleName());
+            }
+            if(hasValuesRestriction)
+            {
+                returnVal.append("</div>");
+            }
+            return returnVal.toString();
+        }
+    }
+
+    private String renderType(final ConfiguredObjectOperation<?> operation)
+    {
+        return operation.getGenericReturnType() instanceof Class ?
+                ((Class) operation.getGenericReturnType()).getName() :
+                operation.getGenericReturnType().toString();
+    }
+
     private void writeFoot(final PrintWriter writer)
     {
         writer.println("</body>");
@@ -378,32 +521,4 @@ public class ApiDocsServlet extends AbstractServlet
     {
         return _hierarchy.length == 0 ? Broker.class : _hierarchy[_hierarchy.length-1];
     }
-
-
-    private int getIntParameterFromRequest(final HttpServletRequest request,
-                                           final String paramName,
-                                           final int defaultValue)
-    {
-        int intValue = defaultValue;
-        final String stringValue = request.getParameter(paramName);
-        if(stringValue!=null)
-        {
-            try
-            {
-                intValue = Integer.parseInt(stringValue);
-            }
-            catch (NumberFormatException e)
-            {
-                LOGGER.warn("Could not parse " + stringValue + " as integer for parameter " + paramName);
-            }
-        }
-        return intValue;
-    }
-
-    private boolean getBooleanParameterFromRequest(HttpServletRequest request, final String paramName)
-    {
-        return Boolean.parseBoolean(request.getParameter(paramName));
-    }
-
-
 }

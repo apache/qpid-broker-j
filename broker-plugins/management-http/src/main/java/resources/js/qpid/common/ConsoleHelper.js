@@ -74,7 +74,18 @@ define(["dojo/domReady!"], function () {
           {
             this.getHelpUrl(openWindow);
           }
+        },
+        showAPI: function()
+        {
+          var openWindow = function(url)
+          {
+            var newWindow = window.open(url,'Qpid REST API','height=800,width=800,scrollbars=1,location=1,resizable=1,status=0,toolbar=1,titlebar=1,menubar=1', true);
+            newWindow.focus();
+          }
+
+          openWindow("/apidocs");
         }
+
     };
 
 });
