@@ -297,7 +297,7 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
 
     private void createEmptyKeyFile(File file) throws IOException
     {
-        final Path parentFilePath = file.getParentFile().toPath();
+        final Path parentFilePath = file.getAbsoluteFile().getParentFile().toPath();
 
         if(isPosixFileSystem(file)) {
             Set<PosixFilePermission> ownerOnly = EnumSet.of(PosixFilePermission.OWNER_READ,
