@@ -72,7 +72,7 @@ define(["dojox/html/entities",
         this.management = management;
         var that=this;
         this.dialog.set("title", "Edit Broker - " + entities.encode(String(brokerData.name)));
-          var typeMetaData = management.metadata.getMetaData("Broker", "broker");
+          var typeMetaData = management.metadata.getMetaData("Broker", "Broker");
           var encrypters = typeMetaData.attributes.confidentialConfigurationEncryptionProvider.validValues;
           var encrypterTypesData = [];
           encrypterTypesData.push({id: undefined, name: "None"});
@@ -135,7 +135,7 @@ define(["dojox/html/entities",
       _show:function(actualData, effectiveData)
       {
           this.initialData = actualData;
-          util.applyToWidgets(dom.byId("editBroker.allFields"), "Broker", "broker", actualData, this.management.metadata);
+          util.applyToWidgets(dom.byId("editBroker.allFields"), "Broker", "Broker", actualData, this.management.metadata);
           util.setContextData(this.context, management, {type: "broker"}, actualData, effectiveData );
 
           // Add regexp to the numeric fields
