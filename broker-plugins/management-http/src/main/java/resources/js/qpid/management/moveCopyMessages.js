@@ -41,15 +41,17 @@ define(["dojo/dom",
                             node.innerHTML = template;
                             moveMessages.dialogNode = dom.byId("moveMessages");
                             parser.instantiate([moveMessages.dialogNode]);
+                            moveMessages.dialog = registry.byId("moveMessages");
+                            moveMessages.submitButton = registry.byId("moveMessageSubmit");
 
                             theForm = registry.byId("formMoveMessages");
 
+                            var cancelButton = registry.byId("moveMessageCancel");
 
-                            var cancelButton = query(".moveMessageCancel")[0];
-                            connect.connect(registry.byNode(cancelButton), "onClick",
+                            connect.connect(cancelButton, "onClick",
                                             function(evt){
                                                 event.stop(evt);
-                                                registry.byId("moveMessages").hide();
+                                                moveMessages.dialog.hide();
                                             });
 
 
@@ -65,7 +67,7 @@ define(["dojo/dom",
                                    moveMessages.management.update(modelObj, parameters).then(
                                      function(result)
                                      {
-                                       registry.byId("moveMessages").hide();
+                                       moveMessages.dialog.hide();
                                        if(moveMessages.next)
                                        {
                                          moveMessages.next();
@@ -87,7 +89,9 @@ define(["dojo/dom",
             moveMessages.next = next;
             registry.byId("formMoveMessages").reset();
 
-
+            var label = data.move ? "Move messages" : "Copy messages";
+            moveMessages.submitButton.set("label", label);
+            moveMessages.dialog.set("title", label);
 
             management.load({type: "queue", parent: modelObj.parent},  {depth:0}).then(
                 function(data) {
@@ -115,7 +119,7 @@ define(["dojo/dom",
 
 
 
-                    registry.byId("moveMessages").show();
+                    moveMessages.dialog.show();
 
 
                 }, util.xhrErrorHandler);
