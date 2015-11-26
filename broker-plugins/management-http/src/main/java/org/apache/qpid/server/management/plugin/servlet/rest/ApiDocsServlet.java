@@ -315,11 +315,15 @@ public class ApiDocsServlet extends AbstractServlet
         writer.println("<a name=\"types\"><h2>Operations</h2></a>");
         writer.println("<h2>Common Operations</h2>");
 
-        writeOperationsTables(writer, _model.getTypeRegistry().getOperations(getConfiguredClass()).values());
+        Collection<ConfiguredObjectOperation<?>> categoryOperations =
+                _model.getTypeRegistry().getOperations(getConfiguredClass()).values();
+        writeOperationsTables(writer, categoryOperations);
         for(Class<? extends ConfiguredObject> type : _types)
         {
             String typeName = getTypeName(type);
-            final Collection<ConfiguredObjectOperation<?>> typeSpecificOperations = _model.getTypeRegistry().getOperations(type).values();
+            Set<ConfiguredObjectOperation<?>> typeSpecificOperations = new HashSet<>(_model.getTypeRegistry().getOperations(type).values());
+            typeSpecificOperations.removeAll(categoryOperations);
+
             if(!typeSpecificOperations.isEmpty() && type != getConfiguredClass())
             {
                 writer.println("<h2><span class=\"type\">"+typeName+"</span> Specific Operations</h2>");
