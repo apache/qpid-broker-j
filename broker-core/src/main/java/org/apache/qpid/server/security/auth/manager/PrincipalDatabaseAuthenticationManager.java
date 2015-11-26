@@ -466,16 +466,6 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         }
 
         @Override
-        protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
-        {
-            super.validateChange(proxyForValidation, changedAttributes);
-            if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-            {
-                throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-            }
-        }
-
-        @Override
         public String getPassword()
         {
             return _password;

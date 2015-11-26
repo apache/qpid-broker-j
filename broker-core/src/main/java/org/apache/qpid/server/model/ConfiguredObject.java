@@ -156,7 +156,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
      *
      * @return the durability
      */
-    @ManagedAttribute( defaultValue = "true" )
+    @ManagedAttribute( defaultValue = "true", immutable = true)
     boolean isDurable();
 
     /**

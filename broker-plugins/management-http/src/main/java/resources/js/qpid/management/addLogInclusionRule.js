@@ -72,6 +72,7 @@ define(["dojo/_base/lang",
                 this.logInclusionRuleType = registry.byId("addLogInclusionRule.type");
                 this.logInclusionRuleType.on("change", function(type){that._typeChanged(type);});
 
+                this.durable = registry.byId("addLogInclusionRule.durable");
                 this.allFieldsContainer = dom.byId("addLogInclusionRule.contentPane");
             },
             show: function(management, modelObj, category, actualData)
@@ -90,7 +91,8 @@ define(["dojo/_base/lang",
 
                 this.name.set("disabled", !this.isNew);
                 this.logInclusionRuleType.set("disabled", !this.isNew);
-                this.dialog.set("title", this.isNew ? "Add Log Inclusion Rule" : "Edit Log Inclusion Rule - " + actualData.name)
+                this.durable.set("disabled", !this.isNew);
+                this.dialog.set("title", this.isNew ? "Add Log Inclusion Rule" : "Edit Log Inclusion Rule - " + actualData.name);
 
                 if (actualData)
                 {

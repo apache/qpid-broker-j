@@ -93,16 +93,6 @@ public abstract class AbstractAuthenticationManager<T extends AbstractAuthentica
         }
     }
 
-    @Override
-    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
-    {
-        super.validateChange(proxyForValidation, changedAttributes);
-        if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
-    }
-
     protected final Broker getBroker()
     {
         return _broker;

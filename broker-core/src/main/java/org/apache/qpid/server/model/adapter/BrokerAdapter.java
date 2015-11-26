@@ -258,10 +258,6 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
         Broker updated = (Broker) proxyForValidation;
         if (changedAttributes.contains(MODEL_VERSION) && !BrokerModel.MODEL_VERSION.equals(updated.getModelVersion()))
         {

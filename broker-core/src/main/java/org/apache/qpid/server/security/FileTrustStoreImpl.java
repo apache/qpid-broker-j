@@ -180,10 +180,6 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
         {
             throw new IllegalConfigurationException("Changing the trust store name is not allowed");
         }
-        if(changedAttributes.contains(DURABLE) && !proxyForValidation.isDurable())
-        {
-            throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
-        }
         validateTrustStore(updated);
     }
 
