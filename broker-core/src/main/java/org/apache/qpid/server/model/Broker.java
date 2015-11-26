@@ -28,7 +28,7 @@ import org.apache.qpid.server.model.adapter.BrokerAdapter;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 
-@ManagedObject( defaultType = "broker" )
+@ManagedObject( defaultType = "Broker" )
 public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventLoggerProvider, StatisticsGatherer
 {
 
