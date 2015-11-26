@@ -22,7 +22,7 @@
 <!ENTITY qpidDownloadUrl "http://qpid.apache.org/download.html">
 <!ENTITY qpidCppBook "../../AMQP-Messaging-Broker-CPP-Book/html/">
 
-<!ENTITY qpidCurrentRelease "6.1.0-SNAPSHOT">
+<!ENTITY qpidCurrentRelease "6.0.0">
 
 <!ENTITY windowsBrokerDownloadFileName "qpid-broker-&qpidCurrentRelease;-bin.zip">
 <!ENTITY windowsExtractedBrokerDirName "qpid-broker\&qpidCurrentRelease;">
