@@ -45,7 +45,6 @@ define(["dojox/html/entities",
         "dojo/domReady!"],
   function (entities, array, event, lang, win, dom, domConstruct, registry, parser, json, query, Memory, ObjectStore, util, template)
   {
-    var fields = [ "name", "statisticsReportingPeriod", "statisticsReportingResetEnabled", "confidentialConfigurationEncryptionProvider", "connection.sessionCountLimit", "connection.heartBeatDelay"];
     var numericFieldNames = ["statisticsReportingPeriod", "connection.sessionCountLimit", "connection.heartBeatDelay"];
 
     var brokerEditor =
@@ -64,11 +63,6 @@ define(["dojox/html/entities",
         this.cancelButton = registry.byId("editBroker.cancelButton");
         this.cancelButton.on("click", function(e){that._cancel(e);});
         this.saveButton.on("click", function(e){that._save(e);});
-        for(var i = 0; i < fields.length; i++)
-        {
-            var fieldName = fields[i];
-            this[fieldName] = registry.byId("editBroker." + fieldName);
-        }
         this.form = registry.byId("editBrokerForm");
         this.form.on("submit", function(){return false;});
         this.context = registry.byId("editBroker.context");
@@ -86,7 +80,7 @@ define(["dojox/html/entities",
           var typeMetaData = management.metadata.getMetaData("Broker", "broker");
           var encrypters = typeMetaData.attributes.confidentialConfigurationEncryptionProvider.validValues;
           var encrypterTypesData = [];
-          encrypterTypesData.push({id: "", name: "None"});
+          encrypterTypesData.push({id: undefined, name: "None"});
           array.forEach(encrypters,
               function(item)
               {
@@ -97,7 +91,7 @@ define(["dojox/html/entities",
           var encrytperTypesStore = new Memory({ data: encrypterTypesData });
           var encrypterControl = registry.byId("editBroker.confidentialConfigurationEncryptionProvider");
           encrypterControl.set("store", encrytperTypesStore);
-          encrypterControl.set("value", "NONE");
+          encrypterControl.set("value", undefined);
 
           management.load( {type:"broker"}, { actuals: true }).then(
               function(data)
@@ -146,23 +140,7 @@ define(["dojox/html/entities",
       _show:function(actualData, effectiveData)
       {
           this.initialData = actualData;
-
-          for(var i = 0; i < fields.length; i++)
-          {
-            var fieldName = fields[i];
-            var widget = this[fieldName];
-            widget.reset();
-
-            if (widget instanceof dijit.form.CheckBox)
-            {
-              widget.set("checked", actualData[fieldName]);
-            }
-            else
-            {
-              widget.set("value", actualData[fieldName]);
-            }
-          }
-          util.applyMetadataToWidgets(dom.byId("editBroker.allFields"), "Broker", "broker", this.management.metadata);
+          util.applyToWidgets(dom.byId("editBroker.allFields"), "Broker", "broker", actualData, this.management.metadata);
           util.setContextData(this.context, management, {type: "broker"}, actualData, effectiveData );
           this.dialog.startup();
           this.dialog.show();
