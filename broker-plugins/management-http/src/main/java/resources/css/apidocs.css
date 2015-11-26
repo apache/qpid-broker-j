@@ -50,6 +50,24 @@ table.attributes td.type {
     width: 7em;
 }
 
+table.operation td.name {
+    font-family: "Courier New", courier, monospace;
+    width: 20em;
+}
+
+table.operation td.type {
+    width: 20em;
+}
+
+table.parameters td.name {
+    font-family: "Courier New", courier, monospace;
+    width: 20em;
+}
+
+table.parameters td.type {
+    width: 20em;
+}
+
 table.api td,th {
     vertical-align: top;
 }
