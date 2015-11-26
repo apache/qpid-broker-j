@@ -21,15 +21,24 @@
 package org.apache.qpid.server.security;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateParsingException;
+import java.security.cert.X509Certificate;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
 import javax.net.ssl.TrustManager;
@@ -51,6 +60,7 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.ManagedAttributeValue;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Port;
@@ -63,10 +73,10 @@ import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.transport.network.security.ssl.QpidPeersOnlyTrustManager;
 
 @ManagedObject( category = false )
-public class ManagedPeerCertificateTrustsStoreImpl
-        extends AbstractConfiguredObject<ManagedPeerCertificateTrustsStoreImpl> implements ManagedPeerCertificateTrustStore<ManagedPeerCertificateTrustsStoreImpl>
+public class ManagedPeerCertificateTrustStoreImpl
+        extends AbstractConfiguredObject<ManagedPeerCertificateTrustStoreImpl> implements ManagedPeerCertificateTrustStore<ManagedPeerCertificateTrustStoreImpl>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ManagedPeerCertificateTrustsStoreImpl.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ManagedPeerCertificateTrustStoreImpl.class);
 
     private final Broker<?> _broker;
     private final EventLogger _eventLogger;
@@ -84,7 +94,7 @@ public class ManagedPeerCertificateTrustsStoreImpl
     private final List<Certificate> _storedCertificates = new ArrayList<>();
 
     @ManagedObjectFactoryConstructor
-    public ManagedPeerCertificateTrustsStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
+    public ManagedPeerCertificateTrustStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
         super(parentsMap(broker), attributes);
         _broker = broker;
@@ -274,7 +284,7 @@ public class ManagedPeerCertificateTrustsStoreImpl
                                         @Override
                                         public String getObject()
                                         {
-                                            return ManagedPeerCertificateTrustsStoreImpl.this.toString();
+                                            return ManagedPeerCertificateTrustStoreImpl.this.toString();
                                         }
 
                                         @Override
@@ -306,5 +316,184 @@ public class ManagedPeerCertificateTrustsStoreImpl
 
                     });
 
+    }
+
+    @Override
+    public List<CertificateDetails> getCertificateDetails()
+    {
+        List<CertificateDetails> details = new ArrayList<>();
+        for(Certificate cert : _storedCertificates)
+        {
+            if(cert instanceof X509Certificate)
+            {
+                details.add(new CertificateDetailsImpl((X509Certificate)cert));
+            }
+        }
+        return details;
+    }
+
+
+    @Override
+    public void removeCertificates(final List<CertificateDetails> certs)
+    {
+        final Map<String,Set<BigInteger>> certsToRemove = new HashMap<>();
+        for(CertificateDetails cert : certs)
+        {
+            if(!certsToRemove.containsKey(cert.getIssuerName()))
+            {
+                certsToRemove.put(cert.getIssuerName(), new HashSet<BigInteger>());
+            }
+            certsToRemove.get(cert.getIssuerName()).add(new BigInteger(cert.getSerialNumber()));
+        }
+
+        final Map<String, Object> updateMap = new HashMap<>();
+
+        doAfter(doOnConfigThread(new Task<ListenableFuture<Void>, RuntimeException>()
+                {
+                    @Override
+                    public ListenableFuture<Void> execute()
+                    {
+
+                        Set<Certificate> certs = new HashSet<>(_storedCertificates);
+
+                        boolean updated = false;
+                        Iterator<Certificate> iter = certs.iterator();
+                        while(iter.hasNext())
+                        {
+                            Certificate cert = iter.next();
+                            if(cert instanceof X509Certificate)
+                            {
+                                X509Certificate x509Certificate = (X509Certificate) cert;
+                                String issuerName = x509Certificate.getIssuerX500Principal().getName();
+                                if(certsToRemove.containsKey(issuerName) && certsToRemove.get(issuerName).contains(x509Certificate.getSerialNumber()))
+                                {
+                                    iter.remove();
+                                    updated = true;
+                                }
+                            }
+                        }
+
+
+                        if(updated)
+                        {
+                            updateMap.put("storedCertificates", new ArrayList<>(certs));
+                        }
+                        return Futures.immediateFuture(null);
+                    }
+
+                    @Override
+                    public String getObject()
+                    {
+                        return ManagedPeerCertificateTrustStoreImpl.this.toString();
+                    }
+
+                    @Override
+                    public String getAction()
+                    {
+                        return "remove certificates";
+                    }
+
+                    @Override
+                    public String getArguments()
+                    {
+                        return String.valueOf(certs);
+                    }
+                }),
+                new Callable<ListenableFuture<Void>>()
+                {
+                    @Override
+                    public ListenableFuture<Void> call() throws Exception
+                    {
+                        if(updateMap.isEmpty())
+                        {
+                            return Futures.immediateFuture(null);
+                        }
+                        else
+                        {
+                            return setAttributesAsync(updateMap);
+                        }
+                    }
+
+                });
+    }
+
+    public static class CertificateDetailsImpl implements CertificateDetails, ManagedAttributeValue
+    {
+        private final X509Certificate _x509cert;
+
+        public CertificateDetailsImpl(final X509Certificate x509cert)
+        {
+            _x509cert = x509cert;
+        }
+
+        @Override
+        public String getSerialNumber()
+        {
+            return _x509cert.getSerialNumber().toString();
+        }
+
+        @Override
+        public int getVersion()
+        {
+            return _x509cert.getVersion();
+        }
+
+        @Override
+        public String getSignatureAlgorithm()
+        {
+            return _x509cert.getSigAlgName();
+        }
+
+        @Override
+        public String getIssuerName()
+        {
+            return _x509cert.getIssuerX500Principal().getName();
+        }
+
+        @Override
+        public String getSubjectName()
+        {
+            return _x509cert.getSubjectX500Principal().getName();
+        }
+
+        @Override
+        public List<String> getSubjectAltNames()
+        {
+            try
+            {
+                List<String> altNames = new ArrayList<String>();
+                final Collection<List<?>> altNameObjects = _x509cert.getSubjectAlternativeNames();
+                if(altNameObjects != null)
+                {
+                    for (List<?> entry : altNameObjects)
+                    {
+                        final int type = (Integer) entry.get(0);
+                        if (type == 1 || type == 2)
+                        {
+                            altNames.add(entry.get(1).toString().trim());
+                        }
+
+                    }
+                }
+                return altNames;
+            }
+            catch (CertificateParsingException e)
+            {
+
+                return Collections.emptyList();
+            }
+        }
+
+        @Override
+        public long getValidFrom()
+        {
+            return _x509cert.getNotBefore().getTime();
+        }
+
+        @Override
+        public long getValidUntil()
+        {
+            return _x509cert.getNotAfter().getTime();
+        }
     }
 }

@@ -23,8 +23,11 @@ package org.apache.qpid.server.security;
 import java.security.cert.Certificate;
 import java.util.List;
 
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedOperation;
+import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.TrustStore;
 
 @ManagedObject( category = false, type = ManagedPeerCertificateTrustStore.TYPE_NAME)
@@ -40,7 +43,12 @@ public interface ManagedPeerCertificateTrustStore<X extends ManagedPeerCertifica
     @ManagedAttribute( oversize = true, defaultValue = "[]" )
     List<Certificate> getStoredCertificates();
 
-    void addCertificate(Certificate cert);
+    @ManagedOperation
+    void addCertificate(@Param(name="certificate") Certificate certificate);
 
+    @DerivedAttribute
+    List<CertificateDetails> getCertificateDetails();
 
+    @ManagedOperation
+    void removeCertificates(@Param(name="certificates") List<CertificateDetails> certificates);
 }
