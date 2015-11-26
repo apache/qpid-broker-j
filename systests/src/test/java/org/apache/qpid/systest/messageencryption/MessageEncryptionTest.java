@@ -53,7 +53,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
 
     public void testEncryptionUsingMessageHeader() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if(isStrongEncryptionEnabled() && !isCppBroker())
         {
             super.setUp();
             Map<String, String> prodConnOptions = new HashMap<>();
@@ -94,7 +94,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
 
     public void testEncryptionFromADDRAddress() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if(isStrongEncryptionEnabled() && !isCppBroker())
         {
             super.setUp();
             Map<String, String> prodConnOptions = new HashMap<>();
@@ -132,7 +132,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
 
     public void testEncryptionFromBURLAddress() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if(isStrongEncryptionEnabled() && !isCppBroker())
         {
             super.setUp();
             Map<String, String> prodConnOptions = new HashMap<>();
@@ -175,7 +175,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
 
     public void testBrokerAsTrustStoreProvider() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if(isStrongEncryptionEnabled() && !isCppBroker())
         {
             addPeerStoreToBroker();
             super.setUp();
@@ -218,7 +218,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
     public void testUnknownRecipient() throws Exception
     {
 
-        if(isStrongEncryptionEnabled())
+        if(isStrongEncryptionEnabled() && !isCppBroker())
         {
             addPeerStoreToBroker();
             super.setUp();
@@ -262,7 +262,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
 
     public void testRecipientHasNoValidCert() throws Exception
     {
-        if(isStrongEncryptionEnabled())
+        if(isStrongEncryptionEnabled() && !isCppBroker())
         {
             super.setUp();
             Map<String, String> prodConnOptions = new HashMap<>();
