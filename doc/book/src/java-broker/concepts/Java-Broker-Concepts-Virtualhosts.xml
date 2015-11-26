@@ -30,7 +30,7 @@
   <para>A virtualhost is identified by a name which must be unique broker-wide. Clients use the name
     to identify the virtualhost to which they wish to connect when they connect.</para>
   <para>A virtualhost exists in a container called a virtualhost node.</para>
-  <para>The virtualhost comprises of a number of entities. This section summaries the purpose of
+  <para>The virtualhost comprises a number of entities. This section summaries the purpose of
     each of the entities and describes the relationships between them. These details are developed
     further in the sub-sections that follow.</para>
   <para><emphasis>Exchanges</emphasis> is a named entity within the Virtual Host which receives

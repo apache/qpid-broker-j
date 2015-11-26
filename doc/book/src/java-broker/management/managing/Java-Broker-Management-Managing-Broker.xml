@@ -39,9 +39,9 @@
             Heartbeats help discover severed TCP/IP connections in a timely manner.</para>
         </listitem>
         <listitem>
-          <para><emphasis>Confidential configuration encryption provider</emphasis>. The name of
-           the provider used to encrypt passwords and other secrets within the configuration. See
-            <xref linkend="Java-Broker-Security-Configuration-Encryption"/>.</para>
+          <para><emphasis>Confidential configuration encryption provider</emphasis>. The name of the
+            provider used to encrypt passwords and other secrets within the configuration. See <xref
+              linkend="Java-Broker-Security-Configuration-Encryption"/>.</para>
         </listitem>
       </itemizedlist>
     </para>
@@ -57,6 +57,29 @@
         <listitem>
           <para><emphasis>broker.messageCompressionEnabled</emphasis> Controls the <link
               linkend="Java-Broker-Runtime-Message-Compression">message compression</link> .</para>
+        </listitem>
+        <listitem id="Java-Broker-Management-Managing-Broker-Context-StoreFilesystemMaxUsagePercent">
+          <para><emphasis>store.filesystem.maxUsagePercent</emphasis> Maximum percentage of space
+            that may be utilised on a filesystem hosting a virtualhost's message store before
+            producer flow control is automatically imposed.</para>
+          <para>This defaults to 90%.</para>
+        </listitem>
+        <listitem
+          id="Java-Broker-Management-Managing-Broker-Context-BrokerDefaultSupportedProtocolVersionReply">
+          <para><emphasis>qpid.broker_default_supported_protocol_version_reply</emphasis> Used
+            during protocol negotiation. If set, the Broker will offer this AMQP version to a client
+            requesting an AMQP protocol that is not supported by the Broker. If not set, the Broker
+            offers the highest protocol version it supports. </para>
+        </listitem>
+        <listitem>
+          <para>
+            <emphasis>qpid.broker_msg_auth</emphasis> If set true, the Broker ensures that the user
+            id of each received message matches the user id of the producing connection. If this
+            check fails, the message is returned to the producer's connection with a 403 (Access
+            Refused) error code.</para>
+          <para>This is check is currently not enforced when using AMQP 0-10 and 1-0
+            protocols.</para>
+          <para>Defaults to false.</para>
         </listitem>
       </itemizedlist>
     </para>

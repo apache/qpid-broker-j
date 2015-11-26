@@ -37,7 +37,7 @@
       <title>Java Platform</title>
       <para> The Java Broker is an 100% Java implementation and as such it can be used on any
         operating system supporting Java 1.7  or higher<footnote><para>Java Cryptography Extension (JCE)
-          Unlimited Strength required for some features</para></footnote>. This includes Linux, Solaris, Mac OS X, and
+          Unlimited Strength policy file are required for some features</para></footnote>. This includes Linux, Solaris, Mac OS X, and
         Windows XP/Vista/7/8.</para>
       <para> The broker has been tested with Java implementations from both Oracle and IBM. Whatever
         platform you chose, it is recommended that you ensure it is patched with any critical
@@ -50,7 +50,7 @@
       <title>Disk</title>
       <para>The Java Broker installation requires approximately 20MB of free disk space.</para>
       <para>The Java Broker also requires a working directory. The working directory is used for the
-        message store, that is, the area of the file-system used to record persistent messages
+        message store, that is, the area of the file-system used to record messages
         whilst they are passing through the Broker. The working directory is also used for the
         default location of the log file. The size of the working directory will depend on the how
         the Broker is used.</para>
@@ -62,10 +62,12 @@
     </section>
     <section role="h3" id="Java-Broker-Installation-Prerequistes-Memory">
       <title>Memory</title>
-      <para>Qpid caches messages on the heap for performance reasons, so in general, the Broker will
-        benefit from as much heap as possible. However, on a 32bit JVM, the maximum addressable
+      <para>Qpid caches messages in memory for performance reasons, so in general, the Broker will
+        benefit from as much memory as possible. However, on a 32bit JVM, the maximum addressable
         memory range for a process is 4GB, after leaving space for the JVM's own use this will give
-        a maximum heap size of approximately ~3.7GB.</para>
+        a maximum usable size of approximately ~3.7GB.</para>
+      <para>See <xref linkend="Java-Broker-Runtime-Memory"/> for a full description of how memory is
+        used.</para>
     </section>
     <section role="h3" id="Java-Broker-Installation-Prerequistes-OperatingSystemAccount">
       <title>Operating System Account</title>

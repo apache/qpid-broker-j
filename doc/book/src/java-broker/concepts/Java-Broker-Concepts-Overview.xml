@@ -21,7 +21,7 @@
 -->
 <section id="Java-Broker-Concepts-Overview">
   <title>Overview</title>
-  <para>The Broker comprises of a number of entities. This section summaries the purpose of each of
+  <para>The Broker comprises a number of entities. This section summaries the purpose of each of
     the entities and describes the relationships between them. These details are developed further
     in the sub-sections that follow.</para>
   <para>The most important entity is the <emphasis>Virtualhost</emphasis>. A virtualhost is an

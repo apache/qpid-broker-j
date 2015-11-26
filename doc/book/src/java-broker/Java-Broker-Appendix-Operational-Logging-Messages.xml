@@ -69,8 +69,8 @@
     user id used by the client (myapp1), their IP, ephemeral port number and the name of the virtual
     host. The message text itself gives us further details about the connection: the client id, the
     protocol version in used, and details of the client's qpid library.</para>
-  <screen>[con:8(myapp1@/127.0.0.1:52851/default)] CON-1001 : Open : Client ID : clientid :
-             Protocol Version : 0-10 : Client Version : &qpidCurrentRelease; : Client Product : qpid</screen>
+  <screen>[con:8(myapp1@/127.0.0.1:52851/default)] CON-1001 : Open : Destination : AMQP(127.0.0.1:5672) :
+    Protocol Version : 0-10 : Client ID : myapp1 : Client Version : &qpidCurrentRelease; : Client Product : qpid</screen>
   <para><literal><link linkend="Java-Broker-Appendix-Operation-Logging-Message-QUE-1001"
         >QUE-1001</link></literal> is used when a queue is created. The connection actor
       <literal>con</literal> tells us details of the connection performing the queue creation: the
@@ -78,7 +78,7 @@
     host. The queue subject tells use the queue's name (myqueue) and the virtualhost. The message
     itself tells us more information about the queue that is being created. </para>
 
-  <screen>[con:8(myapp1@/127.0.0.1:52851/default)/ch:0] [vh(/default)/qu(myqueue)] QUE-1001 : Create : Owner: clientid Transient</screen>
+  <screen>[con:8(myapp1@/127.0.0.1:52851/default)/ch:0] [vh(/default)/qu(myqueue)] QUE-1001 : Create : Owner: myapp1 Transient</screen>
   <para>The first two tables that follow describe the actor and subject entities, then the later
     provide a complete catalogue of all supported messages.</para>
   <table pgwide="1" id="Java-Broker-Appendix-Operation-Logging-Actor-Format">
@@ -314,16 +314,6 @@
             <para>Indicates the name of the configuration store in use by the Broker.</para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1007">
-          <entry morerows="1">BRK-1007</entry>
-          <entry>Using logging configuration : <replaceable>file</replaceable>
-          </entry>
-        </row>
-        <row>
-          <entry>
-            <para>Indicates the name of the log configuration file in use by the Broker.</para>
-          </entry>
-        </row>
         <row id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1008">
           <entry morerows="1">BRK-1008</entry>
           <entry><replaceable>delivered|received</replaceable> : <replaceable>size</replaceable>
@@ -344,6 +334,38 @@
             <para>Statistic - messages delivered or received by the Broker.</para>
           </entry>
         </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1010">
+          <entry morerows="1">BRK-1010</entry>
+          <entry>Platform : JVM : <replaceable>vendor</replaceable> version: <replaceable>version
+          </replaceable> OS : <replaceable>operating system vendor</replaceable> version:
+            <replaceable>operating system version</replaceable>} arch: <replaceable>processor
+              architecture</replaceable> cores: <replaceable>number of CPU cores</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Key information about the environment hosting the Broker</para>
+          </entry>
+        </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1011">
+          <entry morerows="1">BRK-1011</entry>
+          <entry>Maximum Memory : Heap : <replaceable>size</replaceable> bytes Direct : <replaceable>
+            bytes</replaceable> size</entry></row>
+        <row>
+          <entry>
+            <para>Configured memory paramters for the Broker.</para>
+          </entry>
+        </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1012">
+          <entry morerows="1">BRK-1012</entry>
+          <entry>Management Mode : User Details : <replaceable>management node user id</replaceable> /
+            <replaceable>management mode password</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Used when Broker is started in management mode to indicate the
+             management credentials that may be used connect to the Broker.</para>
+          </entry>
+        </row>
         <row id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1014">
           <entry morerows="1">BRK-1014</entry>
           <entry>Message flow to disk active : Message memory use <replaceable>size of all
@@ -352,11 +374,10 @@
         </row>
         <row>
           <entry>
-            <para>Indicates that the heap memory space occupied by messages has exceeded the
+            <para>Indicates that the memory space occupied by messages has exceeded the
               threshold so the flow to disk feature has been activated.</para>
           </entry>
         </row>
-
         <row id="Java-Broker-Appendix-Operation-Logging-Message-BRK-1015">
           <entry morerows="1">BRK-1015</entry>
           <entry>Message flow to disk inactive : Message memory use <replaceable>size of all
@@ -365,7 +386,7 @@
         </row>
         <row>
           <entry>
-            <para>Indicates that the heap memory space occupied by messages has fallen below the
+            <para>Indicates that the memory space occupied by messages has fallen below the
               threshold so the flow to disk feature has been deactivated.</para>
           </entry>
         </row>
@@ -613,6 +634,30 @@
                 linkend="Qpid-Producer-Flow-Control"/> for details.</para>
           </entry>
         </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1014">
+          <entry morerows="1">QUE-1014</entry>
+          <entry>Message flow to disk active : Message memory use <replaceable>size of all
+            messages</replaceable> exceeds threshold <replaceable>threshold
+              size</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the memory space occupied by messages for this queue
+              has exceeded thevthreshold so the flow to disk feature has been activated.</para>
+          </entry>
+        </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-QUE-1015">
+          <entry morerows="1">QUE-1015</entry>
+          <entry>Message flow to disk inactive : Message memory use <replaceable>size of all
+            messages</replaceable> within threshold <replaceable>threshold
+              size</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that the memory space occupied by messages for this queue has fallen
+              below the threshold so the flow to disk feature has been deactivated.</para>
+          </entry>
+        </row>
       </tbody>
     </tgroup>
   </table>
@@ -707,10 +752,10 @@
       <tbody>
         <row id="Java-Broker-Appendix-Operation-Logging-Message-CON-1001">
           <entry morerows="1">CON-1001</entry>
-          <entry>Open : Client ID : <replaceable>clientid</replaceable> : Protocol Version :
-              <replaceable>protocol version</replaceable> : Client Version : <replaceable>client
-              version</replaceable> : Client Product :<replaceable>client
-            product</replaceable></entry>
+          <entry>Open : Destination : <replaceable>target port</replaceable> : Protocol Version :
+            <replaceable>protocol version</replaceable> : Client ID : <replaceable>clientid</replaceable> :
+            Client Version : <replaceable>client version</replaceable> :
+            Client Product : <replaceable>client product</replaceable></entry>
         </row>
         <row>
           <entry>
@@ -737,6 +782,47 @@
           <entry>
             <para>Used when heart beating is in-use. Indicates that the connection has not received
               a heartbeat for too long and is therefore closed as being inactive. </para>
+          </entry>
+        </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-CON-1004">
+          <entry morerows="1">CON-1004</entry>
+          <entry>Connection dropped</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a connection has been unexpectedly closed by the peer. This usually
+            occurs if a machine hosting an application fails or the application's process is 
+            abruptly terminated.</para>
+          </entry>
+        </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-CON-1005">
+          <entry morerows="1">CON-1005</entry>
+          <entry>Client version <replaceable>version</replaceable> logged by validation</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a connection has been received from client with a version number
+              that is configured to be logged.  This feature may help teams manage software currency.</para>
+          </entry>
+        </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-CON-1006">
+          <entry morerows="1">CON-1006</entry>
+          <entry>Client version <replaceable>version</replaceable> rejected by validation</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a connection attempt has been received from client with a version number
+              that is configured to be rejected.  This feature may help manage software currency.</para>
+          </entry>
+        </row>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-CON-1007">
+          <entry morerows="1">CON-1007</entry>
+          <entry>Connection close initiated by operator</entry>
+        </row>
+        <row>
+          <entry>
+            <para>Indicates that a connection has been closed by the actions of an 
+            Operator using manangement.</para>
           </entry>
         </row>
       </tbody>
@@ -938,7 +1024,7 @@
             <para>Indicates that a subscription has been in a suspened state for an unusual length
               of time.  This may be indicative of an consuming application that has stopped taking
               messages from the consumer (i.e. a JMS application is not calling receive() or its
-              asynchronous message listener onMessage() is block in application code).  It may also
+              asynchronous message listener onMessage() is blocked in application code).  It may also
               indicate a generally overloaded system.
               </para>
           </entry>
@@ -1401,14 +1487,24 @@
         </row>
         <row id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1005">
           <entry morerows="1">PRT-1005</entry>
-          <entry>Connection from <replaceable>host</replaceable> rejected</entry>
+          <entry>Connection from <replaceable>peer</replaceable> rejected. Maximum connection count (<replaceable>limit</replaceable>) for this port already reached.</entry>
         </row>
         <row>
           <entry>
             <para>Connection from given host is rejected because of reaching the maximum allowed limit</para>
           </entry>
         </row>
-        </tbody>
+        <row id="Java-Broker-Appendix-Operation-Logging-Message-PRT-1007">
+          <entry morerows="1">PRT-1007</entry>
+          <entry>Unsupported protocol header received, replying with <replaceable>AMQP version</replaceable></entry>
+        </row>
+        <row>
+          <entry>
+            <para>Ususualy indicates an attempt to make an non-AMQP connection on an AMQP port, for instance,
+             with a web browser.</para>
+          </entry>
+        </row>
+      </tbody>
     </tgroup>
 </table>
 

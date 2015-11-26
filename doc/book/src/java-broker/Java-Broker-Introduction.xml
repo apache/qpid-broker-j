@@ -67,6 +67,12 @@
         External, and file-based authentication mechanisms.</para>
     </listitem>
     <listitem>
+      <para>Support for message compression</para>
+    </listitem>
+    <listitem>
+      <para>Client support for end to end message encryption</para>
+    </listitem>
+    <listitem>
       <para>Pluggable storage architecture with implementations including <ulink
           url="http://db.apache.org/derby/">Apache Derby</ulink>, <ulink
           url="&oracleBdbProductOverviewUrl;">Oracle BDB JE</ulink><footnote>

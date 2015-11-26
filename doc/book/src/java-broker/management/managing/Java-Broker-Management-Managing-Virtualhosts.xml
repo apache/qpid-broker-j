@@ -89,6 +89,17 @@
             />.</para>
         </listitem>
         <listitem>
+          <para><emphasis>Connection thread pool size</emphasis>. Number of worker threads
+            used to perform messaging with connected clients.  </para>
+          <para>Defaults to 64 or double the maximum number of available processors, whichever
+            is the larger.</para>
+        </listitem>
+        <listitem>
+          <para><emphasis>Number of selectors</emphasis>. Number of worker threads
+            used from the thread pool to dispatch I/O activity to the worker threads.</para>
+          <para>Defaults to one eighth of the thread pool size. Minimum 1.</para>
+        </listitem>
+        <listitem>
           <para><emphasis>Store transaction timeouts</emphasis>. Warns of long running producer
             transactions. See <xref linkend="Java-Broker-Runtime-Producer-Transaction-Timeout"
             /></para>
@@ -113,9 +124,6 @@
           <para>
             <link linkend="Java-Broker-Management-Managing-Queues">Queue</link>
           </para>
-        </listitem>
-        <listitem>
-          <para>Connection</para>
         </listitem>
       </itemizedlist>
     </para>

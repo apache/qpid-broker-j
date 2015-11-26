@@ -64,31 +64,11 @@
               linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues"/>
             feature. Governs the suffix used when generating a name for a Dead Letter Queue.</entry>
         </row>
-        <row>
-          <entry>qpid.broker_msg_auth</entry>
-          <entry>false</entry>
-          <entry>
-            <para>If set true, the Broker ensures that the user id of each received message matches
-              the user id of the producing connection. If this check fails, the message is returned
-              to the producer's connection with a 403 (Access Refused) error code.</para>
-            <para>This is check is currently not enforced when using AMQP 0-10 and 1-0
-              protocols.</para>
-          </entry>
-        </row>
         <row id="Java-Broker-Appendix-System-Properties-Broker-Status-Updates">
           <entry>qpid.broker_status_updates</entry>
           <entry>true</entry>
           <entry>
             <para>If set true, the Broker will produce operational logging messages.</para>
-          </entry>
-        </row>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Default-Supported-Protocol-Version-Reply">
-          <entry>qpid.broker_default_supported_protocol_version_reply</entry>
-          <entry>none</entry>
-          <entry>
-            <para>Used during protocol negotiation. If set, the Broker will offer this AMQP version
-              to a client requesting an AMQP protocol that is not supported by the Broker.  If not set, the
-              Broker offers the highest protocol version it supports.</para>
           </entry>
         </row>
         <row id="Java-Broker-Appendix-System-Properties-Broker-Disabled-Features">
@@ -121,14 +101,6 @@
               RMI socket factory that is secured from changes outside of the JVM.  If false,
               a standard RMI socket factory is used.</para>
             <para>It is not recommended to change this property from its default value.</para>
-          </entry>
-        </row>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Log-Record-Buffer-Size">
-          <entry>qpid.broker_log_records_buffer_size</entry>
-          <entry>4096</entry>
-          <entry>
-            <para>Controls the number of recent Broker log entries that remain viewable online via
-              the HTTP Management interface.</para>
           </entry>
         </row>
       </tbody>

@@ -27,7 +27,7 @@
         <title>General Information</title>
         <para>
             The Java Broker supports a flow control mechanism to which can be used to prevent either a single queue
-            or an entire virtualhost exceeding configured limits.  These two mechanisms are described
+            or a virtualhost exceeding configured limits.  These two mechanisms are described
             next.
         </para>
     </section>
@@ -107,6 +107,13 @@ MESSAGE [con:2(guest@anonymous(713889609)/test)/ch:1] [con:2(guest@anonymous(713
                 cannot guarantee that the disk space limit will not be exceeded. If several concurrent
                 transactions are started before the limit is reached, which collectively cause the limit
                 to be exceeded, the broker may allow all of them to be committed.
+            </para>
+
+            <para>
+                The Broker will also impose flow control if the filesystem hosting a virtualhost
+                exceeds a <link
+                    linkend="Java-Broker-Management-Managing-Broker-Context-StoreFilesystemMaxUsagePercent">
+                    configured percentage.</link>.
             </para>
 
             <section role="h4">
