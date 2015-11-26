@@ -19,10 +19,10 @@
  under the License.
 
 -->
-<section id="Java-Broker-Close-Connection-When-No-Route">
+<section id="Java-Broker-Runtime-Close-Connection-When-No-Route">
   <title>Closing client connections on unroutable mandatory messages</title>
 
-  <section id="Java-Broker-Close-Connection-When-No-Route-Summary">
+  <section id="Java-Broker-Runtime-Close-Connection-When-No-Route-Summary">
   <title>Summary</title>
     <para>
         Due to asynchronous nature of AMQP 0-8/0-9/0-9-1 protocols sending a message with a routing key for which no queue binding exist results
@@ -51,7 +51,7 @@
         </para>
     </note>
   </section>
-  <section id="Java-Broker-Close-Connection-When-No-Route-Configuration">
+  <section id="Java-Broker-Runtime-Close-Connection-When-No-Route-Configuration">
     <title>Configuring <emphasis>closeWhenNoRoute</emphasis></title>
     <para>
         The Broker attribute <emphasis>closeWhenNoRoute</emphasis> can be set to specify this feature on broker side.
