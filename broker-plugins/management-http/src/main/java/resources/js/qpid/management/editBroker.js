@@ -66,11 +66,6 @@ define(["dojox/html/entities",
         this.form = registry.byId("editBrokerForm");
         this.form.on("submit", function(){return false;});
         this.context = registry.byId("editBroker.context");
-
-        for(var i = 0; i < numericFieldNames.length; i++)
-        {
-            this[numericFieldNames[i]].set("regExpGen", util.numericOrContextVarRegexp);
-        }
       },
       show: function(management, brokerData)
       {
@@ -142,6 +137,13 @@ define(["dojox/html/entities",
           this.initialData = actualData;
           util.applyToWidgets(dom.byId("editBroker.allFields"), "Broker", "broker", actualData, this.management.metadata);
           util.setContextData(this.context, management, {type: "broker"}, actualData, effectiveData );
+
+          // Add regexp to the numeric fields
+          for(var i = 0; i < numericFieldNames.length; i++)
+          {
+            registry.byId("editBroker." + numericFieldNames[i]).set("regExpGen", util.numericOrContextVarRegexp);
+          }
+
           this.dialog.startup();
           this.dialog.show();
           if (!this.resizeEventRegistered)
