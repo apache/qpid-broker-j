@@ -25,6 +25,7 @@
   <id>bin</id>
   <formats>
     <format>tar.gz</format>
+    <format>zip</format>
   </formats>
   <baseDirectory>qpid-broker/${project.version}</baseDirectory>
   <fileSets>
