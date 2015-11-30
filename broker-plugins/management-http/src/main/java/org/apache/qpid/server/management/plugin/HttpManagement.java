@@ -359,7 +359,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         threadPool.setMaxThreads(threadPoolMaximum + additionalInternalThreads);
         threadPool.setMinThreads(threadPoolMinimum + additionalInternalThreads);
 
-        connector.setAcceptors(Math.max(1, threadPoolMaximum / 2));
+        int jettyAcceptorLimit = 2 * Runtime.getRuntime().availableProcessors();
+        connector.setAcceptors(Math.min(Math.max(1, threadPoolMaximum / 2), jettyAcceptorLimit));
         connector.setThreadPool(threadPool);
         return connector;
     }
