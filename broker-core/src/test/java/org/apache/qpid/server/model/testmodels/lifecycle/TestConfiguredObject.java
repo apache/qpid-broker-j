@@ -219,7 +219,8 @@ public class TestConfiguredObject extends AbstractConfiguredObject
                     return TestConfiguredObjectModel.class.getSimpleName();
                 }
             };
-            _configuredObjectTypeRegistry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration), CATEGORIES);
+            _configuredObjectTypeRegistry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration), CATEGORIES,
+                                                                             _configuredObjectFactory);
         }
 
         @Override

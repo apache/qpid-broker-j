@@ -54,7 +54,7 @@ public class TestModel extends Model
 
         ConfiguredObjectRegistration configuredObjectRegistration = new ConfiguredObjectRegistrationImpl();
 
-        _registry = new ConfiguredObjectTypeRegistry(Collections.singletonList(configuredObjectRegistration), Collections.EMPTY_LIST);
+        _registry = new ConfiguredObjectTypeRegistry(Collections.singletonList(configuredObjectRegistration), Collections.EMPTY_LIST, _objectFactory);
     }
 
 

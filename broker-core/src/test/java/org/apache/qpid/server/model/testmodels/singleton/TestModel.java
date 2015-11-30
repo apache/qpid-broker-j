@@ -62,7 +62,7 @@ public class TestModel extends Model
                 return "org.apache.qpid.server.model.testmodels.attribute";
             }
         };
-        _registry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration), getSupportedCategories());
+        _registry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration), getSupportedCategories(), _objectFactory);
     }
 
 
