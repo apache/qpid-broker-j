@@ -95,6 +95,13 @@ function (util, declare, array, domConstruct, win, query, json, _WidgetBase,
     {
         return this.preferencesProviderNameWidget.get("value");
     },
+    setPreferencesProviderName: function(name)
+    {
+      if (!(this.data && this.data.name))
+      {
+        this.preferencesProviderNameWidget.set("value", name);
+      }
+    },
     setMetadata: function(metadata)
     {
         this.metadata = metadata;

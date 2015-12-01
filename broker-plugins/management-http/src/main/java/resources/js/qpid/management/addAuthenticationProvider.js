@@ -61,7 +61,9 @@ define(["dojo/dom",
                 var that = this;
                 this.authenticationProviderName = registry.byId("addAuthenticationProvider.name");
                 this.authenticationProviderName.set("regExpGen", util.nameOrContextVarRegexp);
-                this.authenticationProviderName.on("change", function(newValue){that.preferencesProviderForm.preferencesProviderNameWidget.set("value",newValue);});
+                this.authenticationProviderName.on("change", function(newValue){
+                  that.preferencesProviderForm.setPreferencesProviderName(newValue);
+                });
 
                 this.dialog = registry.byId("addAuthenticationProvider");
                 this.addButton = registry.byId("addAuthenticationProvider.addButton");
@@ -110,7 +112,7 @@ define(["dojo/dom",
                                     else
                                     {
                                         that.preferencesProviderForm.reset();
-                                        that.preferencesProviderForm.preferencesProviderNameWidget.set("value", actualData.name);
+                                        that.preferencesProviderForm.setPreferencesProviderName(actualData.name);
                                     }
                                     that.authenticationProviderName.set("value", actualData.name);
                                     that._show();
