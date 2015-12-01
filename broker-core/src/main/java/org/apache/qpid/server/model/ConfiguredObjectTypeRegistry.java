@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
+import org.apache.qpid.server.plugin.ConfiguredObjectTypeFactory;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.util.Strings;
@@ -195,11 +196,16 @@ public class ConfiguredObjectTypeRegistry
     private final Map<Class<? extends ConfiguredObject>, Map<String, Collection<String>>> _validChildTypes =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<String, Collection<String>>>());
 
-    public ConfiguredObjectTypeRegistry(Iterable<ConfiguredObjectRegistration> configuredObjectRegistrations, Collection<Class<? extends ConfiguredObject>> categoriesRestriction)
-    {
+    private final ConfiguredObjectFactory _objectFactory;
 
+    public ConfiguredObjectTypeRegistry(Iterable<ConfiguredObjectRegistration> configuredObjectRegistrations,
+                                        Collection<Class<? extends ConfiguredObject>> categoriesRestriction,
+                                        final ConfiguredObjectFactory objectFactory)
+    {
+        _objectFactory = objectFactory;
         Set<Class<? extends ConfiguredObject>> categories = new HashSet<>();
         Set<Class<? extends ConfiguredObject>> types = new HashSet<>();
+
 
         for (ConfiguredObjectRegistration registration : configuredObjectRegistrations)
         {
@@ -249,7 +255,12 @@ public class ConfiguredObjectTypeRegistry
             {
                 if (categoryClass.isAssignableFrom(typeClass))
                 {
-                    _knownTypes.get(categoryClass).add(typeClass);
+                    ManagedObject annotation = typeClass.getAnnotation(ManagedObject.class);
+                    String annotationType = annotation.type();
+                    if(ModelRoot.class.isAssignableFrom(categoryClass) || factoryExists(categoryClass, annotationType))
+                    {
+                        _knownTypes.get(categoryClass).add(typeClass);
+                    }
                 }
             }
         }
@@ -306,6 +317,14 @@ public class ConfiguredObjectTypeRegistry
 
             }
         }
+    }
+
+    private boolean factoryExists(final Class<? extends ConfiguredObject> categoryClass, final String type)
+    {
+        final ConfiguredObjectTypeFactory factory =
+                _objectFactory.getConfiguredObjectTypeFactory(categoryClass.getSimpleName(), type);
+
+        return factory != null && factory.getType().equals(type);
     }
 
     private static Method getValidChildTypesFunction(final String validValue, final Class<? extends ConfiguredObject> clazz)

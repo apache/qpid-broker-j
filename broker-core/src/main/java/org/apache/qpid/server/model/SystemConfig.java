@@ -25,7 +25,7 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 
 @ManagedObject (creatable = false)
-public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>
+public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObject<X>, ModelRoot
 {
     String MANAGEMENT_MODE = "managementMode";
     

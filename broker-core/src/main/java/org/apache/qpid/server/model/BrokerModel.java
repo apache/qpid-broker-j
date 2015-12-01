@@ -116,7 +116,8 @@ public final class BrokerModel extends Model
         addRelationship(Session.class, Publisher.class);
 
         _objectFactory = new ConfiguredObjectFactoryImpl(this);
-        _typeRegistry = new ConfiguredObjectTypeRegistry((new QpidServiceLoader()).instancesOf(ConfiguredObjectRegistration.class), getSupportedCategories());
+        _typeRegistry = new ConfiguredObjectTypeRegistry((new QpidServiceLoader()).instancesOf(ConfiguredObjectRegistration.class), getSupportedCategories(),
+                                                         _objectFactory);
     }
 
     public final ConfiguredObjectTypeRegistry getTypeRegistry()

@@ -126,19 +126,25 @@ define(["dojo/_base/lang",
             {
                 if (this.storeForm.validate())
                 {
-                    var success = false,failureReason=null;
+                    var that = this;
+
+                    function disableButtons(disabled) {
+                        that.addButton.set("disabled", disabled);
+                        that.cancelButton.set("disabled", disabled);
+                    }
+
+                    disableButtons(true);
 
                     var storeData = util.getFormWidgetValues(this.storeForm, this.initialData);
-                    var that = this;
 
                     if (this.effectiveData)
                     {
                         // update request
-                        this.management.update(this.modelObj, storeData).then(function(x){that.dialog.hide();});
+                        this.management.update(this.modelObj, storeData).then(function(x){ disableButtons(false); that.dialog.hide();}, function(err) { disableButtons(false); that.management.errorHandler(err); });
                     }
                     else
                     {
-                        this.management.create(this.category, this.modelObj, storeData).then(function(x){that.dialog.hide();});
+                        this.management.create(this.category, this.modelObj, storeData).then(function(x){ disableButtons(false); that.dialog.hide();}, function(err) { disableButtons(false); that.management.errorHandler(err); });
                     }
                 }
                 else
