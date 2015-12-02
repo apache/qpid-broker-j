@@ -445,7 +445,7 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
                     return;
             }
             
-            if (getSession().getState() != SessionState.END_RECVD)
+            if (!(getSession().getState() == SessionState.END_RECVD || getSession().isEnded()))
             {
                 Detach detach = new Detach();
                 detach.setHandle(getLocalHandle());
