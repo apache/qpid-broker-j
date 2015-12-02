@@ -30,6 +30,25 @@
     <para>Any number of ports defined to use AMQP or HTTP protocols can be defined. JMX is limited
         to a single port instance per JMX protocol type.</para>
     <para>Ports can only be managed by the HTTP management channel.</para>
+    <section id="Java-Broker-Management-Managing-Ports-Context">
+        <title>Context</title>
+        <para>
+            <itemizedlist>
+                <listitem>
+                    <para><emphasis>qpid.port.max_open_connections</emphasis>. The default maximum number
+                       of concurrent connections supported by an AMQP port.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>qpid.port.amqp.acceptBacklog</emphasis>. The backlog is the maximum
+                        number of pending connections that may be queued by the AMQP port. Once the queue
+                        is full, further connections will be refused. This is a request to the operating system
+                        which may or may not be respected. The operating system itself may impose a ceiling.
+                        <footnote><para>Some Linux distributions govern the ceiling with a <literal>sysctl</literal>
+                            setting <literal>net.core.somaxconn</literal>.</para></footnote></para>
+                </listitem>
+            </itemizedlist>
+        </para>
+    </section>
     <section id="Java-Broker-Management-Managing-Ports-Attributes">
         <title>Attributes</title>
         <para><itemizedlist>
@@ -68,7 +87,7 @@
                 <listitem>
                     <para><emphasis>Keystore</emphasis>. <link
                             linkend="Java-Broker-Management-Managing-Keystores">Keystore</link>
-                        containing the Broker's private key. Required if the SSL is in use.</para>
+                        containing the Broker's private key. Required if SSL is in use.</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>Want/Need Client Auth</emphasis>. Client authentication can be

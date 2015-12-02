@@ -67,7 +67,7 @@
   </para>
   <para>
     <figure>
-      <title>Broker Structure</title>
+      <title>Broker Structure showing major entities</title>
       <mediaobject>
         <imageobject>
           <imagedata fileref="images/Broker-Model.png" format="PNG" scalefit="1"/>
