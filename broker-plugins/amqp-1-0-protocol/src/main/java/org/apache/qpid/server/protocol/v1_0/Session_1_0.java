@@ -331,7 +331,13 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         }
 
                         String addr = target.getAddress();
-                        if(!addr.startsWith("/") && addr.contains("/"))
+                        if(addr == null || "".equals(addr.trim()))
+                        {
+                            MessageDestination messageDestination = getVirtualHost().getDefaultDestination();
+                            destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
+                                                                       target.getExpiryPolicy());
+                        }
+                        else if(!addr.startsWith("/") && addr.contains("/"))
                         {
                             String[] parts = addr.split("/",2);
                             ExchangeImpl exchange = getVirtualHost().getAttainedExchange(parts[0]);
