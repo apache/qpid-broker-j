@@ -39,7 +39,6 @@ import javax.jms.Connection;
 import javax.jms.JMSException;
 
 import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.management.common.mbeans.ManagedConnection;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.DefaultVirtualHostAlias;
 import org.apache.qpid.server.model.Port;

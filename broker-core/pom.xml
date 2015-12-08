@@ -41,12 +41,6 @@
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-management-common</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-codegen</artifactId>
       <version>${project.version}</version>
       <optional>true</optional>
