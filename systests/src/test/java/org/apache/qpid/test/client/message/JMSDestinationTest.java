@@ -21,11 +21,8 @@
 package org.apache.qpid.test.client.message;
 
 import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQTopic;
 import org.apache.qpid.client.CustomJMSXProperty;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.management.common.mbeans.ManagedQueue;
-import org.apache.qpid.test.utils.JMXTestUtils;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 import javax.jms.Connection;
@@ -38,10 +35,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
-import javax.management.openmbean.CompositeDataSupport;
-import javax.management.openmbean.TabularData;
 
-import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -62,8 +56,6 @@ public class JMSDestinationTest extends QpidBrokerTestCase
 
     public void setUp() throws Exception
     {
-        getBrokerConfiguration().addJmxManagementConfiguration();
-
         super.setUp();
 
         _connection = getConnection();
@@ -122,85 +114,6 @@ public class JMSDestinationTest extends QpidBrokerTestCase
 
         assertNotNull("JMSDestination should not be null", receivedDestination);
         assertEquals("Incorrect Destination type", topic.getClass(), receivedDestination.getClass());
-    }
-
-    /**
-     * Test a message sent to a topic then moved on the broker
-     * comes back with JMSDestination queue.
-     *
-     * i.e. The client is not just setting the value to be the same as the
-     * current consumer destination.
-     *
-     * This test can only be run against the Java broker as it uses JMX to move
-     * messages between queues.
-     *
-     * @throws Exception
-     */
-    public void testMovedToQueue() throws Exception
-    {
-        // Setup JMXUtils
-        JMXTestUtils jmxUtils = new JMXTestUtils(this);
-
-        // Open the JMX Connection
-        jmxUtils.open();
-        try
-        {
-
-            Queue queue = _session.createQueue(getTestQueueName());
-
-            _session.createConsumer(queue).close();
-
-            sendMessage(_session, queue, 1);
-
-            Topic topic = _session.createTopic(getTestQueueName() + "Topic");
-
-            MessageConsumer consumer = _session.createConsumer(topic);
-
-            // Use Management to move message.
-
-            ManagedQueue managedQueue = jmxUtils.
-                    getManagedObject(ManagedQueue.class,
-                                     jmxUtils.getQueueObjectName(getConnectionFactory().getVirtualPath().substring(1),
-                                                                 getTestQueueName()));
-
-            // Find the first message on the queue
-            TabularData data = managedQueue.viewMessages(1L, 2L);
-
-            Iterator values = data.values().iterator();
-            assertTrue("No Messages found via JMX", values.hasNext());
-
-            // Get its message ID
-            Long msgID = (Long) ((CompositeDataSupport) values.next()).get("AMQ MessageId");
-
-            // Start the connection and consume message that has been moved to the
-            // queue
-            _connection.start();
-
-            Message message = consumer.receive(1000);
-
-            //Validate we don't have a message on the queue before we start
-            assertNull("Message should be null", message);
-
-            // Move it to from the topic to the queue
-            managedQueue.moveMessages(msgID, msgID, ((AMQTopic) topic).getQueueName());
-
-            // Retrieve the newly moved message
-            message = consumer.receive(1000);
-
-            assertNotNull("Message should not be null", message);
-
-            Destination receivedDestination = message.getJMSDestination();
-
-            assertNotNull("JMSDestination should not be null", receivedDestination);
-
-            assertEquals("Incorrect Destination type", queue.getClass(), receivedDestination.getClass());
-
-        }
-        finally
-        {
-            jmxUtils.close();
-        }
-
     }
 
     /**

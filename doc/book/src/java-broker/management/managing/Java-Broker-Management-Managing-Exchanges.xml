@@ -23,7 +23,7 @@
 <section id="Java-Broker-Management-Managing-Exchanges">
   <title>Exchanges</title>
   <para><link linkend="Java-Broker-Concepts-Exchanges">Exchanges</link> can be managed using the
-    HTTP, JMX or AMQP channels.</para>
+    HTTP or AMQP channels.</para>
   <section id="Java-Broker-Management-Managing-Exchanges-Types">
     <title>Types</title>
     <para><itemizedlist>

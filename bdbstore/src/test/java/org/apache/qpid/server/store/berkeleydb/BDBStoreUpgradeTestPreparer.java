@@ -38,11 +38,6 @@ import javax.jms.TopicConnection;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
-import javax.management.MBeanServerConnection;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import javax.management.remote.JMXConnectorFactory;
-import javax.management.remote.JMXServiceURL;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,10 +188,7 @@ public class BDBStoreUpgradeTestPreparer
         sendMessages(session, dlqMessageProducer, dlq, DeliveryMode.PERSISTENT, 1*1024, 1);
         session.commit();
 
-        // Create a queue with JMX specifying an owner, so it can later be moved into description
-        createAndBindQueueOnBrokerWithJMX(NONEXCLUSIVE_WITH_ERRONEOUS_OWNER, MISUSED_OWNER, priorityQueueArguments);
-
-        createExchange(TEST_EXCHANGE_NAME, "direct");
+        ((AMQSession<?,?>) session).declareExchange(TEST_EXCHANGE_NAME, "direct", false);
         Queue customQueue = createAndBindQueueOnBroker(session, TEST_QUEUE_NAME, null, TEST_EXCHANGE_NAME, "direct");
         MessageProducer customQueueMessageProducer = session.createProducer(customQueue);
         sendMessages(session, customQueueMessageProducer, customQueue, DeliveryMode.PERSISTENT, 1*1024, 1);
@@ -220,53 +212,6 @@ public class BDBStoreUpgradeTestPreparer
         Queue queue = session.createQueue("BURL:" + exchangeType + "://" + exchangeName + "/" + queueName + "/" + queueName + "?durable='true'");
         ((AMQSession<?,?>) session).declareAndBind((AMQDestination)queue);
         return queue;
-    }
-
-    private void createAndBindQueueOnBrokerWithJMX(String queueName, String owner, final Map<String, Object> arguments)  throws Exception
-    {
-        JMXConnector jmxConnector = createJMXConnector();
-        try
-        {
-            MBeanServerConnection mbsc =  jmxConnector.getMBeanServerConnection();
-            ObjectName virtualHost = new ObjectName("org.apache.qpid:type=VirtualHost.VirtualHostManager,VirtualHost=\"" + VIRTUAL_HOST_NAME + "\"");
-
-            Object[] params = new Object[] {queueName, owner, true, arguments};
-            String[] signature = new String[] {String.class.getName(), String.class.getName(), boolean.class.getName(), Map.class.getName()};
-            mbsc.invoke(virtualHost, "createNewQueue", params, signature);
-
-            ObjectName directExchange = new ObjectName("org.apache.qpid:type=VirtualHost.Exchange,VirtualHost=\"" + VIRTUAL_HOST_NAME + "\",name=\"amq.direct\",ExchangeType=direct");
-            mbsc.invoke(directExchange, "createNewBinding", new Object[] {queueName, queueName}, new String[] {String.class.getName(), String.class.getName()});
-        }
-        finally
-        {
-            jmxConnector.close();
-        }
-    }
-
-    private void createExchange(String exchangeName, String exchangeType) throws Exception
-    {
-        JMXConnector jmxConnector = createJMXConnector();
-        try
-        {
-            MBeanServerConnection mbsc = jmxConnector.getMBeanServerConnection();
-            ObjectName virtualHost = new ObjectName("org.apache.qpid:type=VirtualHost.VirtualHostManager,VirtualHost=\"" + VIRTUAL_HOST_NAME + "\"");
-
-            Object[] params = new Object[]{exchangeName, exchangeType, true};
-            String[] signature = new String[]{String.class.getName(), String.class.getName(), boolean.class.getName()};
-            mbsc.invoke(virtualHost, "createNewExchange", params, signature);
-        }
-        finally
-        {
-            jmxConnector.close();
-        }
-    }
-
-    private JMXConnector createJMXConnector() throws Exception
-    {
-        Map<String, Object> environment = new HashMap<>();
-        environment.put(JMXConnector.CREDENTIALS, new String[] {"admin", "admin"});
-        JMXServiceURL url =  new JMXServiceURL("service:jmx:rmi:///jndi/rmi://localhost:8999/jmxrmi");
-        return JMXConnectorFactory.connect(url, environment);
     }
 
     private void prepareSortedQueue(Session session, String queueName, String sortKey) throws Exception

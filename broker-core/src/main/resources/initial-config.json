@@ -100,8 +100,5 @@
   "plugins" : [ {
     "type" : "MANAGEMENT-HTTP",
     "name" : "httpManagement"
-  }, {
-    "type" : "MANAGEMENT-JMX",
-    "name" : "jmxManagement"
   } ]
 }

@@ -80,8 +80,6 @@ From: 'The Apache Software Foundation' (http://www.apache.org/)
     License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Qpid BDB Message Store (http://qpid.apache.org/components/qpid-bdbstore) org.apache.qpid:qpid-bdbstore:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid BDB Message Store JMX (http://qpid.apache.org/components/bdbstore/qpid-bdbstore-jmx) org.apache.qpid:qpid-bdbstore-jmx:jar
-    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Qpid Java Broker Core (http://qpid.apache.org/components/qpid-broker-core) org.apache.qpid:qpid-broker-core:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Qpid Access Control Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-access-control) org.apache.qpid:qpid-broker-plugins-access-control:jar
@@ -105,8 +103,6 @@ From: 'The Apache Software Foundation' (http://www.apache.org/)
   - Qpid JDBC Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-jdbc-store) org.apache.qpid:qpid-broker-plugins-jdbc-store:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Qpid HTTP Management Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-http) org.apache.qpid:qpid-broker-plugins-management-http:jar
-    License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
-  - Qpid JMX Management Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-management-jmx) org.apache.qpid:qpid-broker-plugins-management-jmx:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - Qpid Memory Message Store Broker Plug-in (http://qpid.apache.org/components/broker-plugins/qpid-broker-plugins-memory-store) org.apache.qpid:qpid-broker-plugins-memory-store:jar
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)

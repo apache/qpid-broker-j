@@ -20,15 +20,20 @@
  */
 package org.apache.qpid.test.unit.client;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
-import org.apache.qpid.management.common.mbeans.ManagedExchange;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.test.utils.JMXTestUtils;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.url.BindingURL;
 
 import javax.jms.Connection;
@@ -41,19 +46,15 @@ import javax.jms.Session;
 
 public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
 {
-    private JMXTestUtils _jmxUtils;
-    private static final String TEST_VHOST = "test";
-
+    private static final String TEST_VHOST = TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST;
+    private RestTestHelper _restTestHelper;
 
     @Override
     public void setUp() throws Exception
     {
-        getBrokerConfiguration().addJmxManagementConfiguration();
-
-        _jmxUtils = new JMXTestUtils(this);
-
+        _restTestHelper = new RestTestHelper(findFreePort());
+        _restTestHelper.enableHttpManagement(getBrokerConfiguration());
         super.setUp();
-        _jmxUtils.open();
     }
 
     @Override
@@ -61,10 +62,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
     {
         try
         {
-            if (_jmxUtils != null)
-            {
-                _jmxUtils.close();
-            }
+            _restTestHelper.tearDown();
         }
         finally
         {
@@ -119,10 +117,9 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
             checkExceptionErrorCode(e, AMQConstant.NOT_FOUND);
         }
 
-        //verify the exchange was not declared
-        String exchangeObjectName = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName);
-        assertFalse("exchange should not exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName));
+        assertFalse("Exchange exists", exchangeExists(exchangeName));
     }
+
 
     /**
      * Checks that setting {@value ClientProperties#QPID_DECLARE_EXCHANGES_PROP_NAME} false results in
@@ -137,14 +134,9 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
 
         Queue queue = session1.createQueue("direct://" + exchangeName1 + "/queue/queue");
         session1.createProducer(queue);
+        ((AMQSession<?,?>)session1).sync();
 
-        //close the session to ensure any previous commands were fully processed by
-        //the broker before observing their effect
-        session1.close();
-
-        //verify the exchange was declared
-        String exchangeObjectName = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName1);
-        assertTrue("exchange should exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName));
+        assertTrue("Exchange does not exist", exchangeExists(exchangeName1));
 
         //Now disable the implicit exchange declares and try again
         setSystemProperty(ClientProperties.QPID_DECLARE_EXCHANGES_PROP_NAME, "false");
@@ -154,14 +146,8 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
 
         Queue queue2 = session2.createQueue("direct://" + exchangeName2 + "/queue/queue");
         session2.createProducer(queue2);
-
-        //close the session to ensure any previous commands were fully processed by
-        //the broker before observing their effect
-        session2.close();
-
-        //verify the exchange was not declared
-        String exchangeObjectName2 = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName2);
-        assertFalse("exchange should not exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName2));
+        ((AMQSession<?,?>)session2).sync();
+        assertFalse("Exchange exists", exchangeExists(exchangeName2));
     }
 
     public void testQueueNotBoundDuringConsumerCreation() throws Exception
@@ -209,11 +195,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         Queue queue = session.createQueue(tmpQueueBoundToTmpExchange);
 
         MessageConsumer consumer = session.createConsumer(queue);
-
-        String exchangeObjectName = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName);
-        assertTrue("Exchange " + exchangeName + " should exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName));
-        ManagedExchange exchange = _jmxUtils.getManagedExchange(exchangeName);
-        assertTrue("Exchange " + exchangeName + " should be autodelete", exchange.isAutoDelete());
+        assertTrue("Exchange does not exist", exchangeExists(exchangeName));
 
         sendMessage(session, queue, 1);
 
@@ -231,7 +213,7 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         boolean exchangeExists = true;
         while (timeout > System.currentTimeMillis() && exchangeExists)
         {
-            exchangeExists = _jmxUtils.doesManagedObjectExist(exchangeObjectName);
+            exchangeExists = exchangeExists(exchangeName);
         }
         assertFalse("Exchange " + exchangeName + " should no longer exist",
                     exchangeExists);
@@ -245,70 +227,90 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
         assertEquals("Error code should be " + code.getCode(), code, ((AMQException) linked).getErrorCode());
     }
 
-    /*
-     * Tests to validate that the custom exchanges declared by the client during
-     * consumer and producer creation have the expected properties.
-     */
-
-    public void testPropertiesOfCustomExchangeDeclaredDuringProducerCreation() throws Exception
+    public void testAutoDeleteExchangeDeclarationByProducer() throws Exception
     {
-        implTestPropertiesOfCustomExchange(true, false);
+        String exchangeName = createExchange(true, BindingURL.OPTION_EXCHANGE_AUTODELETE);
+        verifyDeclaredExchangeAttribute(exchangeName, Exchange.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_LINKS.name());
     }
 
-    public void testPropertiesOfCustomExchangeDeclaredDuringConsumerCreation() throws Exception
+    public void testDurableExchangeDeclarationByProducer() throws Exception
     {
-        implTestPropertiesOfCustomExchange(false, true);
+        String exchangeName = createExchange(true, BindingURL.OPTION_EXCHANGE_DURABLE);
+        verifyDeclaredExchangeAttribute(exchangeName, Exchange.DURABLE, true);
     }
 
-    private void implTestPropertiesOfCustomExchange(boolean createProducer, boolean createConsumer) throws Exception
+    public void testAutoDeleteExchangeDeclarationByConsumer() throws Exception
+    {
+        String exchangeName = createExchange(false, BindingURL.OPTION_EXCHANGE_AUTODELETE);
+        verifyDeclaredExchangeAttribute(exchangeName, Exchange.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_LINKS.name());
+    }
+
+
+    public void testDurableExchangeDeclarationByConsumer() throws Exception
+    {
+        String exchangeName = createExchange(false, BindingURL.OPTION_EXCHANGE_DURABLE);
+        verifyDeclaredExchangeAttribute(exchangeName, Exchange.DURABLE, true);
+    }
+
+    private String createExchange(final boolean createProducer,
+                                  final String optionName)
+            throws Exception
     {
         Connection connection = getConnection();
+        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        Session session1 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        String exchangeName1 = getTestQueueName() + "1";
-        String queueName1 = getTestQueueName() + "1";
-
-        Queue queue = session1.createQueue("direct://" + exchangeName1 + "/" + queueName1 + "/" + queueName1 + "?" + BindingURL.OPTION_EXCHANGE_AUTODELETE + "='true'");
+        String queueName = getTestQueueName() + "1";
+        String exchangeName = getTestQueueName() + "1";
+        Queue queue = session.createQueue("direct://" + exchangeName + "/" + queueName + "/" + queueName + "?" + optionName + "='true'");
         if(createProducer)
         {
-            session1.createProducer(queue);
+            session.createProducer(queue);
         }
-
-        if(createConsumer)
+        else
         {
-            session1.createConsumer(queue);
+            session.createConsumer(queue);
         }
-        session1.close();
-
-        //verify the exchange was declared to expectation
-        verifyDeclaredExchange(exchangeName1, true, false);
-
-        Session session2 = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        String exchangeName2 = getTestQueueName() + "2";
-        String queueName2 = getTestQueueName() + "2";
-
-        Queue queue2 = session2.createQueue("direct://" + exchangeName2 + "/" + queueName2 + "/" + queueName2 + "?" + BindingURL.OPTION_EXCHANGE_DURABLE + "='true'");
-        if(createProducer)
-        {
-            session2.createProducer(queue2);
-        }
-
-        if(createConsumer)
-        {
-            session2.createConsumer(queue2);
-        }
-        session2.close();
-
-        //verify the exchange was declared to expectation
-        verifyDeclaredExchange(exchangeName2, false, true);
+        session.close();
+        return exchangeName;
     }
 
-    private void verifyDeclaredExchange(String exchangeName, boolean isAutoDelete, boolean isDurable) throws IOException
+    private void verifyDeclaredExchangeAttribute(String exchangeName, String attributeName, Object expectedAttributeValue) throws IOException
     {
-        String exchangeObjectName = _jmxUtils.getExchangeObjectName(TEST_VHOST, exchangeName);
-        assertTrue("exchange should exist", _jmxUtils.doesManagedObjectExist(exchangeObjectName));
-        ManagedExchange exchange = _jmxUtils.getManagedExchange(exchangeName);
-        assertEquals(isAutoDelete, exchange.isAutoDelete());
-        assertEquals(isDurable,exchange.isDurable());
+        Map<String, Object> attributes = getExchangeAttributes(exchangeName);
+        Object realAttributeValue = attributes.get(attributeName);
+        assertEquals("Unexpected attribute " + attributeName + " value " + realAttributeValue, realAttributeValue, expectedAttributeValue);
+    }
+
+    private Map<String, Object> getExchangeAttributes(final String exchangeName) throws IOException
+    {
+        String exchangeUrl = "exchange/" + TEST_VHOST + "/" + TEST_VHOST + "/" + exchangeName;
+        List<Map<String, Object>> exchanges = _restTestHelper.getJsonAsList(exchangeUrl);
+        int exchangesSize = exchanges.size();
+        if (exchangesSize == 1)
+        {
+            return exchanges.get(0);
+        }
+        else if (exchangesSize == 0)
+        {
+            return null;
+        }
+        else
+        {
+            fail("Exchange REST service returned more then 1 exchange " + exchanges);
+        }
+        return null;
+    }
+
+    private boolean exchangeExists(final String exchangeName)
+            throws Exception
+    {
+        try
+        {
+            return getExchangeAttributes(exchangeName) != null;
+        }
+        catch (FileNotFoundException e)
+        {
+            return false;
+        }
     }
 }

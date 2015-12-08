@@ -66,8 +66,6 @@ public class BrokerOptions
 
     private boolean _managementMode;
     private boolean _managementModeQuiesceVhosts;
-    private int _managementModeRmiPortOverride;
-    private int _managementModeJmxPortOverride;
     private int _managementModeHttpPortOverride;
     private String _managementModePassword;
     private boolean _overwriteConfigurationStore;
@@ -84,8 +82,6 @@ public class BrokerOptions
 
         attributes.put(SystemConfig.MANAGEMENT_MODE, _managementMode);
         attributes.put(SystemConfig.MANAGEMENT_MODE_QUIESCE_VIRTUAL_HOSTS, _managementModeQuiesceVhosts);
-        attributes.put(SystemConfig.MANAGEMENT_MODE_RMI_PORT_OVERRIDE, _managementModeRmiPortOverride);
-        attributes.put(SystemConfig.MANAGEMENT_MODE_JMX_PORT_OVERRIDE, _managementModeJmxPortOverride);
         attributes.put(SystemConfig.MANAGEMENT_MODE_HTTP_PORT_OVERRIDE, _managementModeHttpPortOverride);
         attributes.put(SystemConfig.MANAGEMENT_MODE_PASSWORD, _managementModePassword);
         attributes.put(SystemConfig.INITIAL_CONFIGURATION_LOCATION, getInitialConfigurationLocation());
@@ -121,26 +117,6 @@ public class BrokerOptions
     public void setManagementModeQuiesceVirtualHosts(boolean managementModeQuiesceVhosts)
     {
         _managementModeQuiesceVhosts = managementModeQuiesceVhosts;
-    }
-
-    public int getManagementModeRmiPortOverride()
-    {
-        return _managementModeRmiPortOverride;
-    }
-
-    public void setManagementModeRmiPortOverride(int managementModeRmiPortOverride)
-    {
-        _managementModeRmiPortOverride = managementModeRmiPortOverride;
-    }
-
-    public int getManagementModeJmxPortOverride()
-    {
-        return _managementModeJmxPortOverride;
-    }
-
-    public void setManagementModeJmxPortOverride(int managementModeJmxPortOverride)
-    {
-        _managementModeJmxPortOverride = managementModeJmxPortOverride;
     }
 
     public int getManagementModeHttpPortOverride()

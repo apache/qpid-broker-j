@@ -35,14 +35,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.port.JmxPort;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
-import org.apache.qpid.test.utils.PortHelper;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 public class PortRestTest extends QpidRestTestCase
@@ -103,76 +100,6 @@ public class PortRestTest extends QpidRestTestCase
         portDetails = getRestTestHelper().getJsonAsList("port/" + portName);
         assertNotNull("Port details cannot be null", portDetails);
         assertEquals("Unexpected number of ports with name " + portName, 1, portDetails.size());
-    }
-
-    public void testPutRmiPortWithMinimumAttributes() throws Exception
-    {
-        String portNameRMI = "test-port-rmi";
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Port.NAME, portNameRMI);
-        int rmiPort = findFreePort();
-        attributes.put(Port.PORT, rmiPort);
-        attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.RMI));
-
-        int responseCode = getRestTestHelper().submitRequest("port/" + portNameRMI, "PUT", attributes);
-        assertEquals("Unexpected response code", 201, responseCode);
-
-
-        List<Map<String, Object>> portDetails = getRestTestHelper().getJsonAsList("port/" + portNameRMI);
-        assertNotNull("Port details cannot be null", portDetails);
-        assertEquals("Unexpected number of ports with name " + portNameRMI, 1, portDetails.size());
-        Map<String, Object> port = portDetails.get(0);
-        Asserts.assertPortAttributes(port, State.QUIESCED);
-
-        String portNameJMX = "test-port-jmx";
-        attributes = new HashMap<String, Object>();
-        attributes.put(Port.NAME, portNameJMX);
-        int jmxPort = getNextAvailable(rmiPort + 1);
-        attributes.put(Port.PORT, jmxPort);
-        attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.JMX_RMI));
-        attributes.put(JmxPort.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
-
-        responseCode = getRestTestHelper().submitRequest("port/" + portNameJMX, "PUT", attributes);
-        assertEquals("Unexpected response code", 201, responseCode);
-
-
-        portDetails = getRestTestHelper().getJsonAsList("port/" + portNameJMX);
-        assertNotNull("Port details cannot be null", portDetails);
-        assertEquals("Unexpected number of ports with name " + portNameRMI, 1, portDetails.size());
-        port = portDetails.get(0);
-        Asserts.assertPortAttributes(port, State.QUIESCED);
-
-
-        attributes.put(Plugin.TYPE, "MANAGEMENT-JMX");
-        attributes.put(Plugin.NAME, "JmxPlugin");
-        responseCode = getRestTestHelper().submitRequest("plugin/JmxPlugin", "PUT", attributes);
-        assertEquals("Unexpected response code", 201, responseCode);
-
-
-        // make sure that port is there after broker restart
-        stopBroker();
-
-        // We shouldn't need to await the ports to be free, but it seems sometimes an RMI TCP Accept
-        // thread is seen to close the socket *after* the broker has finished stopping.
-        new PortHelper().waitUntilPortsAreFree(new HashSet<Integer>(Arrays.asList(jmxPort, rmiPort)));
-
-        startBroker();
-
-        portDetails = getRestTestHelper().getJsonAsList("port/" + portNameRMI);
-        assertNotNull("Port details cannot be null", portDetails);
-        assertEquals("Unexpected number of ports with name " + portNameRMI, 1, portDetails.size());
-        port = portDetails.get(0);
-        Asserts.assertPortAttributes(port, State.ACTIVE);
-
-        // try to add a second RMI port
-        portNameRMI = portNameRMI + "2";
-        attributes = new HashMap<String, Object>();
-        attributes.put(Port.NAME, portNameRMI);
-        attributes.put(Port.PORT, findFreePort());
-        attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.RMI));
-
-        responseCode = getRestTestHelper().submitRequest("port/" + portNameRMI, "PUT", attributes);
-        assertEquals("Adding of a second RMI port should fail", 409, responseCode);
     }
 
     public void testPutCreateAndUpdateAmqpPort() throws Exception

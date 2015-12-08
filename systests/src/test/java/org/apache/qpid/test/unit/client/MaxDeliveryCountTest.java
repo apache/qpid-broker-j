@@ -83,9 +83,6 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
         setTestSystemProperty("queue.deadLetterQueueEnabled","true");
         setTestSystemProperty("queue.maximumDeliveryAttempts", String.valueOf(MAX_DELIVERY_COUNT));
 
-        //Ensure management is on
-        brokerConfiguration.addJmxManagementConfiguration();
-
         // Set client-side flag to allow the server to determine if messages
         // dead-lettered or requeued.
         if (!isBroker010())

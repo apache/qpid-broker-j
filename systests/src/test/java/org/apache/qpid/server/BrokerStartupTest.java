@@ -52,12 +52,8 @@ public class BrokerStartupTest extends AbstractTestLogging
         if (isJavaBroker())
         {
             int port = getPort(0);
-            int managementPort = getManagementPort(port);
-            int connectorServerPort = managementPort + JMXPORT_CONNECTORSERVER_OFFSET;
 
             setTestSystemProperty("qpid.amqp_port",String.valueOf(port));
-            setTestSystemProperty("qpid.jmx_port",String.valueOf(managementPort));
-            setTestSystemProperty("qpid.rmi_port",String.valueOf(connectorServerPort));
             setTestSystemProperty("qpid.http_port",String.valueOf(DEFAULT_HTTP_MANAGEMENT_PORT));
 
             File brokerConfigFile = new File(getTestConfigFile(port));
@@ -84,12 +80,8 @@ public class BrokerStartupTest extends AbstractTestLogging
         if (isJavaBroker())
         {
             int port = getPort(0);
-            int managementPort = getManagementPort(port);
-            int connectorServerPort = managementPort + JMXPORT_CONNECTORSERVER_OFFSET;
 
             setTestSystemProperty("qpid.amqp_port",String.valueOf(port));
-            setTestSystemProperty("qpid.jmx_port",String.valueOf(managementPort));
-            setTestSystemProperty("qpid.rmi_port",String.valueOf(connectorServerPort));
 
             //Purposely set the HTTP port to be the same as the AMQP port so that the port object becomes ERRORED
             setTestSystemProperty("qpid.http_port",String.valueOf(port));

@@ -28,7 +28,6 @@ import org.apache.qpid.client.AMQNoRouteException;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.AMQTopic;
-import org.apache.qpid.management.common.JMXConnnectionFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 import javax.jms.Connection;
@@ -43,11 +42,7 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.jms.TopicSubscriber;
-import javax.management.MBeanServerConnection;
-import javax.management.ObjectName;
-import javax.management.remote.JMXConnector;
-import java.io.IOException;
-import java.util.Set;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -72,41 +67,6 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
     
     /** Timeout for receive() if we are not expecting a message */
     private static final long NEGATIVE_RECEIVE_TIMEOUT = 1000;
-    
-    private JMXConnector _jmxc;
-    private MBeanServerConnection _mbsc;
-    private static final String USER = "admin";
-    private static final String PASSWORD = "admin";
-    private boolean _jmxConnected;
-
-    public void setUp() throws Exception
-    {
-        getBrokerConfiguration().addJmxManagementConfiguration();
-        _jmxConnected=false;
-        super.setUp();
-    }
-
-    public void tearDown() throws Exception
-    {
-        try
-        {
-            if(_jmxConnected)
-            {
-                try
-                {
-                    _jmxc.close();
-                }
-                catch (IOException e)
-                {
-                    _logger.error("Error closing JMX connection", e);
-                }
-            }
-        }
-        finally
-        {
-            super.tearDown();
-        }
-    }
 
     public void testUnsubscribe() throws Exception
     {
@@ -162,29 +122,7 @@ public class DurableSubscriptionTest extends QpidBrokerTestCase
         
         if(isJavaBroker())
         {
-            //Verify that the queue was deleted by querying for its JMX MBean
-            _jmxc = JMXConnnectionFactory.getJMXConnection(5000, "127.0.0.1",
-                    getManagementPort(getPort()), USER, PASSWORD);
-
-            _jmxConnected = true;
-            _mbsc = _jmxc.getMBeanServerConnection();
-            
-            //must replace the occurrence of ':' in queue name with '-'
-            String queueObjectNameText = "clientid" + "-" + MY_SUBSCRIPTION;
-            
-            ObjectName objName = new ObjectName("org.apache.qpid:type=VirtualHost.Queue,name=" 
-                                                + queueObjectNameText + ",*");
-            
-            Set<ObjectName> objectInstances = _mbsc.queryNames(objName, null);
-            
-            if(objectInstances.size() != 0)
-            {
-                fail("Queue MBean was found. Expected queue to have been deleted");
-            }
-            else
-            {
-                _logger.info("Underlying dueue for the durable subscription was confirmed deleted.");
-            }
+            assertFalse("Queue " + subQueue + " exists", ((AMQSession<?, ?>) session2).isQueueBound(subQueue));
         }
         
         //verify unsubscribing the durable subscriber did not affect the non-durable one

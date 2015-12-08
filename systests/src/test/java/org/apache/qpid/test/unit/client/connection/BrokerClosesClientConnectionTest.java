@@ -121,7 +121,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
     private void assertConnectionCloseWasReported(JMSException exception, Class<? extends Exception> linkedExceptionClass)
     {
         assertNotNull("Broker shutdown should be reported to the client via the ExceptionListener", exception);
-        assertNotNull("JMXException should have linked exception", exception.getLinkedException());
+        assertNotNull("JMSXException should have linked exception", exception.getLinkedException());
 
         assertEquals("Unexpected linked exception", linkedExceptionClass, exception.getLinkedException().getClass());
     }

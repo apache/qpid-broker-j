@@ -29,7 +29,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 {
     String CLASS_DESCRIPTION = "<p>The Broker supports configuration of Ports to specify the particular AMQP messaging "
-                               + "and HTTP/JMX management connectivity it offers for use.</p>"
+                               + "and HTTP management connectivity it offers for use.</p>"
                                + "<p>Each Port is configured with the particular Protocols and Transports it supports, "
                                + "as well as the Authentication Provider to be used to authenticate connections. Where "
                                + "SSL is in use, the Port configuration also defines which Keystore to use and (where "

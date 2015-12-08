@@ -23,12 +23,11 @@
 <section id="Java-Broker-Management-Managing-Ports">
     <title>Ports</title>
     <para>Ports provide TCP/IP connectivity for messaging and management. A port is defined to use a
-        protocol. This can be an AMQP protocol for messaging or HTTP/JMX for management.</para>
+        protocol. This can be an AMQP protocol for messaging or HTTP for management.</para>
     <para>A port is defined to have one or more transports. A transport can either be plain (TCP) or
         SSL (TLS). When SSL is in use, the port can be configured to accept or require client
         authentication.</para>
-    <para>Any number of ports defined to use AMQP or HTTP protocols can be defined. JMX is limited
-        to a single port instance per JMX protocol type.</para>
+    <para>Any number of ports defined to use AMQP or HTTP protocols can be defined.</para>
     <para>Ports can only be managed by the HTTP management channel.</para>
     <section id="Java-Broker-Management-Managing-Ports-Context">
         <title>Context</title>
@@ -70,12 +69,11 @@
                 <listitem>
                     <para><emphasis>Protocol(s)</emphasis>. A list of protocols to be supported by
                         the port. For messaging choose one or more AMQP protocols. For management
-                        choose HTTP or one the two JMX protocols.</para>
+                        choose HTTP.</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>Transports</emphasis>. A list of transports supported by the
-                        port. For messaging or HTTP management chose TCP, SSL or both. For JMX, the
-                        TCP/SSL combination is not supported.</para>
+                        port. For messaging or HTTP management chose TCP, SSL or both.</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>Enabled/Disabled Cipher Suites</emphasis>. Allows cipher
@@ -96,7 +94,6 @@
                         using Client Certificate Authentication it may be desirable to use the <link
                             linkend="Java-Broker-Security-External-Provider">External Authentication
                             Provider</link>.</para>
-                    <para>JMX does not support client authentication.</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>Truststore</emphasis>. <link

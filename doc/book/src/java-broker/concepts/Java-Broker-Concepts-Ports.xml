@@ -23,7 +23,7 @@
 <section id="Java-Broker-Concepts-Ports">
     <title>Ports</title>
     <para> The Broker supports configuration of <emphasis>Ports</emphasis> to specify the particular
-        AMQP messaging and HTTP/JMX management connectivity it offers for use. </para>
+        AMQP messaging and HTTP management connectivity it offers for use. </para>
     <para> Each Port is configured with the particular <emphasis>Protocols</emphasis> and
             <emphasis>Transports</emphasis> it supports, as well as the <emphasis>Authentication
             Provider</emphasis> to be used to authenticate connections. Where SSL is in use, the
@@ -41,8 +41,8 @@
         </itemizedlist>
     </para>
 
-    <para> Additionally, HTTP and JMX ports can be configured for use by the associated management
-        plugins. </para>
+    <para> Additionally, HTTP ports can be configured for use by the associated management
+        plugin. </para>
     <para>This diagram explains how Ports, <link
             linkend="Java-Broker-Concepts-Authentication-Providers">Authentication Providers</link>
         and an Access Control Provider work together to allow an application to form a connection to

@@ -39,9 +39,6 @@ public class BrokerProperties
     public static final String PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY = "qpid.broker_default_supported_protocol_version_reply";
     public static final String PROPERTY_DISABLED_FEATURES = "qpid.broker_disabled_features";
 
-    public static final String PROPERTY_MANAGEMENT_RIGHTS_INFER_ALL_ACCESS = "qpid.broker_jmx_method_rights_infer_all_access";
-    public static final String PROPERTY_USE_CUSTOM_RMI_SOCKET_FACTORY = "qpid.broker_jmx_use_custom_rmi_socket_factory";
-
     public static final String PROPERTY_QPID_HOME = "QPID_HOME";
     public static final String PROPERTY_QPID_WORK = "QPID_WORK";
     public static final String POSIX_FILE_PERMISSIONS = "qpid.default_posix_file_permissions";

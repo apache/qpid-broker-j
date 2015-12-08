@@ -57,8 +57,4 @@ com.sun.security.jgss.accept {
     <para> Note: You may need to install the "Java Cryptography Extension (JCE) Unlimited Strength
         Jurisdiction Policy Files" appropriate for your JDK in order to get Kerberos support working. </para>
 
-    <para> Since Kerberos support only works where SASL authentication is available (e.g. not for
-        JMX authentication) you may wish to also include an alternative Authentication Provider
-        configuration, and use this for JMX and HTTP ports. </para>
-
 </section>

@@ -29,13 +29,11 @@
     <tgroup cols="4" align="left" colsep="1" rowsep="1">
       <colspec colname="entity"/>
       <colspec colname="http"/>
-      <colspec colname="jmx"/>
       <colspec colname="amqp"/>
       <thead>
         <row>
           <entry>Entity</entry>
           <entry>HTTP</entry>
-          <entry>JMX</entry>
           <entry>AMQP</entry>
         </row>
       </thead>
@@ -44,41 +42,34 @@
           <entry>Broker</entry>
           <entry>U</entry>
           <entry>No</entry>
-          <entry>No</entry>
         </row>
         <row>
           <entry>Virtualhost Node</entry>
           <entry>C/U/D</entry>
-          <entry>No</entry>
           <entry>No</entry>
         </row>
         <row>
           <entry>Virtualhost</entry>
           <entry>C/U/D</entry>
           <entry>No</entry>
-          <entry>No</entry>
         </row>
         <row>
           <entry>Remote Replication Node</entry>
           <entry>U/D</entry>
-          <entry>No</entry>
           <entry>No</entry>
         </row>
         <row>
           <entry>Exchange</entry>
           <entry>C/D</entry>
           <entry>C/D</entry>
-          <entry>C/D</entry>
         </row>
         <row>
           <entry>Queue</entry>
           <entry>C/D</entry>
-          <entry>C/U/D</entry>
           <entry>C/D</entry>
         </row>
         <row>
           <entry>Binding</entry>
-          <entry>C/D</entry>
           <entry>C/D</entry>
           <entry>C/D</entry>
         </row>
@@ -86,54 +77,45 @@
           <entry>Port</entry>
           <entry>C/U/D</entry>
           <entry>No</entry>
-          <entry>No</entry>
         </row>
         <row>
           <entry>Authentication Providers</entry>
           <entry>C/U/D</entry>
-          <entry>No</entry>
           <entry>No</entry>
         </row>
         <row>
           <entry>Group Providers</entry>
           <entry>C//D</entry>
           <entry>No</entry>
-          <entry>No</entry>
         </row>
         <row>
           <entry>Access Control Provider</entry>
           <entry>C//D</entry>
-          <entry>No</entry>
           <entry>No</entry>
         </row>
         <row>
           <entry>Keystores</entry>
           <entry>C//D</entry>
           <entry>No</entry>
-          <entry>No</entry>
         </row>
         <row>
           <entry>Truststores</entry>
           <entry>C//D</entry>
           <entry>No</entry>
-          <entry>No</entry>
         </row>
         <row>
           <entry>Users</entry>
           <entry>C//D</entry>
-          <entry>C/D</entry>
           <entry>No</entry>
         </row>
         <row>
           <entry>Groups</entry>
           <entry>C//D</entry>
           <entry>No</entry>
-          <entry>No</entry>
         </row>
         <row>
           <entry>Loggers</entry>
           <entry>C/U/D</entry>
-          <entry>Limited</entry>
           <entry>No</entry>
         </row>
       </tbody>
@@ -141,8 +123,6 @@
   </table>
   <important>
     <title>Note</title>
-    <para>It is currently only possible to modify a entity's context using the HTTP channel.
-      Furthermore, when using the JMX channel, it is not possible to assign non-String type
-      attributes in terms of context variables.</para>
+    <para>It is currently only possible to modify a entity's context using the HTTP channel.</para>
   </important>
 </section>

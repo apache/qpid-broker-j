@@ -108,8 +108,7 @@
         </row>
         <row>
           <entry>
-            <para>Used for operations performed by the either the JMX or Web Management
-              interfaces.</para>
+            <para>Used for operations performed by the Web Management interfaces.</para>
           </entry>
         </row>
         <row>
@@ -428,8 +427,7 @@
         </row>
         <row>
           <entry>
-            <para>Indicates that a Management plugin is starting up. Currently supported management
-              plugins are JMX and Web.</para>
+            <para>Indicates that a Management plugin is starting up. Supported by Web management plugin.</para>
           </entry>
         </row>
         <row id="Java-Broker-Appendix-Operation-Logging-Message-MNG-1002">

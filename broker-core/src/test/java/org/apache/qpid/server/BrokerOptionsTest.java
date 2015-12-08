@@ -117,28 +117,6 @@ public class BrokerOptionsTest extends QpidTestCase
         assertEquals(true, _options.isManagementModeQuiesceVirtualHosts());
     }
 
-    public void testDefaultManagementModeRmiPortOverride()
-    {
-        assertEquals(0, _options.getManagementModeRmiPortOverride());
-    }
-
-    public void testOverriddenManagementModeRmiPort()
-    {
-        _options.setManagementModeRmiPortOverride(5555);
-        assertEquals(5555, _options.getManagementModeRmiPortOverride());
-    }
-
-    public void testDefaultManagementModeJmxPortOverride()
-    {
-        assertEquals(0, _options.getManagementModeJmxPortOverride());
-    }
-
-    public void testOverriddenManagementModeJmxPort()
-    {
-        _options.setManagementModeJmxPortOverride(5555);
-        assertEquals(5555, _options.getManagementModeJmxPortOverride());
-    }
-
     public void testDefaultManagementModeHttpPortOverride()
     {
         assertEquals(0, _options.getManagementModeHttpPortOverride());

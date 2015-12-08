@@ -57,8 +57,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String STORE_FILESYSTEM_MAX_USAGE_PERCENT = "store.filesystem.maxUsagePercent";
     String QPID_AMQP_PORT = "qpid.amqp_port";
     String QPID_HTTP_PORT = "qpid.http_port";
-    String QPID_RMI_PORT  = "qpid.rmi_port";
-    String QPID_JMX_PORT  = "qpid.jmx_port";
 
     String NETWORK_BUFFER_SIZE = "qpid.broker.networkBufferSize";
     // network buffer should at least hold a SSL/TLS frame which in jdk1.8 is 33305 bytes
@@ -73,10 +71,6 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     String DEFAULT_AMQP_PORT_NUMBER = "5672";
     @ManagedContextDefault(name = QPID_HTTP_PORT)
     String DEFAULT_HTTP_PORT_NUMBER = "8080";
-    @ManagedContextDefault(name = QPID_RMI_PORT)
-    String DEFAULT_RMI_PORT_NUMBER  = "8999";
-    @ManagedContextDefault(name = QPID_JMX_PORT)
-    String DEFAULT_JMX_PORT_NUMBER  = "9099";
 
     @ManagedContextDefault(name = BROKER_FLOW_TO_DISK_THRESHOLD)
     long DEFAULT_FLOW_TO_DISK_THRESHOLD = (long)(0.4 * (double) BrokerAdapter.getMaxDirectMemorySize());

@@ -50,9 +50,10 @@ public final class BrokerModel extends Model
      *     Replace the defaultVirtualHost (at Broker) with defaultVirtualHostNode flag (at VHN)
      *     Make Connections children of Ports instead of VHosts
      *     Bring model version and Qpid version into sync
+     * 6.1 Remove JMX
      */
     public static final int MODEL_MAJOR_VERSION = 6;
-    public static final int MODEL_MINOR_VERSION = 0;
+    public static final int MODEL_MINOR_VERSION = 1;
     public static final String MODEL_VERSION = MODEL_MAJOR_VERSION + "." + MODEL_MINOR_VERSION;
     private static final Model MODEL_INSTANCE = new BrokerModel();
     private final Map<Class<? extends ConfiguredObject>, Collection<Class<? extends ConfiguredObject>>> _parents =

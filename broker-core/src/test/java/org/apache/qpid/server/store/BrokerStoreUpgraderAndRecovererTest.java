@@ -484,6 +484,115 @@ public class BrokerStoreUpgraderAndRecovererTest extends QpidTestCase
         assertEquals("Unexpected name", getTestName(), attributes.get("name"));
     }
 
+    public void testUpgradeRemoveJmxPlugin()
+    {
+        Map<String, Object> jmxPlugin = new HashMap<>();
+        jmxPlugin.put("name", getTestName());
+        jmxPlugin.put("type", "MANAGEMENT-JMX");
+
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                           "Plugin",
+                                                                           jmxPlugin,
+                                                                           Collections.singletonMap("Broker",
+                                                                                                    _brokerRecord.getId()));
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        List<ConfiguredObjectRecord> plugins = findRecordByType("Plugin", records);
+        assertTrue("JMX Plugin was not removed", plugins.isEmpty());
+    }
+
+    public void testUpgradeRemoveJmxPortByType()
+    {
+        Map<String, Object> jmxPort = new HashMap<>();
+        jmxPort.put("name", "jmx1");
+        jmxPort.put("type", "JMX");
+
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                           jmxPort,
+                                                                           Collections.singletonMap("Broker",
+                                                                                                    _brokerRecord.getId()));
+
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
+        assertTrue("Port was not removed", ports.isEmpty());
+    }
+
+    public void testUpgradeRemoveRmiPortByType()
+    {
+        Map<String, Object> rmiPort = new HashMap<>();
+        rmiPort.put("name", "rmi1");
+        rmiPort.put("type", "RMI");
+
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(), "Port",
+                                                                           rmiPort,
+                                                                           Collections.singletonMap("Broker",
+                                                                                                    _brokerRecord.getId()));
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
+        assertTrue("Port was not removed", ports.isEmpty());
+    }
+
+    public void testUpgradeRemoveJmxPortByProtocol()
+    {
+        Map<String, Object> jmxPort = new HashMap<>();
+        jmxPort.put("name", "jmx2");
+        jmxPort.put("protocols", Collections.singleton("JMX_RMI"));
+
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                           "Port",
+                                                                           jmxPort,
+                                                                           Collections.singletonMap("Broker",
+                                                                                                    _brokerRecord.getId()));
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
+        assertTrue("Port was not removed", ports.isEmpty());
+    }
+
+    public void testUpgradeRemoveRmiPortByProtocol()
+    {
+        Map<String, Object> rmiPort2 = new HashMap<>();
+        rmiPort2.put("name", "rmi2");
+        rmiPort2.put("protocols", Collections.singleton("RMI"));
+
+        _brokerRecord.getAttributes().put("modelVersion", "6.0");
+
+        ConfiguredObjectRecord portRecord = new ConfiguredObjectRecordImpl(UUID.randomUUID(),
+                                                                            "Port",
+                                                                            rmiPort2,
+                                                                            Collections.singletonMap("Broker",
+                                                                                                     _brokerRecord.getId()));
+        DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord, portRecord);
+
+        BrokerStoreUpgraderAndRecoverer recoverer = new BrokerStoreUpgraderAndRecoverer(_systemConfig);
+        List<ConfiguredObjectRecord> records = recoverer.upgrade(dcs);
+
+        List<ConfiguredObjectRecord> ports = findRecordByType("Port", records);
+        assertTrue("Port was not removed", ports.isEmpty());
+    }
+
     private void upgradeBrokerRecordAndAssertUpgradeResults()
     {
         DurableConfigurationStore dcs = new DurableConfigurationStoreStub(_brokerRecord);

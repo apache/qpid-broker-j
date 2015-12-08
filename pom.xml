@@ -175,18 +175,15 @@
     <module>broker-plugins/jdbc-store</module>
     <module>broker-plugins/management-amqp</module>
     <module>broker-plugins/management-http</module>
-    <module>broker-plugins/management-jmx</module>
     <module>broker-plugins/memory-store</module>
     <module>broker-plugins/websocket</module>
     <module>common</module>
     <module>client</module>
     <module>client/example</module>
-    <module>management/common</module>
     <module>jca</module>
     <module>jca/rar</module>
 
     <module>tools</module>
-    <module>management/example</module>
 
     <module>qpid-systests-parent</module>
     <module>qpid-test-utils</module>
@@ -196,7 +193,6 @@
 
     <module>perftests/visualisation-jfc</module>
     <module>bdbstore</module>
-    <module>bdbstore/jmx</module>
     <module>bdbstore/systests</module>
 
     <module>joramtests</module>

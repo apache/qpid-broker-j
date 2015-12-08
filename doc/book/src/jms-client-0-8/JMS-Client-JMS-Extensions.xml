@@ -28,7 +28,7 @@
 
 <appendix id="JMS-Client-0-8-Appendix-JMS-Extensions">
   <title>JMS Extensions</title>
-  <para>This section illustrates using Qpid specific extentions to JMX for the managament of queues,
+  <para>This section illustrates using Qpid specific extentions to JMS for the managament of queues,
   exchanges and bindings.</para>
   <!-- TODO perhaps mention ConnectionListener?-->
   <important>

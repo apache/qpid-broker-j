@@ -488,11 +488,6 @@
     <para>Another possibility is a dynamic technique utilising a proxy or Virtual IP (VIP). These
       require other software and/or hardware and are outside the scope of this document.</para>
   </section>
-  <section role="h3" id="Java-Broker-High-Availability-JMXAPI">
-    <title>Qpid JMX API for HA</title>
-    <para>The Qpid JMX API for HA is now deprecated. New users are recommended to use the <link
-        linkend="Java-Broker-Management-Channel-REST-API">REST API.</link></para>
-  </section>
 
   <section id="Java-Broker-High-Availability-DiskSpace">
     <title>Disk space requirements</title>

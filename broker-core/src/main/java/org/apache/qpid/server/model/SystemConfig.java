@@ -30,8 +30,6 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
     String MANAGEMENT_MODE = "managementMode";
     
     String MANAGEMENT_MODE_QUIESCE_VIRTUAL_HOSTS = "managementModeQuiesceVirtualHosts";
-    String MANAGEMENT_MODE_RMI_PORT_OVERRIDE = "managementModeRmiPortOverride";
-    String MANAGEMENT_MODE_JMX_PORT_OVERRIDE = "managementModeJmxPortOverride";
     String MANAGEMENT_MODE_HTTP_PORT_OVERRIDE = "managementModeHttpPortOverride";
     String MANAGEMENT_MODE_PASSWORD = "managementModePassword";
     String INITIAL_CONFIGURATION_LOCATION = "initialConfigurationLocation";
@@ -42,12 +40,6 @@ public interface SystemConfig<X extends SystemConfig<X>> extends ConfiguredObjec
 
     @ManagedAttribute(defaultValue = "false")
     boolean isManagementMode();
-
-    @ManagedAttribute(defaultValue = "0")
-    int getManagementModeRmiPortOverride();
-
-    @ManagedAttribute(defaultValue = "0")
-    int getManagementModeJmxPortOverride();
 
     @ManagedAttribute(defaultValue = "0")
     int getManagementModeHttpPortOverride();

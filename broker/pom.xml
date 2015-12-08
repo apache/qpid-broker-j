@@ -136,13 +136,6 @@
 
     <dependency>
       <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-broker-plugins-management-jmx</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-broker-plugins-memory-store</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
@@ -159,14 +152,6 @@
     <dependency>
       <groupId>org.apache.qpid</groupId>
       <artifactId>qpid-bdbstore</artifactId>
-      <version>${project.version}</version>
-      <scope>runtime</scope>
-      <optional>true</optional>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-bdbstore-jmx</artifactId>
       <version>${project.version}</version>
       <scope>runtime</scope>
       <optional>true</optional>

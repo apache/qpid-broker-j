@@ -79,10 +79,6 @@ public class Main
             .withLongOpt("management-mode").create("mm");
     private static final Option OPTION_MM_QUIESCE_VHOST = OptionBuilder.withDescription("make virtualhosts stay in the quiesced state during management mode.")
             .withLongOpt("management-mode-quiesce-virtualhosts").create("mmqv");
-    private static final Option OPTION_MM_RMI_PORT = OptionBuilder.withArgName("port").hasArg()
-            .withDescription("override jmx rmi registry port in management mode").withLongOpt("management-mode-rmi-registry-port").create("mmrmi");
-    private static final Option OPTION_MM_CONNECTOR_PORT = OptionBuilder.withArgName("port").hasArg()
-            .withDescription("override jmx connector port in management mode").withLongOpt("management-mode-jmx-connector-port").create("mmjmx");
     private static final Option OPTION_MM_HTTP_PORT = OptionBuilder.withArgName("port").hasArg()
             .withDescription("override http management port in management mode").withLongOpt("management-mode-http-port").create("mmhttp");
     private static final Option OPTION_MM_PASSWORD = OptionBuilder.withArgName("password").hasArg()
@@ -104,8 +100,6 @@ public class Main
         OPTIONS.addOption(OPTION_INITIAL_CONFIGURATION_PATH);
         OPTIONS.addOption(OPTION_MANAGEMENT_MODE);
         OPTIONS.addOption(OPTION_MM_QUIESCE_VHOST);
-        OPTIONS.addOption(OPTION_MM_RMI_PORT);
-        OPTIONS.addOption(OPTION_MM_CONNECTOR_PORT);
         OPTIONS.addOption(OPTION_MM_HTTP_PORT);
         OPTIONS.addOption(OPTION_MM_PASSWORD);
         OPTIONS.addOption(OPTION_CONFIGURATION_PROPERTY);
@@ -258,16 +252,6 @@ public class Main
             if (managementMode)
             {
                 options.setManagementMode(true);
-                String rmiPort = _commandLine.getOptionValue(OPTION_MM_RMI_PORT.getOpt());
-                if (rmiPort != null)
-                {
-                    options.setManagementModeRmiPortOverride(Integer.parseInt(rmiPort));
-                }
-                String connectorPort = _commandLine.getOptionValue(OPTION_MM_CONNECTOR_PORT.getOpt());
-                if (connectorPort != null)
-                {
-                    options.setManagementModeJmxPortOverride(Integer.parseInt(connectorPort));
-                }
                 String httpPort = _commandLine.getOptionValue(OPTION_MM_HTTP_PORT.getOpt());
                 if (httpPort != null)
                 {

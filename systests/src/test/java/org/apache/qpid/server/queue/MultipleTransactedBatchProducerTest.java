@@ -55,8 +55,6 @@ public class MultipleTransactedBatchProducerTest extends QpidBrokerTestCase
     {
         _receivedLatch = new CountDownLatch(MESSAGE_COUNT * NUM_PRODUCERS);
 
-        getBrokerConfiguration().addJmxManagementConfiguration();
-
         super.setUp();
         _queueName = getTestQueueName();
         _failMsg = null;

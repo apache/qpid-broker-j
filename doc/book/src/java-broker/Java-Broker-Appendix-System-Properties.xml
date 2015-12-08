@@ -80,29 +80,6 @@
             <para>Feature names should be comma separated.</para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-System-Properties-Jmx-Method-Rights">
-          <entry>qpid.broker_jmx_method_rights_infer_all_access</entry>
-          <entry>true</entry>
-          <entry>
-            <para>Used when using <link linkend="Java-Broker-Security-ACLs">ACLs</link> and the JMX
-              management interface.</para>
-            <para>If set true, the METHOD object permission is sufficient to allow the user to
-              perform the operation. If set false, the user will require both the METHOD object
-              permission and the underlying object permission too (for instance QUEUE object
-              permission if performing management operations on a queue). If the user is not granted
-              both permissions, the operation will be denied.</para>
-          </entry>
-        </row>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Jmx-Custom-Rmi">
-          <entry>qpid.broker_jmx_use_custom_rmi_socket_factory</entry>
-          <entry>true</entry>
-          <entry>
-            <para>Applicable to the JMX management interface. If true, the Broker creates a custom
-              RMI socket factory that is secured from changes outside of the JVM.  If false,
-              a standard RMI socket factory is used.</para>
-            <para>It is not recommended to change this property from its default value.</para>
-          </entry>
-        </row>
       </tbody>
     </tgroup>
   </table>

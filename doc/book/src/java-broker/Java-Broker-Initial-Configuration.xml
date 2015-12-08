@@ -250,17 +250,6 @@ $ ./qpid-server -st JDBC \
                             <entry> "8080" </entry>
                         </row>
                         <row>
-                            <entry> qpid.rmi_port </entry>
-                            <entry> Port number used for the brokers default RMI Registry port, to
-                                advertise the JMX ConnectorServer. </entry>
-                            <entry> "8999" </entry>
-                        </row>
-                        <row>
-                            <entry> qpid.jmx_port </entry>
-                            <entry> Port number used for the brokers default JMX port </entry>
-                            <entry> "9099" </entry>
-                        </row>
-                        <row>
                             <entry> qpid.home_dir </entry>
                             <entry> Location of the broker installation directory, which contains
                                 the 'lib' directory and the 'etc' directory often used to store
@@ -384,15 +373,6 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
     "port" : "${qpid.http_port}",
     "authenticationProvider" : "passwordFile",
     "protocols" : [ "HTTP" ]
-  }, {
-    "name" : "RMI_REGISTRY",
-    "port" : "${qpid.rmi_port}",
-    "protocols" : [ "RMI" ]
-  }, {
-    "name" : "JMX_CONNECTOR",
-    "port" : "${qpid.jmx_port}",
-    "authenticationProvider" : "passwordFile",
-    "protocols" : [ "JMX_RMI" ]
   }],
   "virtualhostnodes" : [ {
     "name" : "default",
@@ -403,9 +383,6 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
   "plugins" : [ {
     "type" : "MANAGEMENT-HTTP",
     "name" : "httpManagement"
-  }, {
-    "type" : "MANAGEMENT-JMX",
-    "name" : "jmxManagement"
   } ]
 }
 ]]></programlisting>
@@ -416,7 +393,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
                         </para>
                     </listitem>
                     <listitem>
-                        <para> Four Port entries: "AMQP", "HTTP", "RMI_REGISTRY", "JMX_CONNECTOR".
+                        <para> Two Port entries: "AMQP", "HTTP"
                         </para>
                     </listitem>
                     <listitem>
@@ -427,8 +404,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
                             be stored in a <emphasis>DERBY</emphasis> message store.</para>
                     </listitem>
                     <listitem>
-                        <para>Two management plugins: "jmxManagement" of type "MANAGEMENT-JMX" and
-                            "httpManagement" of type "MANAGEMENT-HTTP".</para>
+                        <para>One management plugin: "httpManagement" of type "MANAGEMENT-HTTP".</para>
                     </listitem>
                     <listitem>
                         <para>Broker attributes are stored as a root entry.</para>

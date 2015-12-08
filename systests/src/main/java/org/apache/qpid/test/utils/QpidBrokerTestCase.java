@@ -128,8 +128,6 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public static final int DEFAULT_PORT_VALUE = 5672;
     public static final int DEFAULT_SSL_PORT_VALUE = 5671;
-    public static final int DEFAULT_JMXPORT_REGISTRYSERVER = 8999;
-    public static final int JMXPORT_CONNECTORSERVER_OFFSET = 100;
     public static final int DEFAULT_HTTP_MANAGEMENT_PORT_VALUE = 8080;
 
     public static final String TEST_AMQP_PORT_PROTOCOLS_PROPERTY="test.amqp_port_protocols";
@@ -139,7 +137,6 @@ public class QpidBrokerTestCase extends QpidTestCase
 
     public static final int DEFAULT_PORT = Integer.getInteger("test.port", DEFAULT_PORT_VALUE);
     public static final int FAILING_PORT = Integer.parseInt(System.getProperty("test.port.alt"));
-    public static final int DEFAULT_MANAGEMENT_PORT = Integer.getInteger("test.mport", DEFAULT_JMXPORT_REGISTRYSERVER);
     public static final int DEFAULT_HTTP_MANAGEMENT_PORT = Integer.getInteger("test.hport", DEFAULT_HTTP_MANAGEMENT_PORT_VALUE);
     public static final int DEFAULT_SSL_PORT = Integer.getInteger("test.port.ssl", DEFAULT_SSL_PORT_VALUE);
 
@@ -272,8 +269,6 @@ public class QpidBrokerTestCase extends QpidTestCase
         if (actualPort != DEFAULT_PORT)
         {
             configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT, Port.PORT, actualPort);
-            configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_RMI_PORT, Port.PORT, getManagementPort(actualPort));
-            configuration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_JMX_PORT, Port.PORT, getManagementPort(actualPort) + (actualPort == 0 ? 0 : JMXPORT_CONNECTORSERVER_OFFSET));
 
             String remotelogback = "remotelogback";
 
@@ -370,30 +365,14 @@ public class QpidBrokerTestCase extends QpidTestCase
     }
 
     /**
-     * Return the management port in use by the broker on this main port
-     *
-     * @param mainPort the broker's main port.
-     *
-     * @return the management port that corresponds to the broker on the given port
-     */
-    protected int getManagementPort(int mainPort)
-    {
-        return mainPort == 0 ? 0 : mainPort + (DEFAULT_MANAGEMENT_PORT - DEFAULT_PORT);
-    }
-
-    /**
      * The returned set of port numbers is only a guess because it assumes no ports have been overridden
      * using system properties.
      */
     protected Set<Integer> guessAllPortsUsedByBroker(int mainPort)
     {
-        Set<Integer> ports = new HashSet<Integer>();
-        int managementPort = getManagementPort(mainPort);
-        int connectorServerPort = managementPort + JMXPORT_CONNECTORSERVER_OFFSET;
+        Set<Integer> ports = new HashSet<>();
 
         ports.add(mainPort);
-        ports.add(managementPort);
-        ports.add(connectorServerPort);
         ports.add(DEFAULT_SSL_PORT);
 
         return ports;
@@ -1339,7 +1318,6 @@ public class QpidBrokerTestCase extends QpidTestCase
             BrokerHolder holder = null;
             if (brokerType.equals(BrokerHolder.BrokerType.INTERNAL) && !testCase.existingInternalBroker())
             {
-                testCase.setSystemProperty(BrokerProperties.PROPERTY_USE_CUSTOM_RMI_SOCKET_FACTORY, "false");
                 holder = new InternalBrokerHolder(portsUsedByBroker, testCase);
             }
             else if (!brokerType.equals(BrokerHolder.BrokerType.EXTERNAL))

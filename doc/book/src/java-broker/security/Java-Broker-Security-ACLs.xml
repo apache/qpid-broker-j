@@ -280,12 +280,6 @@
           <entry><para>name</para> </entry>
         </row>
         <row>
-          <entry> <command>MANAGEMENT </command> </entry>
-          <entry> <para>Management - for web and JMX</para> </entry>
-          <entry><para>ALL, ACCESS</para> </entry>
-          <entry><para> </para></entry>
-        </row>
-        <row>
           <entry> <command>QUEUE</command> </entry>
           <entry> <para>A queue </para> </entry>
           <entry><para>ALL, CREATE, DELETE, PURGE, CONSUME, UPDATE</para></entry>
@@ -330,7 +324,7 @@
       <tbody>
         <row>
           <entry><command>name</command> </entry>
-          <entry> <para> String. Object name, such as a queue name, exchange name or JMX method name.  </para> </entry>
+          <entry> <para> String. Object name, such as a queue name or exchange name.</para> </entry>
         </row>
         <row>
           <entry> <command>durable</command> </entry>
@@ -366,7 +360,7 @@
         </row>
         <row>
           <entry> <command>component</command> </entry>
-          <entry> <para> String. JMX component name</para> </entry>
+          <entry> <para> String. component name</para> </entry>
         </row>
         <row>
           <entry> <command>from_network</command> </entry>
@@ -429,41 +423,6 @@
               Boolean. A property can be used to restrict PUBLISH action to publishing only messages with given immediate flag.
             </para>
           </entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </table>
-  <table id="table-Java-Broker-Security-ACLs-Syntax_javacomponents">
-    <title>List of ACL JMX Components</title>
-    <tgroup cols="2">
-      <tbody>
-        <row>
-          <entry> <command>UserManagement</command> </entry>
-          <entry> <para>User maintenance; create/delete/view users, change passwords etc</para> </entry>
-        </row>
-        <row>
-          <entry> <command>ConfigurationManagement</command> </entry>
-          <entry> <para>Dynamically reload configuration from disk.</para> </entry>
-        </row>
-        <row>
-          <entry> <command>LoggingManagement</command> </entry>
-          <entry> <para>Dynamically control Qpid logging level</para> </entry>
-        </row>
-        <row>
-          <entry> <command>ServerInformation</command> </entry>
-          <entry> <para>Read-only information regarding the Qpid: version number etc</para> </entry>
-        </row>
-        <row>
-          <entry> <command>VirtualHost.Queue</command> </entry>
-          <entry> <para>Queue maintenance; copy/move/purge/view etc</para> </entry>
-        </row>
-        <row>
-          <entry> <command>VirtualHost.Exchange</command> </entry>
-          <entry> <para>Exchange maintenance; bind/unbind queues to exchanges</para> </entry>
-        </row>
-        <row>
-          <entry> <command>VirtualHost.VirtualHost</command> </entry>
-          <entry> <para>Virtual host maintenace; create/delete exchanges, queues etc</para> </entry>
         </row>
       </tbody>
     </tgroup>
@@ -541,12 +500,9 @@ ACL DENY-LOG ALL ALL
         is allowed to perform user maintenance  This example illustrates the permissioning of an individual component.
       </para>
       <programlisting>
-# Give usermaint access to management and permission to execute all JMX Methods on the
-# UserManagement MBean and perform all actions for USER objects
-ACL ALLOW usermaint ACCESS MANAGEMENT
-ACL ALLOW usermaint ALL METHOD component="UserManagement"
+# Give usermaint access to management and permission to create
+# and delete users through management
 ACL ALLOW usermaint ALL USER
-ACL DENY ALL ALL METHOD component="UserManagement"
 ACL DENY ALL ALL USER
 ...
 ... rules for other users

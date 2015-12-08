@@ -80,8 +80,7 @@
         </footnote>, and External Database</para>
     </listitem>
     <listitem>
-      <para>Web based management interface and programmatic management interfaces  via REST and JMX
-        APIs.</para>
+      <para>Web based management interface and programmatic management interfaces via REST.</para>
     </listitem>
     <listitem>
       <para>SSL support</para>

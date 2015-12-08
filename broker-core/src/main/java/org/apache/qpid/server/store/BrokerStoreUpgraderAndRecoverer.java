@@ -64,6 +64,7 @@ public class BrokerStoreUpgraderAndRecoverer
         register(new Upgrader_2_0_to_3_0());
 
         register(new Upgrader_3_0_to_6_0());
+        register(new Upgrader_6_0_to_6_1());
     }
 
     private void register(StoreUpgraderPhase upgrader)
@@ -458,6 +459,60 @@ public class BrokerStoreUpgraderAndRecoverer
                 }
 
             }
+            getNextUpgrader().complete();
+        }
+
+    }
+
+    private class Upgrader_6_0_to_6_1 extends StoreUpgraderPhase
+    {
+        public Upgrader_6_0_to_6_1()
+        {
+            super("modelVersion", "6.0", "6.1");
+        }
+
+        @Override
+        public void configuredObject(ConfiguredObjectRecord record)
+        {
+            if (record.getType().equals("Broker"))
+            {
+                record = upgradeRootRecord(record);
+
+                getNextUpgrader().configuredObject(record);
+            }
+            else
+            {
+                Map<String, Object> attributes = record.getAttributes();
+                String type = (String)attributes.get("type");
+                if (record.getType().equals("Plugin") && "MANAGEMENT-JMX".equals(type))
+                {
+                    getDeleteMap().put(record.getId(), record);
+                }
+                else if (record.getType().equals("Port"))
+                {
+                    Object protocols = attributes.get("protocols");
+                    if ((protocols instanceof Collection && (((Collection) protocols).contains("RMI")
+                                                             || ((Collection) protocols).contains("JMX_RMI")))
+                        || "JMX".equals(type)
+                        || "RMI".equals(type))
+                    {
+                        getDeleteMap().put(record.getId(), record);
+                    }
+                    else
+                    {
+                        getNextUpgrader().configuredObject(record);
+                    }
+                }
+                else
+                {
+                    getNextUpgrader().configuredObject(record);
+                }
+            }
+        }
+
+        @Override
+        public void complete()
+        {
             getNextUpgrader().complete();
         }
 

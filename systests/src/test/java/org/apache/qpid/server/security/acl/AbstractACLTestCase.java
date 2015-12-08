@@ -47,7 +47,6 @@ import java.util.concurrent.TimeUnit;
  * test method to run its own setup code before the broker starts.
  *
  * @see ExternalACLTest
- * @see ExternalACLJMXTest
  * @see ExhaustiveACLTest
  */
 public abstract class AbstractACLTestCase extends QpidBrokerTestCase implements ConnectionListener

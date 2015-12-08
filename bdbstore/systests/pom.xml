@@ -57,12 +57,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.qpid</groupId>
-      <artifactId>qpid-bdbstore-jmx</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
       <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
       <version>${bdb-version}</version>

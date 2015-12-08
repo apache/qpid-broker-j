@@ -21,32 +21,6 @@
 ### NOTE: Rules are considered from top to bottom, and the first matching rule governs the decision.
 ### Rules may refer to users or groups. Groups are currently defined in the etc/groups file.
 
-### JMX MANAGEMENT ####
-
-# To use JMX management, first give the user/group ACCESS MANAGEMENT permission
-ACL ALLOW administrators ACCESS MANAGEMENT
-ACL ALLOW guest ACCESS MANAGEMENT
-
-# Allow guest to perform read operations on the ServerInformation mbean
-ACL ALLOW guest ACCESS METHOD component="ServerInformation"
-
-# Allow 'administrators' all management operations. To reduce log file noise, only non-read-only operations are logged.
-ACL ALLOW administrators ACCESS METHOD
-ACL ALLOW-LOG administrators ALL METHOD
-
-# Allow 'guest' to view logger levels, and use getter methods on LoggingManagement
-ACL ALLOW guest ACCESS METHOD component="LoggingManagement" name="viewEffectiveRuntimeLoggerLevels"
-ACL ALLOW guest ACCESS METHOD component="LoggingManagement" name="get*"
-
-# Deny access to Shutdown, UserManagement, ConfigurationManagement and LoggingManagement for all other users
-# You could grant specific users access to these beans by adding rules above to allow them
-ACL DENY-LOG ALL ACCESS METHOD component="Shutdown"
-ACL DENY-LOG ALL ACCESS METHOD component="UserManagement"
-ACL DENY-LOG ALL ACCESS METHOD component="ConfigurationManagement"
-ACL DENY-LOG ALL ACCESS METHOD component="LoggingManagement"
-
-# Allow everyone to perform all read operations on the mbeans not listed in the DENY rules above
-ACL ALLOW ALL ACCESS METHOD
 
 ### WEB MANAGEMENT ####
 

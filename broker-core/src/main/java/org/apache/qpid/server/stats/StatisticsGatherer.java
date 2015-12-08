@@ -22,7 +22,7 @@ package org.apache.qpid.server.stats;
  * This interface is to be implemented by any broker business object that
  * wishes to gather statistics about messages delivered through it.
  * 
- * These statistics are exposed using a separate JMX Mbean interface, which
+ * These statistics are exposed using a management interface, which
  * calls these methods to retrieve the underlying {@link StatisticsCounter}s
  * and return their attributes. This interface gives a standard way for
  * parts of the broker to set up and configure statistics generation.

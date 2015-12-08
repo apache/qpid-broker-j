@@ -198,12 +198,6 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
                 throw new IllegalConfigurationException("Can't create port which requires SSL but has no key store configured.");
             }
         }
-
-        if (protocols != null && protocols.contains(Protocol.RMI) && usesSsl)
-        {
-            throw new IllegalConfigurationException("Can't create RMI Registry port which requires SSL.");
-        }
-
     }
 
     @Override

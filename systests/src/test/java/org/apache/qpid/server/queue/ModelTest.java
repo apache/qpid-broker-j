@@ -20,21 +20,17 @@
  */
 package org.apache.qpid.server.queue;
 
-import org.apache.qpid.QpidException;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.management.common.mbeans.ManagedBroker;
-import org.apache.qpid.management.common.mbeans.ManagedQueue;
-import org.apache.qpid.test.utils.JMXTestUtils;
+import org.apache.qpid.server.model.LifetimePolicy;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 import javax.jms.Connection;
-import javax.jms.JMSException;
 import javax.jms.Session;
-import javax.management.JMException;
-import javax.management.MBeanException;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.UndeclaredThrowableException;
+import java.util.Map;
 
 /**
  * This Test validates the Queue Model on the broker.
@@ -48,7 +44,7 @@ import java.lang.reflect.UndeclaredThrowableException;
  * Additions to this suite would be to complete testing of creations, validating
  * fields such as owner/exclusive, autodelete and priority are correctly set.
  *
- * Currently this test uses the JMX interface to validate that the queue has
+ * Currently this test uses the REST interface to validate that the queue has
  * been declared as expected so these tests cannot run against a CPP broker.
  *
  *
@@ -57,29 +53,27 @@ import java.lang.reflect.UndeclaredThrowableException;
  */
 public class ModelTest extends QpidBrokerTestCase
 {
-
-    private JMXTestUtils _jmxUtils;
-    private static final String VIRTUALHOST_NAME = "test";
+    private RestTestHelper _restTestHelper = new RestTestHelper(findFreePort());
 
     @Override
     public void setUp() throws Exception
     {
-        getBrokerConfiguration().addJmxManagementConfiguration();
+        _restTestHelper.enableHttpManagement(getBrokerConfiguration());
 
-        // Create a JMX Helper
-        _jmxUtils = new JMXTestUtils(this);
         super.setUp();
-
-        // Open the JMX Connection
-        _jmxUtils.open();
     }
 
     @Override
     public void tearDown() throws Exception
     {
-        // Close the JMX Connection
-        _jmxUtils.close();
-        super.tearDown();
+        try
+        {
+            _restTestHelper.tearDown();
+        }
+        finally
+        {
+            super.tearDown();
+        }
     }
 
     /**
@@ -96,8 +90,8 @@ public class ModelTest extends QpidBrokerTestCase
         boolean autoDelete = false;
         boolean exclusive = true;
 
-        createViaAMQPandValidateViaJMX(connection, queueName, durable,
-                                       autoDelete, exclusive);
+        createViaAMQPandValidateViaREST(connection, queueName, durable,
+                                        autoDelete, exclusive);
     }
 
 
@@ -116,8 +110,8 @@ public class ModelTest extends QpidBrokerTestCase
         boolean autoDelete = false;
         boolean exclusive = true;
 
-        createViaAMQPandValidateViaJMX(connection, queueName, durable,
-                                       autoDelete, exclusive);
+        createViaAMQPandValidateViaREST(connection, queueName, durable,
+                                        autoDelete, exclusive);
     }
 
     /**
@@ -135,13 +129,12 @@ public class ModelTest extends QpidBrokerTestCase
         boolean autoDelete = false;
         boolean exclusive = true;
 
-        createViaAMQPandValidateViaJMX(connection, queueName, durable,
-                                       autoDelete, exclusive);
+        createViaAMQPandValidateViaREST(connection, queueName, durable,
+                                        autoDelete, exclusive);
 
         // Clean up
-        ManagedBroker managedBroker =
-                _jmxUtils.getManagedBroker(VIRTUALHOST_NAME);
-        managedBroker.deleteQueue(queueName);
+        String queueUrl = getQueueUrl(queueName);
+        _restTestHelper.submitRequest(queueUrl, "DELETE");
     }
 
     /**
@@ -159,129 +152,21 @@ public class ModelTest extends QpidBrokerTestCase
         boolean autoDelete = false;
         boolean exclusive = false;
 
-        createViaAMQPandValidateViaJMX(connection, queueName, durable,
-                                       autoDelete, exclusive);
+        createViaAMQPandValidateViaREST(connection, queueName, durable,
+                                        autoDelete, exclusive);
 
         // Clean up
-        ManagedBroker managedBroker =
-                _jmxUtils.getManagedBroker(VIRTUALHOST_NAME);
-        managedBroker.deleteQueue(queueName);
+        String queueUrl = getQueueUrl(queueName);
+        _restTestHelper.submitRequest(queueUrl, "DELETE");
     }
 
 
-    /**
-     * Test that a transient queue can be created via JMX.
-     *
-     * @throws IOException                  if there is a problem via the JMX connection
-     * @throws javax.management.JMException if there is a problem with the JMX command
-     */
-    public void testCreationTransientViaJMX() throws IOException, JMException
-    {
-        String name = getName();
-        String owner = null;
-        boolean durable = false;
-
-        createViaJMXandValidateViaJMX(name, owner, durable);
-    }
-
-    /**
-     * Test that a durable queue can be created via JMX.
-     *
-     * @throws IOException                  if there is a problem via the JMX connection
-     * @throws javax.management.JMException if there is a problem with the JMX command
-     */
-    public void testCreationDurableViaJMX() throws IOException, JMException
-    {
-        String name = getName();
-        String owner = null;
-        boolean durable = true;
-
-        createViaJMXandValidateViaJMX(name, owner, durable);
-
-        // Clean up
-        ManagedBroker managedBroker =
-                _jmxUtils.getManagedBroker(VIRTUALHOST_NAME);
-        managedBroker.deleteQueue(name);
-    }
-
-    /**
-     * Test that a transient queue can be deleted via JMX.
-     *
-     * @throws IOException                  if there is a problem via the JMX connection
-     * @throws javax.management.JMException if there is a problem with the JMX command
-     */
-    public void testDeletionTransientViaJMX() throws IOException, JMException
-    {
-        String name = getName();
-
-        _jmxUtils.createQueue(VIRTUALHOST_NAME, name, null, false);
-
-        ManagedBroker managedBroker = _jmxUtils.
-                getManagedBroker(VIRTUALHOST_NAME);
-
-        try
-        {
-            managedBroker.deleteQueue(name);
-        }
-        catch (UndeclaredThrowableException e)
-        {
-            fail(((MBeanException) ((InvocationTargetException)
-                    e.getUndeclaredThrowable()).getTargetException()).getTargetException().getMessage());
-        }
-    }
-
-    /**
-     * Test that a durable queue can be created via JMX.
-     *
-     * @throws IOException                  if there is a problem via the JMX connection
-     * @throws javax.management.JMException if there is a problem with the JMX command
-     */
-    public void testDeletionDurableViaJMX() throws IOException, JMException
-    {
-        String name = getName();
-
-        _jmxUtils.createQueue(VIRTUALHOST_NAME, name, null, true);
-
-        ManagedBroker managedBroker = _jmxUtils.
-                getManagedBroker(VIRTUALHOST_NAME);
-
-        try
-        {
-            managedBroker.deleteQueue(name);
-        }
-        catch (UndeclaredThrowableException e)
-        {
-            fail(((MBeanException) ((InvocationTargetException)
-                    e.getUndeclaredThrowable()).getTargetException()).getTargetException().getMessage());
-        }
-    }
-
-    /*
-     * Helper Methods
-     */
-
-    /**
-     * Using the provided JMS Connection create a queue using the AMQP extension
-     * with the given properties and then validate it was created correctly via
-     * the JMX Connection
-     *
-     * @param connection Qpid JMS Connection
-     * @param queueName  String the desired QueueName
-     * @param durable    boolean if the queue should be durable
-     * @param autoDelete boolean if the queue is an autoDelete queue
-     * @param exclusive  boolean if the queue is exclusive
-     *
-     * @throws QpidException if there is a problem with the createQueue call
-     * @throws JMException  if there is a problem with the JMX validatation
-     * @throws IOException  if there is a problem with the JMX connection
-     * @throws JMSException if there is a problem creating the JMS Session
-     */
-    private void createViaAMQPandValidateViaJMX(Connection connection,
-                                                String queueName,
-                                                boolean durable,
-                                                boolean autoDelete,
-                                                boolean exclusive)
-            throws QpidException, JMException, IOException, JMSException
+    private void createViaAMQPandValidateViaREST(Connection connection,
+                                                 String queueName,
+                                                 boolean durable,
+                                                 boolean autoDelete,
+                                                 boolean exclusive)
+            throws Exception
     {
         AMQSession session = (AMQSession) connection.createSession(false,
                                                                    Session.AUTO_ACKNOWLEDGE);
@@ -289,53 +174,33 @@ public class ModelTest extends QpidBrokerTestCase
         session.createQueue(queueName,
                             autoDelete, durable, exclusive);
 
-        validateQueueViaJMX(queueName, (exclusive && durable &&!isBroker010()) ? connection.getClientID() : null, durable, autoDelete || (exclusive && !isBroker010() && !durable));
+        String owner = (exclusive && durable && !isBroker010()) ? connection.getClientID() : null;
+        boolean isAutoDelete = autoDelete || (exclusive && !isBroker010() && !durable);
+        validateQueueViaREST(queueName, owner, durable, isAutoDelete);
     }
 
-    /**
-     * Use the JMX Helper to create a queue with the given properties and then
-     * validate it was created correctly via the JMX Connection
-     *
-     * @param queueName  String the desired QueueName
-     * @param owner      String the owner value that should be set
-     * @param durable    boolean if the queue should be durable
-     * @param autoDelete boolean if the queue is an autoDelete queue
-     *
-     * @throws JMException if there is a problem with the JMX validatation
-     * @throws IOException if there is a problem with the JMX connection
-     */
-    private void createViaJMXandValidateViaJMX(String queueName, String owner,
-                                               boolean durable)
-            throws JMException, IOException
+    private void validateQueueViaREST(String queueName, String owner, boolean durable, boolean autoDelete)
+            throws Exception
     {
-        _jmxUtils.createQueue(VIRTUALHOST_NAME, queueName, owner, durable);
+        Map<String, Object> queueAttributes = getQueueAttributes(queueName);
 
-        validateQueueViaJMX(queueName, owner, durable, false);
+        assertEquals(queueName, (String) queueAttributes.get(Queue.NAME));
+        assertEquals(owner, (String) queueAttributes.get(Queue.OWNER));
+        assertEquals(durable, (boolean) queueAttributes.get(Queue.DURABLE));
+        LifetimePolicy lifeTimePolicy = LifetimePolicy.valueOf((String)queueAttributes.get(Queue.LIFETIME_POLICY));
+        assertEquals("Unexpected life time policy " + lifeTimePolicy, autoDelete, lifeTimePolicy != LifetimePolicy.PERMANENT);
     }
 
-    /**
-     * Validate that a queue with the given properties exists on the broker
-     *
-     * @param queueName  String the desired QueueName
-     * @param owner      String the owner value that should be set
-     * @param durable    boolean if the queue should be durable
-     * @param autoDelete boolean if the queue is an autoDelete queue
-     *
-     * @throws JMException if there is a problem with the JMX validatation
-     * @throws IOException if there is a problem with the JMX connection
-     */
-    private void validateQueueViaJMX(String queueName, String owner, boolean durable, boolean autoDelete)
-            throws JMException, IOException
+    private Map<String, Object> getQueueAttributes(final String queueName) throws IOException
     {
-        ManagedQueue managedQueue = _jmxUtils.
-                getManagedObject(ManagedQueue.class,
-                                 _jmxUtils.getQueueObjectName(VIRTUALHOST_NAME,
-                                                              queueName));
-
-        assertEquals(queueName, managedQueue.getName());
-        assertEquals(owner, managedQueue.getOwner());
-        assertEquals(durable, managedQueue.isDurable());
-        assertEquals(autoDelete, managedQueue.isAutoDelete());
+        String queueUrl = getQueueUrl(queueName);
+        return _restTestHelper.getJsonAsSingletonList(queueUrl);
     }
 
+    private String getQueueUrl(final String queueName)
+    {
+        return String.format("queue/%1$s/%1$s/%2$s",
+                             TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST,
+                             queueName);
+    }
 }

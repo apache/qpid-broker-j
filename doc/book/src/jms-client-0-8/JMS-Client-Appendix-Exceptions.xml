@@ -128,7 +128,7 @@
   </table>
 
   <para>The following table describes some of the more common exceptions linked to JMSException sent
-    to <ulink url="&oracleJeeDocUrl;javax/jmx/ExceptionListener.html">ExceptionListener</ulink>
+    to <ulink url="&oracleJeeDocUrl;javax/jms/ExceptionListener.html">ExceptionListener</ulink>
     instances.</para>
 
   <table pgwide="1">

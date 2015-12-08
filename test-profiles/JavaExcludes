@@ -26,9 +26,3 @@ org.apache.qpid.test.client.queue.QueuePolicyTest#testRejectPolicy
 
 // Test runs for 2 minutes testing that subtraction works
 org.apache.qpid.util.SerialTest#testCorollary1
-
-// Test fails with new logback sift mechanism for producing log per test.  Issue is the RMI
-// threads linger between tests, so still carry the MDC from a previous test run, meaning that
-// the log statements for MNG-1007/8 get directed to the wrong log.  This is not a general
-// problem because other JMX actions are carried out by configuration threads.
-org.apache.qpid.systest.management.jmx.ManagementLoggingTest#testManagementUserOpenClose

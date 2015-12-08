@@ -90,8 +90,6 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
         final ConfiguredObjectRecordHandler localRecoveryHandler = new ConfiguredObjectRecordHandler()
         {
             private int _version;
-            private boolean _quiesceRmiPort = _systemConfig.getManagementModeRmiPortOverride() > 0;
-            private boolean _quiesceJmxPort = _systemConfig.getManagementModeJmxPortOverride() > 0;
             private boolean _quiesceHttpPort = _systemConfig.getManagementModeHttpPortOverride() > 0;
 
             @Override
@@ -126,12 +124,6 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
                         {
                             switch (protocol)
                             {
-                                case JMX_RMI:
-                                    quiesce = _quiesceJmxPort || _quiesceRmiPort ;
-                                    break;
-                                case RMI:
-                                    quiesce = _quiesceRmiPort;
-                                    break;
                                 case HTTP:
                                     quiesce = _quiesceHttpPort;
                                     break;
@@ -293,37 +285,12 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
 
     private Map<UUID, ConfiguredObjectRecord> createPortsFromCommandLineOptions(SystemConfig<?> options)
     {
-        int managementModeRmiPortOverride = options.getManagementModeRmiPortOverride();
-        if (managementModeRmiPortOverride < 0)
-        {
-            throw new IllegalConfigurationException("Invalid rmi port is specified: " + managementModeRmiPortOverride);
-        }
-        int managementModeJmxPortOverride = options.getManagementModeJmxPortOverride();
-        if (managementModeJmxPortOverride < 0)
-        {
-            throw new IllegalConfigurationException("Invalid jmx port is specified: " + managementModeJmxPortOverride);
-        }
         int managementModeHttpPortOverride = options.getManagementModeHttpPortOverride();
         if (managementModeHttpPortOverride < 0)
         {
             throw new IllegalConfigurationException("Invalid http port is specified: " + managementModeHttpPortOverride);
         }
         Map<UUID, ConfiguredObjectRecord> cliEntries = new HashMap<UUID, ConfiguredObjectRecord>();
-        if (managementModeRmiPortOverride != 0)
-        {
-            ConfiguredObjectRecord entry = createCLIPortEntry(managementModeRmiPortOverride, Protocol.RMI);
-            cliEntries.put(entry.getId(), entry);
-            if (managementModeJmxPortOverride == 0)
-            {
-                ConfiguredObjectRecord connectorEntry = createCLIPortEntry(managementModeRmiPortOverride + 100, Protocol.JMX_RMI);
-                cliEntries.put(connectorEntry.getId(), connectorEntry);
-            }
-        }
-        if (managementModeJmxPortOverride != 0)
-        {
-            ConfiguredObjectRecord entry = createCLIPortEntry(managementModeJmxPortOverride, Protocol.JMX_RMI);
-            cliEntries.put(entry.getId(), entry);
-        }
         if (managementModeHttpPortOverride != 0)
         {
             ConfiguredObjectRecord entry = createCLIPortEntry(managementModeHttpPortOverride, Protocol.HTTP);
@@ -340,10 +307,7 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
         attributes.put(Port.PORT, port);
         attributes.put(Port.PROTOCOLS, Collections.singleton(protocol));
         attributes.put(Port.NAME, MANAGEMENT_MODE_PORT_PREFIX + protocol.name());
-        if (protocol != Protocol.RMI)
-        {
-            attributes.put(Port.AUTHENTICATION_PROVIDER, BrokerAdapter.MANAGEMENT_MODE_AUTHENTICATION);
-        }
+        attributes.put(Port.AUTHENTICATION_PROVIDER, BrokerAdapter.MANAGEMENT_MODE_AUTHENTICATION);
         ConfiguredObjectRecord portEntry = new ConfiguredObjectRecordImpl(UUID.randomUUID(), PORT_TYPE, attributes,
                 Collections.singletonMap(parent.getType(),parent.getId()));
         if (LOGGER.isDebugEnabled())
@@ -370,8 +334,6 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
     private Map<UUID, Object> quiesceEntries(final SystemConfig<?> options)
     {
         final Map<UUID, Object> quiescedEntries = new HashMap<UUID, Object>();
-        final int managementModeRmiPortOverride = options.getManagementModeRmiPortOverride();
-        final int managementModeJmxPortOverride = options.getManagementModeJmxPortOverride();
         final int managementModeHttpPortOverride = options.getManagementModeHttpPortOverride();
 
         _store.visitConfiguredObjectRecords(new ConfiguredObjectRecordHandler()
@@ -409,12 +371,6 @@ public class ManagementModeStoreHandler implements DurableConfigurationStore
                         {
                             switch (protocol)
                             {
-                                case JMX_RMI:
-                                    quiesce = managementModeJmxPortOverride > 0 || managementModeRmiPortOverride > 0;
-                                    break;
-                                case RMI:
-                                    quiesce = managementModeRmiPortOverride > 0;
-                                    break;
                                 case HTTP:
                                     quiesce = managementModeHttpPortOverride > 0;
                                     break;

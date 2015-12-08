@@ -48,7 +48,7 @@ import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNameAlias;
 import org.apache.qpid.server.security.FileTrustStore;
-import org.apache.qpid.test.utils.JMXTestUtils;
+import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
@@ -251,10 +251,9 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
      */
     public void testExternalAuthenticationManagerUsernameAsCN() throws Exception
     {
-        JMXTestUtils jmxUtils = new JMXTestUtils(this);
-
+        RestTestHelper restTestHelper = new RestTestHelper(findFreePort());
+        restTestHelper.enableHttpManagement(getBrokerConfiguration());
         setCommonBrokerSSLProperties(true);
-        getBrokerConfiguration().addJmxManagementConfiguration();
 
         super.setUp();
 
@@ -270,12 +269,16 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
             fail("Should be able to create a connection to the SSL port: " + e.getMessage());
         }
 
-        // Getting the used username using JMX
-        jmxUtils.open();
-        List<ManagedConnection> connections = jmxUtils.getManagedConnections("test");
-        assertNotNull("Connections are null", connections);
-        assertEquals("Unexpected number of connections", 1, connections.size());
-        assertEquals("Wrong authorized ID", "app2@acme.org", connections.get(0).getAuthorizedId());
+        try
+        {
+            // Getting the used username using REST
+            Map<String, Object> connectionAttributes = restTestHelper.getJsonAsSingletonList("connection");
+            assertEquals("Wrong authorized ID", "app2@acme.org", (String) connectionAttributes.get(org.apache.qpid.server.model.Connection.PRINCIPAL));
+        }
+        finally
+        {
+            restTestHelper.tearDown();
+        }
     }
 
     /**
@@ -284,11 +287,15 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
      */
     public void testExternalAuthenticationManagerUsernameAsDN() throws Exception
     {
-        JMXTestUtils jmxUtils = new JMXTestUtils(this);
+        RestTestHelper restTestHelper = new RestTestHelper(findFreePort());
+        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
+        restTestHelper.enableHttpManagement(brokerConfiguration);
 
         setCommonBrokerSSLProperties(true);
-        getBrokerConfiguration().setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_EXTERNAL_PROVIDER, ExternalAuthenticationManager.ATTRIBUTE_USE_FULL_DN, "true");
-        getBrokerConfiguration().addJmxManagementConfiguration();
+        brokerConfiguration.setObjectAttribute(AuthenticationProvider.class,
+                                                    TestBrokerConfiguration.ENTRY_NAME_EXTERNAL_PROVIDER,
+                                                    ExternalAuthenticationManager.ATTRIBUTE_USE_FULL_DN,
+                                                    "true");
 
         super.setUp();
 
@@ -304,12 +311,17 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
             fail("Should be able to create a connection to the SSL port: " + e.getMessage());
         }
 
-        // Getting the used username using JMX
-        jmxUtils.open();
-        List<ManagedConnection> connections = jmxUtils.getManagedConnections("test");
-        assertNotNull("Connections are null", connections);
-        assertEquals("Unexpected number of connections", 1, connections.size());
-        assertEquals("Wrong authorized ID", "CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", connections.get(0).getAuthorizedId());
+        try
+        {
+            // Getting the used username using REST
+            Map<String, Object> connectionAttributes = restTestHelper.getJsonAsSingletonList("connection");
+            assertEquals("Wrong authorized ID", "CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA",
+                         (String) connectionAttributes.get(org.apache.qpid.server.model.Connection.PRINCIPAL));
+        }
+        finally
+        {
+            restTestHelper.tearDown();
+        }
     }
 
     private Connection getExternalSSLConnection(boolean includeUserNameAndPassword) throws Exception

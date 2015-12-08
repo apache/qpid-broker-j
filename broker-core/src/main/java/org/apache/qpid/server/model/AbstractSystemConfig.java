@@ -73,12 +73,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     private boolean _managementMode;
 
     @ManagedAttributeField
-    private int _managementModeRmiPortOverride;
-
-    @ManagedAttributeField
-    private int _managementModeJmxPortOverride;
-
-    @ManagedAttributeField
     private int _managementModeHttpPortOverride;
 
     @ManagedAttributeField
@@ -313,18 +307,6 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     public boolean isManagementMode()
     {
         return _managementMode;
-    }
-
-    @Override
-    public int getManagementModeRmiPortOverride()
-    {
-        return _managementModeRmiPortOverride;
-    }
-
-    @Override
-    public int getManagementModeJmxPortOverride()
-    {
-        return _managementModeJmxPortOverride;
     }
 
     @Override

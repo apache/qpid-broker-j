@@ -116,6 +116,4 @@
     href="management/managing/Java-Broker-Management-Managing-Access-Control-Providers.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
     href="management/managing/Java-Broker-Management-Managing-Plugins-HTTP.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Plugins-JMX.xml"/>
 </chapter>

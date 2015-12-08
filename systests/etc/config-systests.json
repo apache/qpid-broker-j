@@ -20,7 +20,7 @@
  */
 {
   "name": "Broker",
-  "modelVersion": "6.0",
+  "modelVersion": "6.1",
   "authenticationproviders" : [ {
     "name" : "plain",
     "type" : "PlainPasswordFile",
@@ -53,15 +53,6 @@
     "authenticationProvider" : "plain",
     "port" : "${test.hport}",
     "protocols" : [ "HTTP" ]
-  }, {
-    "name" : "rmi",
-    "port" : "${test.mport}",
-    "protocols" : [ "RMI" ]
-  }, {
-    "name" : "jmx",
-    "authenticationProvider" : "plain",
-    "port" : "${test.cport}",
-    "protocols" : [ "JMX_RMI" ]
   }],
   "virtualhostnodes" : [ {
     "name" : "test",

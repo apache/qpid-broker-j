@@ -155,7 +155,6 @@ public class GroupCreator
             virtualHostNodeAttributes.put(BDBHAVirtualHostNode.CONTEXT, context);
 
             TestBrokerConfiguration brokerConfiguration = _testcase.getBrokerConfiguration(brokerPort);
-            brokerConfiguration.addJmxManagementConfiguration();
             brokerConfiguration.addHttpManagementConfiguration();
             brokerConfiguration.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
             brokerConfiguration.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.PORT, _testcase.getHttpManagementPort(brokerPort));

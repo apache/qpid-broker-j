@@ -41,7 +41,7 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
 
     public void testManagementListening()
     {
-        String management = "JMX";
+        String management = "HTTP";
         Integer port = 8889;
 
         _logMessage = ManagementConsoleMessages.LISTENING(management, Transport.TCP.name(), port);
@@ -54,7 +54,7 @@ public class ManagementConsoleMessagesTest extends AbstractTestMessages
 
     public void testManagementShuttingDown()
     {
-        String transport = "JMX";
+        String transport = "HTTP";
         Integer port = 8889;
 
         _logMessage = ManagementConsoleMessages.SHUTTING_DOWN(transport, port);

@@ -27,9 +27,7 @@ public enum Protocol
     AMQP_0_9_1(ProtocolType.AMQP, "0-9-1"),
     AMQP_0_10(ProtocolType.AMQP, "0-10"),
     AMQP_1_0(ProtocolType.AMQP, "1.0"),
-    JMX_RMI(ProtocolType.JMX),
-    HTTP(ProtocolType.HTTP),
-    RMI(ProtocolType.RMI);
+    HTTP(ProtocolType.HTTP);
 
     private final ProtocolType _protocolType;
 
@@ -63,6 +61,6 @@ public enum Protocol
 
     public enum ProtocolType
     {
-        AMQP, HTTP, JMX, RMI
+        AMQP, HTTP
     }
 }

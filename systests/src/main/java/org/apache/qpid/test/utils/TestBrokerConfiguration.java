@@ -60,16 +60,12 @@ public class TestBrokerConfiguration
 
     public static final String ENTRY_NAME_HTTP_PORT = "http";
     public static final String ENTRY_NAME_AMQP_PORT = "amqp";
-    public static final String ENTRY_NAME_RMI_PORT = "rmi";
-    public static final String ENTRY_NAME_JMX_PORT = "jmx";
     public static final String ENTRY_NAME_VIRTUAL_HOST = "test";
     public static final String ENTRY_NAME_AUTHENTICATION_PROVIDER = "plain";
     public static final String ENTRY_NAME_EXTERNAL_PROVIDER = "external";
     public static final String ENTRY_NAME_SSL_PORT = "sslPort";
     public static final String ENTRY_NAME_HTTP_MANAGEMENT = "MANAGEMENT-HTTP";
     public static final String MANAGEMENT_HTTP_PLUGIN_TYPE = "MANAGEMENT-HTTP";
-    public static final String ENTRY_NAME_JMX_MANAGEMENT = "MANAGEMENT-JMX";
-    public static final String MANAGEMENT_JMX_PLUGIN_TYPE = "MANAGEMENT-JMX";
     public static final String ENTRY_NAME_ANONYMOUS_PROVIDER = "anonymous";
     public static final String ENTRY_NAME_SSL_KEYSTORE = "systestsKeyStore";
     public static final String ENTRY_NAME_SSL_TRUSTSTORE = "systestsTrustStore";
@@ -300,14 +296,6 @@ public class TestBrokerConfiguration
 
         _store.update(true, entry);
         return id;
-    }
-
-    public UUID addJmxManagementConfiguration()
-    {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Plugin.TYPE, MANAGEMENT_JMX_PLUGIN_TYPE);
-        attributes.put(Plugin.NAME, ENTRY_NAME_JMX_MANAGEMENT);
-        return addObjectConfiguration(Plugin.class, attributes);
     }
 
     public UUID addHttpManagementConfiguration()

@@ -56,10 +56,9 @@
 [Broker] MNG-1004 : Web Management Ready
 [Broker] BRK-1004 : Qpid Broker Ready</screen>
     <para>The BRK-1004 message confirms that the Broker is ready for work.  The MNG-1002 and BRK-1002 confirm the ports on
-      which the Broker is listening (for HTTP/JMX management and AMQP respectively).</para>
-    <para>To stop the Broker, use Control-C from the controlling command prompy, the
-      <link linkend="Java-Broker-Management-Channel-REST-API-Operations">REST operation broker/shutdown</link> or the Shutdown MBean
-      from the <link linkend="Java-Broker-Management-Channel-JMX">JMX management plugin</link>.
+      which the Broker is listening (for HTTP management and AMQP respectively).</para>
+    <para>To stop the Broker, use Control-C from the controlling command prompt or
+      <link linkend="Java-Broker-Management-Channel-REST-API-Operations">REST operation broker/shutdown</link>.
     </para>
   </section>
   <section role="h2" id="Java-Broker-Getting-Started-Starting-Stopping-Unix">
@@ -79,11 +78,10 @@
 [Broker] MNG-1004 : Web Management Ready
 [Broker] BRK-1004 : Qpid Broker Ready</screen>
     <para>The BRK-1004 message confirms that the Broker is ready for work.  The MNG-1002 and BRK-1002 confirm the ports on
-    which the Broker is listening (for HTTP/JMX management and AMQP respectively).</para>
+    which the Broker is listening (for HTTP management and AMQP respectively).</para>
     <para>To stop the Broker, use Control-C from the controlling shell, use the
-        <command>bin/qpid.stop</command> script, use <command>kill -TERM &lt;pid&gt;</command>,
-      the <link linkend="Java-Broker-Management-Channel-REST-API-Operations">REST operation broker/shutdown</link> or the 
-      Shutdown MBean from the <link linkend="Java-Broker-Management-Channel-JMX">JMX management plugin</link>.</para>
+        <command>bin/qpid.stop</command> script, use <command>kill -TERM &lt;pid&gt;</command>, or
+      the <link linkend="Java-Broker-Management-Channel-REST-API-Operations">REST operation broker/shutdown</link>.</para>
   </section>
   <section role="h2" id="Java-Broker-Getting-Started-Logging">
     <title>Log file</title>
@@ -105,7 +103,7 @@
     <para>To see usage information for all command line options, use the <option>--help</option> option</para>
     <programlisting><![CDATA[bin/qpid-server --help]]></programlisting>
     <screen><![CDATA[usage: Qpid [-cic <path>] [-h] [-icp <path>] [-mm] [-mmhttp <port>]
-       [-mmjmx <port>] [-mmpass <password>] [-mmqv] [-mmrmi <port>] [-os]
+       [-mmpass <password>] [-mmqv] [-os]
        [-prop <name=value>] [-props <path>] [-sp <path>] [-st <type>] [-v]
  -cic,--create-initial-config <path>                  create a copy of the
                                                       initial config file,
@@ -129,9 +127,6 @@
  -mmhttp,--management-mode-http-port <port>           override http
                                                       management port in
                                                       management mode
- -mmjmx,--management-mode-jmx-connector-port <port>   override jmx
-                                                      connector port in
-                                                      management mode
  -mmpass,--management-mode-password <password>        Set the password for
                                                       the management mode
                                                       user mm_admin
@@ -139,9 +134,6 @@
                                                       stay in the quiesced
                                                       state during
                                                       management mode.
- -mmrmi,--management-mode-rmi-registry-port <port>    override jmx rmi
-                                                      registry port in
-                                                      management mode
  -os,--overwrite-store                                overwrite the broker
                                                       configuration store
                                                       with the current

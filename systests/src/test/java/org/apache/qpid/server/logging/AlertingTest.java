@@ -151,8 +151,6 @@ public class AlertingTest extends AbstractTestLogging
         TestBrokerConfiguration config = getBrokerConfiguration();
         config.addHttpManagementConfiguration();
         config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.PORT, restTestHelper.getHttpPort());
-        config.removeObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_JMX_PORT);
-        config.removeObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_RMI_PORT);
 
         Map<String, Object> anonymousProviderAttributes = new HashMap<String, Object>();
         anonymousProviderAttributes.put(AuthenticationProvider.TYPE, AnonymousAuthenticationManager.PROVIDER_TYPE);

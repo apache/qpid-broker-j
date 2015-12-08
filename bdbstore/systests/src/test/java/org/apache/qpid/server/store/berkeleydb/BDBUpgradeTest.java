@@ -21,7 +21,10 @@
 package org.apache.qpid.server.store.berkeleydb;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Map;
 
 import javax.jms.Connection;
@@ -39,14 +42,16 @@ import javax.jms.TopicConnection;
 import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
-import javax.management.openmbean.CompositeData;
-import javax.management.openmbean.TabularDataSupport;
 
-import org.apache.qpid.management.common.mbeans.ManagedExchange;
-import org.apache.qpid.management.common.mbeans.ManagedQueue;
+import org.apache.qpid.client.AMQDestination;
+import org.apache.qpid.client.AMQQueue;
+import org.apache.qpid.exchange.ExchangeDefaults;
+import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBVirtualHostNode;
-import org.apache.qpid.test.utils.JMXTestUtils;
+import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.util.FileUtils;
@@ -80,12 +85,15 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
     private static final String QUEUE_WITH_DLQ_NAME="myQueueWithDLQ";
 
     private String _storeLocation;
+    private RestTestHelper _restTestHelper = new RestTestHelper(findFreePort());
 
     @Override
     public void setUp() throws Exception
     {
         assertNotNull("QPID_WORK must be set", QPID_WORK_ORIG);
-        Map<String, Object> virtualHostNodeAttributes = getBrokerConfiguration().getObjectAttributes(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
+        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
+        _restTestHelper.enableHttpManagement(brokerConfiguration);
+        Map<String, Object> virtualHostNodeAttributes = brokerConfiguration.getObjectAttributes(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
         _storeLocation = Strings.expand((String)virtualHostNodeAttributes.get(BDBVirtualHostNode.STORE_PATH));
 
         //Clear the two target directories if they exist.
@@ -100,67 +108,61 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         InputStream src = getClass().getClassLoader().getResourceAsStream("upgrade/bdbstore-v4/test-store/00000000.jdb");
         FileUtils.copy(src, new File(_storeLocation, "00000000.jdb"));
 
-        getBrokerConfiguration().addJmxManagementConfiguration();
         super.setUp();
+    }
+
+    @Override
+    public void tearDown() throws Exception
+    {
+        try
+        {
+            _restTestHelper.tearDown();
+        }
+        finally
+        {
+            super.tearDown();
+        }
     }
 
     /**
      * Test that the selector applied to the DurableSubscription was successfully
-     * transfered to the new store, and functions as expected with continued use
+     * transferred to the new store, and functions as expected with continued use
      * by monitoring message count while sending new messages to the topic and then
      * consuming them.
      */
     public void testSelectorDurability() throws Exception
     {
-        JMXTestUtils jmxUtils = null;
-        try
-        {
-            jmxUtils = new JMXTestUtils(this, "guest", "guest");
-            jmxUtils.open();
-        }
-        catch (Exception e)
-        {
-            fail("Unable to establish JMX connection, test cannot proceed");
-        }
+        AMQDestination queue = new AMQQueue(ExchangeDefaults.DEFAULT_EXCHANGE_NAME, "clientid" + ":" + SELECTOR_SUB_NAME);
+        // Create a connection and start it
+        TopicConnection connection = (TopicConnection) getConnection();
+        connection.start();
 
-        try
-        {
-            ManagedQueue dursubQueue = jmxUtils.getManagedQueue("clientid" + ":" + SELECTOR_SUB_NAME);
-            assertEquals("DurableSubscription backing queue should have 1 message on it initially",
-                          new Integer(1), dursubQueue.getMessageCount());
+        // Send messages which don't match and do match the selector, checking message count
+        TopicSession pubSession = connection.createTopicSession(true, Session.SESSION_TRANSACTED);
+        assertEquals("DurableSubscription backing queue should have 1 message on it initially",
+                     1, getQueueDepth(queue.getQueueName()));
 
-            // Create a connection and start it
-            TopicConnection connection = (TopicConnection) getConnection();
-            connection.start();
+        Topic topic = pubSession.createTopic(SELECTOR_TOPIC_NAME);
+        TopicPublisher publisher = pubSession.createPublisher(topic);
 
-            // Send messages which don't match and do match the selector, checking message count
-            TopicSession pubSession = connection.createTopicSession(true, Session.SESSION_TRANSACTED);
-            Topic topic = pubSession.createTopic(SELECTOR_TOPIC_NAME);
-            TopicPublisher publisher = pubSession.createPublisher(topic);
+        publishMessages(pubSession, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "false");
+        pubSession.commit();
+        assertEquals("DurableSubscription backing queue should still have 1 message on it",
+                     1, getQueueDepth(queue.getQueueName()));
 
-            publishMessages(pubSession, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "false");
-            pubSession.commit();
-            assertEquals("DurableSubscription backing queue should still have 1 message on it",
-                         Integer.valueOf(1), dursubQueue.getMessageCount());
+        publishMessages(pubSession, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "true");
+        pubSession.commit();
+        assertEquals("DurableSubscription backing queue should now have 2 messages on it",
+                     2, getQueueDepth(queue.getQueueName()));
 
-            publishMessages(pubSession, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "true");
-            pubSession.commit();
-            assertEquals("DurableSubscription backing queue should now have 2 messages on it",
-                         Integer.valueOf(2), dursubQueue.getMessageCount());
+        TopicSubscriber durSub = pubSession.createDurableSubscriber(topic, SELECTOR_SUB_NAME,"testprop='true'", false);
+        Message m = durSub.receive(2000);
+        assertNotNull("Failed to receive an expected message", m);
+        m = durSub.receive(2000);
+        assertNotNull("Failed to receive an expected message", m);
+        pubSession.commit();
 
-            TopicSubscriber durSub = pubSession.createDurableSubscriber(topic, SELECTOR_SUB_NAME,"testprop='true'", false);
-            Message m = durSub.receive(2000);
-            assertNotNull("Failed to receive an expected message", m);
-            m = durSub.receive(2000);
-            assertNotNull("Failed to receive an expected message", m);
-            pubSession.commit();
-
-            pubSession.close();
-        }
-        finally
-        {
-            jmxUtils.close();
-        }
+        pubSession.close();
     }
 
     /**
@@ -169,50 +171,32 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      */
     public void testDurableSubscriptionWithoutSelector() throws Exception
     {
-        JMXTestUtils jmxUtils = null;
-        try
-        {
-            jmxUtils = new JMXTestUtils(this, "guest", "guest");
-            jmxUtils.open();
-        }
-        catch (Exception e)
-        {
-            fail("Unable to establish JMX connection, test cannot proceed");
-        }
+        AMQDestination queue = new AMQQueue(ExchangeDefaults.DEFAULT_EXCHANGE_NAME, "clientid" + ":" + SUB_NAME);
 
-        try
-        {
-            ManagedQueue dursubQueue = jmxUtils.getManagedQueue("clientid" + ":" + SUB_NAME);
-            assertEquals("DurableSubscription backing queue should have 1 message on it initially",
-                          new Integer(1), dursubQueue.getMessageCount());
+        // Create a connection and start it
+        TopicConnection connection = (TopicConnection) getConnection();
+        connection.start();
 
-            // Create a connection and start it
-            TopicConnection connection = (TopicConnection) getConnection();
-            connection.start();
+        // Send new message matching the topic, checking message count
+        TopicSession session = connection.createTopicSession(true, Session.SESSION_TRANSACTED);
+        assertEquals("DurableSubscription backing queue should have 1 message on it initially",
+                     1, getQueueDepth(queue.getQueueName()));
+        Topic topic = session.createTopic(TOPIC_NAME);
+        TopicPublisher publisher = session.createPublisher(topic);
 
-            // Send new message matching the topic, checking message count
-            TopicSession session = connection.createTopicSession(true, Session.SESSION_TRANSACTED);
-            Topic topic = session.createTopic(TOPIC_NAME);
-            TopicPublisher publisher = session.createPublisher(topic);
+        publishMessages(session, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "indifferent");
+        session.commit();
+        assertEquals("DurableSubscription backing queue should now have 2 messages on it",
+                     2, getQueueDepth(queue.getQueueName()));
 
-            publishMessages(session, publisher, topic, DeliveryMode.PERSISTENT, 1*1024, 1, "indifferent");
-            session.commit();
-            assertEquals("DurableSubscription backing queue should now have 2 messages on it",
-                        Integer.valueOf(2), dursubQueue.getMessageCount());
+        TopicSubscriber durSub = session.createDurableSubscriber(topic, SUB_NAME);
+        Message m = durSub.receive(2000);
+        assertNotNull("Failed to receive an expected message", m);
+        m = durSub.receive(2000);
+        assertNotNull("Failed to receive an expected message", m);
 
-            TopicSubscriber durSub = session.createDurableSubscriber(topic, SUB_NAME);
-            Message m = durSub.receive(2000);
-            assertNotNull("Failed to receive an expected message", m);
-            m = durSub.receive(2000);
-            assertNotNull("Failed to receive an expected message", m);
-
-            session.commit();
-            session.close();
-        }
-        finally
-        {
-            jmxUtils.close();
-        }
+        session.commit();
+        session.close();
     }
 
     /**
@@ -222,29 +206,17 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      */
     public void testQueueExclusivity() throws Exception
     {
-        JMXTestUtils jmxUtils = null;
-        try
-        {
-            jmxUtils = new JMXTestUtils(this, "guest", "guest");
-            jmxUtils.open();
-        }
-        catch (Exception e)
-        {
-            fail("Unable to establish JMX connection, test cannot proceed");
-        }
+        Map<String, Object> result = getQueueAttributes(QUEUE_NAME);
+        ExclusivityPolicy exclusivityPolicy =
+                ExclusivityPolicy.valueOf((String) result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE));
+        assertEquals("Queue should not have been marked as Exclusive during upgrade",
+                     ExclusivityPolicy.NONE, exclusivityPolicy);
 
-        try
-        {
-            ManagedQueue queue = jmxUtils.getManagedQueue(QUEUE_NAME);
-            assertFalse("Queue should not have been marked as Exclusive during upgrade", queue.isExclusive());
-
-            ManagedQueue dursubQueue = jmxUtils.getManagedQueue("clientid" + ":" + SUB_NAME);
-            assertTrue("DurableSubscription backing queue should have been marked as Exclusive during upgrade", dursubQueue.isExclusive());
-        }
-        finally
-        {
-            jmxUtils.close();
-        }
+        result = getQueueAttributes("clientid" + ":" + SUB_NAME);
+        exclusivityPolicy =
+                ExclusivityPolicy.valueOf((String) result.get(org.apache.qpid.server.model.Queue.EXCLUSIVE));
+        assertTrue("DurableSubscription backing queue should have been marked as Exclusive during upgrade",
+                   exclusivityPolicy != ExclusivityPolicy.NONE);
     }
 
     /**
@@ -369,53 +341,67 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
      */
     public void testRecoveryOfQueueWithDLQ() throws Exception
     {
-        JMXTestUtils jmxUtils = null;
+        //verify the DLE exchange exists, has the expected type, and a single binding for the DLQ
+        Map<String, Object> exchangeAttributes = getExchangeAttributes(QUEUE_WITH_DLQ_NAME + "_DLE");
+        assertEquals("Wrong exchange type", "fanout", (String) exchangeAttributes.get(Exchange.TYPE));
+        Collection<Map<String, Object>> bindings = (Collection<Map<String, Object>>) exchangeAttributes.get("bindings");
+        assertEquals(1, bindings.size());
+        for(Map<String, Object> binding : bindings)
+        {
+            String bindingKey = (String) binding.get(Binding.NAME);
+            String queueName = (String) binding.get(Binding.QUEUE);
+
+            //Because its a fanout exchange, we just return a single '*' key with all bound queues
+            assertEquals("unexpected binding key", "dlq", bindingKey);
+            assertEquals("unexpected queue name", QUEUE_WITH_DLQ_NAME + "_DLQ", queueName);
+        }
+
+        //verify the queue exists, has the expected alternate exchange and max delivery count
+        Map<String, Object> queueAttributes = getQueueAttributes(QUEUE_WITH_DLQ_NAME);
+        assertEquals("Queue does not have the expected AlternateExchange", QUEUE_WITH_DLQ_NAME + "_DLE",
+                     (String) queueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_EXCHANGE));
+        assertEquals("Unexpected maximum delivery count", 2,
+                     ((Number) queueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue());
+
+        Map<String, Object> dlQueueAttributes = getQueueAttributes(QUEUE_WITH_DLQ_NAME + "_DLQ");
+        assertNull("Queue should not have an AlternateExchange",
+                   dlQueueAttributes.get(org.apache.qpid.server.model.Queue.ALTERNATE_EXCHANGE));
+        assertEquals("Unexpected maximum delivery count", 0,
+                     ((Number) dlQueueAttributes.get(org.apache.qpid.server.model.Queue.MAXIMUM_DELIVERY_ATTEMPTS)).intValue());
+
         try
         {
-            jmxUtils = new JMXTestUtils(this, "guest", "guest");
-            jmxUtils.open();
+            String queueName = QUEUE_WITH_DLQ_NAME + "_DLQ_DLQ";
+            getQueueAttributes(queueName);
+            fail("A DLQ should not exist for the DLQ itself");
         }
-        catch (Exception e)
+        catch (FileNotFoundException e)
         {
-            fail("Unable to establish JMX connection, test cannot proceed");
+            // pass
         }
+    }
 
-        try
-        {
-            //verify the DLE exchange exists, has the expected type, and a single binding for the DLQ
-            ManagedExchange exchange = jmxUtils.getManagedExchange(QUEUE_WITH_DLQ_NAME + "_DLE");
-            assertEquals("Wrong exchange type", "fanout", exchange.getExchangeType());
-            TabularDataSupport bindings = (TabularDataSupport) exchange.bindings();
-            assertEquals(1, bindings.size());
-            for(Object o : bindings.values())
-            {
-                CompositeData binding = (CompositeData) o;
+    private Map<String, Object> getExchangeAttributes(final String exchangeName) throws IOException
+    {
+        String exchangeUrl = String.format("exchange/%1$s/%1$s/%2$s",
+                                           TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST,
+                                           exchangeName);
+        return _restTestHelper.getJsonAsSingletonList(exchangeUrl);
+    }
 
-                String bindingKey = (String) binding.get(ManagedExchange.BINDING_KEY);
-                String[] queueNames = (String[]) binding.get(ManagedExchange.QUEUE_NAMES);
+    private Map<String, Object> getQueueAttributes(final String queueName) throws IOException
+    {
+        String queueUrl = String.format("queue/%1$s/%1$s/%2$s",
+                                        TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST,
+                                        queueName);
+        return _restTestHelper.getJsonAsSingletonList(queueUrl);
+    }
 
-                //Because its a fanout exchange, we just return a single '*' key with all bound queues
-                assertEquals("unexpected binding key", "*", bindingKey);
-                assertEquals("unexpected number of queues bound", 1, queueNames.length);
-                assertEquals("unexpected queue name", QUEUE_WITH_DLQ_NAME + "_DLQ", queueNames[0]);
-            }
-
-            //verify the queue exists, has the expected alternate exchange and max delivery count
-            ManagedQueue queue = jmxUtils.getManagedQueue(QUEUE_WITH_DLQ_NAME);
-            assertEquals("Queue does not have the expected AlternateExchange", QUEUE_WITH_DLQ_NAME + "_DLE", queue.getAlternateExchange());
-            assertEquals("Unexpected maximum delivery count", Integer.valueOf(2), queue.getMaximumDeliveryCount());
-
-            ManagedQueue dlQqueue = jmxUtils.getManagedQueue(QUEUE_WITH_DLQ_NAME + "_DLQ");
-            assertNull("Queue should not have an AlternateExchange", dlQqueue.getAlternateExchange());
-            assertEquals("Unexpected maximum delivery count", Integer.valueOf(0), dlQqueue.getMaximumDeliveryCount());
-
-            String dlqDlqObjectNameString = jmxUtils.getQueueObjectNameString("test", QUEUE_WITH_DLQ_NAME + "_DLQ" + "_DLQ");
-            assertFalse("a DLQ should not exist for the DLQ itself", jmxUtils.doesManagedObjectExist(dlqDlqObjectNameString));
-        }
-        finally
-        {
-            jmxUtils.close();
-        }
+    private long getQueueDepth(final String queueName) throws org.apache.qpid.QpidException, IOException
+    {
+        Map<String, Object> queueAttributes = getQueueAttributes(queueName);
+        Map<String, Object> statistics = (Map<String, Object>) queueAttributes.get("statistics");
+        return ((Number) statistics.get("queueDepthMessages")).longValue();
     }
 
     private void consumeDurableSubscriptionMessages(Connection connection, boolean selector) throws Exception

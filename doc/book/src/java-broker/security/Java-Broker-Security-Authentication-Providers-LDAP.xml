@@ -73,7 +73,7 @@
             you must: </para>
         <itemizedlist>
             <listitem>
-                <para>Use SSL on the broker's AMQP, HTTP and JMX ports to protect the password during
+                <para>Use SSL on the broker's AMQP and HTTP ports to protect the password during
                     transmission to the Broker. The Broker enforces this restriction automatically on AMQP
                     and HTTP ports.</para>
             </listitem>

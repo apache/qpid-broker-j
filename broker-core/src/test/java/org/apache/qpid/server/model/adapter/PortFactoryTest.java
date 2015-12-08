@@ -293,12 +293,12 @@ public class PortFactoryTest extends QpidTestCase
         assertEquals("Unexpected binding", "127.0.0.1", _port.getAttribute(Port.BINDING_ADDRESS));
     }
 
-    public void testCreateNonAmqpPort()
+    public void testCreateHttpPort()
     {
-        Set<Protocol> nonAmqpProtocolSet = Collections.singleton(Protocol.RMI);
-        Set<String> nonAmqpStringSet = Collections.singleton(Protocol.RMI.name());
-        _attributes = new HashMap<String, Object>();
-        _attributes.put(Port.PROTOCOLS, nonAmqpStringSet);
+        Set<Protocol> httpProtocolSet = Collections.singleton(Protocol.HTTP);
+        Set<String> httpStringSet = Collections.singleton(Protocol.HTTP.name());
+        _attributes = new HashMap<>();
+        _attributes.put(Port.PROTOCOLS, httpStringSet);
         _attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
         _attributes.put(Port.PORT, _portNumber);
         _attributes.put(Port.TRANSPORTS, _tcpStringSet);
@@ -312,15 +312,15 @@ public class PortFactoryTest extends QpidTestCase
         assertEquals(_portId, _port.getId());
         assertEquals(_portNumber, _port.getPort());
         assertEquals(_tcpTransports, _port.getTransports());
-        assertEquals(nonAmqpProtocolSet, _port.getProtocols());
+        assertEquals(httpProtocolSet, _port.getProtocols());
     }
 
-    public void testCreateNonAmqpPortWithPartiallySetAttributes()
+    public void testCreateHttpPortWithPartiallySetAttributes()
     {
-        Set<Protocol> nonAmqpProtocolSet = Collections.singleton(Protocol.RMI);
-        Set<String> nonAmqpStringSet = Collections.singleton(Protocol.RMI.name());
-        _attributes = new HashMap<String, Object>();
-        _attributes.put(Port.PROTOCOLS, nonAmqpStringSet);
+        Set<Protocol> httpProtocolSet = Collections.singleton(Protocol.HTTP);
+        Set<String> httpStringSet = Collections.singleton(Protocol.HTTP.name());
+        _attributes = new HashMap<>();
+        _attributes.put(Port.PROTOCOLS, httpStringSet);
         _attributes.put(Port.AUTHENTICATION_PROVIDER, _authProviderName);
         _attributes.put(Port.PORT, _portNumber);
         _attributes.put(Port.NAME, getName());
@@ -333,13 +333,13 @@ public class PortFactoryTest extends QpidTestCase
         assertEquals(_portId, _port.getId());
         assertEquals(_portNumber, _port.getPort());
         assertEquals(Collections.singleton(PortFactory.DEFAULT_TRANSPORT), _port.getTransports());
-        assertEquals(nonAmqpProtocolSet, _port.getProtocols());
+        assertEquals(httpProtocolSet, _port.getProtocols());
 
     }
 
     public void testCreateMixedAmqpAndNonAmqpThrowsException()
     {
-        Set<String> mixedProtocolSet = new HashSet<String>(Arrays.asList(Protocol.AMQP_0_10.name(), Protocol.JMX_RMI.name()));
+        Set<String> mixedProtocolSet = new HashSet<>(Arrays.asList(Protocol.AMQP_0_10.name(), Protocol.HTTP.name()));
         _attributes.put(Port.PROTOCOLS, mixedProtocolSet);
 
         try
@@ -348,51 +348,6 @@ public class PortFactoryTest extends QpidTestCase
             fail("Exception not thrown");
         }
         catch (IllegalConfigurationException e)
-        {
-            // pass
-        }
-    }
-
-    public void testCreateRMIPortWhenAnotherRMIPortAlreadyExists()
-    {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Port.PORT, 1);
-        attributes.put(Port.NAME, getName());
-        attributes.put(Port.TRANSPORTS, Collections.singleton(Transport.TCP));
-        attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.RMI));
-
-        Port rmiPort = mock(Port.class);
-        when(rmiPort.getProtocols()).thenReturn(Collections.singleton(Protocol.RMI));
-        when(_broker.getPorts()).thenReturn(Collections.singletonList(rmiPort));
-
-        try
-        {
-            _port = _factory.create(Port.class, attributes, _broker);
-            fail("RMI port creation should fail as another one already exist");
-        }
-        catch(IntegrityViolationException e)
-        {
-            // pass
-        }
-    }
-
-    public void testCreateRMIPortRequestingSslFails()
-    {
-        String keyStoreName = "myKeyStore";
-
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Port.PORT, 1);
-        attributes.put(Port.NAME, getName());
-        attributes.put(Port.TRANSPORTS, Collections.singleton(Transport.SSL));
-        attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.RMI));
-        _attributes.put(Port.KEY_STORE, keyStoreName);
-
-        try
-        {
-            _port = _factory.create(Port.class, attributes, _broker);
-            fail("RMI port creation should fail due to requesting SSL");
-        }
-        catch(IllegalConfigurationException e)
         {
             // pass
         }

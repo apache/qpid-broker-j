@@ -131,7 +131,6 @@
         <configuration>
           <excludes>
             <exclude>systests/**</exclude>
-            <exclude>jmx/**</exclude>
           </excludes>
         </configuration>
       </plugin>

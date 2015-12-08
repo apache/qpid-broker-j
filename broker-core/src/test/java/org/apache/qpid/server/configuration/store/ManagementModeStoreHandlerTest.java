@@ -194,22 +194,9 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         assertTrue("Store port entry id is not found", childrenIds.contains(_portEntryId));
     }
 
-    public void testGetRootEntryWithRmiPortOverriden()
+    public void testGetRootEntryWithManagementPortsOverriden()
     {
-        _options.setManagementModeRmiPortOverride(9090);
-        _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
-
-        ConfiguredObjectRecord root = getRootEntry();
-        assertEquals("Unexpected root id", _rootId, root.getId());
-        Collection<UUID> childrenIds = getChildrenIds(root);
-        assertEquals("Unexpected children size", 3, childrenIds.size());
-        assertTrue("Store port entry id is not found", childrenIds.contains(_portEntryId));
-    }
-
-    public void testGetRootEntryWithConnectorPortOverriden()
-    {
-        _options.setManagementModeJmxPortOverride(9090);
+        _options.setManagementModeHttpPortOverride(1000);
         _handler = createManagementModeStoreHandler();
         _handler.openConfigurationStore(_systemConfig, false);
 
@@ -217,21 +204,6 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         assertEquals("Unexpected root id", _rootId, root.getId());
         Collection<UUID> childrenIds = getChildrenIds(root);
         assertEquals("Unexpected children size", 2, childrenIds.size());
-        assertTrue("Store port entry id is not found", childrenIds.contains(_portEntryId));
-    }
-
-    public void testGetRootEntryWithManagementPortsOverriden()
-    {
-        _options.setManagementModeHttpPortOverride(1000);
-        _options.setManagementModeRmiPortOverride(2000);
-        _options.setManagementModeJmxPortOverride(3000);
-        _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
-
-        ConfiguredObjectRecord root = getRootEntry();
-        assertEquals("Unexpected root id", _rootId, root.getId());
-        Collection<UUID> childrenIds = getChildrenIds(root);
-        assertEquals("Unexpected children size", 4, childrenIds.size());
         assertTrue("Store port entry id is not found", childrenIds.contains(_portEntryId));
     }
 
@@ -248,18 +220,6 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         assertEquals("Unexpected entry id", _portEntryId, portEntry.getId());
         assertTrue("Unexpected children", getChildrenIds(portEntry).isEmpty());
         assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
-    }
-
-    public void testGetEntryByCLIConnectorPortId()
-    {
-        _options.setManagementModeJmxPortOverride(9090);
-        _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
-
-
-        UUID optionsPort = getOptionsPortId();
-        ConfiguredObjectRecord portEntry = getEntry(optionsPort);
-        assertCLIPortEntry(portEntry, optionsPort, Protocol.JMX_RMI);
     }
 
     public void testGetEntryByCLIHttpPortId()
@@ -280,34 +240,6 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
         attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.HTTP));
         when(_portEntry.getAttributes()).thenReturn(attributes);
         _options.setManagementModeHttpPortOverride(9090);
-        _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
-
-
-        ConfiguredObjectRecord portEntry = getEntry(_portEntryId);
-        assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
-    }
-
-    public void testRmiPortEntryIsQuiesced()
-    {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.RMI));
-        when(_portEntry.getAttributes()).thenReturn(attributes);
-        _options.setManagementModeRmiPortOverride(9090);
-        _handler = createManagementModeStoreHandler();
-        _handler.openConfigurationStore(_systemConfig, false);
-
-
-        ConfiguredObjectRecord portEntry = getEntry(_portEntryId);
-        assertEquals("Unexpected state", State.QUIESCED, portEntry.getAttributes().get(Port.STATE));
-    }
-
-    public void testConnectorPortEntryIsQuiesced()
-    {
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.JMX_RMI));
-        when(_portEntry.getAttributes()).thenReturn(attributes);
-        _options.setManagementModeRmiPortOverride(9090);
         _handler = createManagementModeStoreHandler();
         _handler.openConfigurationStore(_systemConfig, false);
 
@@ -383,8 +315,6 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     public void testSavePort()
     {
         _options.setManagementModeHttpPortOverride(1000);
-        _options.setManagementModeRmiPortOverride(2000);
-        _options.setManagementModeJmxPortOverride(3000);
         _handler = createManagementModeStoreHandler();
         _handler.openConfigurationStore(_systemConfig, false);
 
@@ -400,8 +330,6 @@ public class ManagementModeStoreHandlerTest extends QpidTestCase
     public void testSaveRoot()
     {
         _options.setManagementModeHttpPortOverride(1000);
-        _options.setManagementModeRmiPortOverride(2000);
-        _options.setManagementModeJmxPortOverride(3000);
         _handler = createManagementModeStoreHandler();
         _handler.openConfigurationStore(_systemConfig, false);
 

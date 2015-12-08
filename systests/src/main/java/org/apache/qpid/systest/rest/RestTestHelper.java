@@ -61,8 +61,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.BrokerOptions;
+import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Plugin;
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -122,6 +125,24 @@ public class RestTestHelper
     {
         return new URL(getManagementURL() + path);
     }
+
+    public void enableHttpManagement(TestBrokerConfiguration config) throws IOException
+    {
+        config.addHttpManagementConfiguration();
+        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.PORT, getHttpPort());
+
+        config.setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
+                                  "secureOnlyMechanisms",
+                                  "{}");
+
+        // set password authentication provider on http port for the tests
+        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
+                                  TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+        config.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
+
+        setUsernameAndPassword("webadmin", "webadmin");
+    }
+
 
     public HttpURLConnection openManagementConnection(String path, String method) throws IOException
     {
