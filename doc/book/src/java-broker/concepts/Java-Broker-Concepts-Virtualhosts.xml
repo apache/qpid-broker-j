@@ -46,7 +46,7 @@
   <para>A <emphasis>Consumer</emphasis> represents a live consumer that is attached to queue.</para>
   <para><emphasis>Loggers</emphasis> are responsible for producing logs for this virtualhost.</para>
   <para> The following diagram depicts the Virtualhost model: <figure>
-      <title>Virtualhost Model</title>
+    <title>Virtualhost Model showing major entities</title>
       <mediaobject>
         <imageobject>
           <imagedata fileref="images/VirtualHost-Model.png" format="PNG" scalefit="1"/>
