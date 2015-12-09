@@ -470,7 +470,7 @@
   </table>
   <table id="table-Java-Broker-Security-ACLs-Queue-Exchnage-Operations">
     <title>ACL for Queue management operations invoked via REST interfaces</title>
-    <tgroup cols="2">
+    <tgroup cols="4">
       <tbody>
         <row>
           <entry> <command>Operation</command> </entry>

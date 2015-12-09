@@ -49,7 +49,7 @@ $(OUTPUT)/html/index.html: $(BOOK) $(OUTPUT)/html/css $(OUTPUT)/html/images $(XM
 	xsltproc -o $(OUTPUT)/html/ --xinclude --stringparam  chunk.section.depth 1  --stringparam  section.autolabel 1  --stringparam  callout.graphics 0  --stringparam  callout.unicode 0 --stringparam section.label.includes.component.label 1 --stringparam use.id.as.filename 1 --stringparam html.stylesheet css/style.css --stringparam section.autolabel.max.depth 3 --stringparam toc.section.depth 2 --stringparam chunker.output.encoding UTF-8 --stringparam css.decoration 0 ../../xsl/html-custom.xsl $<
 
 %.fo: %.xml
-	xsltproc --xinclude --stringparam  section.autolabel 1  --stringparam  callout.graphics 0  --stringparam  callout.unicode 0 --stringparam section.label.includes.component.label 1 http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $< > $@
+	xsltproc --xinclude --stringparam fop1.extensions 1 --stringparam  section.autolabel 1  --stringparam  callout.graphics 0  --stringparam  callout.unicode 0 --stringparam section.label.includes.component.label 1 http://docbook.sourceforge.net/release/xsl/current/fo/docbook.xsl $< > $@
  
 
 %.pdf: %.fo
