@@ -78,7 +78,6 @@ public class SSLUtil
     private static final Logger LOGGER = LoggerFactory.getLogger(SSLUtil.class);
 
     private static final Integer DNS_NAME_TYPE = 2;
-    public static final String SSLV3_PROTOCOL = "SSLv3";
 
     private SSLUtil()
     {

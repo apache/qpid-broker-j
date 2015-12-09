@@ -56,7 +56,7 @@ public class CommonProperties
     public static final int HANDSHAKE_TIMEOUT_DEFAULT = 2;
 
     public static final String DISABLED_SSL_PROTOCOLS = "qpid.disabled_ssl_protocols";
-    public static final String DISABLED_SSL_PROTOCOLS_DEFAULT = "SSLv3,TLSv1";
+    public static final String DISABLED_SSL_PROTOCOLS_DEFAULT = "SSLv3"; //temp removed "SSLv3,TLSv1";
 
     /** The name of the version properties file to load from the class path. */
     public static final String VERSION_RESOURCE = "qpidversion.properties";

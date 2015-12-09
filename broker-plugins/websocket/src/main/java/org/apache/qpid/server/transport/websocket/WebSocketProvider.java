@@ -120,7 +120,7 @@ class WebSocketProvider implements AcceptingTransport
         {
             SslContextFactory factory = new SslContextFactory();
             factory.setSslContext(_sslContext);
-            factory.addExcludeProtocols(SSLUtil.SSLV3_PROTOCOL);
+            factory.addExcludeProtocols(SSLUtil.getExcludedSSlProtocols());
             factory.setNeedClientAuth(_port.getNeedClientAuth());
             factory.setWantClientAuth(_port.getWantClientAuth());
             connector = new SslSelectChannelConnector(factory);
