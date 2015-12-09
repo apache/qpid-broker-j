@@ -64,6 +64,34 @@ public class TCPandSSLTransportTest extends QpidTestCase
     }
 
 
+    public void testNoTLSv1SupportOnSharedPort() throws Exception
+    {
+        try
+        {
+            checkSSLExcluded("TLSv1", Transport.TCP, Transport.SSL);
+            fail("Should not be able to connect using SSLv3");
+        }
+        catch(SSLHandshakeException e)
+        {
+            // pass
+        }
+    }
+
+
+    public void testNoTLSv1SupportOnSSLOnlyPort() throws Exception
+    {
+        try
+        {
+            checkSSLExcluded("TLSv1", Transport.SSL);
+            fail("Should not be able to connect using SSLv3");
+        }
+        catch(SSLHandshakeException e)
+        {
+            // pass
+        }
+    }
+
+
     public void testNoSSLv3SupportOnSharedPort() throws Exception
     {
         try
