@@ -69,7 +69,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
         try
         {
             checkSSLExcluded("TLSv1", Transport.TCP, Transport.SSL);
-            fail("Should not be able to connect using SSLv3");
+            fail("Should not be able to connect using TLSv1");
         }
         catch(SSLHandshakeException e)
         {
@@ -83,7 +83,7 @@ public class TCPandSSLTransportTest extends QpidTestCase
         try
         {
             checkSSLExcluded("TLSv1", Transport.SSL);
-            fail("Should not be able to connect using SSLv3");
+            fail("Should not be able to connect using TLSv1");
         }
         catch(SSLHandshakeException e)
         {
