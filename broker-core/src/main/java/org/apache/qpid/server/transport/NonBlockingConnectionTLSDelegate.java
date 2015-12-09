@@ -313,7 +313,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     {
         SSLEngine sslEngine = port.getSSLContext().createSSLEngine();
         sslEngine.setUseClientMode(false);
-        SSLUtil.removeSSLv3Support(sslEngine);
+        SSLUtil.updateProtocolSupport(sslEngine);
         SSLUtil.updateEnabledCipherSuites(sslEngine, port.getEnabledCipherSuites(), port.getDisabledCipherSuites());
 
         if(port.getNeedClientAuth())

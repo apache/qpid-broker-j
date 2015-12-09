@@ -485,24 +485,46 @@ public class SSLUtil
         return property.split("\\s*,\\s*");
     }
 
-    public static void removeSSLv3Support(final SSLEngine engine)
+
+    public static String[] getEnabledSSlProtocols()
     {
-        List<String> allowedProtocols = new ArrayList<>(Arrays.asList(engine.getEnabledProtocols()));
-        boolean modified = false;
-        for(String protocol : getExcludedSSlProtocols())
-        {
-            if (allowedProtocols.contains(protocol))
-            {
-                allowedProtocols.remove(protocol);
-                modified = true;
-            }
-        }
+        String property = System.getProperty(CommonProperties.ENABLED_SSL_PROTOCOLS,
+                                             CommonProperties.ENABLED_SSL_PROTOCOLS_DEFAULT);
+        return property.split("\\s*,\\s*");
+    }
+
+    public static void updateProtocolSupport(final SSLEngine engine)
+    {
+        List<String> enabledProtocols = new ArrayList<>(Arrays.asList(engine.getEnabledProtocols()));
+        String[] supportedProtocols = engine.getSupportedProtocols();
+        boolean modified = updateEnabledProtocols(enabledProtocols, supportedProtocols);
         if(modified)
         {
-            engine.setEnabledProtocols(allowedProtocols.toArray(new String[allowedProtocols.size()]));
+            engine.setEnabledProtocols(enabledProtocols.toArray(new String[enabledProtocols.size()]));
         }
     }
 
+    public static boolean updateEnabledProtocols(final List<String> enabledProtocols, final String[] supportedProtocols)
+    {
+        boolean modified = false;
+        for(String protocol : getExcludedSSlProtocols())
+        {
+            if (enabledProtocols.contains(protocol))
+            {
+                enabledProtocols.remove(protocol);
+                modified = true;
+            }
+        }
+        for(String protocol : getEnabledSSlProtocols())
+        {
+            if(!enabledProtocols.contains(protocol) && Arrays.asList(supportedProtocols).contains(protocol))
+            {
+                enabledProtocols.add(protocol);
+                modified = true;
+            }
+        }
+        return modified;
+    }
 
 
     public static void updateEnabledCipherSuites(final SSLEngine engine,
