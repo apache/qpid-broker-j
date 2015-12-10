@@ -374,8 +374,17 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         {
             throw new IllegalConfigurationException("Key store is not configured. Cannot start management on HTTPS port without keystore");
         }
-        SslContextFactory factory = new SslContextFactory();
-        factory.addExcludeProtocols(SSLUtil.getExcludedSSlProtocols());
+        SslContextFactory factory = new SslContextFactory()
+                                    {
+                                        public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
+                                        {
+                                            List<String> selectedProtocols = new ArrayList<>(Arrays.asList(enabledProtocols));
+                                            SSLUtil.updateEnabledProtocols(selectedProtocols, supportedProtocols);
+
+                                            return selectedProtocols.toArray(new String[selectedProtocols.size()]);
+                                        }
+
+                                    };
 
         if(port.getDisabledCipherSuites() != null)
         {

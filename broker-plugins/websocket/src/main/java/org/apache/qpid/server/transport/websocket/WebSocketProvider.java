@@ -119,9 +119,18 @@ class WebSocketProvider implements AcceptingTransport
         }
         else if (_transport == Transport.WSS)
         {
-            SslContextFactory factory = new SslContextFactory();
+            SslContextFactory factory = new SslContextFactory()
+                                        {
+                                            public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
+                                            {
+                                                List<String> selectedProtocols = new ArrayList<>(Arrays.asList(enabledProtocols));
+                                                SSLUtil.updateEnabledProtocols(selectedProtocols, supportedProtocols);
+
+                                                return selectedProtocols.toArray(new String[selectedProtocols.size()]);
+                                            }
+
+                                        };
             factory.setSslContext(_sslContext);
-            factory.addExcludeProtocols(SSLUtil.getExcludedSSlProtocols());
 
             if(_port.getDisabledCipherSuites() != null)
             {
