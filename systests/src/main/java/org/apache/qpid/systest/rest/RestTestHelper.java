@@ -38,6 +38,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -70,6 +71,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class RestTestHelper
 {
@@ -177,8 +179,14 @@ public class RestTestHelper
                                                          KeyManagerFactory.getDefaultAlgorithm(),
                                                          CERT_ALIAS_APP1);
 
-
                 SSLContext sslContext = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
+                if(Collections.disjoint(Arrays.asList(sslContext.getSupportedSSLParameters().getProtocols()),
+                                        Arrays.asList(SSLUtil.getEnabledSSlProtocols())))
+                {
+                    sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[0]);
+
+                    sslContext.init(keyManagers, trustManagers, null);
+                }
 
                 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
@@ -210,6 +218,13 @@ public class RestTestHelper
 
 
                 SSLContext sslContext = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
+                if(Collections.disjoint(Arrays.asList(sslContext.getSupportedSSLParameters().getProtocols()),
+                                        Arrays.asList(SSLUtil.getEnabledSSlProtocols())))
+                {
+                    sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[0]);
+
+                    sslContext.init(keyManagers, trustManagers, null);
+                }
 
                 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
