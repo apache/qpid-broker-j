@@ -41,9 +41,11 @@ import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
@@ -179,14 +181,10 @@ public class RestTestHelper
                                                          KeyManagerFactory.getDefaultAlgorithm(),
                                                          CERT_ALIAS_APP1);
 
-                SSLContext sslContext = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
-                if(Collections.disjoint(Arrays.asList(sslContext.getSupportedSSLParameters().getProtocols()),
-                                        Arrays.asList(SSLUtil.getEnabledSSlProtocols())))
-                {
-                    sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[0]);
 
-                    sslContext.init(keyManagers, trustManagers, null);
-                }
+                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[0]);
+
+                sslContext.init(keyManagers, trustManagers, null);
 
                 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
@@ -217,14 +215,9 @@ public class RestTestHelper
                         SSLContextFactory.getKeyManagers(null, null, null, null, null);
 
 
-                SSLContext sslContext = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
-                if(Collections.disjoint(Arrays.asList(sslContext.getSupportedSSLParameters().getProtocols()),
-                                        Arrays.asList(SSLUtil.getEnabledSSlProtocols())))
-                {
-                    sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[0]);
+                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[0]);
 
-                    sslContext.init(keyManagers, trustManagers, null);
-                }
+                sslContext.init(keyManagers, trustManagers, null);
 
                 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
