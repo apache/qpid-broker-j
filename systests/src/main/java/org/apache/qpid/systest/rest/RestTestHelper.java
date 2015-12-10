@@ -182,7 +182,7 @@ public class RestTestHelper
                                                          CERT_ALIAS_APP1);
 
 
-                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[0]);
+                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[SSLUtil.getEnabledSSlProtocols().length-1]);
 
                 sslContext.init(keyManagers, trustManagers, null);
 
@@ -215,7 +215,7 @@ public class RestTestHelper
                         SSLContextFactory.getKeyManagers(null, null, null, null, null);
 
 
-                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[0]);
+                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[SSLUtil.getEnabledSSlProtocols().length-1]);
 
                 sslContext.init(keyManagers, trustManagers, null);
 
