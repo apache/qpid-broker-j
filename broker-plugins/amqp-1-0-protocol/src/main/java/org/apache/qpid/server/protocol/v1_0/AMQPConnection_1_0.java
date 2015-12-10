@@ -337,105 +337,115 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                 Binary bin = new Binary(data);
                 RAW_LOGGER.debug("RECV[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
             }
-            switch(_state)
+            ProtocolHandler frameHandler;
+            int remaining;
+
+            do
             {
-                case A:
-                    if (msg.hasRemaining())
-                    {
-                        msg.get();
-                    }
-                    else
-                    {
-                        break;
-                    }
-                case M:
-                    if (msg.hasRemaining())
-                    {
-                        msg.get();
-                    }
-                    else
-                    {
-                        _state = State.M;
-                        break;
-                    }
+                frameHandler = _frameHandler;
+                remaining = msg.remaining();
 
-                case Q:
-                    if (msg.hasRemaining())
-                    {
-                        msg.get();
-                    }
-                    else
-                    {
-                        _state = State.Q;
-                        break;
-                    }
-                case P:
-                    if (msg.hasRemaining())
-                    {
-                        msg.get();
-                    }
-                    else
-                    {
-                        _state = State.P;
-                        break;
-                    }
-                case PROTOCOL:
-                    if (msg.hasRemaining())
-                    {
-                        msg.get();
-                    }
-                    else
-                    {
-                        _state = State.PROTOCOL;
-                        break;
-                    }
-                case MAJOR:
-                    if (msg.hasRemaining())
-                    {
-                        _major = msg.get();
-                    }
-                    else
-                    {
-                        _state = State.MAJOR;
-                        break;
-                    }
-                case MINOR:
-                    if (msg.hasRemaining())
-                    {
-                        _minor = msg.get();
-                    }
-                    else
-                    {
-                        _state = State.MINOR;
-                        break;
-                    }
-                case REVISION:
-                    if (msg.hasRemaining())
-                    {
-                        _revision = msg.get();
-
-                        _state = State.FRAME;
-                    }
-                    else
-                    {
-                        _state = State.REVISION;
-                        break;
-                    }
-                case FRAME:
-                    if (msg.hasRemaining())
-                    {
-                        AccessController.doPrivileged(new PrivilegedAction<Void>()
+                switch (_state)
+                {
+                    case A:
+                        if (msg.hasRemaining())
                         {
-                            @Override
-                            public Void run()
-                            {
-                                _frameHandler = _frameHandler.parse(msg);
-                                return null;
-                            }
-                        }, getAccessControllerContext());
+                            msg.get();
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    case M:
+                        if (msg.hasRemaining())
+                        {
+                            msg.get();
+                        }
+                        else
+                        {
+                            _state = State.M;
+                            break;
+                        }
 
-                    }
+                    case Q:
+                        if (msg.hasRemaining())
+                        {
+                            msg.get();
+                        }
+                        else
+                        {
+                            _state = State.Q;
+                            break;
+                        }
+                    case P:
+                        if (msg.hasRemaining())
+                        {
+                            msg.get();
+                        }
+                        else
+                        {
+                            _state = State.P;
+                            break;
+                        }
+                    case PROTOCOL:
+                        if (msg.hasRemaining())
+                        {
+                            msg.get();
+                        }
+                        else
+                        {
+                            _state = State.PROTOCOL;
+                            break;
+                        }
+                    case MAJOR:
+                        if (msg.hasRemaining())
+                        {
+                            _major = msg.get();
+                        }
+                        else
+                        {
+                            _state = State.MAJOR;
+                            break;
+                        }
+                    case MINOR:
+                        if (msg.hasRemaining())
+                        {
+                            _minor = msg.get();
+                        }
+                        else
+                        {
+                            _state = State.MINOR;
+                            break;
+                        }
+                    case REVISION:
+                        if (msg.hasRemaining())
+                        {
+                            _revision = msg.get();
+
+                            _state = State.FRAME;
+                        }
+                        else
+                        {
+                            _state = State.REVISION;
+                            break;
+                        }
+                    case FRAME:
+                        if (msg.hasRemaining())
+                        {
+                            AccessController.doPrivileged(new PrivilegedAction<Void>()
+                            {
+                                @Override
+                                public Void run()
+                                {
+                                    _frameHandler = _frameHandler.parse(msg);
+                                    return null;
+                                }
+                            }, getAccessControllerContext());
+
+                        }
+                }
             }
+            while(_frameHandler != frameHandler || msg.remaining() != remaining);
         }
         catch(ConnectionScopedRuntimeException e)
         {
