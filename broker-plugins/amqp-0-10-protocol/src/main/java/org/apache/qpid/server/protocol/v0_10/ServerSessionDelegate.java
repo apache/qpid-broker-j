@@ -38,9 +38,10 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
@@ -60,7 +61,6 @@ import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.NoFactoryForTypeException;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.UnknownConfiguredObjectException;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
@@ -81,7 +81,6 @@ import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.*;
 
 public class ServerSessionDelegate extends SessionDelegate
@@ -212,7 +211,7 @@ public class ServerSessionDelegate extends SessionDelegate
             else
             {
                 String queueName = method.getQueue();
-                VirtualHostImpl<?,?,?> vhost = getVirtualHost(session);
+                VirtualHost<?> vhost = getVirtualHost(session);
 
                 final Collection<MessageSource> sources = new HashSet<>();
                 final MessageSource queue = vhost.getAttainedMessageSource(queueName);
@@ -340,11 +339,11 @@ public class ServerSessionDelegate extends SessionDelegate
                                                       options));
                         }
                     }
-                    catch (AMQQueue.ExistingExclusiveConsumer existing)
+                    catch (Queue.ExistingExclusiveConsumer existing)
                     {
                         exception(session, method, ExecutionErrorCode.RESOURCE_LOCKED, "Queue has an exclusive consumer");
                     }
-                    catch (AMQQueue.ExistingConsumerPreventsExclusive exclusive)
+                    catch (Queue.ExistingConsumerPreventsExclusive exclusive)
                     {
                         exception(session, method, ExecutionErrorCode.RESOURCE_LOCKED, "Queue has an existing consumer - can't subscribe exclusively");
                     }
@@ -409,7 +408,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
                 final MessageMetaData_0_10 messageMetaData = new MessageMetaData_0_10(xfr);
 
-                final VirtualHostImpl virtualHost = getVirtualHost(ssn);
+                final VirtualHost<?> virtualHost = getVirtualHost(ssn);
                 try
                 {
                     virtualHost.getSecurityManager()
@@ -818,7 +817,7 @@ public class ServerSessionDelegate extends SessionDelegate
     public void exchangeDeclare(Session session, ExchangeDeclare method)
     {
         String exchangeName = method.getExchange();
-        VirtualHostImpl virtualHost = getVirtualHost(session);
+        VirtualHost<?> virtualHost = getVirtualHost(session);
 
         //we must check for any unsupported arguments present and throw not-implemented
         if(method.hasArguments())
@@ -853,7 +852,7 @@ public class ServerSessionDelegate extends SessionDelegate
             if(method.getPassive())
             {
 
-                ExchangeImpl exchange = getExchange(session, exchangeName);
+                Exchange<?> exchange = getExchange(session, exchangeName);
 
                 if(exchange == null)
                 {
@@ -886,7 +885,7 @@ public class ServerSessionDelegate extends SessionDelegate
                 }
                 catch(ReservedExchangeNameException e)
                 {
-                    ExchangeImpl existingExchange = getExchange(session, exchangeName);
+                    Exchange<?> existingExchange = getExchange(session, exchangeName);
                     if(existingExchange == null
                        || !existingExchange.getType().equals(method.getType())
                        || (method.hasAlternateExchange() && (existingExchange.getAlternateExchange() == null ||
@@ -908,7 +907,7 @@ public class ServerSessionDelegate extends SessionDelegate
                 }
                 catch(ExchangeExistsException e)
                 {
-                    ExchangeImpl exchange = e.getExistingExchange();
+                    Exchange<?> exchange = e.getExistingExchange();
                     if(!exchange.getType().equals(method.getType()))
                     {
                         exception(session, method, ExecutionErrorCode.NOT_ALLOWED,
@@ -948,14 +947,14 @@ public class ServerSessionDelegate extends SessionDelegate
         ((ServerSession)session).close(errorCode.getValue(), description);
     }
 
-    private ExchangeImpl getExchange(Session session, String exchangeName)
+    private Exchange<?> getExchange(Session session, String exchangeName)
     {
         return getVirtualHost(session).getAttainedExchange(exchangeName);
     }
 
     private MessageDestination getDestinationForMessage(Session ssn, MessageTransfer xfr)
     {
-        VirtualHostImpl virtualHost = getVirtualHost(ssn);
+        VirtualHost<?> virtualHost = getVirtualHost(ssn);
 
         MessageDestination destination;
         if(xfr.hasDestination())
@@ -973,7 +972,7 @@ public class ServerSessionDelegate extends SessionDelegate
         return destination;
     }
 
-    private VirtualHostImpl<?,?,?> getVirtualHost(Session session)
+    private VirtualHost<?> getVirtualHost(Session session)
     {
         ServerConnection conn = getServerConnection(session);
         return conn.getVirtualHost();
@@ -993,7 +992,7 @@ public class ServerSessionDelegate extends SessionDelegate
             return;
         }
 
-        ExchangeImpl exchange = getExchange(session, method.getExchange());
+        Exchange<?> exchange = getExchange(session, method.getExchange());
 
         if(exchange == null)
         {
@@ -1055,7 +1054,7 @@ public class ServerSessionDelegate extends SessionDelegate
         }
         else
         {
-            ExchangeImpl exchange = getExchange(session, exchangeName);
+            Exchange<?> exchange = getExchange(session, exchangeName);
 
             if(exchange != null)
             {
@@ -1075,7 +1074,7 @@ public class ServerSessionDelegate extends SessionDelegate
     public void exchangeBind(Session session, ExchangeBind method)
     {
 
-        VirtualHostImpl virtualHost = getVirtualHost(session);
+        VirtualHost<?> virtualHost = getVirtualHost(session);
 
         if (!method.hasQueue())
         {
@@ -1096,8 +1095,8 @@ public class ServerSessionDelegate extends SessionDelegate
                 {
                     method.setBindingKey(method.getQueue());
                 }
-                AMQQueue queue = virtualHost.getAttainedQueue(method.getQueue());
-                ExchangeImpl exchange = virtualHost.getAttainedExchange(exchangeName);
+                Queue<?> queue = virtualHost.getAttainedQueue(method.getQueue());
+                Exchange<?> exchange = virtualHost.getAttainedExchange(exchangeName);
                 if(queue == null)
                 {
                     exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1140,7 +1139,7 @@ public class ServerSessionDelegate extends SessionDelegate
     @Override
     public void exchangeUnbind(Session session, ExchangeUnbind method)
     {
-        VirtualHostImpl virtualHost = getVirtualHost(session);
+        VirtualHost<?> virtualHost = getVirtualHost(session);
 
         if (!method.hasQueue())
         {
@@ -1156,8 +1155,8 @@ public class ServerSessionDelegate extends SessionDelegate
         }
         else
         {
-            AMQQueue queue = virtualHost.getAttainedQueue(method.getQueue());
-            ExchangeImpl exchange = virtualHost.getAttainedExchange(method.getExchange());
+            Queue<?> queue = virtualHost.getAttainedQueue(method.getQueue());
+            Exchange<?> exchange = virtualHost.getAttainedExchange(method.getExchange());
             if(queue == null)
             {
                 exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1188,10 +1187,10 @@ public class ServerSessionDelegate extends SessionDelegate
     {
 
         ExchangeBoundResult result = new ExchangeBoundResult();
-        VirtualHostImpl virtualHost = getVirtualHost(session);
-        ExchangeImpl exchange;
+        VirtualHost<?> virtualHost = getVirtualHost(session);
+        Exchange<?> exchange;
         MessageSource source;
-        AMQQueue<?> queue;
+        Queue<?> queue;
         boolean isDefaultExchange;
         if(!nameNullOrEmpty(method.getExchange()))
         {
@@ -1254,9 +1253,9 @@ public class ServerSessionDelegate extends SessionDelegate
             {
                 result.setQueueNotFound(true);
             }
-            if(source == null || source instanceof AMQQueue)
+            if(source == null || source instanceof Queue)
             {
-                queue = (AMQQueue<?>) source;
+                queue = (Queue<?>) source;
 
                 if (exchange != null && queue != null)
                 {
@@ -1375,7 +1374,7 @@ public class ServerSessionDelegate extends SessionDelegate
         return getVirtualHost(session).getAttainedMessageSource(queue);
     }
 
-    private AMQQueue getQueue(Session session, String queue)
+    private Queue<?> getQueue(Session session, String queue)
     {
         return getVirtualHost(session).getAttainedQueue(queue);
     }
@@ -1384,10 +1383,10 @@ public class ServerSessionDelegate extends SessionDelegate
     public void queueDeclare(Session session, final QueueDeclare method)
     {
 
-        final VirtualHostImpl virtualHost = getVirtualHost(session);
+        final VirtualHost<?> virtualHost = getVirtualHost(session);
 
         String queueName = method.getQueue();
-        AMQQueue queue;
+        Queue<?> queue;
         //TODO: do we need to check that the queue already exists with exactly the same "configuration"?
 
         final boolean exclusive = method.getExclusive();
@@ -1501,7 +1500,7 @@ public class ServerSessionDelegate extends SessionDelegate
         }
         else
         {
-            AMQQueue queue = getQueue(session, queueName);
+            Queue<?> queue = getQueue(session, queueName);
 
 
             if (queue == null)
@@ -1526,7 +1525,7 @@ public class ServerSessionDelegate extends SessionDelegate
                 }
                 else
                 {
-                    VirtualHostImpl virtualHost = getVirtualHost(session);
+                    VirtualHost<?> virtualHost = getVirtualHost(session);
 
                     try
                     {
@@ -1551,7 +1550,7 @@ public class ServerSessionDelegate extends SessionDelegate
         }
         else
         {
-            AMQQueue queue = getQueue(session, queueName);
+            Queue<?> queue = getQueue(session, queueName);
 
             if (queue == null)
             {
@@ -1582,9 +1581,9 @@ public class ServerSessionDelegate extends SessionDelegate
         {
             result.setQueue(source.getName());
 
-            if (source instanceof AMQQueue)
+            if (source instanceof Queue)
             {
-                final AMQQueue queue = (AMQQueue) source;
+                final Queue<?> queue = (Queue<?>) source;
                 result.setDurable(queue.isDurable());
                 result.setExclusive(queue.isExclusive());
                 result.setAutoDelete(queue.getLifetimePolicy() != LifetimePolicy.PERMANENT);

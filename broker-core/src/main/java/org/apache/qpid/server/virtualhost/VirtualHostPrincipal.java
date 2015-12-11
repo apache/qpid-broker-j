@@ -26,10 +26,10 @@ import org.apache.qpid.server.model.VirtualHost;
 
 public class VirtualHostPrincipal implements Principal
 {
-    private final VirtualHost<?,?,?> _virtualHost;
+    private final VirtualHost<?> _virtualHost;
     private final String _name;
 
-    public VirtualHostPrincipal(VirtualHost<?, ?, ?> virtualHost)
+    public VirtualHostPrincipal(VirtualHost<?> virtualHost)
     {
         _virtualHost = virtualHost;
         _name = "virtualhost:" + virtualHost.getName() + "-" + virtualHost.getId();

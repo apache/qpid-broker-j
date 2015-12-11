@@ -31,7 +31,6 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 @PluggableService
 public class TrustStoreMessageSourceCreator implements SystemNodeCreator
@@ -46,7 +45,7 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
     @Override
     public void register(final SystemNodeRegistry registry)
     {
-        final VirtualHostImpl<?,?,?> vhost = registry.getVirtualHost();
+        final VirtualHost<?> vhost = registry.getVirtualHost();
         VirtualHostNode<?> virtualHostNode = vhost.getParent(VirtualHostNode.class);
         final Broker<?> broker = virtualHostNode.getParent(Broker.class);
 
@@ -115,7 +114,7 @@ public class TrustStoreMessageSourceCreator implements SystemNodeCreator
     }
 
 
-    private boolean isTrustStoreExposedAsMessageSource(VirtualHost<?,?,?> virtualHost, final TrustStore trustStore)
+    private boolean isTrustStoreExposedAsMessageSource(VirtualHost<?> virtualHost, final TrustStore trustStore)
     {
         return trustStore.getState() == State.ACTIVE && trustStore.isExposedAsMessageSource()
                && (trustStore.getIncludedVirtualHostMessageSources().contains(virtualHost)

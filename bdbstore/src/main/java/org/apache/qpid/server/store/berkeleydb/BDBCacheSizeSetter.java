@@ -83,7 +83,7 @@ public class BDBCacheSizeSetter extends NoopConfigurationChangeListener
                 }
             }
 
-            VirtualHost<?,?,?> virtualHost = virtualHostNode.getVirtualHost();
+            VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
             if (virtualHost instanceof BDBEnvironmentContainer && virtualHost.getState() == State.ACTIVE)
             {
                 Long explicitJECacheSizeForVHost = getExplicitJECacheSize(virtualHost);

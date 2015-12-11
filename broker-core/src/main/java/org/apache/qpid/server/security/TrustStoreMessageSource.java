@@ -55,10 +55,10 @@ public class TrustStoreMessageSource extends AbstractSystemMessageSource impleme
 
     private final TrustStore<?> _trustStore;
     private final AtomicReference<Set<Certificate>> _certCache = new AtomicReference<>();
-    private final VirtualHost<?, ?, ?> _virtualHost;
+    private final VirtualHost<?> _virtualHost;
 
 
-    public TrustStoreMessageSource(final TrustStore<?> trustStore, final VirtualHost<?, ?, ?> virtualHost)
+    public TrustStoreMessageSource(final TrustStore<?> trustStore, final VirtualHost<?> virtualHost)
     {
         super(getSourceNameFromTrustStore(trustStore), virtualHost);
         _virtualHost = virtualHost;

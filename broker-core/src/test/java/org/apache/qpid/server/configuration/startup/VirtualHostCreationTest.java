@@ -91,7 +91,7 @@ public class VirtualHostCreationTest extends QpidTestCase
         attributes.put(VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
         attributes.put(VirtualHost.ID, UUID.randomUUID());
 
-        VirtualHost<?,?,?> host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
+        VirtualHost<?> host = new TestMemoryVirtualHost(attributes, _virtualHostNode);
         host.open();
 
         assertNotNull("Null is returned", host);
@@ -118,7 +118,7 @@ public class VirtualHostCreationTest extends QpidTestCase
             copy.put(ConfiguredObject.ID, UUID.randomUUID());
             try
             {
-                VirtualHost<?,?,?> host = new TestMemoryVirtualHost(copy,_virtualHostNode);
+                VirtualHost<?> host = new TestMemoryVirtualHost(copy, _virtualHostNode);
                 host.open();
                 fail("Cannot create a virtual host without a mandatory attribute " + name);
             }

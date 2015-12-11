@@ -33,14 +33,14 @@ import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.MessagePublishInfo;
-import org.apache.qpid.server.exchange.ExchangeImpl;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_10.MessageTransferMessage;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.Header;
 import org.apache.qpid.transport.MessageDeliveryMode;
@@ -53,7 +53,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
     private static final int BASIC_CLASS_ID = 60;
 
     public static BasicContentHeaderProperties convertContentHeaderProperties(MessageTransferMessage messageTransferMessage,
-                                                                              VirtualHostImpl vhost)
+                                                                              VirtualHost<?> vhost)
     {
         BasicContentHeaderProperties props = new BasicContentHeaderProperties();
 
@@ -114,7 +114,7 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
                     exchangeName = "";
                 }
 
-                ExchangeImpl exchange = vhost.getAttainedExchange(exchangeName);
+                Exchange<?> exchange = vhost.getAttainedExchange(exchangeName);
                 String exchangeClass = exchange == null
                                             ? ExchangeDefaults.DIRECT_EXCHANGE_CLASS
                                             : exchange.getType();
@@ -170,13 +170,13 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
     }
 
     @Override
-    public AMQMessage convert(MessageTransferMessage message, VirtualHostImpl vhost)
+    public AMQMessage convert(MessageTransferMessage message, VirtualHost<?> vhost)
     {
         return new AMQMessage(convertToStoredMessage(message, vhost));
     }
 
     private StoredMessage<MessageMetaData> convertToStoredMessage(final MessageTransferMessage message,
-                                                                  VirtualHostImpl vhost)
+                                                                  VirtualHost<?> vhost)
     {
         final MessageMetaData metaData = convertMetaData(message, vhost);
         return new StoredMessage<org.apache.qpid.server.protocol.v0_8.MessageMetaData>()
@@ -225,14 +225,14 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
         };
     }
 
-    private MessageMetaData convertMetaData(MessageTransferMessage message, VirtualHostImpl vhost)
+    private MessageMetaData convertMetaData(MessageTransferMessage message, VirtualHost<?> vhost)
     {
         return new MessageMetaData(convertPublishBody(message),
                 convertContentHeaderBody(message, vhost),
                 message.getArrivalTime());
     }
 
-    private ContentHeaderBody convertContentHeaderBody(MessageTransferMessage message, VirtualHostImpl vhost)
+    private ContentHeaderBody convertContentHeaderBody(MessageTransferMessage message, VirtualHost<?> vhost)
     {
         BasicContentHeaderProperties props = convertContentHeaderProperties(message, vhost);
         ContentHeaderBody chb = new ContentHeaderBody(props);

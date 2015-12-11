@@ -57,7 +57,6 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.server.virtualhost.VirtualHostPrincipal;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -73,7 +72,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
     private TaskExecutorImpl _taskExecutor;
     private Broker _broker;
     private VirtualHostNode _virtualHostNode;
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost _virtualHost;
     private AmqpPort _port;
     private ServerNetworkConnection _network;
     private Transport _transport;
@@ -112,7 +111,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_virtualHostNode.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_virtualHostNode.getChildExecutor()).thenReturn(_taskExecutor);
 
-        _virtualHost = mock(VirtualHostImpl.class);
+        _virtualHost = mock(VirtualHost.class);
         VirtualHostPrincipal virtualHostPrincipal = new VirtualHostPrincipal(_virtualHost);
         when(_virtualHost.getParent(VirtualHostNode.class)).thenReturn(_virtualHostNode);
         when(_virtualHost.getModel()).thenReturn(model);

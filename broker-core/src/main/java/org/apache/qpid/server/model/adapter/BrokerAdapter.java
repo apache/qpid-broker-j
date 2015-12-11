@@ -68,7 +68,6 @@ import org.apache.qpid.server.security.auth.manager.SimpleAuthenticationManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.stats.StatisticsGatherer;
 import org.apache.qpid.server.store.FileBasedSettings;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
@@ -476,10 +475,10 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         LOGGER.debug("Assigning target sizes based on total target {}", totalTarget);
         long totalSize = 0l;
         Collection<VirtualHostNode<?>> vhns = getVirtualHostNodes();
-        Map<VirtualHost<?, ?, ?>, Long> vhs = new HashMap<>();
+        Map<VirtualHost<?>, Long> vhs = new HashMap<>();
         for (VirtualHostNode<?> vhn : vhns)
         {
-            VirtualHost<?, ?, ?> vh = vhn.getVirtualHost();
+            VirtualHost<?> vh = vhn.getVirtualHost();
             if (vh != null)
             {
                 long totalQueueDepthBytes = vh.getTotalQueueDepthBytes();
@@ -502,7 +501,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
 
         final long proportionalShare = (long) ((double) totalTarget / (double) vhs.size());
-        for (Map.Entry<VirtualHost<?, ?, ?>, Long> entry : vhs.entrySet())
+        for (Map.Entry<VirtualHost<?>, Long> entry : vhs.entrySet())
         {
             long virtualHostTotalQueueSize = entry.getValue();
             final long size;
@@ -664,11 +663,11 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     }
 
     @Override
-    public VirtualHost<?,?,?> findVirtualHostByName(String name)
+    public VirtualHost<?> findVirtualHostByName(String name)
     {
         for (VirtualHostNode<?> virtualHostNode : getChildren(VirtualHostNode.class))
         {
-            VirtualHost<?, ?, ?> virtualHost = virtualHostNode.getVirtualHost();
+            VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
             if (virtualHost != null && virtualHost.getName().equals(name))
             {
                 return virtualHost;
@@ -779,10 +778,10 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         for (VirtualHostNode<?> virtualHostNode : getChildren(VirtualHostNode.class))
         {
-            VirtualHost<?, ?, ?> virtualHost = virtualHostNode.getVirtualHost();
-            if (virtualHost instanceof VirtualHostImpl)
+            VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
+            if (virtualHost != null)
             {
-                ((VirtualHostImpl) virtualHost).resetStatistics();
+                virtualHost.resetStatistics();
             }
         }
     }
@@ -829,16 +828,15 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
                 for (VirtualHostNode<?> virtualHostNode : getChildren(VirtualHostNode.class))
                 {
-                    VirtualHost<?, ?, ?> virtualHost = virtualHostNode.getVirtualHost();
-                    if (virtualHost instanceof VirtualHostImpl)
+                    VirtualHost<?> virtualHost = virtualHostNode.getVirtualHost();
+                    if (virtualHost != null)
                     {
-                        VirtualHostImpl vhostImpl = (VirtualHostImpl) virtualHost;
                         String name = virtualHost.getName();
-                        StatisticsCounter dataDelivered = vhostImpl.getDataDeliveryStatistics();
-                        StatisticsCounter messagesDelivered = vhostImpl.getMessageDeliveryStatistics();
-                        StatisticsCounter dataReceived = vhostImpl.getDataReceiptStatistics();
-                        StatisticsCounter messagesReceived = vhostImpl.getMessageReceiptStatistics();
-                        EventLogger logger = vhostImpl.getEventLogger();
+                        StatisticsCounter dataDelivered = virtualHost.getDataDeliveryStatistics();
+                        StatisticsCounter messagesDelivered = virtualHost.getMessageDeliveryStatistics();
+                        StatisticsCounter dataReceived = virtualHost.getDataReceiptStatistics();
+                        StatisticsCounter messagesReceived = virtualHost.getMessageReceiptStatistics();
+                        EventLogger logger = virtualHost.getEventLogger();
                         logger.message(VirtualHostMessages.STATS_DATA(name,
                                                                       DELIVERED,
                                                                       dataDelivered.getPeak() / 1024.0,

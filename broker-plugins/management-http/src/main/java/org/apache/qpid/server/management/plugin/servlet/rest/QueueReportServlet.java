@@ -70,7 +70,7 @@ public class QueueReportServlet extends AbstractServlet
         String vhostName = pathInfoElements[0];
         String queueName = pathInfoElements[1];
 
-        VirtualHost<?,?,?> vhost = getBroker().findVirtualHostByName(vhostName);
+        VirtualHost<?> vhost = getBroker().findVirtualHostByName(vhostName);
         if (vhost == null)
         {
             throw new IllegalArgumentException("Could not find virtual host with name '" + vhostName + "'");
@@ -84,7 +84,7 @@ public class QueueReportServlet extends AbstractServlet
         return queueFromVirtualHost;
     }
 
-    private Queue getQueueFromVirtualHost(String queueName, VirtualHost<?,?,?> vhost)
+    private Queue getQueueFromVirtualHost(String queueName, VirtualHost<?> vhost)
     {
         Queue queue = null;
 

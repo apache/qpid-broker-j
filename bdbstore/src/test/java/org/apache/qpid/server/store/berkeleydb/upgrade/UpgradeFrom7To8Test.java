@@ -51,9 +51,9 @@ public class UpgradeFrom7To8Test extends AbstractUpgradeTestCase
     private static final String CONFIGURED_OBJECT_HIERARCHY_DB_NAME = "CONFIGURED_OBJECT_HIERARCHY";
 
     @Override
-    public VirtualHost<?,?,?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
-        VirtualHost<?,?,?> virtualHost = mock(VirtualHost.class);
+        VirtualHost<?> virtualHost = mock(VirtualHost.class);
         when(virtualHost.getName()).thenReturn("test");
         return virtualHost;
     }

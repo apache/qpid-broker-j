@@ -26,18 +26,29 @@ import java.security.Principal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ScheduledFuture;
 
-import org.apache.qpid.server.message.MessageInstance;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import org.apache.qpid.server.logging.EventLoggerProvider;
+import org.apache.qpid.server.message.MessageDestination;
+import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.protocol.LinkRegistry;
 import org.apache.qpid.server.queue.QueueEntry;
+import org.apache.qpid.server.security.SecurityManager;
+import org.apache.qpid.server.stats.StatisticsGatherer;
+import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
+import org.apache.qpid.server.txn.DtxRegistry;
+import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.VirtualHostConnectionListener;
 
-import javax.security.auth.Subject;
-
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
-public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>, E extends Exchange<?> > extends ConfiguredObject<X>
+public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>, StatisticsGatherer,
+                                                               EventLoggerProvider
 {
     String CLASS_DESCRIPTION = "<p>A virtualhost is a namespace in which messaging is performed. Virtualhosts are "
                                + "independent; the messaging goes on a within a virtualhost is independent of any "
@@ -69,6 +80,7 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     @ManagedContextDefault( name = "queue.deadLetterQueueEnabled")
     public static final boolean DEFAULT_DEAD_LETTER_QUEUE_ENABLED = false;
+    String DEFAULT_DLE_NAME_SUFFIX = "_DLE";
 
     @ManagedAttribute( defaultValue = "${queue.deadLetterQueueEnabled}")
     boolean isQueue_deadLetterQueueEnabled();
@@ -177,13 +189,13 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
 
     //children
     Collection<VirtualHostAlias> getAliases();
-    Collection<Q> getQueues();
-    Collection<E> getExchanges();
+    Collection<Queue<?>> getQueues();
+    Collection<Exchange<?>> getExchanges();
 
-    E createExchange(Map<String, Object> attributes)
+    Exchange<?> createExchange(Map<String, Object> attributes)
             throws AccessControlException, IllegalArgumentException;
 
-    Q createQueue(Map<String, Object> attributes)
+    Queue<?> createQueue(Map<String, Object> attributes)
             throws AccessControlException, IllegalArgumentException;
 
     Collection<String> getExchangeTypeNames();
@@ -205,13 +217,45 @@ public interface VirtualHost<X extends VirtualHost<X, Q, E>, Q extends Queue<?>,
     void registerConnection(AMQPConnection<?> connection);
     void deregisterConnection(AMQPConnection<?> connection);
 
+    Queue<?> getAttainedQueue(String name);
+
+    Queue<?> getAttainedQueue(UUID id);
+
+    MessageSource getAttainedMessageSource(String name);
+
+    int removeQueue(Queue<?> queue);
+
+    ListenableFuture<Integer> removeQueueAsync(Queue<?> queue);
+
+    Exchange getAttainedExchange(String name);
+
+    MessageDestination getAttainedMessageDestination(String name);
+
+    MessageDestination getDefaultDestination();
+
+    DurableConfigurationStore getDurableConfigurationStore();
+
+    SecurityManager getSecurityManager();
+
+    void scheduleHouseKeepingTask(long period, HouseKeepingTask task);
+
+    DtxRegistry getDtxRegistry();
+
+    LinkRegistry getLinkRegistry(String remoteContainerId);
+
+    ScheduledFuture<?> scheduleTask(long delay, Runnable timeoutTask);
+
+    boolean authoriseCreateConnection(AMQPConnection<?> connection);
+
+    String getLocalAddress(String routingAddress);
+
     interface Transaction
     {
         void dequeue(QueueEntry entry);
 
-        void copy(QueueEntry entry, Queue queue);
+        void copy(QueueEntry entry, Queue<?> queue);
 
-        void move(QueueEntry entry, Queue queue);
+        void move(QueueEntry entry, Queue<?> queue);
 
     }
 

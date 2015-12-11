@@ -39,9 +39,9 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class StandardQueueEntryListTest extends QueueEntryListTestBase
 {
@@ -61,7 +61,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, getName());
-        final VirtualHostImpl virtualHost = mock(VirtualHostImpl.class);
+        final VirtualHost virtualHost = mock(VirtualHost.class);
         when(virtualHost.getSecurityManager()).thenReturn(mock(SecurityManager.class));
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
         _factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());
@@ -115,7 +115,7 @@ public class StandardQueueEntryListTest extends QueueEntryListTestBase
             Map<String,Object> queueAttributes = new HashMap<String, Object>();
             queueAttributes.put(Queue.ID, UUID.randomUUID());
             queueAttributes.put(Queue.NAME, getName());
-            final VirtualHostImpl virtualHost = mock(VirtualHostImpl.class);
+            final VirtualHost virtualHost = mock(VirtualHost.class);
             when(virtualHost.getSecurityManager()).thenReturn(mock(SecurityManager.class));
             when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
             when(virtualHost.getObjectFactory()).thenReturn(_factory);

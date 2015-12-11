@@ -24,19 +24,20 @@ import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class DefaultDestination implements MessageDestination
 {
 
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost<?> _virtualHost;
 
-    public DefaultDestination(VirtualHostImpl virtualHost)
+    public DefaultDestination(VirtualHost<?> virtualHost)
     {
         _virtualHost =  virtualHost;
     }
@@ -58,14 +59,14 @@ public class DefaultDestination implements MessageDestination
         {
             routingAddress = "";
         }
-        final AMQQueue q = _virtualHost.getAttainedQueue(routingAddress);
+        final Queue<?> q = _virtualHost.getAttainedQueue(routingAddress);
         if(q == null)
         {
             routingAddress = _virtualHost.getLocalAddress(routingAddress);
             if(routingAddress.contains("/") && !routingAddress.startsWith("/"))
             {
                 String[] parts = routingAddress.split("/",2);
-                ExchangeImpl exchange = _virtualHost.getAttainedExchange(parts[0]);
+                Exchange<?> exchange = _virtualHost.getAttainedExchange(parts[0]);
                 if(exchange != null)
                 {
                     return exchange.send(message, parts[1], instanceProperties, txn, postEnqueueAction);
@@ -73,7 +74,7 @@ public class DefaultDestination implements MessageDestination
             }
             else if(!routingAddress.contains("/"))
             {
-                ExchangeImpl exchange = _virtualHost.getAttainedExchange(routingAddress);
+                Exchange<?> exchange = _virtualHost.getAttainedExchange(routingAddress);
                 if(exchange != null)
                 {
                     return exchange.send(message, "", instanceProperties, txn, postEnqueueAction);

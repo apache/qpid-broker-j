@@ -20,9 +20,9 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,8 +33,8 @@ import static org.mockito.Mockito.when;
 public class QueueLogSubjectTest extends AbstractTestLogSubject
 {
 
-    private AMQQueue _queue;
-    private VirtualHostImpl _testVhost;
+    private Queue<?> _queue;
+    private VirtualHost _testVhost;
 
     @Override
     public void setUp() throws Exception
@@ -43,7 +43,7 @@ public class QueueLogSubjectTest extends AbstractTestLogSubject
 
         _testVhost = BrokerTestHelper.createVirtualHost("test");
 
-        _queue = mock(AMQQueue.class);
+        _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn("QueueLogSubjectTest");
         when(_queue.getVirtualHost()).thenReturn(_testVhost);
 

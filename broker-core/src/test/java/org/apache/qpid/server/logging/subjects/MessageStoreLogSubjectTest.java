@@ -20,15 +20,15 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 /**
  * Validate MessageStoreLogSubjects are logged as expected
  */
 public class MessageStoreLogSubjectTest extends AbstractTestLogSubject
 {
-    private VirtualHostImpl _testVhost;
+    private VirtualHost<?> _testVhost;
 
     @Override
     public void setUp() throws Exception

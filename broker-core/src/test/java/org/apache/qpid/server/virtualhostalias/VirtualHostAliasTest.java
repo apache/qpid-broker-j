@@ -40,12 +40,11 @@ import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostAliasTest extends QpidTestCase
 {
-    private final Map<String, VirtualHost<?,?,?>> _vhosts = new HashMap<>();
+    private final Map<String, VirtualHost<?>> _vhosts = new HashMap<>();
     private Broker<?> _broker;
     private AmqpPort _port;
 
@@ -63,7 +62,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         for(String name : new String[] { "red", "blue", "purple", "black" })
         {
             boolean defaultVHN = "black".equals(name);
-            VirtualHostImpl<?, ?, ?> virtualHost = BrokerTestHelper.createVirtualHost(name, _broker, defaultVHN);
+            VirtualHost<?> virtualHost = BrokerTestHelper.createVirtualHost(name, _broker, defaultVHN);
             VirtualHostNode vhn = virtualHost.getParent(VirtualHostNode.class);
             assertNotSame(vhn.getName(), virtualHost.getName());
             _vhosts.put(name, virtualHost);
@@ -97,7 +96,7 @@ public class VirtualHostAliasTest extends QpidTestCase
 
     public void testDefaultAliases_VirtualHostNameAlias()
     {
-        VirtualHostImpl vhost = _port.getVirtualHost("red");
+        VirtualHost<?> vhost = _port.getVirtualHost("red");
 
         assertNotNull(vhost);
         assertEquals(_vhosts.get("red"), vhost);
@@ -116,7 +115,7 @@ public class VirtualHostAliasTest extends QpidTestCase
     {
 
         // test the default vhost resolution
-        VirtualHostImpl vhost = _port.getVirtualHost("");
+        VirtualHost<?> vhost = _port.getVirtualHost("");
 
         assertNotNull(vhost);
         assertEquals(_vhosts.get("black"), vhost);
@@ -125,7 +124,7 @@ public class VirtualHostAliasTest extends QpidTestCase
     public void testDefaultAliases_HostNameAlias()
     {
         // 127.0.0.1 should always resolve and thus return the default vhost
-        VirtualHostImpl vhost = _port.getVirtualHost("127.0.0.1");
+        VirtualHost<?> vhost = _port.getVirtualHost("127.0.0.1");
 
         assertNotNull(vhost);
         assertEquals(_vhosts.get("black"), vhost);
@@ -140,7 +139,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent(VirtualHostNode.class));
         _port.createVirtualHostAlias(attributes);
 
-        VirtualHostImpl vhost = _port.getVirtualHost("orange");
+        VirtualHost<?> vhost = _port.getVirtualHost("orange");
 
         assertNotNull(vhost);
         assertEquals(_vhosts.get("purple"), vhost);
@@ -167,7 +166,7 @@ public class VirtualHostAliasTest extends QpidTestCase
     public void testPriority()
     {
 
-        VirtualHostImpl vhost = _port.getVirtualHost("blue");
+        VirtualHost<?> vhost = _port.getVirtualHost("blue");
 
         assertNotNull(vhost);
         assertEquals(_vhosts.get("blue"), vhost);

@@ -22,9 +22,9 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import org.apache.qpid.amqp_1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 @PluggableService
 public class MessageConverter_v1_0_to_Internal implements MessageConverter<Message_1_0, InternalMessage>
@@ -52,7 +52,7 @@ public class MessageConverter_v1_0_to_Internal implements MessageConverter<Messa
     }
 
     @Override
-    public InternalMessage convert(Message_1_0 serverMessage, VirtualHostImpl vhost)
+    public InternalMessage convert(Message_1_0 serverMessage, VirtualHost<?> vhost)
     {
         Object bodyObject = MessageConverter_from_1_0.convertBodyToObject(serverMessage);
 

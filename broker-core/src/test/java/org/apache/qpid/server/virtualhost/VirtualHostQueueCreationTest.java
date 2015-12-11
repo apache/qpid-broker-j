@@ -31,7 +31,6 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -43,7 +42,6 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.PriorityQueueImpl;
 import org.apache.qpid.server.queue.StandardQueueImpl;
@@ -53,7 +51,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostQueueCreationTest extends QpidTestCase
 {
-    private VirtualHostImpl<?,?,?> _virtualHost;
+    private VirtualHost<?> _virtualHost;
     private VirtualHostNode<?> _virtualHostNode;
     private TaskExecutor _taskExecutor;
 
@@ -106,7 +104,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
             super.tearDown();
         }
     }
-    private VirtualHostImpl<?,?,?> createHost()
+    private VirtualHost<?> createHost()
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(VirtualHost.NAME, getName());
@@ -140,7 +138,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(PriorityQueue.PRIORITIES, 5);
 
 
-        AMQQueue queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createQueue(attributes);
 
         assertEquals("Queue not a priority queue", PriorityQueueImpl.class, queue.getClass());
         verifyQueueRegistered("testPriorityQueue");
@@ -158,7 +156,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.NAME, queueName);
 
 
-        AMQQueue queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createQueue(attributes);
         assertEquals("Queue not a simple queue", StandardQueueImpl.class, queue.getClass());
         verifyQueueRegistered(queueName);
 
@@ -178,7 +176,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
     {
 
         String queueName = "testDeadLetterQueueEnabled";
-        String dlExchangeName = queueName + VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX;
+        String dlExchangeName = queueName + VirtualHost.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
         assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
@@ -190,9 +188,9 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.NAME, queueName);
         attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, true);
 
-        AMQQueue queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createQueue(attributes);
 
-        Exchange altExchange = queue.getAlternateExchange();
+        Exchange<?> altExchange = queue.getAlternateExchange();
         assertNotNull("Queue should have an alternate exchange as DLQ is enabled", altExchange);
         assertEquals("Alternate exchange name was not as expected", dlExchangeName, altExchange.getName());
         assertEquals("Alternate exchange type was not as expected", ExchangeDefaults.FANOUT_EXCHANGE_CLASS, altExchange.getType());
@@ -200,9 +198,9 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         assertNotNull("The alternate exchange was not registered as expected", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
         assertEquals("The registered exchange was not the expected exchange instance", altExchange, _virtualHost.getChildByName(Exchange.class, dlExchangeName));
 
-        AMQQueue dlQueue = (AMQQueue) _virtualHost.getChildByName(Queue.class, dlQueueName);
+        Queue<?> dlQueue = (Queue<?>) _virtualHost.getChildByName(Queue.class, dlQueueName);
         assertNotNull("The DLQ was not registered as expected", dlQueue);
-        assertTrue("DLQ should have been bound to the alternate exchange", ((ExchangeImpl)altExchange).isBound(dlQueue));
+        assertTrue("DLQ should have been bound to the alternate exchange", altExchange.isBound(dlQueue));
         assertNull("DLQ should have no alternate exchange", dlQueue.getAlternateExchange());
         assertEquals("DLQ should have a zero maximum delivery count", 0, dlQueue.getMaximumDeliveryAttempts());
 
@@ -218,7 +216,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
     {
 
         String queueName = "testDeadLetterQueueEnabled";
-        String dlExchangeName = queueName + VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX;
+        String dlExchangeName = queueName + VirtualHost.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
         assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
@@ -230,10 +228,10 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, true);
         attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 5);
 
-        AMQQueue queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createQueue(attributes);
 
         assertEquals("Unexpected maximum delivery count", 5, queue.getMaximumDeliveryAttempts());
-        Exchange altExchange = queue.getAlternateExchange();
+        Exchange<?> altExchange = queue.getAlternateExchange();
         assertNotNull("Queue should have an alternate exchange as DLQ is enabled", altExchange);
         assertEquals("Alternate exchange name was not as expected", dlExchangeName, altExchange.getName());
         assertEquals("Alternate exchange type was not as expected", ExchangeDefaults.FANOUT_EXCHANGE_CLASS, altExchange.getType());
@@ -241,9 +239,9 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         assertNotNull("The alternate exchange was not registered as expected", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
         assertEquals("The registered exchange was not the expected exchange instance", altExchange, _virtualHost.getChildByName(Exchange.class, dlExchangeName));
 
-        AMQQueue dlQueue = (AMQQueue) _virtualHost.getChildByName(Queue.class, dlQueueName);
+        Queue<?> dlQueue = (Queue<?>) _virtualHost.getChildByName(Queue.class, dlQueueName);
         assertNotNull("The DLQ was not registered as expected", dlQueue);
-        assertTrue("DLQ should have been bound to the alternate exchange", ((ExchangeImpl)altExchange).isBound(dlQueue));
+        assertTrue("DLQ should have been bound to the alternate exchange", altExchange.isBound(dlQueue));
         assertNull("DLQ should have no alternate exchange", dlQueue.getAlternateExchange());
         assertEquals("DLQ should have a zero maximum delivery count", 0, dlQueue.getMaximumDeliveryAttempts());
 
@@ -261,7 +259,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
 
         String queueName = "testDeadLetterQueueDisabled";
-        String dlExchangeName = queueName + VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX;
+        String dlExchangeName = queueName + VirtualHost.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
         assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
@@ -272,7 +270,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.NAME, queueName);
         attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, false);
 
-        AMQQueue queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createQueue(attributes);
 
         assertNull("Queue should not have an alternate exchange as DLQ is disabled", queue.getAlternateExchange());
         assertNull("The alternate exchange should still not exist", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
@@ -291,7 +289,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
     {
 
         String queueName = "testDeadLetterQueueNotCreatedForAutodeleteQueues";
-        String dlExchangeName = queueName + VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX;
+        String dlExchangeName = queueName + VirtualHost.DEFAULT_DLE_NAME_SUFFIX;
         String dlQueueName = queueName + AbstractVirtualHost.DEFAULT_DLQ_NAME_SUFFIX;
 
         assertNull("The DLQ should not yet exist", _virtualHost.getChildByName(Queue.class, dlQueueName));
@@ -305,7 +303,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
 
         //create an autodelete queue
-        AMQQueue queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createQueue(attributes);
         assertEquals("Queue should be autodelete",
                      LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS,
                      queue.getLifetimePolicy());
@@ -331,7 +329,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
         attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, (Object) 5);
 
-        final AMQQueue queue = _virtualHost.createQueue(attributes);
+        final Queue<?> queue = _virtualHost.createQueue(attributes);
 
         assertNotNull("The queue was not registered as expected ", queue);
         assertEquals("Maximum delivery count not as expected", 5, queue.getMaximumDeliveryAttempts());
@@ -349,7 +347,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.ID, UUID.randomUUID());
         attributes.put(Queue.NAME, "testMaximumDeliveryCountDefault");
 
-        final AMQQueue queue = _virtualHost.createQueue(attributes);
+        final Queue<?> queue = _virtualHost.createQueue(attributes);
 
         assertNotNull("The queue was not registered as expected ", queue);
         assertEquals("Maximum delivery count not as expected", 0, queue.getMaximumDeliveryAttempts());
@@ -446,7 +444,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.MESSAGE_GROUP_KEY,"mykey");
         attributes.put(Queue.MESSAGE_GROUP_SHARED_GROUPS, true);
 
-        AMQQueue queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createQueue(attributes);
         assertEquals("mykey", queue.getAttribute(Queue.MESSAGE_GROUP_KEY));
         assertEquals(Boolean.TRUE, queue.getAttribute(Queue.MESSAGE_GROUP_SHARED_GROUPS));
     }

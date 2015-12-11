@@ -40,10 +40,10 @@ import org.apache.qpid.amqp_1_0.type.messaging.AmqpValue;
 import org.apache.qpid.amqp_1_0.type.messaging.Data;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.typedmessage.TypedBytesFormatException;
@@ -64,7 +64,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     }
 
     @Override
-    public final Message_1_0 convert(M message, VirtualHostImpl vhost)
+    public final Message_1_0 convert(M message, VirtualHost<?> vhost)
     {
 
         SectionEncoder sectionEncoder = new SectionEncoderImpl(_typeRegistry);

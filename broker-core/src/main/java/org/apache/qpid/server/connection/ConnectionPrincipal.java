@@ -52,7 +52,7 @@ public class ConnectionPrincipal implements SocketConnectionPrincipal
         return _connection;
     }
 
-    public VirtualHost<?,?,?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _connection.getVirtualHost();
     }

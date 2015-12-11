@@ -54,6 +54,7 @@ import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.ManagedAttributeField;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
@@ -331,7 +332,8 @@ class QueueConsumerImpl
         return STATE_MAP.get(_target.getState());
     }
 
-    public final AMQQueue getQueue()
+    @Override
+    public final Queue<?> getQueue()
     {
         return _queue;
     }

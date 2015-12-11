@@ -65,7 +65,6 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManagerFactory;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -81,7 +80,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
     private List<ByteBuffer> _sentBuffers;
     private FrameWriter _frameWriter;
     private AMQPConnection _connection;
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost<?> _virtualHost;
 
     @Override
     public void setUp() throws Exception
@@ -103,7 +102,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _subjectCreator = mock(SubjectCreator.class);
         _authenticationProvider = mock(AuthenticationProvider.class);
         when(_port.getAuthenticationProvider()).thenReturn(_authenticationProvider);
-        _virtualHost = mock(VirtualHostImpl.class);
+        _virtualHost = mock(VirtualHost.class);
         when(_virtualHost.getChildExecutor()).thenReturn(taskExecutor);
         when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
         final ArgumentCaptor<AMQPConnection> connectionCaptor = ArgumentCaptor.forClass(AMQPConnection.class);

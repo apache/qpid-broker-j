@@ -109,7 +109,7 @@ public class RedirectingVirtualHostNodeImpl
     }
 
     @Override
-    public VirtualHost<?, ?, ?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }

@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.server.queue;
 
-import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Queue;
 
-public interface QueueConsumer<X extends QueueConsumer<X>> extends ConsumerImpl, Consumer<X>
+public interface QueueConsumer<X extends QueueConsumer<X>> extends Consumer<X>
 {
 
     void flushBatched();
@@ -43,7 +43,7 @@ public interface QueueConsumer<X extends QueueConsumer<X>> extends ConsumerImpl,
 
     void queueDeleted();
 
-    AMQQueue getQueue();
+    Queue<?> getQueue();
 
     boolean resend(QueueEntry e);
 

@@ -64,7 +64,6 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.AggregateTicker;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.Ticker;
@@ -346,14 +345,14 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         _messagesDelivered.registerEvent(1L);
         _dataDelivered.registerEvent(messageSize);
-        ((VirtualHostImpl<?,?,?>)getVirtualHost()).registerMessageDelivered(messageSize);
+        ((VirtualHost<?>)getVirtualHost()).registerMessageDelivered(messageSize);
     }
 
     public void registerMessageReceived(long messageSize, long timestamp)
     {
         _messagesReceived.registerEvent(1L, timestamp);
         _dataReceived.registerEvent(messageSize, timestamp);
-        ((VirtualHostImpl<?,?,?>)getVirtualHost()).registerMessageReceived(messageSize, timestamp);
+        ((VirtualHost<?>)getVirtualHost()).registerMessageReceived(messageSize, timestamp);
     }
 
     public final void resetStatistics()

@@ -31,7 +31,6 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
@@ -44,14 +43,12 @@ import org.apache.qpid.server.model.UUIDGenerator;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BrokerTestHelper
@@ -118,15 +115,15 @@ public class BrokerTestHelper
     {
     }
 
-    public static VirtualHostImpl<?,?,?> createVirtualHost(Map<String, Object> attributes)
+    public static VirtualHost<?> createVirtualHost(Map<String, Object> attributes)
     {
 
         Broker<?> broker = createBrokerMock();
         return createVirtualHost(attributes, broker, false);
     }
 
-    private static VirtualHostImpl<?, ?, ?> createVirtualHost(final Map<String, Object> attributes,
-                                                                final Broker<?> broker, boolean defaultVHN)
+    private static VirtualHost<?> createVirtualHost(final Map<String, Object> attributes,
+                                                        final Broker<?> broker, boolean defaultVHN)
     {
         ConfiguredObjectFactory objectFactory = broker.getObjectFactory();
 
@@ -163,12 +160,12 @@ public class BrokerTestHelper
         return host;
     }
 
-    public static VirtualHostImpl<?,?,?> createVirtualHost(String name) throws Exception
+    public static VirtualHost<?> createVirtualHost(String name) throws Exception
     {
         return createVirtualHost(name, createBrokerMock(), false);
     }
 
-    public static VirtualHostImpl<?,?,?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN) throws Exception
+    public static VirtualHost<?> createVirtualHost(String name, Broker<?> broker, boolean defaultVHN) throws Exception
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(org.apache.qpid.server.model.VirtualHost.TYPE, TestMemoryVirtualHost.VIRTUAL_HOST_TYPE);
@@ -207,13 +204,13 @@ public class BrokerTestHelper
         return mock(AMQPConnection.class);
     }
 
-    public static ExchangeImpl<?> createExchange(String hostName, final boolean durable, final EventLogger eventLogger) throws Exception
+    public static Exchange<?> createExchange(String hostName, final boolean durable, final EventLogger eventLogger) throws Exception
     {
         Broker broker = mock(Broker.class);
         when(broker.getModel()).thenReturn(BrokerModel.getInstance());
         when(broker.getCategoryClass()).thenReturn(Broker.class);
         SecurityManager securityManager = new SecurityManager(broker, false);
-        final VirtualHostImpl<?,?,?> virtualHost = mock(VirtualHostImpl.class);
+        final VirtualHost<?> virtualHost = mock(VirtualHost.class);
         when(virtualHost.getName()).thenReturn(hostName);
         when(virtualHost.getSecurityManager()).thenReturn(securityManager);
         when(virtualHost.getEventLogger()).thenReturn(eventLogger);
@@ -228,25 +225,25 @@ public class BrokerTestHelper
         attributes.put(org.apache.qpid.server.model.Exchange.NAME, "amq.direct");
         attributes.put(org.apache.qpid.server.model.Exchange.TYPE, "direct");
         attributes.put(org.apache.qpid.server.model.Exchange.DURABLE, durable);
-        return Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<ExchangeImpl>()
+        return Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Exchange<?>>()
         {
             @Override
-            public ExchangeImpl run()
+            public Exchange<?> run()
             {
 
-                return (ExchangeImpl) objectFactory.create(Exchange.class, attributes, virtualHost);
+                return (Exchange<?>) objectFactory.create(Exchange.class, attributes, virtualHost);
             }
         });
 
     }
 
-    public static AMQQueue<?> createQueue(String queueName, VirtualHostImpl<?,?,?> virtualHost)
+    public static Queue<?> createQueue(String queueName, VirtualHost<?> virtualHost)
             throws QueueExistsException
     {
         Map<String,Object> attributes = new HashMap<String, Object>();
         attributes.put(Queue.ID, UUIDGenerator.generateRandomUUID());
         attributes.put(Queue.NAME, queueName);
-        AMQQueue<?> queue = virtualHost.createQueue(attributes);
+        Queue<?> queue = virtualHost.createQueue(attributes);
         return queue;
     }
 

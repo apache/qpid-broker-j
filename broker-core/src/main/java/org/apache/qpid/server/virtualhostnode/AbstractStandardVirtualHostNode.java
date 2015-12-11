@@ -105,11 +105,11 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
 
         getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
 
-        VirtualHost<?,?,?>  host = getVirtualHost();
+        VirtualHost<?>  host = getVirtualHost();
 
         if (host != null)
         {
-            final VirtualHost<?,?,?> recoveredHost = host;
+            final VirtualHost<?> recoveredHost = host;
             final ListenableFuture<Void> openFuture = Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
                                                                    new PrivilegedAction<ListenableFuture<Void>>()
                                                                    {

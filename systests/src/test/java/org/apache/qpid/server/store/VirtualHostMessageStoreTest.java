@@ -45,7 +45,6 @@ import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutorImpl;
 import org.apache.qpid.server.connection.SessionPrincipal;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.Binding;
@@ -63,7 +62,6 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.LastValueQueue;
 import org.apache.qpid.server.queue.LastValueQueueImpl;
 import org.apache.qpid.server.queue.PriorityQueue;
@@ -74,7 +72,6 @@ import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.server.virtualhost.berkeleydb.BDBVirtualHost;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -116,7 +113,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
     private String queueOwner = "MST";
 
-    private VirtualHostImpl<?,?,?> _virtualHost;
+    private VirtualHost<?> _virtualHost;
     private String _storePath;
     private VirtualHostNode<?> _node;
     private TaskExecutor _taskExecutor;
@@ -159,7 +156,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         virtualHostAttributes.putAll(attrs);
         _node.createChild(VirtualHost.class, virtualHostAttributes, _node);
 
-        _virtualHost = (VirtualHostImpl<?,?,?>)_node.getVirtualHost();
+        _virtualHost = (VirtualHost<?>)_node.getVirtualHost();
 
     }
 
@@ -191,7 +188,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         _node.start();
         currentState = _node.getState();
         assertEquals("Virtual host node is not active", State.ACTIVE, currentState);
-        _virtualHost = (VirtualHostImpl<?, ?, ?>) _node.getVirtualHost();
+        _virtualHost = _node.getVirtualHost();
     }
 
     public void testQueueExchangeAndBindingCreation() throws Exception
@@ -202,15 +199,17 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         createAllTopicQueues();
 
         //Register Non-Durable DirectExchange
-        ExchangeImpl<?> nonDurableExchange = createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, nonDurableExchangeName, false);
+        Exchange<?> nonDurableExchange = createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, nonDurableExchangeName, false);
         bindAllQueuesToExchange(nonDurableExchange, directRouting);
 
         //Register DirectExchange
-        ExchangeImpl<?> directExchange = createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, directExchangeName, true);
+        Exchange<?>
+                directExchange = createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, directExchangeName, true);
         bindAllQueuesToExchange(directExchange, directRouting);
 
         //Register TopicExchange
-        ExchangeImpl<?> topicExchange = createExchange(ExchangeDefaults.TOPIC_EXCHANGE_CLASS, topicExchangeName, true);
+        Exchange<?>
+                topicExchange = createExchange(ExchangeDefaults.TOPIC_EXCHANGE_CLASS, topicExchangeName, true);
         bindAllTopicQueuesToExchange(topicExchange, topicRouting);
 
         //Send Message To NonDurable direct Exchange = persistent
@@ -350,7 +349,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     {
         int origExchangeCount = _virtualHost.getExchanges().size();
 
-        Map<String, ExchangeImpl<?>> oldExchanges = createExchanges();
+        Map<String, Exchange<?>> oldExchanges = createExchanges();
 
         assertEquals("Incorrect number of exchanges registered before recovery",
                 origExchangeCount + 3, _virtualHost.getExchanges().size());
@@ -382,8 +381,8 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         //test that removing the exchange means it is not recovered next time
 
-        final ExchangeImpl<?> exchange =
-                (ExchangeImpl<?>) _virtualHost.getChildByName(Exchange.class,  directExchangeName);
+        final Exchange<?> exchange =
+                (Exchange<?>) _virtualHost.getChildByName(Exchange.class, directExchangeName);
         _virtualHost.getDurableConfigurationStore().remove(exchange.asObjectRecord());
 
         reloadVirtualHost();
@@ -407,11 +406,11 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         createAllQueues();
         createAllTopicQueues();
 
-        Map<String, ExchangeImpl<?>> exchanges = createExchanges();
+        Map<String, Exchange<?>> exchanges = createExchanges();
 
-        ExchangeImpl<?> nonDurableExchange = exchanges.get(nonDurableExchangeName);
-        ExchangeImpl<?> directExchange = exchanges.get(directExchangeName);
-        ExchangeImpl<?> topicExchange = exchanges.get(topicExchangeName);
+        Exchange<?> nonDurableExchange = exchanges.get(nonDurableExchangeName);
+        Exchange<?> directExchange = exchanges.get(directExchangeName);
+        Exchange<?> topicExchange = exchanges.get(topicExchangeName);
 
         bindAllQueuesToExchange(nonDurableExchange, directRouting);
         bindAllQueuesToExchange(directExchange, directRouting);
@@ -435,7 +434,8 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     public void testDurableBindingRemoval() throws Exception
     {
         //create durable queue and exchange, bind them
-        ExchangeImpl<?> exch = createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, directExchangeName, true);
+        Exchange<?>
+                exch = createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, directExchangeName, true);
         createQueue(durableQueueName, false, true, false, false);
         bindQueueToExchange(exch, directRouting, _virtualHost.getChildByName(Queue.class, durableQueueName), false);
 
@@ -448,12 +448,12 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         assertEquals("Incorrect number of bindings registered after first recovery",
                 1, _virtualHost.getChildByName(Queue.class, durableQueueName).getBindings().size());
 
-        exch = (ExchangeImpl<?>) _virtualHost.getChildByName(Exchange.class, directExchangeName);
+        exch = (Exchange<?>) _virtualHost.getChildByName(Exchange.class, directExchangeName);
         assertNotNull("Exchange was not recovered", exch);
 
         //remove the binding and verify result after recovery
         unbindQueueFromExchange(exch, directRouting,
-                                (AMQQueue<?>) _virtualHost.getChildByName(Queue.class, durableQueueName), false);
+                                (Queue<?>) _virtualHost.getChildByName(Queue.class, durableQueueName), false);
 
         reloadVirtualHost();
 
@@ -466,11 +466,11 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
      * and that the new exchanges are not the same objects as the provided list (i.e. that the
      * reload actually generated new exchange objects)
      */
-    private void validateExchanges(int originalNumExchanges, Map<String, ExchangeImpl<?>> oldExchanges)
+    private void validateExchanges(int originalNumExchanges, Map<String, Exchange<?>> oldExchanges)
     {
-        Collection<ExchangeImpl<?>> exchanges = (Collection<ExchangeImpl<?>>) _virtualHost.getExchanges();
+        Collection<Exchange<?>> exchanges = _virtualHost.getExchanges();
         Collection<String> exchangeNames = new ArrayList<String>(exchanges.size());
-        for(ExchangeImpl<?> exchange : exchanges)
+        for(Exchange<?> exchange : exchanges)
         {
             exchangeNames.add(exchange.getName());
         }
@@ -530,7 +530,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
     private void setQueueExclusivity(boolean exclusive) throws MessageSource.ExistingConsumerPreventsExclusive
     {
-        AMQQueue<?> queue = (AMQQueue<?>) _virtualHost.getChildByName(Queue.class, durableExclusiveQueueName);
+        Queue<?> queue = (Queue<?>) _virtualHost.getChildByName(Queue.class, durableExclusiveQueueName);
         queue.setAttribute(Queue.EXCLUSIVE, queue.getExclusive(), exclusive ? ExclusivityPolicy.CONTAINER : ExclusivityPolicy.NONE);
     }
 
@@ -593,7 +593,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         }
     }
 
-    private void sendMessageOnExchange(ExchangeImpl<?> exchange, String routingKey, boolean deliveryMode)
+    private void sendMessageOnExchange(Exchange<?> exchange, String routingKey, boolean deliveryMode)
     {
         //Set MessagePersistence
         BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
@@ -685,14 +685,14 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         when(sessionModel.getAMQPConnection()).thenReturn(connectionModel);
         when(connectionModel.getRemoteContainerName()).thenReturn(queueOwner);
         SessionPrincipal principal = new SessionPrincipal(sessionModel);
-        AMQQueue<?> queue = Subject.doAs(new Subject(true,
+        Queue<?> queue = Subject.doAs(new Subject(true,
                                                      Collections.singleton(principal),
                                                      Collections.emptySet(),
                                                      Collections.emptySet()),
-                                         new PrivilegedAction<AMQQueue<?>>()
+                                         new PrivilegedAction<Queue<?>>()
                                          {
                                              @Override
-                                             public AMQQueue<?> run()
+                                             public Queue<?> run()
                                              {
                                                  return _virtualHost.createQueue(queueArguments);
 
@@ -703,9 +703,9 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         validateQueueProperties(queue, usePriority, durable, exclusive, lastValueQueue);
     }
 
-    private Map<String, ExchangeImpl<?>> createExchanges() throws Exception
+    private Map<String, Exchange<?>> createExchanges() throws Exception
     {
-        Map<String, ExchangeImpl<?>> exchanges = new HashMap<String, ExchangeImpl<?>>();
+        Map<String, Exchange<?>> exchanges = new HashMap<String, Exchange<?>>();
 
         //Register non-durable DirectExchange
         exchanges.put(nonDurableExchangeName, createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, nonDurableExchangeName, false));
@@ -717,9 +717,9 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         return exchanges;
     }
 
-    private ExchangeImpl<?> createExchange(String type, String name, boolean durable) throws Exception
+    private Exchange<?> createExchange(String type, String name, boolean durable) throws Exception
     {
-        ExchangeImpl<?> exchange = null;
+        Exchange<?> exchange = null;
 
         Map<String,Object> attributes = new HashMap<String, Object>();
 
@@ -734,7 +734,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         return exchange;
     }
 
-    private void bindAllQueuesToExchange(ExchangeImpl<?> exchange, String routingKey)
+    private void bindAllQueuesToExchange(Exchange<?> exchange, String routingKey)
     {
         bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, durablePriorityQueueName), false);
         bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, durableQueueName), false);
@@ -743,7 +743,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class, durableExclusiveQueueName), false);
     }
 
-    private void bindAllTopicQueuesToExchange(ExchangeImpl<?> exchange, String routingKey)
+    private void bindAllTopicQueuesToExchange(Exchange<?> exchange, String routingKey)
     {
 
         bindQueueToExchange(exchange, routingKey, _virtualHost.getChildByName(Queue.class,
@@ -754,7 +754,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     }
 
 
-    protected void bindQueueToExchange(ExchangeImpl<?> exchange,
+    protected void bindQueueToExchange(Exchange<?> exchange,
                                        String routingKey,
                                        Queue queue,
                                        boolean useSelector)
@@ -768,7 +768,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         try
         {
-            exchange.addBinding(routingKey, (AMQQueue) queue, bindArguments);
+            exchange.addBinding(routingKey, queue, bindArguments);
         }
         catch (Exception e)
         {
@@ -776,9 +776,9 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         }
     }
 
-    protected void unbindQueueFromExchange(ExchangeImpl<?> exchange,
+    protected void unbindQueueFromExchange(Exchange<?> exchange,
                                            String routingKey,
-                                           AMQQueue<?> queue,
+                                           Queue<?> queue,
                                            boolean useSelector)
     {
         Map<String,Object> bindArguments = new HashMap<String, Object>();

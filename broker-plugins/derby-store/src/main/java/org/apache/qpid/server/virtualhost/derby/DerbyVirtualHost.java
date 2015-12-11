@@ -19,13 +19,11 @@
 
 package org.apache.qpid.server.virtualhost.derby;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
-public interface DerbyVirtualHost<X extends DerbyVirtualHost<X>> extends VirtualHostImpl<X,AMQQueue<?>,ExchangeImpl<?>>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings
+public interface DerbyVirtualHost<X extends DerbyVirtualHost<X>> extends VirtualHost<X>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings
 {
     String STORE_PATH = "storePath";
 

@@ -23,14 +23,14 @@ package org.apache.qpid.server.queue;
 import java.util.Map;
 
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.model.VirtualHost;
 
 public class StandardQueueImpl extends AbstractQueue<StandardQueueImpl> implements StandardQueue<StandardQueueImpl>
 {
     private StandardQueueEntryList _entries;
 
     @ManagedObjectFactoryConstructor
-    public StandardQueueImpl(final Map<String, Object> arguments, final VirtualHostImpl virtualHost)
+    public StandardQueueImpl(final Map<String, Object> arguments, final VirtualHost<?> virtualHost)
     {
         super(arguments, virtualHost);
     }

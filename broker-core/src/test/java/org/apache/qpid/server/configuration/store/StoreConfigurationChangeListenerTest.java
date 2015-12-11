@@ -97,7 +97,7 @@ public class StoreConfigurationChangeListenerTest extends QpidTestCase
 
         VirtualHostNode<?> object = mock(VirtualHostNode.class);
         when(object.managesChildStorage()).thenReturn(true);
-        VirtualHost<?,?,?> virtualHost = mock(VirtualHost.class);
+        VirtualHost<?> virtualHost = mock(VirtualHost.class);
         _listener.childAdded(object, virtualHost);
         verifyNoMoreInteractions(_store);
     }

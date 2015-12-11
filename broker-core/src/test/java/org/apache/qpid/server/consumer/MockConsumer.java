@@ -24,49 +24,28 @@ package org.apache.qpid.server.consumer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Type;
-import java.net.SocketAddress;
-import java.security.AccessControlException;
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.filter.FilterManager;
-import org.apache.qpid.server.filter.Filterable;
-import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Consumer;
-import org.apache.qpid.server.model.LifetimePolicy;
-import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.transport.AbstractAMQPConnection;
-import org.apache.qpid.server.queue.AMQQueue;
-import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.apache.qpid.transport.network.Ticker;
@@ -77,7 +56,7 @@ public class MockConsumer implements ConsumerTarget
     private final List<String> _messageIds;
     private boolean _closed = false;
     private String tag = "mocktag";
-    private AMQQueue queue = null;
+    private Queue<?> queue = null;
     private StateChangeListener<ConsumerTarget, State> _listener = null;
     private State _state = State.ACTIVE;
     private ArrayList<MessageInstance> messages = new ArrayList<MessageInstance>();
@@ -121,7 +100,7 @@ public class MockConsumer implements ConsumerTarget
         return 0;
     }
 
-    public AMQQueue getQueue()
+    public Queue<?> getQueue()
     {
         return queue;
     }
@@ -341,12 +320,12 @@ public class MockConsumer implements ConsumerTarget
         }
 
         @Override
-        public void block(AMQQueue queue)
+        public void block(Queue<?> queue)
         {
         }
 
         @Override
-        public void unblock(AMQQueue queue)
+        public void unblock(Queue<?> queue)
         {
         }
 

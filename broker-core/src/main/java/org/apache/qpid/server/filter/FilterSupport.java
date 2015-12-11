@@ -33,8 +33,8 @@ import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.TokenMgrError;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.queue.AMQQueue;
 
 public class FilterSupport
 {
@@ -95,7 +95,7 @@ public class FilterSupport
                        && ((String)args.get(AMQPFilterTypes.JMS_SELECTOR.toString())).trim().length() != 0;
     }
 
-    public static FilterManager createMessageFilter(final Map<String,Object> args, AMQQueue queue) throws AMQInvalidArgumentException
+    public static FilterManager createMessageFilter(final Map<String,Object> args, Queue<?> queue) throws AMQInvalidArgumentException
     {
         FilterManager filterManager = null;
         if(argumentsContainNoLocal(args))

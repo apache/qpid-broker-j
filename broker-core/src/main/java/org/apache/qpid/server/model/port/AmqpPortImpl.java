@@ -62,6 +62,7 @@ import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNameAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -72,7 +73,6 @@ import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.TransportProvider;
 import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
 
 public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<AmqpPortImpl> implements AmqpPort<AmqpPortImpl>
@@ -201,7 +201,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     }
 
     @Override
-    public VirtualHostImpl getVirtualHost(String name)
+    public VirtualHost<?> getVirtualHost(String name)
     {
         Collection<VirtualHostAlias> aliases = new TreeSet<>(VIRTUAL_HOST_ALIAS_COMPARATOR);
 
@@ -212,7 +212,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
             VirtualHostNode vhn = alias.getVirtualHostNode(name);
             if (vhn != null)
             {
-                return (VirtualHostImpl) vhn.getVirtualHost();
+                return vhn.getVirtualHost();
             }
         }
         return null;

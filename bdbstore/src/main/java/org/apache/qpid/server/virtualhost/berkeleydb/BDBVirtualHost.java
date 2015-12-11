@@ -20,15 +20,13 @@
 package org.apache.qpid.server.virtualhost.berkeleydb;
 
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
-public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings, BDBEnvironmentContainer
+public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends VirtualHost<X>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings, BDBEnvironmentContainer
 {
 
     String STORE_PATH = "storePath";

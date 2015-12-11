@@ -71,10 +71,11 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
@@ -97,7 +98,6 @@ import org.apache.qpid.server.txn.UnknownDtxBranchException;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.Binary;
 import org.apache.qpid.transport.Connection;
 import org.apache.qpid.transport.MessageCreditUnit;
@@ -776,7 +776,7 @@ public class ServerSession extends Session
         return getVirtualHost().getMessageStore();
     }
 
-    public VirtualHostImpl<?,?,?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return getConnection().getVirtualHost();
     }
@@ -826,7 +826,7 @@ public class ServerSession extends Session
         _transactionTimeoutHelper.checkIdleOrOpenTimes(_transaction, openWarn, openClose, idleWarn, idleClose);
     }
 
-    public void block(AMQQueue queue)
+    public void block(Queue<?> queue)
     {
         block(queue, queue.getName());
     }
@@ -858,7 +858,7 @@ public class ServerSession extends Session
         }
     }
 
-    public void unblock(AMQQueue queue)
+    public void unblock(Queue<?> queue)
     {
         unblock((Object)queue);
     }

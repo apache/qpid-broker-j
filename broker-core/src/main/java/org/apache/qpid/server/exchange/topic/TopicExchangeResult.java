@@ -30,25 +30,25 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.Filterable;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Queue;
 
 public final class TopicExchangeResult implements TopicMatcherResult
 {
-    private final List<BindingImpl> _bindings = new CopyOnWriteArrayList<BindingImpl>();
-    private final Map<AMQQueue, Integer> _unfilteredQueues = new ConcurrentHashMap<AMQQueue, Integer>();
-    private final ConcurrentMap<AMQQueue, Map<FilterManager,Integer>> _filteredQueues = new ConcurrentHashMap<>();
-    private volatile ArrayList<AMQQueue> _unfilteredQueueList = new ArrayList<AMQQueue>(0);
+    private final List<Binding<?>> _bindings = new CopyOnWriteArrayList<>();
+    private final Map<Queue<?>, Integer> _unfilteredQueues = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Queue<?>, Map<FilterManager,Integer>> _filteredQueues = new ConcurrentHashMap<>();
+    private volatile ArrayList<Queue<?>> _unfilteredQueueList = new ArrayList<>(0);
 
-    public void addUnfilteredQueue(AMQQueue queue)
+    public void addUnfilteredQueue(Queue<?> queue)
     {
         Integer instances = _unfilteredQueues.get(queue);
         if(instances == null)
         {
             _unfilteredQueues.put(queue, 1);
-            ArrayList<AMQQueue> newList = new ArrayList<AMQQueue>(_unfilteredQueueList);
+            ArrayList<Queue<?>> newList = new ArrayList<>(_unfilteredQueueList);
             newList.add(queue);
             _unfilteredQueueList = newList;
         }
@@ -58,13 +58,13 @@ public final class TopicExchangeResult implements TopicMatcherResult
         }
     }
 
-    public void removeUnfilteredQueue(AMQQueue queue)
+    public void removeUnfilteredQueue(Queue<?> queue)
     {
         Integer instances = _unfilteredQueues.get(queue);
         if(instances == 1)
         {
             _unfilteredQueues.remove(queue);
-            ArrayList<AMQQueue> newList = new ArrayList<AMQQueue>(_unfilteredQueueList);
+            ArrayList<Queue<?>> newList = new ArrayList<>(_unfilteredQueueList);
             newList.remove(queue);
             _unfilteredQueueList = newList;
 
@@ -76,27 +76,27 @@ public final class TopicExchangeResult implements TopicMatcherResult
 
     }
 
-    public Collection<AMQQueue> getUnfilteredQueues()
+    public Collection<Queue<?>> getUnfilteredQueues()
     {
         return _unfilteredQueues.keySet();
     }
 
-    public void addBinding(BindingImpl binding)
+    public void addBinding(Binding<?> binding)
     {
         _bindings.add(binding);
     }
     
-    public void removeBinding(BindingImpl binding)
+    public void removeBinding(Binding<?> binding)
     {
         _bindings.remove(binding);
     }
     
-    public List<BindingImpl> getBindings()
+    public List<Binding<?>> getBindings()
     {
         return new ArrayList<>(_bindings);
     }
 
-    public void addFilteredQueue(AMQQueue queue, FilterManager filter)
+    public void addFilteredQueue(Queue<?> queue, FilterManager filter)
     {
         Map<FilterManager,Integer> filters = _filteredQueues.get(queue);
         if(filters == null)
@@ -116,7 +116,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
 
     }
 
-    public void removeFilteredQueue(AMQQueue queue, FilterManager filter)
+    public void removeFilteredQueue(Queue<?> queue, FilterManager filter)
     {
         Map<FilterManager,Integer> filters = _filteredQueues.get(queue);
         if(filters != null)
@@ -142,7 +142,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
 
     }
 
-    public void replaceQueueFilter(AMQQueue queue,
+    public void replaceQueueFilter(Queue<?> queue,
                                    FilterManager oldFilter,
                                    FilterManager newFilter)
     {
@@ -169,7 +169,7 @@ public final class TopicExchangeResult implements TopicMatcherResult
         _filteredQueues.put(queue,newFilters);
     }
 
-    public Collection<AMQQueue> processMessage(Filterable msg, Collection<AMQQueue> queues)
+    public Collection<Queue<?>> processMessage(Filterable msg, Collection<Queue<?>> queues)
     {
         if(queues == null)
         {
@@ -179,18 +179,18 @@ public final class TopicExchangeResult implements TopicMatcherResult
             }
             else
             {
-                queues = new HashSet<AMQQueue>();
+                queues = new HashSet<Queue<?>>();
             }
         }
         else if(!(queues instanceof Set))
         {
-            queues = new HashSet<AMQQueue>(queues);
+            queues = new HashSet<Queue<?>>(queues);
         }
 
         queues.addAll(_unfilteredQueues.keySet());
         if(!_filteredQueues.isEmpty())
         {
-            for(Map.Entry<AMQQueue, Map<FilterManager, Integer>> entry : _filteredQueues.entrySet())
+            for(Map.Entry<Queue<?>, Map<FilterManager, Integer>> entry : _filteredQueues.entrySet())
             {
                 if(!queues.contains(entry.getKey()))
                 {

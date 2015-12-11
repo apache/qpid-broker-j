@@ -327,7 +327,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return _connection.getRemoteContainerName();
     }
 
-    public VirtualHost<?, ?, ?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _connection.getVirtualHost();
     }

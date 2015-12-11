@@ -32,6 +32,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.ArgumentMatcher;
 
@@ -39,7 +41,6 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
@@ -62,14 +63,14 @@ import org.apache.qpid.transport.Xid;
 
 public class SynchronousMessageStoreRecovererTest extends QpidTestCase
 {
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost<?> _virtualHost;
 
     @Override
     protected void setUp() throws Exception
     {
         super.setUp();
 
-        _virtualHost = mock(VirtualHostImpl.class);
+        _virtualHost = mock(VirtualHost.class);
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
 
     }
@@ -77,7 +78,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
     @SuppressWarnings("unchecked")
     public void testRecoveryOfSingleMessageOnSingleQueue()
     {
-        final AMQQueue<?> queue = createRegisteredMockQueue();
+        final Queue<?> queue = createRegisteredMockQueue();
 
         final long messageId = 1;
         final StoredMessage<StorableMessageMetaData> storedMessage = createMockStoredMessage(messageId);
@@ -110,7 +111,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
     @SuppressWarnings("unchecked")
     public void testRecoveryOfMessageInstanceForNonExistingMessage()
     {
-        final AMQQueue<?> queue = createRegisteredMockQueue();
+        final Queue<?> queue = createRegisteredMockQueue();
 
         final long messageId = 1;
         final Transaction transaction = mock(Transaction.class);
@@ -218,7 +219,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
     @SuppressWarnings("unchecked")
     public void testRecoveryOfSingleEnqueueWithDistributedTransaction()
     {
-        AMQQueue<?> queue = createRegisteredMockQueue();
+        Queue<?> queue = createRegisteredMockQueue();
 
         final Transaction transaction = mock(Transaction.class);
 
@@ -301,7 +302,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
     public void testRecoveryOfSingleDequeueWithDistributedTransaction()
     {
         final UUID queueId = UUID.randomUUID();
-        final AMQQueue<?> queue = createRegisteredMockQueue(queueId);
+        final Queue<?> queue = createRegisteredMockQueue(queueId);
 
 
         final Transaction transaction = mock(Transaction.class);
@@ -385,7 +386,7 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
     }
 
 
-    protected EnqueueRecord createMockRecord(AMQQueue<?> queue, EnqueueableMessage enqueueableMessage)
+    protected EnqueueRecord createMockRecord(Queue<?> queue, EnqueueableMessage enqueueableMessage)
     {
         EnqueueRecord enqueueRecord = mock(EnqueueRecord.class);
         when(enqueueRecord.getMessage()).thenReturn(enqueueableMessage);
@@ -424,14 +425,14 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         return storedMessage;
     }
 
-    private AMQQueue<?> createRegisteredMockQueue()
+    private Queue<?> createRegisteredMockQueue()
     {
         return createRegisteredMockQueue(UUID.randomUUID());
     }
 
-    private AMQQueue<?> createRegisteredMockQueue(UUID queueId)
+    private Queue<?> createRegisteredMockQueue(UUID queueId)
     {
-        AMQQueue<?> queue = mock(AMQQueue.class);
+        Queue queue = mock(Queue.class);
         when(queue.getMessageDurability()).thenReturn(MessageDurability.DEFAULT);
         when(queue.getId()).thenReturn(queueId);
         when(queue.getName()).thenReturn("test-queue");

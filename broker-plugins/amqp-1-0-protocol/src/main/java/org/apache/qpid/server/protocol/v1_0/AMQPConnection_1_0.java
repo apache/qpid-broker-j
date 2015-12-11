@@ -53,8 +53,6 @@ import org.apache.qpid.amqp_1_0.transport.SaslServerProvider;
 import org.apache.qpid.amqp_1_0.type.Binary;
 import org.apache.qpid.amqp_1_0.type.FrameBody;
 import org.apache.qpid.amqp_1_0.type.Symbol;
-import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
-import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
@@ -80,7 +78,6 @@ import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
 
@@ -665,7 +662,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         return _connection.getRemoteContainerName();
     }
 
-    public VirtualHost<?, ?, ?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _connection.getVirtualHost();
     }
@@ -688,7 +685,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     @Override
     protected EventLogger getEventLogger()
     {
-        final VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        final VirtualHost<?> virtualHost = _connection.getVirtualHost();
         if (virtualHost !=  null)
         {
             return virtualHost.getEventLogger();

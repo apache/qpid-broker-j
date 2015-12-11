@@ -48,7 +48,7 @@ public class VirtualHostNameAndLevelLogInclusionRuleImplTest extends QpidTestCas
 {
     private VirtualHostLogger _virtualHostLogger;
     private TaskExecutor _taskExecutor;
-    private final VirtualHost<?,?,?> _virtualhost = mock(VirtualHost.class);
+    private final VirtualHost<?> _virtualhost = mock(VirtualHost.class);
 
     @Override
     public void setUp() throws Exception

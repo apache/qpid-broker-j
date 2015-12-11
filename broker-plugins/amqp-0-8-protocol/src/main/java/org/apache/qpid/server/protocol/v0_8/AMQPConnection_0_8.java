@@ -32,7 +32,6 @@ import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -63,10 +62,10 @@ import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
-import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.consumer.ConsumerImpl;
@@ -86,7 +85,6 @@ import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -116,7 +114,7 @@ public class AMQPConnection_0_8
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
 
-    private volatile VirtualHostImpl<?,?,?> _virtualHost;
+    private volatile VirtualHost<?> _virtualHost;
 
     private final Object _channelAddRemoveLock = new Object();
     private final Map<Integer, AMQChannel> _channelMap = new ConcurrentHashMap<>();
@@ -722,12 +720,12 @@ public class AMQPConnection_0_8
         return getMethodRegistry();
     }
 
-    public VirtualHostImpl<?,?,?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }
 
-    public void setVirtualHost(VirtualHostImpl<?,?,?> virtualHost)
+    public void setVirtualHost(VirtualHost<?> virtualHost)
     {
         _virtualHost = virtualHost;
         virtualHostAssociated();
@@ -1033,7 +1031,7 @@ public class AMQPConnection_0_8
             virtualHostStr = virtualHostStr.substring(1);
         }
 
-        VirtualHostImpl<?,?,?> virtualHost = ((AmqpPort)getPort()).getVirtualHost(virtualHostStr);
+        VirtualHost<?> virtualHost = ((AmqpPort)getPort()).getVirtualHost(virtualHostStr);
 
         if (virtualHost == null)
         {

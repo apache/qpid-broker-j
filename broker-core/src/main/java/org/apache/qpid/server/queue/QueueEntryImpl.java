@@ -38,6 +38,7 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.LocalTransaction;
@@ -161,7 +162,7 @@ public abstract class QueueEntryImpl implements QueueEntry
         return _entryId;
     }
 
-    public AMQQueue getQueue()
+    public Queue<?> getQueue()
     {
         return _queueEntryList.getQueue();
     }
@@ -527,7 +528,7 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     public int routeToAlternate(final Action<? super MessageInstance> action, ServerTransaction txn)
     {
-        final AMQQueue currentQueue = getQueue();
+        final Queue<?> currentQueue = getQueue();
         Exchange<?> alternateExchange = currentQueue.getAlternateExchange();
         boolean autocommit =  txn == null;
         int enqueues;

@@ -617,7 +617,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
             upgraderAndRecoverer.perform(getConfigurationStore());
             getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
 
-            VirtualHost<?,?,?>  host = getVirtualHost();
+            VirtualHost<?>  host = getVirtualHost();
 
             if (host == null)
             {
@@ -637,7 +637,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                     host = getVirtualHost();
                     if(host != null)
                     {
-                        final VirtualHost<?,?,?> recoveredHost = host;
+                        final VirtualHost<?> recoveredHost = host;
                         Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                         {
                             @Override
@@ -667,7 +667,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                     LOGGER.debug("Recovered virtualhost with name : " +  getGroupName());
                 }
 
-                final VirtualHost<?,?,?> recoveredHost = host;
+                final VirtualHost<?> recoveredHost = host;
                 Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Object>()
                 {
                     @Override
@@ -729,7 +729,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
 
     protected ListenableFuture<Void> closeVirtualHostIfExist()
     {
-        final VirtualHost<?,?,?> virtualHost = getVirtualHost();
+        final VirtualHost<?> virtualHost = getVirtualHost();
         if (virtualHost!= null)
         {
             return doAfter(virtualHost.closeAsync(), new Runnable()

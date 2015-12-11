@@ -41,9 +41,9 @@ import org.apache.qpid.server.logging.messages.ChannelMessages;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueConsumer;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -463,9 +463,9 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         if (requeues == 0)
         {
             TransactionLogResource owningResource = entry.getOwningResource();
-            if(owningResource instanceof AMQQueue)
+            if(owningResource instanceof Queue)
             {
-                final AMQQueue queue = (AMQQueue)owningResource;
+                final Queue<?> queue = (Queue<?>)owningResource;
                 final Exchange alternateExchange = queue.getAlternateExchange();
 
                 if(alternateExchange != null)

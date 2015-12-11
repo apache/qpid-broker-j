@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
@@ -52,7 +53,6 @@ import org.apache.qpid.server.security.AuthorizationHolder;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.Connection;
 import org.apache.qpid.transport.ConnectionClose;
 import org.apache.qpid.transport.ConnectionCloseCode;
@@ -73,7 +73,7 @@ public class ServerConnection extends Connection implements AuthorizationHolder
     private Principal _authorizedPrincipal = null;
     private final long _connectionId;
     private final Object _reference = new Object();
-    private VirtualHostImpl<?,?,?> _virtualHost;
+    private VirtualHost<?> _virtualHost;
     private final AmqpPort<?> _port;
     private final AtomicLong _lastIoTime = new AtomicLong();
     private boolean _blocking;
@@ -163,12 +163,12 @@ public class ServerConnection extends Connection implements AuthorizationHolder
         _amqpConnection = serverProtocolEngine;
     }
 
-    public VirtualHostImpl<?,?,?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }
 
-    public void setVirtualHost(VirtualHostImpl<?,?,?> virtualHost)
+    public void setVirtualHost(VirtualHost<?> virtualHost)
     {
         _virtualHost = virtualHost;
         _messageCompressionThreshold =

@@ -63,28 +63,27 @@ import org.apache.qpid.amqp_1_0.type.transport.Transfer;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
-import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryStateHandler
 {
     private static final Logger _logger = LoggerFactory.getLogger(SendingLink_1_0.class);
 
-    private VirtualHostImpl _vhost;
+    private VirtualHost<?> _vhost;
     private SendingDestination _destination;
 
     private ConsumerImpl _consumer;
@@ -105,7 +104,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
 
     public SendingLink_1_0(final SendingLinkAttachment linkAttachment,
-                           final VirtualHostImpl vhost,
+                           final VirtualHost<?> vhost,
                            final SendingDestination destination)
             throws AmqpErrorException
     {
@@ -127,7 +126,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         {
             _queue = ((MessageSourceDestination) _destination).getQueue();
 
-            if(_queue instanceof AMQQueue && ((AMQQueue)_queue).getAvailableAttributes().contains("topic"))
+            if(_queue instanceof Queue && ((Queue<?>)_queue).getAvailableAttributes().contains("topic"))
             {
                 source.setDistributionMode(StdDistMode.COPY);
             }
@@ -208,8 +207,8 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                     name = UUID.randomUUID().toString();
                 }
 
-                AMQQueue queue = _vhost.getAttainedQueue(name);
-                ExchangeImpl exchange = exchangeDestination.getExchange();
+                Queue<?> queue = _vhost.getAttainedQueue(name);
+                Exchange<?> exchange = exchangeDestination.getExchange();
 
                 if(queue == null)
                 {
@@ -224,16 +223,16 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                 }
                 else
                 {
-                    Collection<BindingImpl> bindings = queue.getBindings();
-                    List<BindingImpl> bindingsToRemove = new ArrayList<BindingImpl>();
-                    for(BindingImpl existingBinding : bindings)
+                    Collection<? extends Binding<?>> bindings = queue.getBindings();
+                    List<Binding<?>> bindingsToRemove = new ArrayList<>();
+                    for(Binding<?> existingBinding : bindings)
                     {
                         if(existingBinding.getExchange() != exchange)
                         {
                             bindingsToRemove.add(existingBinding);
                         }
                     }
-                    for(BindingImpl existingBinding : bindingsToRemove)
+                    for(Binding<?> existingBinding : bindingsToRemove)
                     {
                         existingBinding.delete();
                     }
@@ -430,7 +429,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
             {
                 try
                 {
-                    _vhost.removeQueue((AMQQueue)_queue);
+                    _vhost.removeQueue((Queue<?>)_queue);
                 }
                 catch (AccessControlException e)
                 {
@@ -702,7 +701,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         _closeAction = action;
     }
 
-    public VirtualHostImpl getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _vhost;
     }

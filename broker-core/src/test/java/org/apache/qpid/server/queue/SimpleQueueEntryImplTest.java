@@ -38,8 +38,8 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
 {
@@ -52,7 +52,7 @@ public class SimpleQueueEntryImplTest extends QueueEntryImplTestBase
         Map<String,Object> queueAttributes = new HashMap<String, Object>();
         queueAttributes.put(Queue.ID, UUID.randomUUID());
         queueAttributes.put(Queue.NAME, "SimpleQueueEntryImplTest");
-        final VirtualHostImpl virtualHost = mock(VirtualHostImpl.class);
+        final VirtualHost virtualHost = mock(VirtualHost.class);
         when(virtualHost.getSecurityManager()).thenReturn(mock(org.apache.qpid.server.security.SecurityManager.class));
         when(virtualHost.getEventLogger()).thenReturn(new EventLogger());
         ConfiguredObjectFactory factory = new ConfiguredObjectFactoryImpl(BrokerModel.getInstance());

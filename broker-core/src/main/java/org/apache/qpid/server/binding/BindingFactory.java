@@ -22,13 +22,11 @@ package org.apache.qpid.server.binding;
 
 import java.util.Map;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.model.AbstractConfiguredObjectTypeFactory;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.plugin.PluggableService;
-import org.apache.qpid.server.queue.AMQQueue;
 
 @PluggableService
 public class BindingFactory extends AbstractConfiguredObjectTypeFactory<BindingImpl>
@@ -41,8 +39,8 @@ public class BindingFactory extends AbstractConfiguredObjectTypeFactory<BindingI
     @Override
     protected BindingImpl createInstance(final Map<String, Object> attributes, final ConfiguredObject<?>... parents)
     {
-        ExchangeImpl<?> exchange = (ExchangeImpl<?>) getParent(Exchange.class, parents);
-        AMQQueue<?> queue = (AMQQueue<?>) getParent(Queue.class, parents);
+        Exchange<?> exchange = (Exchange<?>) getParent(Exchange.class, parents);
+        Queue<?> queue = (Queue<?>) getParent(Queue.class, parents);
         BindingImpl binding = new BindingImpl(attributes, queue, exchange);
         exchange.addBinding(binding);
         return binding;

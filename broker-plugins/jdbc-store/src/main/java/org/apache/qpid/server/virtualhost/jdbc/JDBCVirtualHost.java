@@ -19,15 +19,13 @@
 
 package org.apache.qpid.server.virtualhost.jdbc;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.model.ManagedAttribute;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.jdbc.DefaultConnectionProviderFactory;
 import org.apache.qpid.server.store.jdbc.JDBCSettings;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
-public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>,
-        JDBCSettings
+public interface JDBCVirtualHost<X extends JDBCVirtualHost<X>> extends VirtualHost<X>,
+                                                                       JDBCSettings
 {
     @ManagedAttribute(mandatory=true)
     String getConnectionUrl();

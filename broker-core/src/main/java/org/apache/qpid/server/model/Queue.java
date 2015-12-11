@@ -23,15 +23,34 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.exchange.ExchangeReferrer;
+import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageInfo;
+import org.apache.qpid.server.message.MessageSource;
+import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.protocol.CapacityChecker;
+import org.apache.qpid.server.queue.BaseQueue;
+import org.apache.qpid.server.queue.NotificationCheck;
+import org.apache.qpid.server.queue.QueueConsumer;
+import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.server.store.MessageDurability;
+import org.apache.qpid.server.store.MessageEnqueueRecord;
+import org.apache.qpid.server.util.Deletable;
 
 @ManagedObject( defaultType = "standard", description = Queue.CLASS_DESCRIPTION )
-public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
+public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
+                                                   Comparable<X>, ExchangeReferrer,
+                                                   BaseQueue,
+                                                   MessageSource,
+                                                   CapacityChecker,
+                                                   MessageDestination,
+                                                   Deletable<X>
 {
     String CLASS_DESCRIPTION = "<p>Queues are named entities within a VirtualHost that hold/buffer messages for later "
                                + "delivery to consumer applications. Consumers subscribe to a queue in order to receive "
@@ -174,10 +193,10 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     Map<String, Map<String,List<String>>> getDefaultFilters();
 
     //children
-    Collection<? extends Binding> getBindings();
+    Collection<? extends Binding<?>> getBindings();
 
 
-    Collection<? extends Consumer> getConsumers();
+    Collection<? extends Consumer<?>> getConsumers();
 
     //operations
 
@@ -259,4 +278,67 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>
     @ManagedOperation(nonModifying = true)
     MessageInfo getMessageInfoById(@Param(name = "messageId") long messageId);
 
+    boolean isExclusive();
+
+    void addBinding(Binding<?> binding);
+
+    void removeBinding(Binding<?> binding);
+
+    LogSubject getLogSubject();
+
+    VirtualHost<?> getVirtualHost();
+
+    boolean isUnused();
+
+    boolean isEmpty();
+
+    long getOldestMessageArrivalTime();
+
+    void requeue(QueueEntry entry);
+
+    void dequeue(QueueEntry entry);
+
+    void decrementUnackedMsgCount(QueueEntry queueEntry);
+
+    void incrementUnackedMsgCount(QueueEntry entry);
+
+    boolean resend(QueueEntry entry, QueueConsumer<?> consumer);
+
+    List<? extends QueueEntry> getMessagesOnTheQueue();
+
+    List<Long> getMessagesOnTheQueue(int num);
+
+    List<Long> getMessagesOnTheQueue(int num, int offset);
+
+    QueueEntry getMessageOnTheQueue(long messageId);
+
+    /**
+     * Returns a list of QueEntries from a given range of queue positions, eg messages 5 to 10 on the queue.
+     *
+     * The 'queue position' index starts from 1. Using 0 in 'from' will be ignored and continue from 1.
+     * Using 0 in the 'to' field will return an empty list regardless of the 'from' value.
+     * @param fromPosition
+     * @param toPosition
+     * @return
+     */
+    List<? extends QueueEntry> getMessagesRangeOnTheQueue(long fromPosition, long toPosition);
+
+    /**
+     * Checks the status of messages on the queue, purging expired ones, firing age related alerts etc.
+     */
+    void checkMessageStatus();
+
+    Set<NotificationCheck> getNotificationChecks();
+
+    void deliverAsync();
+
+    Collection<String> getAvailableAttributes();
+
+    void completeRecovery();
+
+    void recover(ServerMessage<?> message, MessageEnqueueRecord enqueueRecord);
+
+    void setTargetSize(long targetSize);
+
+    long getPotentialMemoryFootprint();
 }

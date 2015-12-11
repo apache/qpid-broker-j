@@ -20,9 +20,7 @@
  */
 package org.apache.qpid.server.queue;
 
-import java.security.AccessControlContext;
 import java.security.AccessController;
-import java.security.Principal;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -38,8 +36,8 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 import static org.mockito.Mockito.mock;
 
@@ -248,7 +246,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
 
         private QueueEntryList _entries = new DequeuedQueueEntryList(this);
 
-        public DequeuedQueue(VirtualHostImpl virtualHost)
+        public DequeuedQueue(VirtualHost<?> virtualHost)
         {
             super(attributes(), virtualHost);
         }

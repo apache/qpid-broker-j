@@ -19,17 +19,14 @@
 
 package org.apache.qpid.server.virtualhost.berkeleydb;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.virtualhost.NonStandardVirtualHost;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 /**
   Object that represents the VirtualHost whilst the VirtualHostNode is in the replica role.  The
   real virtualhost will be elsewhere in the group.
  */
 public interface BDBHAReplicaVirtualHost<X extends BDBHAReplicaVirtualHost<X>>
-        extends VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>,
-                NonStandardVirtualHost<X,AMQQueue<?>,ExchangeImpl<?>>
+        extends VirtualHost<X>, NonStandardVirtualHost<X>
 {
 }

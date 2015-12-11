@@ -53,6 +53,7 @@ import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -65,7 +66,6 @@ import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.StateChangeListener;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 class ManagementNode implements MessageSource, MessageDestination
 {
@@ -102,7 +102,7 @@ class ManagementNode implements MessageSource, MessageDestination
     public static final String RESULTS = "results";
 
 
-    private final VirtualHostImpl _virtualHost;
+    private final VirtualHost<?> _virtualHost;
 
     private final UUID _id;
 

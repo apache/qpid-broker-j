@@ -44,12 +44,12 @@ import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.transport.AMQPConnection;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.*;
 import org.apache.qpid.transport.network.NetworkConnection;
 
@@ -167,7 +167,7 @@ public class ServerConnectionDelegate extends ServerDelegate
     {
         final ServerConnection sconn = (ServerConnection) conn;
 
-        VirtualHostImpl vhost;
+        VirtualHost<?> vhost;
         String vhostName;
         if(open.hasVirtualHost())
         {

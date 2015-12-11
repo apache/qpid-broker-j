@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -45,7 +46,7 @@ public abstract class QueueEntryListTestBase extends QpidTestCase
         assertEquals("Unexpected head entry returned by getHead()", getTestList().getQueue(), getTestQueue());
     }
 
-    protected abstract AMQQueue getTestQueue();
+    protected abstract Queue<?> getTestQueue();
 
     /**
      * Test to add a message with properties specific to the queue type.

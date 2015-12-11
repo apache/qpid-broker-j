@@ -21,7 +21,7 @@
 package org.apache.qpid.server.plugin;
 
 import org.apache.qpid.server.message.MessageNode;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.model.VirtualHost;
 
 public interface SystemNodeCreator extends Pluggable
 {
@@ -32,7 +32,7 @@ public interface SystemNodeCreator extends Pluggable
         void removeSystemNode(String name);
 
 
-        VirtualHostImpl getVirtualHost();
+        VirtualHost<?> getVirtualHost();
 
         boolean hasSystemNode(String name);
     }

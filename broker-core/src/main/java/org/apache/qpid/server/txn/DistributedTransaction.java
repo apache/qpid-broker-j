@@ -23,12 +23,12 @@ package org.apache.qpid.server.txn;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
 import org.apache.qpid.server.message.MessageInstance;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TransactionLogResource;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.Xid;
 
 import java.util.Collection;
@@ -41,10 +41,10 @@ public class DistributedTransaction implements ServerTransaction
 
     private DtxBranch _branch;
     private AMQSessionModel _session;
-    private VirtualHostImpl _vhost;
+    private VirtualHost<?> _vhost;
 
 
-    public DistributedTransaction(AMQSessionModel session, MessageStore store, VirtualHostImpl vhost)
+    public DistributedTransaction(AMQSessionModel session, MessageStore store, VirtualHost<?> vhost)
     {
         _session = session;
         _vhost = vhost;

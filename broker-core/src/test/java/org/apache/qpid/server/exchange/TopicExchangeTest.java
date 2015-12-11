@@ -42,19 +42,18 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class TopicExchangeTest extends QpidTestCase
 {
 
     private TopicExchange _exchange;
-    private VirtualHostImpl _vhost;
+    private VirtualHost<?> _vhost;
 
 
     @Override
@@ -89,7 +88,7 @@ public class TopicExchangeTest extends QpidTestCase
         }
     }
 
-    private AMQQueue<?> createQueue(String name) throws QueueExistsException
+    private Queue<?> createQueue(String name) throws QueueExistsException
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, name);
@@ -98,7 +97,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testNoRoute() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a*#b");
+        Queue<?> queue = createQueue("a*#b");
         createBinding(UUID.randomUUID(), "a.*.#.b", queue, _exchange, null);
 
 
@@ -109,7 +108,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testDirectMatch() throws Exception
     {
-        AMQQueue<?> queue = createQueue("ab");
+        Queue<?> queue = createQueue("ab");
         createBinding(UUID.randomUUID(), "a.b", queue, _exchange, null);
 
 
@@ -131,7 +130,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testStarMatch() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a*");
+        Queue<?> queue = createQueue("a*");
         createBinding(UUID.randomUUID(), "a.*", queue, _exchange, null);
 
 
@@ -162,7 +161,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testHashMatch() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a#");
+        Queue<?> queue = createQueue("a#");
         createBinding(UUID.randomUUID(), "a.#", queue, _exchange, null);
 
 
@@ -213,7 +212,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testMidHash() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a");
+        Queue<?> queue = createQueue("a");
         createBinding(UUID.randomUUID(), "a.*.#.b", queue, _exchange, null);
 
         routeMessage("a.c.d.b",0l);
@@ -238,7 +237,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testMatchAfterHash() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a#");
+        Queue<?> queue = createQueue("a#");
         createBinding(UUID.randomUUID(), "a.*.#.b.c", queue, _exchange, null);
 
 
@@ -278,7 +277,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testHashAfterHash() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a#");
+        Queue<?> queue = createQueue("a#");
         createBinding(UUID.randomUUID(),
                       "a.*.#.b.c.#.d",
                       queue,
@@ -303,7 +302,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testHashHash() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a#");
+        Queue<?> queue = createQueue("a#");
         createBinding(UUID.randomUUID(), "a.#.*.#.d", queue, _exchange, null);
 
         int queueCount = routeMessage("a.c.b.b.c",0l);
@@ -324,7 +323,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testSubMatchFails() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a");
+        Queue<?> queue = createQueue("a");
         createBinding(UUID.randomUUID(), "a.b.c.d", queue, _exchange, null);
 
         int queueCount = routeMessage("a.b.c",0l);
@@ -336,7 +335,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testMoreRouting() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a");
+        Queue<?> queue = createQueue("a");
        createBinding(UUID.randomUUID(), "a.b", queue, _exchange, null);
 
 
@@ -349,7 +348,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testMoreQueue() throws Exception
     {
-        AMQQueue<?> queue = createQueue("a");
+        Queue<?> queue = createQueue("a");
         createBinding(UUID.randomUUID(), "a.b", queue, _exchange, null);
 
 
@@ -362,7 +361,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testRouteWithJMSSelector() throws Exception
     {
-        AMQQueue<?> queue = createQueue("queue1");
+        Queue<?> queue = createQueue("queue1");
         final String bindingKey = "bindingKey";
 
         Map<String, Object> bindArgs = Collections.<String, Object>singletonMap(JMS_SELECTOR.toString(), "arg > 5");
@@ -396,7 +395,7 @@ public class TopicExchangeTest extends QpidTestCase
 
     public void testUpdateBindingReplacingSelector() throws Exception
     {
-        AMQQueue<?> queue = createQueue("queue1");
+        Queue<?> queue = createQueue("queue1");
         final String bindingKey = "a";
 
         Map<String, Object> originalArgs = Collections.<String, Object>singletonMap(JMS_SELECTOR.toString(), "arg > 5");
@@ -435,7 +434,7 @@ public class TopicExchangeTest extends QpidTestCase
     // updates generated a NPE
     public void testUpdateBindingAddingSelector() throws Exception
     {
-        AMQQueue<?> queue = createQueue("queue1");
+        Queue<?> queue = createQueue("queue1");
         final String bindingKey = "a";
 
         BindingImpl binding = createBinding(UUID.randomUUID(), bindingKey, queue, _exchange, null);
@@ -470,8 +469,8 @@ public class TopicExchangeTest extends QpidTestCase
 
     private BindingImpl createBinding(UUID id,
                                       String bindingKey,
-                                      AMQQueue queue,
-                                      ExchangeImpl exchange,
+                                      Queue<?> queue,
+                                      Exchange<?> exchange,
                                       Map<String, Object> arguments)
     {
         Map<String, Object> attributes = new HashMap<String, Object>();

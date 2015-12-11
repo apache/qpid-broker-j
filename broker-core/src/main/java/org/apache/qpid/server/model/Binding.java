@@ -31,6 +31,8 @@ public interface Binding<X extends Binding<X>> extends ConfiguredObject<X>
     public String QUEUE = "queue";
     public String EXCHANGE = "exchange";
 
+    String getBindingKey();
+
     // TODO - this is a hack
     @DerivedAttribute
     Queue<?> getQueue();
@@ -45,4 +47,5 @@ public interface Binding<X extends Binding<X>> extends ConfiguredObject<X>
     @ManagedStatistic(statisticType = StatisticType.CUMULATIVE, units = StatisticUnit.COUNT, label = "Matches")
     long getMatches();
 
+    void incrementMatches();
 }

@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.Executor;
 
 import javax.security.auth.Subject;
 
@@ -43,7 +42,6 @@ import org.apache.qpid.framing.MethodRegistry;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.MessageContentSource;
@@ -52,8 +50,9 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Connection;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.MessageStore;
@@ -62,14 +61,13 @@ import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.store.StoredMemoryMessage;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AMQChannelTest extends QpidTestCase
 {
     public static final AMQShortString ROUTING_KEY = AMQShortString.valueOf("routingKey");
 
-    private VirtualHostImpl<?, AMQQueue<?>, ExchangeImpl<?>> _virtualHost;
+    private VirtualHost<?> _virtualHost;
     private AMQPConnection_0_8 _amqConnection;
     private MessageStore _messageStore;
     private AmqpPort<?> _port;
@@ -90,7 +88,7 @@ public class AMQChannelTest extends QpidTestCase
 
         _messageStore = mock(MessageStore.class);
 
-        _virtualHost = mock(VirtualHostImpl.class);
+        _virtualHost = mock(VirtualHost.class);
         when(_virtualHost.getContextValue(Integer.class, Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE)).thenReturn(1);
         when(_virtualHost.getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE)).thenReturn(1l);
         when(_virtualHost.getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH)).thenReturn(false);
@@ -112,7 +110,7 @@ public class AMQChannelTest extends QpidTestCase
         _amqConnection = mock(AMQPConnection_0_8.class);
         when(_amqConnection.getAuthorizedSubject()).thenReturn(authenticatedSubject);
         when(_amqConnection.getAuthorizedPrincipal()).thenReturn(authenticatedPrincipal);
-        when(_amqConnection.getVirtualHost()).thenReturn((VirtualHostImpl)_virtualHost);
+        when(_amqConnection.getVirtualHost()).thenReturn((VirtualHost)_virtualHost);
         when(_amqConnection.getProtocolOutputConverter()).thenReturn(_protocolOutputConverter);
         when(_amqConnection.getBroker()).thenReturn((Broker) _broker);
         when(_amqConnection.getMethodRegistry()).thenReturn(new MethodRegistry(ProtocolVersion.v0_9));
@@ -123,7 +121,7 @@ public class AMQChannelTest extends QpidTestCase
     public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings() throws Exception
     {
         String testExchangeName = getTestName();
-        ExchangeImpl<?> exchange = mock(ExchangeImpl.class);
+        Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
         doReturn(exchange).when(_virtualHost).getAttainedExchange(testExchangeName);
 
@@ -138,7 +136,7 @@ public class AMQChannelTest extends QpidTestCase
 
     public void testReceiveExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding() throws Exception
     {
-        ExchangeImpl<?> exchange = mock(ExchangeImpl.class);
+        Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
         doReturn(exchange).when(_virtualHost).getAttainedExchange(getTestName());
 

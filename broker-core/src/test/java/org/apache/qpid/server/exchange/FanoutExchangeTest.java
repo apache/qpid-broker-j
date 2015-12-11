@@ -48,15 +48,13 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class FanoutExchangeTest extends QpidTestCase
 {
     private FanoutExchange _exchange;
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost _virtualHost;
     private TaskExecutor _taskExecutor;
 
     public void setUp()
@@ -79,7 +77,7 @@ public class FanoutExchangeTest extends QpidTestCase
 
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
-        _virtualHost = mock(VirtualHostImpl.class);
+        _virtualHost = mock(VirtualHost.class);
 
         when(_virtualHost.getSecurityManager()).thenReturn(securityManager);
         when(_virtualHost.getEventLogger()).thenReturn(new EventLogger());
@@ -100,53 +98,53 @@ public class FanoutExchangeTest extends QpidTestCase
 
     public void testIsBoundStringMapAMQQueueWhenQueueIsNull()
     {
-        assertFalse("calling isBound(AMQShortString,FieldTable,AMQQueue) with null queue should return false",
-                _exchange.isBound((String) null, (Map) null, (AMQQueue) null));
+        assertFalse("calling isBound(AMQShortString,FieldTable,Queue<?>) with null queue should return false",
+                _exchange.isBound((String) null, (Map) null, (Queue<?>) null));
     }
 
     public void testIsBoundStringAMQQueueWhenQueueIsNull()
     {
-        assertFalse("calling isBound(AMQShortString,AMQQueue) with null queue should return false",
-                _exchange.isBound((String) null, (AMQQueue) null));
+        assertFalse("calling isBound(AMQShortString,Queue<?>) with null queue should return false",
+                _exchange.isBound((String) null, (Queue<?>) null));
     }
 
     public void testIsBoundAMQQueueWhenQueueIsNull()
     {
-        assertFalse("calling isBound(AMQQueue) with null queue should return false", _exchange.isBound((AMQQueue) null));
+        assertFalse("calling isBound(AMQQueue) with null queue should return false", _exchange.isBound((Queue<?>) null));
     }
 
     public void testIsBoundStringMapAMQQueue()
     {
-        AMQQueue queue = bindQueue();
+        Queue<?> queue = bindQueue();
         assertTrue("Should return true for a bound queue",
                 _exchange.isBound("matters", null, queue));
     }
 
     public void testIsBoundStringAMQQueue()
     {
-        AMQQueue queue = bindQueue();
+        Queue<?> queue = bindQueue();
         assertTrue("Should return true for a bound queue",
                 _exchange.isBound("matters", queue));
     }
 
     public void testIsBoundAMQQueue()
     {
-        AMQQueue queue = bindQueue();
+        Queue<?> queue = bindQueue();
         assertTrue("Should return true for a bound queue",
                 _exchange.isBound(queue));
     }
 
-    private AMQQueue bindQueue()
+    private Queue<?> bindQueue()
     {
-        AMQQueue queue = mockQueue();
+        Queue<?> queue = mockQueue();
 
         _exchange.addBinding("matters", queue, null);
         return queue;
     }
 
-    private AMQQueue mockQueue()
+    private Queue<?> mockQueue()
     {
-        AMQQueue queue = mock(AMQQueue.class);
+        Queue queue = mock(Queue.class);
         when(queue.getVirtualHost()).thenReturn(_virtualHost);
         when(queue.getCategoryClass()).thenReturn(Queue.class);
         when(queue.getModel()).thenReturn(BrokerModel.getInstance());
@@ -159,8 +157,8 @@ public class FanoutExchangeTest extends QpidTestCase
 
     public void testRoutingWithSelectors() throws Exception
     {
-        AMQQueue queue1 = mockQueue();
-        AMQQueue queue2 = mockQueue();
+        Queue<?> queue1 = mockQueue();
+        Queue<?> queue2 = mockQueue();
 
 
         _exchange.addBinding("key",queue1, null);

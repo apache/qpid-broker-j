@@ -32,7 +32,6 @@ import java.util.concurrent.ScheduledFuture;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
@@ -45,12 +44,12 @@ import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.store.DurableConfigurationStore;
@@ -154,7 +153,7 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public ExchangeImpl createExchange(final Map<String, Object> attributes)
+    public Exchange<?> createExchange(final Map<String, Object> attributes)
     {
         throwUnsupportedForRedirector();
         return null;
@@ -167,13 +166,13 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public ExchangeImpl<?> getAttainedExchange(final String name)
+    public Exchange<?> getAttainedExchange(final String name)
     {
         return null;
     }
 
     @Override
-    public AMQQueue<?> createQueue(final Map<String, Object> attributes)
+    public Queue<?> createQueue(final Map<String, Object> attributes)
     {
         throwUnsupportedForRedirector();
         return null;
@@ -312,7 +311,7 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public AMQQueue<?> getAttainedQueue(final String name)
+    public Queue<?> getAttainedQueue(final String name)
     {
         return null;
     }
@@ -324,34 +323,34 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public AMQQueue<?> getAttainedQueue(final UUID id)
+    public Queue<?> getAttainedQueue(final UUID id)
     {
         return null;
     }
 
 
     @Override
-    public Collection<AMQQueue<?>> getQueues()
+    public Collection<Queue<?>> getQueues()
     {
         return Collections.emptyList();
     }
 
     @Override
-    public ListenableFuture<Integer> removeQueueAsync(final AMQQueue<?> queue)
+    public ListenableFuture<Integer> removeQueueAsync(final Queue<?> queue)
     {
         throwUnsupportedForRedirector();
         return null;
     }
 
     @Override
-    public int removeQueue(final AMQQueue<?> queue)
+    public int removeQueue(final Queue<?> queue)
     {
         throwUnsupportedForRedirector();
         return 0;
     }
 
     @Override
-    public Collection<ExchangeImpl<?>> getExchanges()
+    public Collection<Exchange<?>> getExchanges()
     {
         return Collections.emptyList();
     }
@@ -404,35 +403,6 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public long getHouseKeepingTaskCount()
-    {
-        return 0;
-    }
-
-    @Override
-    public long getHouseKeepingCompletedTaskCount()
-    {
-        return 0;
-    }
-
-    @Override
-    public int getHouseKeepingPoolSize()
-    {
-        return 0;
-    }
-
-    @Override
-    public void setHouseKeepingPoolSize(final int newSize)
-    {
-    }
-
-    @Override
-    public int getHouseKeepingActiveCount()
-    {
-        return 0;
-    }
-
-    @Override
     public DtxRegistry getDtxRegistry()
     {
         return null;
@@ -449,12 +419,6 @@ class RedirectingVirtualHostImpl
     {
         throwUnsupportedForRedirector();
         return null;
-    }
-
-    @Override
-    public boolean getDefaultDeadLetterQueueEnabled()
-    {
-        return false;
     }
 
     @Override

@@ -37,8 +37,9 @@ import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
-import org.apache.qpid.server.queue.AMQQueue;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -142,16 +143,16 @@ public class HeadersBindingTest extends QpidTestCase
     private Map<String,Object> bindHeaders = new HashMap<String,Object>();
     private MockHeader matchHeaders = new MockHeader();
     private int _count = 0;
-    private AMQQueue _queue;
-    private ExchangeImpl _exchange;
+    private Queue<?> _queue;
+    private Exchange<?> _exchange;
 
     protected void setUp()
     {
         _count++;
-        _queue = mock(AMQQueue.class);
+        _queue = mock(Queue.class);
         TaskExecutor executor = new CurrentThreadTaskExecutor();
         executor.start();
-        VirtualHostImpl vhost = mock(VirtualHostImpl.class);
+        VirtualHost vhost = mock(VirtualHost.class);
         when(_queue.getVirtualHost()).thenReturn(vhost);
         when(_queue.getModel()).thenReturn(BrokerModel.getInstance());
         when(_queue.getTaskExecutor()).thenReturn(executor);
@@ -163,7 +164,7 @@ public class HeadersBindingTest extends QpidTestCase
         when(vhost.getTaskExecutor()).thenReturn(executor);
         when(vhost.getChildExecutor()).thenReturn(executor);
 
-        _exchange = mock(ExchangeImpl.class);
+        _exchange = mock(Exchange.class);
         when(_exchange.getType()).thenReturn(ExchangeDefaults.HEADERS_EXCHANGE_CLASS);
         when(_exchange.getEventLogger()).thenReturn(eventLogger);
         when(_exchange.getModel()).thenReturn(BrokerModel.getInstance());
@@ -366,8 +367,8 @@ public class HeadersBindingTest extends QpidTestCase
 
     public static BindingImpl createBinding(UUID id,
                                             final String bindingKey,
-                                            final AMQQueue queue,
-                                            final ExchangeImpl exchange,
+                                            final Queue<?> queue,
+                                            final Exchange<?> exchange,
                                             final Map<String, Object> arguments)
     {
         Map<String, Object> attributes = new HashMap<String, Object>();

@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.EnqueueableMessage;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -38,7 +39,6 @@ import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.Transaction;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.Xid;
 
 public class DtxBranch
@@ -55,7 +55,7 @@ public class DtxBranch
 
     private Transaction _transaction;
     private long _expiration;
-    private VirtualHostImpl _vhost;
+    private VirtualHost<?> _vhost;
     private ScheduledFuture<?> _timeoutFuture;
     private MessageStore _store;
     private Transaction.StoredXidRecord _storedXidRecord;
@@ -73,14 +73,14 @@ public class DtxBranch
         ROLLBACK_ONLY
     }
 
-    public DtxBranch(Xid xid, MessageStore store, VirtualHostImpl vhost)
+    public DtxBranch(Xid xid, MessageStore store, VirtualHost<?> vhost)
     {
         _xid = xid;
         _store = store;
         _vhost = vhost;
     }
 
-    public DtxBranch(Transaction.StoredXidRecord storedXidRecord, MessageStore store, VirtualHostImpl vhost)
+    public DtxBranch(Transaction.StoredXidRecord storedXidRecord, MessageStore store, VirtualHost<?> vhost)
     {
         this(new Xid(storedXidRecord.getFormat(), storedXidRecord.getGlobalId(), storedXidRecord.getBranchId()), store, vhost);
         _storedXidRecord = storedXidRecord;

@@ -27,8 +27,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.transport.network.Ticker;
@@ -36,7 +36,7 @@ import org.apache.qpid.transport.network.Ticker;
 /**
  * Session model interface.
  * Extends {@link Comparable} to allow objects to be inserted into a {@link ConcurrentSkipListSet}
- * when monitoring the blocking and blocking of queues/sessions in {@link AMQQueue}.
+ * when monitoring the blocking and blocking of queues/sessions in {@link Queue}.
  */
 public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparable<AMQSessionModel>, Deletable<T>
 {
@@ -69,9 +69,9 @@ public interface AMQSessionModel<T extends AMQSessionModel<T>> extends Comparabl
      */
     public void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose);
 
-    void block(AMQQueue queue);
+    void block(Queue<?> queue);
 
-    void unblock(AMQQueue queue);
+    void unblock(Queue<?> queue);
 
     void block();
 

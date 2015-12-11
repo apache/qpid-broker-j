@@ -72,7 +72,7 @@ public class ConnectionVersionValidator implements ConnectionValidator
 
     @Override
     public boolean validateConnectionCreation(final AMQPConnection<?> connection,
-                                              final VirtualHost<?, ?, ?> virtualHost)
+                                              final VirtualHost<?> virtualHost)
     {
         String connectionVersion = connection.getClientVersion();
         if (connectionVersion == null)
@@ -97,7 +97,7 @@ public class ConnectionVersionValidator implements ConnectionValidator
         return valid;
     }
 
-    private boolean connectionMatches(VirtualHost<?, ?, ?> virtualHost, String listName, final String connectionVersion)
+    private boolean connectionMatches(VirtualHost<?> virtualHost, String listName, final String connectionVersion)
     {
         final List<String> versionRegexList = getContextValueList(virtualHost, listName);
         if (versionRegexList != null)
@@ -123,7 +123,7 @@ public class ConnectionVersionValidator implements ConnectionValidator
         return false;
     }
 
-    private List<String> getContextValueList(final VirtualHost<?,?,?> virtualHost, final String variableName)
+    private List<String> getContextValueList(final VirtualHost<?> virtualHost, final String variableName)
     {
         if (virtualHost.getContextKeys(false).contains(variableName))
         {

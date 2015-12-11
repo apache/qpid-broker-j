@@ -20,11 +20,12 @@
  */
 package org.apache.qpid.server.virtualhost;
 
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class VirtualHostUnavailableException extends ConnectionScopedRuntimeException
 {
-    public VirtualHostUnavailableException(VirtualHostImpl<?, ?, ?> host)
+    public VirtualHostUnavailableException(VirtualHost<?> host)
     {
         super("Virtualhost state "
               + host.getState()

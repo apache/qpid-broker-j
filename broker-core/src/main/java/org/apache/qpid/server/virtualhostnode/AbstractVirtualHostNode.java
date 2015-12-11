@@ -111,7 +111,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
             @Override
             public Principal getPrincipal()
             {
-                VirtualHost<?,?,?> virtualHost = getVirtualHost();
+                VirtualHost<?> virtualHost = getVirtualHost();
                 if (virtualHost != null)
                 {
                     return virtualHost.getPrincipal();
@@ -208,7 +208,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
     }
 
     @Override
-    public VirtualHost<?,?,?> getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         Collection<VirtualHost> children = new ArrayList<>(getChildren(VirtualHost.class));
         if (children.size() == 0)
@@ -347,7 +347,7 @@ public abstract class AbstractVirtualHostNode<X extends AbstractVirtualHostNode<
 
     protected ListenableFuture<Void> deleteVirtualHostIfExists()
     {
-        VirtualHost<?, ?, ?> virtualHost = getVirtualHost();
+        VirtualHost<?> virtualHost = getVirtualHost();
         if (virtualHost != null)
         {
             return virtualHost.deleteAsync();

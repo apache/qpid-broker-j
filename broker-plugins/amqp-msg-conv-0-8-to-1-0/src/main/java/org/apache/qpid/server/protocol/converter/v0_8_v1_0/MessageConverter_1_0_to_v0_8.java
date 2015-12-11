@@ -32,6 +32,7 @@ import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.MessagePublishInfo;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_8.AMQMessage;
@@ -40,7 +41,6 @@ import org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.server.protocol.v1_0.Message_1_0;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 @PluggableService
 public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_0, AMQMessage>
@@ -60,7 +60,7 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
     }
 
     @Override
-    public AMQMessage convert(Message_1_0 serverMsg, VirtualHostImpl vhost)
+    public AMQMessage convert(Message_1_0 serverMsg, VirtualHost<?> vhost)
     {
         return new AMQMessage(convertToStoredMessage(serverMsg), null);
     }

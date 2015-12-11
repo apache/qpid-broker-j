@@ -31,10 +31,10 @@ import java.util.Set;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.ReplyTo;
 import org.apache.qpid.transport.codec.BBDecoder;
@@ -57,7 +57,7 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
     }
 
     @Override
-    public InternalMessage convert(MessageTransferMessage serverMessage, VirtualHostImpl vhost)
+    public InternalMessage convert(MessageTransferMessage serverMessage, VirtualHost<?> vhost)
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];

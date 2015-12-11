@@ -52,11 +52,11 @@ public abstract class AbstractSystemMessageSource implements MessageSource
 {
     protected final UUID _id;
     protected final String _name;
-    protected final VirtualHost<?, ?, ?> _virtualHost;
+    protected final VirtualHost<?> _virtualHost;
     private List<Consumer> _consumers = new CopyOnWriteArrayList<>();
 
     public AbstractSystemMessageSource(
-            String name, final VirtualHost<?, ?, ?> virtualHost)
+            String name, final VirtualHost<?> virtualHost)
     {
         _name = name;
         _id = UUID.nameUUIDFromBytes((getClass().getSimpleName() + "/" + virtualHost.getName() + "/" + name).getBytes(

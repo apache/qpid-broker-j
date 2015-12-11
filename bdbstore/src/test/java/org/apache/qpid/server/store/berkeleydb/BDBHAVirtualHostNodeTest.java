@@ -135,7 +135,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         assertEquals("SYNC,NO_SYNC,SIMPLE_MAJORITY", environmentFacade.getMessageStoreDurability().toString());
 
         _helper.awaitForVirtualhost(node, 30000);
-        VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
+        VirtualHost<?> virtualHost = node.getVirtualHost();
         assertNotNull("Virtual host child was not added", virtualHost);
         assertEquals("Unexpected virtual host name", groupName, virtualHost.getName());
         assertEquals("Unexpected virtual host store", bdbConfigurationStore.getMessageStore(), virtualHost.getMessageStore());

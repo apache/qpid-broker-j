@@ -30,13 +30,13 @@ import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.BrokerModel;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class BindingImplTest extends QpidTestCase
@@ -58,15 +58,15 @@ public class BindingImplTest extends QpidTestCase
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Binding.ARGUMENTS, arguments);
         attributes.put(Binding.NAME, getTestName());
-        AMQQueue queue = mock(AMQQueue.class);
-        VirtualHostImpl vhost = mock(VirtualHostImpl.class);
+        Queue<?> queue = mock(Queue.class);
+        VirtualHost vhost = mock(VirtualHost.class);
         SecurityManager securityManager = mock(SecurityManager.class);
         when(vhost.getSecurityManager()).thenReturn(securityManager);
         when(queue.getTaskExecutor()).thenReturn(_taskExecutor);
         when(queue.getChildExecutor()).thenReturn(_taskExecutor);
         when(queue.getVirtualHost()).thenReturn(vhost);
         when(queue.getModel()).thenReturn(_model);
-        ExchangeImpl exchange = mock(ExchangeImpl.class);
+        Exchange<?> exchange = mock(Exchange.class);
         when(exchange.getTaskExecutor()).thenReturn(_taskExecutor);
         when(exchange.getChildExecutor()).thenReturn(_taskExecutor);
         when(exchange.getModel()).thenReturn(_model);

@@ -34,6 +34,7 @@ import static org.apache.qpid.server.queue.NotificationCheck.QUEUE_DEPTH_ALERT;
 
 
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -41,7 +42,7 @@ public class NotificationCheckTest extends QpidTestCase
 {
 
     private ServerMessage<?> _message = mock(ServerMessage.class);
-    private AMQQueue _queue = mock(AMQQueue.class);
+    private Queue<?> _queue = mock(Queue.class);
     private QueueNotificationListener _listener = mock(QueueNotificationListener .class);
 
     public void testMessageCountAlertFires() throws Exception

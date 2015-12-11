@@ -25,5 +25,5 @@ import org.apache.qpid.server.transport.AMQPConnection;
 
 public interface ConnectionValidator extends Pluggable
 {
-    boolean validateConnectionCreation(AMQPConnection<?> connection, final VirtualHost<?, ?, ?> virtualHost);
+    boolean validateConnectionCreation(AMQPConnection<?> connection, final VirtualHost<?> virtualHost);
 }

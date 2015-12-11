@@ -46,7 +46,7 @@ public interface VirtualHostNode<X extends VirtualHostNode<X>> extends Configure
     @ManagedAttribute( defaultValue = "${" + VIRTUALHOST_BLUEPRINT_CONTEXT_VAR + "}")
     String getVirtualHostInitialConfiguration();
 
-    VirtualHost<?,?,?> getVirtualHost();
+    VirtualHost<?> getVirtualHost();
 
     DurableConfigurationStore getConfigurationStore();
 

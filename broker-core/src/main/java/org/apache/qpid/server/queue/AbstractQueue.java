@@ -54,19 +54,16 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageInfoImpl;
-import org.apache.qpid.server.model.CustomRestHeaders;
-import org.apache.qpid.server.model.RestContentHeader;
+import org.apache.qpid.server.model.*;
 
 import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.logging.EventLogger;
@@ -79,19 +76,6 @@ import org.apache.qpid.server.message.MessageDeletedException;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.model.AbstractConfiguredObject;
-import org.apache.qpid.server.model.Binding;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
-import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.ExclusivityPolicy;
-import org.apache.qpid.server.model.LifetimePolicy;
-import org.apache.qpid.server.model.ManagedAttributeField;
-import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.model.QueueNotificationListener;
-import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.model.Content;
 import org.apache.qpid.server.plugin.MessageFilterFactory;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.protocol.AMQSessionModel;
@@ -112,13 +96,12 @@ import org.apache.qpid.server.util.Deletable;
 import org.apache.qpid.server.util.MapValueConverter;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.util.StateChangeListener;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.TransportException;
 
 public abstract class AbstractQueue<X extends AbstractQueue<X>>
         extends AbstractConfiguredObject<X>
-        implements AMQQueue<X>,
+        implements Queue<X>,
                    StateChangeListener<QueueConsumer<?>, State>,
                    MessageGroupManager.ConsumerResetHelper
 {
@@ -140,7 +123,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private static final long INITIAL_TARGET_QUEUE_SIZE = 102400l;
 
-    private final VirtualHostImpl _virtualHost;
+    private final VirtualHost<?> _virtualHost;
     private final DeletedChildListener _deletedChildListener = new DeletedChildListener();
 
     private final AccessControlContext _immediateDeliveryContext;
@@ -231,8 +214,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final AtomicBoolean _deleted = new AtomicBoolean(false);
     private final SettableFuture<Integer> _deleteFuture = SettableFuture.create();
 
-    private final List<Action<? super AMQQueue>> _deleteTaskList =
-            new CopyOnWriteArrayList<Action<? super AMQQueue>>();
+    private final List<Action<? super X>> _deleteTaskList =
+            new CopyOnWriteArrayList<>();
 
 
     private LogSubject _logSubject;
@@ -243,7 +226,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private final AtomicBoolean _overfull = new AtomicBoolean(false);
     private final FlowToDiskChecker _flowToDiskChecker = new FlowToDiskChecker();
     private final long _estimatedAverageMessageHeaderSize = getContextValue(Long.class, QUEUE_ESTIMATED_MESSAGE_MEMORY_OVERHEAD);
-    private final CopyOnWriteArrayList<BindingImpl> _bindings = new CopyOnWriteArrayList<BindingImpl>();
+    private final CopyOnWriteArrayList<Binding<?>> _bindings = new CopyOnWriteArrayList<>();
     private Map<String, Object> _arguments;
 
     /** the maximum delivery count for each message on this queue or 0 if maximum delivery count is not to be enforced. */
@@ -283,7 +266,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private boolean _closing;
     private final ConcurrentMap<String, Callable<MessageFilter>> _defaultFiltersMap = new ConcurrentHashMap<>();
 
-    protected AbstractQueue(Map<String, Object> attributes, VirtualHostImpl virtualHost)
+    protected AbstractQueue(Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
         super(parentsMap(virtualHost), attributes);
 
@@ -593,24 +576,26 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _alternateExchange;
     }
 
-    public void setAlternateExchange(ExchangeImpl exchange)
+    public void setAlternateExchange(Exchange<?> exchange)
     {
         _alternateExchange = exchange;
     }
 
+    @SuppressWarnings("unused")
     private void postSetAlternateExchange()
     {
-        if(_alternateExchange instanceof ExchangeImpl)
+        if(_alternateExchange != null)
         {
-            ((ExchangeImpl)_alternateExchange).addReference(this);
+            _alternateExchange.addReference(this);
         }
     }
 
+    @SuppressWarnings("unused")
     private void preSetAlternateExchange()
     {
-        if(_alternateExchange instanceof ExchangeImpl)
+        if(_alternateExchange != null)
         {
-            ((ExchangeImpl)_alternateExchange).removeReference(this);
+            _alternateExchange.removeReference(this);
         }
     }
 
@@ -667,7 +652,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return null;
     }
 
-    public VirtualHostImpl getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }
@@ -983,6 +968,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     }
 
+    @Override
     public Collection<QueueConsumer<?>> getConsumers()
     {
         List<QueueConsumer<?>> consumers = new ArrayList<QueueConsumer<?>>();
@@ -1006,6 +992,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
+    @Override
     public void resetSubPointersForGroups(final QueueEntry entry)
     {
         QueueConsumerList.ConsumerNodeIterator subscriberIter = _consumerList.iterator();
@@ -1024,7 +1011,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         deliverAsync();
     }
 
-    public void addBinding(final BindingImpl binding)
+    public void addBinding(final Binding<?> binding)
     {
         _bindings.add(binding);
         int bindingCount = _bindings.size();
@@ -1039,13 +1026,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         childAdded(binding);
     }
 
-    public void removeBinding(final BindingImpl binding)
+    public void removeBinding(final Binding<?> binding)
     {
         _bindings.remove(binding);
         childRemoved(binding);
     }
 
-    public Collection<BindingImpl> getBindings()
+    public Collection<Binding<?>> getBindings()
     {
         return Collections.unmodifiableList(_bindings);
     }
@@ -1665,7 +1652,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         }
     }
 
-    public int compareTo(final AMQQueue o)
+    public int compareTo(final X o)
     {
         return getName().compareTo(o.getName());
     }
@@ -1910,13 +1897,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public void addDeleteTask(final Action<? super AMQQueue> task)
+    public void addDeleteTask(final Action<? super X> task)
     {
         _deleteTaskList.add(task);
     }
 
     @Override
-    public void removeDeleteTask(final Action<? super AMQQueue> task)
+    public void removeDeleteTask(final Action<? super X> task)
     {
         _deleteTaskList.remove(task);
     }
@@ -1930,10 +1917,10 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         {
             final int queueDepthMessages = getQueueDepthMessages();
             final List<ListenableFuture<Void>> removeBindingFutures = new ArrayList<>(_bindings.size());
-            final ArrayList<BindingImpl> bindingCopy = new ArrayList<>(_bindings);
+            final ArrayList<Binding<?>> bindingCopy = new ArrayList<>(_bindings);
 
             // TODO - RG - Need to sort out bindings!
-            for (BindingImpl b : bindingCopy)
+            for (Binding<?> b : bindingCopy)
             {
                 removeBindingFutures.add(b.deleteAsync());
             }
@@ -2009,9 +1996,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private void performQueueDeleteTasks()
     {
-        for (Action<? super AMQQueue> task : _deleteTaskList)
+        for (Action<? super X> task : _deleteTaskList)
         {
-            task.performAction(this);
+            task.performAction((X)this);
         }
 
         _deleteTaskList.clear();
@@ -3132,8 +3119,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         if(childClass == Binding.class && otherParents.length == 1 && otherParents[0] instanceof Exchange)
         {
             final String bindingKey = (String) attributes.get("name");
-            ((ExchangeImpl)otherParents[0]).addBinding(bindingKey, this,
-                                                       (Map<String,Object>) attributes.get(Binding.ARGUMENTS));
+            ((Exchange<?>)otherParents[0]).addBinding(bindingKey, this,
+                                                           (Map<String,Object>) attributes.get(Binding.ARGUMENTS));
             for(Binding binding : _bindings)
             {
                 if(binding.getExchange() == otherParents[0] && binding.getName().equals(bindingKey))

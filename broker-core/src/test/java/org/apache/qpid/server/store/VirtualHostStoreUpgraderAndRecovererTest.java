@@ -120,7 +120,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         VirtualHostStoreUpgraderAndRecoverer upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
         upgraderAndRecoverer.perform(_durableConfigurationStore);
 
-        final VirtualHost<?,?,?>  host = _virtualHostNode.getVirtualHost();
+        final VirtualHost<?>  host = _virtualHostNode.getVirtualHost();
         Subject.doAs(org.apache.qpid.server.security.SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Void>()
                 {
                     @Override
@@ -163,7 +163,7 @@ public class VirtualHostStoreUpgraderAndRecovererTest extends QpidTestCase
         VirtualHostStoreUpgraderAndRecoverer upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(_virtualHostNode);
         upgraderAndRecoverer.perform(_durableConfigurationStore);
 
-        final VirtualHost<?,?,?>  host = _virtualHostNode.getVirtualHost();
+        final VirtualHost<?>  host = _virtualHostNode.getVirtualHost();
         Subject.doAs(org.apache.qpid.server.security.SecurityManager.getSubjectWithAddedSystemRights(), new PrivilegedAction<Void>()
                 {
                     @Override

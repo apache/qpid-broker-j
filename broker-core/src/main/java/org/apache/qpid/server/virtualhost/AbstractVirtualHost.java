@@ -61,7 +61,6 @@ import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.exchange.DefaultDestination;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.MessageStoreMessages;
 import org.apache.qpid.server.logging.messages.VirtualHostMessages;
@@ -77,7 +76,6 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.SystemNodeCreator;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.stats.StatisticsCounter;
@@ -102,7 +100,7 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.MapValueConverter;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
-        implements VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, EventListener
+        implements VirtualHost<X>, EventListener
 {
     private final Collection<ConnectionValidator> _connectionValidators = new ArrayList<>();
 
@@ -265,7 +263,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        VirtualHost<?, ?, ?> virtualHost = (VirtualHost<?, ?, ?>) proxyForValidation;
+        VirtualHost<?> virtualHost = (VirtualHost<?>) proxyForValidation;
 
         if(changedAttributes.contains(GLOBAL_ADDRESS_DOMAINS))
         {
@@ -307,7 +305,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         validateMessageStoreCreation();
     }
 
-    private void validateConnectionThreadPoolSettings(VirtualHost<?,?,?> virtualHost)
+    private void validateConnectionThreadPoolSettings(VirtualHost<?> virtualHost)
     {
         if (virtualHost.getConnectionThreadPoolSize() < 1)
         {
@@ -443,12 +441,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 attributes.put(Exchange.NAME, name);
                 attributes.put(Exchange.TYPE, type);
                 attributes.put(Exchange.ID, UUIDGenerator.generateExchangeUUID(name, getName()));
-                final ListenableFuture<ExchangeImpl> future = addExchangeAsync(attributes);
+                final ListenableFuture<Exchange<?>> future = addExchangeAsync(attributes);
                 final SettableFuture<Void> returnVal = SettableFuture.create();
-                Futures.addCallback(future, new FutureCallback<ExchangeImpl>()
+                Futures.addCallback(future, new FutureCallback<Exchange<?>>()
                 {
                     @Override
-                    public void onSuccess(final ExchangeImpl result)
+                    public void onSuccess(final Exchange<?> result)
                     {
                         try
                         {
@@ -643,31 +641,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         });
     }
 
-    public long getHouseKeepingTaskCount()
-    {
-        return _houseKeepingTaskExecutor.getTaskCount();
-    }
-
-    public long getHouseKeepingCompletedTaskCount()
-    {
-        return _houseKeepingTaskExecutor.getCompletedTaskCount();
-    }
-
-    public int getHouseKeepingPoolSize()
-    {
-        return _houseKeepingTaskExecutor.getCorePoolSize();
-    }
-
-    public void setHouseKeepingPoolSize(int newSize)
-    {
-        _houseKeepingTaskExecutor.setCorePoolSize(newSize);
-    }
-
-
-    public int getHouseKeepingActiveCount()
-    {
-        return _houseKeepingTaskExecutor.getActiveCount();
-    }
 
     @Override
     public List<String> getEnabledConnectionValidators()
@@ -688,9 +661,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public AMQQueue<?> getAttainedQueue(String name)
+    public Queue<?> getAttainedQueue(String name)
     {
-        Queue child = awaitChildClassToAttainState(Queue.class, name);
+        Queue<?> child = awaitChildClassToAttainState(Queue.class, name);
         if(child == null && getGlobalAddressDomains() != null)
         {
             for(String domain : getGlobalAddressDomains())
@@ -705,7 +678,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
             }
         }
-        return (AMQQueue<?>) child;
+        return child;
     }
 
     @Override
@@ -716,9 +689,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public AMQQueue<?> getAttainedQueue(UUID id)
+    public Queue<?> getAttainedQueue(UUID id)
     {
-        return (AMQQueue<?>) awaitChildClassToAttainState(Queue.class, id);
+        return (Queue<?>) awaitChildClassToAttainState(Queue.class, id);
     }
 
     @Override
@@ -728,30 +701,30 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Collection<AMQQueue<?>> getQueues()
+    public Collection<Queue<?>> getQueues()
     {
         Collection children = getChildren(Queue.class);
         return children;
     }
 
     @Override
-    public int removeQueue(AMQQueue<?> queue)
+    public int removeQueue(Queue<?> queue)
     {
         return doSync(removeQueueAsync(queue));
     }
 
     @Override
-    public ListenableFuture<Integer> removeQueueAsync(final AMQQueue<?> queue)
+    public ListenableFuture<Integer> removeQueueAsync(final Queue<?> queue)
     {
         return queue.deleteAndReturnCount();
     }
 
-    public AMQQueue<?> createQueue(Map<String, Object> attributes) throws QueueExistsException
+    public Queue<?> createQueue(Map<String, Object> attributes) throws QueueExistsException
     {
-        return (AMQQueue<?> )createChild(Queue.class, attributes);
+        return (Queue<?> )createChild(Queue.class, attributes);
     }
 
-    private ListenableFuture<? extends AMQQueue<?>> addQueueAsync(Map<String, Object> attributes) throws QueueExistsException
+    private ListenableFuture<? extends Queue<?>> addQueueAsync(Map<String, Object> attributes) throws QueueExistsException
     {
         if (shouldCreateDLQ(attributes))
         {
@@ -765,16 +738,16 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return Futures.immediateFuture(addQueueWithoutDLQ(attributes));
     }
 
-    private AMQQueue<?> addQueueWithoutDLQ(Map<String, Object> attributes) throws QueueExistsException
+    private Queue<?> addQueueWithoutDLQ(Map<String, Object> attributes) throws QueueExistsException
     {
         try
         {
-            return (AMQQueue) getObjectFactory().create(Queue.class, attributes, this);
+            return (Queue) getObjectFactory().create(Queue.class, attributes, this);
         }
         catch (DuplicateNameException e)
         {
             throw new QueueExistsException(String.format("Queue with name '%s' already exists", e.getName()),
-                                           (AMQQueue) e.getExisting());
+                                           (Queue<?>) e.getExisting());
         }
 
     }
@@ -788,9 +761,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public ExchangeImpl getAttainedExchange(String name)
+    public Exchange<?> getAttainedExchange(String name)
     {
-        Exchange child = awaitChildClassToAttainState(Exchange.class, name);
+        Exchange<?> child = awaitChildClassToAttainState(Exchange.class, name);
         if(child == null && getGlobalAddressDomains() != null)
         {
             for(String domain : getGlobalAddressDomains())
@@ -805,7 +778,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
             }
         }
-        return (ExchangeImpl) child;
+        return child;
     }
 
     private <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final String name)
@@ -843,7 +816,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Collection<ExchangeImpl<?>> getExchanges()
+    public Collection<Exchange<?>> getExchanges()
     {
         Collection children = getChildren(Exchange.class);
         return children;
@@ -851,26 +824,26 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
 
     @Override
-    public ExchangeImpl createExchange(Map<String,Object> attributes)
+    public Exchange<?> createExchange(Map<String,Object> attributes)
             throws ExchangeExistsException, ReservedExchangeNameException,
                    NoFactoryForTypeException
     {
-        return (ExchangeImpl)createChild(Exchange.class, attributes);
+        return (Exchange<?>) createChild(Exchange.class, attributes);
     }
 
 
-    private ListenableFuture<ExchangeImpl> addExchangeAsync(Map<String,Object> attributes)
+    private ListenableFuture<Exchange<?>> addExchangeAsync(Map<String,Object> attributes)
             throws ExchangeExistsException, ReservedExchangeNameException,
                    NoFactoryForTypeException
     {
-        final SettableFuture<ExchangeImpl> returnVal = SettableFuture.create();
+        final SettableFuture<Exchange<?>> returnVal = SettableFuture.create();
         Futures.addCallback(getObjectFactory().createAsync(Exchange.class, attributes, this),
                             new FutureCallback<Exchange>()
                             {
                                 @Override
                                 public void onSuccess(final Exchange result)
                                 {
-                                    returnVal.set((ExchangeImpl) result);
+                                    returnVal.set(result);
                                 }
 
                                 @Override
@@ -879,7 +852,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                                     if(t instanceof DuplicateNameException)
                                     {
                                         DuplicateNameException dne = (DuplicateNameException) t;
-                                        returnVal.setException(new ExchangeExistsException((ExchangeImpl) dne.getExisting()));
+                                        returnVal.setException(new ExchangeExistsException((Exchange<?>) dne.getExisting()));
                                     }
                                     else
                                     {
@@ -1217,7 +1190,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             Broker<?> broker = virtualHostNode.getParent(Broker.class);
             broker.assignTargetSizes();
 
-            for (AMQQueue<?> q : getQueues())
+            for (Queue<?> q : getQueues())
             {
                 if (q.getState() == State.ACTIVE)
                 {
@@ -1276,7 +1249,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
 
         @Override
-        public VirtualHostImpl getVirtualHost()
+        public VirtualHost<?> getVirtualHost()
         {
             return AbstractVirtualHost.this;
         }
@@ -1287,13 +1260,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             return _systemNodeSources.containsKey(name) || _systemNodeDestinations.containsKey(name);
         }
 
-    }
-
-
-    @Override
-    public boolean getDefaultDeadLetterQueueEnabled()
-    {
-        return isQueue_deadLetterQueueEnabled();
     }
 
 
@@ -1333,16 +1299,15 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
             }
 
-            public void copy(QueueEntry entry, Queue queue)
+            public void copy(QueueEntry entry, final Queue<?> queue)
             {
                 final ServerMessage message = entry.getMessage();
-                final AMQQueue toQueue = (AMQQueue)queue;
 
-                txn.enqueue(toQueue, message, new ServerTransaction.EnqueueAction()
+                txn.enqueue(queue, message, new ServerTransaction.EnqueueAction()
                 {
                     public void postCommit(MessageEnqueueRecord... records)
                     {
-                        toQueue.enqueue(message, null, records[0]);
+                        queue.enqueue(message, null, records[0]);
                     }
 
                     public void onRollback()
@@ -1352,19 +1317,18 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
             }
 
-            public void move(final QueueEntry entry, Queue queue)
+            public void move(final QueueEntry entry, final Queue<?> queue)
             {
                 final ServerMessage message = entry.getMessage();
-                final AMQQueue toQueue = (AMQQueue)queue;
                 if(entry.acquire())
                 {
-                    txn.enqueue(toQueue, message,
+                    txn.enqueue(queue, message,
                                 new ServerTransaction.EnqueueAction()
                                 {
 
                                     public void postCommit(MessageEnqueueRecord... records)
                                     {
-                                        toQueue.enqueue(message, null, records[0]);
+                                        queue.enqueue(message, null, records[0]);
                                     }
 
                                     public void onRollback()
@@ -1561,7 +1525,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         final String dlExchangeName = getDeadLetterExchangeName(queueName);
         final String dlQueueName = getDeadLetterQueueName(queueName);
 
-        ExchangeImpl dlExchange = null;
+        Exchange<?> dlExchange = null;
         final UUID dlExchangeId = UUID.randomUUID();
 
         try
@@ -1587,10 +1551,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             throw new ConnectionScopedRuntimeException("Attempt to create an alternate exchange for a queue failed",e);
         }
 
-        AMQQueue dlQueue = null;
+        Queue<?> dlQueue = null;
 
         {
-            dlQueue = (AMQQueue) getChildByName(Queue.class, dlQueueName);
+            dlQueue = (Queue<?>) getChildByName(Queue.class, dlQueueName);
 
             if(dlQueue == null)
             {
@@ -1680,7 +1644,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private static String getDeadLetterExchangeName(String name)
     {
-        return name + System.getProperty(BrokerProperties.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, VirtualHostImpl.DEFAULT_DLE_NAME_SUFFIX);
+        return name + System.getProperty(BrokerProperties.PROPERTY_DEAD_LETTER_EXCHANGE_SUFFIX, VirtualHost.DEFAULT_DLE_NAME_SUFFIX);
     }
 
     @Override
@@ -1710,12 +1674,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private void allocateTargetSizeToQueues()
     {
         long targetSize = _targetSize.get();
-        Collection<AMQQueue<?>> queues = getQueues();
+        Collection<Queue<?>> queues = getQueues();
         long totalSize = calculateTotalEnqueuedSize(queues);
         _logger.debug("Allocating target size to queues, total target: {} ; total enqueued size {}", targetSize, totalSize);
         if(targetSize > 0l)
         {
-            for (AMQQueue<?> q : queues)
+            for (Queue<?> q : queues)
             {
                 long size = (long) ((((double) q.getPotentialMemoryFootprint() / (double) totalSize))
                                              * (double) targetSize);
@@ -1832,10 +1796,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
 
-    private long calculateTotalEnqueuedSize(final Collection<AMQQueue<?>> queues)
+    private long calculateTotalEnqueuedSize(final Collection<Queue<?>> queues)
     {
         long total = 0;
-        for(AMQQueue<?> queue : queues)
+        for(Queue<?> queue : queues)
         {
             total += queue.getPotentialMemoryFootprint();
         }

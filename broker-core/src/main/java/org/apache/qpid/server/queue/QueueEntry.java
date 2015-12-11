@@ -22,11 +22,12 @@ package org.apache.qpid.server.queue;
 
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
+import org.apache.qpid.server.model.Queue;
 
 public interface QueueEntry extends MessageInstance, Comparable<QueueEntry>
 {
 
-    AMQQueue getQueue();
+    Queue<?> getQueue();
 
     long getSize();
 

@@ -22,14 +22,14 @@ package org.apache.qpid.server.logging.subjects;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.EXCHANGE_FORMAT;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.VirtualHost;
 
 public class ExchangeLogSubject extends AbstractLogSubject
 {
 
     /** Create an ExchangeLogSubject that Logs in the following format. */
-    public ExchangeLogSubject(ExchangeImpl exchange, VirtualHostImpl vhost)
+    public ExchangeLogSubject(Exchange<?> exchange, VirtualHost<?> vhost)
     {
         setLogStringWithFormat(EXCHANGE_FORMAT, vhost.getName(),
                                exchange.getType(), exchange.getName());

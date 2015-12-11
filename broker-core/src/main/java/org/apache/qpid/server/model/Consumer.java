@@ -20,8 +20,10 @@
  */
 package org.apache.qpid.server.model;
 
+import org.apache.qpid.server.consumer.ConsumerImpl;
+
 @ManagedObject
-public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>
+public interface Consumer<X extends Consumer<X>> extends ConfiguredObject<X>, ConsumerImpl
 {
     public String DISTRIBUTION_MODE = "distributionMode";
     public String EXCLUSIVE = "exclusive";

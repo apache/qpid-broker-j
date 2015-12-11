@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.QUEUE_FORMAT;
 
@@ -28,7 +28,7 @@ public class QueueLogSubject extends AbstractLogSubject
 {
 
     /** Create an QueueLogSubject that Logs in the following format. */
-    public QueueLogSubject(AMQQueue queue)
+    public QueueLogSubject(Queue<?> queue)
     {
         setLogStringWithFormat(QUEUE_FORMAT,
                                queue.getVirtualHost().getName(),

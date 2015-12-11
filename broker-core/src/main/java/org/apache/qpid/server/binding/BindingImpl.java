@@ -32,7 +32,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.exchange.AbstractExchange;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.logging.EventLogger;
@@ -41,11 +40,11 @@ import org.apache.qpid.server.logging.subjects.BindingLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.security.SecurityManager;
 
 public class BindingImpl
@@ -53,14 +52,14 @@ public class BindingImpl
         implements org.apache.qpid.server.model.Binding<BindingImpl>
 {
     private final String _bindingKey;
-    private final AMQQueue _queue;
-    private final ExchangeImpl _exchange;
+    private final Queue<?> _queue;
+    private final Exchange<?> _exchange;
     @ManagedAttributeField
     private Map<String, Object> _arguments;
     private final AtomicLong _matches = new AtomicLong();
     private BindingLogSubject _logSubject;
 
-    public BindingImpl(Map<String, Object> attributes, AMQQueue queue, ExchangeImpl exchange)
+    public BindingImpl(Map<String, Object> attributes, Queue<?> queue, Exchange<?> exchange)
     {
         super(parentsMap(queue,exchange),stripEmptyArguments(enhanceWithDurable(attributes, queue, exchange)));
         _bindingKey = getName();
@@ -103,8 +102,8 @@ public class BindingImpl
     }
 
     private static Map<String, Object> enhanceWithDurable(Map<String, Object> attributes,
-                                                          final AMQQueue queue,
-                                                          final ExchangeImpl exchange)
+                                                          final Queue<?> queue,
+                                                          final Exchange<?> exchange)
     {
         if(!attributes.containsKey(DURABLE))
         {
@@ -114,12 +113,13 @@ public class BindingImpl
         return attributes;
     }
 
+    @Override
     public String getBindingKey()
     {
         return _bindingKey;
     }
 
-    public AMQQueue getAMQQueue()
+    public Queue<?> getAMQQueue()
     {
         return _queue;
     }
@@ -131,7 +131,7 @@ public class BindingImpl
     }
 
     @Override
-    public ExchangeImpl<?> getExchange()
+    public Exchange<?> getExchange()
     {
         return _exchange;
     }
@@ -259,7 +259,7 @@ public class BindingImpl
     {
         authoriseCreate(this);
 
-        AMQQueue queue = getAMQQueue();
+        Queue<?> queue = getAMQQueue();
         Map<String, Object> arguments = getArguments();
         if (arguments!=null && !arguments.isEmpty() && FilterSupport.argumentsContainFilter(arguments))
         {

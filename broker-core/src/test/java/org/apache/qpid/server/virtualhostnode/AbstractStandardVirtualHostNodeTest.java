@@ -119,7 +119,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.open();
         node.start();
 
-        VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
+        VirtualHost<?> virtualHost = node.getVirtualHost();
         assertNotNull("Virtual host was not recovered", virtualHost);
         assertEquals("Unexpected virtual host name", TEST_VIRTUAL_HOST_NAME, virtualHost.getName());
         assertEquals("Unexpected virtual host state", State.ACTIVE, virtualHost.getState());
@@ -143,7 +143,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.open();
         node.start();
 
-        VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
+        VirtualHost<?> virtualHost = node.getVirtualHost();
         assertNull("Virtual host should not be automatically created", virtualHost);
         node.close();
     }
@@ -170,7 +170,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.open();
         node.start();
 
-        VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
+        VirtualHost<?> virtualHost = node.getVirtualHost();
 
         assertNotNull("Virtual host should be created by blueprint", virtualHost);
         assertEquals("Unexpected virtual host name", TEST_VIRTUAL_HOST_NAME, virtualHost.getName());
@@ -206,7 +206,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.open();
         node.start();
 
-        VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
+        VirtualHost<?> virtualHost = node.getVirtualHost();
 
         assertNull("Virtual host should not be created by blueprint", virtualHost);
         node.close();
@@ -238,7 +238,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         node.open();
         node.start();
 
-        VirtualHost<?, ?, ?> virtualHost = node.getVirtualHost();
+        VirtualHost<?> virtualHost = node.getVirtualHost();
 
         assertNotNull("Virtual host should be recovered", virtualHost);
         assertEquals("Unexpected virtual host name", TEST_VIRTUAL_HOST_NAME, virtualHost.getName());

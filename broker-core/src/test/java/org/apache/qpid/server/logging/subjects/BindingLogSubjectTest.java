@@ -20,11 +20,10 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,10 +34,10 @@ import static org.mockito.Mockito.when;
 public class BindingLogSubjectTest extends AbstractTestLogSubject
 {
 
-    private AMQQueue _queue;
+    private Queue<?> _queue;
     private String _routingKey;
-    private ExchangeImpl _exchange;
-    private VirtualHostImpl _testVhost;
+    private Exchange<?> _exchange;
+    private VirtualHost _testVhost;
 
     @Override
     public void setUp() throws Exception
@@ -47,8 +46,8 @@ public class BindingLogSubjectTest extends AbstractTestLogSubject
 
         _testVhost = BrokerTestHelper.createVirtualHost("test");
         _routingKey = "RoutingKey";
-        _exchange = (ExchangeImpl) _testVhost.getChildByName(Exchange.class, "amq.direct");
-        _queue = mock(AMQQueue.class);
+        _exchange = (Exchange<?>) _testVhost.getChildByName(Exchange.class, "amq.direct");
+        _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn("BindingLogSubjectTest");
         when(_queue.getVirtualHost()).thenReturn(_testVhost);
 

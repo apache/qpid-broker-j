@@ -54,7 +54,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostLoggerTest  extends QpidTestCase
 {
-    private VirtualHost<?,?,?> _virtualHost;
+    private VirtualHost<?> _virtualHost;
     private TaskExecutor _taskExecutor;
     private File _baseFolder;
     private File _logFile;

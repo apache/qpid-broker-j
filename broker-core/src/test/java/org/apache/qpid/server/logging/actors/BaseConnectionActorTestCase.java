@@ -21,14 +21,14 @@
 package org.apache.qpid.server.logging.actors;
 
 import org.apache.qpid.protocol.AMQConstant;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
 {
     private AMQPConnection<?> _connection;
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost<?> _virtualHost;
 
     @Override
     public void setUp() throws Exception
@@ -39,7 +39,7 @@ public abstract class BaseConnectionActorTestCase extends BaseActorTestCase
         _virtualHost = BrokerTestHelper.createVirtualHost("test");
     }
 
-    public VirtualHostImpl getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }

@@ -44,7 +44,7 @@ public class VirtualHostSyslogLoggerImpl extends AbstractVirtualHostLogger<Virtu
     private boolean _throwableExcluded;
 
     @ManagedObjectFactoryConstructor
-    protected VirtualHostSyslogLoggerImpl(final Map<String, Object> attributes, VirtualHost<?,?,?> virtualHost)
+    protected VirtualHostSyslogLoggerImpl(final Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }

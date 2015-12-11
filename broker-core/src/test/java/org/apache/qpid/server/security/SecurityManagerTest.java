@@ -78,7 +78,7 @@ public class SecurityManagerTest extends QpidTestCase
 
     private AccessControl _accessControl;
     private SecurityManager _securityManager;
-    private VirtualHost<?,?,?> _virtualHost;
+    private VirtualHost<?> _virtualHost;
     private Broker _broker;
     private VirtualHostNode<?> _virtualHostNode;
 

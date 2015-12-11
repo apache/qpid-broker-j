@@ -25,10 +25,13 @@ import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.exchange.ExchangeReferrer;
+import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.MessageDestination;
 
 @ManagedObject( description = Exchange.CLASS_DESCRIPTION )
-public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, MessageDestination
+public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, MessageDestination,
+                                                         ExchangeReferrer
 {
     String CLASS_DESCRIPTION = "<p>An Exchange is a named entity within the Virtualhost which receives messages from "
                                + "producers and routes them to matching Queues within the Virtualhost.</p>"
@@ -69,4 +72,70 @@ public interface Exchange<X extends Exchange<X>> extends ConfiguredObject<X>, Me
                           Map<String,Object> bindingArguments,
                           Map<String, Object> attributes);
 
+    /**
+     * @return true if the exchange will be deleted after all queues have been detached
+     */
+    boolean isAutoDelete();
+
+    boolean addBinding(String bindingKey, Queue<?> queue, Map<String, Object> arguments);
+
+    boolean deleteBinding(String bindingKey, Queue<?> queue);
+
+    boolean hasBinding(String bindingKey, Queue<?> queue);
+
+    boolean replaceBinding(String bindingKey,
+                           Queue<?> queue,
+                           Map<String, Object> arguments);
+
+    /**
+     * Determines whether a message would be isBound to a particular queue using a specific routing key and arguments
+     * @param bindingKey
+     * @param arguments
+     * @param queue
+     * @return
+     */
+
+    boolean isBound(String bindingKey, Map<String, Object> arguments, Queue<?> queue);
+
+    /**
+     * Determines whether a message would be isBound to a particular queue using a specific routing key
+     * @param bindingKey
+     * @param queue
+     * @return
+     */
+
+    boolean isBound(String bindingKey, Queue<?> queue);
+
+    /**
+     * Determines whether a message is routing to any queue using a specific _routing key
+     * @param bindingKey
+     * @return
+     */
+    boolean isBound(String bindingKey);
+
+    /**
+     * Returns true if this exchange has at least one binding associated with it.
+     * @return
+     */
+    boolean hasBindings();
+
+    boolean isBound(Queue<?> queue);
+
+    boolean isBound(Map<String, Object> arguments);
+
+    boolean isBound(String bindingKey, Map<String, Object> arguments);
+
+    boolean isBound(Map<String, Object> arguments, Queue<?> queue);
+
+    void removeReference(ExchangeReferrer exchange);
+
+    void addReference(ExchangeReferrer exchange);
+
+    boolean hasReferrers();
+
+    ListenableFuture<Void> removeBindingAsync(Binding<?> binding);
+
+    EventLogger getEventLogger();
+
+    void addBinding(Binding<?> binding);
 }

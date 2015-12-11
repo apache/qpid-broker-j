@@ -37,11 +37,11 @@ import org.apache.qpid.server.model.VirtualHost;
 public class VirtualHostPropertiesNode extends AbstractSystemMessageSource
 {
 
-    public VirtualHostPropertiesNode(final VirtualHost<?, ?, ?> virtualHost)
+    public VirtualHostPropertiesNode(final VirtualHost<?> virtualHost)
     {
         this(virtualHost, "$virtualhostProperties");
     }
-    public VirtualHostPropertiesNode(final VirtualHost<?, ?, ?> virtualHost, String name)
+    public VirtualHostPropertiesNode(final VirtualHost<?> virtualHost, String name)
     {
         super(name, virtualHost);
     }

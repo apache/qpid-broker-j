@@ -40,7 +40,9 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.StateChangeListener;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -49,7 +51,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.MockConsumer;
 import org.apache.qpid.server.exchange.DirectExchange;
@@ -65,7 +66,6 @@ import org.apache.qpid.server.queue.AbstractQueue.QueueEntryFilter;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 abstract class AbstractQueueTestBase extends QpidTestCase
@@ -73,8 +73,8 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     private static final Logger _logger = LoggerFactory.getLogger(AbstractQueueTestBase.class);
 
 
-    private AMQQueue<?> _queue;
-    private VirtualHostImpl _virtualHost;
+    private Queue<?> _queue;
+    private VirtualHost<?> _virtualHost;
     private String _qname = "qname";
     private String _owner = "owner";
     private String _routingKey = "routing key";
@@ -154,7 +154,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
                     _exchange.isBound(_routingKey,_queue));
         assertEquals("Exchange binding count", 1,
                      _queue.getBindings().size());
-        final BindingImpl firstBinding = _queue.getBindings().iterator().next();
+        final Binding<?> firstBinding = _queue.getBindings().iterator().next();
         assertEquals("Wrong exchange bound", _routingKey,
                      firstBinding.getBindingKey());
         assertEquals("Wrong exchange bound", _exchange,
@@ -837,7 +837,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         attributes.put(Queue.NAME,"testTtlOverrideMaximumTTl");
         attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 10000l);
 
-        AMQQueue queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createQueue(attributes);
 
         assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 0l));
 
@@ -897,7 +897,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
     public void testOldestMessage()
     {
-        AMQQueue<?> queue = getQueue();
+        Queue<?> queue = getQueue();
         queue.enqueue(createMessage(1l, (byte)1, Collections.singletonMap("sortKey", (Object) "Z"), 10l), null, null);
         queue.enqueue(createMessage(2l, (byte)4, Collections.singletonMap("sortKey", (Object) "M"), 100l), null, null);
         queue.enqueue(createMessage(3l, (byte)9, Collections.singletonMap("sortKey", (Object) "A"), 1000l), null, null);
@@ -905,7 +905,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         assertEquals(10l,queue.getOldestMessageArrivalTime());
     }
 
-    private long getExpirationOnQueue(final AMQQueue queue, long arrivalTime, long expiration)
+    private long getExpirationOnQueue(final Queue<?> queue, long arrivalTime, long expiration)
     {
         final List<QueueEntry> entries = new ArrayList<>();
 
@@ -942,7 +942,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * @param messageNumber
      *            number of messages to put into queue
      */
-    protected List<? extends QueueEntry> enqueueGivenNumberOfMessages(AMQQueue<?> queue, int messageNumber)
+    protected List<? extends QueueEntry> enqueueGivenNumberOfMessages(Queue<?> queue, int messageNumber)
     {
         putGivenNumberOfMessages(queue, messageNumber);
 
@@ -968,7 +968,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * @param queue
      * @param messageNumber
      */
-    protected void putGivenNumberOfMessages(AMQQueue<?> queue, int messageNumber)
+    protected void putGivenNumberOfMessages(Queue<?> queue, int messageNumber)
     {
         for (int i = 0; i < messageNumber; i++)
         {
@@ -998,7 +998,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
      * @param dequeueMessageIndex
      *            entry index to dequeue.
      */
-    protected QueueEntry dequeueMessage(AMQQueue<?> queue, int dequeueMessageIndex)
+    protected QueueEntry dequeueMessage(Queue<?> queue, int dequeueMessageIndex)
     {
         List<? extends QueueEntry> entries = queue.getMessagesOnTheQueue();
         QueueEntry entry = entries.get(dequeueMessageIndex);
@@ -1021,12 +1021,12 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         }
     }
 
-    public AMQQueue<?> getQueue()
+    public Queue<?> getQueue()
     {
         return _queue;
     }
 
-    protected void setQueue(AMQQueue<?> queue)
+    protected void setQueue(Queue<?> queue)
     {
         _queue = queue;
     }
@@ -1123,7 +1123,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
     }
 
 
-    public VirtualHostImpl getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _virtualHost;
     }

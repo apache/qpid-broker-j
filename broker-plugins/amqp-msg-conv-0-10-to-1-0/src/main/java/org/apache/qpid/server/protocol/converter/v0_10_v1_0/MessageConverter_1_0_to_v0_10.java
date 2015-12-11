@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.protocol.v0_10.MessageMetaData_0_10;
@@ -35,7 +36,6 @@ import org.apache.qpid.server.protocol.v1_0.MessageConverter_from_1_0;
 import org.apache.qpid.server.protocol.v1_0.MessageMetaData_1_0;
 import org.apache.qpid.server.protocol.v1_0.Message_1_0;
 import org.apache.qpid.server.store.StoredMessage;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.DeliveryProperties;
 import org.apache.qpid.transport.Header;
 import org.apache.qpid.transport.MessageDeliveryPriority;
@@ -58,13 +58,13 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
     }
 
     @Override
-    public MessageTransferMessage convert(Message_1_0 serverMsg, VirtualHostImpl vhost)
+    public MessageTransferMessage convert(Message_1_0 serverMsg, VirtualHost<?> vhost)
     {
         return new MessageTransferMessage(convertToStoredMessage(serverMsg, vhost), null);
     }
 
     private StoredMessage<MessageMetaData_0_10> convertToStoredMessage(final Message_1_0 serverMsg,
-                                                                       final VirtualHostImpl vhost)
+                                                                       final VirtualHost<?> vhost)
     {
         Object bodyObject = MessageConverter_from_1_0.convertBodyToObject(serverMsg);
 
@@ -128,7 +128,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
     }
 
     private MessageMetaData_0_10 convertMetaData(Message_1_0 serverMsg,
-                                                 final VirtualHostImpl vhost,
+                                                 final VirtualHost<?> vhost,
                                                  final String bodyMimeType,
                                                  final int size)
     {

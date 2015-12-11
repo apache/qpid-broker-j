@@ -23,9 +23,10 @@ package org.apache.qpid.server.queue;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.Queue;
 
 @ManagedObject( category = false, type="priority" )
-public interface PriorityQueue<X extends PriorityQueue<X>> extends AMQQueue<X>
+public interface PriorityQueue<X extends PriorityQueue<X>> extends Queue<X>
 {
     String PRIORITIES = "priorities";
 

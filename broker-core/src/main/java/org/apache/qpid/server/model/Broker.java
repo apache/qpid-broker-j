@@ -177,7 +177,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
      */
     SecurityManager getSecurityManager();
 
-    VirtualHost<?,?,?> findVirtualHostByName(String name);
+    VirtualHost<?> findVirtualHostByName(String name);
 
     VirtualHostNode findDefautVirtualHostNode();
 

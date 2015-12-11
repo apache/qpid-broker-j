@@ -37,8 +37,9 @@ import org.apache.qpid.server.logging.messages.TransactionLogMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -61,7 +62,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private static final Logger _logger = LoggerFactory.getLogger(SynchronousMessageStoreRecoverer.class);
 
     @Override
-    public ListenableFuture<Void> recover(VirtualHostImpl virtualHost)
+    public ListenableFuture<Void> recover(VirtualHost<?> virtualHost)
     {
         EventLogger eventLogger = virtualHost.getEventLogger();
         MessageStore store = virtualHost.getMessageStore();
@@ -87,9 +88,9 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             virtualHost.getAttainedQueue(entry.getKey()).completeRecovery();
         }
 
-        Collection<AMQQueue> allQueues = virtualHost.getQueues();
+        Collection<Queue<?>> allQueues = virtualHost.getQueues();
 
-        for(AMQQueue q : allQueues)
+        for(Queue<?> q : allQueues)
         {
             if(!queueRecoveries.containsKey(q.getName()))
             {
@@ -155,14 +156,14 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
     private static class MessageInstanceVisitor implements MessageInstanceHandler
     {
-        private final VirtualHostImpl _virtualHost;
+        private final VirtualHost<?> _virtualHost;
         private final MessageStore _store;
 
         private final Map<String, Integer> _queueRecoveries;
         private final Map<Long, ServerMessage<?>> _recoveredMessages;
         private final Map<Long, StoredMessage<?>> _unusedMessages;
 
-        private MessageInstanceVisitor(final VirtualHostImpl virtualHost,
+        private MessageInstanceVisitor(final VirtualHost<?> virtualHost,
                                        final MessageStore store,
                                        final Map<String, Integer> queueRecoveries,
                                        final Map<Long, ServerMessage<?>> recoveredMessages,
@@ -180,7 +181,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         {
             final UUID queueId = record.getQueueId();
             long messageId = record.getMessageNumber();
-            AMQQueue<?> queue = _virtualHost.getAttainedQueue(queueId);
+            Queue<?> queue = _virtualHost.getAttainedQueue(queueId);
             if(queue != null)
             {
                 String queueName = queue.getName();
@@ -226,7 +227,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private static class DistributedTransactionVisitor implements DistributedTransactionHandler
     {
 
-        private final VirtualHostImpl _virtualHost;
+        private final VirtualHost<?> _virtualHost;
         private final MessageStore _store;
         private final EventLogger _eventLogger;
         private final MessageStoreLogSubject _logSubject;
@@ -234,7 +235,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private final Map<Long, ServerMessage<?>> _recoveredMessages;
         private final Map<Long, StoredMessage<?>> _unusedMessages;
 
-        private DistributedTransactionVisitor(final VirtualHostImpl virtualHost,
+        private DistributedTransactionVisitor(final VirtualHost<?> virtualHost,
                                               final MessageStore store,
                                               final EventLogger eventLogger,
                                               final MessageStoreLogSubject logSubject,
@@ -264,7 +265,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             }
             for(EnqueueRecord record : enqueues)
             {
-                final AMQQueue<?> queue = _virtualHost.getAttainedQueue(record.getResource().getId());
+                final Queue<?> queue = _virtualHost.getAttainedQueue(record.getResource().getId());
                 if(queue != null)
                 {
                     final long messageId = record.getMessage().getMessageNumber();
@@ -320,7 +321,7 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             }
             for(Transaction.DequeueRecord record : dequeues)
             {
-                final AMQQueue<?> queue = _virtualHost.getAttainedQueue(record.getEnqueueRecord().getQueueId());
+                final Queue<?> queue = _virtualHost.getAttainedQueue(record.getEnqueueRecord().getQueueId());
                 if(queue != null)
                 {
                     final long messageId = record.getEnqueueRecord().getMessageNumber();

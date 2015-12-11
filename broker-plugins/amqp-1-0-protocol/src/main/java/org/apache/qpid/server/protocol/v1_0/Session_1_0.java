@@ -75,25 +75,25 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Consumer;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConsumerListener;
 import org.apache.qpid.server.protocol.LinkRegistry;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.Ticker;
 
 public class Session_1_0 implements SessionEventListener, AMQSessionModel<Session_1_0>, LogSubject
@@ -165,14 +165,14 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                 {
                     if(Boolean.TRUE.equals(source.getDynamic()))
                     {
-                        AMQQueue tempQueue = createTemporaryQueue(source.getDynamicNodeProperties());
+                        Queue<?> tempQueue = createTemporaryQueue(source.getDynamicNodeProperties());
                         source.setAddress(tempQueue.getName());
                     }
                     String addr = source.getAddress();
                     if(!addr.startsWith("/") && addr.contains("/"))
                     {
                         String[] parts = addr.split("/",2);
-                        ExchangeImpl exchg = getVirtualHost().getAttainedExchange(parts[0]);
+                        Exchange<?> exchg = getVirtualHost().getAttainedExchange(parts[0]);
                         if(exchg != null)
                         {
                             ExchangeDestination exchangeDestination =
@@ -196,7 +196,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         }
                         else
                         {
-                            ExchangeImpl exchg = getVirtualHost().getAttainedExchange(addr);
+                            Exchange<?> exchg = getVirtualHost().getAttainedExchange(addr);
                             if(exchg != null)
                             {
                                 destination = new ExchangeDestination(exchg, source.getDurable(), source.getExpiryPolicy());
@@ -326,7 +326,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         if(Boolean.TRUE.equals(target.getDynamic()))
                         {
 
-                            AMQQueue tempQueue = createTemporaryQueue(target.getDynamicNodeProperties());
+                            Queue<?> tempQueue = createTemporaryQueue(target.getDynamicNodeProperties());
                             target.setAddress(tempQueue.getName());
                         }
 
@@ -340,7 +340,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         else if(!addr.startsWith("/") && addr.contains("/"))
                         {
                             String[] parts = addr.split("/",2);
-                            ExchangeImpl exchange = getVirtualHost().getAttainedExchange(parts[0]);
+                            Exchange<?> exchange = getVirtualHost().getAttainedExchange(parts[0]);
                             if(exchange != null)
                             {
                                 ExchangeDestination exchangeDestination =
@@ -369,7 +369,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                             }
                             else
                             {
-                                AMQQueue queue = getVirtualHost().getAttainedQueue(addr);
+                                Queue<?> queue = getVirtualHost().getAttainedQueue(addr);
                                 if(queue != null)
                                 {
 
@@ -449,10 +449,10 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     }
 
 
-    private AMQQueue createTemporaryQueue(Map properties)
+    private Queue<?> createTemporaryQueue(Map properties)
     {
         final String queueName = UUID.randomUUID().toString();
-        AMQQueue queue = null;
+        Queue<?> queue = null;
         try
         {
             LifetimePolicy lifetimePolicy = properties == null
@@ -666,13 +666,13 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     }
 
     @Override
-    public void block(AMQQueue queue)
+    public void block(Queue<?> queue)
     {
         // TODO - required for AMQSessionModel / producer side flow control
     }
 
     @Override
-    public void unblock(AMQQueue queue)
+    public void unblock(Queue<?> queue)
     {
         // TODO - required for AMQSessionModel / producer side flow control
     }
@@ -797,7 +797,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
         return _subject;
     }
 
-    VirtualHostImpl getVirtualHost()
+    VirtualHost<?> getVirtualHost()
     {
         return _connection.getVirtualHost();
     }

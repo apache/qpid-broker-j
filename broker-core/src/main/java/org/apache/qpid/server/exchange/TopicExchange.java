@@ -42,12 +42,13 @@ import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 @ManagedObject( category = false, type = ExchangeDefaults.TOPIC_EXCHANGE_CLASS )
 public class TopicExchange extends AbstractExchange<TopicExchange>
@@ -59,19 +60,19 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
     private final Map<String, TopicExchangeResult> _topicExchangeResults =
             new ConcurrentHashMap<String, TopicExchangeResult>();
 
-    private final Map<BindingImpl, Map<String,Object>> _bindings = new HashMap<BindingImpl, Map<String,Object>>();
+    private final Map<Binding<?>, Map<String,Object>> _bindings = new HashMap<>();
 
     @ManagedObjectFactoryConstructor
-    public TopicExchange(final Map<String,Object> attributes, final VirtualHostImpl vhost)
+    public TopicExchange(final Map<String,Object> attributes, final VirtualHost<?> vhost)
     {
         super(attributes, vhost);
     }
 
     @Override
-    protected synchronized void onBindingUpdated(final BindingImpl binding, final Map<String, Object> oldArguments)
+    protected synchronized void onBindingUpdated(final Binding<?> binding, final Map<String, Object> oldArguments)
     {
         final String bindingKey = binding.getBindingKey();
-        AMQQueue queue = binding.getAMQQueue();
+        Queue<?> queue = binding.getQueue();
         Map<String,Object> args = binding.getArguments();
 
         assert queue != null;
@@ -129,10 +130,10 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
 
     }
 
-    protected synchronized void registerQueue(final BindingImpl binding) throws AMQInvalidArgumentException
+    protected synchronized void registerQueue(final Binding<?> binding) throws AMQInvalidArgumentException
     {
         final String bindingKey = binding.getBindingKey();
-        AMQQueue queue = binding.getAMQQueue();
+        Queue<?> queue = binding.getQueue();
         Map<String,Object> args = binding.getArguments();
 
         assert queue != null;
@@ -225,7 +226,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
                                           ? ""
                                           : routingAddress;
 
-        final Collection<AMQQueue> matchedQueues =
+        final Collection<Queue<?>> matchedQueues =
                 getMatchedQueues(Filterable.Factory.newInstance(payload,instanceProperties), routingKey);
 
         ArrayList<BaseQueue> queues;
@@ -249,7 +250,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
 
     }
 
-    private synchronized boolean deregisterQueue(final BindingImpl binding)
+    private synchronized boolean deregisterQueue(final Binding<?> binding)
     {
         if(_bindings.containsKey(binding))
         {
@@ -266,8 +267,8 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
             {
                 try
                 {
-                    result.removeFilteredQueue(binding.getAMQQueue(), FilterSupport.createMessageFilter(bindingArgs,
-                            binding.getAMQQueue()));
+                    result.removeFilteredQueue(binding.getQueue(), FilterSupport.createMessageFilter(bindingArgs,
+                            binding.getQueue()));
                 }
                 catch (AMQInvalidArgumentException e)
                 {
@@ -276,7 +277,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
             }
             else
             {
-                result.removeUnfilteredQueue(binding.getAMQQueue());
+                result.removeUnfilteredQueue(binding.getQueue());
             }
             return true;
         }
@@ -286,7 +287,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
         }
     }
 
-    private Collection<AMQQueue> getMatchedQueues(Filterable message, String routingKey)
+    private Collection<Queue<?>> getMatchedQueues(Filterable message, String routingKey)
     {
 
         Collection<TopicMatcherResult> results = _parser.parse(routingKey);
@@ -299,12 +300,12 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
                 results.toArray(resultQueues);
                 return ((TopicExchangeResult)resultQueues[0]).processMessage(message, null);
             default:
-                Collection<AMQQueue> queues = new HashSet<AMQQueue>();
+                Collection<Queue<?>> queues = new HashSet<>();
                 for(TopicMatcherResult result : results)
                 {
                     TopicExchangeResult res = (TopicExchangeResult)result;
 
-                    for(BindingImpl b : res.getBindings())
+                    for(Binding<?> b : res.getBindings())
                     {
                         b.incrementMatches();
                     }
@@ -317,7 +318,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
 
     }
 
-    protected void onBind(final BindingImpl binding)
+    protected void onBind(final Binding<?> binding)
     {
         try
         {
@@ -330,7 +331,7 @@ public class TopicExchange extends AbstractExchange<TopicExchange>
         }
     }
 
-    protected void onUnbind(final BindingImpl binding)
+    protected void onUnbind(final Binding<?> binding)
     {
         deregisterQueue(binding);
     }

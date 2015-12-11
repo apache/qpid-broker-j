@@ -52,12 +52,12 @@ import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class Connection_1_0 implements ConnectionEventListener
 {
@@ -66,7 +66,7 @@ public class Connection_1_0 implements ConnectionEventListener
     private final AmqpPort<?> _port;
     private final SubjectCreator _subjectCreator;
     private AMQPConnection_1_0 _amqpConnection;
-    private VirtualHostImpl<?,?,?> _vhost;
+    private VirtualHost<?> _vhost;
     private final Transport _transport;
     private final ConnectionEndpoint _connectionEndpoint;
     private final long _connectionId;
@@ -383,7 +383,7 @@ public class Connection_1_0 implements ConnectionEventListener
         return _amqpConnection.getSubject();
     }
 
-    public VirtualHostImpl getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return _vhost;
     }

@@ -21,25 +21,25 @@
 
 package org.apache.qpid.server.virtualhost;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.IntegrityViolationException;
 
 public class ExchangeExistsException extends IntegrityViolationException
 {
-    private final ExchangeImpl _existing;
+    private final Exchange<?> _existing;
 
-    public ExchangeExistsException(ExchangeImpl existing)
+    public ExchangeExistsException(Exchange<?> existing)
     {
         this(existing.getName(), existing);
     }
 
-    public ExchangeExistsException(String message, ExchangeImpl existing)
+    public ExchangeExistsException(String message, Exchange<?> existing)
     {
         super(message);
         _existing = existing;
     }
 
-    public ExchangeImpl getExistingExchange()
+    public Exchange<?> getExistingExchange()
     {
         return _existing;
     }

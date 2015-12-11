@@ -23,7 +23,7 @@ package org.apache.qpid.server.protocol.v1_0;
 import org.apache.qpid.amqp_1_0.type.Outcome;
 import org.apache.qpid.amqp_1_0.type.messaging.Accepted;
 import org.apache.qpid.server.message.MessageReference;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.txn.ServerTransaction;
 
@@ -33,7 +33,7 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
     private static final Outcome[] OUTCOMES = new Outcome[] { ACCEPTED };
 
 
-    public QueueDestination(AMQQueue queue)
+    public QueueDestination(Queue<?> queue)
     {
         super(queue);
     }
@@ -79,9 +79,9 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
         return 100;
     }
 
-    public AMQQueue getQueue()
+    public Queue<?> getQueue()
     {
-        return (AMQQueue) super.getQueue();
+        return (Queue<?>) super.getQueue();
     }
 
 }

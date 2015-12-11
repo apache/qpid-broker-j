@@ -35,18 +35,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.exchange.ExchangeDefaults;
-import org.apache.qpid.server.binding.BindingImpl;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Binding;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.queue.BaseQueue;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 @ManagedObject( category = false, type = ExchangeDefaults.DIRECT_EXCHANGE_CLASS )
 public class DirectExchange extends AbstractExchange<DirectExchange>
@@ -56,23 +56,23 @@ public class DirectExchange extends AbstractExchange<DirectExchange>
 
     private static final class BindingSet
     {
-        private CopyOnWriteArraySet<BindingImpl> _bindings = new CopyOnWriteArraySet<BindingImpl>();
+        private CopyOnWriteArraySet<Binding<?>> _bindings = new CopyOnWriteArraySet<>();
         private List<BaseQueue> _unfilteredQueues = new ArrayList<BaseQueue>();
         private Map<BaseQueue, FilterManager> _filteredQueues = new HashMap<>();
 
-        public synchronized void addBinding(BindingImpl binding)
+        public synchronized void addBinding(Binding<?> binding)
         {
             _bindings.add(binding);
             recalculateQueues();
         }
 
-        public synchronized void removeBinding(BindingImpl binding)
+        public synchronized void removeBinding(Binding<?> binding)
         {
             _bindings.remove(binding);
             recalculateQueues();
         }
 
-        public synchronized void updateBinding(BindingImpl binding)
+        public synchronized void updateBinding(Binding<?> binding)
         {
             recalculateQueues();
         }
@@ -82,19 +82,19 @@ public class DirectExchange extends AbstractExchange<DirectExchange>
             List<BaseQueue> queues = new ArrayList<BaseQueue>(_bindings.size());
             Map<BaseQueue, FilterManager> filteredQueues = new HashMap<>();
 
-            for(BindingImpl b : _bindings)
+            for(Binding<?> b : _bindings)
             {
 
                 if(FilterSupport.argumentsContainFilter(b.getArguments()))
                 {
                     try
                     {
-                        FilterManager filter = FilterSupport.createMessageFilter(b.getArguments(), b.getAMQQueue());
-                        filteredQueues.put(b.getAMQQueue(),filter);
+                        FilterManager filter = FilterSupport.createMessageFilter(b.getArguments(), b.getQueue());
+                        filteredQueues.put(b.getQueue(),filter);
                     }
                     catch (AMQInvalidArgumentException e)
                     {
-                        _logger.warn("Binding ignored: cannot parse filter on binding of queue '"+b.getAMQQueue().getName()
+                        _logger.warn("Binding ignored: cannot parse filter on binding of queue '"+b.getQueue().getName()
                                      + "' to exchange '" + b.getExchange().getName()
                                      + "' with arguments: " + b.getArguments(), e);
                     }
@@ -103,9 +103,9 @@ public class DirectExchange extends AbstractExchange<DirectExchange>
                 else
                 {
 
-                    if(!queues.contains(b.getAMQQueue()))
+                    if(!queues.contains(b.getQueue()))
                     {
-                        queues.add(b.getAMQQueue());
+                        queues.add(b.getQueue());
                     }
                 }
             }
@@ -119,7 +119,7 @@ public class DirectExchange extends AbstractExchange<DirectExchange>
             return _unfilteredQueues;
         }
 
-        public CopyOnWriteArraySet<BindingImpl> getBindings()
+        public CopyOnWriteArraySet<Binding<?>> getBindings()
         {
             return _bindings;
         }
@@ -139,7 +139,7 @@ public class DirectExchange extends AbstractExchange<DirectExchange>
             new ConcurrentHashMap<String, BindingSet>();
 
     @ManagedObjectFactoryConstructor
-    public DirectExchange(final Map<String, Object> attributes, final VirtualHostImpl vhost)
+    public DirectExchange(final Map<String, Object> attributes, final VirtualHost<?> vhost)
     {
         super(attributes, vhost);
     }
@@ -189,10 +189,10 @@ public class DirectExchange extends AbstractExchange<DirectExchange>
     }
 
     @Override
-    protected void onBindingUpdated(final BindingImpl binding, final Map<String, Object> oldArguments)
+    protected void onBindingUpdated(final Binding<?> binding, final Map<String, Object> oldArguments)
     {
         String bindingKey = binding.getBindingKey();
-        AMQQueue queue = binding.getAMQQueue();
+        Queue<?> queue = binding.getQueue();
 
         assert queue != null;
         assert bindingKey != null;
@@ -201,10 +201,10 @@ public class DirectExchange extends AbstractExchange<DirectExchange>
         bindings.updateBinding(binding);
     }
 
-    protected void onBind(final BindingImpl binding)
+    protected void onBind(final Binding<?> binding)
     {
         String bindingKey = binding.getBindingKey();
-        AMQQueue queue = binding.getAMQQueue();
+        Queue<?> queue = binding.getQueue();
 
         assert queue != null;
         assert bindingKey != null;
@@ -225,7 +225,7 @@ public class DirectExchange extends AbstractExchange<DirectExchange>
 
     }
 
-    protected void onUnbind(final BindingImpl binding)
+    protected void onUnbind(final Binding<?> binding)
     {
         assert binding != null;
 

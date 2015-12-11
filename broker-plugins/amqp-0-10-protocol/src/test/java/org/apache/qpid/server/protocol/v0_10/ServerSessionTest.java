@@ -33,9 +33,9 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.Binary;
 import org.apache.qpid.transport.ExecutionErrorCode;
@@ -46,7 +46,7 @@ import org.apache.qpid.transport.Method;
 public class ServerSessionTest extends QpidTestCase
 {
 
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost<?> _virtualHost;
 
     @Override
     public void setUp() throws Exception

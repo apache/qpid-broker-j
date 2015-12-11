@@ -22,12 +22,12 @@ package org.apache.qpid.server.queue;
 
 import java.util.Map;
 
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.model.VirtualHost;
 
 public abstract class OutOfOrderQueue<X extends OutOfOrderQueue<X>> extends AbstractQueue<X>
 {
 
-    protected OutOfOrderQueue(Map<String, Object> attributes, VirtualHostImpl virtualHost)
+    protected OutOfOrderQueue(Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }

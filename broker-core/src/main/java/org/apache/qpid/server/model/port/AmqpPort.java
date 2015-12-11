@@ -34,8 +34,8 @@ import org.apache.qpid.server.model.StatisticType;
 import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostAlias;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 import javax.net.ssl.SSLContext;
 
@@ -138,7 +138,7 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Connections")
     int getConnectionCount();
 
-    VirtualHostImpl getVirtualHost(String name);
+    VirtualHost<?> getVirtualHost(String name);
 
     boolean canAcceptNewConnection(final SocketAddress remoteSocketAddress);
 

@@ -21,24 +21,24 @@
 package org.apache.qpid.server.virtualhost;
 
 import org.apache.qpid.server.model.IntegrityViolationException;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
 
 public class QueueExistsException extends IntegrityViolationException
 {
-    private final AMQQueue _existing;
+    private final Queue<?> _existing;
 
-    public QueueExistsException(AMQQueue existing)
+    public QueueExistsException(Queue<?> existing)
     {
         this(existing.getName(), existing);
     }
 
-    public QueueExistsException(String name, AMQQueue existing)
+    public QueueExistsException(String name, Queue<?> existing)
     {
         super(name);
         _existing = existing;
     }
 
-    public AMQQueue getExistingQueue()
+    public Queue<?> getExistingQueue()
     {
         return _existing;
     }

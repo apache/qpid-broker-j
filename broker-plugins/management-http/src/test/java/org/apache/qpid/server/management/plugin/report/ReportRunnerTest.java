@@ -38,7 +38,6 @@ import org.mockito.stubbing.Answer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.queue.QueueEntryVisitor;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -164,7 +163,7 @@ public class ReportRunnerTest extends QpidTestCase
 
     private Queue createMockQueue(final ServerMessage<?>... messages)
     {
-        final AMQQueue queue = mock(AMQQueue.class);
+        final Queue<?> queue = mock(Queue.class);
         final ArgumentCaptor<QueueEntryVisitor> captor = ArgumentCaptor.forClass(QueueEntryVisitor.class);
         doAnswer(new Answer()
         {
@@ -185,7 +184,7 @@ public class ReportRunnerTest extends QpidTestCase
         return queue;
     }
 
-    private QueueEntry makeEntry(final AMQQueue queue, final ServerMessage<?> message)
+    private QueueEntry makeEntry(final Queue queue, final ServerMessage<?> message)
     {
         QueueEntry entry = mock(QueueEntry.class);
         when(entry.getQueue()).thenReturn(queue);

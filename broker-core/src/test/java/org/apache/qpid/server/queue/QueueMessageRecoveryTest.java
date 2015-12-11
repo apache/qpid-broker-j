@@ -34,17 +34,17 @@ import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class QueueMessageRecoveryTest extends QpidTestCase
 {
-    VirtualHostImpl<?, ?, ?> _vhost;
+    VirtualHost<?> _vhost;
 
     @Override
     public void setUp() throws Exception
@@ -195,7 +195,7 @@ public class QueueMessageRecoveryTest extends QpidTestCase
         private final List<ServerMessage<?>> _messageList;
 
         protected TestQueue(final Map<String, Object> attributes,
-                            final VirtualHostImpl virtualHost,
+                            final VirtualHost<?> virtualHost,
                             final List<ServerMessage<?>> messageList)
         {
             super(attributes, virtualHost);

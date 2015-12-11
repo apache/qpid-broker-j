@@ -20,13 +20,11 @@
  */
 package org.apache.qpid.server.virtualhostnode;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.virtualhost.NonStandardVirtualHost;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public interface RedirectingVirtualHost<X extends RedirectingVirtualHost<X>>
-        extends VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>,
-                NonStandardVirtualHost<X,AMQQueue<?>,ExchangeImpl<?>>
+        extends VirtualHost<X>,
+                NonStandardVirtualHost<X>
 {
 }

@@ -20,10 +20,8 @@
  */
 package org.apache.qpid.server.virtualhost;
 
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
 
-public interface NonStandardVirtualHost<X extends NonStandardVirtualHost<X, Q, E>, Q extends Queue<?>, E extends Exchange<?> > extends VirtualHost<X, Q, E>
+public interface NonStandardVirtualHost<X extends NonStandardVirtualHost<X>> extends VirtualHost<X>
 {
 }

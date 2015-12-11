@@ -36,6 +36,7 @@ import org.apache.qpid.server.filter.FilterSupport;
 import org.apache.qpid.server.filter.Filterable;
 import org.apache.qpid.server.filter.MessageFilter;
 import org.apache.qpid.server.message.AMQMessageHeader;
+import org.apache.qpid.server.model.Binding;
 
 /**
  * Defines binding and matching based on a set of headers.
@@ -45,7 +46,7 @@ class HeadersBinding
     private static final Logger _logger = LoggerFactory.getLogger(HeadersBinding.class);
 
     private final Map<String,Object> _mappings;
-    private final BindingImpl _binding;
+    private final Binding<?> _binding;
     private final Set<String> required = new HashSet<String>();
     private final Map<String,Object> matches = new HashMap<String,Object>();
     private boolean matchAny;
@@ -59,7 +60,7 @@ class HeadersBinding
      *
      * @param binding the binding to create a header binding using
      */
-    public HeadersBinding(BindingImpl binding)
+    public HeadersBinding(Binding<?> binding)
     {
         _binding = binding;
         if(_binding !=null)
@@ -80,11 +81,11 @@ class HeadersBinding
         {
             try
             {
-                _filter = FilterSupport.createMessageFilter(_mappings,_binding.getAMQQueue());
+                _filter = FilterSupport.createMessageFilter(_mappings,_binding.getQueue());
             }
             catch (AMQInvalidArgumentException e)
             {
-                _logger.warn("Invalid filter in binding queue '"+_binding.getAMQQueue().getName()
+                _logger.warn("Invalid filter in binding queue '"+_binding.getQueue().getName()
                              +"' to exchange '"+_binding.getExchange().getName()
                              +"' with arguments: " + _binding.getArguments());
                 _filter = new FilterManager();
@@ -111,7 +112,7 @@ class HeadersBinding
         }
     }
 
-    public BindingImpl getBinding()
+    public Binding<?> getBinding()
     {
         return _binding;
     }

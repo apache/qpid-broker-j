@@ -74,7 +74,7 @@ public class VirtualHostTest extends QpidTestCase
     private TaskExecutor _taskExecutor;
     private VirtualHostNode _virtualHostNode;
     private DurableConfigurationStore _configStore;
-    private VirtualHost<?, ?, ?> _virtualHost;
+    private VirtualHost<?> _virtualHost;
     private StoreConfigurationChangeListener _storeConfigurationChangeListener;
 
     @Override
@@ -135,7 +135,7 @@ public class VirtualHostTest extends QpidTestCase
     public void testNewVirtualHost()
     {
         String virtualHostName = getName();
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         assertNotNull("Unexpected id", virtualHost.getId());
         assertEquals("Unexpected name", virtualHostName, virtualHost.getName());
@@ -146,7 +146,7 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testDeleteVirtualHost()
     {
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(getName());
+        VirtualHost<?> virtualHost = createVirtualHost(getName());
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         virtualHost.delete();
@@ -159,7 +159,7 @@ public class VirtualHostTest extends QpidTestCase
     {
         String virtualHostName = getName();
 
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         virtualHost.stop();
@@ -176,7 +176,7 @@ public class VirtualHostTest extends QpidTestCase
     {
         String virtualHostName = getName();
 
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
         final ConfiguredObjectRecord virtualHostCor = virtualHost.asObjectRecord();
 
@@ -230,7 +230,7 @@ public class VirtualHostTest extends QpidTestCase
     {
         String virtualHostName = getName();
 
-        VirtualHost<?, ?, ?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
@@ -257,7 +257,7 @@ public class VirtualHostTest extends QpidTestCase
     {
         String virtualHostName = getName();
 
-        VirtualHost<?, ?, ?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
         assertEquals("Unexpected state", State.ACTIVE, virtualHost.getState());
 
         AbstractAMQPConnection connection = createMockProtocolConnection(virtualHost);
@@ -287,7 +287,7 @@ public class VirtualHostTest extends QpidTestCase
     public void testCreateDurableQueue()
     {
         String virtualHostName = getName();
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         String queueName = "myQueue";
         Map<String, Object> arguments = new HashMap<>();
@@ -304,7 +304,7 @@ public class VirtualHostTest extends QpidTestCase
     public void testCreateNonDurableQueue()
     {
         String virtualHostName = getName();
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         String queueName = "myQueue";
         Map<String, Object> arguments = new HashMap<>();
@@ -325,7 +325,7 @@ public class VirtualHostTest extends QpidTestCase
         when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
 
         String virtualHostName = getName();
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(
                 virtualHost);
@@ -350,7 +350,7 @@ public class VirtualHostTest extends QpidTestCase
         when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
 
         String virtualHostName = getName();
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseUpdate(
                 virtualHost);
@@ -373,7 +373,7 @@ public class VirtualHostTest extends QpidTestCase
         when(_broker.getSecurityManager()).thenReturn(_mockSecurityManager);
 
         String virtualHostName = getName();
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(virtualHostName);
+        VirtualHost<?> virtualHost = createVirtualHost(virtualHostName);
 
         doThrow(new AccessControlException("mocked ACL exception")).when(_mockSecurityManager).authoriseDelete(
                 virtualHost);
@@ -393,7 +393,7 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testExistingConnectionBlocking()
     {
-        VirtualHost<?,?,?> host = createVirtualHost(getTestName());
+        VirtualHost<?> host = createVirtualHost(getTestName());
         AbstractAMQPConnection connection = mock(AbstractAMQPConnection.class);
         when(connection.getUnderlyingConnection()).thenReturn(connection);
         host.registerConnection(connection);
@@ -434,7 +434,7 @@ public class VirtualHostTest extends QpidTestCase
 
     public void testChangeValidation() throws Exception
     {
-        VirtualHost<?,?,?> virtualHost = createVirtualHost(getTestName());
+        VirtualHost<?> virtualHost = createVirtualHost(getTestName());
         try
         {
             virtualHost.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.NUMBER_OF_SELECTORS, "-1"));
@@ -465,12 +465,12 @@ public class VirtualHostTest extends QpidTestCase
         }
     }
 
-    private VirtualHost<?,?,?> createVirtualHost(final String virtualHostName)
+    private VirtualHost<?> createVirtualHost(final String virtualHostName)
     {
         return createVirtualHost(virtualHostName, Collections.<String, Object>emptyMap());
     }
 
-    private VirtualHost<?,?,?> createVirtualHost(final String virtualHostName, Map<String,Object> attributes)
+    private VirtualHost<?> createVirtualHost(final String virtualHostName, Map<String,Object> attributes)
     {
         Map<String, Object> vhAttributes = new HashMap<>();
         vhAttributes.put(VirtualHost.NAME, virtualHostName);
@@ -486,7 +486,7 @@ public class VirtualHostTest extends QpidTestCase
         return host;
     }
 
-    private AbstractAMQPConnection createMockProtocolConnection(final VirtualHost<?, ?, ?> virtualHost)
+    private AbstractAMQPConnection createMockProtocolConnection(final VirtualHost<?> virtualHost)
     {
         final AbstractAMQPConnection connection = mock(AbstractAMQPConnection.class);
         final List<Action<?>> tasks = new ArrayList<>();

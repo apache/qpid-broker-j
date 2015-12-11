@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 
 public abstract class OrderedQueueEntryList implements QueueEntryList
@@ -40,7 +41,7 @@ public abstract class OrderedQueueEntryList implements QueueEntryList
         (OrderedQueueEntryList.class, OrderedQueueEntry.class, "_tail");
 
 
-    private final AMQQueue _queue;
+    private final Queue<?> _queue;
 
     static final AtomicReferenceFieldUpdater<OrderedQueueEntry, OrderedQueueEntry>
                 _nextUpdater = OrderedQueueEntry._nextUpdater;
@@ -50,7 +51,7 @@ public abstract class OrderedQueueEntryList implements QueueEntryList
     private final AtomicReference<QueueEntry> _unscavengedHWM = new AtomicReference<QueueEntry>();
 
 
-    public OrderedQueueEntryList(AMQQueue queue, HeadCreator headCreator)
+    public OrderedQueueEntryList(Queue<?> queue, HeadCreator headCreator)
     {
         _queue = queue;
         _head = headCreator.createHead(this);
@@ -72,7 +73,7 @@ public abstract class OrderedQueueEntryList implements QueueEntryList
     }
 
 
-    public AMQQueue getQueue()
+    public Queue<?> getQueue()
     {
         return _queue;
     }

@@ -21,11 +21,12 @@
 package org.apache.qpid.server.queue;
 
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 
 public interface QueueEntryList
 {
-    AMQQueue<?> getQueue();
+    Queue<?> getQueue();
 
     QueueEntry add(ServerMessage message, final MessageEnqueueRecord enqueueRecord);
 

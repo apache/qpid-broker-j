@@ -43,8 +43,9 @@ import org.apache.qpid.server.logging.messages.TransactionLogMessages;
 import org.apache.qpid.server.logging.subjects.MessageStoreLogSubject;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.store.MessageStore;
@@ -67,7 +68,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
     private AsynchronousRecoverer _asynchronousRecoverer;
 
     @Override
-    public ListenableFuture<Void> recover(final VirtualHostImpl virtualHost)
+    public ListenableFuture<Void> recover(final VirtualHost<?> virtualHost)
     {
         _asynchronousRecoverer = new AsynchronousRecoverer(virtualHost);
 
@@ -88,19 +89,19 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         private static final Logger LOGGER = LoggerFactory.getLogger(AsynchronousRecoverer.class);
 
         public static final int THREAD_POOL_SHUTDOWN_TIMEOUT = 5000;
-        private final VirtualHostImpl<?, ?, ?> _virtualHost;
+        private final VirtualHost<?> _virtualHost;
         private final EventLogger _eventLogger;
         private final MessageStore _store;
         private final MessageStoreLogSubject _logSubject;
         private final long _maxMessageId;
-        private final Set<AMQQueue<?>> _recoveringQueues = new CopyOnWriteArraySet<>();
+        private final Set<Queue<?>> _recoveringQueues = new CopyOnWriteArraySet<>();
         private final AtomicBoolean _recoveryComplete = new AtomicBoolean();
         private final Map<Long, MessageReference<? extends ServerMessage<?>>> _recoveredMessages = new HashMap<>();
         private final ListeningExecutorService _queueRecoveryExecutor = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
         private final MessageStore.MessageStoreReader _storeReader;
         private AtomicBoolean _continueRecovery = new AtomicBoolean(true);
 
-        private AsynchronousRecoverer(final VirtualHostImpl<?, ?, ?> virtualHost)
+        private AsynchronousRecoverer(final VirtualHost<?> virtualHost)
         {
             _virtualHost = virtualHost;
             _eventLogger = virtualHost.getEventLogger();
@@ -118,7 +119,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             getStoreReader().visitDistributedTransactions(new DistributedTransactionVisitor());
 
             List<ListenableFuture<Void>> queueRecoveryFutures = new ArrayList<>();
-            for(AMQQueue<?> queue : _recoveringQueues)
+            for(Queue<?> queue : _recoveringQueues)
             {
                 ListenableFuture<Void> result = _queueRecoveryExecutor.submit(new QueueRecoveringTask(queue), null);
                 queueRecoveryFutures.add(result);
@@ -134,7 +135,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             });
         }
 
-        public VirtualHostImpl<?, ?, ?> getVirtualHost()
+        public VirtualHost<?> getVirtualHost()
         {
             return _virtualHost;
         }
@@ -154,12 +155,12 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             return _logSubject;
         }
 
-        private boolean isRecovering(AMQQueue<?> queue)
+        private boolean isRecovering(Queue<?> queue)
         {
             return _recoveringQueues.contains(queue);
         }
 
-        private void recoverQueue(AMQQueue<?> queue)
+        private void recoverQueue(Queue<?> queue)
         {
             MessageInstanceVisitor handler = new MessageInstanceVisitor(queue);
             _storeReader.visitMessageInstances(queue, handler);
@@ -277,7 +278,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 }
                 for (Transaction.EnqueueRecord record : enqueues)
                 {
-                    final AMQQueue<?> queue = getVirtualHost().getAttainedQueue(record.getResource().getId());
+                    final Queue<?> queue = getVirtualHost().getAttainedQueue(record.getResource().getId());
                     if (queue != null)
                     {
                         final long messageId = record.getMessage().getMessageNumber();
@@ -337,7 +338,7 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                 for (Transaction.DequeueRecord record : dequeues)
                 {
 
-                    final AMQQueue<?> queue = getVirtualHost().getAttainedQueue(record.getEnqueueRecord().getQueueId());
+                    final Queue<?> queue = getVirtualHost().getAttainedQueue(record.getEnqueueRecord().getQueueId());
 
                     if (queue != null)
                     {
@@ -420,9 +421,9 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
         private class QueueRecoveringTask implements Runnable
         {
-            private final AMQQueue<?> _queue;
+            private final Queue<?> _queue;
 
-            public QueueRecoveringTask(final AMQQueue<?> queue)
+            public QueueRecoveringTask(final Queue<?> queue)
             {
                 _queue = queue;
             }
@@ -447,10 +448,10 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
 
         private class MessageInstanceVisitor implements MessageInstanceHandler
         {
-            private final AMQQueue<?> _queue;
+            private final Queue<?> _queue;
             long _recoveredCount;
 
-            private MessageInstanceVisitor(AMQQueue<?> queue)
+            private MessageInstanceVisitor(Queue<?> queue)
             {
                 _queue = queue;
             }

@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.model.VirtualHost;
 
 public class LastValueQueueImpl extends AbstractQueue<LastValueQueueImpl> implements LastValueQueue<LastValueQueueImpl>
 {
@@ -35,7 +35,7 @@ public class LastValueQueueImpl extends AbstractQueue<LastValueQueueImpl> implem
     private String _lvqKey;
 
     @ManagedObjectFactoryConstructor
-    public LastValueQueueImpl(Map<String, Object> attributes, VirtualHostImpl virtualHost)
+    public LastValueQueueImpl(Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }

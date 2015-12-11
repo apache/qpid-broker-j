@@ -26,15 +26,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.TransactionLogResource;
 import org.apache.qpid.server.store.handler.MessageInstanceHandler;
@@ -43,7 +41,7 @@ import org.apache.qpid.test.utils.QpidTestCase;
 
 public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
 {
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost _virtualHost;
     private MessageStore _store;
     private MessageStore.MessageStoreReader _storeReader;
 
@@ -52,7 +50,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
     {
         super.setUp();
 
-        _virtualHost = mock(VirtualHostImpl.class);
+        _virtualHost = mock(VirtualHost.class);
         _store = mock(MessageStore.class);
         _storeReader = mock(MessageStore.MessageStoreReader.class);
 
@@ -66,7 +64,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         ServerScopedRuntimeException exception = new ServerScopedRuntimeException("test");
         doThrow(exception).when(_storeReader).visitMessageInstances(any(TransactionLogResource.class),
                                                                                              any(MessageInstanceHandler.class));
-        AMQQueue queue = mock(AMQQueue.class);
+        Queue<?> queue = mock(Queue.class);
         when(_virtualHost.getQueues()).thenReturn(Collections.singleton(queue));
 
         AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
@@ -84,7 +82,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
 
     public void testRecoveryEmptyQueue() throws Exception
     {
-        AMQQueue queue = mock(AMQQueue.class);
+        Queue<?> queue = mock(Queue.class);
         when(_virtualHost.getQueues()).thenReturn(Collections.singleton(queue));
 
         AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();

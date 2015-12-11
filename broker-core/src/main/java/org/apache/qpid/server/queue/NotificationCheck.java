@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.message.ServerMessage;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.QueueNotificationListener;
 
 
@@ -32,7 +33,7 @@ public enum NotificationCheck
 
     MESSAGE_COUNT_ALERT
     {
-        public boolean notifyIfNecessary(ServerMessage<?> msg, AMQQueue queue, QueueNotificationListener listener)
+        public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener listener)
         {
             int msgCount;
             final long maximumMessageCount = queue.getAlertThresholdQueueDepthMessages();
@@ -49,7 +50,7 @@ public enum NotificationCheck
     },
     MESSAGE_SIZE_ALERT(true)
     {
-        public boolean notifyIfNecessary(ServerMessage<?> msg, AMQQueue queue, QueueNotificationListener  listener)
+        public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
             final long maximumMessageSize = queue.getAlertThresholdMessageSize();
             if(maximumMessageSize != 0)
@@ -73,7 +74,7 @@ public enum NotificationCheck
     },
     QUEUE_DEPTH_ALERT
     {
-        public boolean notifyIfNecessary(ServerMessage<?> msg, AMQQueue queue, QueueNotificationListener  listener)
+        public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
             // Check for threshold queue depth in bytes
             final long maximumQueueDepth = queue.getAlertThresholdQueueDepthBytes();
@@ -97,7 +98,7 @@ public enum NotificationCheck
     },
     MESSAGE_AGE_ALERT
     {
-        public boolean notifyIfNecessary(ServerMessage<?> msg, AMQQueue queue, QueueNotificationListener  listener)
+        public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
 
             final long maxMessageAge = queue.getAlertThresholdMessageAge();
@@ -144,10 +145,10 @@ public enum NotificationCheck
         return _messageSpecific;
     }
 
-    public abstract boolean notifyIfNecessary(ServerMessage<?> msg, AMQQueue queue, QueueNotificationListener  listener);
+    public abstract boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener);
 
     //A bit of a hack, only for use until we do the logging listener
-    private static void logNotification(NotificationCheck notification, AMQQueue queue, String notificationMsg)
+    private static void logNotification(NotificationCheck notification, Queue<?> queue, String notificationMsg)
     {
         LOGGER.info(notification.name() + " On Queue " + queue.getName() + " - " + notificationMsg);
     }

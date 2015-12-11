@@ -20,10 +20,9 @@
  */
 package org.apache.qpid.server.logging.subjects;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 
 /**
@@ -31,8 +30,8 @@ import org.apache.qpid.server.virtualhost.VirtualHostImpl;
  */
 public class ExchangeLogSubjectTest extends AbstractTestLogSubject
 {
-    private ExchangeImpl _exchange;
-    private VirtualHostImpl _testVhost;
+    private Exchange<?> _exchange;
+    private VirtualHost<?> _testVhost;
 
     @Override
     public void setUp() throws Exception
@@ -41,7 +40,7 @@ public class ExchangeLogSubjectTest extends AbstractTestLogSubject
 
         _testVhost = BrokerTestHelper.createVirtualHost("test");
 
-        _exchange = (ExchangeImpl) _testVhost.getChildByName(Exchange.class, "amq.direct");
+        _exchange = (Exchange<?>) _testVhost.getChildByName(Exchange.class, "amq.direct");
         _subject = new ExchangeLogSubject(_exchange,_testVhost);
     }
 

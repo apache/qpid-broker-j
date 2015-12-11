@@ -62,7 +62,6 @@ import org.apache.qpid.server.TransactionTimeoutHelper.CloseAction;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.filter.AMQInvalidArgumentException;
 import org.apache.qpid.server.filter.ArrivalTimeFilter;
 import org.apache.qpid.server.filter.FilterManager;
@@ -94,10 +93,10 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.Session;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.UnknownConfiguredObjectException;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.QueueArgumentsConverter;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.MessageHandle;
@@ -110,14 +109,12 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.LocalTransaction.ActivityTimeAccessor;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.ExchangeExistsException;
 import org.apache.qpid.server.virtualhost.ExchangeIsAlternateException;
 import org.apache.qpid.server.virtualhost.QueueExistsException;
 import org.apache.qpid.server.virtualhost.RequiredExchangeException;
 import org.apache.qpid.server.virtualhost.ReservedExchangeNameException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.Ticker;
 
 public class AMQChannel
@@ -147,7 +144,7 @@ public class AMQChannel
     private long _deliveryTag = 0;
 
     /** A channel has a default queue (the last declared) that is used when no queue name is explicitly set */
-    private volatile AMQQueue<?> _defaultQueue;
+    private volatile Queue<?> _defaultQueue;
 
     /** This tag is unique per subscription to a queue. The server returns this in response to a basic.consume request. */
     private int _consumerTag;
@@ -401,7 +398,7 @@ public class AMQChannel
     public void setPublishFrame(MessagePublishInfo info, final MessageDestination e)
     {
         String routingKey = AMQShortString.toString(info.getRoutingKey());
-        VirtualHostImpl virtualHost = getVirtualHost();
+        VirtualHost<?> virtualHost = getVirtualHost();
         SecurityManager securityManager = virtualHost.getSecurityManager();
 
         securityManager.authorisePublish(info.isImmediate(), routingKey, e.getName(), virtualHost.getName(), _subject);
@@ -1489,7 +1486,7 @@ public class AMQChannel
                                     final InstanceProperties props, final long deliveryTag)
         {
             _singleMessageCredit.useCreditForMessage(message.getSize());
-            int queueSize = _queue instanceof AMQQueue ? ((AMQQueue)_queue).getQueueDepthMessages() : 0;
+            int queueSize = _queue instanceof Queue ? ((Queue<?>)_queue).getQueueDepthMessages() : 0;
             long size = _connection.getProtocolOutputConverter().writeGetOk(message,
                                                                             props,
                                                                             AMQChannel.this.getChannelId(),
@@ -1701,7 +1698,7 @@ public class AMQChannel
     }
 
 
-    public synchronized void block(AMQQueue queue)
+    public synchronized void block(Queue<?> queue)
     {
         if(_blockingEntities.add(queue))
         {
@@ -1715,7 +1712,7 @@ public class AMQChannel
         }
     }
 
-    public synchronized void unblock(AMQQueue queue)
+    public synchronized void unblock(Queue<?> queue)
     {
         if(_blockingEntities.remove(queue))
         {
@@ -1758,7 +1755,7 @@ public class AMQChannel
         return _blocking.get();
     }
 
-    public VirtualHostImpl getVirtualHost()
+    public VirtualHost<?> getVirtualHost()
     {
         return getConnection().getVirtualHost();
     }
@@ -1798,9 +1795,9 @@ public class AMQChannel
             {
 
                 final TransactionLogResource owningResource = rejectedQueueEntry.getOwningResource();
-                if(owningResource instanceof AMQQueue)
+                if(owningResource instanceof Queue)
                 {
-                    final AMQQueue queue = (AMQQueue) owningResource;
+                    final Queue<?> queue = (Queue<?>) owningResource;
 
                     final Exchange altExchange = queue.getAlternateExchange();
 
@@ -2119,7 +2116,7 @@ public class AMQChannel
         }
 
         AMQShortString consumerTag1 = consumerTag;
-        VirtualHostImpl<?, ?, ?> vHost = _connection.getVirtualHost();
+        VirtualHost<?> vHost = _connection.getVirtualHost();
         sync();
         String queueName = AMQShortString.toString(queue);
 
@@ -2201,7 +2198,7 @@ public class AMQChannel
 
 
             }
-            catch (AMQQueue.ExistingExclusiveConsumer e)
+            catch (Queue.ExistingExclusiveConsumer e)
             {
                 _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED,
                         "Cannot subscribe to queue '"
@@ -2209,7 +2206,7 @@ public class AMQChannel
                                 + "' as it already has an existing exclusive consumer", _channelId);
 
             }
-            catch (AMQQueue.ExistingConsumerPreventsExclusive e)
+            catch (Queue.ExistingConsumerPreventsExclusive e)
             {
                 _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED,
                         "Cannot subscribe to queue '"
@@ -2244,7 +2241,7 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicGet[" +" queue: " + queueName + " noAck: " + noAck + " ]");
         }
 
-        VirtualHostImpl vHost = _connection.getVirtualHost();
+        VirtualHost<?> vHost = _connection.getVirtualHost();
         sync();
         MessageSource queue = queueName == null ? getDefaultQueue() : vHost.getAttainedMessageSource(queueName.toString());
         if (queue == null)
@@ -2317,7 +2314,7 @@ public class AMQChannel
 
 
 
-        VirtualHostImpl vHost = _connection.getVirtualHost();
+        VirtualHost<?> vHost = _connection.getVirtualHost();
 
         if(blockingTimeoutExceeded())
         {
@@ -2699,7 +2696,7 @@ public class AMQChannel
                           routingKey + " queue: " + queueName + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHost<?> virtualHost = _connection.getVirtualHost();
         MethodRegistry methodRegistry = _connection.getMethodRegistry();
 
         sync();
@@ -2745,7 +2742,7 @@ public class AMQChannel
                 }
                 else
                 {
-                    AMQQueue queue = virtualHost.getAttainedQueue(queueName.toString());
+                    Queue<?> queue = virtualHost.getAttainedQueue(queueName.toString());
                     if (queue == null)
                     {
 
@@ -2764,7 +2761,7 @@ public class AMQChannel
         }
         else
         {
-            ExchangeImpl exchange = virtualHost.getAttainedExchange(exchangeName.toString());
+            Exchange<?> exchange = virtualHost.getAttainedExchange(exchangeName.toString());
             if (exchange == null)
             {
 
@@ -2789,7 +2786,7 @@ public class AMQChannel
                 else
                 {
 
-                    AMQQueue queue = virtualHost.getAttainedQueue(queueName.toString());
+                    Queue<?> queue = virtualHost.getAttainedQueue(queueName.toString());
                     if (queue == null)
                     {
                         replyCode = ExchangeBoundOkBody.QUEUE_NOT_FOUND;
@@ -2816,7 +2813,7 @@ public class AMQChannel
             }
             else if (queueName != null)
             {
-                AMQQueue queue = virtualHost.getAttainedQueue(queueName.toString());
+                Queue<?> queue = virtualHost.getAttainedQueue(queueName.toString());
                 if (queue == null)
                 {
                     replyCode = ExchangeBoundOkBody.QUEUE_NOT_FOUND;
@@ -2887,8 +2884,8 @@ public class AMQChannel
         final MethodRegistry methodRegistry = _connection.getMethodRegistry();
         final AMQMethodBody declareOkBody = methodRegistry.createExchangeDeclareOkBody();
 
-        ExchangeImpl exchange;
-        VirtualHostImpl<?, ?, ?> virtualHost = _connection.getVirtualHost();
+        Exchange<?> exchange;
+        VirtualHost<?> virtualHost = _connection.getVirtualHost();
 
         if (isDefaultExchange(exchangeName))
         {
@@ -3043,7 +3040,7 @@ public class AMQChannel
         }
 
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHost<?> virtualHost = _connection.getVirtualHost();
         sync();
 
         if (isDefaultExchange(exchangeStr))
@@ -3057,7 +3054,7 @@ public class AMQChannel
         {
             final String exchangeName = exchangeStr.toString();
 
-            final ExchangeImpl exchange = virtualHost.getAttainedExchange(exchangeName);
+            final Exchange<?> exchange = virtualHost.getAttainedExchange(exchangeName);
             if (exchange == null)
             {
                 closeChannel(AMQConstant.NOT_FOUND, "No such exchange: '" + exchangeStr + "'");
@@ -3113,8 +3110,8 @@ public class AMQChannel
                           " nowait: " + nowait + " arguments: " + argumentsTable + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
-        AMQQueue<?> queue;
+        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        Queue<?> queue;
         if (queueName == null)
         {
 
@@ -3152,7 +3149,7 @@ public class AMQChannel
 
             final String exchangeName = exchange.toString();
 
-            final ExchangeImpl exch = virtualHost.getAttainedExchange(exchangeName);
+            final Exchange<?> exch = virtualHost.getAttainedExchange(exchangeName);
             if (exch == null)
             {
                 closeChannel(AMQConstant.NOT_FOUND,
@@ -3222,7 +3219,7 @@ public class AMQChannel
                           " autoDelete: " + autoDelete + " nowait: " + nowait + " arguments: " + arguments + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHost<?> virtualHost = _connection.getVirtualHost();
 
         final AMQShortString queueName;
 
@@ -3236,7 +3233,7 @@ public class AMQChannel
             queueName = queueStr;
         }
 
-        AMQQueue<?> queue;
+        Queue<?> queue;
 
         //TODO: do we need to check that the queue already exists with exactly the same "configuration"?
 
@@ -3413,9 +3410,9 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] QueueDelete[" +" queue: " + queueName + " ifUnused: " + ifUnused + " ifEmpty: " + ifEmpty + " nowait: " + nowait + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHost<?> virtualHost = _connection.getVirtualHost();
         sync();
-        AMQQueue queue;
+        Queue<?> queue;
         if (queueName == null)
         {
 
@@ -3483,8 +3480,8 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] QueuePurge[" +" queue: " + queueName + " nowait: " + nowait + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
-        AMQQueue queue = null;
+        VirtualHost<?> virtualHost = _connection.getVirtualHost();
+        Queue<?> queue = null;
         if (queueName == null && (queue = getDefaultQueue()) == null)
         {
 
@@ -3536,11 +3533,11 @@ public class AMQChannel
                           " arguments: " + arguments + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHost<?> virtualHost = _connection.getVirtualHost();
 
 
         final boolean useDefaultQueue = queueName == null;
-        final AMQQueue queue = useDefaultQueue
+        final Queue<?> queue = useDefaultQueue
                 ? getDefaultQueue()
                 : virtualHost.getAttainedQueue(queueName.toString());
 
@@ -3562,7 +3559,7 @@ public class AMQChannel
         else
         {
 
-            final ExchangeImpl exch = virtualHost.getAttainedExchange(exchange.toString());
+            final Exchange<?> exch = virtualHost.getAttainedExchange(exchange.toString());
 
             if (exch == null)
             {
@@ -3697,9 +3694,9 @@ public class AMQChannel
         return exchangeName == null || AMQShortString.EMPTY_STRING.equals(exchangeName);
     }
 
-    private void setDefaultQueue(AMQQueue<?> queue)
+    private void setDefaultQueue(Queue<?> queue)
     {
-        AMQQueue<?> currentDefaultQueue = _defaultQueue;
+        Queue<?> currentDefaultQueue = _defaultQueue;
         if (queue != currentDefaultQueue)
         {
             if (currentDefaultQueue != null)
@@ -3714,15 +3711,15 @@ public class AMQChannel
         _defaultQueue = queue;
     }
 
-    private AMQQueue getDefaultQueue()
+    private Queue<?> getDefaultQueue()
     {
         return _defaultQueue;
     }
 
-    private class DefaultQueueAssociationClearingTask implements Action<AMQQueue>
+    private class DefaultQueueAssociationClearingTask implements Action<Queue<?>>
     {
         @Override
-        public void performAction(final AMQQueue queue)
+        public void performAction(final Queue<?> queue)
         {
             if ( queue == _defaultQueue)
             {

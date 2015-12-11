@@ -26,9 +26,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
-import org.apache.qpid.server.queue.AMQQueue;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.transport.ExchangeDelete;
 import org.apache.qpid.transport.ExecutionErrorCode;
@@ -38,7 +37,7 @@ import org.mockito.ArgumentMatcher;
 
 public class ServerSessionDelegateTest extends QpidTestCase
 {
-    private VirtualHostImpl<?, AMQQueue<?>, ExchangeImpl<?>> _host;
+    private VirtualHost<?> _host;
     private ServerSession _session;
     private ServerSessionDelegate _delegate;
 
@@ -46,7 +45,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
     public void setUp() throws Exception
     {
         super.setUp();
-        _host = mock(VirtualHostImpl.class);
+        _host = mock(VirtualHost.class);
 
         ServerConnection serverConnection = mock(ServerConnection.class);
         doReturn(_host).when(serverConnection).getVirtualHost();
@@ -59,7 +58,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
 
     public void testExchangeDeleteWhenIfUsedIsSetAndExchangeHasBindings() throws Exception
     {
-        ExchangeImpl<?> exchange = mock(ExchangeImpl.class);
+        Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
 
         doReturn(exchange).when(_host).getAttainedExchange(getTestName());
@@ -80,7 +79,7 @@ public class ServerSessionDelegateTest extends QpidTestCase
 
     public void testExchangeDeleteWhenIfUsedIsSetAndExchangeHasNoBinding() throws Exception
     {
-        ExchangeImpl<?> exchange = mock(ExchangeImpl.class);
+        Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
 
         doReturn(exchange).when(_host).getAttainedExchange(getTestName());

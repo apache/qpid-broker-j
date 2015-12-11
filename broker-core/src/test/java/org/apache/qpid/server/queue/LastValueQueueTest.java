@@ -42,7 +42,7 @@ public class LastValueQueueTest extends AbstractQueueTestBase
 
     public void testOldestMessage()
     {
-        AMQQueue<?> queue = getQueue();
+        Queue<?> queue = getQueue();
         queue.enqueue(createMessage(1l, (byte)1, Collections.singletonMap("lvqKey", (Object) "Z"), 10l), null, null);
         assertEquals(10l,queue.getOldestMessageArrivalTime());
         queue.enqueue(createMessage(2l, (byte)4, Collections.singletonMap("lvqKey", (Object) "M"), 100l), null, null);

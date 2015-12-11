@@ -23,14 +23,14 @@ package org.apache.qpid.server.logging.subjects;
 
 import java.util.List;
 
-import org.apache.qpid.server.exchange.ExchangeImpl;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.LogMessage;
 import org.apache.qpid.server.logging.LogSubject;
 import org.apache.qpid.server.logging.UnitTestMessageLogger;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Exchange;
+import org.apache.qpid.server.model.Queue;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.util.BrokerTestHelper;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 /**
@@ -152,7 +152,7 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
      * @param message The message to check
      * @param queue   The queue to check against
      */
-    protected void verifyQueue(String message, AMQQueue queue)
+    protected void verifyQueue(String message, Queue<?> queue)
     {
         String queueSlice = getSlice("qu", message);
 
@@ -169,7 +169,7 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
      * @param message  The message to check
      * @param exchange the exchange to check against
      */
-    protected void verifyExchange(String message, ExchangeImpl exchange)
+    protected void verifyExchange(String message, Exchange<?> exchange)
     {
         String exchangeSlice = getSlice("ex", message);
 
@@ -195,7 +195,7 @@ public abstract class AbstractTestLogSubject extends QpidTestCase
      * @param message the message to search
      * @param vhost   the vhostName to check against
      */
-    static public void verifyVirtualHost(String message, VirtualHostImpl vhost)
+    static public void verifyVirtualHost(String message, VirtualHost<?> vhost)
     {
         String vhostSlice = getSlice("vh", message);
 

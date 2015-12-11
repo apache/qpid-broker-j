@@ -32,10 +32,10 @@ import java.util.Set;
 
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.codec.BBDecoder;
 import org.apache.qpid.typedmessage.TypedBytesContentReader;
 import org.apache.qpid.typedmessage.TypedBytesFormatException;
@@ -57,7 +57,7 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
     }
 
     @Override
-    public InternalMessage convert(AMQMessage serverMessage, VirtualHostImpl vhost)
+    public InternalMessage convert(AMQMessage serverMessage, VirtualHost<?> vhost)
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];

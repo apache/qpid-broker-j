@@ -30,9 +30,9 @@ import org.apache.qpid.server.model.VirtualHostLogInclusionRule;
 public abstract class AbstractVirtualHostLogger <X extends AbstractVirtualHostLogger<X>> extends AbstractLogger<X> implements VirtualHostLogger<X>
 {
 
-    private final VirtualHost<?, ?, ?> _virtualHost;
+    private final VirtualHost<?> _virtualHost;
 
-    protected AbstractVirtualHostLogger(Map<String, Object> attributes, VirtualHost<?,?,?> virtualHost)
+    protected AbstractVirtualHostLogger(Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
         _virtualHost = virtualHost;

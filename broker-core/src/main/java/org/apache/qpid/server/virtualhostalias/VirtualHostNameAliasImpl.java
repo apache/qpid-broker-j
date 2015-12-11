@@ -45,7 +45,7 @@ public final class VirtualHostNameAliasImpl
         Broker<?> broker = getPort().getParent(Broker.class);
         for(VirtualHostNode<?> vhn : broker.getVirtualHostNodes())
         {
-            VirtualHost<?, ?, ?> vh = vhn.getVirtualHost();
+            VirtualHost<?> vh = vhn.getVirtualHost();
             if(vh != null && vh.getName().equals(name))
             {
                 return vhn;

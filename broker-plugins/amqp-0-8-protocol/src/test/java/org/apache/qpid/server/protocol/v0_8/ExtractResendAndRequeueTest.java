@@ -24,7 +24,7 @@ import org.apache.qpid.QpidException;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
-import org.apache.qpid.server.queue.AMQQueue;
+import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.queue.QueueEntry;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.mockito.invocation.InvocationOnMock;
@@ -60,7 +60,7 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
 
     private UnacknowledgedMessageMapImpl _unacknowledgedMessageMap;
     private static final int INITIAL_MSG_COUNT = 10;
-    private AMQQueue _queue;
+    private Queue _queue;
     private LinkedList<MessageInstance> _referenceList = new LinkedList<MessageInstance>();
     private ConsumerImpl _consumer;
     private boolean _queueDeleted;
@@ -70,7 +70,7 @@ public class ExtractResendAndRequeueTest extends QpidTestCase
     {
         _queueDeleted = false;
         _unacknowledgedMessageMap = new UnacknowledgedMessageMapImpl(100);
-        _queue = mock(AMQQueue.class);
+        _queue = mock(Queue.class);
         when(_queue.getName()).thenReturn(getName());
         when(_queue.isDeleted()).thenReturn(_queueDeleted);
         _consumer = mock(ConsumerImpl.class);

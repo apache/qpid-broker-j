@@ -21,7 +21,6 @@
 package org.apache.qpid.server.logging;
 
 import java.io.File;
-import java.security.AccessControlException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +66,7 @@ public class VirtualHostFileLoggerImpl extends AbstractVirtualHostLogger<Virtual
     private boolean _safeMode;
 
     @ManagedObjectFactoryConstructor
-    protected VirtualHostFileLoggerImpl(final Map<String, Object> attributes, VirtualHost<?,?,?> virtualHost)
+    protected VirtualHostFileLoggerImpl(final Map<String, Object> attributes, VirtualHost<?> virtualHost)
     {
         super(attributes, virtualHost);
     }

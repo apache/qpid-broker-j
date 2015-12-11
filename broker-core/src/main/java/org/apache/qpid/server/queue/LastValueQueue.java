@@ -23,9 +23,10 @@ package org.apache.qpid.server.queue;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.Queue;
 
 @ManagedObject( category = false, type= LastValueQueue.LAST_VALUE_QUEUE_TYPE)
-public interface LastValueQueue<X extends LastValueQueue<X>> extends AMQQueue<X>
+public interface LastValueQueue<X extends LastValueQueue<X>> extends Queue<X>
 {
     String LVQ_KEY = "lvqKey";
 

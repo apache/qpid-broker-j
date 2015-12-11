@@ -52,15 +52,13 @@ import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.queue.AMQQueue;
 import org.apache.qpid.server.queue.BaseQueue;
 import org.apache.qpid.server.security.SecurityManager;
-import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
 public class HeadersExchangeTest extends QpidTestCase
 {
     private HeadersExchange _exchange;
-    private VirtualHostImpl _virtualHost;
+    private VirtualHost _virtualHost;
     private TaskExecutor _taskExecutor;
     private ConfiguredObjectFactoryImpl _factory;
 
@@ -71,7 +69,7 @@ public class HeadersExchangeTest extends QpidTestCase
 
         _taskExecutor = new CurrentThreadTaskExecutor();
         _taskExecutor.start();
-        _virtualHost = mock(VirtualHostImpl.class);
+        _virtualHost = mock(VirtualHost.class);
 
         Broker broker = mock(Broker.class);
         SecurityManager securityManager = new SecurityManager(broker, false);
@@ -109,7 +107,7 @@ public class HeadersExchangeTest extends QpidTestCase
         _taskExecutor.stop();
     }
 
-    protected void routeAndTest(ServerMessage msg, AMQQueue... expected) throws Exception
+    protected void routeAndTest(ServerMessage msg, Queue<?>... expected) throws Exception
     {
         List<? extends BaseQueue> results = _exchange.route(msg, "", InstanceProperties.EMPTY);
         List<? extends BaseQueue> unexpected = new ArrayList<BaseQueue>(results);
@@ -122,7 +120,7 @@ public class HeadersExchangeTest extends QpidTestCase
     }
 
 
-    private AMQQueue createAndBind(final String name, String... arguments)
+    private Queue<?> createAndBind(final String name, String... arguments)
             throws Exception
     {
         return createAndBind(name, getArgsMapFromStrings(arguments));
@@ -147,22 +145,22 @@ public class HeadersExchangeTest extends QpidTestCase
         return map;
     }
 
-    private AMQQueue createAndBind(final String name, Map<String, Object> arguments)
+    private Queue<?> createAndBind(final String name, Map<String, Object> arguments)
             throws Exception
     {
-        AMQQueue q = create(name);
+        Queue<?> q = create(name);
         bind(name, arguments, q);
         return q;
     }
 
-    private void bind(String bindingKey, Map<String, Object> arguments, AMQQueue q)
+    private void bind(String bindingKey, Map<String, Object> arguments, Queue<?> q)
     {
         _exchange.addBinding(bindingKey,q,arguments);
     }
 
-    private AMQQueue create(String name)
+    private Queue<?> create(String name)
     {
-        AMQQueue q = mock(AMQQueue.class);
+        Queue q = mock(Queue.class);
         when(q.toString()).thenReturn(name);
         when(q.getVirtualHost()).thenReturn(_virtualHost);
         when(q.getParent(VirtualHost.class)).thenReturn(_virtualHost);
@@ -178,14 +176,14 @@ public class HeadersExchangeTest extends QpidTestCase
 
     public void testSimple() throws Exception
     {
-        AMQQueue q1 = createAndBind("Q1", "F0000");
-        AMQQueue q2 = createAndBind("Q2", "F0000=Aardvark");
-        AMQQueue q3 = createAndBind("Q3", "F0001");
-        AMQQueue q4 = createAndBind("Q4", "F0001=Bear");
-        AMQQueue q5 = createAndBind("Q5", "F0000", "F0001");
-        AMQQueue q6 = createAndBind("Q6", "F0000=Aardvark", "F0001=Bear");
-        AMQQueue q7 = createAndBind("Q7", "F0000", "F0001=Bear");
-        AMQQueue q8 = createAndBind("Q8", "F0000=Aardvark", "F0001");
+        Queue<?> q1 = createAndBind("Q1", "F0000");
+        Queue<?> q2 = createAndBind("Q2", "F0000=Aardvark");
+        Queue<?> q3 = createAndBind("Q3", "F0001");
+        Queue<?> q4 = createAndBind("Q4", "F0001=Bear");
+        Queue<?> q5 = createAndBind("Q5", "F0000", "F0001");
+        Queue<?> q6 = createAndBind("Q6", "F0000=Aardvark", "F0001=Bear");
+        Queue<?> q7 = createAndBind("Q7", "F0000", "F0001=Bear");
+        Queue<?> q8 = createAndBind("Q8", "F0000=Aardvark", "F0001");
 
         routeAndTest(mockMessage(getArgsMapFromStrings("F0000")), q1);
         routeAndTest(mockMessage(getArgsMapFromStrings("F0000=Aardvark")), q1, q2);
@@ -199,11 +197,11 @@ public class HeadersExchangeTest extends QpidTestCase
 
     public void testAny() throws Exception
     {
-        AMQQueue q1 = createAndBind("Q1", "F0000", "F0001", "X-match=any");
-        AMQQueue q2 = createAndBind("Q2", "F0000=Aardvark", "F0001=Bear", "X-match=any");
-        AMQQueue q3 = createAndBind("Q3", "F0000", "F0001=Bear", "X-match=any");
-        AMQQueue q4 = createAndBind("Q4", "F0000=Aardvark", "F0001", "X-match=any");
-        AMQQueue q5 = createAndBind("Q5", "F0000=Apple", "F0001", "X-match=any");
+        Queue<?> q1 = createAndBind("Q1", "F0000", "F0001", "X-match=any");
+        Queue<?> q2 = createAndBind("Q2", "F0000=Aardvark", "F0001=Bear", "X-match=any");
+        Queue<?> q3 = createAndBind("Q3", "F0000", "F0001=Bear", "X-match=any");
+        Queue<?> q4 = createAndBind("Q4", "F0000=Aardvark", "F0001", "X-match=any");
+        Queue<?> q5 = createAndBind("Q5", "F0000=Apple", "F0001", "X-match=any");
 
         routeAndTest(mockMessage(getArgsMapFromStrings("F0000")), q1, q3);
         routeAndTest(mockMessage(getArgsMapFromStrings("F0000=Aardvark")), q1, q2, q3, q4);
@@ -215,9 +213,9 @@ public class HeadersExchangeTest extends QpidTestCase
 
     public void testOnUnbind() throws Exception
     {
-        AMQQueue q1 = createAndBind("Q1", "F0000");
-        AMQQueue q2 = createAndBind("Q2", "F0000=Aardvark");
-        AMQQueue q3 = createAndBind("Q3", "F0001");
+        Queue<?> q1 = createAndBind("Q1", "F0000");
+        Queue<?> q2 = createAndBind("Q2", "F0000=Aardvark");
+        Queue<?> q3 = createAndBind("Q3", "F0001");
 
         routeAndTest(mockMessage(getArgsMapFromStrings("F0000")), q1);
         routeAndTest(mockMessage(getArgsMapFromStrings("F0000=Aardvark")), q1, q2);
@@ -232,8 +230,8 @@ public class HeadersExchangeTest extends QpidTestCase
 
     public void testWithSelectors() throws Exception
     {
-        AMQQueue q1 = create("Q1");
-        AMQQueue q2 = create("Q2");
+        Queue<?> q1 = create("Q1");
+        Queue<?> q2 = create("Q2");
         bind("q1",getArgsMapFromStrings("F"), q1);
         bind("q1select",getArgsMapFromStrings("F", AMQPFilterTypes.JMS_SELECTOR.toString()+"=F='1'"), q1);
         bind("q2",getArgsMapFromStrings("F=1"), q2);
@@ -243,7 +241,7 @@ public class HeadersExchangeTest extends QpidTestCase
         routeAndTest(mockMessage(getArgsMapFromStrings("F=1")),q1,q2);
 
 
-        AMQQueue q3 = create("Q3");
+        Queue<?> q3 = create("Q3");
         bind("q3select",getArgsMapFromStrings("F", AMQPFilterTypes.JMS_SELECTOR.toString()+"=F='1'"), q3);
         routeAndTest(mockMessage(getArgsMapFromStrings("F=1")),q1,q2,q3);
         routeAndTest(mockMessage(getArgsMapFromStrings("F=2")),q1);
