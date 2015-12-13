@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -62,8 +63,15 @@ public class MessageConverter_from_1_0
     public static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
         byte[] data = new byte[(int) serverMessage.getSize()];
-        serverMessage.getStoredMessage().getContent(ByteBuffer.wrap(data));
-
+        final Collection<QpidByteBuffer> allData = serverMessage.getStoredMessage().getContent();
+        int offset = 0;
+        for(QpidByteBuffer buf : allData)
+        {
+            int len = buf.remaining();
+            buf.get(data, offset, len);
+            offset+=len;
+            buf.dispose();
+        }
         SectionDecoderImpl sectionDecoder = new SectionDecoderImpl(MessageConverter_v1_0_to_Internal.TYPE_REGISTRY);
 
         Object bodyObject;

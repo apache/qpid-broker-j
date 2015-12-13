@@ -21,7 +21,6 @@
 
 package org.apache.qpid.server.store;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -82,25 +81,6 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
             _content.flip();
         }
         return this;
-    }
-
-    public int getContent(ByteBuffer dst)
-    {
-        if(_content == null)
-        {
-            return 0;
-        }
-        QpidByteBuffer src = _content.duplicate();
-
-        src.position(0);
-
-        int length = dst.remaining() < src.remaining() ? dst.remaining() : src.remaining();
-        src.limit(length);
-
-        src.get(dst);
-
-        src.dispose();
-        return length;
     }
 
     @Override

@@ -75,4 +75,9 @@ public class PathContent implements Content, CustomRestHeaders
             throw new FileNotFoundException();
         }
     }
+
+    @Override
+    public void release()
+    {
+    }
 }

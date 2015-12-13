@@ -32,13 +32,16 @@ import java.nio.ByteBuffer;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 
 import org.mockito.ArgumentCaptor;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.consumer.ConsumerTarget;
+import org.apache.qpid.server.message.AbstractServerMessageImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.State;
@@ -93,13 +96,20 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
         }
     }
 
-    private List<String> getCertificatesFromMessage(final ServerMessage message) throws ClassNotFoundException
+    private List<String> getCertificatesFromMessage(final ServerMessage<?> message) throws ClassNotFoundException
     {
         final int bodySize = (int) message.getSize();
         byte[] msgContent = new byte[bodySize];
-        ByteBuffer buf = ByteBuffer.wrap(msgContent);
-        int stored = message.getContent(buf);
-        assertEquals("Unexpected message size was retrieved", bodySize, stored);
+        final Collection<QpidByteBuffer> allData = message.getStoredMessage().getContent();
+        int total = 0;
+        for(QpidByteBuffer b : allData)
+        {
+            int len = b.remaining();
+            b.get(msgContent, total, len);
+            b.dispose();
+            total += len;
+        }
+        assertEquals("Unexpected message size was retrieved", bodySize, total);
 
         List<String> certificates = new ArrayList<>();
         ByteArrayInputStream bytesIn = new ByteArrayInputStream(msgContent);

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.store;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
@@ -95,12 +94,6 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
         @Override
         public long getArrivalTime()
-        {
-            return 0;
-        }
-
-        @Override
-        public int getContent(ByteBuffer buf)
         {
             return 0;
         }

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.message;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -166,24 +165,6 @@ public abstract class AbstractServerMessageImpl<X extends AbstractServerMessageI
     final public long getMessageNumber()
     {
         return getStoredMessage().getMessageNumber();
-    }
-
-    @Override
-    final public int getContent(ByteBuffer buf)
-    {
-        StoredMessage<T> storedMessage = getStoredMessage();
-        boolean wasInMemory = storedMessage.isInMemory();
-        try
-        {
-            return storedMessage.getContent(buf);
-        }
-        finally
-        {
-            if (!wasInMemory)
-            {
-                storedMessage.flowToDisk();
-            }
-        }
     }
 
     @Override

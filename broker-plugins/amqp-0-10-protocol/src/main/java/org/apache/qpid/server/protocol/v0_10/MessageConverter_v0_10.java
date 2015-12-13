@@ -85,12 +85,6 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
-                    public int getContent(ByteBuffer dst)
-                    {
-                        return serverMsg.getContent(dst);
-                    }
-
-                    @Override
                     public Collection<QpidByteBuffer> getContent()
                     {
                         return serverMsg.getContent();

@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -76,18 +75,6 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                     public long getMessageNumber()
                     {
                         return serverMsg.getMessageNumber();
-                    }
-
-                    @Override
-                    public int getContent(ByteBuffer dst)
-                    {
-                        int size = messageContent.length;
-                        if(dst.remaining() < size)
-                        {
-                            size = dst.remaining();
-                        }
-                        dst.put(messageContent, 0, size);
-                        return size;
                     }
 
                     @Override

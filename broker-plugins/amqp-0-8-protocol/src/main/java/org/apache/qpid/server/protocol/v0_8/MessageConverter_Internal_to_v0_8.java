@@ -91,18 +91,6 @@ public class MessageConverter_Internal_to_v0_8 implements MessageConverter<Inter
             }
 
             @Override
-            public int getContent(ByteBuffer dst)
-            {
-                int size = messageContent.length;
-                if(dst.remaining() < size)
-                {
-                    size = dst.remaining();
-                }
-                dst.put(messageContent, 0, size);
-                return size;
-            }
-
-            @Override
             public Collection<QpidByteBuffer> getContent()
             {
                 return Collections.singleton(QpidByteBuffer.wrap(messageContent));

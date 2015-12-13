@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.txn;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 
 
@@ -105,12 +104,6 @@ class MockServerMessage implements ServerMessage
 
     @Override
     public long getExpiration()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getContent(ByteBuffer buf)
     {
         throw new UnsupportedOperationException();
     }

@@ -208,7 +208,14 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
-        serverMessage.getContent(ByteBuffer.wrap(data));
+        int total = 0;
+        for(QpidByteBuffer b : serverMessage.getContent())
+        {
+            int len = b.remaining();
+            b.get(data, total, len);
+            b.dispose();
+            total += len;
+        }
         byte[] uncompressed;
 
         if(Symbol.valueOf(GZIPUtils.GZIP_CONTENT_ENCODING).equals(metaData.getPropertiesSection().getContentEncoding())
@@ -235,26 +242,6 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         public long getMessageNumber()
                         {
                             return serverMessage.getMessageNumber();
-                        }
-
-                        @Override
-                        public int getContent(ByteBuffer dst)
-                        {
-                            QpidByteBuffer buf = allData.duplicate();
-                            buf.position(0);
-                            int size;
-                            if (dst.remaining() < buf.remaining())
-                            {
-                                buf.limit(dst.remaining());
-                                size = dst.remaining();
-                            }
-                            else
-                            {
-                                size = buf.remaining();
-                            }
-                            buf.get(dst);
-                            buf.dispose();
-                            return size;
                         }
 
                         @Override

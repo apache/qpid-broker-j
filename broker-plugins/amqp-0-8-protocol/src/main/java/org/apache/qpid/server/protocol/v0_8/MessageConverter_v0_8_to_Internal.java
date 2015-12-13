@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.VirtualHost;
@@ -61,7 +62,14 @@ public class MessageConverter_v0_8_to_Internal implements MessageConverter<AMQMe
     {
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
-        serverMessage.getContent(ByteBuffer.wrap(data));
+        int total = 0;
+        for(QpidByteBuffer b : serverMessage.getContent())
+        {
+            int len = b.remaining();
+            b.get(data, total, len);
+            b.dispose();
+            total += len;
+        }
 
         Object body = convertMessageBody(mimeType, data);
 

@@ -51,6 +51,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.configuration.updater.Task;
 import org.apache.qpid.server.message.MessageInfo;
 import org.apache.qpid.server.message.MessageInfoImpl;
@@ -2584,31 +2585,55 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public static class MessageContent implements Content, CustomRestHeaders
     {
-        private final byte[] _data;
-        private final String _mimeType;
 
-        public MessageContent(byte[] data, String mimeType )
+        private final MessageReference<?> _messageReference;
+
+        public MessageContent(MessageReference<?> messageReference)
         {
-            _data = data;
-            _mimeType = mimeType;
+            _messageReference = messageReference;
         }
 
         @Override
         public void write(OutputStream outputStream) throws IOException
         {
-            outputStream.write(_data);
+            Collection<QpidByteBuffer> content = _messageReference.getMessage().getContent();
+            try
+            {
+                for (QpidByteBuffer b : content)
+                {
+
+                    int len = b.remaining();
+                    byte[] data = new byte[len];
+                    b.get(data);
+                    outputStream.write(data);
+
+                }
+            }
+            finally
+            {
+                for (QpidByteBuffer b : content)
+                {
+                    b.dispose();
+                }
+            }
+        }
+
+        @Override
+        public void release()
+        {
+            _messageReference.release();
         }
 
         @RestContentHeader("Content-Type")
         public String getContentType()
         {
-            return _mimeType;
+            return _messageReference.getMessage().getMessageHeader().getMimeType();
         }
 
         @RestContentHeader("Content-Length")
         public long getSize()
         {
-            return _data.length;
+            return _messageReference.getMessage().getSize();
         }
 
     }
@@ -3336,7 +3361,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         visit(messageFinder);
         if(messageFinder.isFound())
         {
-            return new MessageContent(messageFinder.getContent(), messageFinder.getMimeType());
+            return new MessageContent(messageFinder.getMessageReference());
         }
         else
         {
@@ -3402,10 +3427,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     private class MessageContentFinder implements QueueEntryVisitor
     {
         private final long _messageNumber;
-        private String _mimeType;
-        private long _size;
-        private byte[] _content;
         private boolean _found;
+        private MessageReference<?> _messageReference;
 
         private MessageContentFinder(long messageNumber)
         {
@@ -3422,19 +3445,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 {
                     try
                     {
-                        MessageReference reference = message.newReference();
-                        try
-                        {
-                            _mimeType = message.getMessageHeader().getMimeType();
-                            _size = message.getSize();
-                            _content = new byte[(int) _size];
-                            _found = true;
-                            message.getContent(ByteBuffer.wrap(_content));
-                        }
-                        finally
-                        {
-                            reference.release();
-                        }
+                        _messageReference = message.newReference();
+                        _found = true;
                         return true;
                     }
                     catch (MessageDeletedException e)
@@ -3447,19 +3459,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return false;
         }
 
-        public String getMimeType()
+        MessageReference<?> getMessageReference()
         {
-            return _mimeType;
-        }
-
-        public long getSize()
-        {
-            return _size;
-        }
-
-        public byte[] getContent()
-        {
-            return _content;
+            return _messageReference;
         }
 
         public boolean isFound()

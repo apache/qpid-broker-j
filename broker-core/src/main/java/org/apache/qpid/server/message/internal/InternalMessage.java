@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -221,18 +220,6 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     public long getMessageNumber()
                     {
                         return messageNumber;
-                    }
-
-                    @Override
-                    public int getContent(final ByteBuffer dst)
-                    {
-                        int size = bytes.length;
-                        if (dst.remaining() < size)
-                        {
-                            size = dst.remaining();
-                        }
-                        dst.put(bytes, 0 ,size);
-                        return size;
                     }
 
                     @Override

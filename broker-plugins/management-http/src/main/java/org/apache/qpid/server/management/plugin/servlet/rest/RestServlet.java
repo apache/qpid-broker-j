@@ -635,7 +635,15 @@ public class RestServlet extends AbstractServlet
         if(returnVal instanceof Content)
         {
             Content content = (Content)returnVal;
-            writeTypedContent(content, request, response);
+            try
+            {
+
+                writeTypedContent(content, request, response);
+            }
+            finally
+            {
+                content.release();
+            }
         }
         else
         {

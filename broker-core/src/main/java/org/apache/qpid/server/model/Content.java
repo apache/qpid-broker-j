@@ -27,4 +27,6 @@ import java.io.OutputStream;
 public interface Content
 {
     void write(OutputStream outputStream) throws IOException;
+
+    void release();
 }

@@ -21,7 +21,6 @@
 package org.apache.qpid.server.protocol.converter.v0_8_v0_10;
 
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -80,12 +79,6 @@ public class MessageConverter_0_8_to_0_10  implements MessageConverter<AMQMessag
             public long getMessageNumber()
             {
                 return message_0_8.getMessageNumber();
-            }
-
-            @Override
-            public int getContent(ByteBuffer dst)
-            {
-                return message_0_8.getContent(dst);
             }
 
             @Override

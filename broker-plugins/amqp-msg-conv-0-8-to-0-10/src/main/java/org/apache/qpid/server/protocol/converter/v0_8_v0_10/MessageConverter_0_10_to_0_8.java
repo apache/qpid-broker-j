@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.server.protocol.converter.v0_8_v0_10;
 
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -191,12 +190,6 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             public long getMessageNumber()
             {
                 return message.getMessageNumber();
-            }
-
-            @Override
-            public int getContent(ByteBuffer dst)
-            {
-                return message.getContent(dst);
             }
 
             @Override

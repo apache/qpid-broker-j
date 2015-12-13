@@ -1483,20 +1483,6 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
             return this;
         }
 
-        @Override
-        public synchronized int getContent(final ByteBuffer dst)
-        {
-            // These do not need to be disposed of because getContentAsByteBuffer() retains a reference
-            Collection<QpidByteBuffer> allContent = getContentAsByteBuffer();
-            int length = 0;
-            for(QpidByteBuffer contentChunk : allContent)
-            {
-                length += contentChunk.remaining();
-                contentChunk.copyTo(dst);
-            }
-            return length;
-        }
-
         /**
          * returns QBBs containing the content. The caller must not dispose of them because we keep a reference in _messageDataRef.
          */
