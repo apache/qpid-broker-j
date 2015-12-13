@@ -119,11 +119,6 @@ public class BindingImpl
         return _bindingKey;
     }
 
-    public Queue<?> getAMQQueue()
-    {
-        return _queue;
-    }
-
     @Override
     public Queue<?> getQueue()
     {
@@ -174,7 +169,7 @@ public class BindingImpl
 
         return (_bindingKey == null ? binding.getBindingKey() == null : _bindingKey.equals(binding.getBindingKey()))
             && (_exchange == null ? binding.getExchange() == null : _exchange.equals(binding.getExchange()))
-            && (_queue == null ? binding.getAMQQueue() == null : _queue.equals(binding.getAMQQueue()));
+            && (_queue == null ? binding.getQueue() == null : _queue.equals(binding.getQueue()));
     }
 
     @Override
@@ -259,7 +254,7 @@ public class BindingImpl
     {
         authoriseCreate(this);
 
-        Queue<?> queue = getAMQQueue();
+        Queue<?> queue = getQueue();
         Map<String, Object> arguments = getArguments();
         if (arguments!=null && !arguments.isEmpty() && FilterSupport.argumentsContainFilter(arguments))
         {
