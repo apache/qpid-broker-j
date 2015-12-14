@@ -63,6 +63,12 @@ public class ZippedContent implements Content, CustomRestHeaders
         }
     }
 
+    @Override
+    public void release()
+    {
+
+    }
+
     private void addLogFileEntry(String zipEntryName, Path path, ZipOutputStream out) throws IOException
     {
         File file = path.toFile();
