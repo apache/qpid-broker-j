@@ -96,7 +96,7 @@ function createTest(name, numberOfParticipantPairs, acknowledgeMode, deliveryMod
   for(var i=0; i < numberOfParticipantPairs; i++)
   {
     var queueName = "testQueue_" + i;
-    var destination = "BURL:direct:////" + queueName + "?durable='true'";
+    var destination = queueName;
     test._queues.push({"_name": destination, "_durable": true});
 
     test._clients.push({"_name": "producingClient_" + i,

@@ -49,6 +49,8 @@
     <qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>0.95</qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>
     <qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>0.95</qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>
     <qpid.disttest.hillclimb.minimum_delta>1.0</qpid.disttest.hillclimb.minimum_delta>
+
+    <qpid-jms-client-version>0.6.0</qpid-jms-client-version>
   </properties>
 
   <dependencies>
@@ -208,6 +210,10 @@
               <key>qpid.close_timeout</key>
               <value>${qpid.close_timeout}</value>
             </systemProperty>
+            <systemProperty>
+               <key>java.naming.factory.initial</key>
+               <value>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</value>
+            </systemProperty>
           </systemProperties>
         </configuration>
       </plugin>
@@ -225,4 +231,75 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+
+    <profile>
+      <id>qpid-jms-client</id>
+      <activation>
+        <property>
+          <name>client</name>
+          <value>qpid-jms-client</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>${exec-maven-plugin-version}</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>java</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <mainClass>org.apache.qpid.disttest.ControllerRunner</mainClass>
+              <arguments>
+                <argument>jndi-config=${basedir}/etc/perftests-jndi-qpid-jms-client.properties</argument>
+                <argument>test-config=${qpid.disttest.test_config}</argument>
+                <argument>distributed=false</argument>
+                <argument>writeToDb=false</argument>
+                <argument>hill-climb=${qpid.disttest.hillclimb}</argument>
+                <argument>hill-climber.max-runs=${qpid.disttest.hillclimb.max_runs}</argument>
+                <argument>hill-climber.start-target-rate=${qpid.disttest.hillclimb.start_target_rate}</argument>
+                <argument>hill-climber.production-to-target-ratio-success-threshold=${qpid.disttest.hillclimb.production_to_target_ratio_success_threshold}</argument>
+                <argument>hill-climber.consumption-to-production-ratio-success-threshold=${qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold}</argument>
+                <argument>hill-climber.minimum-delta=${qpid.disttest.hillclimb.minimum_delta}</argument>
+              </arguments>
+              <classpathScope>compile</classpathScope>
+              <systemProperties>
+                <systemProperty>
+                  <key>qpid.disttest.loglevel</key>
+                  <value>${qpid.disttest.loglevel}</value>
+                </systemProperty>
+                <systemProperty>
+                  <key>qpid.disttest.duration</key>
+                  <value>${qpid.disttest.duration}</value>
+                </systemProperty>
+                <systemProperty>
+                  <key>java.naming.factory.initial</key>
+                  <value>org.apache.qpid.jms.jndi.JmsInitialContextFactory</value>
+                </systemProperty>
+                <systemProperty>
+                  <key>qpid.disttest.queue.creator.class</key>
+                  <value>org.apache.qpid.disttest.jms.ExistingQueueDrainer</value>
+                </systemProperty>
+              </systemProperties>
+            </configuration>
+          </plugin>
+
+        </plugins>
+      </build>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.qpid</groupId>
+          <artifactId>qpid-jms-client</artifactId>
+          <version>${qpid-jms-client-version}</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
 </project>

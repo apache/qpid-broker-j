@@ -46,7 +46,10 @@ public class AbstractRunner
         Hashtable env = new Hashtable();
         env.put(Context.PROVIDER_URL, jndiConfig);
         // Java allows this to be overridden with a system property of the same name
-        env.put(InitialContext.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
+        if (!System.getProperties().containsKey(InitialContext.INITIAL_CONTEXT_FACTORY))
+        {
+            env.put(InitialContext.INITIAL_CONTEXT_FACTORY, "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
+        }
 
         try
         {
