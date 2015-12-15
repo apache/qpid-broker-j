@@ -61,7 +61,7 @@ public class Hello
             connection.start();
 
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Destination destination = (Destination) context.lookup("testDestination");
+            Destination destination = (Destination) context.lookup("topicExchange");
 
             MessageProducer messageProducer = session.createProducer(destination);
             MessageConsumer messageConsumer = session.createConsumer(destination);
