@@ -42,6 +42,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import javax.security.auth.Subject;
 
@@ -193,6 +195,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @ManagedAttributeField
     private List<String> _globalAddressDomains;
 
+    @ManagedAttributeField
+    private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
+
     private boolean _useAsyncRecoverer;
 
     private MessageDestination _defaultDestination;
@@ -255,6 +260,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 validateGlobalAddressDomain(domain);
             }
         }
+        if(getNodeAutoCreationPolicies() != null)
+        {
+            for(NodeAutoCreationPolicy policy : getNodeAutoCreationPolicies())
+            {
+                validateNodeAutoCreationPolicy(policy);
+            }
+        }
 
         validateConnectionThreadPoolSettings(this);
     }
@@ -276,11 +288,74 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 }
             }
         }
+        if(changedAttributes.contains(NODE_AUTO_CREATION_POLICIES))
+        {
+            if(getNodeAutoCreationPolicies() != null)
+            {
+                for(NodeAutoCreationPolicy policy : getNodeAutoCreationPolicies())
+                {
+                    validateNodeAutoCreationPolicy(policy);
+                }
+            }
+
+        }
 
         if (changedAttributes.contains(CONNECTION_THREAD_POOL_SIZE) || changedAttributes.contains(NUMBER_OF_SELECTORS))
         {
             validateConnectionThreadPoolSettings(virtualHost);
         }
+    }
+
+    private void validateNodeAutoCreationPolicy(final NodeAutoCreationPolicy policy)
+    {
+        String pattern = policy.getPattern();
+        if(pattern == null)
+        {
+            throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPattern MUST be supplied");
+        }
+
+        try
+        {
+            Pattern.compile(pattern);
+        }
+        catch (PatternSyntaxException e)
+        {
+            throw new IllegalArgumentException("The 'pattern' attribute of a NodeAutoCreationPattern MUST be a valid "
+                                               + "Java Regular Expression Pattern, the value '" + pattern + "' is not");
+
+        }
+
+        String nodeType = policy.getNodeType();
+        Class<? extends ConfiguredObject> sourceClass = null;
+        for (Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
+        {
+            if (childClass.getSimpleName().equalsIgnoreCase(nodeType.trim()))
+            {
+                sourceClass = childClass;
+                break;
+            }
+        }
+        if(sourceClass == null)
+        {
+            throw new IllegalArgumentException("The node type of a NodeAutoCreationPattern must be a valid child type "
+                                               + "of a VirtualHost, '" + nodeType + "' is not.");
+        }
+        if(policy.isCreatedOnConsume() && !MessageSource.class.isAssignableFrom(sourceClass))
+        {
+            throw new IllegalArgumentException("A NodeAutoCreationPattern which creates nodes on consume must have a "
+                                               + "nodeType which implements MessageSource, '" + nodeType + "' does not.");
+        }
+
+        if(policy.isCreatedOnPublish() && !MessageDestination.class.isAssignableFrom(sourceClass))
+        {
+            throw new IllegalArgumentException("A NodeAutoCreationPattern which creates nodes on publish must have a "
+                                               + "nodeType which implements MessageDestination, '" + nodeType + "' does not.");
+        }
+        if(!(policy.isCreatedOnConsume() || policy.isCreatedOnPublish()))
+        {
+            throw new IllegalArgumentException("A NodeAutoCreationPattern must create on consume, create on publish or both.");
+        }
+
     }
 
     private void validateGlobalAddressDomain(final String name)
@@ -661,6 +736,12 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
+    public List<NodeAutoCreationPolicy> getNodeAutoCreationPolicies()
+    {
+        return _nodeAutoCreationPolicies;
+    }
+
+    @Override
     public Queue<?> getAttainedQueue(String name)
     {
         Queue<?> child = awaitChildClassToAttainState(Queue.class, name);
@@ -684,9 +765,109 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public MessageSource getAttainedMessageSource(final String name)
     {
-        MessageSource systemSource = _systemNodeSources.get(name);
-        return systemSource == null ? (MessageSource) awaitChildClassToAttainState(Queue.class, name) : systemSource;
+        MessageSource messageSource = _systemNodeSources.get(name);
+        if(messageSource == null)
+        {
+            messageSource = awaitChildClassToAttainState(Queue.class, name);
+        }
+        if(messageSource == null)
+        {
+            messageSource = autoCreateSource(name);
+        }
+        return messageSource;
     }
+
+    private MessageSource autoCreateSource(final String name)
+    {
+        for(NodeAutoCreationPolicy policy : getNodeAutoCreationPolicies())
+        {
+            String pattern = policy.getPattern();
+            if(name.matches(pattern) && policy.isCreatedOnConsume())
+            {
+                String nodeType = policy.getNodeType();
+                Class<? extends ConfiguredObject> sourceClass = null;
+                for(Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
+                {
+                    if(childClass.getSimpleName().equalsIgnoreCase(nodeType.trim()) && MessageSource.class.isAssignableFrom(childClass))
+                    {
+                        sourceClass = childClass;
+                    }
+                }
+                if(sourceClass != null)
+                {
+                    Map<String, Object> attributes = new HashMap<>(policy.getAttributes());
+                    attributes.remove(ConfiguredObject.ID);
+                    attributes.put(ConfiguredObject.NAME, name);
+
+                    try
+                    {
+
+                        final MessageSource messageSource =
+                                (MessageSource) doSync(addChildAsync(sourceClass, attributes));
+                        if (messageSource != null)
+                        {
+                            return messageSource;
+                        }
+                    }
+                    catch (RuntimeException e)
+                    {
+                        _logger.info("Unable to auto create a node named {} due to exception", name, e);
+                    }
+
+                }
+            }
+
+        }
+        return null;
+    }
+
+
+    private MessageDestination autoCreateDestination(final String name)
+    {
+        for (NodeAutoCreationPolicy policy : getNodeAutoCreationPolicies())
+        {
+            String pattern = policy.getPattern();
+            if (name.matches(pattern) && policy.isCreatedOnPublish())
+            {
+                String nodeType = policy.getNodeType();
+                Class<? extends ConfiguredObject> sourceClass = null;
+                for (Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
+                {
+                    if (childClass.getSimpleName().equalsIgnoreCase(nodeType.trim())
+                        && MessageDestination.class.isAssignableFrom(childClass))
+                    {
+                        sourceClass = childClass;
+                    }
+                }
+                if (sourceClass != null)
+                {
+                    Map<String, Object> attributes = new HashMap<>(policy.getAttributes());
+                    attributes.remove(ConfiguredObject.ID);
+                    attributes.put(ConfiguredObject.NAME, name);
+
+                    try
+                    {
+
+                        final MessageDestination messageDestination =
+                                (MessageDestination) doSync(addChildAsync(sourceClass, attributes));
+                        if (messageDestination != null)
+                        {
+                            return messageDestination;
+                        }
+                    }
+                    catch (RuntimeException e)
+                    {
+                        _logger.info("Unable to auto create a node named {} due to exception", name, e);
+                    }
+
+                }
+            }
+
+        }
+        return null;
+
+    }
+
 
     @Override
     public Queue<?> getAttainedQueue(UUID id)
@@ -757,7 +938,19 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     public MessageDestination getAttainedMessageDestination(final String name)
     {
         MessageDestination destination = _systemNodeDestinations.get(name);
-        return destination == null ? getAttainedExchange(name) : destination;
+        if(destination == null)
+        {
+            destination = getAttainedExchange(name);
+        }
+        if(destination == null)
+        {
+            destination = getAttainedQueue(name);
+        }
+        if(destination == null)
+        {
+            destination = autoCreateDestination(name);
+        }
+        return destination;
     }
 
     @Override

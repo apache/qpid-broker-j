@@ -103,6 +103,9 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     @ManagedAttributeField
     private List<String> _globalAddressDomains;
 
+    @ManagedAttributeField
+    private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
+
     @ManagedObjectFactoryConstructor
     public BDBHAReplicaVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -236,6 +239,12 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     public int getHousekeepingThreadCount()
     {
         return 0;
+    }
+
+    @Override
+    public List<NodeAutoCreationPolicy> getNodeAutoCreationPolicies()
+    {
+        return Collections.emptyList();
     }
 
     @Override

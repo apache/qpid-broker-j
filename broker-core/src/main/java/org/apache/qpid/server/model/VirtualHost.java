@@ -44,6 +44,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
+import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
 import org.apache.qpid.server.virtualhost.VirtualHostConnectionListener;
 
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
@@ -74,6 +75,7 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     String NUMBER_OF_SELECTORS                  = "numberOfSelectors";
     String CONNECTION_THREAD_POOL_SIZE          = "connectionThreadPoolSize";
     String CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT = "connectionThreadPoolKeepAliveTimeout";
+    String NODE_AUTO_CREATION_POLICIES = "nodeAutoCreationPolicies";
 
     @ManagedContextDefault( name = VIRTUALHOST_WORK_DIR_VAR)
     public static final String VIRTUALHOST_WORK_DIR = VIRTUALHOST_WORK_DIR_VAR_EXPRESSION;
@@ -124,6 +126,9 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     @ManagedAttribute( defaultValue = "${virtualhost.housekeepingThreadCount}")
     int getHousekeepingThreadCount();
+
+    @ManagedAttribute( defaultValue = "[]" )
+    List<NodeAutoCreationPolicy> getNodeAutoCreationPolicies();
 
     String VIRTUALHOST_CONNECTION_THREAD_POOL_SIZE = "virtualhost.connectionThreadPool.size";
     @SuppressWarnings("unused")

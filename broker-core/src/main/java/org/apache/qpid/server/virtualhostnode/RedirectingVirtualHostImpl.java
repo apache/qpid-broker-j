@@ -103,6 +103,9 @@ class RedirectingVirtualHostImpl
     @ManagedAttributeField
     private List<String> _globalAddressDomains;
 
+    @ManagedAttributeField
+    private List<NodeAutoCreationPolicy> _nodeAutoCreationPolicies;
+
     @ManagedObjectFactoryConstructor
     public RedirectingVirtualHostImpl(final Map<String, Object> attributes, VirtualHostNode<?> virtualHostNode)
     {
@@ -236,6 +239,12 @@ class RedirectingVirtualHostImpl
     public int getHousekeepingThreadCount()
     {
         return 0;
+    }
+
+    @Override
+    public List<NodeAutoCreationPolicy> getNodeAutoCreationPolicies()
+    {
+        return Collections.emptyList();
     }
 
     @Override
