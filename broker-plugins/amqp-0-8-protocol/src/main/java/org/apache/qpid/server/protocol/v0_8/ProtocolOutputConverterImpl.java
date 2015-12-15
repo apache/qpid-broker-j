@@ -20,11 +20,9 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +36,6 @@ import org.apache.qpid.framing.AMQMethodBody;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicCancelOkBody;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.BasicGetOkBody;
-import org.apache.qpid.framing.BasicReturnBody;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
@@ -49,7 +45,6 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.util.ByteBufferUtils;
 import org.apache.qpid.util.GZIPUtils;
 
 public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
@@ -100,73 +95,64 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         return writeMessageDelivery(message, message.getContentHeaderBody(), channelId, deliverBody);
     }
 
+    interface DisposableMessageContentSource extends MessageContentSource
+    {
+        void dispose();
+    }
+
     private long writeMessageDelivery(MessageContentSource message, ContentHeaderBody contentHeaderBody, int channelId, AMQBody deliverBody)
     {
 
         int bodySize = (int) message.getSize();
         boolean msgCompressed = isCompressed(contentHeaderBody);
-        Collection<QpidByteBuffer> modifiedContentBuffers = null;
+        DisposableMessageContentSource modifiedContent = null;
 
         boolean compressionSupported = _connection.isCompressionSupported();
 
-        Collection<QpidByteBuffer> contentBuffers = message.getContent();
 
         long length;
         if(msgCompressed
            && !compressionSupported
-           && (contentBuffers != null)
-           && (modifiedContentBuffers = inflateIfPossible(contentBuffers)) != null)
+           && (modifiedContent = inflateIfPossible(message)) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
             modifiedProps.setEncoding((String)null);
 
-            length = writeMessageDeliveryModified(modifiedContentBuffers, channelId, deliverBody, modifiedProps);
+            length = writeMessageDeliveryModified(modifiedContent, channelId, deliverBody, modifiedProps);
        }
         else if(!msgCompressed
                 && compressionSupported
                 && contentHeaderBody.getProperties().getEncoding()==null
                 && bodySize > _connection.getMessageCompressionThreshold()
-                && (contentBuffers != null)
-                && (modifiedContentBuffers = deflateIfPossible(contentBuffers)) != null)
+                && (modifiedContent = deflateIfPossible(message)) != null)
         {
             BasicContentHeaderProperties modifiedProps =
                     new BasicContentHeaderProperties(contentHeaderBody.getProperties());
             modifiedProps.setEncoding(GZIP_ENCODING);
 
-            length = writeMessageDeliveryModified(modifiedContentBuffers, channelId, deliverBody, modifiedProps);
+            length = writeMessageDeliveryModified(modifiedContent, channelId, deliverBody, modifiedProps);
         }
         else
         {
-            writeMessageDeliveryUnchanged(contentBuffers, channelId, deliverBody, contentHeaderBody, bodySize);
+            writeMessageDeliveryUnchanged(message, channelId, deliverBody, contentHeaderBody, bodySize);
 
             length = bodySize;
         }
 
-        if (contentBuffers != null)
+        if (modifiedContent != null)
         {
-            for (QpidByteBuffer buf : contentBuffers)
-            {
-                buf.dispose();
-            }
-        }
-
-        if (modifiedContentBuffers != null)
-        {
-            for(QpidByteBuffer buf : modifiedContentBuffers)
-            {
-                buf.dispose();
-            }
+            modifiedContent.dispose();
         }
 
         return length;
     }
 
-    private Collection<QpidByteBuffer> deflateIfPossible(final Collection<QpidByteBuffer> buffers)
+    private DisposableMessageContentSource deflateIfPossible(MessageContentSource source)
     {
         try
         {
-            return QpidByteBuffer.deflate(buffers);
+            return new ModifiedContentSource(QpidByteBuffer.deflate(source.getContent(0, (int) source.getSize())));
         }
         catch (IOException e)
         {
@@ -175,11 +161,12 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         }
     }
 
-    private Collection<QpidByteBuffer> inflateIfPossible(final Collection<QpidByteBuffer> buffers)
+
+    private DisposableMessageContentSource inflateIfPossible(MessageContentSource source)
     {
         try
         {
-            return QpidByteBuffer.inflate(buffers);
+            return new ModifiedContentSource(QpidByteBuffer.inflate(source.getContent(0, (int) source.getSize())));
         }
         catch (IOException e)
         {
@@ -188,18 +175,19 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         }
     }
 
-    private int writeMessageDeliveryModified(final Collection<QpidByteBuffer> contentBuffers, final int channelId,
+
+    private int writeMessageDeliveryModified(final MessageContentSource content, final int channelId,
                                              final AMQBody deliverBody,
                                              final BasicContentHeaderProperties modifiedProps)
     {
-        final int bodySize = ByteBufferUtils.remaining(contentBuffers);
+        final int bodySize = (int) content.getSize();
         ContentHeaderBody modifiedHeaderBody = new ContentHeaderBody(modifiedProps, bodySize);
-        writeMessageDeliveryUnchanged(contentBuffers, channelId, deliverBody, modifiedHeaderBody, bodySize);
+        writeMessageDeliveryUnchanged(content, channelId, deliverBody, modifiedHeaderBody, bodySize);
         return bodySize;
     }
 
 
-    private void writeMessageDeliveryUnchanged(Collection<QpidByteBuffer> contentBuffers,
+    private void writeMessageDeliveryUnchanged(MessageContentSource content,
                                                int channelId, AMQBody deliverBody, ContentHeaderBody contentHeaderBody,
                                                int bodySize)
     {
@@ -219,7 +207,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
             int writtenSize = capacity;
 
-            AMQBody firstContentBody = new MessageContentSourceBody(contentBuffers, 0, capacity);
+            AMQBody firstContentBody = new MessageContentSourceBody(content, 0, capacity);
 
             CompositeAMQBodyBlock
                     compositeBlock =
@@ -229,7 +217,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             while (writtenSize < bodySize)
             {
                 capacity = bodySize - writtenSize > maxBodySize ? maxBodySize : bodySize - writtenSize;
-                AMQBody body = new MessageContentSourceBody(contentBuffers, writtenSize, capacity);
+                AMQBody body = new MessageContentSourceBody(content, writtenSize, capacity);
                 writtenSize += capacity;
 
                 writeFrame(new AMQFrame(channelId, body));
@@ -246,47 +234,12 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
     {
         public static final byte TYPE = 3;
         private final int _length;
-        private final Collection<QpidByteBuffer> _contentBuffers;
+        private final MessageContentSource _content;
         private final int _offset;
 
-        public MessageContentSourceBody(Collection<QpidByteBuffer> bufs, int offset, int length)
+        public MessageContentSourceBody(MessageContentSource content, int offset, int length)
         {
-            int pos = 0;
-            int added = 0;
-
-            List<QpidByteBuffer> content = new ArrayList<>(bufs.size());
-            for(QpidByteBuffer buf : bufs)
-            {
-                if(pos < offset)
-                {
-                    final int remaining = buf.remaining();
-                    if(pos + remaining > offset)
-                    {
-                        buf = buf.view(offset-pos,length);
-
-                        content.add(buf);
-                        added += buf.remaining();
-                    }
-                    pos += remaining;
-
-                }
-                else
-                {
-                    buf = buf.slice();
-                    if(buf.remaining() > (length-added))
-                    {
-                        buf.limit(length-added);
-                    }
-                    content.add(buf);
-                    added += buf.remaining();
-                }
-                if(added >= length)
-                {
-                    break;
-                }
-            }
-
-            _contentBuffers = content;
+            _content = content;
             _offset = offset;
             _length = length;
         }
@@ -301,32 +254,11 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             return _length;
         }
 
-        public void writePayload(DataOutput buffer) throws IOException
-        {
-            for(QpidByteBuffer buf : _contentBuffers)
-            {
-                if (buf.hasArray())
-                {
-                    buffer.write(buf.array(), buf.arrayOffset() + buf.position(), buf.remaining());
-                }
-                else
-                {
-
-                    byte[] data = new byte[_length];
-
-                    buf.get(data);
-
-                    buffer.write(data);
-                }
-                buf.dispose();
-            }
-        }
-
         @Override
-        public long writePayload(final ByteBufferSender sender) throws IOException
+        public long writePayload(final ByteBufferSender sender)
         {
-            long size = 0l;
-            for(QpidByteBuffer buf : _contentBuffers)
+            long size = 0L;
+            for(QpidByteBuffer buf : _content.getContent(_offset, _length))
             {
                 size += buf.remaining();
 
@@ -373,8 +305,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         exchangeName = pb.getExchange();
         routingKey = pb.getRoutingKey();
 
-        final AMQBody returnBlock = new EncodedDeliveryBody(deliveryTag, routingKey, exchangeName, consumerTag, isRedelivered);
-        return returnBlock;
+        return new EncodedDeliveryBody(deliveryTag, routingKey, exchangeName, consumerTag, isRedelivered);
     }
 
     private class EncodedDeliveryBody implements AMQBody
@@ -418,16 +349,7 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             return _underlyingBody.getSize();
         }
 
-        public void writePayload(DataOutput buffer) throws IOException
-        {
-            if(_underlyingBody == null)
-            {
-                _underlyingBody = createAMQBody();
-            }
-            _underlyingBody.writePayload(buffer);
-        }
-
-        public long writePayload(ByteBufferSender sender) throws IOException
+        public long writePayload(ByteBufferSender sender)
         {
             if(_underlyingBody == null)
             {
@@ -461,14 +383,11 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
 
         final boolean isRedelivered = Boolean.TRUE.equals(props.getProperty(InstanceProperties.Property.REDELIVERED));
 
-        BasicGetOkBody getOkBody =
-                _connection.getMethodRegistry().createBasicGetOkBody(deliveryTag,
-                                                                          isRedelivered,
-                                                                          exchangeName,
-                                                                          routingKey,
-                                                                          queueSize);
-
-        return getOkBody;
+        return _connection.getMethodRegistry().createBasicGetOkBody(deliveryTag,
+                                                            isRedelivered,
+                                                            exchangeName,
+                                                            routingKey,
+                                                            queueSize);
     }
 
     private AMQBody createEncodedReturnFrame(MessagePublishInfo messagePublishInfo,
@@ -476,14 +395,11 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
                                              AMQShortString replyText)
     {
 
-        BasicReturnBody basicReturnBody =
-                _connection.getMethodRegistry().createBasicReturnBody(replyCode,
-                                                                           replyText,
-                                                                           messagePublishInfo.getExchange(),
-                                                                           messagePublishInfo.getRoutingKey());
 
-
-        return basicReturnBody;
+        return _connection.getMethodRegistry().createBasicReturnBody(replyCode,
+                                                             replyText,
+                                                             messagePublishInfo.getExchange(),
+                                                             messagePublishInfo.getRoutingKey());
     }
 
     public void writeReturn(MessagePublishInfo messagePublishInfo, ContentHeaderBody header, MessageContentSource message, int channelId, int replyCode, AMQShortString replyText)
@@ -533,13 +449,8 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             return OVERHEAD + _methodBody.getSize() + _headerBody.getSize() + _contentBody.getSize();
         }
 
-        public void writePayload(DataOutput buffer) throws IOException
-        {
-            AMQFrame.writeFrames(buffer, _channel, _methodBody, _headerBody, _contentBody);
-        }
-
         @Override
-        public long writePayload(final ByteBufferSender sender) throws IOException
+        public long writePayload(final ByteBufferSender sender)
         {
             long size = (new AMQFrame(_channel, _methodBody)).writePayload(sender);
 
@@ -586,13 +497,8 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
             return OVERHEAD + _methodBody.getSize() + _headerBody.getSize() ;
         }
 
-        public void writePayload(DataOutput buffer) throws IOException
-        {
-            AMQFrame.writeFrames(buffer, _channel, _methodBody, _headerBody);
-        }
-
         @Override
-        public long writePayload(final ByteBufferSender sender) throws IOException
+        public long writePayload(final ByteBufferSender sender)
         {
             long size = (new AMQFrame(_channel, _methodBody)).writePayload(sender);
             size += (new AMQFrame(_channel, _headerBody)).writePayload(sender);
@@ -611,4 +517,81 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         }
     }
 
+    private static class ModifiedContentSource implements DisposableMessageContentSource
+    {
+        private final Collection<QpidByteBuffer> _buffers;
+        private final int _size;
+
+        public ModifiedContentSource(final Collection<QpidByteBuffer> buffers)
+        {
+            _buffers = buffers;
+            int size = 0;
+            for(QpidByteBuffer buf : buffers)
+            {
+                size += buf.remaining();
+            }
+            _size = size;
+        }
+
+        @Override
+        public void dispose()
+        {
+            for(QpidByteBuffer buffer : _buffers)
+            {
+                buffer.dispose();
+            }
+        }
+
+        @Override
+        public Collection<QpidByteBuffer> getContent(final int offset, int length)
+        {
+            Collection<QpidByteBuffer> content = new ArrayList<>(_buffers.size());
+            int pos = 0;
+            for (QpidByteBuffer buf : _buffers)
+            {
+                if (length > 0)
+                {
+                    int bufRemaining = buf.remaining();
+                    if (pos + bufRemaining <= offset)
+                    {
+                        pos += bufRemaining;
+                    }
+                    else if (pos >= offset)
+                    {
+                        buf = buf.duplicate();
+                        if (bufRemaining <= length)
+                        {
+                            length -= bufRemaining;
+                        }
+                        else
+                        {
+                            buf.limit(length);
+                            length = 0;
+                        }
+                        content.add(buf);
+                        pos+=buf.remaining();
+
+                    }
+                    else
+                    {
+                        int offsetInBuf = offset - pos;
+                        int limit = length < bufRemaining - offsetInBuf ? length : bufRemaining - offsetInBuf;
+                        final QpidByteBuffer bufView = buf.view(offsetInBuf, limit);
+                        content.add(bufView);
+                        length -= limit;
+                        pos+=limit+offsetInBuf;
+                    }
+                }
+
+            }
+            return content;
+
+        }
+
+        @Override
+        public long getSize()
+        {
+            return _size;
+        }
+    }
 }

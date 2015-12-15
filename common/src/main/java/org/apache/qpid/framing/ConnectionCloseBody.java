@@ -27,10 +27,10 @@
 
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
@@ -103,7 +103,7 @@ public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableA
         return size;
     }
 
-    public void writeMethodPayload(DataOutput buffer) throws IOException
+    public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeUnsignedShort( buffer, _replyCode );
         writeAMQShortString( buffer, _replyText );

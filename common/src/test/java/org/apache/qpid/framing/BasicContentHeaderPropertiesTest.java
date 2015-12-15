@@ -80,11 +80,6 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
         assertEquals(99, _testProperties.getPropertyFlags());
     }
 
-    public void testWritePropertyListPayload() throws IOException
-    {
-        _testProperties.writePropertyListPayload(new DataOutputStream(new ByteArrayOutputStream(300)));
-    }
-
     public void testPopulatePropertiesFromBuffer() throws Exception
     {
         ByteArrayDataInput buf = new ByteArrayDataInput(new byte[300]);

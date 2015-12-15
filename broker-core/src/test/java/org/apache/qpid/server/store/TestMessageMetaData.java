@@ -20,16 +20,11 @@
  */
 package org.apache.qpid.server.store;
 
-import java.io.DataOutput;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.framing.EncodingUtils;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.server.util.ByteBufferOutputStream;
 
 public class TestMessageMetaData implements StorableMessageMetaData
 {
@@ -96,17 +91,8 @@ public class TestMessageMetaData implements StorableMessageMetaData
     public int writeToBuffer(QpidByteBuffer dest)
     {
         int oldPosition = dest.position();
-        try
-        {
-            DataOutput dataOutputStream = dest.asDataOutput();
-            EncodingUtils.writeLong(dataOutputStream, _messageId);
-            EncodingUtils.writeInteger(dataOutputStream, _contentSize);
-        }
-        catch (IOException e)
-        {
-            // This shouldn't happen as we are not actually using anything that can throw an IO Exception
-            throw new RuntimeException(e);
-        }
+        dest.putLong(_messageId);
+        dest.putInt(_contentSize);
 
         return dest.position() - oldPosition;
     };

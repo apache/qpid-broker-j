@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
-import java.io.IOException;
-
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.transport.ByteBufferSender;
 
@@ -51,15 +48,6 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
     }
 
 
-    public void writePayload(DataOutput buffer) throws IOException
-    {
-        buffer.writeByte(_bodyFrame.getFrameType());
-        EncodingUtils.writeUnsignedShort(buffer, _channel);
-        EncodingUtils.writeUnsignedInteger(buffer, _bodyFrame.getSize());
-        _bodyFrame.writePayload(buffer);
-        buffer.writeByte(FRAME_END_BYTE);
-    }
-
     private static final QpidByteBuffer FRAME_END_BYTE_BUFFER = QpidByteBuffer.allocateDirect(1);
     static
     {
@@ -68,7 +56,7 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
     }
 
     @Override
-    public long writePayload(final ByteBufferSender sender) throws IOException
+    public long writePayload(final ByteBufferSender sender)
     {
         QpidByteBuffer frameHeader = QpidByteBuffer.allocateDirect(HEADER_SIZE);
 
@@ -97,51 +85,6 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
     public String toString()
     {
         return "Frame channelId: " + _channel + ", bodyFrame: " + String.valueOf(_bodyFrame);
-    }
-
-    public static void writeFrame(DataOutput buffer, final int channel, AMQBody body) throws IOException
-    {
-        buffer.writeByte(body.getFrameType());
-        EncodingUtils.writeUnsignedShort(buffer, channel);
-        EncodingUtils.writeUnsignedInteger(buffer, body.getSize());
-        body.writePayload(buffer);
-        buffer.writeByte(FRAME_END_BYTE);
-
-    }
-
-    public static void writeFrames(DataOutput buffer, final int channel, AMQBody body1, AMQBody body2) throws IOException
-    {
-        buffer.writeByte(body1.getFrameType());
-        EncodingUtils.writeUnsignedShort(buffer, channel);
-        EncodingUtils.writeUnsignedInteger(buffer, body1.getSize());
-        body1.writePayload(buffer);
-        buffer.writeByte(FRAME_END_BYTE);
-        buffer.writeByte(body2.getFrameType());
-        EncodingUtils.writeUnsignedShort(buffer, channel);
-        EncodingUtils.writeUnsignedInteger(buffer, body2.getSize());
-        body2.writePayload(buffer);
-        buffer.writeByte(FRAME_END_BYTE);
-
-    }
-
-    public static void writeFrames(DataOutput buffer, final int channel, AMQBody body1, AMQBody body2, AMQBody body3) throws IOException
-    {
-        buffer.writeByte(body1.getFrameType());
-        EncodingUtils.writeUnsignedShort(buffer, channel);
-        EncodingUtils.writeUnsignedInteger(buffer, body1.getSize());
-        body1.writePayload(buffer);
-        buffer.writeByte(FRAME_END_BYTE);
-        buffer.writeByte(body2.getFrameType());
-        EncodingUtils.writeUnsignedShort(buffer, channel);
-        EncodingUtils.writeUnsignedInteger(buffer, body2.getSize());
-        body2.writePayload(buffer);
-        buffer.writeByte(FRAME_END_BYTE);
-        buffer.writeByte(body3.getFrameType());
-        EncodingUtils.writeUnsignedShort(buffer, channel);
-        EncodingUtils.writeUnsignedInteger(buffer, body3.getSize());
-        body3.writePayload(buffer);
-        buffer.writeByte(FRAME_END_BYTE);
-
     }
 
 }

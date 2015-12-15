@@ -109,7 +109,7 @@ class MockServerMessage implements ServerMessage
     }
 
     @Override
-    public Collection<QpidByteBuffer> getContent()
+    public Collection<QpidByteBuffer> getContent(int offset, int length)
     {
         throw new UnsupportedOperationException();
     }

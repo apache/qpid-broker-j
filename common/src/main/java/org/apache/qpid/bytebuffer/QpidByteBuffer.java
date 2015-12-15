@@ -21,7 +21,6 @@
 package org.apache.qpid.bytebuffer;
 
 import java.io.BufferedOutputStream;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -439,11 +438,6 @@ public final class QpidByteBuffer
         return new BufferDataInput();
     }
 
-
-    public DataOutput asDataOutput()
-    {
-        return new BufferDataOutput();
-    }
 
     public static QpidByteBuffer allocate(int size)
     {
@@ -908,120 +902,6 @@ public final class QpidByteBuffer
         {
             _buffer.position(_mark);
         }
-    }
-
-    private final class BufferDataOutput implements DataOutput
-    {
-        public void write(int b)
-        {
-            _buffer.put((byte) b);
-        }
-
-        public void write(byte[] b)
-        {
-            _buffer.put(b);
-        }
-
-
-        public void write(byte[] b, int off, int len)
-        {
-            _buffer.put(b, off, len);
-
-        }
-
-        public void writeBoolean(boolean v)
-        {
-            _buffer.put(v ? (byte) 1 : (byte) 0);
-        }
-
-        public void writeByte(int v)
-        {
-            _buffer.put((byte) v);
-        }
-
-        public void writeShort(int v)
-        {
-            _buffer.putShort((short) v);
-        }
-
-        public void writeChar(int v)
-        {
-            _buffer.put((byte) (v >>> 8));
-            _buffer.put((byte) v);
-        }
-
-        public void writeInt(int v)
-        {
-            _buffer.putInt(v);
-        }
-
-        public void writeLong(long v)
-        {
-            _buffer.putLong(v);
-        }
-
-        public void writeFloat(float v)
-        {
-            writeInt(Float.floatToIntBits(v));
-        }
-
-        public void writeDouble(double v)
-        {
-            writeLong(Double.doubleToLongBits(v));
-        }
-
-        public void writeBytes(String s)
-        {
-            throw new UnsupportedOperationException("writeBytes(String s) not supported");
-        }
-
-        public void writeChars(String s)
-        {
-            int len = s.length();
-            for (int i = 0 ; i < len ; i++)
-            {
-                int v = s.charAt(i);
-                _buffer.put((byte) (v >>> 8));
-                _buffer.put((byte) v);
-            }
-        }
-
-        public void writeUTF(String s)
-        {
-            int strlen = s.length();
-
-            int pos = _buffer.position();
-            _buffer.position(pos + 2);
-
-
-            for (int i = 0; i < strlen; i++)
-            {
-                int c = s.charAt(i);
-                if ((c >= 0x0001) && (c <= 0x007F))
-                {
-                    c = s.charAt(i);
-                    _buffer.put((byte) c);
-
-                }
-                else if (c > 0x07FF)
-                {
-                    _buffer.put((byte) (0xE0 | ((c >> 12) & 0x0F)));
-                    _buffer.put((byte) (0x80 | ((c >> 6) & 0x3F)));
-                    _buffer.put((byte) (0x80 | (c & 0x3F)));
-                }
-                else
-                {
-                    _buffer.put((byte) (0xC0 | ((c >> 6) & 0x1F)));
-                    _buffer.put((byte) (0x80 | (c & 0x3F)));
-                }
-            }
-
-            int len = _buffer.position() - (pos + 2);
-
-            _buffer.put(pos++, (byte) (len >>> 8));
-            _buffer.put(pos, (byte) len);
-        }
-
     }
 
 }

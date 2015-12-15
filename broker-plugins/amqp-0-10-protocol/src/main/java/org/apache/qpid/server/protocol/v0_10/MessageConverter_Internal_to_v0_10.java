@@ -78,9 +78,9 @@ public class MessageConverter_Internal_to_v0_10 implements MessageConverter<Inte
                     }
 
                     @Override
-                    public Collection<QpidByteBuffer> getContent()
+                    public Collection<QpidByteBuffer> getContent(final int offset, final int length)
                     {
-                        return Collections.singleton(QpidByteBuffer.wrap(messageContent));
+                        return Collections.singleton(QpidByteBuffer.wrap(messageContent, offset, length));
                     }
 
                     @Override

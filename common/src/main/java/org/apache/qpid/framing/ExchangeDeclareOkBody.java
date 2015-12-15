@@ -27,10 +27,10 @@
 
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
 public class ExchangeDeclareOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
@@ -68,7 +68,7 @@ public class ExchangeDeclareOkBody extends AMQMethodBodyImpl implements Encodabl
         return size;
     }
 
-    public void writeMethodPayload(DataOutput buffer) throws IOException
+    public void writeMethodPayload(QpidByteBuffer buffer)
     {
     }
 

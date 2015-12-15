@@ -30,7 +30,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.protocol.AMQProtocolSession;
 import org.apache.qpid.client.protocol.BlockingMethodFrameListener;
 import org.slf4j.Logger;
@@ -47,7 +46,6 @@ import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.client.state.AMQStateManager;
 import org.apache.qpid.client.state.StateWaiter;
 import org.apache.qpid.client.state.listener.SpecificMethodFrameListener;
-import org.apache.qpid.codec.AMQDecoder;
 import org.apache.qpid.codec.ClientDecoder;
 import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.AMQBody;
@@ -71,7 +69,6 @@ import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.NetworkConnection;
 import org.apache.qpid.transport.network.TransportActivity;
-import org.apache.qpid.util.BytesDataOutput;
 
 public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, TransportActivity
 {
@@ -142,8 +139,6 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
     private static final int REUSABLE_BYTE_BUFFER_CAPACITY = 65 * 1024;
     private final byte[] _reusableBytes = new byte[REUSABLE_BYTE_BUFFER_CAPACITY];
-    private final ByteBuffer _reusableByteBuffer = ByteBuffer.wrap(_reusableBytes);
-    private final BytesDataOutput _reusableDataOutput = new BytesDataOutput(_reusableBytes);
 
     private int _queueId = 1;
     private final Object _queueIdLock = new Object();
@@ -557,10 +552,9 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
     public  synchronized void writeFrame(AMQDataBlock frame, boolean flush)
     {
-        final ByteBuffer buf = asByteBuffer(frame);
         _lastWriteTime = System.currentTimeMillis();
-        _writtenBytes += buf.remaining();
-        _sender.send(QpidByteBuffer.wrap(buf));
+        _writtenBytes += frame.getSize();
+        frame.writePayload(_sender);
         if(flush)
         {
             _sender.flush();
@@ -579,49 +573,6 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
         _connection.bytesSent(_writtenBytes);
 
-    }
-
-    private ByteBuffer asByteBuffer(AMQDataBlock block)
-    {
-        final int size = (int) block.getSize();
-
-        final byte[] data;
-
-
-        if(size > REUSABLE_BYTE_BUFFER_CAPACITY)
-        {
-            data= new byte[size];
-        }
-        else
-        {
-
-            data = _reusableBytes;
-        }
-        _reusableDataOutput.setBuffer(data);
-
-        try
-        {
-            block.writePayload(_reusableDataOutput);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-
-        final ByteBuffer buf;
-
-        if(size < REUSABLE_BYTE_BUFFER_CAPACITY)
-        {
-            buf = _reusableByteBuffer;
-            buf.position(0);
-        }
-        else
-        {
-            buf = ByteBuffer.wrap(data);
-        }
-        buf.limit(_reusableDataOutput.length());
-
-        return buf;
     }
 
 

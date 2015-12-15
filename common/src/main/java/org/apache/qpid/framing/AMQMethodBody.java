@@ -20,55 +20,23 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
-import java.io.IOException;
-
-import org.apache.qpid.AMQChannelException;
-import org.apache.qpid.AMQConnectionException;
 import org.apache.qpid.QpidException;
-import org.apache.qpid.protocol.AMQConstant;
 
 public interface AMQMethodBody extends AMQBody
 {
-    public static final byte TYPE = 1;
+    byte TYPE = 1;
 
     /** @return unsigned short */
-    public int getClazz();
+    int getClazz();
 
     /** @return unsigned short */
-    public int getMethod();
+    int getMethod();
 
-    public void writeMethodPayload(DataOutput buffer) throws IOException;
+    int getSize();
 
+    AMQFrame generateFrame(int channelId);
 
-    public int getSize();
+    String toString();
 
-    public void writePayload(DataOutput buffer) throws IOException;
-
-    public AMQFrame generateFrame(int channelId);
-
-    public String toString();
-
-
-
-    /**
-     * Convenience Method to create a channel not found exception
-     *
-     * @param channelId The channel id that is not found
-     *
-     * @param methodRegistry
-     * @return new AMQChannelException
-     */
-    public AMQChannelException getChannelNotFoundException(int channelId, final MethodRegistry methodRegistry);
-
-    public AMQChannelException getChannelException(AMQConstant code,
-                                                   String message,
-                                                   final MethodRegistry methodRegistry);
-
-    public AMQConnectionException getConnectionException(AMQConstant code,
-                                                         String message,
-                                                         final MethodRegistry methodRegistry);
-
-
-    public boolean execute(MethodDispatcher methodDispatcher, int channelId) throws QpidException;
+    boolean execute(MethodDispatcher methodDispatcher, int channelId) throws QpidException;
 }

@@ -193,9 +193,9 @@ public class MessageConverter_0_10_to_0_8 implements MessageConverter<MessageTra
             }
 
             @Override
-            public Collection<QpidByteBuffer> getContent()
+            public Collection<QpidByteBuffer> getContent(final int offset, final int length)
             {
-                return message.getContent();
+                return message.getContent(offset, length);
             }
 
             @Override

@@ -106,7 +106,6 @@ public class NetworkConnectionScheduler
         {
             rerun = false;
             boolean closed = connection.doWork();
-
             if (!closed && connection.getScheduler() == this)
             {
 

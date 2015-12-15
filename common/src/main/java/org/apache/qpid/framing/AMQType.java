@@ -20,11 +20,11 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collection;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
 /**
@@ -53,7 +53,7 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
@@ -99,9 +99,10 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeUnsignedInteger(buffer, (Long) value);
+            buffer.putLong( (Long) value);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -130,7 +131,8 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             BigDecimal bd = (BigDecimal) value;
 
@@ -138,9 +140,9 @@ public enum AMQType
 
             int unscaled = bd.intValue();
 
-            EncodingUtils.writeByte(buffer, places);
+            buffer.put(places);
 
-            EncodingUtils.writeInteger(buffer, unscaled);
+            buffer.putInt(unscaled);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -175,9 +177,9 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeLong(buffer, (Long) value);
+            buffer.putLong ((Long) value);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -233,13 +235,7 @@ public enum AMQType
             return (FieldTable) value;
         }
 
-        /**
-         * Writes an instance of the type to a specified byte buffer.
-         *
-         * @param value  An instance of the type.
-         * @param buffer The byte buffer to write it to.
-         */
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             // Ensure that the value is a FieldTable.
             if (!(value instanceof FieldTable))
@@ -252,7 +248,6 @@ public enum AMQType
             // Loop over all name/values writing out into buffer.
             ftValue.writeToBuffer(buffer);
         }
-
         /**
          * Reads an instance of the type from a specified byte buffer.
          *
@@ -302,7 +297,7 @@ public enum AMQType
                     return FieldArray.asFieldArray((Collection)value);
                 }
 
-                public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+                public void writeValueImpl(Object value, QpidByteBuffer buffer)
                 {
 
                     if (!(value instanceof FieldArray))
@@ -350,7 +345,7 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer)
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         { }
 
         public Object readValueFromBuffer(MarkableDataInput buffer)
@@ -379,7 +374,7 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeLongstr(buffer, (byte[]) value);
         }
@@ -409,7 +404,7 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
@@ -440,7 +435,7 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeLongStringBytes(buffer, (String) value);
         }
@@ -475,7 +470,7 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
             EncodingUtils.writeBoolean(buffer, (Boolean) value);
         }
@@ -510,9 +505,10 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeChar(buffer, (Character) value);
+            char charVal = (Character) value;
+            buffer.put((byte) charVal);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -545,9 +541,9 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeByte(buffer, (Byte) value);
+            buffer.put((Byte) value);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -584,9 +580,9 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeShort(buffer, (Short) value);
+            buffer.putShort((Short) value);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -626,11 +622,10 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeInteger(buffer, (Integer) value);
+            buffer.putInt((Integer) value);
         }
-
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
         {
             return EncodingUtils.readInteger(buffer);
@@ -673,9 +668,9 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeLong(buffer, (Long) value);
+            buffer.putLong ((Long) value);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -708,9 +703,9 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeFloat(buffer, (Float) value);
+            buffer.putFloat ((Float) value);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -747,9 +742,9 @@ public enum AMQType
             }
         }
 
-        public void writeValueImpl(Object value, DataOutput buffer) throws IOException
+        public void writeValueImpl(Object value, QpidByteBuffer buffer)
         {
-            EncodingUtils.writeDouble(buffer, (Double) value);
+            buffer.putDouble((Double) value);
         }
 
         public Object readValueFromBuffer(MarkableDataInput buffer) throws IOException
@@ -812,27 +807,13 @@ public enum AMQType
         return AMQTypedValue.createAMQTypedValue(this, toNativeValue(value));
     }
 
-    /**
-     * Writes an instance of the type to a specified byte buffer, preceded by its one byte identifier. As the type and
-     * value are both written, this provides a fully encoded description of a parameters type and value.
-     *
-     * @param value  An instance of the type.
-     * @param buffer The byte buffer to write it to.
-     * @throws IOException if there is a problem writing to the buffer
-     */
-    public void writeToBuffer(Object value, DataOutput buffer) throws IOException
+    public void writeToBuffer(Object value, QpidByteBuffer buffer)
     {
-        buffer.writeByte(identifier());
+        buffer.put(identifier());
         writeValueImpl(value, buffer);
     }
 
-    /**
-     * Writes an instance of the type to a specified byte buffer.
-     *
-     * @param value  An instance of the type.
-     * @param buffer The byte buffer to write it to.
-     */
-    abstract void writeValueImpl(Object value, DataOutput buffer) throws IOException;
+    abstract void writeValueImpl(Object value, QpidByteBuffer buffer);
 
     /**
      * Reads an instance of the type from a specified byte buffer.

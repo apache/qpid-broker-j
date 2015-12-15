@@ -110,32 +110,24 @@ public class MessageMetaData implements StorableMessageMetaData
     public int writeToBuffer(final QpidByteBuffer dest)
     {
         int oldPosition = dest.position();
-        try
+
+        dest.putInt(_contentHeaderBody.getSize());
+        _contentHeaderBody.writePayload(dest);
+
+        EncodingUtils.writeShortStringBytes(dest, _messagePublishInfo.getExchange());
+        EncodingUtils.writeShortStringBytes(dest, _messagePublishInfo.getRoutingKey());
+        byte flags = 0;
+        if(_messagePublishInfo.isMandatory())
         {
-
-            dest.putInt(_contentHeaderBody.getSize());
-            _contentHeaderBody.writePayload(dest);
-
-            EncodingUtils.writeShortStringBytes(dest, _messagePublishInfo.getExchange());
-            EncodingUtils.writeShortStringBytes(dest, _messagePublishInfo.getRoutingKey());
-            byte flags = 0;
-            if(_messagePublishInfo.isMandatory())
-            {
-                flags |= MANDATORY_FLAG;
-            }
-            if(_messagePublishInfo.isImmediate())
-            {
-                flags |= IMMEDIATE_FLAG;
-            }
-            dest.put(flags);
-            dest.putLong(_arrivalTime);
-
+            flags |= MANDATORY_FLAG;
         }
-        catch (IOException e)
+        if(_messagePublishInfo.isImmediate())
         {
-            // This shouldn't happen as we are not actually using anything that can throw an IO Exception
-            throw new ConnectionScopedRuntimeException(e);
+            flags |= IMMEDIATE_FLAG;
         }
+        dest.put(flags);
+        dest.putLong(_arrivalTime);
+
 
         return dest.position()-oldPosition;
     }
@@ -143,55 +135,47 @@ public class MessageMetaData implements StorableMessageMetaData
     @Override
     public Collection<QpidByteBuffer> asByteBuffers()
     {
-        try
-        {
-            final List<QpidByteBuffer> buffers = new ArrayList<>();
-            QpidByteBuffer buf = QpidByteBuffer.allocateDirect(4);
-            buffers.add(buf);
-            buf.putInt(0, _contentHeaderBody.getSize());
-            _contentHeaderBody.writePayload(new ByteBufferSender()
+        final List<QpidByteBuffer> buffers = new ArrayList<>();
+        QpidByteBuffer buf = QpidByteBuffer.allocateDirect(4);
+        buffers.add(buf);
+        buf.putInt(0, _contentHeaderBody.getSize());
+        _contentHeaderBody.writePayload(new ByteBufferSender()
+                                        {
+                                            @Override
+                                            public void send(final QpidByteBuffer msg)
                                             {
-                                                @Override
-                                                public void send(final QpidByteBuffer msg)
-                                                {
-                                                    buffers.add(msg.duplicate());
-                                                }
+                                                buffers.add(msg.duplicate());
+                                            }
 
-                                                @Override
-                                                public void flush()
-                                                {
+                                            @Override
+                                            public void flush()
+                                            {
 
-                                                }
+                                            }
 
-                                                @Override
-                                                public void close()
-                                                {
+                                            @Override
+                                            public void close()
+                                            {
 
-                                                }
-                                            });
-            buf = QpidByteBuffer.allocateDirect(9+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getExchange())+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getRoutingKey()));
-            EncodingUtils.writeShortStringBytes(buf, _messagePublishInfo.getExchange());
-            EncodingUtils.writeShortStringBytes(buf, _messagePublishInfo.getRoutingKey());
-            byte flags = 0;
-            if(_messagePublishInfo.isMandatory())
-            {
-                flags |= MANDATORY_FLAG;
-            }
-            if(_messagePublishInfo.isImmediate())
-            {
-                flags |= IMMEDIATE_FLAG;
-            }
-            buf.put(flags);
-            buf.putLong(_arrivalTime);
-            buf.flip();
-            buffers.add(buf);
-            return buffers;
-        }
-        catch (IOException e)
+                                            }
+                                        });
+        buf = QpidByteBuffer.allocateDirect(9+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getExchange())+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getRoutingKey()));
+        EncodingUtils.writeShortStringBytes(buf, _messagePublishInfo.getExchange());
+        EncodingUtils.writeShortStringBytes(buf, _messagePublishInfo.getRoutingKey());
+        byte flags = 0;
+        if(_messagePublishInfo.isMandatory())
         {
-            // This shouldn't happen as we are not actually using anything that can throw an IO Exception
-            throw new ConnectionScopedRuntimeException(e);
+            flags |= MANDATORY_FLAG;
         }
+        if(_messagePublishInfo.isImmediate())
+        {
+            flags |= IMMEDIATE_FLAG;
+        }
+        buf.put(flags);
+        buf.putLong(_arrivalTime);
+        buf.flip();
+        buffers.add(buf);
+        return buffers;
     }
 
     public int getContentSize()

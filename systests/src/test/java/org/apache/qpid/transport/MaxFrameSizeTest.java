@@ -20,13 +20,14 @@
  */
 package org.apache.qpid.transport;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,8 +41,8 @@ import javax.security.sasl.Sasl;
 import javax.security.sasl.SaslClient;
 import javax.security.sasl.SaslException;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.BrokerDetails;
-import org.apache.qpid.codec.AMQDecoder;
 import org.apache.qpid.codec.ClientDecoder;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -242,19 +243,18 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         }
 
         ConnectionStartOkBody startOK = new ConnectionStartOkBody(new FieldTable(), AMQShortString.valueOf("PLAIN"), response, AMQShortString.valueOf("en_US"));
-
-        DataOutputStream dos = new DataOutputStream(os);
-        new AMQFrame(0, startOK).writePayload(dos);
-        dos.flush();
+        TestSender sender = new TestSender(os);
+        new AMQFrame(0, startOK).writePayload(sender);
+        sender.flush();
         ConnectionTuneOkBody tuneOk = new ConnectionTuneOkBody(256, frameSize, 0);
-        new AMQFrame(0, tuneOk).writePayload(dos);
-        dos.flush();
+        new AMQFrame(0, tuneOk).writePayload(sender);
+        sender.flush();
         ConnectionOpenBody open = new ConnectionOpenBody(AMQShortString.valueOf(""),AMQShortString.EMPTY_STRING, false);
 
         try
         {
-            new AMQFrame(0, open).writePayload(dos);
-            dos.flush();
+            new AMQFrame(0, open).writePayload(sender);
+            sender.flush();
 
             socket.setSoTimeout(5000);
         }
@@ -281,17 +281,8 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         }
 
 
-
-        try
-        {
-            new AMQFrame(0, closeOk).writePayload(dos);
-            dos.flush();
-
-        }
-        catch (IOException e)
-        {
-            // ignore - the broker may have closed the socket already
-        }
+        new AMQFrame(0, closeOk).writePayload(sender);
+        sender.flush();
 
 
     }
@@ -378,4 +369,63 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         }
 
     }
+
+    private static class TestSender implements ByteBufferSender
+    {
+        private final Collection<QpidByteBuffer> _sentBuffers = new ArrayList<>();
+        private final OutputStream _output;
+
+
+        private TestSender(final OutputStream output)
+        {
+            _output = output;
+        }
+
+        @Override
+        public void send(final QpidByteBuffer msg)
+        {
+            _sentBuffers.add(msg.duplicate());
+            msg.position(msg.limit());
+        }
+
+        @Override
+        public void flush()
+        {
+            int size = 0;
+            for(QpidByteBuffer buf : _sentBuffers)
+            {
+                size += buf.remaining();
+            }
+            byte[] data = new byte[size];
+            int offset = 0;
+            for(QpidByteBuffer buf : _sentBuffers)
+            {
+                int bufSize = buf.remaining();
+                buf.get(data, offset, bufSize);
+                offset+=bufSize;
+                buf.dispose();
+            }
+            try
+            {
+                _output.write(data);
+            }
+            catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+            finally
+            {
+                _sentBuffers.clear();
+            }
+
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+    }
+
 }

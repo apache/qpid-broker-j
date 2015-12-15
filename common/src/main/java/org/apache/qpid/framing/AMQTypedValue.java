@@ -21,13 +21,13 @@
 package org.apache.qpid.framing;
 
 import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
 /**
@@ -43,7 +43,7 @@ public abstract class AMQTypedValue
 
     public abstract Object getValue();
 
-    public abstract void writeToBuffer(DataOutput buffer) throws IOException;
+    public abstract void writeToBuffer(QpidByteBuffer buffer);
 
     public abstract int getEncodingSize();
 
@@ -84,7 +84,7 @@ public abstract class AMQTypedValue
             return _value;
         }
 
-        public void writeToBuffer(DataOutput buffer) throws IOException
+        public void writeToBuffer(QpidByteBuffer buffer)
         {
             _type.writeToBuffer(_value, buffer);
         }
@@ -147,10 +147,10 @@ public abstract class AMQTypedValue
             return _value;
         }
 
-        public void writeToBuffer(DataOutput buffer) throws IOException
+        public void writeToBuffer(QpidByteBuffer buffer)
         {
-            EncodingUtils.writeByte(buffer,AMQType.LONG.identifier());
-            EncodingUtils.writeLong(buffer,_value);
+            buffer.put(AMQType.LONG.identifier());
+            buffer.putLong(_value);
         }
 
 
@@ -186,12 +186,11 @@ public abstract class AMQTypedValue
             return _value;
         }
 
-        public void writeToBuffer(DataOutput buffer) throws IOException
+        public void writeToBuffer(QpidByteBuffer buffer)
         {
-            EncodingUtils.writeByte(buffer,AMQType.INT.identifier());
-            EncodingUtils.writeInteger(buffer, _value);
+            buffer.put(AMQType.INT.identifier());
+            buffer.putInt(_value);
         }
-
 
         public int getEncodingSize()
         {

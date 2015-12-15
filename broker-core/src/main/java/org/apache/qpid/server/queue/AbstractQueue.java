@@ -2596,7 +2596,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         @Override
         public void write(OutputStream outputStream) throws IOException
         {
-            Collection<QpidByteBuffer> content = _messageReference.getMessage().getContent();
+            ServerMessage message = _messageReference.getMessage();
+            Collection<QpidByteBuffer> content = message.getContent(0, (int) message.getSize());
             try
             {
                 for (QpidByteBuffer b : content)

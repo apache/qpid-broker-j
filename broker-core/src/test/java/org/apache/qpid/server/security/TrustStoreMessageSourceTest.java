@@ -100,7 +100,7 @@ public class TrustStoreMessageSourceTest extends QpidTestCase
     {
         final int bodySize = (int) message.getSize();
         byte[] msgContent = new byte[bodySize];
-        final Collection<QpidByteBuffer> allData = message.getStoredMessage().getContent();
+        final Collection<QpidByteBuffer> allData = message.getStoredMessage().getContent(0, bodySize);
         int total = 0;
         for(QpidByteBuffer b : allData)
         {

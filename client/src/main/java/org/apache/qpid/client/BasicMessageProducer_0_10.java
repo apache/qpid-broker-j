@@ -58,7 +58,6 @@ import org.apache.qpid.transport.MessageDeliveryPriority;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.Option;
 import org.apache.qpid.transport.codec.BBEncoder;
-import org.apache.qpid.util.BytesDataOutput;
 import org.apache.qpid.util.GZIPUtils;
 import org.apache.qpid.util.Strings;
 
@@ -251,9 +250,6 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
 
                 final int headerLength = buf.remaining();
                 byte[] unencryptedBytes = new byte[headerLength + (data == null ? 0 : data.remaining())];
-                BytesDataOutput output = new BytesDataOutput(unencryptedBytes);
-
-                output.write(buf.array(), buf.arrayOffset()+buf.position(), buf.remaining());
 
                 if (data != null)
                 {

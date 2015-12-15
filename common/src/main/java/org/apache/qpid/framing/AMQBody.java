@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -35,11 +32,9 @@ public interface AMQBody
      * Get the size of the body
      * @return unsigned short
      */
-    public abstract int getSize();
-    
-    public void writePayload(DataOutput buffer) throws IOException;
-    
+    int getSize();
+
     void handle(final int channelId, final AMQVersionAwareProtocolSession amqProtocolSession) throws QpidException;
 
-    long writePayload(ByteBufferSender sender) throws IOException;
+    long writePayload(ByteBufferSender sender);
 }

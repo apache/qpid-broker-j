@@ -20,12 +20,8 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -44,7 +40,6 @@ import org.apache.qpid.AMQPInvalidClassException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
-// extends FieldTable
 public class FieldTable
 {
     private static final Logger _logger = LoggerFactory.getLogger(FieldTable.class);
@@ -826,7 +821,7 @@ public class FieldTable
 
     // *************************  Byte Buffer Processing
 
-    public void writeToBuffer(DataOutput buffer) throws IOException
+    public void writeToBuffer(QpidByteBuffer buffer)
     {
         final boolean trace = _logger.isDebugEnabled();
 
@@ -844,21 +839,15 @@ public class FieldTable
         putDataInBuffer(buffer);
     }
 
+
     public byte[] getDataAsBytes()
     {
         if(_encodedForm == null)
         {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            try
-            {
-                putDataInBuffer(new DataOutputStream(baos));
-                return baos.toByteArray();
-            }
-            catch (IOException e)
-            {
-                throw new IllegalArgumentException("IO Exception should never be thrown here");
-            }
-
+            byte[] data = new byte[(int) getEncodedSize()];
+            QpidByteBuffer buf = QpidByteBuffer.wrap(data);
+            putDataInBuffer(buf);
+            return data;
         }
         else
         {
@@ -1119,14 +1108,14 @@ public class FieldTable
         return _properties.keySet();
     }
 
-    private void putDataInBuffer(DataOutput buffer) throws IOException
+    private void putDataInBuffer(QpidByteBuffer buffer)
     {
         if (_encodedForm != null)
         {
             byte[] encodedCopy = new byte[_encodedForm.remaining()];
             _encodedForm.copyTo(encodedCopy);
 
-            buffer.write(encodedCopy);
+            buffer.put(encodedCopy);
         }
         else if (_properties != null)
         {
@@ -1151,6 +1140,7 @@ public class FieldTable
             }
         }
     }
+
 
     private void setFromBuffer() throws AMQFrameDecodingException, IOException
     {

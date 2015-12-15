@@ -63,7 +63,7 @@ public class MessageConverter_v0_10_to_Internal implements MessageConverter<Mess
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
         int total = 0;
-        for(QpidByteBuffer b : serverMessage.getContent())
+        for(QpidByteBuffer b : serverMessage.getContent(0, (int) serverMessage.getSize()))
         {
             int len = b.remaining();
             b.get(data, total, len);

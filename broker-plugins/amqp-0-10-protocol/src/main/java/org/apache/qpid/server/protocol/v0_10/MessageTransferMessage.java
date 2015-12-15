@@ -83,6 +83,6 @@ public class MessageTransferMessage extends AbstractServerMessageImpl<MessageTra
 
     public Collection<QpidByteBuffer> getBody()
     {
-        return  getContent();
+        return  getContent(0, (int) getSize());
     }
 }

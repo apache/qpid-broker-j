@@ -30,6 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.framing.*;
 import org.apache.qpid.protocol.AMQConstant;
 
@@ -47,6 +50,7 @@ import org.apache.qpid.protocol.AMQConstant;
  */
 public abstract class AMQDecoder<T extends MethodProcessor>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AMQDecoder.class);
     private static final int MAX_BUFFERS_LIMIT = 10;
     private final T _methodProcessor;
 
@@ -158,7 +162,6 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                                                 + _maxFrameSize);
         }
         in.reset();
-
         return (remainingAfterAttributes >= bodySize);
 
     }

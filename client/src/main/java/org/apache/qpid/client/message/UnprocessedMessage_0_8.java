@@ -29,6 +29,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This class contains everything needed to process a JMS message. It assembles the deliver body, the content header and
  * the content body/ies.
@@ -40,6 +43,7 @@ public class UnprocessedMessage_0_8 extends UnprocessedMessage
 {
     private long _bytesReceived = 0;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UnprocessedMessage_0_8.class);
 
     private AMQShortString _exchange;
     private AMQShortString _routingKey;
@@ -124,6 +128,7 @@ public class UnprocessedMessage_0_8 extends UnprocessedMessage
 
     public boolean isAllBodyDataReceived()
     {
+        LOGGER.debug("Received {} of {} bytes for message body", _bytesReceived, getContentHeader().getBodySize());
         return _bytesReceived == getContentHeader().getBodySize();
     }
 

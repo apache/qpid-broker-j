@@ -21,14 +21,15 @@
 package org.apache.qpid.codec;
 
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.AMQBody;
 import org.apache.qpid.framing.AMQDataBlock;
 import org.apache.qpid.framing.AMQFrame;
@@ -39,7 +40,8 @@ import org.apache.qpid.framing.FrameCreatingMethodProcessor;
 import org.apache.qpid.framing.HeartbeatBody;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.test.utils.QpidTestCase;
-import org.apache.qpid.util.BytesDataOutput;
+import org.apache.qpid.transport.ByteBufferSender;
+import org.apache.qpid.util.ByteBufferUtils;
 
 public class AMQDecoderTest extends QpidTestCase
 {
@@ -57,9 +59,9 @@ public class AMQDecoderTest extends QpidTestCase
     
     private ByteBuffer getHeartbeatBodyBuffer() throws IOException
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        HeartbeatBody.FRAME.writePayload(new DataOutputStream(baos));
-        return ByteBuffer.wrap(baos.toByteArray());
+        TestSender sender = new TestSender();
+        HeartbeatBody.FRAME.writePayload(sender);
+        return ByteBufferUtils.combine(sender.getSentBuffers());
     }
     
     public void testSingleFrameDecode() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
@@ -85,13 +87,18 @@ public class AMQDecoderTest extends QpidTestCase
         random.nextBytes(payload);
         final AMQBody body = new ContentBody(ByteBuffer.wrap(payload));
         AMQFrame frame = new AMQFrame(1, body);
-        byte[] outputBuf = new byte[4096];
-        BytesDataOutput dataOutput = new BytesDataOutput(outputBuf);
-        frame.writePayload(dataOutput);
-        for(int i = 0 ; i < dataOutput.length(); i++)
+        TestSender sender = new TestSender();
+        frame.writePayload(sender);
+        ByteBuffer allData = ByteBufferUtils.combine(sender.getSentBuffers());
+
+
+        for(int i = 0 ; i < allData.remaining(); i++)
         {
-            _decoder.decodeBuffer(ByteBuffer.wrap(outputBuf, i, 1));
+            byte[] minibuf = new byte[1];
+            minibuf[0] = allData.get(i);
+            _decoder.decodeBuffer(ByteBuffer.wrap(minibuf));
         }
+
         List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
         if (frames.get(0) instanceof AMQFrame)
         {
@@ -202,5 +209,34 @@ public class AMQDecoderTest extends QpidTestCase
             }
         }
     }
-    
+
+    private static class TestSender implements ByteBufferSender
+    {
+        private final Collection<QpidByteBuffer> _sentBuffers = new ArrayList<>();
+
+        @Override
+        public void send(final QpidByteBuffer msg)
+        {
+            _sentBuffers.add(msg.duplicate());
+            msg.position(msg.limit());
+        }
+
+        @Override
+        public void flush()
+        {
+
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+        public Collection<QpidByteBuffer> getSentBuffers()
+        {
+            return _sentBuffers;
+        }
+    }
+
 }

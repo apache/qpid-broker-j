@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.qpid.QpidException;
@@ -91,17 +90,8 @@ public class ContentHeaderBody implements AMQBody
         return 2 + 2 + 8 + 2 + _properties.getPropertyListSize();
     }
 
-    public void writePayload(DataOutput buffer) throws IOException
-    {
-        EncodingUtils.writeUnsignedShort(buffer, CLASS_ID);
-        EncodingUtils.writeUnsignedShort(buffer, 0);
-        buffer.writeLong(_bodySize);
-        EncodingUtils.writeUnsignedShort(buffer, _properties.getPropertyFlags());
-        _properties.writePropertyListPayload(buffer);
-    }
-
     @Override
-    public long writePayload(final ByteBufferSender sender) throws IOException
+    public long writePayload(final ByteBufferSender sender)
     {
         QpidByteBuffer data = QpidByteBuffer.allocateDirect(HEADER_SIZE);
         EncodingUtils.writeUnsignedShort(data, CLASS_ID);
@@ -114,7 +104,7 @@ public class ContentHeaderBody implements AMQBody
         return HEADER_SIZE + _properties.writePropertyListPayload(sender);
     }
 
-    public long writePayload(final QpidByteBuffer buf) throws IOException
+    public long writePayload(final QpidByteBuffer buf)
     {
         EncodingUtils.writeUnsignedShort(buf, CLASS_ID);
         EncodingUtils.writeUnsignedShort(buf, 0);

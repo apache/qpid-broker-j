@@ -209,7 +209,7 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
         final String mimeType = serverMessage.getMessageHeader().getMimeType();
         byte[] data = new byte[(int) serverMessage.getSize()];
         int total = 0;
-        for(QpidByteBuffer b : serverMessage.getContent())
+        for(QpidByteBuffer b : serverMessage.getContent(0, (int) serverMessage.getSize()))
         {
             int len = b.remaining();
             b.get(data, total, len);
@@ -245,9 +245,9 @@ public abstract class MessageConverter_to_1_0<M extends ServerMessage> implement
                         }
 
                         @Override
-                        public Collection<QpidByteBuffer> getContent()
+                        public Collection<QpidByteBuffer> getContent(int offset, int length)
                         {
-                            return Collections.singleton(allData.duplicate());
+                            return Collections.singleton(allData.view(offset, length));
                         }
 
                         @Override

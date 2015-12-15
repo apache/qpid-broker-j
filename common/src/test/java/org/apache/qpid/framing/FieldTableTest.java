@@ -470,16 +470,16 @@ public class FieldTableTest extends QpidTestCase
         outerTable.setFieldTable("innerTable", innerTable);
 
         // Write the outer table into the buffer.
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        QpidByteBuffer buf = QpidByteBuffer.allocate(EncodingUtils.encodedFieldTableLength(outerTable));
 
-        outerTable.writeToBuffer(new DataOutputStream(baos));
+        outerTable.writeToBuffer(buf);
 
-        byte[] data = baos.toByteArray();
+        buf.flip();
 
         // Extract the table back from the buffer again.
         try
         {
-            FieldTable extractedOuterTable = EncodingUtils.readFieldTable(new ByteArrayDataInput(data));
+            FieldTable extractedOuterTable = EncodingUtils.readFieldTable(buf.asDataInput());
 
             FieldTable extractedTable = extractedOuterTable.getFieldTable("innerTable");
 
@@ -599,10 +599,10 @@ public class FieldTableTest extends QpidTestCase
         table.setString("null-string", null);
 
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream((int) table.getEncodedSize() + 4);
-        table.writeToBuffer(new DataOutputStream(baos));
+        QpidByteBuffer buf = QpidByteBuffer.allocate((int) table.getEncodedSize() + 4);
+        table.writeToBuffer(buf);
 
-        QpidByteBuffer buf = QpidByteBuffer.wrap(baos.toByteArray());
+        buf.flip();
 
         long length = buf.getInt() & 0xFFFFFFFFL;
         buf = buf.slice();

@@ -184,7 +184,14 @@ public class NonBlockingNetworkTransport
                 else
                 {
                     LOGGER.error("No Engine available.");
-                }
+                    try
+                    {
+                        socketChannel.close();
+                    }
+                    catch (IOException e)
+                    {
+                        LOGGER.debug("Failed to close socket " + socketChannel, e);
+                    }                }
             }
         }
         catch (IOException e)

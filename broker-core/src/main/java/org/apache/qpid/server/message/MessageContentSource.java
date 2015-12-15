@@ -28,7 +28,7 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public interface MessageContentSource
 {
-    Collection<QpidByteBuffer> getContent();
+    Collection<QpidByteBuffer> getContent(int offset, int length);
 
     long getSize();
 }

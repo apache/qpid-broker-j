@@ -83,14 +83,15 @@ public class StoredMemoryMessage<T extends StorableMessageMetaData> implements S
         return this;
     }
 
+
     @Override
-    public Collection<QpidByteBuffer> getContent()
+    public Collection<QpidByteBuffer> getContent(int offset, int length)
     {
         if(_content == null)
         {
             return null;
         }
-        return Collections.singleton(_content.duplicate());
+        return Collections.singleton(_content.view(offset, length));
     }
 
     public T getMetaData()

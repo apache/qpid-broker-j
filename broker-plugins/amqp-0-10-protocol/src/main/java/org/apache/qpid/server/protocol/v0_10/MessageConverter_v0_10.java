@@ -85,9 +85,9 @@ public class MessageConverter_v0_10 implements MessageConverter<ServerMessage, M
                     }
 
                     @Override
-                    public Collection<QpidByteBuffer> getContent()
+                    public Collection<QpidByteBuffer> getContent(final int offset, final int length)
                     {
-                        return serverMsg.getContent();
+                        return serverMsg.getContent(offset, length);
                     }
 
                     @Override

@@ -22,13 +22,10 @@
 package org.apache.qpid.framing;
 
 import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,16 +199,7 @@ public final class AMQShortString implements Comparable<AMQShortString>
         }
     }
 
-    public void writeToBuffer(DataOutput buffer) throws IOException
-    {
-
-        final int size = length();
-        buffer.writeByte(size);
-        buffer.write(_data, _offset, size);
-
-    }
-
-    public void writeToBuffer(QpidByteBuffer buffer) throws IOException
+    public void writeToBuffer(QpidByteBuffer buffer)
     {
         final int size = length();
         buffer.put((byte)size);

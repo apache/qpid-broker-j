@@ -1506,13 +1506,48 @@ public abstract class AbstractJDBCMessageStore implements MessageStore
         }
 
         @Override
-        public synchronized Collection<QpidByteBuffer> getContent()
+        public synchronized Collection<QpidByteBuffer> getContent(int offset, int length)
         {
             Collection<QpidByteBuffer> bufs = getContentAsByteBuffer();
             Collection<QpidByteBuffer> content = new ArrayList<>(bufs.size());
+
+            int pos = 0;
             for (QpidByteBuffer buf : bufs)
             {
-                content.add(buf.duplicate());
+                if (length > 0)
+                {
+                    int bufRemaining = buf.remaining();
+                    if (pos + bufRemaining <= offset)
+                    {
+                        pos += bufRemaining;
+                    }
+                    else if (pos >= offset)
+                    {
+                        buf = buf.duplicate();
+                        if (bufRemaining <= length)
+                        {
+                            length -= bufRemaining;
+                        }
+                        else
+                        {
+                            buf.limit(length);
+                            length = 0;
+                        }
+                        content.add(buf);
+                        pos += buf.remaining();
+
+                    }
+                    else
+                    {
+                        int offsetInBuf = offset - pos;
+                        int limit = length < bufRemaining - offsetInBuf ? length : bufRemaining - offsetInBuf;
+                        final QpidByteBuffer bufView = buf.view(offsetInBuf, limit);
+                        content.add(bufView);
+                        length -= limit;
+                        pos+=limit+offsetInBuf;
+                    }
+                }
+
             }
             return content;
         }

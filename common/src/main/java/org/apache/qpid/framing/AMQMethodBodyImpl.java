@@ -22,17 +22,13 @@ package org.apache.qpid.framing;
 
 
 import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQChannelException;
-import org.apache.qpid.AMQConnectionException;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
 
@@ -67,33 +63,6 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
      * method ids of the body it resulted from).
      */
 
-    /**
-     * Convenience Method to create a channel not found exception
-     *
-     * @param channelId The channel id that is not found
-     *
-     * @param methodRegistry
-     * @return new AMQChannelException
-     */
-    public AMQChannelException getChannelNotFoundException(int channelId, final MethodRegistry methodRegistry)
-    {
-        return getChannelException(AMQConstant.NOT_FOUND, "Channel not found for id:" + channelId, methodRegistry);
-    }
-
-    public AMQChannelException getChannelException(AMQConstant code,
-                                                   String message,
-                                                   final MethodRegistry methodRegistry)
-    {
-        return new AMQChannelException(code, message, getClazz(), getMethod(), methodRegistry);
-    }
-
-    public AMQConnectionException getConnectionException(AMQConstant code,
-                                                         String message,
-                                                         final MethodRegistry methodRegistry)
-    {
-        return new AMQConnectionException(code, message, this, methodRegistry);
-    }
-
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session) throws QpidException
     {
         session.methodFrameReceived(channelId, this);
@@ -104,50 +73,49 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
         return 2 + 2 + getBodySize();
     }
 
-    public void writePayload(DataOutput buffer) throws IOException
-    {
-        EncodingUtils.writeUnsignedShort(buffer, getClazz());
-        EncodingUtils.writeUnsignedShort(buffer, getMethod());
-        writeMethodPayload(buffer);
-    }
-
     @Override
-    public long writePayload(final ByteBufferSender sender) throws IOException
+    public long writePayload(final ByteBufferSender sender)
     {
 
         final int size = getSize();
         QpidByteBuffer buf = QpidByteBuffer.allocateDirect(size);
-        DataOutput dataOutput = buf.asDataOutput();
-        writePayload(dataOutput);
+        EncodingUtils.writeUnsignedShort(buf, getClazz());
+        EncodingUtils.writeUnsignedShort(buf, getMethod());
+        writeMethodPayload(buf);
         buf.flip();
         sender.send(buf);
         buf.dispose();
         return size;
     }
 
+    abstract protected void writeMethodPayload(QpidByteBuffer buffer);
+
+
     protected int getSizeOf(AMQShortString string)
     {
         return EncodingUtils.encodedShortStringLength(string);
     }
 
-    protected void writeByte(DataOutput buffer, byte b) throws IOException
+    protected void writeByte(QpidByteBuffer buffer, byte b)
     {
-        buffer.writeByte(b);
+        buffer.put(b);
     }
 
-    protected void writeAMQShortString(DataOutput buffer, AMQShortString string) throws IOException
+    protected void writeAMQShortString(QpidByteBuffer buffer, AMQShortString string)
     {
         EncodingUtils.writeShortStringBytes(buffer, string);
     }
 
+
+    protected void writeInt(QpidByteBuffer buffer, int i)
+    {
+        buffer.putInt(i);
+    }
+
+
     protected int readInt(DataInput buffer) throws IOException
     {
         return buffer.readInt();
-    }
-
-    protected void writeInt(DataOutput buffer, int i) throws IOException
-    {
-        buffer.writeInt(i);
     }
 
     protected int getSizeOf(FieldTable table)
@@ -155,22 +123,23 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
         return EncodingUtils.encodedFieldTableLength(table);  //To change body of created methods use File | Settings | File Templates.
     }
 
-    protected void writeFieldTable(DataOutput buffer, FieldTable table) throws IOException
+    protected void writeFieldTable(QpidByteBuffer buffer, FieldTable table)
     {
         EncodingUtils.writeFieldTableBytes(buffer, table);
     }
 
-    protected void writeLong(DataOutput buffer, long l) throws IOException
+    protected void writeLong(QpidByteBuffer buffer, long l)
     {
-        buffer.writeLong(l);
+        buffer.putLong(l);
     }
+
 
     protected int getSizeOf(byte[] response)
     {
         return (response == null) ? 4 : response.length + 4;
     }
 
-    protected void writeBytes(DataOutput buffer, byte[] data) throws IOException
+    protected void writeBytes(QpidByteBuffer buffer, byte[] data)
     {
         EncodingUtils.writeBytes(buffer,data);
     }
@@ -180,39 +149,29 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
         return EncodingUtils.readShort(buffer);
     }
 
-    protected void writeShort(DataOutput buffer, short s) throws IOException
+    protected void writeShort(QpidByteBuffer buffer, short s)
     {
-        EncodingUtils.writeShort(buffer, s);
+        buffer.putShort(s);
     }
 
-    protected void writeBitfield(DataOutput buffer, byte bitfield0) throws IOException
+    protected void writeBitfield(QpidByteBuffer buffer, byte bitfield0)
     {
-        buffer.writeByte(bitfield0);
+        buffer.put(bitfield0);
     }
 
-    protected void writeUnsignedShort(DataOutput buffer, int s) throws IOException
+    protected void writeUnsignedShort(QpidByteBuffer buffer, int s)
     {
         EncodingUtils.writeUnsignedShort(buffer, s);
     }
 
-    protected void writeUnsignedInteger(DataOutput buffer, long i) throws IOException
+    protected void writeUnsignedInteger(QpidByteBuffer buffer, long i)
     {
         EncodingUtils.writeUnsignedInteger(buffer, i);
     }
 
-
-    protected void writeUnsignedByte(DataOutput buffer, short unsignedByte) throws IOException
+    protected void writeUnsignedByte(QpidByteBuffer buffer, short unsignedByte)
     {
         EncodingUtils.writeUnsignedByte(buffer, unsignedByte);
     }
 
-    protected long readTimestamp(DataInput buffer) throws IOException
-    {
-        return EncodingUtils.readTimestamp(buffer);
-    }
-
-    protected void writeTimestamp(DataOutput buffer, long t) throws IOException
-    {
-        EncodingUtils.writeTimestamp(buffer, t);
-    }
 }

@@ -64,7 +64,7 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
     {
         super(msg, null);
         _contentSize = msg.getMetaData().getContentSize();
-        Collection<QpidByteBuffer> bufs = msg.getContent();
+        Collection<QpidByteBuffer> bufs = msg.getContent(0, _contentSize);
 
         try(ObjectInputStream is = new ObjectInputStream(new ByteBufferInputStream(ByteBufferUtils.combine(bufs))))
         {
@@ -223,9 +223,9 @@ public class InternalMessage extends AbstractServerMessageImpl<InternalMessage, 
                     }
 
                     @Override
-                    public Collection<QpidByteBuffer> getContent()
+                    public Collection<QpidByteBuffer> getContent(final int offset, final int length)
                     {
-                        return Collections.singleton(QpidByteBuffer.wrap(bytes));
+                        return Collections.singleton(QpidByteBuffer.wrap(bytes, offset, length));
                     }
 
                     @Override

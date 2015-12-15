@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 
 import org.slf4j.Logger;
@@ -228,28 +227,18 @@ public class BasicContentHeaderProperties
         return _propertyFlags;
     }
 
-    public synchronized void writePropertyListPayload(DataOutput buffer) throws IOException
+    public synchronized long writePropertyListPayload(QpidByteBuffer buffer)
     {
         if(useEncodedForm())
         {
-            int offset;
-            int length = _encodedForm.remaining();;
-            byte[] array;
-            if(_encodedForm.hasArray())
-            {
-                array = _encodedForm.array();
-                offset = _encodedForm.arrayOffset() + _encodedForm.position();
-            }
-            else
-            {
-                array = new byte[length];
-                _encodedForm.copyTo(array);
-                offset = 0;
-            }
-            buffer.write(array, offset, length);
+            buffer.putCopyOf(_encodedForm);
+            return _encodedForm.remaining();
+
         }
         else
         {
+            int propertyListSize = getPropertyListSize();
+
             if ((_propertyFlags & (CONTENT_TYPE_MASK)) != 0)
             {
                 EncodingUtils.writeShortStringBytes(buffer, _contentType);
@@ -267,12 +256,12 @@ public class BasicContentHeaderProperties
 
             if ((_propertyFlags & DELIVERY_MODE_MASK) != 0)
             {
-                buffer.writeByte(_deliveryMode);
+                buffer.put(_deliveryMode);
             }
 
             if ((_propertyFlags & PRIORITY_MASK) != 0)
             {
-                buffer.writeByte(_priority);
+                buffer.put(_priority);
             }
 
             if ((_propertyFlags & CORRELATION_ID_MASK) != 0)
@@ -304,7 +293,7 @@ public class BasicContentHeaderProperties
 
             if ((_propertyFlags & TIMESTAMP_MASK) != 0)
             {
-                EncodingUtils.writeTimestamp(buffer, _timestamp);
+                buffer.putLong(_timestamp);
             }
 
             if ((_propertyFlags & TYPE_MASK) != 0)
@@ -326,6 +315,8 @@ public class BasicContentHeaderProperties
             {
                 EncodingUtils.writeShortStringBytes(buffer, _clusterId);
             }
+
+            return propertyListSize;
         }
     }
 
@@ -467,7 +458,7 @@ public class BasicContentHeaderProperties
     }
 
 
-    public synchronized long writePropertyListPayload(final ByteBufferSender sender) throws IOException
+    public synchronized long writePropertyListPayload(final ByteBufferSender sender)
     {
         if(useEncodedForm())
         {
@@ -480,26 +471,10 @@ public class BasicContentHeaderProperties
         {
             int propertyListSize = getPropertyListSize();
             QpidByteBuffer buf = QpidByteBuffer.allocateDirect(propertyListSize);
-            writePropertyListPayload(buf.asDataOutput());
+            writePropertyListPayload(buf);
             buf.flip();
             sender.send(buf);
             buf.dispose();
-            return propertyListSize;
-        }
-
-    }
-
-    public synchronized long writePropertyListPayload(final QpidByteBuffer buffer) throws IOException
-    {
-        if(useEncodedForm())
-        {
-            buffer.putCopyOf(_encodedForm);
-            return _encodedForm.remaining();
-        }
-        else
-        {
-            int propertyListSize = getPropertyListSize();
-            writePropertyListPayload(buffer.asDataOutput());
             return propertyListSize;
         }
 

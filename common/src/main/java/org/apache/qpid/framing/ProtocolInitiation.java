@@ -20,10 +20,8 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -31,7 +29,6 @@ import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.transport.ByteBufferSender;
-import org.apache.qpid.util.BytesDataOutput;
 
 public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQDataBlock
 {
@@ -82,22 +79,18 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
         return 4 + 1 + 1 + 1 + 1;
     }
 
-    public void writePayload(DataOutput buffer) throws IOException
-    {
-
-        buffer.write(_protocolHeader);
-        buffer.write(_protocolClass);
-        buffer.write(_protocolInstance);
-        buffer.write(_protocolMajor);
-        buffer.write(_protocolMinor);
-    }
-
     @Override
-    public long writePayload(final ByteBufferSender sender) throws IOException
+    public long writePayload(final ByteBufferSender sender)
     {
         byte[] data = new byte[8];
-        BytesDataOutput out = new BytesDataOutput(data);
-        writePayload(out);
+        for(int i = 0; i < _protocolHeader.length; i++)
+        {
+            data[i] = _protocolHeader[i];
+        }
+        data[4] = _protocolClass;
+        data[5] = _protocolInstance;
+        data[6] = _protocolMajor;
+        data[7] = _protocolMinor;
         sender.send(QpidByteBuffer.wrap(data));
         return 8l;
     }

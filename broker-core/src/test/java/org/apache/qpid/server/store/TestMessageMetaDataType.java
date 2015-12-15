@@ -99,10 +99,11 @@ public class TestMessageMetaDataType implements MessageMetaDataType<TestMessageM
         }
 
         @Override
-        public Collection<QpidByteBuffer> getContent()
+        public Collection<QpidByteBuffer> getContent(int offset, int length)
         {
             return null;
         }
+
 
         @Override
         public Object getConnectionReference()

@@ -22,12 +22,10 @@ package org.apache.qpid.transport;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.ByteArrayDataInput;
@@ -127,11 +125,13 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
 
             assertTrue("Expected socket to be connected", socket.isConnected());
 
-            final DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+            OutputStream outputStream = socket.getOutputStream();
+            final TestSender sender = new TestSender(outputStream);
             final InputStream inputStream = socket.getInputStream();
 
             // write header
-            pi.writePayload(dataOutputStream);
+            pi.writePayload(sender);
+            sender.flush();
 
             // reader header
             byte[] receivedHeader = new byte[AMQP_HEADER_LEN];
@@ -143,9 +143,9 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
 
             long timeout = System.currentTimeMillis() + 3000;
             boolean brokenPipe = false;
-            while(timeout > System.currentTimeMillis())
+            while (timeout > System.currentTimeMillis())
             {
-                if (!writeHeartbeat(dataOutputStream));
+                if (!writeHeartbeat(sender)) ;
                 {
                     brokenPipe = true;
                     break;
@@ -172,110 +172,39 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
 
             assertTrue("Expected socket to be connected", socket.isConnected());
 
-            final DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
             final InputStream inputStream = socket.getInputStream();
 
             // write header
-            pi.writePayload(dataOutputStream);
+            TestSender sender = new TestSender(socket.getOutputStream());
+            pi.writePayload(sender);
+            sender.flush();
 
             // reader header
             byte[] receivedHeader = new byte[AMQP_HEADER_LEN];
             int len = inputStream.read(receivedHeader);
             assertEquals("Unexpected number of bytes available from socket", receivedHeader.length, len);
 
-            dataOutputStream.write("NOTANAMPQFRAME".getBytes());
-
+            sender.send(QpidByteBuffer.wrap("NOTANAMPQFRAME".getBytes()));
 
         }
     }
 
-    private boolean writeHeartbeat(final DataOutputStream dataOutputStream)
+    private boolean writeHeartbeat(final TestSender sender)
             throws IOException
     {
-        final AtomicBoolean success = new AtomicBoolean(true);
         if (isBroker010())
         {
             ConnectionHeartbeat heartbeat = new ConnectionHeartbeat();
-            ServerDisassembler serverDisassembler = new ServerDisassembler(new ByteBufferSender()
-            {
-                private void send(final ByteBuffer msg)
-                {
-                    try
-                    {
-                        if(msg.hasArray())
-                        {
-                            dataOutputStream.write(msg.array(), msg.arrayOffset() + msg.position(), msg.remaining());
-                        }
-                        else
-                        {
-                            byte[] data = new byte[msg.remaining()];
-                            msg.duplicate().get(data);
-                            dataOutputStream.write(data, 0, data.length);
-                        }
-                    }
-                    catch (SocketException se)
-                    {
-
-                        success.set(false);
-                    }
-                    catch(IOException e)
-                    {
-                        throw new RuntimeException("Unexpected IOException", e);
-                    }
-                }
-
-                @Override
-                public void send(final QpidByteBuffer msg)
-                {
-                    try
-                    {
-                        if(msg.hasArray())
-                        {
-                            dataOutputStream.write(msg.array(), msg.arrayOffset() + msg.position(), msg.remaining());
-                        }
-                        else
-                        {
-                            byte[] data = new byte[msg.remaining()];
-                            msg.duplicate().get(data);
-                            dataOutputStream.write(data, 0, data.length);
-                        }
-                    }
-                    catch (SocketException se)
-                    {
-
-                        success.set(false);
-                    }
-                    catch(IOException e)
-                    {
-                        throw new RuntimeException("Unexpected IOException", e);
-                    }
-                }
-
-                @Override
-                public void flush()
-                {
-                }
-
-                @Override
-                public void close()
-                {
-                }
-            }, Frame.HEADER_SIZE + 1);
+            ServerDisassembler serverDisassembler = new ServerDisassembler(sender, Frame.HEADER_SIZE + 1);
             serverDisassembler.command(null, heartbeat);
         }
         else
         {
-            try
-            {
-                HeartbeatBody.FRAME.writePayload(dataOutputStream);
-            }
-            catch (SocketException se)
-            {
-                success.set(false);
-            }
+            HeartbeatBody.FRAME.writePayload(sender);
+
         }
 
-        return success.get();
+        return sender.hasSuccess();
     }
 
     private ProtocolVersion convertProtocolToProtocolVersion(final Protocol p)
@@ -300,4 +229,52 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
         }
         return protocolVersion;
     }
+
+    private static class TestSender implements ByteBufferSender
+    {
+        private final OutputStream _output;
+        private boolean _success = true;
+
+
+        private TestSender(final OutputStream output)
+        {
+            _output = output;
+        }
+
+        @Override
+        public void send(final QpidByteBuffer msg)
+        {
+            byte[] data = new byte[msg.remaining()];
+            msg.get(data);
+            try
+            {
+                _output.write(data);
+            }
+            catch (IOException e)
+            {
+                _success = false;
+                throw new RuntimeException(e);
+            }
+
+        }
+
+        public boolean hasSuccess()
+        {
+            return _success;
+        }
+
+        @Override
+        public void flush()
+        {
+
+        }
+
+        @Override
+        public void close()
+        {
+
+        }
+
+    }
+
 }

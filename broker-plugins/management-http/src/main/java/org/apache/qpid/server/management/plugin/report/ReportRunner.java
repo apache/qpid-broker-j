@@ -218,7 +218,8 @@ public class ReportRunner<T>
     private static ReportableMessage convertMessage(QueueEntry entry)
     {
         final MessageInfoImpl messageInfo = new MessageInfoImpl(entry, true);
-        final Collection<QpidByteBuffer> contentBuffers = entry.getMessage().getContent();
+        ServerMessage message = entry.getMessage();
+        final Collection<QpidByteBuffer> contentBuffers = message.getContent(0, (int) message.getSize());
         final ByteBuffer content = ByteBufferUtils.combine(contentBuffers);
         for(QpidByteBuffer buf : contentBuffers)
         {

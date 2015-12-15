@@ -392,14 +392,7 @@ public class AMQPConnection_0_8
             _logger.debug("SEND: " + frame);
         }
 
-        try
-        {
-            frame.writePayload(_sender);
-        }
-        catch (IOException e)
-        {
-            throw new ServerScopedRuntimeException(e);
-        }
+        frame.writePayload(_sender);
 
 
         updateLastWriteTime();

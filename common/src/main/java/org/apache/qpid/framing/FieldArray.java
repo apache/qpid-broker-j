@@ -21,7 +21,6 @@
 package org.apache.qpid.framing;
 
 import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.AbstractCollection;
@@ -33,6 +32,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public class FieldArray<T> extends AbstractCollection<T>
 {
@@ -105,9 +106,9 @@ public class FieldArray<T> extends AbstractCollection<T>
         }
     }
 
-    public void writeToBuffer(final DataOutput buffer) throws IOException
+    public void writeToBuffer(final QpidByteBuffer buffer)
     {
-        buffer.writeInt(getEncodingSize());
+        buffer.putInt(getEncodingSize());
         for( T obj : this)
         {
             AMQTypedValue.toTypedValue(obj).writeToBuffer(buffer);

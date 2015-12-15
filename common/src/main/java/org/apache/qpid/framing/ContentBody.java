@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -58,24 +57,6 @@ public class ContentBody implements AMQBody
         return _payload == null ? 0 : _payload.remaining();
     }
 
-    public void writePayload(DataOutput buffer) throws IOException
-    {
-        if (_payload.hasArray())
-        {
-            int start = _payload.arrayOffset() + _payload.position();
-            buffer.write(_payload.array(),
-                         start,
-                         _payload.remaining());
-            _payload.position(_payload.position() + _payload.remaining());
-        }
-        else
-        {
-            byte[] data = new byte[_payload.remaining()];
-            _payload.copyTo(data);
-            buffer.write(data);
-        }
-    }
-
     public void handle(final int channelId, final AMQVersionAwareProtocolSession session)
             throws QpidException
     {
@@ -83,7 +64,7 @@ public class ContentBody implements AMQBody
     }
 
     @Override
-    public long writePayload(final ByteBufferSender sender) throws IOException
+    public long writePayload(final ByteBufferSender sender)
     {
         if(_payload != null)
         {

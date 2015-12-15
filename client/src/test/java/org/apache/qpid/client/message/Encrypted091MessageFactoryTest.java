@@ -38,13 +38,13 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.x500.X500Principal;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.test.utils.QpidTestCase;
 import org.apache.qpid.test.utils.TestSSLConstants;
 import org.apache.qpid.transport.ConnectionSettings;
-import org.apache.qpid.util.BytesDataOutput;
 
 public class Encrypted091MessageFactoryTest extends QpidTestCase
 {
@@ -78,8 +78,8 @@ public class Encrypted091MessageFactoryTest extends QpidTestCase
 
             final int headerLength = _props.getPropertyListSize() + 2;
             _unencrypted = new byte[headerLength + _data.length];
-            BytesDataOutput output = new BytesDataOutput(_unencrypted);
-            output.writeShort((short) (_props.getPropertyFlags() & 0xffff));
+            QpidByteBuffer output = QpidByteBuffer.wrap(_unencrypted);
+            output.putShort((short) (_props.getPropertyFlags() & 0xffff));
             _props.writePropertyListPayload(output);
 
 

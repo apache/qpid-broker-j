@@ -27,10 +27,10 @@
 
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
 public class ChannelFlowOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
@@ -74,7 +74,7 @@ public class ChannelFlowOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         return size;
     }
 
-    public void writeMethodPayload(DataOutput buffer) throws IOException
+    public void writeMethodPayload(QpidByteBuffer buffer)
     {
         writeBitfield( buffer, _active ? (byte)1 : (byte)0 );
     }

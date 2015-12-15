@@ -27,10 +27,10 @@
 
 package org.apache.qpid.framing;
 
-import java.io.DataOutput;
 import java.io.IOException;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.MarkableDataInput;
 
 public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
@@ -78,11 +78,11 @@ public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         return _isAMQP08 ? 0 : 4;
     }
 
-    public void writeMethodPayload(DataOutput buffer) throws IOException
+    public void writeMethodPayload(QpidByteBuffer buffer)
     {
         if(!_isAMQP08)
         {
-            buffer.writeInt(0);
+            buffer.putInt(0);
         }
     }
 

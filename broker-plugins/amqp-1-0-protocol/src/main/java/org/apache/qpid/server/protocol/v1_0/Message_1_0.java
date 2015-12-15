@@ -100,7 +100,7 @@ public class Message_1_0 extends AbstractServerMessageImpl<Message_1_0, MessageM
 
     public Collection<QpidByteBuffer> getFragments()
     {
-        return getContent();
+        return getContent(0, (int) getSize());
     }
 
 }

@@ -51,6 +51,7 @@ import org.apache.qpid.amqp_1_0.type.messaging.AmqpSequence;
 import org.apache.qpid.amqp_1_0.type.messaging.AmqpValue;
 import org.apache.qpid.amqp_1_0.type.messaging.Data;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.transport.codec.BBEncoder;
 import org.apache.qpid.typedmessage.TypedBytesContentWriter;
@@ -63,7 +64,7 @@ public class MessageConverter_from_1_0
     public static Object convertBodyToObject(final Message_1_0 serverMessage)
     {
         byte[] data = new byte[(int) serverMessage.getSize()];
-        final Collection<QpidByteBuffer> allData = serverMessage.getStoredMessage().getContent();
+        final Collection<QpidByteBuffer> allData = serverMessage.getContent(0, (int) serverMessage.getSize());
         int offset = 0;
         for(QpidByteBuffer buf : allData)
         {

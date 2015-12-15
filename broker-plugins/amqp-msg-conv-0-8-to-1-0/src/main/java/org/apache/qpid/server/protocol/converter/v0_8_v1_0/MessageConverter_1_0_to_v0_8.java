@@ -91,9 +91,9 @@ public class MessageConverter_1_0_to_v0_8 implements MessageConverter<Message_1_
             }
 
             @Override
-            public Collection<QpidByteBuffer> getContent()
+            public Collection<QpidByteBuffer> getContent(final int offset, final int length)
             {
-                return Collections.singleton(QpidByteBuffer.wrap(messageContent));
+                return Collections.singleton(QpidByteBuffer.wrap(messageContent, offset, length));
             }
 
             @Override
