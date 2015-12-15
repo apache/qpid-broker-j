@@ -779,62 +779,30 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private MessageSource autoCreateSource(final String name)
     {
-        for(NodeAutoCreationPolicy policy : getNodeAutoCreationPolicies())
-        {
-            String pattern = policy.getPattern();
-            if(name.matches(pattern) && policy.isCreatedOnConsume())
-            {
-                String nodeType = policy.getNodeType();
-                Class<? extends ConfiguredObject> sourceClass = null;
-                for(Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
-                {
-                    if(childClass.getSimpleName().equalsIgnoreCase(nodeType.trim()) && MessageSource.class.isAssignableFrom(childClass))
-                    {
-                        sourceClass = childClass;
-                    }
-                }
-                if(sourceClass != null)
-                {
-                    Map<String, Object> attributes = new HashMap<>(policy.getAttributes());
-                    attributes.remove(ConfiguredObject.ID);
-                    attributes.put(ConfiguredObject.NAME, name);
-
-                    try
-                    {
-
-                        final MessageSource messageSource =
-                                (MessageSource) doSync(addChildAsync(sourceClass, attributes));
-                        if (messageSource != null)
-                        {
-                            return messageSource;
-                        }
-                    }
-                    catch (RuntimeException e)
-                    {
-                        _logger.info("Unable to auto create a node named {} due to exception", name, e);
-                    }
-
-                }
-            }
-
-        }
-        return null;
+        return autoCreateNode(name, MessageSource.class, false);
     }
 
 
     private MessageDestination autoCreateDestination(final String name)
     {
+        return autoCreateNode(name, MessageDestination.class, true);
+
+    }
+
+    private <T> T autoCreateNode(final String name, final Class<T> clazz, boolean publish)
+    {
         for (NodeAutoCreationPolicy policy : getNodeAutoCreationPolicies())
         {
             String pattern = policy.getPattern();
-            if (name.matches(pattern) && policy.isCreatedOnPublish())
+            if (name.matches(pattern) &&
+                ((publish && policy.isCreatedOnPublish()) || (!publish && policy.isCreatedOnConsume())))
             {
                 String nodeType = policy.getNodeType();
                 Class<? extends ConfiguredObject> sourceClass = null;
                 for (Class<? extends ConfiguredObject> childClass : getModel().getChildTypes(getCategoryClass()))
                 {
                     if (childClass.getSimpleName().equalsIgnoreCase(nodeType.trim())
-                        && MessageDestination.class.isAssignableFrom(childClass))
+                        && clazz.isAssignableFrom(childClass))
                     {
                         sourceClass = childClass;
                     }
@@ -848,11 +816,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     try
                     {
 
-                        final MessageDestination messageDestination =
-                                (MessageDestination) doSync(addChildAsync(sourceClass, attributes));
-                        if (messageDestination != null)
+                        final T node =
+                                (T) doSync(addChildAsync(sourceClass, attributes));
+                        if (node != null)
                         {
-                            return messageDestination;
+                            return node;
                         }
                     }
                     catch (RuntimeException e)
