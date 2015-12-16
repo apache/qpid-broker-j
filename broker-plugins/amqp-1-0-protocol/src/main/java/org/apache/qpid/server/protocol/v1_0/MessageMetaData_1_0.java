@@ -322,6 +322,7 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
             buf.put(duplicate);
             duplicate.dispose();
         }
+        buf.flip();
 
         return buf;
     }
