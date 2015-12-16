@@ -817,7 +817,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     {
 
                         final T node =
-                                (T) doSync(addChildAsync(sourceClass, attributes));
+                                (T) doSync(createChildAsync(sourceClass, attributes));
                         if (node != null)
                         {
                             return node;
