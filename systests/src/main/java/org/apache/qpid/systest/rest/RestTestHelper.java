@@ -23,11 +23,8 @@ import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 
-import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -64,11 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.BrokerOptions;
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Binding;
-import org.apache.qpid.server.model.Plugin;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
@@ -95,7 +88,6 @@ public class RestTestHelper
 
     private String _password;
 
-    private File _passwdFile;
     private boolean _useSslAuth;
     static final String[] EXPECTED_QUEUES = { "queue", "ping" };
     private final int _connectTimeout = Integer.getInteger("qpid.resttest_connection_timeout", 30000);
@@ -103,6 +95,7 @@ public class RestTestHelper
     public RestTestHelper(int httpPort)
     {
         _httpPort = httpPort;
+        setUsernameAndPassword("webadmin", "webadmin");
     }
 
     public int getHttpPort()
@@ -129,24 +122,6 @@ public class RestTestHelper
     {
         return new URL(getManagementURL() + path);
     }
-
-    public void enableHttpManagement(TestBrokerConfiguration config) throws IOException
-    {
-        config.addHttpManagementConfiguration();
-        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.PORT, getHttpPort());
-
-        config.setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
-                                  "secureOnlyMechanisms",
-                                  "{}");
-
-        // set password authentication provider on http port for the tests
-        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
-                                  TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
-        config.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
-
-        setUsernameAndPassword("webadmin", "webadmin");
-    }
-
 
     public HttpURLConnection openManagementConnection(String path, String method) throws IOException
     {
@@ -516,55 +491,11 @@ public class RestTestHelper
         setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, QpidBrokerTestCase.MANAGEMENT_MODE_PASSWORD);
     }
 
-    /**
-     * Create password file that follows the convention username=password, which is deleted by {@link #tearDown()}
-     */
-    public void configureTemporaryPasswordFile(QpidBrokerTestCase testCase, String... users) throws IOException
-    {
-        _passwdFile = createTemporaryPasswdFile(users);
-
-        testCase.getBrokerConfiguration().setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
-                "path", _passwdFile.getAbsolutePath());
-    }
-
     public void tearDown()
     {
-        if (_passwdFile != null)
-        {
-            if (_passwdFile.exists())
-            {
-                _passwdFile.delete();
-            }
-        }
+
     }
 
-    File createTemporaryPasswdFile(String[] users) throws IOException
-    {
-        BufferedWriter writer = null;
-        try
-        {
-            File testFile = File.createTempFile(this.getClass().getName(),"tmp");
-            testFile.deleteOnExit();
-
-            writer = new BufferedWriter(new FileWriter(testFile));
-            for (int i = 0; i < users.length; i++)
-            {
-                String username = users[i];
-                writer.write(username + ":" + username);
-                writer.newLine();
-            }
-
-            return testFile;
-
-        }
-        finally
-        {
-            if (writer != null)
-            {
-                writer.close();
-            }
-        }
-    }
 
     public int submitRequest(String url, String method, Map<String, Object> attributes) throws IOException
     {

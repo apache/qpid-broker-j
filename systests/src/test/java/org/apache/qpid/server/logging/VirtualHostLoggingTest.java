@@ -21,11 +21,10 @@
 
 package org.apache.qpid.server.logging;
 
-import junit.framework.AssertionFailedError;
-
-
 import java.util.Arrays;
 import java.util.List;
+
+import junit.framework.AssertionFailedError;
 
 /**
  * Virtualhost Test Cases
@@ -107,7 +106,7 @@ public class VirtualHostLoggingTest extends AbstractTestLogging
     {
         if (isJavaBroker() && isInternalBroker())
         {
-            stopBroker();
+            stopDefaultBroker();
 
             // Wait for the correct VHT message to arrive.
             waitForMessage(VHT_PREFIX + "1002");

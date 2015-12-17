@@ -23,7 +23,6 @@ package org.apache.qpid.systest.rest;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,20 +42,21 @@ public class BrokerRestHttpsTest extends QpidRestTestCase
     {
         setSystemProperty("javax.net.debug", "ssl");
         super.setUp();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpsPort());
+        _restTestHelper.setUseSsl(true);
         setSystemProperty("javax.net.ssl.trustStore", TRUSTSTORE);
         setSystemProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getRestTestHelper().setUseSsl(true);
         Map<String, Object> newAttributes = new HashMap<String, Object>();
         newAttributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.HTTP));
         newAttributes.put(Port.TRANSPORTS, Collections.singleton(Transport.SSL));
         newAttributes.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
-        getBrokerConfiguration().setObjectAttributes(Port.class,TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT,newAttributes);
+        getDefaultBrokerConfiguration().setObjectAttributes(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, newAttributes);
     }
 
     public void testGetWithHttps() throws Exception

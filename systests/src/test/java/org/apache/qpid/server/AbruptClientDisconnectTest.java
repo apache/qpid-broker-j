@@ -72,7 +72,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         // create queue
         consumeIgnoringLastSeenOmission(_utilityConnection, _testQueue, 1, 0, -1);
 
-        _tcpTunneler = new TCPTunneler(getFailingPort(), "localhost", getPort(), 1);
+        _tcpTunneler = new TCPTunneler(getFailingPort(), "localhost", getDefaultAmqpPort(), 1);
         _tcpTunneler.start();
     }
 
@@ -210,7 +210,7 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
     private Connection createTunneledConnection(final ClientMonitor clientMonitor)
             throws URLSyntaxException, JMSException
     {
-        final ConnectionURL url = new AMQConnectionURL(String.format(CONNECTION_URL_TEMPLATE, getFailingPort()));
+        final ConnectionURL url = new AMQConnectionURL(String.format(CONNECTION_URL_TEMPLATE, _tcpTunneler.getLocalPort()));
         Connection tunneledConnection = getConnection(url);
         _tcpTunneler.addClientListener(clientMonitor);
         final AtomicReference _exception = new AtomicReference();

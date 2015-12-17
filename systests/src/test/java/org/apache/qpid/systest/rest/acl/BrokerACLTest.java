@@ -31,17 +31,16 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.qpid.server.logging.BrokerFileLogger;
 import org.apache.qpid.server.logging.BrokerMemoryLogger;
 import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
-import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
-import org.apache.qpid.server.model.BrokerLogger;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.management.plugin.HttpManagement;
+import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.AccessControlProvider;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.BrokerLogger;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ExternalFileBasedAuthenticationManager;
 import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.model.KeyStore;
-import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.TrustStore;
@@ -65,10 +64,11 @@ public class BrokerACLTest extends QpidRestTestCase
     private String _secondaryAclFileContent = "";
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getRestTestHelper().configureTemporaryPasswordFile(this, ALLOWED_USER, DENIED_USER);
+        final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
+        defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
 
         AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " CONFIGURE BROKER",
@@ -82,9 +82,6 @@ public class BrokerACLTest extends QpidRestTestCase
                 "ACL ALLOW-LOG " + ALLOWED_USER + " CONFIGURE BROKER\n" +
                 "ACL DENY-LOG " + DENIED_USER + " CONFIGURE BROKER\n" +
                 "ACL DENY-LOG ALL ALL";
-
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
-                HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
     }
 
     /* === AuthenticationProvider === */
@@ -1006,7 +1003,7 @@ public class BrokerACLTest extends QpidRestTestCase
     {
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Port.NAME, portName);
-        attributes.put(Port.PORT, findFreePort());
+        attributes.put(Port.PORT, 0);
         attributes.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
 
         return getRestTestHelper().submitRequest("port/" + portName, "PUT", attributes);

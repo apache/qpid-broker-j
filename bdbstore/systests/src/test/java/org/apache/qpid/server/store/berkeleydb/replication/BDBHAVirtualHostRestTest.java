@@ -32,6 +32,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -52,6 +53,7 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
     private String _bluePrint;
     private List<String> _permittedNodes;
     private String _address;
+    private int _httpPort;
 
     @Override
     public void setUp() throws Exception
@@ -61,7 +63,8 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
         _hostName = "ha";
         _nodeName = "node1";
         _storeBaseDir = new File(TMP_FOLDER, "store-" + _hostName + "-" + System.currentTimeMillis());
-        _nodeHaPort = getNextAvailable(getRestTestHelper().getHttpPort() + 1);
+        _httpPort = findFreePort();
+        _nodeHaPort = getNextAvailable(_httpPort + 1);
         _virtualhostUrl = "virtualhost/" + _nodeName + "/" + _hostName;
         _bluePrint = GroupCreator.getBlueprint();
         _permittedNodes = GroupCreator.getPermittedNodes("localhost", _nodeHaPort);
@@ -86,10 +89,10 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.removeObjectConfiguration(VirtualHostNode.class, TEST2_VIRTUALHOST);
         config.removeObjectConfiguration(VirtualHostNode.class, TEST3_VIRTUALHOST);
 
@@ -108,6 +111,7 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
 
         nodeAttributes.put(BDBHAVirtualHostNode.CONTEXT, context);
         config.addObjectConfiguration(VirtualHostNode.class, nodeAttributes);
+        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.PORT, _httpPort);
     }
 
     public void testSetLocalTransactionSynchronizationPolicy() throws Exception

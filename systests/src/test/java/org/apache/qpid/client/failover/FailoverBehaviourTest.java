@@ -18,27 +18,18 @@
  */
 package org.apache.qpid.client.failover;
 
-import org.apache.qpid.QpidException;
-import org.apache.qpid.client.BrokerDetails;
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.jms.ConnectionListener;
-import org.apache.qpid.jms.ConnectionURL;
-import org.apache.qpid.jms.FailoverPolicy;
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.Plugin;
-import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.model.VirtualHostNode;
-import org.apache.qpid.systest.rest.RestTestHelper;
-import org.apache.qpid.test.utils.FailoverBaseCase;
-import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.apache.qpid.test.utils.TestUtils;
-import org.apache.qpid.url.URLSyntaxException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -56,24 +47,25 @@ import javax.jms.TextMessage;
 import javax.jms.TransactionRolledBackException;
 import javax.naming.NamingException;
 
-import java.io.IOException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.QpidException;
+import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.client.AMQConnectionFactory;
+import org.apache.qpid.client.AMQDestination;
+import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.client.BrokerDetails;
+import org.apache.qpid.jms.ConnectionListener;
+import org.apache.qpid.jms.ConnectionURL;
+import org.apache.qpid.jms.FailoverPolicy;
+import org.apache.qpid.test.utils.FailoverBaseCase;
+import org.apache.qpid.url.URLSyntaxException;
 
 /**
  * Test suite to test all possible failover corner cases
  */
-public class FailoverBehaviourTest extends FailoverBaseCase implements ConnectionListener, ExceptionListener
+public class FailoverBehaviourTest extends FailoverBaseCase implements ExceptionListener
 {
     protected static final Logger _LOGGER = LoggerFactory.getLogger(FailoverBehaviourTest.class);
 
@@ -90,12 +82,6 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
 
     /** Test connection */
     protected Connection _connection;
-
-    /**
-     * Failover completion latch is used to wait till connectivity to broker is
-     * restored
-     */
-    private CountDownLatch _failoverComplete;
 
     /**
      * Consumer session
@@ -127,11 +113,6 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
      */
     private JMSException _exceptionListenerException;
 
-    /**
-     * Latch to check that failover mutex is hold by a failover thread
-     */
-    private CountDownLatch _failoverStarted;
-
     @Override
     protected void setUp() throws Exception
     {
@@ -140,8 +121,6 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         _connection = getConnection();
         _connection.setExceptionListener(this);
         ((AMQConnection) _connection).setConnectionListener(this);
-        _failoverComplete = new CountDownLatch(1);
-        _failoverStarted = new CountDownLatch(1);
     }
 
     /**
@@ -735,7 +714,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         doFailoverWhilstPublishingInFlight(false);
     }
 
-    private void doFailoverWhilstPublishingInFlight(boolean hardKill) throws JMSException, InterruptedException
+    private void doFailoverWhilstPublishingInFlight(boolean hardKill) throws Exception
     {
         init(Session.SESSION_TRANSACTED, false);
 
@@ -802,12 +781,12 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         if (hardKill)
         {
             _logger.debug("Killing the Broker");
-            killBroker(getFailingPort());
+            killDefaultBroker();
         }
         else
         {
             _logger.debug("Stopping the Broker");
-            stopBroker(getFailingPort());
+            stopDefaultBroker();
         }
 
         if (exception.get() != null)
@@ -833,7 +812,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         String text = MessageFormat.format(TEST_MESSAGE_FORMAT, 0);
         Message message = _producerSession.createTextMessage(text);
 
-        failBroker(getFailingPort());
+        failDefaultBroker();
 
         if(!_failoverStarted.await(5, TimeUnit.SECONDS))
         {
@@ -866,7 +845,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         // proceeding before we try to send the message
         synchronized(connection.getFailoverMutex())
         {
-            failBroker(getFailingPort());
+            failDefaultBroker();
 
             // wait to make sure that connection is lost
             while(!connection.isFailingOver())
@@ -904,8 +883,8 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
             // holding failover mutex should prevent the failover from proceeding
             synchronized(connection.getFailoverMutex())
             {
-                killBroker();
-                startBroker();
+                killDefaultBroker();
+                startDefaultBroker();
 
                 // sleep interval exceeds failover timeout interval
                 Thread.sleep(11000l);
@@ -937,8 +916,8 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
             // holding failover mutex should prevent the failover from proceeding
             synchronized(connection.getFailoverMutex())
             {
-                killBroker();
-                startBroker();
+                killDefaultBroker();
+                startDefaultBroker();
             }
 
             // allows the failover thread to proceed
@@ -1016,8 +995,8 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
             final int currentCounter = counter.get();
             assertTrue("Unexpected number of sent messages:" + currentCounter, currentCounter >=3);
 
-            killBroker();
-            startBroker();
+            killDefaultBroker();
+            startDefaultBroker();
 
             // allows the failover thread to proceed
             Thread.yield();
@@ -1068,7 +1047,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
                     {
                         stopFlag.countDown();
 
-                        failBroker(getFailingPort());
+                        failDefaultBroker();
                     }
 
                 }
@@ -1154,7 +1133,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
 
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
         assertNotNull("Session should be created", session);
-        killBroker();
+        killDefaultBroker();
 
         boolean failingOver = failoverBegun.await(5000, TimeUnit.MILLISECONDS);
         assertTrue("Failover did not begin with a reasonable time", failingOver);
@@ -1162,99 +1141,6 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         // Failover will now be in flight
         connection.close();
         assertTrue("Failover policy is unexpectedly exhausted", connection.getFailoverPolicy().failoverAllowed());
-    }
-
-
-
-    private int getUnacknowledgedMessageNumber(int testMessageNumber) throws IOException, InterruptedException
-    {
-        int unacknowledgedMessageNumber = 0;
-        int i =0;
-        do
-        {
-            unacknowledgedMessageNumber = getUnacknowledgedMessageNumber();
-            if (unacknowledgedMessageNumber != testMessageNumber)
-            {
-                Thread.sleep(50);
-            }
-            else
-            {
-                break;
-            }
-        }
-        while (i++ < 20);
-        return unacknowledgedMessageNumber;
-    }
-
-    private void configureHttpManagement()
-    {
-        TestBrokerConfiguration config = getBrokerConfiguration();
-        config.addHttpManagementConfiguration();
-        String initialConfiguration = System.getProperty("virtualhostnode.context.blueprint");
-        if (initialConfiguration != null)
-        {
-            config.setObjectAttribute(VirtualHostNode.class, "test", VirtualHostNode.VIRTUALHOST_INITIAL_CONFIGURATION, initialConfiguration);
-        }
-        config.setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
-                "secureOnlyMechanisms",
-                "{}");
-
-
-        // set password authentication provider on http port for the tests
-        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
-                TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
-        config.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
-        config.setSaved(false);
-    }
-
-    private void closeConnectionViaManagement() throws IOException
-    {
-        RestTestHelper restTestHelper = new RestTestHelper(getHttpManagementPort(getPort(0)));
-        try
-        {
-            restTestHelper.setUsernameAndPassword("webadmin", "webadmin");
-            List<Map<String, Object>> connections = restTestHelper.getJsonAsList("virtualhost/test/test/getConnections");
-            assertEquals("Unexpected number of connections", 1, connections.size());
-            Map<String, Object> connection = connections.get(0);
-            String connectionName = (String) connection.get(org.apache.qpid.server.model.Connection.NAME);
-            restTestHelper.submitRequest("connection/" + TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT + "/" + restTestHelper.encodeAsUTF( connectionName ), "DELETE", 200);
-        }
-        finally
-        {
-            restTestHelper.tearDown();
-        }
-    }
-
-    private int getUnacknowledgedMessageNumber() throws IOException
-    {
-        RestTestHelper restTestHelper = new RestTestHelper(getHttpManagementPort(getPort(0)));
-        try
-        {
-            restTestHelper.setUsernameAndPassword("webadmin", "webadmin");
-            List<Map<String, Object>> sessions = restTestHelper.getJsonAsList("session");
-            for(Map<String, Object> session: sessions )
-            {
-                List<Map<String, Object>> consumers =  (List<Map<String, Object>>)session.get("consumers");
-                if (consumers != null)
-                {
-                    Map<String, Object> consumer = consumers.get(0);
-                    Map<String, Object> stat = (Map<String, Object>)consumer.get("statistics");
-                    if (stat != null)
-                    {
-                        Number unacknowledgedMessages = (Number)stat.get("unacknowledgedMessages");
-                        if (unacknowledgedMessages != null)
-                        {
-                            return unacknowledgedMessages.intValue();
-                        }
-                    }
-                }
-            }
-            return 0;
-        }
-        finally
-        {
-            restTestHelper.tearDown();
-        }
     }
 
     private Queue createAndBindQueueWithFlowControlEnabled(Session session, String queueName, int capacity, int resumeCapacity) throws Exception
@@ -1508,21 +1394,19 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
      */
     private void causeFailure()
     {
-        causeFailure(getFailingPort(), DEFAULT_FAILOVER_TIME * 2);
+        causeFailure(DEFAULT_FAILOVER_TIME * 2);
     }
 
     /**
-     * Causes failover by stopping broker on given port and waits till
+     * Causes failover by stopping broker and waits till
      * connection is re-established during given time interval.
      *
-     * @param port
-     *            broker port
      * @param delay
      *            time interval to wait for connection re-establishement
      */
-    private void causeFailure(int port, long delay)
+    private void causeFailure(long delay)
     {
-        failBroker(port);
+        failDefaultBroker();
 
         awaitForFailoverCompletion(delay);
     }
@@ -1549,34 +1433,6 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         // along with error code and/or expected exception type
     }
 
-    @Override
-    public void bytesSent(long count)
-    {
-    }
-
-    @Override
-    public void bytesReceived(long count)
-    {
-    }
-
-    @Override
-    public boolean preFailover(boolean redirect)
-    {
-        _failoverStarted.countDown();
-        return true;
-    }
-
-    @Override
-    public boolean preResubscribe()
-    {
-        return true;
-    }
-
-    @Override
-    public void failoverComplete()
-    {
-        _failoverComplete.countDown();
-    }
 
     @Override
     public void onException(JMSException e)
@@ -1680,7 +1536,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         Message receivedMessage = _consumer.receive(1000l);
         assertReceivedMessage(receivedMessage, TEST_MESSAGE_FORMAT, 0);
 
-        failBroker(getFailingPort());
+        failDefaultBroker();
 
         // wait until failover is started
         _failoverStarted.await(5, TimeUnit.SECONDS);
@@ -1736,7 +1592,7 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         Message receivedMessage = (Message) messages.nextElement();
         assertReceivedMessage(receivedMessage, TEST_MESSAGE_FORMAT, 0);
 
-        failBroker(getFailingPort());
+        failDefaultBroker();
 
         // wait until failover is started
         _failoverStarted.await(5, TimeUnit.SECONDS);
@@ -1772,11 +1628,4 @@ public class FailoverBehaviourTest extends FailoverBaseCase implements Connectio
         ((AMQConnection) _connection).setFailoverPolicy(failoverPolicy);
         return failoverPolicy;
     }
-
-    @Override
-    public void failBroker(int port)
-    {
-        killBroker(port);
-    }
-
 }

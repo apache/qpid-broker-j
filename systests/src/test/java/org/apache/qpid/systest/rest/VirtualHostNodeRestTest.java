@@ -105,13 +105,13 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
 
     public void testRecoverVirtualHostNodeWithDesiredStateStopped() throws Exception
     {
-        stopBroker();
+        stopDefaultBroker();
 
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.setObjectAttribute(VirtualHostNode.class, TEST3_VIRTUALHOST, ConfiguredObject.DESIRED_STATE, "STOPPED");
         config.setSaved(false);
 
-        startBroker();
+        startDefaultBroker();
 
         String restUrl = "virtualhostnode/" + TEST3_VIRTUALHOST;
         assertActualAndDesireStates(restUrl, "STOPPED", "STOPPED");
@@ -149,20 +149,15 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
 
     public void testCreateVirtualHostNodeByPostUsingParentURI() throws Exception
     {
-        String nodeName = getTestName();
-        Map<String, Object> nodeData = new HashMap<>();
-        nodeData.put(VirtualHostNode.NAME, nodeName);
-        nodeData.put(VirtualHostNode.TYPE, getTestProfileVirtualHostNodeType());
-
-        String url = "virtualhostnode";
-        getRestTestHelper().submitRequest(url, "POST", nodeData, HttpServletResponse.SC_CREATED);
-
-        Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(url + "/" + nodeName);
-        Asserts.assertVirtualHostNode(nodeName, virtualhostNode);
-
+        createVirtualHostNodeByUsingParentURI("POST");
     }
 
     public void testCreateVirtualHostNodeByPutUsingParentURI() throws Exception
+    {
+        createVirtualHostNodeByUsingParentURI("PUT");
+    }
+
+    private void createVirtualHostNodeByUsingParentURI(final String method) throws IOException
     {
         String nodeName = getTestName();
         Map<String, Object> nodeData = new HashMap<>();
@@ -170,7 +165,7 @@ public class VirtualHostNodeRestTest  extends QpidRestTestCase
         nodeData.put(VirtualHostNode.TYPE, getTestProfileVirtualHostNodeType());
 
         String url = "virtualhostnode";
-        getRestTestHelper().submitRequest(url, "PUT", nodeData, HttpServletResponse.SC_CREATED);
+        getRestTestHelper().submitRequest(url, method, nodeData, HttpServletResponse.SC_CREATED);
 
         Map<String, Object> virtualhostNode = getRestTestHelper().getJsonAsSingletonList(url + "/" + nodeName);
         Asserts.assertVirtualHostNode(nodeName, virtualhostNode);

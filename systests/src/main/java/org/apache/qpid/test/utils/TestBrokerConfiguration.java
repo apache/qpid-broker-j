@@ -22,8 +22,10 @@ package org.apache.qpid.test.utils;
 
 import static org.mockito.Mockito.mock;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -39,8 +41,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.qpid.server.BrokerOptions;
+import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProvider;
 import org.apache.qpid.server.model.adapter.FileBasedGroupProviderImpl;
@@ -53,6 +57,7 @@ import org.apache.qpid.server.store.ConfiguredObjectRecordConverter;
 import org.apache.qpid.server.store.ConfiguredObjectRecordImpl;
 import org.apache.qpid.server.store.DurableConfigurationStore;
 import org.apache.qpid.server.store.handler.ConfiguredObjectRecordHandler;
+import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
 import org.apache.qpid.util.Strings;
 
 public class TestBrokerConfiguration
@@ -76,14 +81,16 @@ public class TestBrokerConfiguration
 
     private DurableConfigurationStore _store;
     private boolean _saved;
+    private File _passwdFile;
 
-    public TestBrokerConfiguration(String storeType, String initialStoreLocation, final TaskExecutor taskExecutor)
+    public TestBrokerConfiguration(String storeType, String initialStoreLocation)
     {
         BrokerOptions brokerOptions = new BrokerOptions();
-        _taskExecutor = taskExecutor;
+        _taskExecutor = new CurrentThreadTaskExecutor();
+        _taskExecutor.start();
         _storeType = storeType;
         brokerOptions.setInitialConfigurationLocation(initialStoreLocation);
-        final AbstractSystemConfig parentObject = new JsonSystemConfigImpl(taskExecutor,
+        final AbstractSystemConfig parentObject = new JsonSystemConfigImpl(_taskExecutor,
                                                                mock(EventLogger.class),
                                                                            brokerOptions.convertToSystemConfigAttributes());
 
@@ -226,7 +233,6 @@ public class TestBrokerConfiguration
             }
         });
 
-
         configurationStore.openConfigurationStore(parentObject,true,initialRecords.toArray(new ConfiguredObjectRecord[initialRecords.size()]));
         configurationStore.closeConfigurationStore();
         parentObject.close();
@@ -300,9 +306,15 @@ public class TestBrokerConfiguration
 
     public UUID addHttpManagementConfiguration()
     {
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
+                           "secureOnlyMechanisms", "{}");
+        setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
+                           TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(Plugin.TYPE, MANAGEMENT_HTTP_PLUGIN_TYPE);
         attributes.put(Plugin.NAME, ENTRY_NAME_HTTP_MANAGEMENT);
+        attributes.put(HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
         return addObjectConfiguration(Plugin.class, attributes);
     }
 
@@ -381,6 +393,75 @@ public class TestBrokerConfiguration
     public Map<String,Object> getObjectAttributes(final Class<? extends ConfiguredObject> category, final String name)
     {
         return findObject(category, name).getAttributes();
+    }
+
+    public void createVirtualHostNode(final String virtualHostNodeName,
+                                      final String storeType,
+                                      final String storeDir,
+                                      final String blueprint)
+    {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(VirtualHostNode.NAME, virtualHostNodeName);
+        attributes.put(VirtualHostNode.TYPE, storeType);
+        if (storeDir != null)
+        {
+            attributes.put(JsonVirtualHostNode.STORE_PATH, storeDir);
+        }
+
+        if (blueprint != null)
+        {
+            attributes.put(VirtualHostNode.CONTEXT,
+                           Collections.singletonMap(VirtualHostNode.VIRTUALHOST_BLUEPRINT_CONTEXT_VAR, blueprint));
+        }
+
+        addObjectConfiguration(VirtualHostNode.class, attributes);
+    }
+
+    public void configureTemporaryPasswordFile(String... users) throws IOException
+    {
+        _passwdFile = createTemporaryPasswordFile(users);
+
+        setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
+                                    "path", _passwdFile.getAbsolutePath());
+    }
+
+    public void cleanUp()
+    {
+        if (_passwdFile != null)
+        {
+            if (_passwdFile.exists())
+            {
+                _passwdFile.delete();
+            }
+        }
+    }
+
+    public File createTemporaryPasswordFile(String[] users) throws IOException
+    {
+        BufferedWriter writer = null;
+        try
+        {
+            File testFile = File.createTempFile(this.getClass().getName(),"tmp");
+            testFile.deleteOnExit();
+
+            writer = new BufferedWriter(new FileWriter(testFile));
+            for (int i = 0; i < users.length; i++)
+            {
+                String username = users[i];
+                writer.write(username + ":" + username);
+                writer.newLine();
+            }
+
+            return testFile;
+
+        }
+        finally
+        {
+            if (writer != null)
+            {
+                writer.close();
+            }
+        }
     }
 
     private static class RecordFindingVisitor implements ConfiguredObjectRecordHandler

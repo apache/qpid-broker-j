@@ -17,6 +17,8 @@
  */
 package org.apache.qpid.test.utils;
 
+import java.io.File;
+
 public class BrokerCommandHelperTest extends QpidTestCase
 {
     private static final String PATH_TO_QPID_EXECUTABLE = "/path  / to (/qpid";
@@ -41,7 +43,7 @@ public class BrokerCommandHelperTest extends QpidTestCase
 
     public void testGetBrokerCommand()
     {
-        String[] brokerCommand = _brokerCommandHelper.getBrokerCommand(1, "path to config file", "json");
+        String[] brokerCommand = _brokerCommandHelper.getBrokerCommand(1, TMP_FOLDER + File.separator + "work-dir", "path to config file", "json");
 
         String[] expected = { PATH_TO_QPID_EXECUTABLE, ARGUMENT_PORT, "1", ARGUMENT_STORE_PATH,  "path to config file",
                 ARGUMENT_STORE_TYPE, "json", ARGUMENT_WITH_SPACES };

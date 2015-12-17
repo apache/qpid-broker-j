@@ -38,12 +38,13 @@ import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.jms.Session;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.AMQConnectionClosedException;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.transport.ConnectionException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ExceptionListenerTest extends QpidBrokerTestCase
 {
@@ -68,7 +69,7 @@ public class ExceptionListenerTest extends QpidBrokerTestCase
         Connection connection = getConnection();
         connection.setExceptionListener(listener);
 
-        stopBroker();
+        stopDefaultBroker();
 
         exceptionReceivedLatch.await(10, TimeUnit.SECONDS);
 
@@ -110,7 +111,7 @@ public class ExceptionListenerTest extends QpidBrokerTestCase
         connection.setExceptionListener(listener);
 
 
-        stopBroker();
+        stopDefaultBroker();
 
         boolean exceptionReceived = exceptionReceivedLatch.await(10, TimeUnit.SECONDS);
         assertTrue("Exception listener did not hear exception within timeout", exceptionReceived);
@@ -151,7 +152,7 @@ public class ExceptionListenerTest extends QpidBrokerTestCase
         };
         connection.setExceptionListener(listener);
 
-        stopBroker();
+        stopDefaultBroker();
 
         boolean exceptionReceived = exceptionReceivedLatch.await(10, TimeUnit.SECONDS);
         assertTrue("Exception listener did not hear exception within timeout", exceptionReceived);

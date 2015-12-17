@@ -22,7 +22,6 @@
 package org.apache.qpid.test.client.failover;
 
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.jms.Connection;
@@ -39,10 +38,10 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.jms.ConnectionListener;
+import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.FailoverBaseCase;
 
-public class FailoverTest extends FailoverBaseCase implements ConnectionListener
+public class FailoverTest extends FailoverBaseCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(FailoverTest.class);
 
@@ -56,25 +55,22 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
     private Session consumerSession;
     private MessageConsumer consumer;
 
-    private CountDownLatch failoverComplete;
     private boolean CLUSTERED = Boolean.getBoolean("profile.clustered");
     private int seed;
     private Random rand;
-    private int _currentPort = getFailingPort();
 
     @Override
     protected void setUp() throws Exception
     {
         super.setUp();
-        
-        numMessages = Integer.getInteger("profile.failoverMsgCount",DEFAULT_NUM_MESSAGES);
-        seed = Integer.getInteger("profile.failoverRandomSeed",DEFAULT_SEED);
+
+        numMessages = Integer.getInteger("profile.failoverMsgCount", DEFAULT_NUM_MESSAGES);
+        seed = Integer.getInteger("profile.failoverRandomSeed", DEFAULT_SEED);
         rand = new Random(seed);
         
         connection = getConnection();
         ((AMQConnection) connection).setConnectionListener(this);
         connection.start();
-        failoverComplete = new CountDownLatch(1);
     }
 
     private void init(boolean transacted, int mode) throws Exception
@@ -99,7 +95,14 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
 
         }
 
-        super.tearDown();
+        try
+        {
+            _alternativeBroker.shutdown();
+        }
+        finally
+        {
+            super.tearDown();
+        }
     }
 
     private void consumeMessages(int startIndex,int endIndex, boolean transacted) throws JMSException
@@ -154,14 +157,14 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
 
     public void testP2PFailover() throws Exception
     {
-        testP2PFailover(numMessages, true,true, false);
+        testP2PFailover(numMessages, true, true, false);
     }
 
     public void testP2PFailoverWithMessagesLeftToConsumeAndProduce() throws Exception
     {
         if (CLUSTERED)
         {
-            testP2PFailover(numMessages, false,false, false);
+            testP2PFailover(numMessages, false, false, false);
         }
     }
     
@@ -175,7 +178,7 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
      
     public void testP2PFailoverTransacted() throws Exception
     {
-        testP2PFailover(numMessages, true,true, true);
+        testP2PFailover(numMessages, true, true, true);
     }
 
     public void testP2PFailoverTransactedWithMessagesLeftToConsumeAndProduce() throws Exception
@@ -189,10 +192,10 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
     private void testP2PFailover(int totalMessages, boolean consumeAll, boolean produceAll , boolean transacted) throws Exception
     {        
         init(transacted, Session.AUTO_ACKNOWLEDGE);
-        runP2PFailover(totalMessages,consumeAll, produceAll , transacted);
+        runP2PFailover(getDefaultBroker(), totalMessages,consumeAll, produceAll , transacted);
     } 
 
-    private void runP2PFailover(int totalMessages, boolean consumeAll, boolean produceAll , boolean transacted) throws Exception
+    private void runP2PFailover(BrokerHolder broker, int totalMessages, boolean consumeAll, boolean produceAll , boolean transacted) throws Exception
     {
         int toProduce = totalMessages;
         
@@ -209,7 +212,7 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
         _logger.debug("Sending " + toProduce + " messages");
         _logger.debug("==================");
         
-        sendMessages(0,toProduce, transacted);
+        sendMessages(0, toProduce, transacted);
 
         // Consume some messages
         int toConsume = toProduce;
@@ -218,7 +221,7 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
             toConsume = toProduce - rand.nextInt(toProduce);         
         }
         
-        consumeMessages(0,toConsume, transacted);
+        consumeMessages(0, toConsume, transacted);
 
         _logger.debug("==================");
         _logger.debug("Consuming " + toConsume + " messages");
@@ -226,30 +229,30 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
         
         _logger.info("Failing over");
 
-        causeFailure(_currentPort, DEFAULT_FAILOVER_TIME);
+        causeFailure(broker, DEFAULT_FAILOVER_TIME);
 
         // Check that you produce and consume the rest of messages.
         _logger.debug("==================");
         _logger.debug("Sending " + (totalMessages-toProduce) + " messages");
         _logger.debug("==================");
         
-        sendMessages(toProduce,totalMessages, transacted);
-        consumeMessages(toConsume,totalMessages, transacted);       
+        sendMessages(toProduce, totalMessages, transacted);
+        consumeMessages(toConsume, totalMessages, transacted);
         
         _logger.debug("==================");
         _logger.debug("Consuming " + (totalMessages-toConsume) + " messages");
         _logger.debug("==================");
     }
 
-    private void causeFailure(int port, long delay)
+    private void causeFailure(BrokerHolder broker, long delay)
     {
 
-        failBroker(port);
+        failBroker(broker);
 
         _logger.info("Awaiting Failover completion");
         try
         {
-            if (!failoverComplete.await(delay, TimeUnit.MILLISECONDS))
+            if (!_failoverComplete.await(delay, TimeUnit.MILLISECONDS))
             {
                 fail("failover did not complete");
             }
@@ -267,7 +270,7 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
         Message msg = consumer.receive();
         assertNotNull("Expected msgs not received", msg);
 
-        causeFailure(getFailingPort(), DEFAULT_FAILOVER_TIME);
+        causeFailure(getDefaultBroker(), DEFAULT_FAILOVER_TIME);
 
         Exception failure = null;
         try
@@ -291,61 +294,32 @@ public class FailoverTest extends FailoverBaseCase implements ConnectionListener
         {
             return;
         }
-        
-        int iterations = Integer.getInteger("profile.failoverIterations",0);
-        boolean useAltPort = false;
-        int altPort = FAILING_PORT;
-        int stdPort = DEFAULT_PORT;
+
+        BrokerHolder currentBroker = getDefaultBroker();
+        int iterations = Integer.getInteger("profile.failoverIterations", 3);
+        _logger.debug("LQ: iterations {}", iterations);
+        boolean useDefaultBroker = true;
         init(false, Session.AUTO_ACKNOWLEDGE);
         for (int i=0; i < iterations; i++)
         {
             _logger.debug("===================================================================");
             _logger.debug("Failover In a loop : iteration number " + i);
             _logger.debug("===================================================================");
-            
-            runP2PFailover(numMessages, false,false, false);
-            startBroker(_currentPort);
-            if (useAltPort)
+
+            runP2PFailover(currentBroker, numMessages, false, false, false);
+            restartBroker(currentBroker);
+            if (useDefaultBroker)
             {
-                _currentPort = altPort;
-                useAltPort = false;
+                currentBroker = _alternativeBroker;
+                useDefaultBroker = false;
             }
             else
             {
-            	_currentPort = stdPort;
-            	useAltPort = true;
+                currentBroker = getDefaultBroker();
+                useDefaultBroker = true;
             }
-            
         }
         //To prevent any failover logic being initiated when we shutdown the brokers.
         connection.close();
-        
-        // Shutdown the brokers
-        stopBroker(altPort);
-        stopBroker(stdPort);
-        
-    }  
-    
-    public void bytesSent(long count)
-    {
-    }
-
-    public void bytesReceived(long count)
-    {
-    }
-
-    public boolean preFailover(boolean redirect)
-    {
-        return true;
-    }
-
-    public boolean preResubscribe()
-    {
-        return true;
-    }
-
-    public void failoverComplete()
-    {   
-        failoverComplete.countDown();
     }
 }

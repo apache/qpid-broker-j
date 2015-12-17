@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -124,7 +125,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         String nodeName = "node" + getName();
         String hostName = "host" + getName();
-        _storePath = System.getProperty("QPID_WORK", TMP_FOLDER + File.separator + getTestName()) + File.separator + nodeName;
+        _storePath = Files.createTempDirectory("qpid-work-" + getClassQualifiedTestName() + "-").toString();
         cleanup(new File(_storePath));
 
         Broker<?> broker = BrokerTestHelper.createBrokerMock();
@@ -149,7 +150,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         String bluePrint = getTestProfileVirtualHostNodeBlueprint();
         if (bluePrint == null)
         {
-            bluePrint = "{type=\"" + TestMemoryVirtualHost.VIRTUAL_HOST_TYPE + "\"}";
+            bluePrint = "{\"type\":\"" + TestMemoryVirtualHost.VIRTUAL_HOST_TYPE + "\"}";
         }
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, Object> attrs =  objectMapper.readValue(bluePrint, Map.class);
@@ -175,6 +176,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         {
             _taskExecutor.stopImmediately();
             super.tearDown();
+            FileUtils.delete(new File(_storePath), true);
         }
     }
 

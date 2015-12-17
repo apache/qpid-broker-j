@@ -23,11 +23,16 @@ package org.apache.qpid.test.unit.client.connection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.jms.Connection;
+import javax.jms.ExceptionListener;
+import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
+import javax.jms.Session;
+
 import org.apache.qpid.AMQConnectionClosedException;
 import org.apache.qpid.AMQDisconnectedException;
 import org.apache.qpid.client.AMQConnection;
@@ -36,11 +41,6 @@ import org.apache.qpid.client.BasicMessageConsumer;
 import org.apache.qpid.client.BasicMessageProducer;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.transport.ConnectionException;
-
-import javax.jms.Connection;
-import javax.jms.ExceptionListener;
-import javax.jms.JMSException;
-import javax.jms.Session;
 
 /**
  * Tests the behaviour of the client when the Broker terminates client connection
@@ -77,7 +77,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
 
         assertJmsObjectsOpen();
 
-        stopBroker();
+        stopDefaultBroker();
 
         JMSException exception = _recordingExceptionListener.awaitException(10000);
         assertConnectionCloseWasReported(exception, expectedLinkedException);
@@ -97,7 +97,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
 
         assertJmsObjectsOpen();
 
-        killBroker();
+        killDefaultBroker();
 
         JMSException exception = _recordingExceptionListener.awaitException(10000);
         assertConnectionCloseWasReported(exception, expectedLinkedException);
@@ -219,7 +219,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
 
         assertEquals(1, listener.getCount());
 
-        stopBroker();
+        stopDefaultBroker();
 
         assertEquals(1, listener.getCount());
 

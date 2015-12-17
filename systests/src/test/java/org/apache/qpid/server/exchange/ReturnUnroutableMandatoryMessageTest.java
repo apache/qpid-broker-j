@@ -56,17 +56,6 @@ public class ReturnUnroutableMandatoryMessageTest extends QpidBrokerTestCase imp
 
     private final List<Message> _bouncedMessageList = Collections.synchronizedList(new ArrayList<Message>());
 
-    static
-    {
-        String workdir = System.getProperty("QPID_WORK");
-        if (workdir == null || workdir.equals(""))
-        {
-            String tempdir = System.getProperty("java.io.tmpdir");
-            _logger.info("QPID_WORK not set using tmp directory: " + tempdir);
-            System.setProperty("QPID_WORK", tempdir);
-        }
-    }
-
     /**
      * Tests that mandatory message which are not routable are returned to the producer
      *

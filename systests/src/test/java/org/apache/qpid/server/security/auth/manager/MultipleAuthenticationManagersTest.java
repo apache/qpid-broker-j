@@ -48,14 +48,14 @@ public class MultipleAuthenticationManagersTest extends QpidBrokerTestCase
     @Override
     protected void setUp() throws Exception
     {
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
 
-        Map<String, Object> externalAuthProviderAttributes = new HashMap<String, Object>();
+        Map<String, Object> externalAuthProviderAttributes = new HashMap<>();
         externalAuthProviderAttributes.put(AuthenticationProvider.TYPE, AnonymousAuthenticationManager.PROVIDER_TYPE);
         externalAuthProviderAttributes.put(AuthenticationProvider.NAME, TestBrokerConfiguration.ENTRY_NAME_ANONYMOUS_PROVIDER);
         config.addObjectConfiguration(AuthenticationProvider.class, externalAuthProviderAttributes);
 
-        Map<String, Object> sslPortAttributes = new HashMap<String, Object>();
+        Map<String, Object> sslPortAttributes = new HashMap<>();
         sslPortAttributes.put(Port.TRANSPORTS, Collections.singleton(Transport.SSL));
         sslPortAttributes.put(Port.PORT, DEFAULT_SSL_PORT);
         sslPortAttributes.put(Port.NAME, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT);
@@ -74,7 +74,7 @@ public class MultipleAuthenticationManagersTest extends QpidBrokerTestCase
         aliasAttributes = new HashMap<>();
         aliasAttributes.put(VirtualHostAlias.NAME, "nameAlias");
         aliasAttributes.put(VirtualHostAlias.TYPE, VirtualHostNameAlias.TYPE_NAME);
-        getBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
+        getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
 
 
         // set the ssl system properties
@@ -90,7 +90,7 @@ public class MultipleAuthenticationManagersTest extends QpidBrokerTestCase
     {
         String url = "amqp://:@test/?brokerlist='tcp://localhost:%s?ssl='true''";
 
-        url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT);
+        url = String.format(url, getDefaultBroker().getAmqpTlsPort());
 
         return new AMQConnection(url);
 
@@ -100,7 +100,7 @@ public class MultipleAuthenticationManagersTest extends QpidBrokerTestCase
     {
         String url = "amqp://:@test/?brokerlist='tcp://localhost:%s'";
 
-        url = String.format(url,QpidBrokerTestCase.DEFAULT_PORT);
+        url = String.format(url, getDefaultBroker().getAmqpPort());
 
         return new AMQConnection(url);
 

@@ -66,7 +66,8 @@ public class BDBBackupTest extends QpidBrokerTestCase
         _backupToDir = new File(SYSTEM_TMP_DIR + File.separator + getTestName());
         _backupToDir.mkdirs();
 
-        Map<String, Object> virtualHostNodeAttributes = getBrokerConfiguration().getObjectAttributes(VirtualHostNode.class, TEST_VHOST);
+        Map<String, Object> virtualHostNodeAttributes = getDefaultBrokerConfiguration().getObjectAttributes(VirtualHostNode.class, TEST_VHOST);
+        setSystemProperty("qpid.work_dir", getDefaultBroker().getWorkDir().toString());
         _backupFromDir = new File(Strings.expand((String) virtualHostNodeAttributes.get(BDBVirtualHostNode.STORE_PATH)));
         boolean fromDirExistsAndIsDir = _backupFromDir.isDirectory();
         assertTrue("backupFromDir " + _backupFromDir + " should already exist", fromDirExistsAndIsDir);
@@ -91,12 +92,12 @@ public class BDBBackupTest extends QpidBrokerTestCase
         invokeBdbBackup(_backupFromDir, _backupToDir);
         sendNumberedMessages(10, 20);
         confirmBrokerHasMessages(0, 20);
-        stopBroker();
+        stopDefaultBroker();
 
         deleteStore(_backupFromDir);
         replaceStoreWithBackup(_backupToDir, _backupFromDir);
 
-        startBroker();
+        startDefaultBroker();
         confirmBrokerHasMessages(0, 10);
     }
 

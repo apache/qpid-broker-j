@@ -35,12 +35,7 @@ import javax.naming.NamingException;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.jms.ConnectionURL;
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.Exchange;
-import org.apache.qpid.server.model.Plugin;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -48,36 +43,21 @@ import org.apache.qpid.url.URLSyntaxException;
 
 public class MessageCompressionTest extends QpidBrokerTestCase
 {
-    private RestTestHelper _restTestHelper = new RestTestHelper(findFreePort());
+    private RestTestHelper _restTestHelper;
 
     @Override
-    public void setUp() throws Exception
+    public void startDefaultBroker()
     {
-        // do nothing - only call setup after props set
+        // tests are starting the broker
     }
 
     public void doActualSetUp() throws Exception
     {
-        // use webadmin account to perform tests
-        _restTestHelper.setUsernameAndPassword("webadmin", "webadmin");
-
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.addHttpManagementConfiguration();
-        config.setObjectAttribute(Port.class,
-                                  TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT,
-                                  Port.PORT,
-                                  _restTestHelper.getHttpPort());
+        super.startDefaultBroker();
 
-        config.setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
-                                  "secureOnlyMechanisms",
-                                  "{}");
-
-        // set password authentication provider on http port for the tests
-        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
-                                  TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
-        config.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
-
-        super.setUp();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
     }
 
     @Override

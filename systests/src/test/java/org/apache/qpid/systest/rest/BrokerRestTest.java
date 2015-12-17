@@ -105,7 +105,7 @@ public class BrokerRestTest extends QpidRestTestCase
         int response = getRestTestHelper().submitRequest("broker", "PUT", brokerAttributes);
         assertEquals("Unexpected update response", 200, response);
 
-        restartBroker();
+        restartDefaultBroker();
         Map<String, Object> brokerDetails = getRestTestHelper().getJsonAsSingletonList("broker");
         assertBrokerAttributes(brokerAttributes, brokerDetails);
     }

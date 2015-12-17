@@ -738,15 +738,13 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
     public void testValidateOnCreateForAlreadyBoundAddress() throws Exception
     {
-        int node1PortNumber = findFreePort();
-
         ServerSocket serverSocket = null;
         try
         {
             serverSocket = new ServerSocket();
             serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress("localhost", node1PortNumber));
-
+            serverSocket.bind(new InetSocketAddress(0));
+            int node1PortNumber = serverSocket.getLocalPort();
 
             Map<String, Object> attributes = _helper.createNodeAttributes("node1", "group", "localhost:" + node1PortNumber,
                     "localhost:" + node1PortNumber, "node2", node1PortNumber, node1PortNumber);
@@ -772,7 +770,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
     public void testValidateOnCreateForInvalidStorePath() throws Exception
     {
-        int node1PortNumber = findFreePort();
+        int node1PortNumber = 0;
 
         File storeBaseFolder = TestFileUtils.createTestDirectory();
         File file = new File(storeBaseFolder, getTestName());

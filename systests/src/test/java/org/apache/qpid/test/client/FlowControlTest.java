@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.AMQSession_0_8;
 import org.apache.qpid.client.message.AbstractJMSMessage;
+import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class FlowControlTest extends QpidBrokerTestCase
@@ -204,16 +205,20 @@ public class FlowControlTest extends QpidBrokerTestCase
         {
             System.err.println("Test Run:" + ++run);
             Thread.sleep(1000);
+            BrokerHolder broker = null;
             try
             {
-                test.startBroker();
+                broker = test.createSpawnedBroker();
                 test.testBasicBytesFlowControl();
 
                 Thread.sleep(1000);
             }
             finally
             {
-                test.stopBroker();
+                if (broker != null)
+                {
+                    broker.shutdown();
+                }
             }
         }
     }

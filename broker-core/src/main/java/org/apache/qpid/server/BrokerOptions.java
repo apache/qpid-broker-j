@@ -332,4 +332,21 @@ public class BrokerOptions
     {
         _initialSystemProperties = initialSystemProperties;
     }
+
+    @Override
+    public String toString()
+    {
+        return "BrokerOptions{" +
+               "_configurationStoreLocation='" + _configurationStoreLocation + '\'' +
+               ", _configurationStoreType='" + _configurationStoreType + '\'' +
+               ", _initialConfigurationLocation='" + _initialConfigurationLocation + '\'' +
+               ", _managementMode=" + _managementMode +
+               ", _managementModeQuiesceVhosts=" + _managementModeQuiesceVhosts +
+               ", _managementModeHttpPortOverride=" + _managementModeHttpPortOverride +
+               ", _overwriteConfigurationStore=" + _overwriteConfigurationStore +
+               ", _configProperties=" + _configProperties +
+               ", _startupLoggedToSystemOut=" + _startupLoggedToSystemOut +
+               ", _initialSystemProperties='" + _initialSystemProperties + '\'' +
+               '}';
+    }
 }

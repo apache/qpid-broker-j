@@ -31,7 +31,7 @@ public class TransactionTimeoutDisabledTest extends TransactionTimeoutTestCase
     protected void configure() throws Exception
     {
         // Setup housekeeping every second
-        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
+        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
         setTestSystemProperty("virtualhost.housekeepingCheckPeriod", "100");
 
         // No transaction timeout configuration.

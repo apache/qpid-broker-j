@@ -20,6 +20,12 @@
  */
 package org.apache.qpid.server.failover;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import javax.jms.ExceptionListener;
+import javax.jms.JMSException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +36,6 @@ import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.util.SystemUtils;
-
-import javax.jms.ExceptionListener;
-import javax.jms.JMSException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionListener
 {
@@ -59,7 +60,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
         //note: The first broker has no connect delay and the default 1 retry
         //        while the tcp:localhost broker has 3 retries with a 2s connect delay
         String connectionString = "amqp://guest:guest@/test?brokerlist=" +
-                                  "'tcp://localhost:" + getPort() +
+                                  "'tcp://localhost:" + getDefaultAmqpPort() +
                                   ";tcp://localhost:" + _freePortWithNoBroker + "?connectdelay='2000',retries='3''";
 
         AMQConnectionURL url = new AMQConnectionURL(connectionString);
@@ -72,7 +73,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
             connection.setExceptionListener(this);
 
             LOGGER.debug("Stopping broker");
-            stopBroker();
+            stopDefaultBroker();
             LOGGER.debug("Stopped broker");
 
             _failoverComplete.await(30, TimeUnit.SECONDS);
@@ -112,7 +113,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
             return;
         }
 
-        String connectionString = "amqp://guest:guest@/test?brokerlist='tcp://localhost:" + getPort() + "?connectdelay='2000',retries='3''";
+        String connectionString = "amqp://guest:guest@/test?brokerlist='tcp://localhost:" + getDefaultAmqpPort() + "?connectdelay='2000',retries='3''";
 
         AMQConnectionURL url = new AMQConnectionURL(connectionString);
 
@@ -124,7 +125,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
             connection.setExceptionListener(this);
 
             LOGGER.debug("Stopping broker");
-            stopBroker();
+            stopDefaultBroker();
             LOGGER.debug("Stopped broker");
 
             _failoverComplete.await(30, TimeUnit.SECONDS);
@@ -171,7 +172,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
         }
 
         int CONNECT_DELAY = 2000;
-        String connectionString = "amqp://guest:guest@/test?brokerlist='tcp://localhost:" + getPort() + "?connectdelay='" + CONNECT_DELAY + "'," +
+        String connectionString = "amqp://guest:guest@/test?brokerlist='tcp://localhost:" + getDefaultAmqpPort() + "?connectdelay='" + CONNECT_DELAY + "'," +
                                   "retries='3'',failover='nofailover'";
 
         
@@ -181,7 +182,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
         try
         {
             //Kill initial broker
-            stopBroker();
+            stopDefaultBroker();
 
             //Create a thread to start the broker asynchronously
             brokerStart = new Thread(new Runnable()
@@ -193,7 +194,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
                         //Wait before starting broker
                         // The wait should allow at least 1 retries to fail before broker is ready
                         Thread.sleep(750);
-                        startBroker();
+                        startDefaultBroker();
                     }
                     catch (Exception e)
                     {
@@ -223,7 +224,7 @@ public class FailoverMethodTest extends QpidBrokerTestCase implements ExceptionL
             start = System.currentTimeMillis();
 
             //Kill connection
-            stopBroker();
+            stopDefaultBroker();
 
             _failoverComplete.await(30, TimeUnit.SECONDS);
             assertEquals("failoverLatch was not decremented in given timeframe", 0, _failoverComplete.getCount());

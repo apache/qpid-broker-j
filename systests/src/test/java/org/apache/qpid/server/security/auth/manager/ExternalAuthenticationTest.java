@@ -56,8 +56,14 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     @Override
     protected void setUp() throws Exception
     {
-        // not calling super.setUp() to avoid broker start-up
+        super.setUp();
         setSystemProperty("javax.net.debug", "ssl");
+    }
+
+    @Override
+    public void startDefaultBroker()
+    {
+        // each test start the broker in its own way
     }
 
     /**
@@ -67,7 +73,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     public void testExternalAuthenticationManagerOnSSLPort() throws Exception
     {
         setCommonBrokerSSLProperties(true);
-        super.setUp();
+        super.startDefaultBroker();
 
         setClientKeystoreProperties();
         setClientTrustoreProperties();
@@ -99,8 +105,8 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     public void testExternalAuthenticationManagerOnNonSslPort() throws Exception
     {
         setCommonBrokerSSLProperties(true);
-        getBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT, Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_EXTERNAL_PROVIDER);
-        super.setUp();
+        getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT, Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_EXTERNAL_PROVIDER);
+        super.startDefaultBroker();
 
         setClientKeystoreProperties();
         setClientTrustoreProperties();
@@ -123,7 +129,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     public void testExternalAuthenticationManagerWithoutClientKeyStore() throws Exception
     {
         setCommonBrokerSSLProperties(false);
-        super.setUp();
+        super.startDefaultBroker();
 
         setClientTrustoreProperties();
 
@@ -145,7 +151,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
     public void testExternalAuthenticationDeniesUntrustedClientCert() throws Exception
     {
         setCommonBrokerSSLProperties(true);
-        super.setUp();
+        super.startDefaultBroker();
 
         setUntrustedClientKeystoreProperties();
         setClientTrustoreProperties();
@@ -205,9 +211,9 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         sslTrustStoreAttributes.put(FileTrustStore.STORE_URL, BROKER_PEERSTORE);
         sslTrustStoreAttributes.put(FileTrustStore.PASSWORD, BROKER_PEERSTORE_PASSWORD);
         sslTrustStoreAttributes.put(FileTrustStore.PEERS_ONLY, true);
-        getBrokerConfiguration().addObjectConfiguration(TrustStore.class, sslTrustStoreAttributes);
+        getDefaultBrokerConfiguration().addObjectConfiguration(TrustStore.class, sslTrustStoreAttributes);
 
-        super.setUp();
+        super.startDefaultBroker();
 
         setClientKeystoreProperties();
         setClientTrustoreProperties();
@@ -250,11 +256,10 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
      */
     public void testExternalAuthenticationManagerUsernameAsCN() throws Exception
     {
-        RestTestHelper restTestHelper = new RestTestHelper(findFreePort());
-        restTestHelper.enableHttpManagement(getBrokerConfiguration());
+        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
         setCommonBrokerSSLProperties(true);
 
-        super.setUp();
+        super.startDefaultBroker();
 
         setClientKeystoreProperties();
         setClientTrustoreProperties();
@@ -268,6 +273,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
             fail("Should be able to create a connection to the SSL port: " + e.getMessage());
         }
 
+        RestTestHelper restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
         try
         {
             // Getting the used username using REST
@@ -286,17 +292,15 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
      */
     public void testExternalAuthenticationManagerUsernameAsDN() throws Exception
     {
-        RestTestHelper restTestHelper = new RestTestHelper(findFreePort());
-        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
-        restTestHelper.enableHttpManagement(brokerConfiguration);
-
+        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
+        brokerConfiguration.addHttpManagementConfiguration();
         setCommonBrokerSSLProperties(true);
         brokerConfiguration.setObjectAttribute(AuthenticationProvider.class,
                                                     TestBrokerConfiguration.ENTRY_NAME_EXTERNAL_PROVIDER,
                                                     ExternalAuthenticationManager.ATTRIBUTE_USE_FULL_DN,
                                                     "true");
 
-        super.setUp();
+        super.startDefaultBroker();
 
         setClientKeystoreProperties();
         setClientTrustoreProperties();
@@ -310,6 +314,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
             fail("Should be able to create a connection to the SSL port: " + e.getMessage());
         }
 
+        RestTestHelper restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
         try
         {
             // Getting the used username using REST
@@ -330,14 +335,15 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
 
     private Connection getExternalSSLConnection(boolean includeUserNameAndPassword, String optionString) throws Exception
     {
+        int amqpTlsPort = getDefaultBroker().getAmqpTlsPort();
         String url = "amqp://%s@test/?brokerlist='tcp://localhost:%s?ssl='true'&sasl_mechs='EXTERNAL'%s'";
         if (includeUserNameAndPassword)
         {
-            url = String.format(url, "guest:guest", String.valueOf(QpidBrokerTestCase.DEFAULT_SSL_PORT), optionString);
+            url = String.format(url, "guest:guest", String.valueOf(amqpTlsPort), optionString);
         }
         else
         {
-            url = String.format(url, ":", String.valueOf(QpidBrokerTestCase.DEFAULT_SSL_PORT), optionString);
+            url = String.format(url, ":", String.valueOf(amqpTlsPort), optionString);
         }
         return getConnection(new AMQConnectionURL(url));
     }
@@ -349,7 +355,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
 
     private void setCommonBrokerSSLProperties(boolean needClientAuth, Collection<String> trustStoreNames)
     {
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
 
         Map<String, Object> sslPortAttributes = new HashMap<String, Object>();
         sslPortAttributes.put(Port.TRANSPORTS, Collections.singleton(Transport.SSL));
@@ -365,12 +371,12 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
         Map<String, Object> aliasAttributes = new HashMap<>();
         aliasAttributes.put(VirtualHostAlias.NAME, "defaultAlias");
         aliasAttributes.put(VirtualHostAlias.TYPE, DefaultVirtualHostAlias.TYPE_NAME);
-        getBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
+        getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
 
         aliasAttributes = new HashMap<>();
         aliasAttributes.put(VirtualHostAlias.NAME, "nameAlias");
         aliasAttributes.put(VirtualHostAlias.TYPE, VirtualHostNameAlias.TYPE_NAME);
-        getBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
+        getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
 
 
         Map<String, Object> externalAuthProviderAttributes = new HashMap<String, Object>();

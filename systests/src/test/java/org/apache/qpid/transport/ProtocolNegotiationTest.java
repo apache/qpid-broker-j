@@ -56,7 +56,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
         {
             socket.setSoTimeout(SO_TIMEOUT);
 
-            final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getPort());
+            final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
             _logger.debug("Making connection to {}", inetSocketAddress);
 
             socket.connect(inetSocketAddress);
@@ -84,7 +84,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
         {
             socket.setSoTimeout(SO_TIMEOUT);
 
-            final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getPort());
+            final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
             _logger.debug("Making connection to {}", inetSocketAddress);
 
             socket.connect(inetSocketAddress);
@@ -118,7 +118,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             final ProtocolVersion protocolVersion = convertProtocolToProtocolVersion(getBrokerProtocol());
             ProtocolInitiation pi = new ProtocolInitiation(protocolVersion);
 
-            final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getPort());
+            final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
             _logger.debug("Making connection to {}", inetSocketAddress);
 
             socket.connect(inetSocketAddress);
@@ -165,7 +165,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             final ProtocolVersion protocolVersion = convertProtocolToProtocolVersion(getBrokerProtocol());
             ProtocolInitiation pi = new ProtocolInitiation(protocolVersion);
 
-            final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getPort());
+            final InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", getDefaultAmqpPort());
             _logger.debug("Making connection to {}", inetSocketAddress);
 
             socket.connect(inetSocketAddress);

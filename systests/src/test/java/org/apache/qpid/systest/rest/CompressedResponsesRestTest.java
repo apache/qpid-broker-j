@@ -22,7 +22,6 @@ package org.apache.qpid.systest.rest;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.LinkedHashMap;
@@ -46,13 +45,13 @@ public class CompressedResponsesRestTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getBrokerConfiguration().setObjectAttribute(Plugin.class,
-                                                    TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
-                                                    "compressResponses",
-                                                    _compress);
+        getDefaultBrokerConfiguration().setObjectAttribute(Plugin.class,
+                                                           TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
+                                                           "compressResponses",
+                                                           _compress);
     }
 
     public void testCompressionOffAcceptOff() throws Exception

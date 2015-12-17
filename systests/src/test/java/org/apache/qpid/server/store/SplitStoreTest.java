@@ -47,13 +47,13 @@ public class SplitStoreTest extends QpidBrokerTestCase
     {
         super.setUp();
 
-        String virtualHostWorkDir = "${json:QPID_WORK}${json:file.separator}${this:name}${json:file.separator}";
+        String virtualHostWorkDir = "${json:qpid.work_dir}${json:file.separator}${this:name}${json:file.separator}";
         _messageStorePath =  virtualHostWorkDir  + "messageStore";
         _configStorePath =  virtualHostWorkDir  + "configStore";
     }
 
     @Override
-    public void startBroker() throws Exception
+    public void startDefaultBroker() throws Exception
     {
         // Overridden to prevent QBTC starting the Broker.
     }
@@ -75,12 +75,12 @@ public class SplitStoreTest extends QpidBrokerTestCase
         final Map<String, String> contextMap = Collections.singletonMap(AbstractVirtualHostNode.VIRTUALHOST_BLUEPRINT_CONTEXT_VAR,
                                                                         blueprint);
 
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, VirtualHostNode.TYPE, virtualHostNodeType);
         config.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, VirtualHostNode.CONTEXT, contextMap);
         config.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, JsonVirtualHostNode.STORE_PATH, _configStorePath);
 
-        super.startBroker();
+        super.startDefaultBroker();
     }
 
     private void doTest(String nodeType, String path) throws Exception
@@ -94,7 +94,7 @@ public class SplitStoreTest extends QpidBrokerTestCase
         sendMessage(session, queue, 1);
         connection.close();
 
-        restartBroker();
+        restartDefaultBroker();
 
         setTestSystemProperty(ClientProperties.QPID_DECLARE_QUEUES_PROP_NAME, "false");
         connection = getConnection();
@@ -107,7 +107,7 @@ public class SplitStoreTest extends QpidBrokerTestCase
         assertNotNull("Message was not received after first restart", message);
         assertEquals("Unexpected message received after first restart", 0, message.getIntProperty(INDEX));
 
-        stopBroker();
+        stopDefaultBroker();
     }
 
 }

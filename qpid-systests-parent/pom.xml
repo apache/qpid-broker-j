@@ -34,7 +34,6 @@
     <broker.home.dir>target${file.separator}qpid-broker${file.separator}${project.version}</broker.home.dir>
     <!-- test properties -->
     <qpid.home>${basedir}${file.separator}${broker.home.dir}</qpid.home>
-    <qpid.home.qbtc.output>${qpid.home}${file.separator}qbtc-test-config</qpid.home.qbtc.output>
 
     <test.working.directory>${basedir}/..</test.working.directory>
     <test.resource.directory>${basedir}/..</test.resource.directory>

@@ -60,16 +60,16 @@ public class ProducerFlowControlTest extends AbstractTestLogging
     private MessageProducer _producer;
     private MessageConsumer _consumer;
     private Queue _queue;
-    private RestTestHelper _restTestHelper = new RestTestHelper(findFreePort());
+    private RestTestHelper _restTestHelper;
 
     private final AtomicInteger _sentMessages = new AtomicInteger(0);
 
     public void setUp() throws Exception
     {
-        _restTestHelper.enableHttpManagement(getBrokerConfiguration());
-
+        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
         super.setUp();
 
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
         _monitor.markDiscardPoint();
 
         _producerConnection = getConnection();

@@ -20,13 +20,14 @@
  */
 package org.apache.qpid.systest.rest;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.model.GroupMember;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -45,7 +46,7 @@ public class GroupRestTest extends QpidRestTestCase
     {
         _groupFile = createTemporaryGroupFile();
 
-        getBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
+        getDefaultBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
 
         super.setUp();
     }

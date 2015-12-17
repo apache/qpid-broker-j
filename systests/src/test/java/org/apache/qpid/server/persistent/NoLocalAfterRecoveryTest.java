@@ -81,7 +81,7 @@ public class NoLocalAfterRecoveryTest extends QpidBrokerTestCase
 
         //Ensure the no-local subscribers messages were discarded by restarting the broker
         //and reconnecting to the subscription to ensure they were not recovered.
-        restartBroker();
+        restartDefaultBroker();
 
         Connection connection2 = getConnection();
         connection2.start();
@@ -140,7 +140,7 @@ public class NoLocalAfterRecoveryTest extends QpidBrokerTestCase
 
         //We didn't receive the messages on the durable queue for the no-local subscriber
         //so they are still on the broker. Restart the broker, prompting their recovery.
-        restartBroker();
+        restartDefaultBroker();
 
         Connection connection2 = getConnection();
         connection2.start();

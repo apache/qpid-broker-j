@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -38,19 +37,21 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.configuration.BrokerProperties;
+import org.apache.qpid.server.logging.BrokerLogbackSocketLogger;
+import org.apache.qpid.server.logging.BrokerNameAndLevelLogInclusionRule;
 import org.apache.qpid.server.logging.messages.BrokerMessages;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.model.BrokerLogInclusionRule;
+import org.apache.qpid.server.model.BrokerLogger;
 import org.apache.qpid.util.SystemUtils;
 
-public class SpawnedBrokerHolder implements BrokerHolder
+public class SpawnedBrokerHolder extends AbstractBrokerHolder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpawnedBrokerHolder.class);
     protected static final String BROKER_READY = System.getProperty("broker.ready", BrokerMessages.READY().toString());
     private static final String BROKER_STOPPED = System.getProperty("broker.stopped", BrokerMessages.STOPPED().toString());
+    private static final String BROKER_COMMAND_PLATFORM = "broker.command." + SystemUtils.getOSConfigSuffix();
+    private static final String BROKER_COMMAND_TEMPLATE = System.getProperty(BROKER_COMMAND_PLATFORM, System.getProperty("broker.command"));
 
-    private final BrokerType _type;
-    private final int _port;
-    private final String _name;
     private final Map<String, String> _jvmOptions;
     private final Map<String, String> _environmentSettings;
     protected BrokerCommandHelper _brokerCommandHelper;
@@ -58,28 +59,36 @@ public class SpawnedBrokerHolder implements BrokerHolder
     private  Process _process;
     private  Integer _pid;
     private List<String> _windowsPids;
-    private Set<Integer> _portsUsedByBroker;
     private String _brokerCommand;
+    private String _pseudoThreadName;
 
-    public SpawnedBrokerHolder(String brokerCommandTemplate, int port, String name, Map<String, String> jvmOptions, Map<String, String> environmentSettings, BrokerType type, Set<Integer> portsUsedByBroker)
+    public SpawnedBrokerHolder(final int port,
+                               final String classQualifiedTestName,
+                               final File logFile,
+                               Map<String, String> jvmOptions,
+                               Map<String, String> environmentSettings)
     {
-        _type = type;
-        _portsUsedByBroker = portsUsedByBroker;
-        _port = port;
-        _name = name;
+        super(port, classQualifiedTestName, logFile);
         _jvmOptions = jvmOptions;
         _environmentSettings = environmentSettings;
-        _brokerCommandHelper = new BrokerCommandHelper(brokerCommandTemplate);
+        _brokerCommandHelper = new BrokerCommandHelper(BROKER_COMMAND_TEMPLATE);
+        _pseudoThreadName = "BROKER-" + getBrokerIndex();
     }
 
 
     @Override
     public void start(BrokerOptions brokerOptions) throws Exception
     {
-        // Add the port to QPID_WORK to ensure unique working dirs for multi broker tests
-        final String qpidWork = getQpidWork(_type, _port);
+        Map<String, String> mdc = new HashMap<>();
+        mdc.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
+        mdc.put("origin", getLogPrefix());
 
-        String[] cmd = _brokerCommandHelper.getBrokerCommand(_port, brokerOptions.getConfigurationStoreLocation(), brokerOptions.getConfigurationStoreType());
+        LOGGER.debug("Spawning broker with options: {} jvmOptions: {} environmentSettings: {}", brokerOptions, _jvmOptions, _environmentSettings);
+
+        String[] cmd = _brokerCommandHelper.getBrokerCommand(Integer.parseInt(brokerOptions.getConfigProperties().get("test.port")),
+                                                             brokerOptions.getConfigProperties().get("qpid.work_dir"),
+                                                             brokerOptions.getConfigurationStoreLocation(),
+                                                             brokerOptions.getConfigurationStoreType());
         if (brokerOptions.isManagementMode())
         {
             String[] newCmd = new String[cmd.length + 3];
@@ -112,8 +121,7 @@ public class SpawnedBrokerHolder implements BrokerHolder
         }
         //Add the test name to the broker run.
         // DON'T change PNAME, qpid.stop needs this value.
-        processEnv.put("QPID_PNAME", "-DPNAME=QPBRKR -DTNAME=\"" + _name + "\"");
-        processEnv.put("QPID_WORK", qpidWork);
+        processEnv.put("QPID_PNAME", "-DPNAME=QPBRKR -DTNAME=\"" + getClassQualifiedTestName() + "\"");
 
         // Add all the environment settings the test requested
         if (!_environmentSettings.isEmpty())
@@ -142,19 +150,14 @@ public class SpawnedBrokerHolder implements BrokerHolder
         }
         processEnv.put("QPID_OPTS", qpidOpts);
 
-        // cpp broker requires that the work directory is created
-        createBrokerWork(qpidWork);
-
         _process = pb.start();
 
         Piper standardOutputPiper = new Piper(_process.getInputStream(),
                 BROKER_READY,
                 BROKER_STOPPED,
-                "STD", "BROKER-" + _port);
+                _pseudoThreadName, getClass().getName());
 
         standardOutputPiper.start();
-
-        new Piper(_process.getErrorStream(), null, null, "ERROR", "BROKER-" + _port).start();
 
         StringBuilder cmdLine = new StringBuilder(cmd[0]);
         for(int i = 1; i< cmd.length; i++)
@@ -176,7 +179,6 @@ public class SpawnedBrokerHolder implements BrokerHolder
             }
             //Ensure broker has stopped
             _process.destroy();
-            cleanBrokerWork(qpidWork);
             throw new RuntimeException("broker failed to become ready:"
                     + standardOutputPiper.getStopLine());
         }
@@ -188,7 +190,6 @@ public class SpawnedBrokerHolder implements BrokerHolder
             //test that the broker is still running and hasn't exited unexpectedly
             int exit = _process.exitValue();
             LOGGER.info("broker aborted: " + exit);
-            cleanBrokerWork(qpidWork);
             throw new RuntimeException("broker aborted: " + exit);
         }
         catch (IllegalThreadStateException e)
@@ -211,47 +212,7 @@ public class SpawnedBrokerHolder implements BrokerHolder
         }
     }
 
-    protected void createBrokerWork(final String qpidWork)
-    {
-        if (qpidWork != null)
-        {
-            final File dir = new File(qpidWork);
-            dir.mkdirs();
-            if (!dir.isDirectory())
-            {
-                throw new RuntimeException("Failed to created Qpid work directory : " + qpidWork);
-            }
-        }
-    }
-
-    private String getQpidWork(BrokerType broker, int port)
-    {
-        if (!broker.equals(BrokerType.EXTERNAL))
-        {
-            return System.getProperty(BrokerProperties.PROPERTY_QPID_WORK) + File.separator + port;
-        }
-
-        return System.getProperty(BrokerProperties.PROPERTY_QPID_WORK);
-    }
-
-    private void cleanBrokerWork(final String qpidWork)
-    {
-        if (qpidWork != null)
-        {
-            LOGGER.info("Cleaning broker work dir: " + qpidWork);
-
-            File file = new File(qpidWork);
-            if (file.exists())
-            {
-                final boolean success = FileUtils.delete(file, true);
-                if(!success)
-                {
-                    throw new RuntimeException("Failed to recursively delete beneath : " + file);
-                }
-            }
-        }
-    }
-
+    @Override
     public void shutdown()
     {
         if(SystemUtils.isWindows())
@@ -259,12 +220,20 @@ public class SpawnedBrokerHolder implements BrokerHolder
             doWindowsKill();
         }
 
-        LOGGER.info("Destroying broker process");
-        _process.destroy();
+        if (_process != null)
+        {
+            LOGGER.info("Destroying broker process");
+            _process.destroy();
 
-        reapChildProcess();
+            reapChildProcess();
+            waitUntilPortsAreFree();
+        }
+    }
 
-        waitUntilPortsAreFree();
+    @Override
+    protected String getLogPrefix()
+    {
+        return _pseudoThreadName;
     }
 
     private List<String> retrieveWindowsPidsIfPossible()
@@ -472,11 +441,6 @@ public class SpawnedBrokerHolder implements BrokerHolder
         }
     }
 
-    private void waitUntilPortsAreFree()
-    {
-        new PortHelper().waitUntilPortsAreFree(_portsUsedByBroker);
-    }
-
     @Override
     public String dumpThreads()
     {
@@ -502,7 +466,48 @@ public class SpawnedBrokerHolder implements BrokerHolder
     @Override
     public String toString()
     {
-        return "SpawnedBrokerHolder [_pid=" + _pid + ", _portsUsedByBroker="
-                + _portsUsedByBroker + "]";
+        return "SpawnedBrokerHolder [_pid=" + _pid + ", _amqpPort="
+                + getAmqpPort() + "]";
     }
+
+    @Override
+    protected TestBrokerConfiguration createBrokerConfiguration()
+    {
+        TestBrokerConfiguration configuration = super.createBrokerConfiguration();
+
+        String remotelogback = "remotelogback";
+
+        Map<String, String> mdc = new HashMap<>();
+        mdc.put(QpidBrokerTestCase.CLASS_QUALIFIED_TEST_NAME, getClassQualifiedTestName());
+        mdc.put("origin", getLogPrefix());
+
+        Map<String, Object> loggerAttrs = new HashMap<>();
+        loggerAttrs.put(BrokerLogger.TYPE, BrokerLogbackSocketLogger.TYPE);
+        loggerAttrs.put(BrokerLogbackSocketLogger.NAME, remotelogback);
+        loggerAttrs.put(BrokerLogbackSocketLogger.PORT, QpidBrokerTestCase.LOGBACK_REMOTE_PORT);
+        loggerAttrs.put(BrokerLogbackSocketLogger.MAPPED_DIAGNOSTIC_CONTEXT, mdc);
+
+        configuration.addObjectConfiguration(BrokerLogger.class, loggerAttrs);
+
+        Map<String, Object> qpidRuleAttrs = new HashMap<>();
+        qpidRuleAttrs.put(BrokerLogInclusionRule.NAME, "Qpid");
+        qpidRuleAttrs.put(BrokerLogInclusionRule.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+        qpidRuleAttrs.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "DEBUG");
+        qpidRuleAttrs.put(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, "org.apache.qpid.*");
+
+        configuration.addObjectConfiguration(BrokerLogger.class, remotelogback,
+                                             BrokerLogInclusionRule.class, qpidRuleAttrs);
+
+        Map<String, Object> operationalLoggingRuleAttrs = new HashMap<>();
+        operationalLoggingRuleAttrs.put(BrokerLogInclusionRule.NAME, "Operational");
+        operationalLoggingRuleAttrs.put(BrokerLogInclusionRule.TYPE, BrokerNameAndLevelLogInclusionRule.TYPE);
+        operationalLoggingRuleAttrs.put(BrokerNameAndLevelLogInclusionRule.LEVEL, "INFO");
+        operationalLoggingRuleAttrs.put(BrokerNameAndLevelLogInclusionRule.LOGGER_NAME, "qpid.message.*");
+
+        configuration.addObjectConfiguration(BrokerLogger.class, remotelogback,
+                                             BrokerLogInclusionRule.class, operationalLoggingRuleAttrs);
+
+        return configuration;
+    }
+
 }

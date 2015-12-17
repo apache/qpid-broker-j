@@ -20,14 +20,13 @@
  */
 package org.apache.qpid.server;
 
-import java.io.File;
-
 import javax.jms.Connection;
 import javax.jms.JMSException;
 
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.server.logging.AbstractTestLogging;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
 /**
  * Series of tests to validate the external Java broker starts up as expected.
@@ -35,15 +34,14 @@ import org.apache.qpid.util.FileUtils;
 public class BrokerStartupTest extends AbstractTestLogging
 {
     @Override
-    public void startBroker()
+    public void startDefaultBroker()
     {
-        // Each test starts its own broker so no-op here because it is called from super.setup()
+        // noop; we do not want to start broker
     }
 
     /**
      * This test simply tests that the broker will startup even if there is no config file (i.e. that it can use the
      * currently packaged initial config file (all system tests by default generate their own config file).
-     *
      *
      * @throws Exception
      */
@@ -51,18 +49,9 @@ public class BrokerStartupTest extends AbstractTestLogging
     {
         if (isJavaBroker())
         {
-            int port = getPort(0);
-
-            setTestSystemProperty("qpid.amqp_port",String.valueOf(port));
-            setTestSystemProperty("qpid.http_port",String.valueOf(DEFAULT_HTTP_MANAGEMENT_PORT));
-
-            File brokerConfigFile = new File(getTestConfigFile(port));
-            if (brokerConfigFile.exists())
-            {
-                FileUtils.delete(brokerConfigFile, true);
-            }
-
-            startBroker(port, null);
+            super.startDefaultBroker();
+            int port = getDefaultBroker().getAmqpPort();
+            assert (port > 0) : "port should be >0";
 
             AMQConnectionURL url = new AMQConnectionURL(String.format("amqp://"
                                                                       + GUEST_USERNAME
@@ -79,24 +68,18 @@ public class BrokerStartupTest extends AbstractTestLogging
     {
         if (isJavaBroker())
         {
-            int port = getPort(0);
-
-            setTestSystemProperty("qpid.amqp_port",String.valueOf(port));
-
-            //Purposely set the HTTP port to be the same as the AMQP port so that the port object becomes ERRORED
-            setTestSystemProperty("qpid.http_port",String.valueOf(port));
+            // Purposely set the HTTP port to -1 so that the port object becomes ERRORED
+            final int invalidHttpPort = -1;
+            setTestSystemProperty("test.hport", String.valueOf(invalidHttpPort));
+            getDefaultBrokerConfiguration().addHttpManagementConfiguration();
+            getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.PORT, invalidHttpPort);
 
             // Set broker to fail on startup if it has ERRORED children
             setTestSystemProperty("broker.failStartupWithErroredChild", String.valueOf(Boolean.TRUE));
 
-            File brokerConfigFile = new File(getTestConfigFile(port));
-            if (brokerConfigFile.exists())
-            {
-                // Config exists from previous test run, delete it.
-                FileUtils.delete(brokerConfigFile, true);
-            }
-
-            startBroker(port, null);
+            super.startDefaultBroker();
+            int port = getDefaultBroker().getAmqpPort();
+            assert (port > 0) : "port should be >0";
 
             AMQConnectionURL url = new AMQConnectionURL(String.format("amqp://"
                     + GUEST_USERNAME

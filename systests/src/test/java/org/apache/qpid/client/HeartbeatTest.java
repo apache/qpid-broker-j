@@ -45,14 +45,14 @@ public class HeartbeatTest extends QpidBrokerTestCase
     {
         if (getName().equals("testHeartbeatsEnabledBrokerSide"))
         {
-            getBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_HEART_BEAT_DELAY, "1");
+            getDefaultBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_HEART_BEAT_DELAY, "1");
         }
         super.setUp();
     }
 
     public void testHeartbeatsEnabledUsingUrl() throws Exception
     {
-        final String url = String.format(CONNECTION_URL_WITH_HEARTBEAT, DEFAULT_PORT, 1);
+        final String url = String.format(CONNECTION_URL_WITH_HEARTBEAT, getDefaultBroker().getAmqpPort(), 1);
         AMQConnection conn = (AMQConnection) getConnection(new AMQConnectionURL(url));
         conn.setHeartbeatListener(_listener);
         conn.start();

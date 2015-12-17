@@ -20,10 +20,11 @@
  */
 package org.apache.qpid.systest.rest;
 
-import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.model.User;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -33,10 +34,16 @@ public class UserRestTest extends QpidRestTestCase
     @Override
     public void setUp() throws Exception
     {
-        getRestTestHelper().configureTemporaryPasswordFile(this, "user1", "user2");
-
-        super.setUp(); // do this last because it starts the broker, using the modified config
+        super.setUp();
         getRestTestHelper().setUsernameAndPassword("user1", "user1");
+    }
+
+    @Override
+    protected void customizeConfiguration() throws Exception
+    {
+        super.customizeConfiguration();
+        final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
+        defaultBrokerConfiguration.configureTemporaryPasswordFile("user1", "user2");
     }
 
     public void testGet() throws Exception

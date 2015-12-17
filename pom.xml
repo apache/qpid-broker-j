@@ -88,18 +88,20 @@
 
     <!-- test profile properties and defaults-->
     <qpid.home>${basedir}</qpid.home> <!-- override for broker tests -->
-    <qpid.home.qbtc.output>${qpid.home}${file.separator}target${file.separator}qbtc-test-config</qpid.home.qbtc.output> <!-- override for broker tests -->
-    <qpid.work>${project.build.directory}${file.separator}QPID_WORK</qpid.work>
     <!-- Directory used for per test log file output -->
-    <test.output.dir>${basedir}${file.separator}target${file.separator}surefire-reports</test.output.dir>
+    <test.output.dir>${basedir}${file.separator}target${file.separator}surefire-reports${file.separator}${profile}</test.output.dir>
 
     <profile>java-mms.0-10</profile>
     <profile.broker.language>java</profile.broker.language>
     <profile.broker.type>internal</profile.broker.type>
     <profile.broker.stopped>Exception</profile.broker.stopped>
     <profile.broker.ready>BRK-1004</profile.broker.ready>
-    <profile.broker.command>"${qpid.home}${file.separator}bin${file.separator}qpid-server" -sp ${at.sign}STORE_PATH -st ${at.sign}STORE_TYPE</profile.broker.command>
-    <profile.broker.command.windows>"${qpid.home}${file.separator}bin${file.separator}qpid-server.bat" -sp ${at.sign}STORE_PATH -st ${at.sign}STORE_TYPE</profile.broker.command.windows>
+    <profile.broker.amqpTcpPortRegEx>BRK-1002 : Starting : Listening on TCP port (\d+)</profile.broker.amqpTcpPortRegEx>
+    <profile.broker.amqpTlsPortRegEx>BRK-1002 : Starting : Listening on SSL port (\d+)</profile.broker.amqpTlsPortRegEx>
+    <profile.broker.httpTcpPortRegEx>MNG-1002 : Starting : HTTP : Listening on TCP port (\d+)</profile.broker.httpTcpPortRegEx>
+    <profile.broker.httpTlsPortRegEx>MNG-1002 : Starting : HTTP : Listening on SSL port (\d+)</profile.broker.httpTlsPortRegEx>
+    <profile.broker.command>"${qpid.home}${file.separator}bin${file.separator}qpid-server" -sp "${at.sign}STORE_PATH" -st ${at.sign}STORE_TYPE -prop test.port=${at.sign}PORT -prop "qpid.work_dir=${at.sign}QPID_WORK"</profile.broker.command>
+    <profile.broker.command.windows>"${qpid.home}${file.separator}bin${file.separator}qpid-server.bat" -sp "${at.sign}STORE_PATH" -st ${at.sign}STORE_TYPE -prop test.port=${at.sign}PORT -prop "qpid.work_dir=${at.sign}QPID_WORK"</profile.broker.command.windows>
     <profile.test.excludes>Excludes JavaExcludes ${profile}.excludes ${profile.specific.excludes}</profile.test.excludes>
     <profile.specific.excludes>JavaTransientExcludes Java010Excludes</profile.specific.excludes>
     <profile.broker.version>v0_10</profile.broker.version>
@@ -281,6 +283,10 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-report-plugin</artifactId>
           <version>${maven-failsafe-and-surefire-plugins-version}</version>
+          <configuration>
+            <alwaysGenerateSurefireReport>false</alwaysGenerateSurefireReport>
+            <reportsDirectory>${test.output.dir}</reportsDirectory>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -314,18 +320,6 @@
               </target>
             </configuration>
           </execution>
-          <execution>
-             <id>create-qbtc-output-dir</id>
-             <phase>pre-integration-test</phase>
-             <goals>
-               <goal>run</goal>
-             </goals>
-             <configuration>
-               <target>
-                 <mkdir dir="${qpid.home.qbtc.output}" />
-               </target>
-             </configuration>
-          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -336,21 +330,19 @@
             <include>**/*Test.java</include>
           </includes>
           <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <reportsDirectory>${test.output.dir}</reportsDirectory>
           <systemPropertyVariables>
             <!-- Defaults -->
             <QPID_HOME>${qpid.home}</QPID_HOME>
-            <QPID_WORK>${qpid.work}</QPID_WORK>
             <java.naming.factory.initial>org.apache.qpid.jndi.PropertiesFileInitialContextFactory</java.naming.factory.initial>
             <broker.config>${qpid.home}${file.separator}etc${file.separator}config-systests.json</broker.config>
             <max_prefetch>1000</max_prefetch>
             <qpid.dest_syntax>BURL</qpid.dest_syntax>
-            <test.port>15672</test.port>
-            <test.mport>18999</test.mport>
-            <test.cport>19099</test.cport>
-            <test.hport>18080</test.hport>
-            <test.port.ssl>15671</test.port.ssl>
-            <test.port.alt>25672</test.port.alt>
-            <test.port.alt.ssl>25671</test.port.alt.ssl>
+            <test.port>0</test.port>
+            <test.hport>0</test.hport>
+            <test.port.ssl>0</test.port.ssl>
+            <test.port.alt>0</test.port.alt>
+            <test.port.alt.ssl>0</test.port.alt.ssl>
             <test.exclude>true</test.exclude>
             <test.mem>512M</test.mem>
             <profile.clustered>false</profile.clustered>
@@ -361,6 +353,10 @@
             <broker.type>${profile.broker.type}</broker.type>
             <broker.stopped>${profile.broker.stopped}</broker.stopped>
             <broker.ready>${profile.broker.ready}</broker.ready>
+            <broker.amqpTcpPortRegEx>${profile.broker.amqpTcpPortRegEx}</broker.amqpTcpPortRegEx>
+            <broker.httpTcpPortRegEx>${profile.broker.httpTcpPortRegEx}</broker.httpTcpPortRegEx>
+            <broker.amqpTlsPortRegEx>${profile.broker.amqpTlsPortRegEx}</broker.amqpTlsPortRegEx>
+            <broker.httpTlsPortRegEx>${profile.broker.httpTlsPortRegEx}</broker.httpTlsPortRegEx>
             <broker.command>${profile.broker.command}</broker.command>
             <broker.command.windows>${profile.broker.command.windows}</broker.command.windows>
             <test.excludes>${profile.test.excludes}</test.excludes>
@@ -371,9 +367,6 @@
             <virtualhostnode.context.blueprint>${profile.virtualhostnode.context.blueprint}</virtualhostnode.context.blueprint>
             <broker.clean.between.tests>${profile.broker.clean.between.tests}</broker.clean.between.tests>
             <qpid.globalAddressDomains>[]</qpid.globalAddressDomains>
-
-            <!-- This must be a child of qpid home currently due to the horrible mechanics of QBTC  -->
-            <test.output>${qpid.home.qbtc.output}</test.output>
             <test.output.dir>${test.output.dir}</test.output.dir>
             <broker.clean.between.tests>true</broker.clean.between.tests>
             <qpid.test_receive_timeout>${profile.test_receive_timeout}</qpid.test_receive_timeout>
@@ -497,6 +490,7 @@
         </reportSets>
         <configuration>
           <alwaysGenerateSurefireReport>false</alwaysGenerateSurefireReport>
+          <reportsDirectory>${test.output.dir}</reportsDirectory>
         </configuration>
       </plugin>
 
@@ -764,7 +758,7 @@
     <!--
     Split store profiles.
     Virtual host configuration can be overridden by setting blueprint property like below
-    -Dprofile.virtualhostnode.context.blueprint='{"type":"BDB","storePath":"${QPID_WORK}/${this:name}/bdb"}'
+    -Dprofile.virtualhostnode.context.blueprint='{"type":"BDB","storePath":"${qpid.work_dir}/${this:name}/bdb"}'
     -->
     <profile>
       <id>java-json.0-9-1</id>
@@ -781,7 +775,7 @@
         <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1"]</profile.test.amqp_port_protocols>
         <profile.broker.persistent>true</profile.broker.persistent>
         <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
-        <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:QPID_WORK}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+        <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:qpid.work_dir}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
       </properties>
     </profile>
 
@@ -800,7 +794,7 @@
               <profile.test.amqp_port_protocols>["AMQP_0_8","AMQP_0_9","AMQP_0_9_1","AMQP_0_10"]</profile.test.amqp_port_protocols>
               <profile.broker.persistent>true</profile.broker.persistent>
               <profile.virtualhostnode.type>JSON</profile.virtualhostnode.type>
-              <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:QPID_WORK}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
+              <profile.virtualhostnode.context.blueprint>{"type":"DERBY","storePath":"${dollar.sign}{json:qpid.work_dir}${dollar.sign}{json:file.separator}${dollar.sign}{this:name}${dollar.sign}{json:file.separator}derby","globalAddressDomains":"${dollar.sign}{qpid.globalAddressDomains}"}</profile.virtualhostnode.context.blueprint>
           </properties>
       </profile>
 
@@ -818,7 +812,11 @@
         <profile.broker.type>spawned</profile.broker.type>
         <profile.broker.stopped>Exception constructed</profile.broker.stopped>
         <profile.broker.ready>Listening on TCP</profile.broker.ready>
-        <profile.broker.command>"${cpp-broker-dir}/qpidd" -p ${at.sign}PORT --data-dir "${qpid.work}/${at.sign}PORT" -t --auth no --no-module-dir</profile.broker.command>
+        <profile.broker.amqpTcpPortRegEx>Listening on TCP/TCP6 port (\d+)</profile.broker.amqpTcpPortRegEx>
+        <profile.broker.amqpTlsPortRegEx>Listening for SSL connections on TCP/TCP6 port (\d+)</profile.broker.amqpTlsPortRegEx>
+        <profile.broker.httpTcpPortRegEx>x^</profile.broker.httpTcpPortRegEx>
+        <profile.broker.httpTlsPortRegEx>x^</profile.broker.httpTlsPortRegEx>
+        <profile.broker.command>"${cpp-broker-dir}/qpidd" -p ${at.sign}PORT --data-dir "${at.sign}QPID_WORK" -t --auth no --no-module-dir</profile.broker.command>
         <profile.broker.command.windows />
         <profile.test.excludes>Excludes CPPExcludes ${profile}.excludes ${profile.specific.excludes} cpp.excludes</profile.test.excludes>
         <profile.specific.excludes>CPPPrefetchExcludes CPPTransientExcludes</profile.specific.excludes>

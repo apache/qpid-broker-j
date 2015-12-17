@@ -52,8 +52,8 @@ public class PersistentStoreTest extends QpidBrokerTestCase
     public void testCommittedMessagesSurviveBrokerNormalShutdown() throws Exception
     {
         sendAndCommitMessages();
-        stopBroker();
-        startBroker();
+        stopDefaultBroker();
+        startDefaultBroker();
         confirmBrokerStillHasCommittedMessages();
     }
 
@@ -65,8 +65,8 @@ public class PersistentStoreTest extends QpidBrokerTestCase
         }
 
         sendAndCommitMessages();
-        killBroker();
-        startBroker();
+        killDefaultBroker();
+        startDefaultBroker();
         confirmBrokerStillHasCommittedMessages();
     }
 
@@ -74,8 +74,8 @@ public class PersistentStoreTest extends QpidBrokerTestCase
     {
         sendAndCommitMessages();
         sendMoreMessagesWithoutCommitting();
-        stopBroker();
-        startBroker();
+        stopDefaultBroker();
+        startDefaultBroker();
         confirmBrokerStillHasCommittedMessages();
     }
 
@@ -87,8 +87,8 @@ public class PersistentStoreTest extends QpidBrokerTestCase
         }
         sendAndCommitMessages();
         sendMoreMessagesWithoutCommitting();
-        killBroker();
-        startBroker();
+        killDefaultBroker();
+        startDefaultBroker();
         confirmBrokerStillHasCommittedMessages();
     }
 
@@ -126,8 +126,8 @@ public class PersistentStoreTest extends QpidBrokerTestCase
         assertEquals("Unexpected user property", propertyValue, receivedMessage.getStringProperty(propertyKey));
         // Do not commit message so we can re-receive after Broker restart
 
-        stopBroker();
-        startBroker();
+        stopDefaultBroker();
+        startDefaultBroker();
 
         _con = getConnection();
         _con.start();

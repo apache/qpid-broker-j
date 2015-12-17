@@ -28,7 +28,6 @@ import javax.jms.JMSException;
 
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
-import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class TwoNodeTest extends QpidBrokerTestCase
@@ -37,7 +36,7 @@ public class TwoNodeTest extends QpidBrokerTestCase
 
     private static final int NUMBER_OF_NODES = 2;
 
-    private final GroupCreator _groupCreator = new GroupCreator(this, VIRTUAL_HOST, NUMBER_OF_NODES);
+    private GroupCreator _groupCreator;
 
     /** Used when expectation is client will not (re)-connect */
     private ConnectionURL _positiveFailoverUrl;
@@ -48,16 +47,16 @@ public class TwoNodeTest extends QpidBrokerTestCase
     @Override
     protected void setUp() throws Exception
     {
-        _brokerType = BrokerHolder.BrokerType.SPAWNED;
-
         assertTrue(isJavaBroker());
         assertTrue(isBrokerStorePersistent());
 
         super.setUp();
+
+        _groupCreator = new GroupCreator(this, VIRTUAL_HOST, NUMBER_OF_NODES);
     }
 
     @Override
-    public void startBroker() throws Exception
+    public void startDefaultBroker() throws Exception
     {
         // Don't start default broker provided by QBTC.
     }

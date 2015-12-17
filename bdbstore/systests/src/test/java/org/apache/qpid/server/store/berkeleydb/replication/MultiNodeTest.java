@@ -20,6 +20,7 @@
 package org.apache.qpid.server.store.berkeleydb.replication;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +54,7 @@ import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestUtils;
+import org.apache.qpid.util.FileUtils;
 
 /**
  * The HA black box tests test the BDB cluster as a opaque unit.  Client connects to
@@ -65,7 +67,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
     private static final String VIRTUAL_HOST = "test";
     private static final int NUMBER_OF_NODES = 3;
 
-    private final GroupCreator _groupCreator = new GroupCreator(this, VIRTUAL_HOST, NUMBER_OF_NODES);
+    private GroupCreator _groupCreator;
 
     private FailoverAwaitingListener _failoverListener;
 
@@ -78,11 +80,10 @@ public class MultiNodeTest extends QpidBrokerTestCase
     @Override
     protected void setUp() throws Exception
     {
-        _brokerType = BrokerHolder.BrokerType.SPAWNED;
-
         assertTrue(isJavaBroker());
         assertTrue(isBrokerStorePersistent());
 
+        _groupCreator = new GroupCreator(this, VIRTUAL_HOST, NUMBER_OF_NODES);
         _groupCreator.configureClusterNodes();
 
         _positiveFailoverUrl = _groupCreator.getConnectionUrlForAllClusterNodes();
@@ -95,7 +96,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
     }
 
     @Override
-    public void startBroker() throws Exception
+    public void startDefaultBroker() throws Exception
     {
         // Don't start default broker provided by QBTC.
     }
@@ -452,48 +453,63 @@ public class MultiNodeTest extends QpidBrokerTestCase
         int intruderPort = getNextAvailable(Collections.max(_groupCreator.getBdbPortNumbers()) + 1);
         String nodeName = "intruder";
         String nodeHostPort = _groupCreator.getIpAddressOfBrokerHost() + ":" + intruderPort;
-        File environmentPathFile = new File(System.getProperty("QPID_WORK"), intruderPort + "");
-        environmentPathFile.mkdirs();
-        ReplicationConfig replicationConfig = new ReplicationConfig(_groupCreator.getGroupName(), nodeName, nodeHostPort);
-        replicationConfig.setHelperHosts(_groupCreator.getHelperHostPort());
-        EnvironmentConfig envConfig = new EnvironmentConfig();
-        envConfig.setAllowCreate(true);
-        envConfig.setTransactional(true);
-        envConfig.setDurability(new Durability(Durability.SyncPolicy.SYNC, Durability.SyncPolicy.WRITE_NO_SYNC, Durability.ReplicaAckPolicy.SIMPLE_MAJORITY));
-
-        ReplicatedEnvironment intruder = null;
-        final String currentThreadName = Thread.currentThread().getName();
+        File environmentPathFile = Files.createTempDirectory("qpid-work-intruder").toFile();
         try
         {
+            environmentPathFile.mkdirs();
+            ReplicationConfig replicationConfig =
+                    new ReplicationConfig(_groupCreator.getGroupName(), nodeName, nodeHostPort);
+            replicationConfig.setHelperHosts(_groupCreator.getHelperHostPort());
+            EnvironmentConfig envConfig = new EnvironmentConfig();
+            envConfig.setAllowCreate(true);
+            envConfig.setTransactional(true);
+            envConfig.setDurability(new Durability(Durability.SyncPolicy.SYNC,
+                                                   Durability.SyncPolicy.WRITE_NO_SYNC,
+                                                   Durability.ReplicaAckPolicy.SIMPLE_MAJORITY));
 
-            intruder = new ReplicatedEnvironment(environmentPathFile, replicationConfig, envConfig);
-        }
-        finally
-        {
+            ReplicatedEnvironment intruder = null;
+            final String currentThreadName = Thread.currentThread().getName();
             try
             {
-                if (intruder != null)
-                {
-                    intruder.close();
-                }
+                intruder = new ReplicatedEnvironment(environmentPathFile, replicationConfig, envConfig);
             }
             finally
             {
-                Thread.currentThread().setName(currentThreadName);
+                try
+                {
+                    if (intruder != null)
+                    {
+                        intruder.close();
+                    }
+                }
+                finally
+                {
+                    Thread.currentThread().setName(currentThreadName);
+                }
+            }
+
+            for (int port : _groupCreator.getBrokerPortNumbersForNodes())
+            {
+                _groupCreator.awaitNodeToAttainAttributeValue(port,
+                                                              port,
+                                                              BDBHAVirtualHostNode.STATE,
+                                                              State.ERRORED.name());
+            }
+
+            _groupCreator.stopCluster();
+            _groupCreator.startCluster();
+
+            for (int port : _groupCreator.getBrokerPortNumbersForNodes())
+            {
+                _groupCreator.awaitNodeToAttainAttributeValue(port,
+                                                              port,
+                                                              BDBHAVirtualHostNode.STATE,
+                                                              State.ERRORED.name());
             }
         }
-
-        for (int port: _groupCreator.getBrokerPortNumbersForNodes())
+        finally
         {
-            _groupCreator.awaitNodeToAttainAttributeValue(port, port, BDBHAVirtualHostNode.STATE, State.ERRORED.name());
-        }
-
-        _groupCreator.stopCluster();
-        _groupCreator.startCluster();
-
-        for (int port: _groupCreator.getBrokerPortNumbersForNodes())
-        {
-            _groupCreator.awaitNodeToAttainAttributeValue(port, port, BDBHAVirtualHostNode.STATE, State.ERRORED.name());
+            FileUtils.delete(environmentPathFile, true);
         }
     }
 

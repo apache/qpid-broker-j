@@ -33,7 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +89,11 @@ public class TCPTunneler
         {
             _tcpWorker.disconnect(address);
         }
+    }
+
+    public int getLocalPort()
+    {
+        return _tcpWorker.getLocalPort();
     }
 
     public interface TunnelListener
@@ -364,6 +368,14 @@ public class TCPTunneler
             return client;
         }
 
+        public int getLocalPort()
+        {
+            if (_serverSocket == null)
+            {
+                return -1;
+            }
+            return _serverSocket.getLocalPort();
+        }
     }
 
     private static class SocketTunnel

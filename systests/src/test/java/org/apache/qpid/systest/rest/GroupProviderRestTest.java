@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.systest.rest;
 
-import static  org.apache.qpid.server.management.plugin.servlet.rest.RestServlet.SC_UNPROCESSABLE_ENTITY;
+import static org.apache.qpid.server.management.plugin.servlet.rest.RestServlet.SC_UNPROCESSABLE_ENTITY;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -54,7 +54,7 @@ public class GroupProviderRestTest extends QpidRestTestCase
     {
         _groupFile = createTemporaryGroupFile();
 
-        getBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
+        getDefaultBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
 
         super.setUp();
     }
@@ -300,7 +300,7 @@ public class GroupProviderRestTest extends QpidRestTestCase
 
     public void testRemovalOfGroupProviderInErrorStateUsingManagementMode() throws Exception
     {
-        stopBroker();
+        stopDefaultBroker();
 
         File file = new File(TMP_FOLDER, getTestName());
         if (file.exists())
@@ -309,11 +309,11 @@ public class GroupProviderRestTest extends QpidRestTestCase
         }
         assertFalse("Group file should not exist", file.exists());
 
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.removeObjectConfiguration(GroupProvider.class, TestBrokerConfiguration.ENTRY_NAME_GROUP_FILE);
         UUID id = config.addGroupFileConfiguration(file.getAbsolutePath());
         config.setSaved(false);
-        startBroker(0, true);
+        startDefaultBroker(true);
 
         getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 

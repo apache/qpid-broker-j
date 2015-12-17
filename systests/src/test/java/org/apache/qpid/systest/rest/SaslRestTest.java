@@ -44,15 +44,14 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 public class SaslRestTest extends QpidRestTestCase
 {
     @Override
-    public void startBroker()
+    public void startDefaultBroker()
     {
         // prevent broker from starting in setUp
     }
 
     public void startBrokerNow() throws Exception
     {
-        super.startBroker();
-
+        super.startDefaultBroker();
         getRestTestHelper().setUsernameAndPassword(null,null);
     }
 
@@ -382,6 +381,6 @@ public class SaslRestTest extends QpidRestTestCase
         Map<String, Object> newAttributes = new HashMap<String, Object>();
         newAttributes.put("path", passwordFile.getAbsolutePath());
         newAttributes.put(AuthenticationProvider.TYPE, Base64MD5PasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
-        getBrokerConfiguration().setObjectAttributes(AuthenticationProvider.class,TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER, newAttributes);
+        getDefaultBrokerConfiguration().setObjectAttributes(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER, newAttributes);
     }
 }

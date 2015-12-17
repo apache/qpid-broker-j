@@ -26,10 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.Plugin;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -45,25 +41,29 @@ public class QpidRestTestCase extends QpidBrokerTestCase
     public static final String[] EXPECTED_VIRTUALHOSTS = { TEST1_VIRTUALHOST, TEST2_VIRTUALHOST, TEST3_VIRTUALHOST};
     public static final String[] EXPECTED_EXCHANGES = { "amq.fanout", "amq.match", "amq.direct","amq.topic" };
 
-    private RestTestHelper _restTestHelper = new RestTestHelper(findFreePort());
+    protected RestTestHelper _restTestHelper;
 
     @Override
     public void setUp() throws Exception
     {
-        // use webadmin account to perform tests
-        getRestTestHelper().setUsernameAndPassword("webadmin", "webadmin");
-
-        //remove the normal 'test' vhost, we will configure the vhosts below
-        getBrokerConfiguration(0).removeObjectConfiguration(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
+        // remove the normal 'test' vhost, we will configure the vhosts below
+        getDefaultBrokerConfiguration().removeObjectConfiguration(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
 
         // Set up virtualhost config with queues and bindings to the amq.direct
         for (String virtualhost : EXPECTED_VIRTUALHOSTS)
         {
-            createTestVirtualHostNode(0, virtualhost);
+            createTestVirtualHostNode(virtualhost);
         }
 
         customizeConfiguration();
         super.setUp();
+    }
+
+    @Override
+    public void startDefaultBroker() throws Exception
+    {
+        super.startDefaultBroker();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
     }
 
     @Override
@@ -79,9 +79,9 @@ public class QpidRestTestCase extends QpidBrokerTestCase
         }
     }
 
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
-        _restTestHelper.enableHttpManagement(getBrokerConfiguration());
+        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
     }
 
     public RestTestHelper getRestTestHelper()

@@ -20,26 +20,42 @@
  */
 package org.apache.qpid.test.utils;
 
-import java.io.File;
+import java.util.concurrent.CountDownLatch;
+
+import javax.naming.NamingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.util.FileUtils;
+import org.apache.qpid.jms.ConnectionListener;
 
-import javax.naming.NamingException;
-
-public class FailoverBaseCase extends QpidBrokerTestCase
+public class FailoverBaseCase extends QpidBrokerTestCase implements ConnectionListener
 {
     protected static final Logger _logger = LoggerFactory.getLogger(FailoverBaseCase.class);
 
     public static final long DEFAULT_FAILOVER_TIME = 10000L;
 
-    protected void setUp() throws java.lang.Exception
+    protected CountDownLatch _failoverStarted;
+    protected CountDownLatch _failoverComplete;
+    protected BrokerHolder _alternativeBroker;
+    protected int _port;
+    protected int _alternativePort;
+
+    @Override
+    protected void setUp() throws Exception
     {
         super.setUp();
-        startBroker(getFailingPort());
+        _failoverComplete = new CountDownLatch(1);
+        _failoverStarted = new CountDownLatch(1);
+
+        _alternativeBroker = createSpawnedBroker();
+        _alternativeBroker.start();
+        _alternativePort = _alternativeBroker.getAmqpPort();
+
+        _port = getDefaultBroker().getAmqpPort();
+        setTestSystemProperty("test.port.alt", String.valueOf(_alternativePort));
+        setTestSystemProperty("test.port", String.valueOf(_port));
     }
 
     /**
@@ -66,35 +82,55 @@ public class FailoverBaseCase extends QpidBrokerTestCase
         return _connectionFactory;
     }
 
-    public void tearDown() throws Exception
+    public void failDefaultBroker()
     {
-        try
-        {
-            super.tearDown();
-        }
-        finally
-        {
-            // Ensure we shutdown any secondary brokers, even if we are unable
-            // to cleanly tearDown the QTC.
-            stopBroker(getFailingPort());
-
-            if (isBrokerCleanBetweenTests())
-            {
-                FileUtils.deleteDirectory(System.getProperty("QPID_WORK") + File.separator + getFailingPort());
-            }
-        }
+        failBroker(getDefaultBroker());
     }
 
-    public void failBroker(int port)
+    public void failBroker(BrokerHolder broker)
     {
         try
         {
             //TODO: use killBroker instead
-            stopBroker(port);
+            broker.shutdown();
         }
         catch (Exception e)
         {
             throw new RuntimeException(e);
         }
+    }
+
+    public void restartBroker(BrokerHolder broker) throws Exception
+    {
+        broker.restart();
+    }
+
+    @Override
+    public void bytesSent(long count)
+    {
+    }
+
+    @Override
+    public void bytesReceived(long count)
+    {
+    }
+
+    @Override
+    public boolean preFailover(boolean redirect)
+    {
+        _failoverStarted.countDown();
+        return true;
+    }
+
+    @Override
+    public boolean preResubscribe()
+    {
+        return true;
+    }
+
+    @Override
+    public void failoverComplete()
+    {
+        _failoverComplete.countDown();
     }
 }

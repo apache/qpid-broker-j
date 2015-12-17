@@ -17,10 +17,6 @@
  */
 package org.apache.qpid.test.unit.xa;
 
-import junit.framework.TestSuite;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.jms.DeliveryMode;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -36,6 +32,10 @@ import javax.jms.XAQueueSession;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
+import junit.framework.TestSuite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class QueueTest extends AbstractXATestCase
 {
@@ -383,7 +383,7 @@ public class QueueTest extends AbstractXATestCase
             try
             {
                 _logger.debug("stopping broker");
-                restartBroker();
+                restartDefaultBroker();
                 init();
             }
             catch (Exception e)
@@ -572,7 +572,7 @@ public class QueueTest extends AbstractXATestCase
             try
             {
                 _logger.debug("stopping broker");
-                restartBroker();
+                restartDefaultBroker();
                 init();
             }
             catch (Exception e)

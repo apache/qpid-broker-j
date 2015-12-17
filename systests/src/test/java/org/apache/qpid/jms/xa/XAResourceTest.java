@@ -20,17 +20,17 @@
  */
 package org.apache.qpid.jms.xa;
 
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.jms.ConnectionURL;
-import org.apache.qpid.util.FileUtils;
-import org.apache.qpid.test.unit.xa.AbstractXATestCase;
-import org.apache.qpid.client.AMQXAResource;
-
 import javax.jms.XAConnection;
 import javax.jms.XAConnectionFactory;
 import javax.jms.XASession;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+
+import org.apache.qpid.client.AMQConnectionFactory;
+import org.apache.qpid.client.AMQXAResource;
+import org.apache.qpid.jms.ConnectionURL;
+import org.apache.qpid.test.unit.xa.AbstractXATestCase;
+import org.apache.qpid.test.utils.BrokerHolder;
 
 public class XAResourceTest extends AbstractXATestCase
 {
@@ -109,46 +109,41 @@ public class XAResourceTest extends AbstractXATestCase
      */
     public void testIsSameRMMultiCF() throws Exception
     {
-        startBroker(FAILING_PORT);
-        ConnectionURL url = getConnectionFactory(FACTORY_NAME).getConnectionURL();
-        XAConnectionFactory factory = new AMQConnectionFactory(url);
-        XAConnectionFactory factory2 = new AMQConnectionFactory(url);
-        XAConnectionFactory factory3 = getConnectionFactory(ALT_FACTORY_NAME);
-
-        XAConnection conn = factory.createXAConnection("guest","guest");
-        XAConnection conn2 = factory2.createXAConnection("guest","guest");
-        XAConnection conn3 = factory3.createXAConnection("guest","guest");
-
-        XASession session = conn.createXASession();
-        XASession session2 = conn2.createXASession();
-        XASession session3 = conn3.createXASession();
-
-        XAResource xaResource1 = session.getXAResource();
-        XAResource xaResource2 = session2.getXAResource();
-        XAResource xaResource3 = session3.getXAResource();
-
-        assertFalse("XAResource objects should not be equal", xaResource1.equals(xaResource2));
-        assertTrue("isSameRM not true for identical objects", xaResource1.isSameRM(xaResource2));
-        assertFalse("isSameRM true for XA Resources created by two different brokers", xaResource1.isSameRM(xaResource3));
-
-        conn.close();
-        conn2.close();
-        conn3.close();
-    }
-
-    @Override
-    public void tearDown() throws Exception
-    {
+        BrokerHolder secondBroker = createSpawnedBroker();
         try
         {
-            super.tearDown();
+            secondBroker.start();
+            setTestSystemProperty("test.port.alt", String.valueOf(secondBroker.getAmqpPort()));
+
+            ConnectionURL url = getConnectionFactory(FACTORY_NAME).getConnectionURL();
+            XAConnectionFactory factory = new AMQConnectionFactory(url);
+            XAConnectionFactory factory2 = new AMQConnectionFactory(url);
+            XAConnectionFactory factory3 = getConnectionFactory(ALT_FACTORY_NAME);
+
+            XAConnection conn = factory.createXAConnection("guest", "guest");
+            XAConnection conn2 = factory2.createXAConnection("guest", "guest");
+            XAConnection conn3 = factory3.createXAConnection("guest", "guest");
+
+            XASession session = conn.createXASession();
+            XASession session2 = conn2.createXASession();
+            XASession session3 = conn3.createXASession();
+
+            XAResource xaResource1 = session.getXAResource();
+            XAResource xaResource2 = session2.getXAResource();
+            XAResource xaResource3 = session3.getXAResource();
+
+            assertFalse("XAResource objects should not be equal", xaResource1.equals(xaResource2));
+            assertTrue("isSameRM not true for identical objects", xaResource1.isSameRM(xaResource2));
+            assertFalse("isSameRM true for XA Resources created by two different brokers",
+                        xaResource1.isSameRM(xaResource3));
+
+            conn.close();
+            conn2.close();
+            conn3.close();
         }
         finally
         {
-            // Ensure we shutdown any secondary brokers
-            stopBroker(FAILING_PORT);
-            FileUtils.deleteDirectory(System.getProperty("QPID_WORK") + "/" + getFailingPort());
+            secondBroker.shutdown();
         }
     }
-
 }

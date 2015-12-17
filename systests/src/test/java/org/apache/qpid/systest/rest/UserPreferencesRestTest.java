@@ -22,7 +22,6 @@
 package org.apache.qpid.systest.rest;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
@@ -62,11 +61,11 @@ public class UserPreferencesRestTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
 
-        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
+        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(PreferencesProvider.NAME, "test");
         attributes.put(PreferencesProvider.TYPE, FileSystemPreferencesProvider.PROVIDER_TYPE);

@@ -21,7 +21,6 @@
 package org.apache.qpid.systest.rest;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -29,10 +28,8 @@ import java.util.UUID;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.BrokerOptions;
-import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.AccessControlProvider;
-import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.security.access.FileAccessControlProviderConstants;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -56,13 +53,11 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
                           "ACL DENY-LOG ALL ALL";
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getRestTestHelper().configureTemporaryPasswordFile(this, ALLOWED_USER, DENIED_USER, OTHER_USER);
-
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
-                HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
+        final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
+        defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER, OTHER_USER);
     }
 
     public void testCreateAccessControlProvider() throws Exception
@@ -163,7 +158,7 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
 
     public void testRemovalOfAccessControlProviderInErrorStateUsingManagementMode() throws Exception
     {
-        stopBroker();
+        stopDefaultBroker();
 
         File file = new File(TMP_FOLDER, getTestName());
         if (file.exists())
@@ -171,9 +166,10 @@ public class AccessControlProviderRestTest extends QpidRestTestCase
             file.delete();
         }
         assertFalse("ACL file should not exist", file.exists());
-        UUID id = getBrokerConfiguration().addAclFileConfiguration(file.getAbsolutePath());
-        getBrokerConfiguration().setSaved(false);
-        startBroker(0, true);
+        TestBrokerConfiguration configuration = getDefaultBrokerConfiguration();
+        UUID id = configuration.addAclFileConfiguration(file.getAbsolutePath());
+        configuration.setSaved(false);
+        startDefaultBroker(true);
 
         getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 

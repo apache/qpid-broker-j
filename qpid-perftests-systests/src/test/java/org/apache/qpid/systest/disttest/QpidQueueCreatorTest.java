@@ -31,8 +31,9 @@ import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.disttest.controller.config.QueueConfig;
 import org.apache.qpid.disttest.jms.QpidQueueCreator;
+import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
-public class QpidQueueCreatorTest extends DistributedTestSystemTestBase
+public class QpidQueueCreatorTest extends QpidBrokerTestCase
 {
     private static final Map<String, Object> EMPTY_ATTRIBUTES = Collections.emptyMap();
 
@@ -51,7 +52,7 @@ public class QpidQueueCreatorTest extends DistributedTestSystemTestBase
         _connection = getConnection();
         _session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _creator = new QpidQueueCreator();
-        _configs = new ArrayList<QueueConfig>();
+        _configs = new ArrayList<>();
         _queueName = "direct://amq.direct//" + getTestQueueName() + "?durable='" + QUEUE_DURABILITY + "'";
     }
 

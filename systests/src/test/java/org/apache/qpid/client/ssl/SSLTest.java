@@ -72,8 +72,13 @@ public class SSLTest extends QpidBrokerTestCase
 
         setSslStoreSystemProperties();
 
-        //We dont call super.setUp, the tests start the broker after deciding
-        //whether to run and then configuring it appropriately
+        super.setUp();
+    }
+
+    @Override
+    public void startDefaultBroker() throws Exception
+    {
+        // noop; we do not need to start broker in setUp
     }
 
     public void testCreateSSLConnectionUsingConnectionURLParams() throws Exception
@@ -84,7 +89,7 @@ public class SSLTest extends QpidBrokerTestCase
 
             //Start the broker (NEEDing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, true, false, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
             "?ssl='true'" +
@@ -92,7 +97,7 @@ public class SSLTest extends QpidBrokerTestCase
             "&trust_store='%s'&trust_store_password='%s'" +
             "'";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT,
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort(),
                     KEYSTORE,KEYSTORE_PASSWORD,TRUSTSTORE,TRUSTSTORE_PASSWORD);
 
             Connection con = getConnection(new AMQConnectionURL(url));
@@ -110,7 +115,7 @@ public class SSLTest extends QpidBrokerTestCase
 
             //Start the broker (NEEDing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, false, false, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
                          "?ssl='true'" +
@@ -118,7 +123,7 @@ public class SSLTest extends QpidBrokerTestCase
                          "'";
             File trustCertFile = extractCertFileFromTestTrustStore();
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT,
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort(),
                                 trustCertFile.getCanonicalPath());
 
             Connection con = getConnection(new AMQConnectionURL(url));
@@ -132,12 +137,12 @@ public class SSLTest extends QpidBrokerTestCase
     {
         if (shouldPerformTest())
         {
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
                          "?ssl='true''";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_PORT);
+            url = String.format(url, getDefaultBroker().getAmqpPort());
 
             try
             {
@@ -161,7 +166,7 @@ public class SSLTest extends QpidBrokerTestCase
 
             //Start the broker (NEEDing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, true, false, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://127.0.0.1:%s" +
                     "?ssl='true'" +
@@ -169,7 +174,7 @@ public class SSLTest extends QpidBrokerTestCase
                     "&trust_store='%s'&trust_store_password='%s'" +
                     "'";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT,
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort(),
                     KEYSTORE,KEYSTORE_PASSWORD,TRUSTSTORE,TRUSTSTORE_PASSWORD);
 
             try
@@ -187,7 +192,7 @@ public class SSLTest extends QpidBrokerTestCase
                     "&key_store='%s'&key_store_password='%s'" +
                     "&trust_store='%s'&trust_store_password='%s'" +
                     "'";
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT,
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort(),
                     KEYSTORE,KEYSTORE_PASSWORD,TRUSTSTORE,TRUSTSTORE_PASSWORD);
 
             Connection con = getConnection(new AMQConnectionURL(url));
@@ -208,11 +213,11 @@ public class SSLTest extends QpidBrokerTestCase
         {
             //Start the broker (NEEDing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, true, false, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             //Create URL enabling SSL at the connection rather than brokerlist level
             String url = "amqp://guest:guest@test/?ssl='true'&brokerlist='tcp://localhost:%s'";
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT);
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort());
 
             Connection con = getConnection(new AMQConnectionURL(url));
             assertNotNull("connection should be successful", con);
@@ -232,11 +237,11 @@ public class SSLTest extends QpidBrokerTestCase
         {
             //Start the broker (NEEDing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, true, false, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             //Create URL enabling SSL at the connection, overriding the false at the brokerlist level
             String url = "amqp://guest:guest@test/?ssl='true'&brokerlist='tcp://localhost:%s?ssl='false''";
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT);
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort());
 
             Connection con = getConnection(new AMQConnectionURL(url));
             assertNotNull("connection should be successful", con);
@@ -251,11 +256,11 @@ public class SSLTest extends QpidBrokerTestCase
         {
             //Start the broker (NEEDing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, true, false, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s?ssl='true''";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT);
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort());
 
             Connection con = getConnection(new AMQConnectionURL(url));
             assertNotNull("connection should be successful", con);
@@ -270,11 +275,11 @@ public class SSLTest extends QpidBrokerTestCase
         {
             //Start the broker (NEEDing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, true, false, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:" +
-            QpidBrokerTestCase.DEFAULT_SSL_PORT +
-            "?ssl='true'&ssl_cert_alias='" + CERT_ALIAS_APP1 + "''";
+                         getDefaultBroker().getAmqpTlsPort() +
+                         "?ssl='true'&ssl_cert_alias='" + CERT_ALIAS_APP1 + "''";
 
             AMQTestConnection_0_10 con = new AMQTestConnection_0_10(url);
             org.apache.qpid.transport.Connection transportCon = con.getConnection();
@@ -283,8 +288,8 @@ public class SSLTest extends QpidBrokerTestCase
             con.close();
 
             url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:" +
-            QpidBrokerTestCase.DEFAULT_SSL_PORT +
-            "?ssl='true'&ssl_cert_alias='" + CERT_ALIAS_APP2 + "''";
+                  getDefaultBroker().getAmqpTlsPort() +
+                  "?ssl='true'&ssl_cert_alias='" + CERT_ALIAS_APP2 + "''";
 
             con = new AMQTestConnection_0_10(url);
             transportCon = con.getConnection();
@@ -300,11 +305,10 @@ public class SSLTest extends QpidBrokerTestCase
         {
             //Start the broker (WANTing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, false, true, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://127.0.0.1:" +
-            QpidBrokerTestCase.DEFAULT_SSL_PORT +
-            "?ssl='true''";
+                         getDefaultBroker().getAmqpTlsPort() + "?ssl='true''";
 
             try
             {
@@ -334,11 +338,10 @@ public class SSLTest extends QpidBrokerTestCase
         {
             //Start the broker (WANTing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, false, true, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:" +
-            QpidBrokerTestCase.DEFAULT_SSL_PORT +
-            "?ssl='true''";
+                         getDefaultBroker().getAmqpTlsPort() + "?ssl='true''";
 
             Connection con = getConnection(new AMQConnectionURL(url));
             assertNotNull("connection should have been created", con);
@@ -351,11 +354,10 @@ public class SSLTest extends QpidBrokerTestCase
         {
             //Start the broker (WANTing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, false, true, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost.localdomain:" +
-            QpidBrokerTestCase.DEFAULT_SSL_PORT +
-            "?ssl='true''";
+                         getDefaultBroker().getAmqpTlsPort() + "?ssl='true''";
 
             Connection con = getConnection(new AMQConnectionURL(url));
             assertNotNull("connection should have been created", con);
@@ -370,7 +372,7 @@ public class SSLTest extends QpidBrokerTestCase
 
             //Start the broker (WANTing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, false, true, false);
-            super.setUp();
+            super.startDefaultBroker();
 
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
@@ -378,7 +380,7 @@ public class SSLTest extends QpidBrokerTestCase
             "&trust_store='%s'&trust_store_password='%s'" +
             "'";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT, TRUSTSTORE,TRUSTSTORE_PASSWORD);
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort(), TRUSTSTORE, TRUSTSTORE_PASSWORD);
 
             Connection con = getConnection(new AMQConnectionURL(url));
             assertNotNull("connection should be successful", con);
@@ -423,12 +425,12 @@ public class SSLTest extends QpidBrokerTestCase
 
             //Start the broker
             configureJavaBrokerIfNecessary(true, true, needClientCerts, wantClientCerts, false);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
             "?ssl='true'&trust_store='%s'&trust_store_password='%s''";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT,TRUSTSTORE,TRUSTSTORE_PASSWORD);
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort(), TRUSTSTORE, TRUSTSTORE_PASSWORD);
             try
             {
                 Connection con = getConnection(new AMQConnectionURL(url));
@@ -470,7 +472,7 @@ public class SSLTest extends QpidBrokerTestCase
 
             //Start the broker (NEEDing client certificate authentication)
             configureJavaBrokerIfNecessary(true, false, false, false, true);
-            super.setUp();
+            super.startDefaultBroker();
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
             "?ssl='true'&ssl_verify_hostname='true'" +
@@ -478,7 +480,7 @@ public class SSLTest extends QpidBrokerTestCase
             "&trust_store='%s'&trust_store_password='%s'" +
             "'";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT,
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort(),
                     KEYSTORE,KEYSTORE_PASSWORD,TRUSTSTORE,TRUSTSTORE_PASSWORD);
 
             Connection con = getConnection(new AMQConnectionURL(url));
@@ -488,7 +490,7 @@ public class SSLTest extends QpidBrokerTestCase
 
             url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s'";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT);
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort());
 
             con = getConnection(new AMQConnectionURL(url));
             assertNotNull("connection should be successful", con);
@@ -506,7 +508,7 @@ public class SSLTest extends QpidBrokerTestCase
             File[] certAndKeyFiles = extractResourcesFromTestKeyStore();
             //Start the broker (WANTing client certificate authentication)
             configureJavaBrokerIfNecessary(true, true, true, false, false);
-            super.setUp();
+            super.startDefaultBroker();
 
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:%s" +
@@ -514,7 +516,8 @@ public class SSLTest extends QpidBrokerTestCase
                          "&trust_store='%s'&ssl_verify_hostname='false'&trust_store_password='%s'" +
                          "&client_cert_path='%s'&client_cert_priv_key_path='%s''";
 
-            url = String.format(url,QpidBrokerTestCase.DEFAULT_SSL_PORT, TRUSTSTORE,TRUSTSTORE_PASSWORD, certAndKeyFiles[1].getCanonicalPath(), certAndKeyFiles[0].getCanonicalPath());
+            url = String.format(url, getDefaultBroker().getAmqpTlsPort(), TRUSTSTORE, TRUSTSTORE_PASSWORD,
+                                certAndKeyFiles[1].getCanonicalPath(), certAndKeyFiles[0].getCanonicalPath());
 
             final AMQConnectionURL connectionURL = new AMQConnectionURL(url);
             Connection con = getConnection(connectionURL);
@@ -553,17 +556,17 @@ public class SSLTest extends QpidBrokerTestCase
             sslPortAttributes.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
             sslPortAttributes.put(Port.TRUST_STORES, Collections.singleton(TestBrokerConfiguration.ENTRY_NAME_SSL_TRUSTSTORE));
             sslPortAttributes.put(Port.PROTOCOLS, System.getProperty(TEST_AMQP_PORT_PROTOCOLS_PROPERTY));
-            getBrokerConfiguration().addObjectConfiguration(Port.class,sslPortAttributes);
+            getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, sslPortAttributes);
 
             Map<String, Object> aliasAttributes = new HashMap<>();
             aliasAttributes.put(VirtualHostAlias.NAME, "defaultAlias");
             aliasAttributes.put(VirtualHostAlias.TYPE, DefaultVirtualHostAlias.TYPE_NAME);
-            getBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
+            getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
 
             aliasAttributes = new HashMap<>();
             aliasAttributes.put(VirtualHostAlias.NAME, "nameAlias");
             aliasAttributes.put(VirtualHostAlias.TYPE, VirtualHostNameAlias.TYPE_NAME);
-            getBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
+            getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT, VirtualHostAlias.class, aliasAttributes);
 
         }
     }

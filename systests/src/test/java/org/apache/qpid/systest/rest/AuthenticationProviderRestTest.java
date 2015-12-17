@@ -26,12 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.jms.Connection;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.client.AMQConnection;
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.management.plugin.servlet.rest.RestServlet;
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -69,7 +65,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
 
     public void testPutCreateSecondPlainPrincipalDatabaseProviderSucceeds() throws Exception
     {
-        File principalDatabase = getRestTestHelper().createTemporaryPasswdFile(new String[]{"admin2", "guest2", "test2"});
+        File principalDatabase = getDefaultBrokerConfiguration().createTemporaryPasswordFile(new String[]{"admin2", "guest2", "test2"});
         try
         {
 
@@ -114,63 +110,6 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
             principalDatabase.delete();
         }
     }
-
-    public void testCreatePlainPrincipalDatabaseProviderAddUserAndAuthenticateWithNewUser() throws Exception
-    {
-        File principalDatabase = TestFileUtils.createTempFile(this, ".user.passwords");
-        try
-        {
-            String providerName = "test-provider";
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put(AuthenticationProvider.NAME, providerName);
-            attributes.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
-            attributes.put(ExternalFileBasedAuthenticationManager.PATH, principalDatabase.getAbsolutePath());
-
-            int responseCode = getRestTestHelper().submitRequest("authenticationprovider/" + providerName, "PUT", attributes);
-            assertEquals("failed to create authentication provider", 201, responseCode);
-
-            String userName = getName();
-            String userPassword = "password";
-
-            Map<String,Object> userAttributes = new HashMap<>();
-            userAttributes.put("password", userPassword);
-            userAttributes.put("name", userName);
-
-            String url = "user/" + providerName;
-            getRestTestHelper().submitRequest(url, "POST", userAttributes, HttpServletResponse.SC_CREATED);
-
-            Map<String, Object> userDetails = getRestTestHelper().getJsonAsSingletonList(url + "/" + userName);
-            assertEquals("Unexpected user name", userName, userDetails.get(User.NAME));
-
-            String portName = "test-port";
-            Map<String, Object> portAttributes = new HashMap<String, Object>();
-            portAttributes.put(Port.NAME, portName);
-            portAttributes.put(Port.PORT, getFailingPort());
-            portAttributes.put(Port.AUTHENTICATION_PROVIDER, providerName);
-
-            responseCode = getRestTestHelper().submitRequest("port/" + portName, "PUT", portAttributes);
-            assertEquals("Unexpected response code", 201, responseCode);
-
-            getRestTestHelper().setUsernameAndPassword(userName, userPassword);
-
-            ConnectionURL connectionURL = new AMQConnectionURL("amqp://"+ userName + ":" + userPassword +
-                    "@/" + TEST1_VIRTUALHOST + "?brokerlist='tcp://localhost:"+getFailingPort()+"'");
-            Connection connection = getConnection(connectionURL);
-            try
-            {
-                assertTrue("Connection should be successfully established", ((AMQConnection) connection).isConnected());
-            }
-            finally
-            {
-                connection.close();
-            }
-        }
-        finally
-        {
-            principalDatabase.delete();
-        }
-    }
-
     public void testPutCreateNewAnonymousProvider() throws Exception
     {
         String providerName = "test-provider";
@@ -220,7 +159,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         Map<String, Object> portAttributes = new HashMap<String, Object>();
         portAttributes.put(Port.NAME, portName);
         portAttributes.put(Port.AUTHENTICATION_PROVIDER, providerName);
-        portAttributes.put(Port.PORT, findFreePort());
+        portAttributes.put(Port.PORT, 0);
 
         responseCode = getRestTestHelper().submitRequest("port/" + portName, "PUT", portAttributes);
         assertEquals("Unexpected response code for port creation", 201, responseCode);
@@ -253,7 +192,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
 
     public void testRemovalOfAuthenticationProviderInErrorStateUsingManagementMode() throws Exception
     {
-        stopBroker();
+        stopDefaultBroker();
 
         File file = new File(TMP_FOLDER, getTestName());
         if (file.exists())
@@ -262,17 +201,17 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         }
         assertFalse("Group file should not exist", file.exists());
 
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
 
         String providerName = getTestName();
-        Map<String, Object> attributes = new HashMap<String, Object>();
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
         attributes.put(AuthenticationProvider.NAME, providerName);
         attributes.put(ExternalFileBasedAuthenticationManager.PATH, file.getAbsoluteFile());
 
         UUID id = config.addObjectConfiguration(AuthenticationProvider.class, attributes);
         config.setSaved(false);
-        startBroker(0, true);
+        startDefaultBroker(true);
 
         getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 
@@ -290,7 +229,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
 
     public void testUpdateOfAuthenticationProviderInErrorStateUsingManagementMode() throws Exception
     {
-        stopBroker();
+        stopDefaultBroker();
 
         File file = new File(TMP_FOLDER, getTestName());
         if (file.exists())
@@ -299,7 +238,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         }
         assertFalse("Group file should not exist", file.exists());
 
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
 
         String providerName = getTestName();
         Map<String, Object> attributes = new HashMap<String, Object>();
@@ -309,7 +248,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
 
         UUID id = config.addObjectConfiguration(AuthenticationProvider.class, attributes);
         config.setSaved(false);
-        startBroker(0, true);
+        startDefaultBroker(true);
 
         getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 
@@ -322,7 +261,7 @@ public class AuthenticationProviderRestTest extends QpidRestTestCase
         File principalDatabase = null;
         try
         {
-            principalDatabase = getRestTestHelper().createTemporaryPasswdFile(new String[]{"admin2", "guest2", "test2"});
+            principalDatabase = getDefaultBrokerConfiguration().createTemporaryPasswordFile(new String[]{"admin2", "guest2", "test2"});
             attributes = new HashMap<String, Object>();
             attributes.put(AuthenticationProvider.NAME, providerName);
             attributes.put(AuthenticationProvider.ID, id);

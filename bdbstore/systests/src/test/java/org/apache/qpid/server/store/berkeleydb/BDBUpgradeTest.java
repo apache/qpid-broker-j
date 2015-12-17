@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.Collection;
 import java.util.Map;
 
@@ -43,6 +44,9 @@ import javax.jms.TopicPublisher;
 import javax.jms.TopicSession;
 import javax.jms.TopicSubscriber;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.exchange.ExchangeDefaults;
@@ -55,9 +59,6 @@ import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.util.FileUtils;
-import org.apache.qpid.util.Strings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests upgrading a BDB store on broker startup.
@@ -69,8 +70,6 @@ import org.slf4j.LoggerFactory;
 public class BDBUpgradeTest extends QpidBrokerTestCase
 {
     protected static final Logger _logger = LoggerFactory.getLogger(BDBUpgradeTest.class);
-
-    private static final String QPID_WORK_ORIG = System.getProperty("QPID_WORK");
 
     private static final String STRING_1024 = generateString(1024);
     private static final String STRING_1024_256 = generateString(1024*256);
@@ -85,16 +84,15 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
     private static final String QUEUE_WITH_DLQ_NAME="myQueueWithDLQ";
 
     private String _storeLocation;
-    private RestTestHelper _restTestHelper = new RestTestHelper(findFreePort());
+    private RestTestHelper _restTestHelper;
 
     @Override
     public void setUp() throws Exception
     {
-        assertNotNull("QPID_WORK must be set", QPID_WORK_ORIG);
-        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
-        _restTestHelper.enableHttpManagement(brokerConfiguration);
-        Map<String, Object> virtualHostNodeAttributes = brokerConfiguration.getObjectAttributes(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
-        _storeLocation = Strings.expand((String)virtualHostNodeAttributes.get(BDBVirtualHostNode.STORE_PATH));
+        _storeLocation = Files.createTempDirectory("qpid-work-" + getClassQualifiedTestName() + "-bdb-store").toString();
+        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
+        brokerConfiguration.addHttpManagementConfiguration();
+        brokerConfiguration.setObjectAttribute(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST, BDBVirtualHostNode.STORE_PATH, _storeLocation );
 
         //Clear the two target directories if they exist.
         File directory = new File(_storeLocation);
@@ -109,6 +107,7 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         FileUtils.copy(src, new File(_storeLocation, "00000000.jdb"));
 
         super.setUp();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
     }
 
     @Override
@@ -120,7 +119,14 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         }
         finally
         {
-            super.tearDown();
+            try
+            {
+                super.tearDown();
+            }
+            finally
+            {
+                FileUtils.delete(new File(_storeLocation), true);
+            }
         }
     }
 
@@ -243,7 +249,7 @@ public class BDBUpgradeTest extends QpidBrokerTestCase
         session.close();
 
         // Restart the broker
-        restartBroker();
+        restartDefaultBroker();
 
         // Drain the queue of all messages
         connection = (TopicConnection) getConnection();

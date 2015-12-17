@@ -77,7 +77,7 @@ public class HttpPortImplTest extends QpidTestCase
         int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(HttpPort.PORT, 10000);
+        attributes.put(HttpPort.PORT, 0);
         attributes.put(HttpPort.NAME, getTestName());
         attributes.put(HttpPort.THREAD_POOL_MINIMUM, threadPoolMinimumSize);
         attributes.put(HttpPort.THREAD_POOL_MAXIMUM, invalidThreadPoolMaximumSize);
@@ -101,7 +101,7 @@ public class HttpPortImplTest extends QpidTestCase
         int invalidThreadPoolMaximumSize = threadPoolMinimumSize - 1;
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(HttpPort.PORT, 10000);
+        attributes.put(HttpPort.PORT, 0);
         attributes.put(HttpPort.NAME, getTestName());
         attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
 
@@ -128,7 +128,7 @@ public class HttpPortImplTest extends QpidTestCase
         int threadPoolMaximumSize = 1;
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(HttpPort.PORT, 10000);
+        attributes.put(HttpPort.PORT, 0);
         attributes.put(HttpPort.NAME, getTestName());
         attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
 
@@ -155,7 +155,7 @@ public class HttpPortImplTest extends QpidTestCase
         int threadPoolMaximumSize = threadPoolMinimumSize + 1;
 
         Map<String, Object> attributes = new HashMap<>();
-        attributes.put(HttpPort.PORT, 10000);
+        attributes.put(HttpPort.PORT, 0);
         attributes.put(HttpPort.NAME, getTestName());
         attributes.put(HttpPort.AUTHENTICATION_PROVIDER, AUTHENTICATION_PROVIDER_NAME);
 

@@ -31,9 +31,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.TreeSet;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -43,7 +43,6 @@ import javax.net.ssl.X509TrustManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import org.apache.qpid.server.model.ConfiguredObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +52,7 @@ import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.logging.subjects.PortLogSubject;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.DefaultVirtualHostAlias;
 import org.apache.qpid.server.model.HostNameAlias;
 import org.apache.qpid.server.model.KeyStore;
@@ -289,7 +289,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         {
             for(Transport transport : getTransports())
             {
-                _broker.getEventLogger().message(BrokerMessages.SHUTTING_DOWN(String.valueOf(transport), getPort()));
+                _broker.getEventLogger().message(BrokerMessages.SHUTTING_DOWN(String.valueOf(transport), _transport.getAcceptingPort()));
             }
 
 

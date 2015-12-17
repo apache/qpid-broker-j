@@ -79,7 +79,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
     {
         //enable DLQ/maximumDeliveryCount support for all queues at the vhost level
 
-        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
+        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
         setTestSystemProperty("queue.deadLetterQueueEnabled","true");
         setTestSystemProperty("queue.maximumDeliveryAttempts", String.valueOf(MAX_DELIVERY_COUNT));
 
@@ -205,7 +205,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
 
     public void testWhenBrokerIsRestartedAfterEnqeuingMessages() throws Exception
     {
-        restartBroker();
+        restartDefaultBroker();
 
         doTest(Session.SESSION_TRANSACTED, _redeliverMsgs, true, false);
     }
@@ -279,7 +279,7 @@ public class MaxDeliveryCountTest extends QpidBrokerTestCase
             //restart the broker to verify persistence of the DLQ and the messages on it
             clientConnection.close();
 
-            restartBroker();
+            restartDefaultBroker();
 
             final Connection clientConnection2 = getConnection();
             clientConnection2.start();

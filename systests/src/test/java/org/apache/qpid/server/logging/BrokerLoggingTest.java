@@ -20,19 +20,23 @@
 */
 package org.apache.qpid.server.logging;
 
+import java.io.IOException;
+import java.net.Socket;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import junit.framework.AssertionFailedError;
 
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.transport.ConnectionException;
 import org.apache.qpid.util.LogMonitor;
-
-import java.io.IOException;
-import java.net.Socket;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Broker Test Suite
@@ -55,16 +59,11 @@ public class BrokerLoggingTest extends AbstractTestLogging
     private static final Pattern BROKER_MESSAGE_LOG_PATTERN = Pattern.compile(BROKER_MESSAGE_LOG_REG_EXP);
     private static final String BRK_LOG_PREFIX = "BRK-";
 
-    @Override
-    public void setUp() throws Exception
-    {
-        setLogMessagePrefix();
 
-        // We either do this here or have a null check in tearDown.
-        // As when this test is run against profiles other than java it will NPE
-        _monitor = new LogMonitor(getOutputFile());
-        //We explicitly do not call super.setUp as starting up the broker is
-        //part of the test case.
+    @Override
+    public void startDefaultBroker()
+    {
+        // noop. we do not want to start broker
     }
 
     /**
@@ -94,13 +93,13 @@ public class BrokerLoggingTest extends AbstractTestLogging
 
         if (isJavaBroker())
         {
-            startBroker();
+            super.startDefaultBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(getOutputFile());
 
 
-            String configFilePath = getConfigPath();
+            String configFilePath = getDefaultBroker().getConfigurationPath();
 
             // Ensure we wait for TESTID to be logged
             waitAndFindMatches(TESTID);
@@ -136,11 +135,6 @@ public class BrokerLoggingTest extends AbstractTestLogging
         }
     }
 
-    private String getConfigPath()
-    {
-        return getPathRelativeToWorkingDirectory(getTestConfigFile(DEFAULT_PORT));
-    }
-
 
     /**
      * Description: On startup the broker reports the broker version number and svn build revision. This information is retrieved from the resource 'qpidversion.properties' which is located via the classloader.
@@ -164,7 +158,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
         {
             String TESTID = "BRK-1001";
 
-            startBroker();
+            super.startDefaultBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(getOutputFile());
@@ -246,7 +240,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
         {
             String TESTID = "BRK-1002";
 
-            startBroker();
+            super.startDefaultBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(getOutputFile());
@@ -297,7 +291,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
                     //3
                     String message = getMessageString(log);
                     assertTrue("Expected Listen log not correct" + message,
-                               message.endsWith("Listening on TCP port " + getPort()));
+                               message.endsWith("Listening on TCP port " + getDefaultBroker().getAmqpPort()));
 
                     validation = true;
                 }
@@ -358,9 +352,13 @@ public class BrokerLoggingTest extends AbstractTestLogging
             sslPortAttributes.put(Port.NAME, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT);
             sslPortAttributes.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
             sslPortAttributes.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
-            getBrokerConfiguration().addObjectConfiguration(Port.class, sslPortAttributes);
+            getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, sslPortAttributes);
 
-            startBroker();
+            super.startDefaultBroker();
+
+            final BrokerHolder defaultBroker = getDefaultBroker();
+            int amqpTlsPort =  defaultBroker.getAmqpTlsPort();
+            int amqpPort = defaultBroker.getAmqpPort();
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(getOutputFile());
@@ -413,11 +411,11 @@ public class BrokerLoggingTest extends AbstractTestLogging
 
                     for (String message : listenMessages)
                     {
-                        if (message.endsWith("Listening on TCP port " + getPort()))
+                        if (message.endsWith("Listening on TCP port " + amqpPort))
                         {
                             tcpStarted++;
                         }
-                        if (message.endsWith("Listening on SSL port " + DEFAULT_SSL_PORT))
+                        if (message.endsWith("Listening on SSL port " + amqpTlsPort))
                         {
                             sslStarted++;
                         }
@@ -427,8 +425,8 @@ public class BrokerLoggingTest extends AbstractTestLogging
                     assertEquals("Unexpected number of logs 'Listening on SSL port'", 1, sslStarted);
 
                     //4 Test ports open
-                    testSocketOpen(getPort());
-                    testSocketOpen(DEFAULT_SSL_PORT);
+                    testSocketOpen(amqpPort);
+                    testSocketOpen(amqpTlsPort);
 
                     validation = true;
                 }
@@ -467,7 +465,7 @@ public class BrokerLoggingTest extends AbstractTestLogging
         {
             String TESTID = "BRK-1004";
 
-            startBroker();
+            super.startDefaultBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(getOutputFile());
@@ -555,15 +553,15 @@ public class BrokerLoggingTest extends AbstractTestLogging
         {
             String TESTID = "BRK-1003";
 
-            startBroker();
+            super.startDefaultBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(getOutputFile());
 
-            stopBroker();
+            stopDefaultBroker();
 
             //Give broker time to shutdown and flush log
-            checkSocketClosed(getPort());
+            checkSocketClosed(getDefaultBroker().getAmqpPort());
 
             List<String> results = waitAndFindMatches(BRK_LOG_PREFIX);
             try
@@ -599,11 +597,12 @@ public class BrokerLoggingTest extends AbstractTestLogging
 
                     //3
                     String message = getMessageString(log);
+                    final int amqpPort = getDefaultBroker().getAmqpPort();
                     assertTrue("Expected shutdown log not correct" + message,
-                               message.endsWith("TCP port " + getPort()));
+                               message.endsWith("TCP port " + amqpPort));
 
                     //4
-                    checkSocketClosed(getPort());
+                    checkSocketClosed(amqpPort);
 
                     validation = true;
                 }
@@ -654,9 +653,12 @@ public class BrokerLoggingTest extends AbstractTestLogging
             sslPortAttributes.put(Port.NAME, TestBrokerConfiguration.ENTRY_NAME_SSL_PORT);
             sslPortAttributes.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
             sslPortAttributes.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
-            getBrokerConfiguration().addObjectConfiguration(Port.class, sslPortAttributes);
+            getDefaultBrokerConfiguration().addObjectConfiguration(Port.class, sslPortAttributes);
 
-            startBroker();
+            super.startDefaultBroker();
+
+            final BrokerHolder defaultBroker = getDefaultBroker();
+            int amqpTlsPort = defaultBroker.getAmqpTlsPort();
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(getOutputFile());
@@ -665,10 +667,11 @@ public class BrokerLoggingTest extends AbstractTestLogging
 //            //Clear any startup messages as we don't need them for validation
 //            _monitor.reset();
             //Stop the broker to get the log messages for testing
-            stopBroker();
+            stopDefaultBroker();
 
             //Give broker time to shutdown and flush log
-            checkSocketClosed(getPort());
+            final int amqpPort = getDefaultBroker().getAmqpPort();
+            checkSocketClosed(amqpPort);
 
             List<String> results = waitAndFindMatches(TESTID);
             try
@@ -692,11 +695,11 @@ public class BrokerLoggingTest extends AbstractTestLogging
 
                 for (String m : listenMessages)
                 {
-                    if (m.endsWith("Shutting down : TCP port " + getPort()))
+                    if (m.endsWith("Shutting down : TCP port " + amqpPort))
                     {
                         tcpShuttingDown++;
                     }
-                    if (m.endsWith("Shutting down : SSL port " + DEFAULT_SSL_PORT))
+                    if (m.endsWith("Shutting down : SSL port " + amqpTlsPort))
                     {
                         sslShuttingDown++;
                     }
@@ -707,9 +710,9 @@ public class BrokerLoggingTest extends AbstractTestLogging
 
                 //4
                 //Test Port closed
-                checkSocketClosed(getPort());
+                checkSocketClosed(amqpPort);
                 //Test SSL Port closed
-                checkSocketClosed(DEFAULT_SSL_PORT);
+                checkSocketClosed(amqpTlsPort);
             }
             catch (AssertionFailedError afe)
             {
@@ -743,17 +746,19 @@ public class BrokerLoggingTest extends AbstractTestLogging
         {
             String TESTID = "BRK-1005";
 
-            startBroker();
+            super.startDefaultBroker();
 
             // Now we can create the monitor as _outputFile will now be defined
             _monitor = new LogMonitor(getOutputFile());
 
             getConnection().close();
 
-            stopBroker();
+            stopDefaultBroker();
+
+            final int amqpPort = getDefaultBroker().getAmqpPort();
 
             // Ensure the broker has shutdown before retreving results
-            checkSocketClosed(getPort());
+            checkSocketClosed(amqpPort);
 
             waitAndFindMatches(TESTID);
 

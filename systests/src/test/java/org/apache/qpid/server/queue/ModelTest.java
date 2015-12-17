@@ -20,17 +20,18 @@
  */
 package org.apache.qpid.server.queue;
 
+import java.io.IOException;
+import java.util.Map;
+
+import javax.jms.Connection;
+import javax.jms.Session;
+
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
-
-import javax.jms.Connection;
-import javax.jms.Session;
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * This Test validates the Queue Model on the broker.
@@ -53,14 +54,14 @@ import java.util.Map;
  */
 public class ModelTest extends QpidBrokerTestCase
 {
-    private RestTestHelper _restTestHelper = new RestTestHelper(findFreePort());
+    private RestTestHelper _restTestHelper;
 
     @Override
     public void setUp() throws Exception
     {
-        _restTestHelper.enableHttpManagement(getBrokerConfiguration());
-
+        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
         super.setUp();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
     }
 
     @Override

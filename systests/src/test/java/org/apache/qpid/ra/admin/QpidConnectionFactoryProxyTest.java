@@ -31,9 +31,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 public class QpidConnectionFactoryProxyTest extends QpidBrokerTestCase
 {
-    private static final String BROKER_PORT = "15672";
-
-    private static final String URL = "amqp://guest:guest@client/test?brokerlist='tcp://localhost:" + BROKER_PORT + "?sasl_mechs='PLAIN%2520CRAM-MD5''";
+    private static final String URL_TEMPLATE = "amqp://guest:guest@client/test?brokerlist='tcp://localhost:%d?sasl_mechs='PLAIN%%2520CRAM-MD5''";
 
     public void testQueueConnectionFactory() throws Exception
     {
@@ -43,7 +41,7 @@ public class QpidConnectionFactoryProxyTest extends QpidBrokerTestCase
         try
         {
             cf = new QpidConnectionFactoryProxy();
-            ((QpidConnectionFactoryProxy)cf).setConnectionURL(URL);
+            ((QpidConnectionFactoryProxy)cf).setConnectionURL(getBrokerUrl());
             c = cf.createQueueConnection();
             assertTrue(c instanceof QueueConnection);
 
@@ -65,7 +63,7 @@ public class QpidConnectionFactoryProxyTest extends QpidBrokerTestCase
         try
         {
             cf = new QpidConnectionFactoryProxy();
-            ((QpidConnectionFactoryProxy)cf).setConnectionURL(URL);
+            ((QpidConnectionFactoryProxy)cf).setConnectionURL(getBrokerUrl());
             c = cf.createTopicConnection();
             assertTrue(c instanceof TopicConnection);
 
@@ -95,7 +93,7 @@ public class QpidConnectionFactoryProxyTest extends QpidBrokerTestCase
         try
         {
             cf = new QpidConnectionFactoryProxy();
-            ((QpidConnectionFactoryProxy)cf).setConnectionURL(URL);
+            ((QpidConnectionFactoryProxy)cf).setConnectionURL(getBrokerUrl());
             c = cf.createConnection();
             assertTrue(c instanceof Connection);
 
@@ -108,6 +106,11 @@ public class QpidConnectionFactoryProxyTest extends QpidBrokerTestCase
             }
 
         }
+    }
+
+    private String getBrokerUrl()
+    {
+        return String.format(URL_TEMPLATE, getDefaultBroker().getAmqpPort());
     }
 }
 

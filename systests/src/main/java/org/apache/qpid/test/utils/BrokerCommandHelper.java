@@ -36,7 +36,7 @@ public class BrokerCommandHelper
         _brokerCommandTemplateAsList = split(brokerCommandTemplate);
     }
 
-    public String[] getBrokerCommand(int port, String storePath, String storeType)
+    public String[] getBrokerCommand(int port, String qpidWork, String storePath, String storeType)
     {
         String[] command = new String[_brokerCommandTemplateAsList.size()];
         int i=0;
@@ -44,6 +44,7 @@ public class BrokerCommandHelper
         {
             command[i] = commandPart
                     .replace("@PORT", "" + port)
+                    .replace("@QPID_WORK", qpidWork)
                     .replace("@STORE_PATH", storePath)
                     .replace("@STORE_TYPE", storeType);
             i++;

@@ -42,7 +42,7 @@ public class ImmediateAndMandatoryPublishingTest extends QpidBrokerTestCase
     @Override
     public void setUp() throws Exception
     {
-        getBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_CLOSE_WHEN_NO_ROUTE, false);
+        getDefaultBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_CLOSE_WHEN_NO_ROUTE, false);
         super.setUp();
         _connection = getConnection();
         _connection.setExceptionListener(_testExceptionListener);

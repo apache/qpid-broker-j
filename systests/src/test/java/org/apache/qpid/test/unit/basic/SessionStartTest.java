@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.test.unit.basic;
 
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageListener;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +33,6 @@ import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageListener;
-
 public class SessionStartTest extends QpidBrokerTestCase implements MessageListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(SessionStartTest.class);
@@ -41,7 +41,6 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
     private AMQDestination _destination;
     private AMQSession _session;
     private int count;
-    public String _connectionString = "vm://:1";
 
     protected void setUp() throws Exception
     {
@@ -102,13 +101,5 @@ public class SessionStartTest extends QpidBrokerTestCase implements MessageListe
     private static String randomize(String in)
     {
         return in + System.currentTimeMillis();
-    }
-
-    public static void main(String[] argv) throws Exception
-    {
-        SessionStartTest test = new SessionStartTest();
-        test._connectionString = (argv.length == 0) ? "localhost:5672" : argv[0];
-        test.setUp();
-        test.test();
     }
 }

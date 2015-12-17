@@ -20,14 +20,11 @@
  */
 package org.apache.qpid.systest.rest.acl;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
@@ -49,10 +46,11 @@ public class QueueRestACLTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getRestTestHelper().configureTemporaryPasswordFile(this, ALLOWED_USER, DENIED_USER);
+        final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
+        defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
 
         AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " CREATE QUEUE",
@@ -63,8 +61,6 @@ public class QueueRestACLTest extends QpidRestTestCase
                 "ACL DENY-LOG " + DENIED_USER + " DELETE QUEUE",
                 "ACL DENY-LOG ALL ALL");
 
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
-                HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
     }
 
     public void testCreateQueueAllowed() throws Exception

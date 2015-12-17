@@ -21,6 +21,14 @@
 package org.apache.qpid.test.unit.transacted;
 
 
+import javax.jms.Connection;
+import javax.jms.IllegalStateException;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.TextMessage;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +37,6 @@ import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.jms.Session;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
-import javax.jms.Connection;
-import javax.jms.IllegalStateException;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.jms.TextMessage;
 
 public class TransactedTest extends QpidBrokerTestCase
 {
@@ -108,7 +108,7 @@ public class TransactedTest extends QpidBrokerTestCase
         catch (Exception e)
         {
             _logger.error("setup error",e);
-            stopBroker();
+            startDefaultBroker();
             throw e;
         }
     }

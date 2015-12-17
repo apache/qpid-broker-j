@@ -25,7 +25,6 @@ import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -53,10 +52,10 @@ public class BrokerRestHttpsClientCertAuthTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getRestTestHelper().setUseSslAuth(true);
+
         Map<String, Object> newAttributes = new HashMap<String, Object>();
         newAttributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.HTTP));
         newAttributes.put(Port.TRANSPORTS, Collections.singleton(Transport.SSL));
@@ -68,17 +67,19 @@ public class BrokerRestHttpsClientCertAuthTest extends QpidRestTestCase
         Map<String, Object> externalProviderAttributes = new HashMap<String, Object>();
         externalProviderAttributes.put(AuthenticationProvider.TYPE, ExternalAuthenticationManager.PROVIDER_TYPE);
         externalProviderAttributes.put(AuthenticationProvider.NAME, EXTERNAL_AUTHENTICATION_PROVIDER);
-        getBrokerConfiguration().addObjectConfiguration(AuthenticationProvider.class, externalProviderAttributes);
+        getDefaultBrokerConfiguration().addObjectConfiguration(AuthenticationProvider.class, externalProviderAttributes);
 
         // set password authentication provider on http port for the tests
-        getBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
-                                                    EXTERNAL_AUTHENTICATION_PROVIDER);
+        getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
+                                                           EXTERNAL_AUTHENTICATION_PROVIDER);
 
-        getBrokerConfiguration().setObjectAttributes(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, newAttributes);
+        getDefaultBrokerConfiguration().setObjectAttributes(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, newAttributes);
     }
 
     public void testGetWithHttps() throws Exception
     {
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpsPort());
+        _restTestHelper.setUseSslAuth(true);
         Map<String, Object> saslData = getRestTestHelper().getJsonAsMap("/service/sasl");
 
         Asserts.assertAttributesPresent(saslData, "user");

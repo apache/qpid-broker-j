@@ -39,9 +39,17 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.ConnectionListener;
+import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.util.FileUtils;
 
+/*
+ * we need to create 4 brokers:
+ * 1st broker will be running in test JVM and will not have failover host (only tcp connection will established, amqp connection will be closed)
+ * 2d broker will be spawn in separate JVM and should have a failover host (amqp connection should be established)
+ * 3d broker will be spawn in separate JVM and should not have a failover host (only tcp connection will established, amqp connection will be closed)
+ * 4d broker will be spawn in separate JVM and should have a failover host (amqp connection should be established)
+ */
 public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements ConnectionListener
 {
     private static final Logger _logger = LoggerFactory.getLogger(MultipleBrokersFailoverTest.class);
@@ -52,9 +60,9 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
     private static final int FAILOVER_RETRIES = 0;
     private static final int FAILOVER_CONNECTDELAY = 0;
     private static final int FAILOVER_AWAIT_TIME = 10000;
+    private static final int NUMBER_OF_BROKERS = 4;
 
-
-    private int[] _brokerPorts;
+    private BrokerHolder[] _brokerHolders;
     private AMQConnectionURL _connectionURL;
     private Connection _connection;
     private CountDownLatch _failoverComplete;
@@ -66,33 +74,24 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
     private MessageProducer _producer;
 
     @Override
+    public void startDefaultBroker()
+    {
+        // do not start the default broker for this test
+    }
+
+    @Override
     protected void setUp() throws Exception
     {
         super.setUp();
 
-        int numBrokers = 4;
-        int port = getPort();
-        _brokerPorts = new int[numBrokers];
-
-        // we need to create 4 brokers:
-        // 1st broker will be running in test JVM and will not have failover host (only tcp connection will established, amqp connection will be closed)
-        // 2d broker will be spawn in separate JVM and should have a failover host (amqp connection should be established)
-        // 3d broker will be spawn in separate JVM and should not have a failover host (only tcp connection will established, amqp connection will be closed)
-        // 4d broker will be spawn in separate JVM and should have a failover host (amqp connection should be established)
+        _brokerHolders = new BrokerHolder[NUMBER_OF_BROKERS];
 
         // the test should connect to the second broker first and fail over to the forth broker
         // after unsuccessful try to establish the connection to the 3d broker
-        for (int i = 0; i < numBrokers; i++)
+        for (int i = 0; i < NUMBER_OF_BROKERS; i++)
         {
-            if (i > 0)
-            {
-                port = getNextAvailable(port + 1);
-            }
-            _brokerPorts[i] = port;
-
-            createBrokerConfiguration(port);
             String host = null;
-            if (i == 1 || i == _brokerPorts.length - 1)
+            if (i == 1 || i == NUMBER_OF_BROKERS - 1)
             {
                 host = FAILOVER_VIRTUAL_HOST;
             }
@@ -100,23 +99,22 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
             {
                 host = NON_FAILOVER_VIRTUAL_HOST;
             }
-            createTestVirtualHostNode(port, host);
 
-            startBroker(port);
+            BrokerHolder brokerHolder = createSpawnedBroker();
+            createTestVirtualHostNode(brokerHolder, host, true);
+            brokerHolder.start();
+
+            _brokerHolders[i] = brokerHolder;
+
             revertSystemProperties();
         }
 
-        _connectionURL = new AMQConnectionURL(generateUrlString(numBrokers));
+        _connectionURL = new AMQConnectionURL(generateUrlString(NUMBER_OF_BROKERS));
 
         _connection = getConnection(_connectionURL);
         ((AMQConnection) _connection).setConnectionListener(this);
         _failoverComplete = new CountDownLatch(1);
         _failoverStarted = new CountDownLatch(1);
-    }
-
-    public void startBroker() throws Exception
-    {
-        // noop, prevent the broker startup in super.setUp()
     }
 
     private String generateUrlString(int numBrokers)
@@ -132,7 +130,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
                 buffer.append(";");
             }
 
-            String broker = String.format(BROKER_PORTION_FORMAT, _brokerPorts[i],
+            String broker = String.format(BROKER_PORTION_FORMAT, _brokerHolders[i].getAmqpPort(),
                                           FAILOVER_CONNECTDELAY, FAILOVER_RETRIES);
             buffer.append(broker);
         }
@@ -141,6 +139,7 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
         return buffer.toString();
     }
 
+    @Override
     public void tearDown() throws Exception
     {
         try
@@ -149,15 +148,10 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
         }
         finally
         {
-            for (int i = 0; i < _brokerPorts.length; i++)
+            for (BrokerHolder broker : _brokerHolders)
             {
-                if (_brokerPorts[i] > 0)
-                {
-                    stopBrokerSafely(_brokerPorts[i]);
-                    FileUtils.deleteDirectory(System.getProperty("QPID_WORK") + File.separator + getFailingPort());
-                }
+                stopBrokerSafely(broker);
             }
-
         }
     }
 
@@ -165,33 +159,33 @@ public class MultipleBrokersFailoverTest extends QpidBrokerTestCase implements C
     public void testFailoverOnBrokerKill() throws Exception
     {
         init(Session.SESSION_TRANSACTED, true);
-        assertConnectionPort(_brokerPorts[1]);
+        assertConnectionPort(_brokerHolders[1].getAmqpPort());
 
         assertSendReceive(0);
 
-        killBroker(_brokerPorts[1]);
+        _brokerHolders[1].kill();
 
         awaitForFailoverCompletion(FAILOVER_AWAIT_TIME);
         assertEquals("Failover is not started as expected", 0, _failoverStarted.getCount());
 
         assertSendReceive(2);
-        assertConnectionPort(_brokerPorts[_brokerPorts.length - 1]);
+        assertConnectionPort(_brokerHolders[NUMBER_OF_BROKERS - 1].getAmqpPort());
     }
 
     public void testFailoverOnBrokerStop() throws Exception
     {
         init(Session.SESSION_TRANSACTED, true);
-        assertConnectionPort(_brokerPorts[1]);
+        assertConnectionPort(_brokerHolders[1].getAmqpPort());
 
         assertSendReceive(0);
 
-        stopBroker(_brokerPorts[1]);
+        _brokerHolders[1].shutdown();
 
         awaitForFailoverCompletion(FAILOVER_AWAIT_TIME);
         assertEquals("Failover is not started as expected", 0, _failoverStarted.getCount());
 
         assertSendReceive(1);
-        assertConnectionPort(_brokerPorts[_brokerPorts.length - 1]);
+        assertConnectionPort(_brokerHolders[NUMBER_OF_BROKERS - 1].getAmqpPort());
     }
 
     private void assertConnectionPort(int brokerPort)

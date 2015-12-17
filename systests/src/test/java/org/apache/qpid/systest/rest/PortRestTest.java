@@ -82,7 +82,7 @@ public class PortRestTest extends QpidRestTestCase
         String portName = "test-port";
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Port.NAME, portName);
-        attributes.put(Port.PORT, findFreePort());
+        attributes.put(Port.PORT, 0);
         attributes.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
 
         int responseCode = getRestTestHelper().submitRequest("port/" + portName, "PUT", attributes);
@@ -95,7 +95,7 @@ public class PortRestTest extends QpidRestTestCase
         Asserts.assertPortAttributes(port);
 
         // make sure that port is there after broker restart
-        restartBroker();
+        restartDefaultBroker();
 
         portDetails = getRestTestHelper().getJsonAsList("port/" + portName);
         assertNotNull("Port details cannot be null", portDetails);
@@ -107,7 +107,7 @@ public class PortRestTest extends QpidRestTestCase
         String portName = "test-port";
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(Port.NAME, portName);
-        attributes.put(Port.PORT, findFreePort());
+        attributes.put(Port.PORT, 0);
         attributes.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
 
         int responseCode = getRestTestHelper().submitRequest("port/" + portName, "PUT", attributes);
@@ -126,7 +126,7 @@ public class PortRestTest extends QpidRestTestCase
         responseCode = getRestTestHelper().submitRequest("authenticationprovider/" + TestBrokerConfiguration.ENTRY_NAME_ANONYMOUS_PROVIDER, "PUT", authProviderAttributes);
         assertEquals("Unexpected response code for authentication provider creation", 201, responseCode);
 
-        attributes = new HashMap<String, Object>(port);
+        attributes = new HashMap<>(port);
         attributes.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_ANONYMOUS_PROVIDER);
         attributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.AMQP_0_9_1));
 
@@ -261,8 +261,8 @@ public class PortRestTest extends QpidRestTestCase
     public void testDefaultAmqpPortIsQuiescedWhenInManagementMode() throws Exception
     {
         // restart Broker in management port
-        stopBroker();
-        startBroker(0, true);
+        stopDefaultBroker();
+        startDefaultBroker(true);
         getRestTestHelper().setUsernameAndPassword(BrokerOptions.MANAGEMENT_MODE_USER_NAME, MANAGEMENT_MODE_PASSWORD);
 
         String ampqPortName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;

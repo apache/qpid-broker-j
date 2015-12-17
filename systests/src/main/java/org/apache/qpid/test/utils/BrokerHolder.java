@@ -20,14 +20,26 @@
  */
 package org.apache.qpid.test.utils;
 
-import org.apache.qpid.server.BrokerOptions;
+import java.nio.file.Path;
 
 public interface BrokerHolder
 {
-    public void start(BrokerOptions options) throws Exception;
+    void start() throws Exception;
+    void start(boolean managementMode) throws Exception;
+    void restart() throws Exception;
     void shutdown();
     void kill();
+    void cleanUp();
     String dumpThreads();
+    void createVirtualHostNode(String virtualHostNodeName, String storeType, String storeDir, String blueprint);
+    TestBrokerConfiguration getConfiguration();
+    String getConfigurationPath();
+    Path getWorkDir();
+    int getBrokerIndex();
+    int getAmqpPort();
+    int getHttpPort();
+    int getHttpsPort();
+    int getAmqpTlsPort();
 
     enum BrokerType
     {

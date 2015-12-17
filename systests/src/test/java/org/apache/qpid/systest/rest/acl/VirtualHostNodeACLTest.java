@@ -19,14 +19,11 @@
 package org.apache.qpid.systest.rest.acl;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNode;
@@ -40,18 +37,16 @@ public class VirtualHostNodeACLTest extends QpidRestTestCase
     private static final String DENIED_USER = "user2";
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getRestTestHelper().configureTemporaryPasswordFile(this, ALLOWED_USER, DENIED_USER);
+        final TestBrokerConfiguration defaultBrokerConfiguration = getDefaultBrokerConfiguration();
+        defaultBrokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
 
         AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT",
                 "ACL ALLOW-LOG " + ALLOWED_USER + " ALL VIRTUALHOSTNODE",
                 "ACL DENY-LOG " + DENIED_USER + " ALL VIRTUALHOSTNODE",
                 "ACL DENY-LOG ALL ALL");
-
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
-                HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
 
         Map<String, Object> virtualHostNodeAttributes = new HashMap<>();
         virtualHostNodeAttributes.put(VirtualHostNode.NAME, TEST_VIRTUAL_HOST_NODE);
@@ -59,8 +54,7 @@ public class VirtualHostNodeACLTest extends QpidRestTestCase
         // TODO need better way to determine the VHN's optional attributes
         virtualHostNodeAttributes.put(JsonVirtualHostNode.STORE_PATH, getStoreLocation(TEST_VIRTUAL_HOST_NODE));
 
-
-        getBrokerConfiguration().addObjectConfiguration(VirtualHostNode.class, virtualHostNodeAttributes);
+        defaultBrokerConfiguration.addObjectConfiguration(VirtualHostNode.class, virtualHostNodeAttributes);
     }
 
     public void testCreateVirtualHostNodeAllowed() throws Exception

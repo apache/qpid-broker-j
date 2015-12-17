@@ -76,7 +76,7 @@ public class VirtualHostAliasTest extends QpidTestCase
 
         final Map<String, Object> attributes = new HashMap<>();
         attributes.put(Port.NAME, getTestName());
-        attributes.put(Port.PORT, findFreePort());
+        attributes.put(Port.PORT, 0);
         attributes.put(Port.AUTHENTICATION_PROVIDER, "dummy");
         attributes.put(Port.TYPE, "AMQP");
         _port = (AmqpPort) objectFactory.create(Port.class, attributes, _broker );

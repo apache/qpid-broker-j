@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.systest.rest;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,21 +36,24 @@ import org.apache.qpid.test.utils.TestBrokerConfiguration;
 public class AnonymousAccessRestTest extends QpidRestTestCase
 {
     @Override
-    public void startBroker()
+    public void startDefaultBroker()
     {
         // prevent broker from starting in setUp
     }
 
     public void startBrokerNow() throws Exception
     {
-        super.startBroker();
+        super.startDefaultBroker();
+
+        // reset credentials
+        getRestTestHelper().setUsernameAndPassword(null, null);
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
 
         Map<String, Object> anonymousAuthProviderAttributes = new HashMap<String, Object>();
         anonymousAuthProviderAttributes.put(AuthenticationProvider.TYPE, AnonymousAuthenticationManager.PROVIDER_TYPE);
@@ -63,8 +65,6 @@ public class AnonymousAccessRestTest extends QpidRestTestCase
                 TestBrokerConfiguration.ENTRY_NAME_ANONYMOUS_PROVIDER);
         config.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, false);
 
-        // reset credentials
-        getRestTestHelper().setUsernameAndPassword(null, null);
     }
 
     public void testGetWithAnonymousProvider() throws Exception
@@ -94,8 +94,8 @@ public class AnonymousAccessRestTest extends QpidRestTestCase
 
     public void testGetWithPasswordAuthProvider() throws Exception
     {
-        getBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
-                TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+        getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
+                                                           TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
         startBrokerNow();
 
         getRestTestHelper().submitRequest("broker", "GET", HttpServletResponse.SC_UNAUTHORIZED);
@@ -104,8 +104,8 @@ public class AnonymousAccessRestTest extends QpidRestTestCase
     public void testPutWithPasswordAuthProvider() throws Exception
     {
         String newBrokerName = getName();
-        getBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
-                TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+        getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
+                                                           TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
         startBrokerNow();
 
         Map<String, Object> brokerAttributes = new HashMap<String, Object>();

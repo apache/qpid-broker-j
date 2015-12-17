@@ -44,7 +44,21 @@ import javax.security.sasl.SaslException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.codec.ClientDecoder;
-import org.apache.qpid.framing.*;
+import org.apache.qpid.framing.AMQDataBlock;
+import org.apache.qpid.framing.AMQFrame;
+import org.apache.qpid.framing.AMQFrameDecodingException;
+import org.apache.qpid.framing.AMQMethodBodyImpl;
+import org.apache.qpid.framing.AMQProtocolVersionException;
+import org.apache.qpid.framing.AMQShortString;
+import org.apache.qpid.framing.ConnectionCloseBody;
+import org.apache.qpid.framing.ConnectionCloseOkBody;
+import org.apache.qpid.framing.ConnectionOpenBody;
+import org.apache.qpid.framing.ConnectionOpenOkBody;
+import org.apache.qpid.framing.ConnectionStartOkBody;
+import org.apache.qpid.framing.ConnectionTuneOkBody;
+import org.apache.qpid.framing.FieldTable;
+import org.apache.qpid.framing.FrameCreatingMethodProcessor;
+import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
@@ -67,10 +81,10 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
     public void testTooSmallFrameSize() throws Exception
     {
 
-        getBrokerConfiguration().setObjectAttribute(AuthenticationProvider.class,
-                                                    TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
-                                                    "secureOnlyMechanisms",
-                                                    "[]");
+        getDefaultBrokerConfiguration().setObjectAttribute(AuthenticationProvider.class,
+                                                           TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
+                                                           "secureOnlyMechanisms",
+                                                           "[]");
         super.setUp();
 
         if(isBroker010())
@@ -138,10 +152,10 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
 
     public void testTooLargeFrameSize() throws Exception
     {
-        getBrokerConfiguration().setObjectAttribute(AuthenticationProvider.class,
-                                                    TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
-                                                    "secureOnlyMechanisms",
-                                                    "[]");
+        getDefaultBrokerConfiguration().setObjectAttribute(AuthenticationProvider.class,
+                                                           TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
+                                                           "secureOnlyMechanisms",
+                                                           "[]");
 
         super.setUp();
         if(isBroker010())

@@ -79,10 +79,10 @@ public class BDBHAVirtualHostNodeRestTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.removeObjectConfiguration(VirtualHostNode.class, TEST2_VIRTUALHOST);
         config.removeObjectConfiguration(VirtualHostNode.class, TEST3_VIRTUALHOST);
     }

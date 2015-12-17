@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.test.utils;
 
+import java.io.File;
 import java.security.PrivilegedAction;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.security.auth.Subject;
@@ -34,19 +34,16 @@ import org.apache.qpid.server.BrokerOptions;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.util.Action;
 
-public class InternalBrokerHolder implements BrokerHolder
+public class InternalBrokerHolder extends AbstractBrokerHolder
 {
     private final static Logger LOGGER = LoggerFactory.getLogger(InternalBrokerHolder.class);
     private final static UncaughtExceptionHandler UNCAUGHT_EXCEPTION_HANDLER = new UncaughtExceptionHandler();
-    private final QpidBrokerTestCase _testCase;
-    private final Set<Integer> _portsUsedByBroker;
 
     private volatile Broker _broker;
 
-    public InternalBrokerHolder(Set<Integer> portsUsedByBroker, final QpidBrokerTestCase testCase)
+    public InternalBrokerHolder(int port, final String classQualifiedTestName, final File logFile)
     {
-        _portsUsedByBroker = portsUsedByBroker;
-        _testCase = testCase;
+        super(port, classQualifiedTestName, logFile);
     }
 
     @Override
@@ -75,16 +72,19 @@ public class InternalBrokerHolder implements BrokerHolder
                 {
                     super.shutdown();
                 }
-                catch(IllegalStateException e)
+                catch (IllegalStateException e)
                 {
-                    System.out.println("IllegalStateException occurred on broker shutdown in test " + _testCase.getName());
+                    System.out.println("IllegalStateException occurred on broker shutdown in test "
+                                       + getClassQualifiedTestName());
                     throw e;
                 }
             }
         };
+
         _broker.startup(options);
     }
 
+    @Override
     public void shutdown()
     {
         LOGGER.info("Shutting down Broker instance");
@@ -94,7 +94,7 @@ public class InternalBrokerHolder implements BrokerHolder
             @Override
             public Object run()
             {
-                if(_broker != null)
+                if (_broker != null)
                 {
                     _broker.shutdown();
                 }
@@ -105,11 +105,11 @@ public class InternalBrokerHolder implements BrokerHolder
         });
         waitUntilPortsAreFree();
 
-        _testCase.assertEquals(
-                "One or more uncaught exceptions occurred prior to end of this test. Check test logs.",
-                0,
-                UNCAUGHT_EXCEPTION_HANDLER.getAndResetCount());
-
+        if (UNCAUGHT_EXCEPTION_HANDLER.getAndResetCount() > 0)
+        {
+            throw new RuntimeException(
+                    "One or more uncaught exceptions occurred prior to end of this test. Check test logs.");
+        }
         LOGGER.info("Broker instance shutdown");
     }
 
@@ -118,11 +118,6 @@ public class InternalBrokerHolder implements BrokerHolder
     {
         // Can't kill a internal broker as we would also kill ourselves as we share the same JVM.
         shutdown();
-    }
-
-    private void waitUntilPortsAreFree()
-    {
-        new PortHelper().waitUntilPortsAreFree(_portsUsedByBroker);
     }
 
     @Override
@@ -134,7 +129,13 @@ public class InternalBrokerHolder implements BrokerHolder
     @Override
     public String toString()
     {
-        return "InternalBrokerHolder [_portsUsedByBroker=" + _portsUsedByBroker + "]";
+        return "InternalBrokerHolder [amqpPort=" + getAmqpPort() + "]";
+    }
+
+    @Override
+    protected String getLogPrefix()
+    {
+        return null;
     }
 
     private static class UncaughtExceptionHandler implements Thread.UncaughtExceptionHandler
@@ -158,7 +159,7 @@ public class InternalBrokerHolder implements BrokerHolder
             {
                 count = _count.get();
             }
-            while(!_count.compareAndSet(count, 0));
+            while (!_count.compareAndSet(count, 0));
             return count;
         }
     }

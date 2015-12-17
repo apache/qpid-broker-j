@@ -36,7 +36,7 @@ public class ConnectionFactoryTest extends QpidBrokerTestCase
     public void testCreateConnectionWithUsernamePassword() throws Exception
     {
         
-        String brokerUrl = getBroker().toString();
+        String brokerUrl = getBrokerDetailsFromDefaultConnectionUrl().toString();
         String URL = "amqp://guest:guest@clientID/test?brokerlist='" + brokerUrl + "'";
         AMQConnectionFactory factory = new AMQConnectionFactory(URL);
         
@@ -66,7 +66,7 @@ public class ConnectionFactoryTest extends QpidBrokerTestCase
      */
     public void testCreatingConnectionWithInstanceMadeUsingDefaultConstructor() throws Exception
     {
-        String broker = getBroker().toString();
+        String broker = getBrokerDetailsFromDefaultConnectionUrl().toString();
         String url = "amqp://guest:guest@clientID/test?brokerlist='" + broker + "'";
 
         AMQConnectionFactory factory = new AMQConnectionFactory();

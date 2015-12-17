@@ -111,7 +111,7 @@ public class QueueMessageDurabilityTest extends QpidBrokerTestCase
         assertEquals(1,amqSession.getQueueDepth((AMQDestination)session.createQueue(DURABLE_DEFAULT_PERSIST_NAME)));
         assertEquals(1,amqSession.getQueueDepth((AMQDestination)session.createQueue(NONDURABLE_ALWAYS_PERSIST_NAME)));
 
-        restartBroker();
+        restartDefaultBroker();
 
         conn = getConnection();
         session = conn.createSession(true, Session.SESSION_TRANSACTED);
@@ -141,7 +141,7 @@ public class QueueMessageDurabilityTest extends QpidBrokerTestCase
         assertEquals(1,amqSession.getQueueDepth((AMQDestination)session.createQueue(DURABLE_DEFAULT_PERSIST_NAME)));
         assertEquals(1,amqSession.getQueueDepth((AMQDestination)session.createQueue(NONDURABLE_ALWAYS_PERSIST_NAME)));
 
-        restartBroker();
+        restartDefaultBroker();
 
         conn = getConnection();
         session = conn.createSession(true, Session.SESSION_TRANSACTED);
@@ -170,7 +170,7 @@ public class QueueMessageDurabilityTest extends QpidBrokerTestCase
         assertTrue(msg instanceof TextMessage);
         assertEquals("test2", ((TextMessage) msg).getText());
         session.rollback();
-        restartBroker();
+        restartDefaultBroker();
         conn = getConnection();
         conn.start();
         session = conn.createSession(true, Session.SESSION_TRANSACTED);

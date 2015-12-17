@@ -52,16 +52,16 @@ public class GroupRestACLTest extends QpidRestTestCase
     public void setUp() throws Exception
     {
         _groupFile = createTemporaryGroupFile();
-        getBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
+        getDefaultBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
 
         //DONT call super.setUp(), the tests will start the broker after configuring it
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
+        getDefaultBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
     }
 
     @Override

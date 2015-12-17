@@ -35,6 +35,7 @@ import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
+import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.VirtualHostNode;
@@ -65,13 +66,13 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
     @Override
     public void setUp() throws Exception
     {
-        createTestVirtualHostNode(0, VHOST_NAME1);
-        createTestVirtualHostNode(0, VHOST_NAME2);
-        createTestVirtualHostNode(0, VHOST_NAME3);
+        createTestVirtualHostNode(VHOST_NAME1);
+        createTestVirtualHostNode(VHOST_NAME2);
+        createTestVirtualHostNode(VHOST_NAME3);
 
         if (getName().equals("testEnabledStatisticsReporting"))
         {
-            TestBrokerConfiguration config = getBrokerConfiguration();
+            TestBrokerConfiguration config = getDefaultBrokerConfiguration();
             config.removeObjectConfiguration(VirtualHostNode.class, TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST);
             config.setBrokerAttribute(Broker.STATISTICS_REPORTING_PERIOD, STATISTICS_REPORTING_PERIOD_IN_SECONDS);
         }
@@ -81,7 +82,10 @@ public class StatisticsReportingTest extends QpidBrokerTestCase
         super.setUp();
         _monitor = new LogMonitor(getOutputFile());
 
-        _brokerUrl = getBroker().toString();
+        BrokerDetails brokerDetails = getBrokerDetailsFromDefaultConnectionUrl();
+        brokerDetails.setPort(getDefaultBroker().getAmqpPort());
+
+        _brokerUrl = brokerDetails.toString();
         _conToVhost1 = new AMQConnection(_brokerUrl, USER, USER, "clientid", VHOST_NAME1);
         _conToVhost2 = new AMQConnection(_brokerUrl, USER, USER, "clientid", VHOST_NAME2);
         _conToVhost3 = new AMQConnection(_brokerUrl, USER, USER, "clientid", VHOST_NAME3);

@@ -22,7 +22,6 @@
 package org.apache.qpid.systest.rest;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,14 +72,14 @@ public class PreferencesProviderRestTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
         Map<String, Object> anonymousAuthProviderAttributes = new HashMap<String, Object>();
         anonymousAuthProviderAttributes.put(AuthenticationProvider.TYPE, PlainPasswordDatabaseAuthenticationManager.PROVIDER_TYPE);
         anonymousAuthProviderAttributes.put(AuthenticationProvider.NAME,  TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER + "-2");
         anonymousAuthProviderAttributes.put(ExternalFileBasedAuthenticationManager.PATH, _authenticationProviderFile.getAbsolutePath());
-        getBrokerConfiguration().addObjectConfiguration(AuthenticationProvider.class,anonymousAuthProviderAttributes);
+        getDefaultBrokerConfiguration().addObjectConfiguration(AuthenticationProvider.class, anonymousAuthProviderAttributes);
     }
 
     public void testCreateAndGetProvider() throws Exception

@@ -34,15 +34,13 @@ public class QpidRAConnectionTest extends QpidBrokerTestCase
 {
     private static final Logger _logger = LoggerFactory.getLogger(QpidRAConnectionTest.class);
 
-    private static final String BROKER_PORT = "15672";
-
-    private static final String URL = "amqp://guest:guest@client/test?brokerlist='tcp://localhost:" + BROKER_PORT + "?sasl_mechs='PLAIN%25252520CRAM-MD5''";
+    private static final String URL_TEMPLATE = "amqp://guest:guest@client/test?brokerlist='tcp://localhost:%d?sasl_mechs='PLAIN%%25252520CRAM-MD5''";
 
     public void testSessionCommitOnClosedConnectionThrowsException() throws Exception
     {
         QpidResourceAdapter ra = new QpidResourceAdapter();
         QpidRAManagedConnectionFactory mcf = new QpidRAManagedConnectionFactory();
-        mcf.setConnectionURL(URL);
+        mcf.setConnectionURL(getBrokerUrl());
         mcf.setResourceAdapter(ra);
         ConnectionFactory cf = new QpidRAConnectionFactoryImpl(mcf, null);
         Connection c = cf.createConnection();
@@ -66,7 +64,7 @@ public class QpidRAConnectionTest extends QpidBrokerTestCase
     {
         QpidResourceAdapter ra = new QpidResourceAdapter();
         QpidRAManagedConnectionFactory mcf = new QpidRAManagedConnectionFactory();
-        mcf.setConnectionURL(URL);
+        mcf.setConnectionURL(getBrokerUrl());
         mcf.setResourceAdapter(ra);
         ConnectionFactory cf = new QpidRAConnectionFactoryImpl(mcf, null);
         Connection c = cf.createConnection();
@@ -86,5 +84,10 @@ public class QpidRAConnectionTest extends QpidBrokerTestCase
             s.close();
             c.close();
         }
+    }
+
+    private String getBrokerUrl()
+    {
+        return String.format(URL_TEMPLATE, getDefaultBroker().getAmqpPort());
     }
 }

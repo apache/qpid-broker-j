@@ -45,7 +45,6 @@ import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Model;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -204,7 +203,7 @@ public class AmqpPortImplTest extends QpidTestCase
     {
         ServerSocket serverSocket = new ServerSocket();
         serverSocket.setReuseAddress(true);
-        serverSocket.bind(new InetSocketAddress(findFreePort()));
+        serverSocket.bind(new InetSocketAddress(0));
         return serverSocket;
     }
 

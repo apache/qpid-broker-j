@@ -104,7 +104,10 @@ public class PortHelper
 
         for (Integer port : ports)
         {
-            waitUntilPortIsFree(port);
+            if (port > 0)
+            {
+                waitUntilPortIsFree(port);
+            }
         }
 
         _logger.debug("ports " + ports + " are free");

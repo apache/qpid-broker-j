@@ -26,8 +26,6 @@ import java.util.Properties;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
 import org.apache.qpid.systest.rest.QpidRestTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -45,21 +43,19 @@ public class UserRestACLTest extends QpidRestTestCase
     private File _groupFile;
 
     @Override
-    public void setUp() throws Exception
+    public void startDefaultBroker() throws Exception
     {
-        _groupFile = createTemporaryGroupFile();
-        getBrokerConfiguration().addGroupFileConfiguration(_groupFile.getAbsolutePath());
-
-        getRestTestHelper().configureTemporaryPasswordFile(this, ALLOWED_USER, DENIED_USER, OTHER_USER);
-
-        //DONT call super.setUp(), the tests will start the broker after configuring it
+        // starting broker in tests
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
+        _groupFile = createTemporaryGroupFile();
+        final TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
+        brokerConfiguration.addGroupFileConfiguration(_groupFile.getAbsolutePath());
+        brokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER, OTHER_USER);
     }
 
     @Override
@@ -97,8 +93,7 @@ public class UserRestACLTest extends QpidRestTestCase
                 "ACL ALLOW-LOG " + ALLOWED_GROUP + " CREATE USER",
                 "ACL DENY-LOG " + DENIED_GROUP + " CREATE USER");
 
-        //Start the broker with the custom config
-        super.setUp();
+        super.startDefaultBroker();
 
         String newUser = "newUser";
         String password = "password";
@@ -121,8 +116,7 @@ public class UserRestACLTest extends QpidRestTestCase
                 "ACL ALLOW-LOG " + ALLOWED_GROUP + " DELETE USER",
                 "ACL DENY-LOG " + DENIED_GROUP + " DELETE USER");
 
-        //Start the broker with the custom config
-        super.setUp();
+        super.startDefaultBroker();
 
         assertUserExists(OTHER_USER);
 
@@ -141,8 +135,7 @@ public class UserRestACLTest extends QpidRestTestCase
                 "ACL ALLOW-LOG " + ALLOWED_GROUP + " UPDATE USER",
                 "ACL DENY-LOG " + DENIED_GROUP + " UPDATE USER");
 
-        //Start the broker with the custom config
-        super.setUp();
+        super.startDefaultBroker();
 
         String newPassword = "newPassword";
 

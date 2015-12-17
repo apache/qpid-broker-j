@@ -39,26 +39,24 @@ public class BasicAuthRestTest extends QpidRestTestCase
     private static final String USERNAME = "admin";
 
     @Override
-    public void setUp() throws Exception
+    public void startDefaultBroker() throws Exception
     {
-        setSystemProperty("javax.net.debug", "ssl");
-
         //don't call super method, we will configure the broker in the test before doing so
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         //do nothing, we will configure this locally
     }
 
-    private void configure(boolean useSsl) throws IOException
+    private void configure(boolean useSsl) throws Exception
     {
-        getRestTestHelper().setUseSsl(useSsl);
+        setSystemProperty("javax.net.debug", "ssl");
         if (useSsl)
         {
-            getBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.TRANSPORTS, Collections.singleton(Transport.SSL));
-            getBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
+            getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.TRANSPORTS, Collections.singleton(Transport.SSL));
+            getDefaultBrokerConfiguration().setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
         }
         super.customizeConfiguration();
     }
@@ -71,22 +69,24 @@ public class BasicAuthRestTest extends QpidRestTestCase
     public void testBasicAuthWhenEnabledWithHttps() throws Exception
     {
         configure(true);
-        super.setUp();
+        super.startDefaultBroker();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpsPort());
+        _restTestHelper.setUseSsl(true);
         setSystemProperty("javax.net.ssl.trustStore", TRUSTSTORE);
         setSystemProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
 
         // Try the attempt with authentication, it should succeed because
         // BASIC auth is enabled by default on secure connections.
-        getRestTestHelper().setUsernameAndPassword(USERNAME, USERNAME);
+        _restTestHelper.setUsernameAndPassword(USERNAME, USERNAME);
         verifyGetBrokerAttempt(HttpServletResponse.SC_OK);
     }
 
     public void testBasicAuthWhenDisabledWithHttp() throws Exception
     {
         configure(false);
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, false);
-        super.setUp();
-
+        getDefaultBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, false);
+        super.startDefaultBroker();
+        getRestTestHelper().setUseSsl(false);
         // Try the attempt with authentication, it should fail because
         // BASIC auth is disabled by default on non-secure connections.
         getRestTestHelper().setUsernameAndPassword(USERNAME, USERNAME);
@@ -97,8 +97,9 @@ public class BasicAuthRestTest extends QpidRestTestCase
     {
         configure(false);
 
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
-        super.setUp();
+        getDefaultBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
+        super.startDefaultBroker();
+        getRestTestHelper().setUseSsl(false);
 
         // Try the attempt with authentication, it should succeed because
         // BASIC auth is now enabled on non-secure connections.
@@ -109,14 +110,16 @@ public class BasicAuthRestTest extends QpidRestTestCase
     public void testDisablingForHttps() throws Exception
     {
         configure(true);
-        getBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, "httpsBasicAuthenticationEnabled", false);
-        super.setUp();
+        getDefaultBrokerConfiguration().setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, "httpsBasicAuthenticationEnabled", false);
+        super.startDefaultBroker();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpsPort());
+        _restTestHelper.setUseSsl(true);
         setSystemProperty("javax.net.ssl.trustStore", TRUSTSTORE);
         setSystemProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
 
         // Try the attempt with authentication, it should fail because
         // BASIC auth is now disabled on secure connections.
-        getRestTestHelper().setUsernameAndPassword(USERNAME, USERNAME);
+        _restTestHelper.setUsernameAndPassword(USERNAME, USERNAME);
         verifyGetBrokerAttempt(HttpServletResponse.SC_UNAUTHORIZED);
     }
 }

@@ -48,17 +48,17 @@ public class BrokerRestHttpAndHttpsTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
         Map<String, Object> newAttributes = new HashMap<String, Object>();
         newAttributes.put(Port.PROTOCOLS, Collections.singleton(Protocol.HTTP));
         newAttributes.put(Port.TRANSPORTS, Arrays.asList(Transport.SSL, Transport.TCP));
         newAttributes.put(Port.KEY_STORE, TestBrokerConfiguration.ENTRY_NAME_SSL_KEYSTORE);
-        getBrokerConfiguration().setObjectAttributes(Port.class,TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT,newAttributes);
-        getBrokerConfiguration().setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
-                                  "secureOnlyMechanisms",
-                                  "[\"PLAIN\"]");
+        getDefaultBrokerConfiguration().setObjectAttributes(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, newAttributes);
+        getDefaultBrokerConfiguration().setObjectAttribute(AuthenticationProvider.class, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER,
+                                                           "secureOnlyMechanisms",
+                                                           "[\"PLAIN\"]");
 
     }
 
@@ -78,8 +78,9 @@ public class BrokerRestHttpAndHttpsTest extends QpidRestTestCase
 
     private Collection<String> getMechanisms(final boolean useSsl) throws IOException
     {
-        getRestTestHelper().setUseSsl(useSsl);
-        Map<String, Object> mechanisms = getRestTestHelper().getJsonAsMap("/service/sasl");
+        _restTestHelper = new RestTestHelper(useSsl? getDefaultBroker().getHttpsPort() : getDefaultBroker().getHttpPort());
+        _restTestHelper.setUseSsl(useSsl);
+        Map<String, Object> mechanisms = _restTestHelper.getJsonAsMap("/service/sasl");
         return (Collection<String>) mechanisms.get("mechanisms");
     }
 }

@@ -43,10 +43,10 @@ public class TransactionTimeoutTest extends TransactionTimeoutTestCase
     protected void configure() throws Exception
     {
         // switch off connection close in order to test timeout on publishing of unroutable messages
-        getBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_CLOSE_WHEN_NO_ROUTE, false);
+        getDefaultBrokerConfiguration().setBrokerAttribute(Broker.CONNECTION_CLOSE_WHEN_NO_ROUTE, false);
 
         // Setup housekeeping every 100ms
-        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
+        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
         setTestSystemProperty("virtualhost.housekeepingCheckPeriod","100");
 
         if (getName().contains("ProducerIdle"))

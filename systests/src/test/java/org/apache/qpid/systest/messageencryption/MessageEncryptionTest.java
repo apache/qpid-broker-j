@@ -37,7 +37,6 @@ import org.apache.qpid.client.message.JMSBytesMessage;
 import org.apache.qpid.client.message.JMSTextMessage;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-
 import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSLConstants
@@ -304,7 +303,7 @@ public class MessageEncryptionTest extends QpidBrokerTestCase implements TestSSL
         peerStoreAttributes.put("password" , "password");
         peerStoreAttributes.put("type", "FileTrustStore");
         peerStoreAttributes.put("exposedAsMessageSource", true);
-        getBrokerConfiguration().addObjectConfiguration(TrustStore.class,peerStoreAttributes);
+        getDefaultBrokerConfiguration().addObjectConfiguration(TrustStore.class, peerStoreAttributes);
 
 
     }

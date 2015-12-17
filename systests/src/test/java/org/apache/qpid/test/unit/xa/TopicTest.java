@@ -17,18 +17,20 @@
  */
 package org.apache.qpid.test.unit.xa;
 
-import junit.framework.TestSuite;
-import org.apache.qpid.configuration.ClientProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.jms.*;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+
+import junit.framework.TestSuite;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.apache.qpid.configuration.ClientProperties;
 
 /**
  *
@@ -836,7 +838,7 @@ public class TopicTest extends AbstractXATestCase
                 /////// stop the broker now !!
                 try
                 {
-                    restartBroker();
+                    restartDefaultBroker();
                     init();
                 }
                 catch (Exception e)
@@ -1141,7 +1143,7 @@ public class TopicTest extends AbstractXATestCase
                 /////// stop the server now !!
                 try
                 {
-                    restartBroker();
+                    restartDefaultBroker();
                     init();
                 }
                 catch (Exception e)
@@ -1319,7 +1321,7 @@ public class TopicTest extends AbstractXATestCase
                 /////// stop the server now !!
                 try
                 {
-                    restartBroker();
+                    restartDefaultBroker();
                     init();
                 }
                 catch (Exception e)

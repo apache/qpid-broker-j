@@ -22,14 +22,11 @@
 package org.apache.qpid.systest.rest.acl;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.Plugin;
 import org.apache.qpid.server.model.PreferencesProvider;
 import org.apache.qpid.server.model.adapter.FileSystemPreferencesProvider;
 import org.apache.qpid.server.security.acl.AbstractACLTestCase;
@@ -72,17 +69,14 @@ public class UserPreferencesRestACLTest extends QpidRestTestCase
     }
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-        getRestTestHelper().configureTemporaryPasswordFile(this, ALLOWED_USER, DENIED_USER);
+        final TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
+        brokerConfiguration.configureTemporaryPasswordFile(ALLOWED_USER, DENIED_USER);
 
         AbstractACLTestCase.writeACLFileUtil(this, "ACL ALLOW-LOG ALL ACCESS MANAGEMENT", "ACL ALLOW-LOG " + ALLOWED_USER
                 + " UPDATE USER", "ACL DENY-LOG " + DENIED_USER + " UPDATE USER", "ACL DENY-LOG ALL ALL");
-
-        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
-        brokerConfiguration.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT,
-                HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
 
         Map<String, Object> attributes = new HashMap<String, Object>();
         attributes.put(PreferencesProvider.NAME, "test");

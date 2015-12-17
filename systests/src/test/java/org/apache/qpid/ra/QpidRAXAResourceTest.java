@@ -30,14 +30,13 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 public class QpidRAXAResourceTest extends QpidBrokerTestCase
 {
     private static final String FACTORY_NAME = "default";
-    private static final String BROKER_PORT = "15672";
-    private static final String URL = "amqp://guest:guest@client/test?brokerlist='tcp://localhost:" + BROKER_PORT + "?sasl_mechs='PLAIN%2520CRAM-MD5''";
+    private static final String URL_TEMPLATE = "amqp://guest:guest@client/test?brokerlist='tcp://localhost:%d?sasl_mechs='PLAIN%%2520CRAM-MD5''";
 
     public void testXAResourceIsSameRM() throws Exception
     {
         QpidResourceAdapter ra = new QpidResourceAdapter();
         QpidRAManagedConnectionFactory mcf = new QpidRAManagedConnectionFactory();
-        mcf.setConnectionURL(URL);
+        mcf.setConnectionURL(getBrokerUrl());
         mcf.setResourceAdapter(ra);
         QpidRAManagedConnection mc = (QpidRAManagedConnection)mcf.createManagedConnection(null, null);
         AMQXAResource xa1 = (AMQXAResource)mc.getXAResource();
@@ -52,4 +51,8 @@ public class QpidRAXAResourceTest extends QpidBrokerTestCase
 
     }
 
+    private String getBrokerUrl()
+    {
+        return String.format(URL_TEMPLATE, getDefaultBroker().getAmqpPort());
+    }
 }

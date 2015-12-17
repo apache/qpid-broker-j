@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.systest.rest;
 
-import static  org.apache.qpid.server.management.plugin.servlet.rest.RestServlet.SC_UNPROCESSABLE_ENTITY;
+import static org.apache.qpid.server.management.plugin.servlet.rest.RestServlet.SC_UNPROCESSABLE_ENTITY;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -34,6 +34,8 @@ import javax.jms.Destination;
 import javax.jms.Session;
 import javax.servlet.http.HttpServletResponse;
 
+import org.junit.Assert;
+
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.Queue;
@@ -42,11 +44,8 @@ import org.apache.qpid.server.queue.LastValueQueue;
 import org.apache.qpid.server.queue.PriorityQueue;
 import org.apache.qpid.server.queue.SortedQueue;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
-
 import org.apache.qpid.server.virtualhost.derby.DerbyVirtualHostImpl;
 import org.apache.qpid.server.virtualhostnode.JsonVirtualHostNodeImpl;
-import org.apache.qpid.test.utils.TestBrokerConfiguration;
-import org.junit.Assert;
 
 public class VirtualHostRestTest extends QpidRestTestCase
 {
@@ -58,12 +57,10 @@ public class VirtualHostRestTest extends QpidRestTestCase
     private AMQConnection _connection;
 
     @Override
-    protected void customizeConfiguration() throws IOException
+    protected void customizeConfiguration() throws Exception
     {
         super.customizeConfiguration();
-
-        TestBrokerConfiguration config = getBrokerConfiguration();
-        createTestVirtualHostNode(0, EMPTY_VIRTUALHOSTNODE_NAME, false);
+        createTestVirtualHostNode(getDefaultBroker(), EMPTY_VIRTUALHOSTNODE_NAME, false);
     }
 
     public void testGet() throws Exception
@@ -276,7 +273,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
 
         assertActualAndDesireStates(restUrl, "STOPPED", "STOPPED");
 
-        restartBroker();
+        restartDefaultBroker();
 
         Map<String, Object> rereadVirtualhost = getRestTestHelper().getJsonAsSingletonList(restUrl);
         Asserts.assertActualAndDesiredState("STOPPED", "STOPPED", rereadVirtualhost);

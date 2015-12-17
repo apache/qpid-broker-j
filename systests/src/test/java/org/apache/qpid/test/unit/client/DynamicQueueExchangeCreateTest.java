@@ -25,6 +25,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import javax.jms.Connection;
+import javax.jms.InvalidDestinationException;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.Queue;
+import javax.jms.Session;
+
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.configuration.ClientProperties;
@@ -36,14 +44,6 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.url.BindingURL;
 
-import javax.jms.Connection;
-import javax.jms.InvalidDestinationException;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.Queue;
-import javax.jms.Session;
-
 public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
 {
     private static final String TEST_VHOST = TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST;
@@ -52,9 +52,9 @@ public class DynamicQueueExchangeCreateTest extends QpidBrokerTestCase
     @Override
     public void setUp() throws Exception
     {
-        _restTestHelper = new RestTestHelper(findFreePort());
-        _restTestHelper.enableHttpManagement(getBrokerConfiguration());
+        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
         super.setUp();
+        _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
     }
 
     @Override

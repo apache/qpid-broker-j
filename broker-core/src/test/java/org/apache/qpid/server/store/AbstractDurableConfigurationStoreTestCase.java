@@ -100,7 +100,6 @@ public abstract class AbstractDurableConfigurationStoreTestCase extends QpidTest
         _storeName = getName();
         _storePath = TMP_FOLDER + File.separator + _storeName;
         FileUtils.delete(new File(_storePath), true);
-        setTestSystemProperty("QPID_WORK", TMP_FOLDER);
 
         _handler = mock(ConfiguredObjectRecordHandler.class);
         when(_handler.handle(any(ConfiguredObjectRecord.class))).thenReturn(true);

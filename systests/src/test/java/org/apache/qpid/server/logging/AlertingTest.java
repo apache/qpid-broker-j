@@ -21,8 +21,6 @@
 package org.apache.qpid.server.logging;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.jms.Connection;
 import javax.jms.Queue;
@@ -30,11 +28,6 @@ import javax.jms.Session;
 
 import org.apache.qpid.client.AMQDestination;
 import org.apache.qpid.client.AMQSession;
-import org.apache.qpid.server.management.plugin.HttpManagement;
-import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.Plugin;
-import org.apache.qpid.server.model.Port;
-import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 
@@ -115,9 +108,9 @@ public class AlertingTest extends AbstractTestLogging
         sendMessage(_session, _destination, _numMessages + 1);
         _session.commit();
         _connection.close();
-        stopBroker();
+        stopDefaultBroker();
 
-        startBroker();
+        startDefaultBroker();
         wasAlertFired();
     }
 
@@ -144,27 +137,13 @@ public class AlertingTest extends AbstractTestLogging
         // To prevent any failover/retry/connection dropped errors
         _connection.close();
 
-        stopBroker();
+        stopDefaultBroker();
 
-
-        RestTestHelper restTestHelper = new RestTestHelper(findFreePort());
-        TestBrokerConfiguration config = getBrokerConfiguration();
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
         config.addHttpManagementConfiguration();
-        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.PORT, restTestHelper.getHttpPort());
-
-        Map<String, Object> anonymousProviderAttributes = new HashMap<String, Object>();
-        anonymousProviderAttributes.put(AuthenticationProvider.TYPE, AnonymousAuthenticationManager.PROVIDER_TYPE);
-        anonymousProviderAttributes.put(AuthenticationProvider.NAME, "testAnonymous");
-        config.addObjectConfiguration(AuthenticationProvider.class, anonymousProviderAttributes);
-
-        // set password authentication provider on http port for the tests
-        config.setObjectAttribute(Port.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_PORT, Port.AUTHENTICATION_PROVIDER,
-                TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
-        config.setObjectAttribute(Plugin.class, TestBrokerConfiguration.ENTRY_NAME_HTTP_MANAGEMENT, HttpManagement.HTTP_BASIC_AUTHENTICATION_ENABLED, true);
         config.setSaved(false);
-        restTestHelper.setUsernameAndPassword("webadmin", "webadmin");
 
-        startBroker();
+        startDefaultBroker();
 
         setupConnection();
 
@@ -176,11 +155,23 @@ public class AlertingTest extends AbstractTestLogging
         assertLoggingNotYetOccured(MESSAGE_COUNT_ALERT);
 
         // Change max message count to 5, start broker and make sure that that's triggered at the right time
-        TestBrokerConfiguration brokerConfiguration = getBrokerConfiguration();
+        TestBrokerConfiguration brokerConfiguration = getDefaultBrokerConfiguration();
         setTestSystemProperty("queue.alertThresholdQueueDepthMessages","5");
         brokerConfiguration.setSaved(false);
 
-        restTestHelper.submitRequest("queue/test/test/" + getTestQueueName(), "PUT", Collections.<String, Object>singletonMap(org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES, 5));
+        RestTestHelper restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
+        try
+        {
+            restTestHelper.submitRequest("queue/test/test/" + getTestQueueName(),
+                                         "PUT",
+                                         Collections.<String, Object>singletonMap(org.apache.qpid.server.model.Queue.ALERT_THRESHOLD_QUEUE_DEPTH_MESSAGES,
+                                                                                  5));
+        }
+        finally
+        {
+            restTestHelper.tearDown();
+        }
+
         // Trigger the new value
         sendMessage(_session, _destination, 3);
         _session.commit();
