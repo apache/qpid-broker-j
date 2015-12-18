@@ -251,6 +251,8 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
                 final int headerLength = buf.remaining();
                 byte[] unencryptedBytes = new byte[headerLength + (data == null ? 0 : data.remaining())];
 
+                buf.get(unencryptedBytes, 0, headerLength);
+
                 if (data != null)
                 {
                     data.get(unencryptedBytes, headerLength, data.remaining());
