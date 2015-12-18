@@ -524,6 +524,10 @@ public class LastValueQueueTest extends QpidBrokerTestCase
 
                         Message shutdownMessage = producerSession.createMessage();
                         shutdownMessage.setBooleanProperty(SHUTDOWN, true);
+                        // make sure the shutdown messages have distinct keys because the Qpid Cpp Broker will
+                        // otherwise consider them to have the same key.
+                        shutdownMessage.setStringProperty(KEY_PROPERTY, _threadName);
+
                         backgroundProducer.send(shutdownMessage);
 
                         LOGGER.info("Finished sending in background thread");
