@@ -818,6 +818,19 @@ public class ClientJmsDelegate
             }
             catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e)
             {
+                try
+                {
+                    ConnectionMetaData  metaData = connection.getMetaData();
+                    if (metaData != null && ("QpidJMS".equals(metaData.getJMSProviderName()) ||
+                                             "AMQP.ORG".equals(metaData.getJMSProviderName())))
+                    {
+                        return "1.0";
+                    }
+                }
+                catch (JMSException e1)
+                {
+                    return null;
+                }
                 return null;
             }
         }
