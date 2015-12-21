@@ -19,6 +19,7 @@
  */
 package org.apache.qpid.disttest.jms;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,6 +33,7 @@ import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
+import javax.jms.Queue;
 import javax.jms.Session;
 import javax.naming.Context;
 import javax.naming.NamingException;
@@ -53,7 +55,7 @@ public class ControllerJmsDelegate
 
     private final Map<String, Destination> _clientNameToQueueMap = new ConcurrentHashMap<String, Destination>();
     private final Connection _connection;
-    private final Destination _controllerQueue;
+    private final Queue _controllerQueue;
     private final Session _controllerQueueListenerSession;
     private final Session _commandSession;
     private QueueCreator _queueCreator;
@@ -65,7 +67,7 @@ public class ControllerJmsDelegate
         final ConnectionFactory connectionFactory = (ConnectionFactory) context.lookup("connectionfactory");
         _connection = connectionFactory.createConnection();
         _connection.start();
-        _controllerQueue = (Destination) context.lookup("controllerqueue");
+        _controllerQueue = (Queue) context.lookup("controllerqueue");
         _controllerQueueListenerSession = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
         _commandSession = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
@@ -107,6 +109,7 @@ public class ControllerJmsDelegate
     {
         try
         {
+            createControllerQueue();
             final MessageConsumer consumer = _controllerQueueListenerSession.createConsumer(_controllerQueue);
             consumer.setMessageListener(new MessageListener()
             {
@@ -116,13 +119,13 @@ public class ControllerJmsDelegate
                     try
                     {
                         String jmsMessageID = message.getJMSMessageID();
-                        LOGGER.debug("Received message " + jmsMessageID);
+                        LOGGER.debug("Received message ID {}", jmsMessageID);
 
                         final Command command = JmsMessageAdaptor.messageToCommand(message);
-                        LOGGER.debug("Converted message " + jmsMessageID + " into command: " + command);
+                        LOGGER.debug("Converted message ID {} into command {}", jmsMessageID, command);
 
                         processCommandWithFirstSupportingListener(command);
-                        LOGGER.debug("Finished processing command for message " + jmsMessageID);
+                        LOGGER.debug("Finished processing command for message ID", jmsMessageID);
                     }
                     catch (Exception t)
                     {
@@ -266,6 +269,16 @@ public class ControllerJmsDelegate
     public void deleteQueues(List<QueueConfig> queues)
     {
         _queueCreator.deleteQueues(_connection, _commandSession, queues);
+    }
+
+    private void createControllerQueue() throws JMSException
+    {
+        QueueConfig controllerQueueConfig = new QueueConfig(_controllerQueue.getQueueName(),
+                                                            true,
+                                                            Collections.<String, Object>emptyMap());
+        _queueCreator.createQueues(_connection,
+                                   _controllerQueueListenerSession,
+                                   Collections.singletonList(controllerQueueConfig));
     }
 
     public void addCommandListener(CommandListener commandListener)

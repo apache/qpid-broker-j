@@ -100,6 +100,12 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>${httpclient-version}</version>
+    </dependency>
+
     <!-- test deps -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
@@ -232,7 +238,6 @@
     </plugins>
   </build>
   <profiles>
-
     <profile>
       <id>qpid-jms-client</id>
       <activation>
@@ -284,12 +289,11 @@
                 </systemProperty>
                 <systemProperty>
                   <key>qpid.disttest.queue.creator.class</key>
-                  <value>org.apache.qpid.disttest.jms.ExistingQueueDrainer</value>
+                  <value>org.apache.qpid.disttest.jms.QpidRestAPIQueueCreator</value>
                 </systemProperty>
               </systemProperties>
             </configuration>
           </plugin>
-
         </plugins>
       </build>
       <dependencies>
