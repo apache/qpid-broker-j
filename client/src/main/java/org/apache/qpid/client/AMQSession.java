@@ -27,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -939,7 +938,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     private void rejectPending(C consumer)
     {
         // Reject messages on pre-receive queue
-        consumer.rollbackPendingMessages();
+        consumer.releasePendingMessages();
 
         // Reject messages on pre-dispatch queue
         rejectMessagesForConsumerTag(consumer.getConsumerTag());
@@ -3373,7 +3372,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 {
                     if (!consumer.isBrowseOnly())
                     {
-                        consumer.rollback();
+                        consumer.releasePendingMessages();
                     }
                     else
                     {

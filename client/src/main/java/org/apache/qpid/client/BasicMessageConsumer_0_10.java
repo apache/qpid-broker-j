@@ -454,7 +454,7 @@ public class BasicMessageConsumer_0_10 extends BasicMessageConsumer<UnprocessedM
         return receiveNoWait();
     }
 
-    @Override public void rollbackPendingMessages()
+    @Override void releasePendingMessages()
     {
         if (getSynchronousQueue().size() > 0)
         {

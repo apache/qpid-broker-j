@@ -652,9 +652,9 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
             }
 
 
-            if(!(isBrowseOnly() || getSession().isClosing()))
+            if(!isBrowseOnly())
             {
-                rollback();
+                releasePendingMessages();
             }
         }
     }
@@ -887,12 +887,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
         return _browseOnly;
     }
 
-    public void rollback()
-    {
-        rollbackPendingMessages();
-    }
-
-    public void rollbackPendingMessages()
+    void releasePendingMessages()
     {
         if (_synchronousQueue.size() > 0)
         {
@@ -942,7 +937,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
             if (_synchronousQueue.size() != 0)
             {
                 _logger.warn("Queue was not empty after rejecting all messages Remaining:" + _synchronousQueue.size());
-                rollback();
+                releasePendingMessages();
             }
 
             clearReceiveQueue();

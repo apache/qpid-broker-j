@@ -108,4 +108,39 @@ public class MessageConsumerCloseTest  extends QpidBrokerTestCase
         assertEquals("Message three has unexpected content", 2, msg3.getIntProperty(INDEX));
         session.commit();
     }
+
+    public void testMessagesReceivedBeforeConsumerCloseAreRedeliveredAfterRollback() throws Exception
+    {
+        Connection connection = getConnection();
+        final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        Destination destination = getTestQueue();
+        MessageConsumer consumer = session.createConsumer(destination);
+
+        int messageNumber = 4;
+        connection.start();
+        sendMessage(session, destination, messageNumber);
+
+        for(int i = 0; i < messageNumber/2 ; i++)
+        {
+            Message message = consumer.receive(RECEIVE_TIMEOUT);
+            assertNotNull("Message [" + i +"] was null", message);
+            assertEquals("Message [" + i +"] has unexpected content", i, message.getIntProperty(INDEX));
+        }
+
+        consumer.close();
+
+        session.rollback();
+
+        MessageConsumer consumer2 = session.createConsumer(destination);
+
+        for(int i = 0; i < messageNumber ; i++)
+        {
+            Message message = consumer2.receive(RECEIVE_TIMEOUT);
+            assertNotNull("Message [" + i +"] was null", message);
+            assertEquals("Message [" + i +"] has unexpected content", i, message.getIntProperty(INDEX));
+        }
+
+        session.commit();
+    }
 }
