@@ -652,7 +652,7 @@ public abstract class BasicMessageConsumer<U> extends Closeable implements Messa
             }
 
 
-            if(!isBrowseOnly())
+            if(!(isBrowseOnly() || getSession().isClosing()))
             {
                 releasePendingMessages();
             }
