@@ -35,7 +35,6 @@
     <properties>
         <joram-jms-tests-version>1.0</joram-jms-tests-version>
         <qpid-amqp-1-0-client-jms-version>0.32</qpid-amqp-1-0-client-jms-version>
-        <qpid-jms-client-version>0.6.0</qpid-jms-client-version>
 
         <joramtests.broker-hostport>localhost:5672</joramtests.broker-hostport>
         <joramtests.broker-virtualhostnode>default</joramtests.broker-virtualhostnode>

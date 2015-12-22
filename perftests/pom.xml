@@ -49,8 +49,6 @@
     <qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>0.95</qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>
     <qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>0.95</qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>
     <qpid.disttest.hillclimb.minimum_delta>1.0</qpid.disttest.hillclimb.minimum_delta>
-
-    <qpid-jms-client-version>0.6.0</qpid-jms-client-version>
   </properties>
 
   <dependencies>
