@@ -18,28 +18,18 @@
  * under the License.
  *
  */
+define(["dijit/registry",
+        "dojo/domReady!"],
+       function (registry)
+       {
+            return {
+                        get: function()
+                             {
+                                 return {
+                                            username: registry.byId("username").value,
+                                            password: registry.byId("password").value
+                                        };
+                             }
+                   };
 
-define(["dojo/dom",
-         "qpid/sasl/Authenticator",
-         "dijit/registry",
-         "dojox/html/entities",
-         "dojo/domReady!"], function(dom, sasl, registry, entities){
-
-var updateUI = function updateUI(data)
-{
-    if(data.user)
-    {
-      var userName = entities.encode(String(data.user));
-      var controlButton = registry.byId("authenticatedUserControls");
-      if (controlButton)
-      {
-        controlButton.set("label", userName);
-      }
-      dom.byId("authenticatedUser").innerHTML = userName;
-      dom.byId("login").style.display = "inline";
-    }
-};
-
-return {getUserAndUpdateUI: function(management){sasl.getUser(management, updateUI);}}
-
-});
+       });

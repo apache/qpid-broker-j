@@ -1,5 +1,4 @@
 /*
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,30 +15,23 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
-define(["dojo/dom",
-         "qpid/sasl/Authenticator",
-         "dijit/registry",
-         "dojox/html/entities",
-         "dojo/domReady!"], function(dom, sasl, registry, entities){
-
-var updateUI = function updateUI(data)
-{
-    if(data.user)
-    {
-      var userName = entities.encode(String(data.user));
-      var controlButton = registry.byId("authenticatedUserControls");
-      if (controlButton)
-      {
-        controlButton.set("label", userName);
-      }
-      dom.byId("authenticatedUser").innerHTML = userName;
-      dom.byId("login").style.display = "inline";
-    }
-};
-
-return {getUserAndUpdateUI: function(management){sasl.getUser(management, updateUI);}}
-
-});
+define(["dojo/_base/declare",
+        "qpid/sasl/ShaSaslClient" ],
+       function(declare, ShaSaslClient)
+       {
+            return declare("qpid.sasl.SaslClientScramSha1", [ShaSaslClient],
+            {
+                 constructor:        function()
+                                     {
+                                        this.inherited(arguments, ["SCRAM-SHA-1"]);
+                                     },
+                 getPriority:        function()
+                                     {
+                                        return 4;
+                                     },
+                 toString:           function() { return "[SaslClientScramSha1]";}
+            });
+       }
+);

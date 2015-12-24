@@ -81,7 +81,7 @@
                 <script type="dojo/on" data-dojo-event="submit" data-dojo-args="e">
                     e.preventDefault()
                     if(this.validate()){
-                        require(["qpid/authorization/sasl","qpid/management/Management"], function(sasl, Management){
+                        require(["qpid/sasl/Authenticator","qpid/management/Management"], function(sasl, Management){
                             var management = new Management();
                             var redirectIfAuthenticated = function redirectIfAuthenticated(){
                                 sasl.getUser(management, function(data){
@@ -91,7 +91,7 @@
                                 });
                             };
 
-                            sasl.authenticate(management, dijit.byId("username").value, dijit.byId("password").value, redirectIfAuthenticated);
+                            sasl.authenticate(management, redirectIfAuthenticated);
                         });
                     }
                     return false;
