@@ -1,8 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "../commonEntities.xml">
-%entities;
-]>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,14 +20,13 @@
 
 -->
 
-<section id="Java-Broker-Runtime-Producer-Transaction-Timeout">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout">
  <title>Producer Transaction Timeout</title>
- <section role="h2" id="Java-Broker-Runtime-Producer-Transaction-Timeout-GeneralInformation">
+ <section role="h2" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-GeneralInformation">
   <title>General Information</title>
   <para> The transaction timeout mechanism is used to control broker resources when clients
    producing messages using transactional sessions hang or otherwise become unresponsive, or simply
-   begin a transaction and keep using it without ever calling <ulink
-    url="&oracleJeeDocUrl;javax/jms/Session.html#commit">Session#commit()</ulink>.</para>
+   begin a transaction and keep using it without ever calling <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/Session.html#commit">Session#commit()</link>.</para>
   <para>Users can choose to configure an idleWarn or openWarn threshold, after which the identified
    transaction should be logged as a WARN level alert as well as (more importantly) an idleClose or
    openClose threshold after which the transaction and the connection it applies to will be
@@ -41,7 +36,7 @@
    deployment.</para>
   <para>The following section provide more details on this feature and its use.</para>
  </section>
- <section role="h2" id="Java-Broker-Runtime-Producer-Transaction-Timeout-Purpose">
+ <section role="h2" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-Purpose">
   <title>Purpose</title>
   <para> This feature has been introduced to address the scenario where an open transaction on the
    broker holds an open transaction on the persistent store. This can have undesirable consequences
@@ -49,59 +44,57 @@
    result in a rapid increase in disk usage size, bounded only by available space, due to growth of
    the transaction log. </para>
  </section>
- <section role="h2" id="Java-Broker-Runtime-Producer-Transaction-Timeout-Scope">
+ <section role="h2" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-Scope">
   <title>Scope</title>
-  <para>Note that only <ulink url="&oracleJeeDocUrl;javax/jms/MessageProducer.html"
-    >MessageProducer</ulink> clients will be affected by a transaction timeout, since store
+  <para>Note that only <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/MessageProducer.html">MessageProducer</link> clients will be affected by a transaction timeout, since store
    transaction lifespan on a consumer only spans the execution of the call to Session#commit() and
    there is no scope for a long-lived transaction to arise.</para>
   <para>It is also important to note that the transaction timeout mechanism is purely a JMS
    transaction timeout, and unrelated to any other timeouts in the Qpid client library and will have
    no impact on any RDBMS your application may utilise.</para>
  </section>
- <section role="h2" id="Java-Broker-Runtime-Producer-Transaction-Timeout-Effect">
+ <section role="h2" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-Effect">
   <title>Effect</title>
   <para>Full details of configuration options are provided in the sections that follow. This section
    gives a brief overview of what the Transaction Timeout feature can do.</para>
-  <section role="h3" id="Java-Broker-Runtime-Producer-Transaction-Timeout-Effect-Broker-Side">
+  <section role="h3" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-Effect-Broker-Side">
    <title>Broker Logging and Connection Close</title>
    <para>When the openWarn or idleWarn specified threshold is exceeded, the broker will log a WARN
     level alert with details of the connection and channel on which the threshold has been exceeded,
     along with the age of the transaction.</para>
    <para>When the openClose or idleClose specified threshold value is exceeded, the broker will
-    throw an exception back to the client connection via the <ulink
-     url="&oracleJeeDocUrl;javax/jms/ExceptionListener.html">ExceptionListener</ulink>, log the
+    throw an exception back to the client connection via the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/ExceptionListener.html">ExceptionListener</link>, log the
     action and then close the connection.</para>
    <para>The example broker log output shown below is where the idleWarn threshold specified is
     lower than the idleClose threshold and the broker therefore logs the idle transaction 3 times
     before the close threshold is triggered and the connection closed out.</para>
-   <screen><![CDATA[CHN-1008 : Idle Transaction : 13,116 ms
+   <screen>CHN-1008 : Idle Transaction : 13,116 ms
 CHN-1008 : Idle Transaction : 14,116 ms
 CHN-1008 : Idle Transaction : 15,118 ms
-CHN-1003 : Close]]>
+CHN-1003 : Close
    </screen>
    <para>The second example broker log output shown below illustrates the same mechanism operating
     on an open transaction.</para>
-   <screen><![CDATA[
+   <screen>
 CHN-1007 : Open Transaction : 12,406 ms
 CHN-1007 : Open Transaction : 13,406 ms
 CHN-1007 : Open Transaction : 14,406 ms
-CHN-1003 : Close]]>
+CHN-1003 : Close
    </screen>
   </section>
-  <section role="h3" id="Java-Broker-Runtime-Producer-Transaction-Timeout-Effect-Client-Side">
+  <section role="h3" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-Effect-Client-Side">
    <title>Client Side Effect</title>
    <para>After a Close threshold has been exceeded, the trigger client will receive this exception
-    on its <ulink url="&oracleJeeDocUrl;javax/jms/ExceptionListener.html">exception
-    listener</ulink>, prior to being disconnected:</para>
+    on its <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/ExceptionListener.html">exception
+    listener</link>, prior to being disconnected:</para>
    <computeroutput>org.apache.qpid.AMQConnectionClosedException: Error: Idle transaction timed out
     [error code 506: resource error]</computeroutput>
    <para>Any later attempt to use the connection will result in this exception being thrown:</para>
-   <screen><![CDATA[Producer: Caught an Exception: javax.jms.IllegalStateException: Object org.apache.qpid.client.AMQSession_0_8@129b0e1 has been closed
+   <screen>Producer: Caught an Exception: javax.jms.IllegalStateException: Object org.apache.qpid.client.AMQSession_0_8@129b0e1 has been closed
     javax.jms.IllegalStateException: Object org.apache.qpid.client.AMQSession_0_8@129b0e1 has been closed
     at org.apache.qpid.client.Closeable.checkNotClosed(Closeable.java:70)
     at org.apache.qpid.client.AMQSession.checkNotClosed(AMQSession.java:555)
-    at org.apache.qpid.client.AMQSession.createBytesMessage(AMQSession.java:573)]]>
+    at org.apache.qpid.client.AMQSession.createBytesMessage(AMQSession.java:573)
    </screen>
    <para>Thus clients must be able to handle this case successfully, reconnecting where required and
     registering an exception listener on all connections. This is critical, and must be communicated
@@ -109,9 +102,9 @@ CHN-1003 : Close]]>
   </section>
 
  </section>
- <section role="h2" id="Java-Broker-Runtime-Producer-Transaction-Timeout-Configuration">
+ <section role="h2" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-Configuration">
   <title>Configuration</title>
-  <section role="h3" id="Java-Broker-Runtime-Producer-Transaction-Timeout-Configuration-Overview">
+  <section role="h3" xml:id="Java-Broker-Runtime-Producer-Transaction-Timeout-Configuration-Overview">
    <title>Configuration</title>
    <para>The transaction timeouts can be specified when a new virtualhost is created or an exiting
     virtualhost is edited.</para>

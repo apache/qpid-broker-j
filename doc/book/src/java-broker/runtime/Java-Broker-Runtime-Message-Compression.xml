@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Runtime-Message-Compression">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Message-Compression">
  <title>Message Compression</title>
  <para>The Java Broker supports<footnote><para>Message compression is not yet supported for the 1.0
     protocol.</para></footnote> message compression. This feature works in co-operation with Qpid

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Access-Control-Providers">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Access-Control-Providers">
     <title>Access Control Providers</title>
     <para>An <link linkend="Java-Broker-Concepts-Access-Control-Providers">Access Control
             Provider</link> governs who may do what within the Broker. It governs both messaging and

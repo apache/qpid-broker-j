@@ -1,10 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
-[
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -26,11 +20,10 @@
 
 -->
 
-<appendix id="JMS-Client-0-8-Appendix-Exceptions">
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-Appendix-Exceptions">
   <title>Exceptions</title>
 
-  <para>The methods of Qpid JMS Client throw <ulink
-      url="&oracleJeeDocUrl;javax/jms/JMSException.html">JMSExceptions</ulink> in response to error
+  <para>The methods of Qpid JMS Client throw <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/JMSException.html">JMSExceptions</link> in response to error
     conditions. Typically the exception's message (#getMessage()) summarises the error condition,
     with contextual information being provided by the messages of linked exception(s). To understand
     the problem, it is important to read the messages associated with <emphasis>all</emphasis> the
@@ -53,28 +46,20 @@
         <row>
           <entry>AMQUnresolvedAddressException</entry>
           <entry><emphasis>message varies</emphasis></entry>
-          <entry><para>Indicates that the hostname included in the Connection URL's <link
-                linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-Brokerlist"
-                >brokerlist</link>, could not be resolved, . This could mean that the hostname is
+          <entry><para>Indicates that the hostname included in the Connection URL's <link linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-Brokerlist">brokerlist</link>, could not be resolved, . This could mean that the hostname is
               mispelt, or there is name resolution problem.</para></entry>
         </row>
         <row>
           <entry>AMQConnectionFailure</entry>
           <entry>Connection refused</entry>
-          <entry><para>Indicates that the host included in the Connection URL's <link
-                linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-Brokerlist"
-                >brokerlist</link>, actively refused the connection. This could mean that the
+          <entry><para>Indicates that the host included in the Connection URL's <link linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-Brokerlist">brokerlist</link>, actively refused the connection. This could mean that the
               hostname and/or port number is incorrect, or the Broker may not be
             running.</para></entry>
         </row>
         <row>
           <entry>AMQConnectionFailure</entry>
           <entry>connect timed out</entry>
-          <entry><para>Indicates that the host included in the Connection URL's <link
-                linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-Brokerlist"
-                >brokerlist</link>, could not be contacted within the <link
-                linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-ConnectTimeout"
-                >connecttimeout</link>. This could mean that the host is shutdown, or a networking
+          <entry><para>Indicates that the host included in the Connection URL's <link linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-Brokerlist">brokerlist</link>, could not be contacted within the <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-ConnectTimeout">connecttimeout</link>. This could mean that the host is shutdown, or a networking
               routing problem means the host is unreachable.</para></entry>
         </row>
         <row>
@@ -90,8 +75,7 @@
           <entry>AMQConnectionFailure / AMQAuthenticationException</entry>
           <entry>not allowed</entry>
           <entry><para>Indicates that the user cannot be authenticated by the Broker. Check the
-              username and/or password elements within the <link
-                linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.</para></entry>
+              username and/or password elements within the <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.</para></entry>
         </row>
         <row>
           <entry>AMQConnectionFailure / AMQSecurityException</entry>
@@ -99,17 +83,14 @@
           <entry><para>Indicates that the user is not authorised to connect to the given
               virtualhost. The user is recognised by the Broker and is using the correct password
               but does not have permission. This exception normally indicates that the user (or
-              group) has not been permissioned within the Broker's <ulink
-                url="&qpidJavaBrokerBook;Java-Broker-Security-ACLs.html">Access Control List
-                (ACL)</ulink>.</para></entry>
+              group) has not been permissioned within the Broker's <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&qpidJavaBrokerBook;Java-Broker-Security-ACLs.html">Access Control List
+                (ACL)</link>.</para></entry>
         </row>
         <row>
           <entry>AMQTimeoutException</entry>
           <entry>Server did not respond in a timely fashion; Request Timeout</entry>
           <entry><para>Indicates that the broker did not respond to a request sent by the client in
-              a reasonable length of time. The timeout is governed by <link
-                linkend="JMS-Client-0-8-System-Properties-SyncOpTimeout"
-                  ><literal>qpid.sync_op_timeout</literal></link>.</para><para>This can be a symptom
+              a reasonable length of time. The timeout is governed by <link linkend="JMS-Client-0-8-System-Properties-SyncOpTimeout"><literal>qpid.sync_op_timeout</literal></link>.</para><para>This can be a symptom
               of a heavily loaded broker that cannot respond or the Broker may have failed in
               unexpected manner. Check the broker and the host on which it runs and performance of
               its storage.</para></entry>
@@ -119,16 +100,15 @@
           <entry>Permission denied: <emphasis>message varies</emphasis></entry>
           <entry><para>Indicates that the user is not authorised to use the given resource or
               perform the given operation. This exception normally indicates that the user (or
-              group) has not been permissioned within the Broker's <ulink
-                url="&qpidJavaBrokerBook;Java-Broker-Security-ACLs.html">Access Control List
-                (ACL)</ulink>.</para></entry>
+              group) has not been permissioned within the Broker's <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&qpidJavaBrokerBook;Java-Broker-Security-ACLs.html">Access Control List
+                (ACL)</link>.</para></entry>
         </row>
       </tbody>
     </tgroup>
   </table>
 
   <para>The following table describes some of the more common exceptions linked to JMSException sent
-    to <ulink url="&oracleJeeDocUrl;javax/jms/ExceptionListener.html">ExceptionListener</ulink>
+    to <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/ExceptionListener.html">ExceptionListener</link>
     instances.</para>
 
   <table pgwide="1">
@@ -142,50 +122,41 @@
         </row>
       </thead>
       <tbody>
-        <row id="JMS-Client-0-8-Appendix-Exceptions-AMQNoRouteException">
+        <row xml:id="JMS-Client-0-8-Appendix-Exceptions-AMQNoRouteException">
           <entry>AMQNoRouteException</entry>
           <entry>No Route for message [Exchange: <emphasis>exchange name</emphasis>, Routing key:
               <emphasis>routing key</emphasis>] [error code 312: no route]</entry>
           <entry><para>Indicate that the named exchange is unable to route a message to at least one
               queue.</para>
             <para>This will occur if a queue has been improperly bound to an exchange. Use the
-              Broker's management interface to check the bindings. See <xref
-                linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-MandatoryMessage"
-              /></para></entry>
+              Broker's management interface to check the bindings. See <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-MandatoryMessage"/></para></entry>
         </row>
-        <row id="JMS-Client-0-8-Appendix-Exceptions-AMQNoConsumersException">
+        <row xml:id="JMS-Client-0-8-Appendix-Exceptions-AMQNoConsumersException">
           <entry>AMQNoConsumersException</entry>
           <entry>Immediate delivery is not possible. [error code 313: no consumers]</entry>
           <entry><para>Immediate delivery was requested by the MessageProducer, but as there are no
               consumers on any target queue, the message has been returned to the publisher. See
-                <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-ImmediateMessage"
-              />
+                <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-ImmediateMessage"/>
             </para></entry>
         </row>
         <row>
           <entry>AMQDisconnectedException</entry>
           <entry>Server closed connection and reconnection not permitted</entry>
-          <entry><para>Indicates that the connection was closed by the Broker, and as <link
-                linkend="JMS-Client-0-8-Client-Understanding-Connection-Failover">failover
+          <entry><para>Indicates that the connection was closed by the Broker, and as <link linkend="JMS-Client-0-8-Client-Understanding-Connection-Failover">failover
                 options</link> are not included in the Connection URL, the client has been unable to
               reestablish connection.</para>
             <para>The Connection is now closed and any attempt to use either Connection object, or
-              any objects created from the Connection will receive an <ulink
-                url="&oracleJeeDocUrl;javax/jms/IllegalStateException.html"
-                >IllegalStateException</ulink>.</para></entry>
+              any objects created from the Connection will receive an <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/IllegalStateException.html">IllegalStateException</link>.</para></entry>
         </row>
-        <row id="JMS-Client-0-8-Appendix-Exceptions-AMQDisconnectedException">
+        <row xml:id="JMS-Client-0-8-Appendix-Exceptions-AMQDisconnectedException">
           <entry>AMQDisconnectedException</entry>
           <entry>Server closed connection and no failover was successful</entry>
           <entry><para>Indicates that the connection was closed by the Broker. The client has tried
-              failover according to the rules of the <link
-                linkend="JMS-Client-0-8-Client-Understanding-Connection-Failover">failover
+              failover according to the rules of the <link linkend="JMS-Client-0-8-Client-Understanding-Connection-Failover">failover
                 options</link>within the Connection URL, but these attempts were all
               unsuccessful.</para>
             <para>The Connection is now closed and any attempt to use either Connection object, or
-              any objects created from the Connection will receive an <ulink
-                url="&oracleJeeDocUrl;javax/jms/IllegalStateException.html"
-                >IllegalStateException</ulink>.</para></entry>
+              any objects created from the Connection will receive an <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/IllegalStateException.html">IllegalStateException</link>.</para></entry>
         </row>
 
       </tbody>

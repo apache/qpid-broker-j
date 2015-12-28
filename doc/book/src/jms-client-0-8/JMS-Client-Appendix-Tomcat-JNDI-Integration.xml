@@ -1,10 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
-[
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -26,23 +20,23 @@
 
 -->
 
-<appendix id="JMS-Client-0-8-Appendix-Tomcat-JNDI-Integration">
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-Appendix-Tomcat-JNDI-Integration">
   <title>How to bind Qpid destinations and connection factories into Tomcat JNDI</title>
   <para>
       Qpid client destinations and connection factories can be registered in external JNDI containers, for example, Tomcat JNDI implementation.
   </para>
   <para>
     <literal>org.apache.qpid.jndi.ObjectFactory</literal> implements
-    <ulink url="&oracleJdkDocUrl;javax/naming/spi/ObjectFactory.html">javax.naming.spi.ObjectFactory</ulink>
+    <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/spi/ObjectFactory.html">javax.naming.spi.ObjectFactory</link>
     allowing it to create instances of <literal>AMQConnectionFactory</literal>, <literal>PooledConnectionFactory</literal>,
     <literal>AMQConnection</literal>, <literal>AMQQueue</literal> and <literal>AMQTopic</literal> in external JNDI container from
-    <ulink url="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</ulink>s.
+    <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</link>s.
   </para>
   <para>Additionally,
     <literal>AMQConnectionFactory</literal>, <literal>PooledConnectionFactory</literal> and <literal>AMQDestination</literal> (parent of
     <literal>AMQQueue</literal> and <literal>AMQTopic</literal>) implement
-    <ulink url="&oracleJdkDocUrl;javax/naming/Referenceable.html">javax.naming.Referenceable</ulink>
-    allowing creation of <ulink url="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</ulink> objects
+    <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/Referenceable.html">javax.naming.Referenceable</link>
+    allowing creation of <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</link> objects
     for binding in external JNDI implementations.
   </para>
   <para>
@@ -51,7 +45,7 @@
       <listitem>
         <para>
           an instance of <literal>ConnectionFactory</literal> from a <literal>Reference</literal> containing reference
-          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>)
+          address (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</link>)
           <literal>connectionURL</literal> with content set to a
           <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.
         </para>
@@ -59,7 +53,7 @@
       <listitem>
         <para>
           an instance of <literal>PooledConnectionFactory</literal> from a <literal>Reference</literal> containing reference
-          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>)
+          address (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</link>)
           <literal>connectionURL</literal> with content set to a
           <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.
         </para>
@@ -67,7 +61,7 @@
       <listitem>
         <para>
           an instance of <literal>AMQConnection</literal> from a <literal>Reference</literal> containing reference
-          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>)
+          address (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</link>)
           <literal>connectionURL</literal> with content set to a
           <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>.
         </para>
@@ -75,16 +69,16 @@
       <listitem>
         <para>
           an instance of <literal>AMQQueue</literal> from a <literal>Reference</literal> containing reference
-          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>)
-          <literal>address</literal> with content set to either <ulink url="&qpidProgrammingBook;">Address</ulink> or
+          address (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</link>)
+          <literal>address</literal> with content set to either <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&qpidProgrammingBook;">Address</link> or
           <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>.
         </para>
       </listitem>
       <listitem>
         <para>
           an instance of <literal>AMQTopic</literal> from a <literal>Reference</literal> containing reference
-          address (<ulink url="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</ulink>)
-          <literal>address</literal> with content set to either <ulink url="&qpidProgrammingBook;">Address</ulink> or
+          address (<link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/RefAddr.html">javax.naming.RefAddr</link>)
+          <literal>address</literal> with content set to either <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&qpidProgrammingBook;">Address</link> or
           <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>.
         </para>
       </listitem>
@@ -93,7 +87,7 @@
       <para>
         For  <literal>AMQQueue</literal> and <literal>AMQTopic</literal> prefix <literal>BURL:</literal> need
         to be specified for <link linkend="JMS-Client-0-8-Binding-URL">Binding URL</link>. Otherwise, client will try
-        to parse content using <ulink url="&qpidProgrammingBook;">Address</ulink> format.
+        to parse content using <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&qpidProgrammingBook;">Address</link> format.
       </para>
     </note>
   </para>
@@ -102,33 +96,33 @@
   </para>
   <example>
       <title>An example of Tomcat context.xml declaring Qpid JNDI resources</title>
-      <programlisting language="xml"><![CDATA[
-<?xml version='1.0' encoding='utf-8'?>
-<!DOCTYPE xml>
-<Context>
+      <programlisting language="xml">
+&lt;?xml version='1.0' encoding='utf-8'?&gt;
+&lt;!DOCTYPE xml&gt;
+&lt;Context&gt;
 
-  <Resource name="jms/connectionFactory" auth="Container"
+  &lt;Resource name="jms/connectionFactory" auth="Container"
             type="org.apache.qpid.client.AMQConnectionFactory"
             factory="org.apache.qpid.jndi.ObjectFactory"
-            connectionURL="amqp://guest:guest@clientid/?brokerlist='localhost:5672'"/>
+            connectionURL="amqp://guest:guest@clientid/?brokerlist='localhost:5672'"/&gt;
 
-  <Resource name="jms/pooledConnectionFactory" auth="Container"
+  &lt;Resource name="jms/pooledConnectionFactory" auth="Container"
             type="org.apache.qpid.client.PooledConnectionFactory"
             factory="org.apache.qpid.jndi.ObjectFactory"
             connectionURL="amqp://guest:guest@clientid/?brokerlist='localhost:5672'"
-            maxPoolSize="20" connectionTimeout="60000"/>
+            maxPoolSize="20" connectionTimeout="60000"/&gt;
 
-  <Resource name="jms/queue" auth="Container"
+  &lt;Resource name="jms/queue" auth="Container"
             type="org.apache.qpid.client.AMQQueue"
             factory="org.apache.qpid.jndi.ObjectFactory"
-            address="BURL:direct://amq.direct//myQueue?durable='true'"/>
+            address="BURL:direct://amq.direct//myQueue?durable='true'"/&gt;
 
-  <Resource name="jms/topic" auth="Container"
+  &lt;Resource name="jms/topic" auth="Container"
             type="org.apache.qpid.client.AMQTopic"
             factory="org.apache.qpid.client.AMQConnectionFactory"
-            address="BURL:topic://amq.topic//myTopic?routingkey='myTopic'"/>
+            address="BURL:topic://amq.topic//myTopic?routingkey='myTopic'"/&gt;
 
-</Context>]]></programlisting>
+&lt;/Context&gt;</programlisting>
   </example>
   <para>In the example above <literal>AMQConnectionFactory</literal> would be registered under JNDI name "jms/connectionFactory",
     <literal>PooledConnectionFactory</literal> would be registered under JNDI name "jms/pooledConnectionFactory",
@@ -142,7 +136,7 @@
   </para>
   <example>
     <title>An example of JNDI lookup for Qpid resources registered in Tomcat JNDI</title>
-    <programlisting language="java"><![CDATA[
+    <programlisting language="java">
     Context context = new InitialContext();
     Context environmentContext = (Context)context.lookup("java:comp/env");
     ...
@@ -151,41 +145,41 @@
     Queue queue = (Queue)environmentContext.lookup("jms/queue");
     ...
     Topic topic = (Topic)environmentContext.lookup("jms/topic");
-    ...]]></programlisting>
+    ...</programlisting>
   </example>
   <note>
     <para>
       In order to support backward compatibility <literal>AMQConnectionFactory</literal> continues to implement
-      <ulink url="&oracleJdkDocUrl;javax/naming/spi/ObjectFactory.html">javax.naming.spi.ObjectFactory</ulink>
+      <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/spi/ObjectFactory.html">javax.naming.spi.ObjectFactory</link>
       and can be used to instantiate JNDI resources from
-      <ulink url="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</ulink>s.
+      <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/Reference.html">javax.naming.Reference</link>s.
       However, its method <literal>getObjectInstance</literal> is marked as <literal>Deprecated</literal> and will be
       removed in future version of client. For backward compatibility, Qpid JNDI resources can be declared using fully
       qualified class names as addresses. That will became unsupported in future version as well.
       An example of Tomcat context.xml with declarations of JNDI resources using deprecated factory and addresses is provided below.
   <example>
       <title>An example of Tomcat context.xml declaring Qpid JNDI resources using deprecated <literal>ObjectFactory</literal> and deprecated addresses</title>
-      <programlisting language="xml"><![CDATA[
-<?xml version='1.0' encoding='utf-8'?>
-<!DOCTYPE xml>
-<Context>
+      <programlisting language="xml">
+&lt;?xml version='1.0' encoding='utf-8'?&gt;
+&lt;!DOCTYPE xml&gt;
+&lt;Context&gt;
 
-  <Resource name="jms/queue" auth="Container"
+  &lt;Resource name="jms/queue" auth="Container"
             type="org.apache.qpid.client.AMQQueue"
             factory="org.apache.qpid.client.AMQConnectionFactory"
-            org.apache.qpid.client.AMQQueue="direct://amq.direct//myDurableQueue?durable='true'"/>
+            org.apache.qpid.client.AMQQueue="direct://amq.direct//myDurableQueue?durable='true'"/&gt;
 
-  <Resource name="jms/topic" auth="Container"
+  &lt;Resource name="jms/topic" auth="Container"
             type="org.apache.qpid.client.AMQTopic"
             factory="org.apache.qpid.client.AMQConnectionFactory"
-            org.apache.qpid.client.AMQTopic="topic://amq.topic//myTopic?routingkey='myTopic'"/>
+            org.apache.qpid.client.AMQTopic="topic://amq.topic//myTopic?routingkey='myTopic'"/&gt;
 
-  <Resource name="jms/connectionFactory" auth="Container"
+  &lt;Resource name="jms/connectionFactory" auth="Container"
             type="org.apache.qpid.client.AMQConnectionFactory"
             factory="org.apache.qpid.client.AMQConnectionFactory"
-            org.apache.qpid.client.AMQConnectionFactory="amqp://guest:guest@clientid/?brokerlist='localhost:5672'"/>
+            org.apache.qpid.client.AMQConnectionFactory="amqp://guest:guest@clientid/?brokerlist='localhost:5672'"/&gt;
 
-</Context>]]></programlisting>
+&lt;/Context&gt;</programlisting>
   </example>
     </para>
   </note>

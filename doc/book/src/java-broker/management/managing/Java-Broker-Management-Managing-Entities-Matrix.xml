@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Entities-Matrix">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Entities-Matrix">
   <title>Entity/Management Channel Support Matrix</title>
   <para>This tables indicates which management channels support the creation (C), update (U), or
     deletion (D) of different entities within the Broker.</para>

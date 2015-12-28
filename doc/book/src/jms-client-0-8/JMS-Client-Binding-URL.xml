@@ -1,10 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
-[
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -26,18 +20,17 @@
 
 -->
 
-<chapter id="JMS-Client-0-8-Binding-URL">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-Binding-URL">
   <title>Binding URL</title>
 
   <para> The <emphasis>Binding URL</emphasis> syntax for addressing<footnote>
-      <para>The client also supports the ADDR format. This is documented in <ulink
-          url="&qpidProgrammingBook;">Programming in Apache Qpid</ulink>.</para>
+      <para>The client also supports the ADDR format. This is documented in <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&qpidProgrammingBook;">Programming in Apache Qpid</link>.</para>
     </footnote>. It allows the specification of the bindings between a queue and an exchange, queue
     and exchange creation arguments and some ancillary options.</para>
 
-  <para> The format for a <emphasis>Binding URL</emphasis> is provided below <screen><![CDATA[
-<Exchange Class>://<Exchange Name>/[<Destination>]/[<Queue>][?<option>='<value>'[&<option>='<value>']]
-    ]]></screen> where <itemizedlist>
+  <para> The format for a <emphasis>Binding URL</emphasis> is provided below <screen>
+&lt;Exchange Class&gt;://&lt;Exchange Name&gt;/[&lt;Destination&gt;]/[&lt;Queue&gt;][?&lt;option&gt;='&lt;value&gt;'[&amp;&lt;option&gt;='&lt;value&gt;']]
+    </screen> where <itemizedlist>
       <listitem>
         <para><emphasis>Exchange Class</emphasis>, specifies the type of the exchange, for example,
             <emphasis>direct</emphasis>,<emphasis>topic</emphasis>,<emphasis>fanout</emphasis>, etc.
@@ -72,8 +65,7 @@
         <emphasis>must</emphasis> be surrounded with single quotes ('). </para>
   </important>
 
-  <para> The following <emphasis>Binding URL</emphasis> options are currently defined: <table
-      pgwide="1">
+  <para> The following <emphasis>Binding URL</emphasis> options are currently defined: <table pgwide="1">
       <title>Binding URL options </title>
       <tgroup cols="3">
         <thead>
@@ -138,7 +130,7 @@
                 consumer, such consumer can only read messages on the queue but cannot consume them.
                 The consumer behaves like a queue browser in this case.</para></entry>
           </row>
-          <row id="JMS-Client-0-8-Binding-URL-Options-RejectBehaviour">
+          <row xml:id="JMS-Client-0-8-Binding-URL-Options-RejectBehaviour">
             <entry><para>rejectbehaviour</para></entry>
             <entry><para>string </para></entry>
             <entry><para>Defines the reject behaviour for the re-delivered messages. If set to
@@ -151,52 +143,52 @@
     </table>
   </para>
 
-  <section id="JMS-Client-0-8-Binding-URL-Examples">
+  <section xml:id="JMS-Client-0-8-Binding-URL-Examples">
     <title>Binding URL Examples</title>
 
-    <section id="JMS-Client-0-8-Binding-URL-JMS-Queues" role="h4">
+    <section xml:id="JMS-Client-0-8-Binding-URL-JMS-Queues" role="h4">
       <title>Binding URLs for declaring of JMS Queues</title>
       <para>The Qpid client Binding URLs for JMS queue destinations can be declared using direct
         exchange (Mostly it is a pre-defined exchange with a name "amq.direct". Also, custom direct
-        exchanges can be used.): <screen><![CDATA[
-direct://amq.direct//<Queue Name>
-         ]]></screen>
+        exchanges can be used.): <screen>
+direct://amq.direct//&lt;Queue Name&gt;
+         </screen>
       </para>
       <para>The Binding URLs for destinations created with calls to
-          <emphasis>Session.createQueue(String)</emphasis> can be expressed as <screen><![CDATA[
-direct://amq.direct//<Queue Name>?durable='true'
-         ]]></screen> The durability flag is set to <emphasis>true</emphasis> in such destinations. </para>
+          <emphasis>Session.createQueue(String)</emphasis> can be expressed as <screen>
+direct://amq.direct//&lt;Queue Name&gt;?durable='true'
+         </screen> The durability flag is set to <emphasis>true</emphasis> in such destinations. </para>
       <example>
         <title>Binding URL examples for JMS queues</title>
-        <screen><![CDATA[
+        <screen>
 direct://amq.direct//myNonDurableQueue
 direct://amq.direct//myDurableQueue?durable='true'
-direct://amq.direct//myAnotherQueue?durable='true'&routingkey='myqueue'
-direct://amq.direct//myQueue?durable='true'&routingkey='myqueue'&rejectbehaviour='server'
+direct://amq.direct//myAnotherQueue?durable='true'&amp;routingkey='myqueue'
+direct://amq.direct//myQueue?durable='true'&amp;routingkey='myqueue'&amp;rejectbehaviour='server'
 direct://custom.direct//yetAnotherQueue
-        ]]></screen>
+        </screen>
       </example>
     </section>
 
-    <section id="JMS-Client-0-8-Binding-URL-JMS-Topics" role="h4">
+    <section xml:id="JMS-Client-0-8-Binding-URL-JMS-Topics" role="h4">
       <title>Binding URLs for declaring of JMS Topics</title>
       <para>The Binding URLs for JMS queue destinations can be declared using topic exchange (A
         pre-defined exchange having name "amq.topic" is used mainly. However, custom topic exchanges
-        can be used as well): <screen><![CDATA[
-topic://amq.topic//<Queue name>?routingkey='<Topic Name>'&exclusive='true'&autodelete='true'
-         ]]></screen>
+        can be used as well): <screen>
+topic://amq.topic//&lt;Queue name&gt;?routingkey='&lt;Topic Name&gt;'&amp;exclusive='true'&amp;autodelete='true'
+         </screen>
       </para>
       <para>The Binding URLs for a topic destination created with calls to
           <emphasis>Session.createTopic("hello")</emphasis> is provided below: <example>
           <title>Binding URL examples for JMS topics</title>
-          <screen><![CDATA[
-topic://amq.topic/hello/tmp_127_0_0_1_36973_1?routingkey='hello'&exclusive='true'&autodelete='true'
-        ]]></screen>
+          <screen>
+topic://amq.topic/hello/tmp_127_0_0_1_36973_1?routingkey='hello'&amp;exclusive='true'&amp;autodelete='true'
+        </screen>
         </example>
       </para>
     </section>
 
-    <section id="JMS-Client-0-8-Binding-URL-Topics-Wildcards" role="h4">
+    <section xml:id="JMS-Client-0-8-Binding-URL-Topics-Wildcards" role="h4">
       <title>Wildcard characters in routing keys for topic destinations</title>
       <para> AMQP exchanges of class <emphasis>topic</emphasis> can route messages to the queues
         using special matches containing wildcard characters (a "#" matches one or more words, a "*"
@@ -205,15 +197,15 @@ topic://amq.topic/hello/tmp_127_0_0_1_36973_1?routingkey='hello'&exclusive='true
         the destination like "usa.#", it should receive all the messages matching to that routing
         key. For example, "usa.boston", "usa.new-york", etc. </para>
       <para> The examples of the <emphasis>Binding URLs</emphasis> having routing keys with
-        wildcards characters are provided below: <screen><![CDATA[
+        wildcards characters are provided below: <screen>
 topic://amq.topic?routingkey='stocks.#'
 topic://amq.topic?routingkey='stocks.*.ibm'
 topic://amq.topic?routingkey='stocks.nyse.ibm'
-        ]]></screen>
+        </screen>
       </para>
     </section>
 
-    <section id="JMS-Client-0-8-Binding-URL-Extra-Examples" role="h4">
+    <section xml:id="JMS-Client-0-8-Binding-URL-Extra-Examples" role="h4">
       <title>More Examples</title>
       <table>
         <title>Binding URL examples</title>

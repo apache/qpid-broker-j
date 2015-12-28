@@ -1,8 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,7 +20,7 @@
 
 -->
 
-<appendix id="Java-Broker-Appendix-Queue-Alerts">
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Appendix-Queue-Alerts">
   <title>Queue Alerts</title>
   <para>The Broker supports a variety of queue alerting thresholds. Once configured on a queue,
     these limits will be periodically written to the log if these limits are breached, until the
@@ -38,7 +34,7 @@ INFO [default:VirtualHostHouseKeepingTask] (queue.NotificationCheck) - MESSAGE_C
   </screen>
   <para>Note that queue alerts are <emphasis>soft</emphasis> in nature; breaching the limit will
     merely cause the alerts to be generated but messages will still be accepted to the queue.</para>
-  <table pgwide="1" id="Java-Broker-Appendix-Queue-Alerts-Alerting-Messages">
+  <table pgwide="1" xml:id="Java-Broker-Appendix-Queue-Alerts-Alerting-Messages">
     <title>Queue Alerts</title>
     <tgroup cols="2">
       <thead>

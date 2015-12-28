@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -19,10 +19,11 @@
  under the License.
 
 -->
-<section id="Java-Broker-Runtime-Close-Connection-When-No-Route">
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Close-Connection-When-No-Route">
   <title>Closing client connections on unroutable mandatory messages</title>
 
-  <section id="Java-Broker-Runtime-Close-Connection-When-No-Route-Summary">
+  <section xml:id="Java-Broker-Runtime-Close-Connection-When-No-Route-Summary">
   <title>Summary</title>
     <para>
         Due to asynchronous nature of AMQP 0-8/0-9/0-9-1 protocols sending a message with a routing key for which no queue binding exist results
@@ -51,7 +52,7 @@
         </para>
     </note>
   </section>
-  <section id="Java-Broker-Runtime-Close-Connection-When-No-Route-Configuration">
+  <section xml:id="Java-Broker-Runtime-Close-Connection-When-No-Route-Configuration">
     <title>Configuring <emphasis>closeWhenNoRoute</emphasis></title>
     <para>
         The Broker attribute <emphasis>closeWhenNoRoute</emphasis> can be set to specify this feature on broker side.
@@ -63,8 +64,8 @@
     </para>
     <example>
         <title>Disable feature to close connection on unroutable messages with client URL</title>
-        <screen><![CDATA[
-amqp://guest:guest@clientid/?brokerlist='tcp://localhost:5672'&closeWhenNoRoute='false']]></screen>
+        <screen>
+amqp://guest:guest@clientid/?brokerlist='tcp://localhost:5672'&amp;closeWhenNoRoute='false'</screen>
     </example>
     <para>
        If no value is specified on the client the broker setting will be used. If client setting is specified then it will take precedence

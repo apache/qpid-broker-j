@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,13 +20,13 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-RemoteReplicationNodes">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-RemoteReplicationNodes">
   <title>Remote Replication Nodes</title>
   <para>Used for HA only. A <link linkend="Java-Broker-Concepts-RemoteReplicationNodes">remote replication node</link> is a representation of another virtualhost node
     in the group. Remote replication nodes are not created directly. Instead the system
     automatically creates a remote replication node for every node in the group. It serves to
     provide a view of the whole group from every node in the system.</para>
-  <section id="Java-Broker-Management-Managing-RemoteReplicationNodes-Attributes">
+  <section xml:id="Java-Broker-Management-Managing-RemoteReplicationNodes-Attributes">
     <title>Attributes</title>
     <para><itemizedlist>
         <listitem>
@@ -62,11 +62,11 @@
         </listitem>
       </itemizedlist></para>
   </section>
-  <section id="Java-Broker-Management-Managing-RemoteReplicationNodes-Children">
+  <section xml:id="Java-Broker-Management-Managing-RemoteReplicationNodes-Children">
     <title>Children</title>
     <para>None</para>
   </section>
-  <section id="Java-Broker-Management-Managing-RemoteReplicationNodes-Lifecycle">
+  <section xml:id="Java-Broker-Management-Managing-RemoteReplicationNodes-Lifecycle">
     <title>Lifecycle</title>
     <para>
       <itemizedlist>
@@ -79,7 +79,7 @@
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-RemoteReplication-Nodes-Operations">
+  <section xml:id="Java-Broker-Management-Managing-RemoteReplication-Nodes-Operations">
     <title>Operations</title>
     <para>
       <itemizedlist>

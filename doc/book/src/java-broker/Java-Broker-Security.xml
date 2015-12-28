@@ -20,7 +20,7 @@
 
 -->
 
-<chapter id="Java-Broker-Security">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security">
   <title>Security</title>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="security/Java-Broker-Security-Authentication-Providers.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="security/Java-Broker-Security-Group-Providers.xml"/>

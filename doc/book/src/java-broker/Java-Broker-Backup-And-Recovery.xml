@@ -1,8 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,9 +20,9 @@
 
 -->
 
-<chapter id="Java-Broker-Backup-And-Recovery">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Backup-And-Recovery">
   <title>Backup And Recovery</title>
-  <section id="Java-Broker-Backup-And-Recovery-Broker">
+  <section xml:id="Java-Broker-Backup-And-Recovery-Broker">
     <title>Broker</title>
     <para>To perform a complete backup whilst the Broker is shutdown, simply copy all the files the
       exist beneath <literal>${QPID_WORK}</literal>, assuming all virtualhost nodes and virtualhost
@@ -34,7 +30,7 @@
     <para>There is currently no safe mechanism to take a complete copy of the entire Broker whilst
       it is running.</para>
   </section>
-  <section id="Java-Broker-Backup-And-Recovery-Virtualhost-Node">
+  <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node">
     <title>Virtualhost Node</title>
     <para>To perform a complete backup of a Virtualhost node whilst it is stopped (or Broker down),
       simply copy all the files the exist beneath
@@ -43,7 +39,7 @@
       node.</para>
     <para>The technique for backing up a virtualhost node whilst it is running depends on its
       type.</para>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB">
       <title>BDB</title>
       <para>Qpid Broker distribution includes the "hot" backup utility <literal>backup.sh</literal>
         which can be found at broker bin folder. This utility can perform the backup when broker is
@@ -79,27 +75,27 @@
         </cmdsynopsis>
       </example>
     </section>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB-HA">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB-HA">
       <title>BDB-HA</title>
       <para>See <xref linkend="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB"/></para>
     </section>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-Derby">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-Derby">
       <title>Derby</title>
       <para>Not yet supported</para>
     </section>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-JDBC">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-JDBC">
       <title>JDBC</title>
       <para>The responsibility for backup is delegated to the database server itself. See the
         documentation accompanying it. Any technique that takes a consistent snapshot of the
         database is acceptable.</para>
     </section>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-JSON">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Node-JSON">
       <title>JSON</title>
       <para>JSON stores its config in a single text file. It can be safely backed up using standard
         command line tools.</para>
     </section>
   </section>
-  <section id="Java-Broker-Backup-And-Recovery-Virtualhost">
+  <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost">
     <title>Virtualhost</title>
     <para>To perform a complete backup of a Virtualhost whilst it is stopped (or Broker down),
       simply copy all the files the exist beneath
@@ -107,27 +103,27 @@
       standard location. This will copy all messages that belongs to that virtualhost.</para>
     <para>The technique for backing up a virtualhost whilst it is running depends on its
       type.</para>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-BDB">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-BDB">
       <title>BDB</title>
       <para>Use the same backup utility described above, but use the path
           <literal>${QPID_WORK}/&lt;name&gt;/messages</literal> instead.</para>
     </section>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-Derby">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Derby">
       <title>Derby</title>
       <para>Not yet supported</para>
     </section>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-JDBC">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-JDBC">
       <title>JDBC</title>
       <para>The responsibility for backup is delegated to the database server itself. See the
         documentation accompanying it. Any technique that takes a consistent snapshot of the
         database is acceptable.</para>
     </section>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-Provided">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-Provided">
       <title>Provided</title>
       <para>The contents of the virtualhost will be backed up as part of virtualhost node that
         contains it.</para>
     </section>
-    <section id="Java-Broker-Backup-And-Recovery-Virtualhost-BDBHA">
+    <section xml:id="Java-Broker-Backup-And-Recovery-Virtualhost-BDBHA">
       <title>BDB-HA</title>
       <para>The contents of the virtualhost will be backed up as part of virtualhost node that
         contains it.</para>

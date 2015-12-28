@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,11 +20,11 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Exchanges">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Exchanges">
   <title>Exchanges</title>
   <para><link linkend="Java-Broker-Concepts-Exchanges">Exchanges</link> can be managed using the
     HTTP or AMQP channels.</para>
-  <section id="Java-Broker-Management-Managing-Exchanges-Types">
+  <section xml:id="Java-Broker-Management-Managing-Exchanges-Types">
     <title>Types</title>
     <para><itemizedlist>
         <listitem>
@@ -42,7 +42,7 @@
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Exchanges-Attributes">
+  <section xml:id="Java-Broker-Management-Managing-Exchanges-Attributes">
     <title>Attributes</title>
     <para><itemizedlist>
         <listitem>
@@ -50,18 +50,14 @@
             producing messages.</para>
         </listitem>
         <listitem>
-          <para><emphasis>Type of the exchange</emphasis>. Can be either <link
-              linkend="Java-Broker-Concepts-Exchanges-Types-Direct">direct</link>, <link
-              linkend="Java-Broker-Concepts-Exchanges-Types-Topic">topic</link>, <link
-              linkend="Java-Broker-Concepts-Exchanges-Types-Fanout">fanout</link>, or <link
-              linkend="Java-Broker-Concepts-Exchanges-Types-Headers">headers</link>.</para>
+          <para><emphasis>Type of the exchange</emphasis>. Can be either <link linkend="Java-Broker-Concepts-Exchanges-Types-Direct">direct</link>, <link linkend="Java-Broker-Concepts-Exchanges-Types-Topic">topic</link>, <link linkend="Java-Broker-Concepts-Exchanges-Types-Fanout">fanout</link>, or <link linkend="Java-Broker-Concepts-Exchanges-Types-Headers">headers</link>.</para>
         </listitem>
         <listitem>
           <para><emphasis>Durable</emphasis>. Whether the exchange survives a restart.</para>
         </listitem>
       </itemizedlist></para>
   </section>
-  <section id="Java-Broker-Management-Managing-Exchanges-Children">
+  <section xml:id="Java-Broker-Management-Managing-Exchanges-Children">
     <title>Children</title>
     <para>
       <itemizedlist>
@@ -71,7 +67,7 @@
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Exchanges-Lifecycle">
+  <section xml:id="Java-Broker-Management-Managing-Exchanges-Lifecycle">
     <title>Lifecycle</title>
     <para>Not supported</para>
   </section>

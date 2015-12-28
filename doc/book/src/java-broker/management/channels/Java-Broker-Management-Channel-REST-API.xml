@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,9 +20,9 @@
 
 -->
 
-<section id="Java-Broker-Management-Channel-REST-API">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel-REST-API">
   <title>REST API</title>
-  <section id="Java-Broker-Management-Channel-REST-API-Introduction">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Introduction">
     <title>Introduction</title>
     <para>This section describes the REST API provided by the Java Broker. The REST API is intended
       for use by developers who wish to automate the management or monitoring of the Qpid Broker. It
@@ -42,21 +42,21 @@
     <para>There are also some ancillary services under URI <literal>/service</literal> used for
       authentication and logout.</para>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-APIDocs">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-APIDocs">
     <title>REST API documentation</title>
     <para>REST API documentation is available on-line from any Java Broker at location
         <literal>/apidocs</literal>. It is also linked from the menu of the Web Management Console.
     </para>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-Authentication">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Authentication">
     <title>Authentication</title>
     <para>Before you can use the REST API, you must authenticate. Authentication decisions are made
       by the <link linkend="Java-Broker-Concepts-Authentication-Providers">authentication
         provider</link> associated with HTTP <link linkend="Java-Broker-Concepts-Ports">port</link>
       on which you connect.</para>
-    <para>You may authenticate using <ulink url="https://www.ietf.org/rfc/rfc4422.txt">SASL</ulink>
-        (<literal>/service/sasl</literal>) or <ulink url="https://tools.ietf.org/html/rfc2617">HTTP
-        Basic Authentication</ulink>. The latter is convienent when using tools such as
+    <para>You may authenticate using <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.ietf.org/rfc/rfc4422.txt">SASL</link>
+        (<literal>/service/sasl</literal>) or <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://tools.ietf.org/html/rfc2617">HTTP
+        Basic Authentication</link>. The latter is convienent when using tools such as
         <literal>curl</literal> on the command line. This is illustrated in the examples
       below.</para>
     <para>For SASL authentication use a <literal>GET</literal> request to
@@ -65,7 +65,7 @@
     <para>It is possible to end an authenticated session using
       <literal>/service/logout</literal>.</para>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-Create">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Create">
     <title>Configured Object creation</title>
     <para>Methods PUT or POST can be used to create ConfiguredObject.</para>
     <para> ConfiguredObject can be created by submitting PUT request against ConfiguredObject full
@@ -88,9 +88,9 @@
       <para> To create Queue with name "my-queue" on a virtual host with name "vh" (which is
         contained within virtual host node with name "vhn") either of the following requests should
         be made: </para>
-      <screen><![CDATA[PUT /api/latest/queue/vhn/vh HTTP/1.1]]></screen>
-      <screen><![CDATA[POST /api/latest/queue/vhn/vh HTTP/1.1]]></screen>
-      <screen><![CDATA[PUT /api/latest/queue/vhn/vh/my-queue HTTP/1.1]]></screen>
+      <screen>PUT /api/latest/queue/vhn/vh HTTP/1.1</screen>
+      <screen>POST /api/latest/queue/vhn/vh HTTP/1.1</screen>
+      <screen>PUT /api/latest/queue/vhn/vh/my-queue HTTP/1.1</screen>
       <para> Response code 201 should be returned on successful queue creation. Response header
         "Location" should be set to "/api/latest/queue/test/my-queue". If queue with name "my-queue"
         already exists and either of 2 first requests above were used, an error response with
@@ -99,7 +99,7 @@
         update should occur. </para>
     </example>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-Update">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Update">
     <title>Configured Object update</title>
     <para>Methods PUT or POST can be used to update ConfiguredObject.</para>
     <para> ConfiguredObject can be updated by submitting PUT or POST request against
@@ -116,11 +116,11 @@
       <title>Examples of REST calls for Queue update</title>
       <para>To update Queue with name "my-queue" on a virtual host with name "vh" (contained in
         virtual host node with name "vhn") either of the following requests can be made:</para>
-      <screen><![CDATA[POST /api/latest/queue/vhn/vh/my-queue HTTP/1.1]]></screen>
-      <screen><![CDATA[POST /api/latest/queue/vhn/vh/my-queue HTTP/1.1]]></screen>
+      <screen>POST /api/latest/queue/vhn/vh/my-queue HTTP/1.1</screen>
+      <screen>POST /api/latest/queue/vhn/vh/my-queue HTTP/1.1</screen>
     </example>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-Delete">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Delete">
     <title>Configured Object deletion</title>
     <para>Method DELETE can be used to delete ConfiguredObject. Alternatively, ConfiguredObject can
       be deleted with update request having desiredState attribute set to value "DELETED". POST or
@@ -143,12 +143,12 @@
       <title>Examples of REST calls for Queue deletion</title>
       <para>To delete Queue with name "my-queue" on a virtual host with name "vh" (contained in
         virtual host node with name "vhn") either of the following requests can be made:</para>
-      <screen><![CDATA[DELETE /api/latest/queue/vhn/vh/my-queue HTTP/1.1]]></screen>
-      <screen><![CDATA[DELETE /api/latest/queue/vhn/vh?name=my-queue HTTP/1.1]]></screen>
-      <screen><![CDATA[DELETE /api/latest/queue/vhn/vh?id=real-queue-id HTTP/1.1]]></screen>
+      <screen>DELETE /api/latest/queue/vhn/vh/my-queue HTTP/1.1</screen>
+      <screen>DELETE /api/latest/queue/vhn/vh?name=my-queue HTTP/1.1</screen>
+      <screen>DELETE /api/latest/queue/vhn/vh?id=real-queue-id HTTP/1.1</screen>
     </example>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-Get">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Get">
     <title>Retrieving Configured Object details</title>
     <para>Method GET is used to retrieve ConfiguredObject attributes values and children
       hierarchy.</para>
@@ -213,7 +213,7 @@
       </varlistentry>
     </variablelist>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-Operations">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Operations">
     <title>Configured Object operations</title>
     <para>Method POST is used to invoke Configured Objects operations. Some operations support
       parameters. Pass parameters using a JSON request body containing a map with a map entry for
@@ -221,10 +221,10 @@
     <example>
       <title>Example of REST call to invoke the Queue clear queue operation</title>
       <para>To clear the queue with name "my-queue" on a virtual host with name "vh".</para>
-      <screen><![CDATA[POST api/latest/queue/default/vhn/vh/my-queue/clearQueue HTTP/1.1]]></screen>
+      <screen>POST api/latest/queue/default/vhn/vh/my-queue/clearQueue HTTP/1.1</screen>
     </example>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-Status-Codes">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Status-Codes">
     <title>HTTP status codes returned by REST interfaces</title>
     <table>
       <title>HTTP status codes returned by REST interfaces</title>
@@ -319,27 +319,26 @@
       </tgroup>
     </table>
   </section>
-  <section id="Java-Broker-Management-Channel-REST-API-Examples">
+  <section xml:id="Java-Broker-Management-Channel-REST-API-Examples">
     <title>Examples of REST requests with curl</title>
     <example>
       <title>Examples of queue creation using curl (authenticating as user admin):</title>
-      <programlisting><![CDATA[
+      <programlisting>
 #create a durable queue
-curl --user admin -X PUT  -d '{"durable":true}' http://localhost:8080/api/latest/queue/<vhostnode name>/<vhostname>/<queuename>
+curl --user admin -X PUT  -d '{"durable":true}' http://localhost:8080/api/latest/queue/&lt;vhostnode name&gt;/&lt;vhostname&gt;/&lt;queuename&gt;
 #create a durable priority queue
-curl --user admin -X PUT  -d '{"durable":true,"type":"priority"}' http://localhost:8080/api/latest/queue/<vhostnode name>/<vhostname>/<queuename>
-            ]]></programlisting>
+curl --user admin -X PUT  -d '{"durable":true,"type":"priority"}' http://localhost:8080/api/latest/queue/&lt;vhostnode name&gt;/&lt;vhostname&gt;/&lt;queuename&gt;
+            </programlisting>
     </example>
     <example>
       <title>Example of binding a queue to an exchange using curl</title>
-      <programlisting><![CDATA[
-curl --user admin -X PUT  -d '{}' http://localhost:8080/api/latest/binding/<vhostnode name>/<vhostname>/<exchangename>/<queue-name>/<binding-name>
-            ]]></programlisting>
+      <programlisting>
+curl --user admin -X PUT  -d '{}' http://localhost:8080/api/latest/binding/&lt;vhostnode name&gt;/&lt;vhostname&gt;/&lt;exchangename&gt;/&lt;queue-name&gt;/&lt;binding-name&gt;
+            </programlisting>
     </example>
     <para> NOTE: These curl examples utilise unsecure HTTP transport. To use the examples it is
       first necessary enable Basic authentication for HTTP within the HTTP Management Configuration
-      (it is off by default). For details see <xref
-        linkend="Java-Broker-Management-Managing-Plugin-HTTP"/>
+      (it is off by default). For details see <xref linkend="Java-Broker-Management-Managing-Plugin-HTTP"/>
     </para>
   </section>
 

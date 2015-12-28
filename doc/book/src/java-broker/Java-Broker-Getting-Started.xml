@@ -1,8 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,10 +20,10 @@
 
 -->
 
-<chapter id="Java-Broker-Getting-Started">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Getting-Started">
   <title>Getting Started</title>
 
-  <section role="h2" id="Java-Broker-Getting-Started-Introduction">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-Introduction">
     <title>Introduction</title>
     <para>
       This section describes how to start and stop the Java Broker, and outlines the various command line options.
@@ -39,12 +35,12 @@
       <xref linkend="Java-Broker-Management-Channel-Web-Console"/>.
     </para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-Starting-Stopping-Windows">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-Starting-Stopping-Windows">
     <title>Starting/Stopping the broker on Windows</title>
     <para>Firstly change to the installation directory used during the <link linkend="Java-Broker-Installation-InstallationWindows">installation</link>
       and ensure that the <link linkend="Java-Broker-Installation-InstallationWindows-SettingQPIDWORK">QPID_WORK environment variable is set</link>.</para>
     <para>Now use the <command>qpid-server.bat</command> to start the server</para>
-    <programlisting><![CDATA[bin\qpid-server.bat]]></programlisting>
+    <programlisting>bin\qpid-server.bat</programlisting>
     <para>Output similar to the following will be seen:</para>
     <screen>[Broker] BRK-1006 : Using configuration : C:\qpidwork\config.json
 [Broker] BRK-1001 : Startup : Version: &qpidCurrentRelease; Build: 1478262
@@ -61,12 +57,12 @@
       <link linkend="Java-Broker-Management-Channel-REST-API-Operations">REST operation broker/shutdown</link>.
     </para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-Starting-Stopping-Unix">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-Starting-Stopping-Unix">
     <title>Starting/Stopping the broker on Unix</title>
     <para>Firstly change to the installation directory used during the <link linkend="Java-Broker-Installation-InstallationUnix">installation</link>
       and ensure that the <link linkend="Java-Broker-Installation-InstallationUnix-SettingQPIDWORK">QPID_WORK environment variable is set</link>.</para>
     <para>Now use the <command>qpid-server</command> script to start the server:</para>
-    <programlisting><![CDATA[bin/qpid-server]]></programlisting>
+    <programlisting>bin/qpid-server</programlisting>
     <para>Output similar to the following will be seen:</para>
     <screen>[Broker] BRK-1006 : Using configuration : /var/qpidwork/config.json
 [Broker] BRK-1001 : Startup : Version: &qpidCurrentRelease; Build: exported
@@ -83,7 +79,7 @@
         <command>bin/qpid.stop</command> script, use <command>kill -TERM &lt;pid&gt;</command>, or
       the <link linkend="Java-Broker-Management-Channel-REST-API-Operations">REST operation broker/shutdown</link>.</para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-Logging">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-Logging">
     <title>Log file</title>
     <para>The Java Broker writes a log file to record both details of its normal operation and any exceptional
       conditions.  By default the log file is written within the log subdirectory beneath the work directory
@@ -91,7 +87,7 @@
       <computeroutput>%QPID_WORK%\log\qpid.log</computeroutput> (Windows).</para>
     <para>For details of how to control the logging, see <xref linkend="Java-Broker-Runtime-Logging"/></para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-CommandLine">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-CommandLine">
     <title>Using the command line</title>
     <para>The Java Broker understands a number of command line options which may be used to customise the configuration.</para>
     <para>
@@ -101,11 +97,11 @@
       <xref linkend="Java-Broker-Management-Channel-Web-Console"/>.
     </para>
     <para>To see usage information for all command line options, use the <option>--help</option> option</para>
-    <programlisting><![CDATA[bin/qpid-server --help]]></programlisting>
-    <screen><![CDATA[usage: Qpid [-cic <path>] [-h] [-icp <path>] [-mm] [-mmhttp <port>]
-       [-mmpass <password>] [-mmqv] [-os]
-       [-prop <name=value>] [-props <path>] [-sp <path>] [-st <type>] [-v]
- -cic,--create-initial-config <path>                  create a copy of the
+    <programlisting>bin/qpid-server --help</programlisting>
+    <screen>usage: Qpid [-cic &lt;path&gt;] [-h] [-icp &lt;path&gt;] [-mm] [-mmhttp &lt;port&gt;]
+       [-mmpass &lt;password&gt;] [-mmqv] [-os]
+       [-prop &lt;name=value&gt;] [-props &lt;path&gt;] [-sp &lt;path&gt;] [-st &lt;type&gt;] [-v]
+ -cic,--create-initial-config &lt;path&gt;                  create a copy of the
                                                       initial config file,
                                                       either to an
                                                       optionally specified
@@ -114,7 +110,7 @@
                                                       in the current
                                                       directory
  -h,--help                                            print this message
- -icp,--initial-config-path <path>                    set the location of
+ -icp,--initial-config-path &lt;path&gt;                    set the location of
                                                       initial JSON config
                                                       to use when
                                                       creating/overwriting
@@ -124,10 +120,10 @@
                                                       management mode,
                                                       disabling the AMQP
                                                       ports
- -mmhttp,--management-mode-http-port <port>           override http
+ -mmhttp,--management-mode-http-port &lt;port&gt;           override http
                                                       management port in
                                                       management mode
- -mmpass,--management-mode-password <password>        Set the password for
+ -mmpass,--management-mode-password &lt;password&gt;        Set the password for
                                                       the management mode
                                                       user mm_admin
  -mmqv,--management-mode-quiesce-virtualhosts         make virtualhosts
@@ -139,26 +135,26 @@
                                                       with the current
                                                       initial
                                                       configuration
- -prop,--config-property <name=value>                 set a configuration
+ -prop,--config-property &lt;name=value&gt;                 set a configuration
                                                       property to use when
                                                       resolving variables
                                                       in the broker
                                                       configuration store,
                                                       with format
                                                       "name=value"
- -props,--system-properties-file <path>               set the location of
+ -props,--system-properties-file &lt;path&gt;               set the location of
                                                       initial properties
                                                       file to set
                                                       otherwise unset
                                                       system properties
- -sp,--store-path <path>                              use given
+ -sp,--store-path &lt;path&gt;                              use given
                                                       configuration store
                                                       location
- -st,--store-type <type>                              use given broker
+ -st,--store-type &lt;type&gt;                              use given broker
                                                       configuration store
                                                       type
  -v,--version                                         print the version
                                                       information and exit
-]]></screen>
+</screen>
   </section>
 </chapter>

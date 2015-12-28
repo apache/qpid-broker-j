@@ -1,10 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
-[
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -26,7 +20,7 @@
 
 -->
 
-<appendix id="JMS-Client-0-8-Appendix-Maven">
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-Appendix-Maven">
   <title>Minimal Maven POM</title>
   <para> The following is a minimal Maven POM required to use the Qpid Client. It is suitable for
     use with the <link linkend="JMS-Client-0-8-Examples">examples</link> included in this
@@ -35,32 +29,32 @@
   <example>
     <title>Minimal Maven POM </title>
     <programlisting>
-    <![CDATA[
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>test</groupId>
-  <artifactId>test</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <dependencies>
-    <dependency>
-      <groupId>]]>&qpidClientGroupId;<![CDATA[</groupId>
-      <artifactId>]]>&qpidClientArtefactId;<![CDATA[</artifactId>
-      <version>]]>&qpidVersion;<![CDATA[</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
-      <version>1.6.4</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.geronimo.specs</groupId>
-      <artifactId>geronimo-jms_1.1_spec</artifactId>
-      <version>1.1.1</version>
-    </dependency>
-  </dependencies>
-</project>
-    ]]>
+    
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+  &lt;groupId&gt;test&lt;/groupId&gt;
+  &lt;artifactId&gt;test&lt;/artifactId&gt;
+  &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;&qpidClientGroupId;&lt;/groupId&gt;
+      &lt;artifactId&gt;&qpidClientArtefactId;&lt;/artifactId&gt;
+      &lt;version&gt;&qpidVersion;&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+      &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+      &lt;version&gt;1.6.4&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.apache.geronimo.specs&lt;/groupId&gt;
+      &lt;artifactId&gt;geronimo-jms_1.1_spec&lt;/artifactId&gt;
+      &lt;version&gt;1.1.1&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+&lt;/project&gt;
+    
   </programlisting>
   </example>
   <para>Note: We use the SLF4J Binding for Log4J12 here, but any SLF4J Binding could be used

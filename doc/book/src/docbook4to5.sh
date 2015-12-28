@@ -1,3 +1,14 @@
+#!/bin/bash
+
+curl -O https://svn.code.sf.net/p/docbook/code/trunk/docbook/relaxng/tools/db4-upgrade.xsl
+chmod a+x cloak
+
+for i in `find . -name "*.xml" | grep -v commonEntities`
+do
+
+   echo $i
+   sed -e 's/&\([A-Za-z]*\);/=TODO=\1=/g' < $i > $i.tmp
+   cat > $i << EOF
 <?xml version="1.0"?>
 <!--
 
@@ -20,12 +31,6 @@
 
 -->
 
-<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Concepts-Authentication-Providers">
-    <title>Authentication Providers</title>
-    <para>
-        <emphasis>Authentication Providers</emphasis> are used by <emphasis>Ports</emphasis> to authenticate connections.
-        Many <emphasis>Authentication Providers</emphasis> can be configured on the Broker at the same time, from which
-        each <emphasis>Port</emphasis> can be assigned one.
-    </para>
-    <para>Some Authentication Providers offer facilities for creation and deletion of users.</para>
-</section>
+EOF
+   xsltproc db4-upgrade.xsl $i.tmp | grep -v 'Converted by db4-upgrade version 1.1' | sed -e 's/\(=TODO=\)\([A-Za-z]*\)\(=\)/\&\2;/g' >> $i
+done

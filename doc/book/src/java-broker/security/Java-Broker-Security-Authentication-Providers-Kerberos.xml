@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +19,8 @@
  under the License.
 
 -->
-<section id="Java-Broker-Security-Kerberos-Provider">
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-Kerberos-Provider">
     <title>Kerberos</title>
 
     <para> Kereberos Authentication Provider uses java GSS-API SASL mechanism to authenticate the
@@ -37,7 +36,7 @@
 
     <para>Where qpid.conf would look something like this:</para>
 
-    <programlisting><![CDATA[
+    <programlisting>
 com.sun.security.jgss.accept {
     com.sun.security.auth.module.Krb5LoginModule required
     useKeyTab=true
@@ -47,8 +46,8 @@ com.sun.security.jgss.accept {
     useSubjectCredsOnly=false
     kdc="kerberos.example.com"
     keyTab="/path/to/keytab-file"
-    principal="<name>/<host>";
-};]]></programlisting>
+    principal="&lt;name&gt;/&lt;host&gt;";
+};</programlisting>
 
     <para> Where realm, kdc, keyTab and principal should obviously be set correctly for the
         environment where you are running (see the existing documentation for the C++ broker about

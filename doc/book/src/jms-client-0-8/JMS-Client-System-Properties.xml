@@ -1,10 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
-[
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -26,12 +20,11 @@
 
 -->
 
-<chapter id="JMS-Client-0-8-System-Properties">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-System-Properties">
 	<title>System Properties</title>
 	<para>The following system properties affect the behaviour of the Qpid JMS client. System
 		properties are global in nature so affect all Qpid interactions made from within the same
-		JVM. For many options, there are equivalent <link linkend="JMS-Client-0-8-Connection-URL"
-			>Connection URL</link> options allowing the option to be controlled at the level of the
+		JVM. For many options, there are equivalent <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link> options allowing the option to be controlled at the level of the
 		Connection.</para>
 
 	<table pgwide="1">
@@ -55,7 +48,7 @@
 							the specified version and only negotiate downwards if the Broker does
 							not support the specified version.</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-Heartbeat">
+				<row xml:id="JMS-Client-0-8-System-Properties-Heartbeat">
 					<entry>qpid.heartbeat</entry>
 					<entry>int</entry>
 					<entry><para>Defaults to the heartbeat value suggested by the Broker, if
@@ -63,9 +56,7 @@
 					<entry>Frequency of heartbeat messages (in seconds). A value of 0 disables
 						heartbeating. <para>Two consecutive missed heartbeats will result in the
 							connection timing out.</para><para>This can also be set per connection
-							using the <link
-								linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-Heartbeat"
-								>Connection URL</link> options.</para><para>For compatibility with
+							using the <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-Heartbeat">Connection URL</link> options.</para><para>For compatibility with
 							old client configuration, the synonym
 								<varname>amqj.heartbeat.delay</varname> is supported.</para></entry>
 				</row>
@@ -87,13 +78,13 @@
                         <para>Setting this property to 'false' will disable that check and
                             allow you to ignore host name errors.</para></entry>
                 </row>
-				<row id="JMS-Client-0-8-System-Properties-ConnectionCompressMessages">
+				<row xml:id="JMS-Client-0-8-System-Properties-ConnectionCompressMessages">
 					<entry>qpid.connection_compress_messages</entry>
 					<entry>Boolean</entry>
 					<entry>false</entry>
 					<entry><para>Controls whether the client will compress messages before they they are sent.</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-MessageCompressionThresholdSize">
+				<row xml:id="JMS-Client-0-8-System-Properties-MessageCompressionThresholdSize">
 					<entry>qpid.message_compression_threshold_size</entry>
 					<entry>Integer</entry>
 					<entry>102400</entry>
@@ -116,21 +107,19 @@
 				</row>
 			</thead>
 			<tbody>
-				<row id="JMS-Client-0-8-System-Properties-DestSyntax">
+				<row xml:id="JMS-Client-0-8-System-Properties-DestSyntax">
 					<entry>qpid.dest_syntax</entry>
 					<entry>String</entry>
 					<entry>ADDR</entry>
 					<entry><para>Addressing syntax: ADDR (Address format) or BURL (Binding URL)</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-Maxprefetch">
+				<row xml:id="JMS-Client-0-8-System-Properties-Maxprefetch">
 					<entry>max_prefetch</entry>
 					<entry>int</entry>
 					<entry>500</entry>
 					<entry><para>Maximum number of pre-fetched messages per Session. This can also
 							be defaulted for sessions created on a particular connection using the
-								<link
-								linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-Maxprefetch"
-								>Connection URL</link> options.</para></entry>
+								<link linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-Maxprefetch">Connection URL</link> options.</para></entry>
 				</row>
 				<!-- 0-10
 				<row>
@@ -154,9 +143,7 @@
 					<entry>false</entry>
 					<entry><para>If set will use the old map message encoding. By default the Map
 							messages are encoded using the 0-10 map encoding.</para><para>This can
-							also be set per connection using the <link
-								linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-UseLegacyMap"
-								>Connection URL</link> options.</para></entry>
+							also be set per connection using the <link linkend="JMS-Client-0-8-Connection-URL-ConnectionOptions-UseLegacyMap">Connection URL</link> options.</para></entry>
 				</row>
 
 				<row>
@@ -184,7 +171,7 @@
 				</row>
 			</thead>
 			<tbody>
-				<row id="JMS-Client-0-8-System-Properties-DeclareExchanges">
+				<row xml:id="JMS-Client-0-8-System-Properties-DeclareExchanges">
 					<entry>qpid.declare_exchanges</entry>
 					<entry>Boolean</entry>
 					<entry>true</entry>
@@ -193,7 +180,7 @@
 							Destination), creating it if is does not already exist.
 						</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-DeclareQueues">
+				<row xml:id="JMS-Client-0-8-System-Properties-DeclareQueues">
 					<entry>qpid.declare_queues</entry>
 					<entry>Boolean</entry>
 					<entry>true</entry>
@@ -202,7 +189,7 @@
 							Destination), creating it if is does not already
 						exist.</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-BindQueues">
+				<row xml:id="JMS-Client-0-8-System-Properties-BindQueues">
 					<entry>qpid.bind_queues</entry>
 					<entry>Boolean</entry>
 					<entry>true</entry>
@@ -211,13 +198,11 @@
 							exchange name, queue name and routing key are taken from 
 							the Binding URL associated with the Destination.</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-RejectBehaviour">
+				<row xml:id="JMS-Client-0-8-System-Properties-RejectBehaviour">
 					<entry>qpid.reject.behaviour</entry>
 					<entry>String</entry>
 					<entry>NORMAL</entry>
-					<entry><para>Used with the maximum delivery count feature. See <xref
-								linkend="JMS-Client-0-8-Client-Understanding-MessageConsumer-MaximumDeliveryCount"
-							/> for details.</para></entry>
+					<entry><para>Used with the maximum delivery count feature. See <xref linkend="JMS-Client-0-8-Client-Understanding-MessageConsumer-MaximumDeliveryCount"/> for details.</para></entry>
 				</row>
 
 				<!-- 0-10 
@@ -271,56 +256,46 @@
 				</row>
 			</thead>
 			<tbody>
-				<row id="JMS-Client-0-8-System-Properties-DefaultMandatory">
+				<row xml:id="JMS-Client-0-8-System-Properties-DefaultMandatory">
 					<entry>qpid.default_mandatory</entry>
 					<entry>Boolean</entry>
 					<entry>True</entry>
 					<entry><para>If true, messages sent to Queue destinations for which cannot be
 							routed to at least one queue on the Broker, will be returned to the
-							application. See <xref
-								linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-MandatoryMessage"
-							/> for more details.</para></entry>
+							application. See <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-MandatoryMessage"/> for more details.</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-DefaultMandatoryTopic">
+				<row xml:id="JMS-Client-0-8-System-Properties-DefaultMandatoryTopic">
 					<entry>qpid.default_mandatory_topic</entry>
 					<entry>Boolean</entry>
 					<entry>False</entry>
 					<entry><para>If true, messages sent to Topic destinations for which cannot be
 							routed to at least one queue on the Broker, will be returned to the
-							application. See <xref
-								linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-MandatoryMessage"
-							/> for more details..</para></entry>
+							application. See <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-MandatoryMessage"/> for more details..</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-DefaultImmediate">
+				<row xml:id="JMS-Client-0-8-System-Properties-DefaultImmediate">
 					<entry>qpid.default_immediate</entry>
 					<entry>Boolean</entry>
 					<entry>False</entry>
 					<entry><para>If true, the message will be returned to the application unless the
 							Broker is able to route the message to at least one queue with a
-							consumer attached. See <xref
-								linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-ImmediateMessage"
-							/> for more details.</para></entry>
+							consumer attached. See <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-ImmediateMessage"/> for more details.</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-FlowControlWaitFailure">
+				<row xml:id="JMS-Client-0-8-System-Properties-FlowControlWaitFailure">
 					<entry>qpid.flow_control_wait_failure</entry>
 					<entry>Long</entry>
 					<entry>60000</entry>
-					<entry><para>Used with <xref
-								linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-FlowControl"
-							/>. The amount of time (in milliseconds) to wait before timing
+					<entry><para>Used with <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-FlowControl"/>. The amount of time (in milliseconds) to wait before timing
 							out.</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-System-Properties-FlowControlWaitNotifyPeriod">
+				<row xml:id="JMS-Client-0-8-System-Properties-FlowControlWaitNotifyPeriod">
 					<entry>qpid.flow_control_wait_notify_period</entry>
 					<entry>Long</entry>
 					<entry>5000</entry>
-					<entry><para>Used with <xref
-								linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-FlowControl"
-							/>. The frequency at which the log message informing that the producer
+					<entry><para>Used with <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-FlowControl"/>. The frequency at which the log message informing that the producer
 							is flow controlled .</para></entry>
 				</row>
 				
-				<row id="JMS-Client-0-8-System-Properties-SyncPublish">
+				<row xml:id="JMS-Client-0-8-System-Properties-SyncPublish">
 					<entry>sync_publish</entry>
 					<entry>string</entry>
 					<entry>"" (disabled)</entry>
@@ -383,7 +358,7 @@
 				</row>
 			</thead>
 			<tbody>
-				<row id="JMS-Client-0-8-System-Properties-SyncOpTimeout">
+				<row xml:id="JMS-Client-0-8-System-Properties-SyncOpTimeout">
 					<entry>qpid.sync_op_timeout</entry>
 					<entry>long</entry>
 					<entry>60000</entry>
@@ -400,9 +375,7 @@
 						<para>Sets the TCP_NODELAY property of the underlying socket. The default
 							was changed to true as of Qpid 0.14.</para>
 						<para>This can also be set per connection using the Connection URL broker
-								option<link
-								linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-TcpNoDelay"
-									><literal>tcp_nodelay</literal>.</link> options.</para>
+								option<link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-TcpNoDelay"><literal>tcp_nodelay</literal>.</link> options.</para>
 						<para>For compatibility with older clients, the synonym
 								<varname>amqj.tcp_nodelay</varname> is supported.</para>
 					</entry>
@@ -609,8 +582,7 @@
 					<entry>string</entry>
 					<entry>jvm default</entry>
 					<entry><para>Specifies the key store path.</para><para>This can also be set per
-							connection using the <link linkend="JMS-Client-0-8-Connection-URL"
-								>Connection URL</link> options.</para></entry>
+							connection using the <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link> options.</para></entry>
 				</row>
 
 				<row>
@@ -618,8 +590,7 @@
 					<entry>string</entry>
 					<entry>jvm default</entry>
 					<entry><para>Specifies the key store password.</para><para>This can also be set
-							per connection using the <link linkend="JMS-Client-0-8-Connection-URL"
-								>Connection URL</link> options.</para></entry>
+							per connection using the <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link> options.</para></entry>
 				</row>
 
 				<row>
@@ -627,8 +598,7 @@
 					<entry>string</entry>
 					<entry>jvm default</entry>
 					<entry><para>Specifies the trust store path.</para><para>This can also be set
-							per connection using the <link linkend="JMS-Client-0-8-Connection-URL"
-								>Connection URL</link> options.</para></entry>
+							per connection using the <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link> options.</para></entry>
 				</row>
 
 				<row>
@@ -636,8 +606,7 @@
 					<entry>string</entry>
 					<entry>jvm default</entry>
 					<entry><para>Specifies the trust store password.</para><para>This can also be
-							set per connection using the <link
-								linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>
+							set per connection using the <link linkend="JMS-Client-0-8-Connection-URL">Connection URL</link>
 							options.</para></entry>
 				</row>
 			</tbody>

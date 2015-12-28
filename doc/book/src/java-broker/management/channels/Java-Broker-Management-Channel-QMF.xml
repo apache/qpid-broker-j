@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Management-Channel-QMF">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel-QMF">
     <title>QMF</title>
     <para>QMF is provided by an optional plugin.</para>
 </section>

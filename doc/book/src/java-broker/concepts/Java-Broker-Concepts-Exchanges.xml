@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Concepts-Exchanges">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Concepts-Exchanges">
 <title>Exchanges</title>
  <para>An <emphasis>Exchange</emphasis> is a named entity within the <emphasis>Virtualhost</emphasis> which receives
   messages from producers and routes them to matching <emphasis>Queue</emphasis>s within the <emphasis>Virtualhost</emphasis>.</para>
@@ -31,7 +31,7 @@
  <para>Applications can make use of the pre-declared exchanges, or they may declare their own. The number of exchanges within a <emphasis>Virtualhost</emphasis> is
   limited only by resource constraints.</para>
  <para>The behaviour when an <emphasis>Exchange</emphasis> is unable to route a message to any queue is defined in <xref linkend="Java-Broker-Concepts-Exchanges-UnroutableMessage"/></para>
- <section id="Java-Broker-Concepts-Exchanges-Predeclared">
+ <section xml:id="Java-Broker-Concepts-Exchanges-Predeclared">
   <title>Predeclared Exchanges</title>
   <para>Each <emphasis>Virtualhost</emphasis> pre-declares the following exchanges:
    <itemizedlist>
@@ -47,7 +47,7 @@
    bindings within this exchange.</para>
   <para>Applications may not declare exchanges with names beginning with &quot;<literal>amq.</literal>&quot;. Such names are reserved for system use.</para>
  </section>
- <section id="Java-Broker-Concepts-Exchanges-Types">
+ <section xml:id="Java-Broker-Concepts-Exchanges-Types">
   <title>Exchange Types</title>
   <para>
    The following Exchange types are supported.
@@ -59,7 +59,7 @@
    </itemizedlist>
    These exchange types are described in the following sub-sections.</para>
 
-   <section id="Java-Broker-Concepts-Exchanges-Types-Direct">
+   <section xml:id="Java-Broker-Concepts-Exchanges-Types-Direct">
    <title>Direct</title>
    <para>The direct exchange type routes messages to queues based on an exact match between
     the routing key of the message, and the binding key used to bind the queue to the exchange. Additional
@@ -84,7 +84,7 @@
     <para>The routing key of the blue message matches no binding keys, so the message is unroutable. It is handled as described
      in <xref linkend="Java-Broker-Concepts-Exchanges-UnroutableMessage"/>.</para>
   </section>
-  <section id="Java-Broker-Concepts-Exchanges-Types-Topic">
+  <section xml:id="Java-Broker-Concepts-Exchanges-Types-Topic">
     <title>Topic</title>
     <para>This exchange type is used to support the classic publish/subscribe paradigm.</para>
     <para>The topic exchange is capable of routing messages to queues based on wildcard matches between the routing key and the
@@ -94,7 +94,7 @@
    <para>Additional filter rules may be specified using a <link linkend="Java-Broker-Concepts-Exchanges-BindingArguments-JMSSelector">
      binding argument specifying a JMS message selector</link>.</para>
    <para>The following three figures help explain how the topic exchange functions.</para>
-    <para></para>
+    <para/>
     <figure>
      <title>Topic exchange - exact match on topic name</title>
      <mediaobject>
@@ -141,7 +141,7 @@
    <para>The properties of purple message cause no expressions to evaluate true, so the message is unroutable. It is handled as described in
     <xref linkend="Java-Broker-Concepts-Exchanges-UnroutableMessage"/>.</para>
   </section>
-  <section id="Java-Broker-Concepts-Exchanges-Types-Fanout">
+  <section xml:id="Java-Broker-Concepts-Exchanges-Types-Fanout">
     <title>Fanout</title>
     <para>The fanout exchange type routes messages to all queues bound to the exchange, regardless of the message's routing key.</para>
     <para>Filter rules may be specified using a <link linkend="Java-Broker-Concepts-Exchanges-BindingArguments-JMSSelector">
@@ -155,7 +155,7 @@
      </mediaobject>
     </figure>
   </section>
-  <section id="Java-Broker-Concepts-Exchanges-Types-Headers">
+  <section xml:id="Java-Broker-Concepts-Exchanges-Types-Headers">
     <title>Headers</title>
     <para>The headers exchange type routes messages to queues based on header properties within the message. The message is passed to
      a queue if the header properties of the message satisfy the <link linkend="Java-Broker-Concepts-Exchanges-BindingArguments-x-match">
@@ -163,17 +163,17 @@
    </para>
   </section>
  </section>
- <section id="Java-Broker-Concepts-Exchanges-BindingArguments">
+ <section xml:id="Java-Broker-Concepts-Exchanges-BindingArguments">
   <title>Binding Arguments</title>
   <para>Binding arguments are used by certain exchange types to further filter messages.</para>
-  <section id="Java-Broker-Concepts-Exchanges-BindingArguments-JMSSelector">
+  <section xml:id="Java-Broker-Concepts-Exchanges-BindingArguments-JMSSelector">
    <title>JMS Selector</title>
    <para>The binding argument <literal>x-filter-jms-selector</literal> specifies a JMS selector conditional expression. The expression
     is written in terms of message header and message property names.  If the expression evaluates to true, the message is routed to the queue.
     This type of binding argument is understood by exchange types direct, topic and fanout.<footnote><para>
     This is a Qpid specific extension.</para></footnote>.</para>
   </section>
-  <section id="Java-Broker-Concepts-Exchanges-BindingArguments-x-match">
+  <section xml:id="Java-Broker-Concepts-Exchanges-BindingArguments-x-match">
    <title>x-match</title>
    <para>The binding argument <literal>x-match</literal> is understood by exchange type headers.  It can take two values, dictating how the
     rest of the name value pairs are treated during matching.</para>
@@ -188,7 +188,7 @@
     message headers and has that same value.</para>
   </section>
  </section>
- <section id="Java-Broker-Concepts-Exchanges-UnroutableMessage">
+ <section xml:id="Java-Broker-Concepts-Exchanges-UnroutableMessage">
   <title>Unrouteable Messages</title>
   <para>If an exchange is unable to route a message to any queues, the Broker will:
    <itemizedlist>

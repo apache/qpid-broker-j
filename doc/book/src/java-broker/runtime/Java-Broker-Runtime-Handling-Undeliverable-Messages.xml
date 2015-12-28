@@ -1,8 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "../commonEntities.xml">
-%entities;
-]>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,10 +20,10 @@
 
 -->
 
-<section id="Java-Broker-Runtime-Handling-Undeliverable-Messages">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Handling-Undeliverable-Messages">
  <title>Handing Undeliverable Messages</title>
 
- <section role="h2" id="Java-Broker-Runtime-Handling-Undeliverable-Messages-Introduction">
+ <section role="h2" xml:id="Java-Broker-Runtime-Handling-Undeliverable-Messages-Introduction">
   <title>Introduction</title>
   <para> Messages that cannot be delivered successfully to a consumer (for instance, because the
    client is using a transacted session and rolls-back the transaction) can be made available on
@@ -48,15 +44,13 @@
    described in the following sections.</para>
  </section>
 
- <section role="h2" id="Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count">
+ <section role="h2" xml:id="Java-Broker-Runtime-Handling-Undeliverable-Messages-Maximum-Delivery-Count">
   <title>Maximum Delivery Count</title>
   <para> Maximum delivery count is a property of a queue. If a consumer application is unable to
    process a message more than the specified number of times, then the broker will either route the
    message to a dead-letter queue (if one has been defined), or will discard the message. </para>
   <para> In order for a maximum delivery count to be enforced, the consuming client
-    <emphasis>must</emphasis> call <ulink url="&oracleJeeDocUrl;javax/jms/Session.html#rollback()"
-    >Session#rollback()</ulink> (or <ulink url="&oracleJeeDocUrl;javax/jms/Session.html#recover()"
-    >Session#recover()</ulink> if the session is not transacted). It is during the Broker's
+    <emphasis>must</emphasis> call <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/Session.html#rollback()">Session#rollback()</link> (or <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJeeDocUrl;javax/jms/Session.html#recover()">Session#recover()</link> if the session is not transacted). It is during the Broker's
    processing of Session#rollback() (or Session#recover()) that if a message has been seen
    at least the maximum number of times then it will move the message to the DLQ or discard the
    message.</para>
@@ -74,7 +68,7 @@
    queue declare property <property>x-qpid-maximum-delivery-count</property></para>
  </section>
 
- <section role="h2" id="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues">
+ <section role="h2" xml:id="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues">
   <title>Dead Letter Queues (DLQ)</title>
   <para>A Dead Letter Queue (DLQ) acts as an destination for messages that have somehow exceeded the
    normal bounds of processing and is utilised to prevent disruption to flow of other messages. When

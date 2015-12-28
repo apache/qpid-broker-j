@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,13 +20,13 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Broker">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Broker">
   <title>Broker</title>
   <para>The <link linkend="Java-Broker-Concepts-Broker">Broker</link> is the principal entity. It is
     composed of a number of other entities that collaborate to provide message broker
     facilities.</para>
   <para>The Broker can only be managed via the HTTP management channel.</para>
-  <section id="Java-Broker-Management-Managing-Broker-Attributes">
+  <section xml:id="Java-Broker-Management-Managing-Broker-Attributes">
     <title>Attributes</title>
     <para>
       <itemizedlist>
@@ -40,32 +40,28 @@
         </listitem>
         <listitem>
           <para><emphasis>Confidential configuration encryption provider</emphasis>. The name of the
-            provider used to encrypt passwords and other secrets within the configuration. See <xref
-              linkend="Java-Broker-Security-Configuration-Encryption"/>.</para>
+            provider used to encrypt passwords and other secrets within the configuration. See <xref linkend="Java-Broker-Security-Configuration-Encryption"/>.</para>
         </listitem>
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Broker-Context">
+  <section xml:id="Java-Broker-Management-Managing-Broker-Context">
     <title>Context</title>
     <para>
       <itemizedlist>
         <listitem>
-          <para><emphasis>broker.flowToDiskThreshold</emphasis> Controls the <link
-              linkend="Java-Broker-Runtime-Flow-To-Disk">flow to disk</link> feature.</para>
+          <para><emphasis>broker.flowToDiskThreshold</emphasis> Controls the <link linkend="Java-Broker-Runtime-Flow-To-Disk">flow to disk</link> feature.</para>
         </listitem>
         <listitem>
-          <para><emphasis>broker.messageCompressionEnabled</emphasis> Controls the <link
-              linkend="Java-Broker-Runtime-Message-Compression">message compression</link> .</para>
+          <para><emphasis>broker.messageCompressionEnabled</emphasis> Controls the <link linkend="Java-Broker-Runtime-Message-Compression">message compression</link> .</para>
         </listitem>
-        <listitem id="Java-Broker-Management-Managing-Broker-Context-StoreFilesystemMaxUsagePercent">
+        <listitem xml:id="Java-Broker-Management-Managing-Broker-Context-StoreFilesystemMaxUsagePercent">
           <para><emphasis>store.filesystem.maxUsagePercent</emphasis> Maximum percentage of space
             that may be utilised on a filesystem hosting a virtualhost's message store before
             producer flow control is automatically imposed.</para>
           <para>This defaults to 90%.</para>
         </listitem>
-        <listitem
-          id="Java-Broker-Management-Managing-Broker-Context-BrokerDefaultSupportedProtocolVersionReply">
+        <listitem xml:id="Java-Broker-Management-Managing-Broker-Context-BrokerDefaultSupportedProtocolVersionReply">
           <para><emphasis>qpid.broker_default_supported_protocol_version_reply</emphasis> Used
             during protocol negotiation. If set, the Broker will offer this AMQP version to a client
             requesting an AMQP protocol that is not supported by the Broker. If not set, the Broker
@@ -84,7 +80,7 @@
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Broker-Children">
+  <section xml:id="Java-Broker-Management-Managing-Broker-Children">
     <title>Children</title>
     <para>
       <itemizedlist>
@@ -114,7 +110,7 @@
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Broker-Lifecycle">
+  <section xml:id="Java-Broker-Management-Managing-Broker-Lifecycle">
     <title>Lifecycle</title>
     <para>Not supported</para>
   </section>

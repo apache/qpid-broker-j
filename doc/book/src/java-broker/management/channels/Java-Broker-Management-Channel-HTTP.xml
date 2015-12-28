@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,10 +20,10 @@
 
 -->
 
-<section id="Java-Broker-Management-Channel-HTTP">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel-HTTP">
     <title>HTTP Management</title>
 
-    <section id="Java-Broker-Management-Channel-HTTP-Introduction">
+    <section xml:id="Java-Broker-Management-Channel-HTTP-Introduction">
         <title>Introduction</title>
         <para>The HTTP Management plugin provides a HTTP based API for monitoring and control of the
             Broker. The plugin actually provides two interfaces:</para>
@@ -46,7 +46,7 @@
             controlled from systems such as Naoios or BMC Control-M.</para>
     </section>
 
-    <section id="Java-Broker-Management-Channel-HTTP-DefaultConfiguration">
+    <section xml:id="Java-Broker-Management-Channel-HTTP-DefaultConfiguration">
         <title>Default Configuration</title>
         <para>By default, the Broker is shipped with HTTP enabled running port 8080. The HTTP plugin
             is configured to require SASL authentication. The port is not SSL protected.</para>

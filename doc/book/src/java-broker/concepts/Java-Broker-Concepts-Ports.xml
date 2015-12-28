@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Concepts-Ports">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Concepts-Ports">
     <title>Ports</title>
     <para> The Broker supports configuration of <emphasis>Ports</emphasis> to specify the particular
         AMQP messaging and HTTP management connectivity it offers for use. </para>
@@ -43,8 +43,7 @@
 
     <para> Additionally, HTTP ports can be configured for use by the associated management
         plugin. </para>
-    <para>This diagram explains how Ports, <link
-            linkend="Java-Broker-Concepts-Authentication-Providers">Authentication Providers</link>
+    <para>This diagram explains how Ports, <link linkend="Java-Broker-Concepts-Authentication-Providers">Authentication Providers</link>
         and an Access Control Provider work together to allow an application to form a connection to
         a Virtualhost.<figure>
             <title>Control flow during Authentication</title>

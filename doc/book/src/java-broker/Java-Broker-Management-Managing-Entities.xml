@@ -1,10 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
-[
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]><!--
+<?xml version="1.0"?>
+<!--
 
  Licensed to the Apache Software Foundation (ASF) under one
  or more contributor license agreements.  See the NOTICE file
@@ -25,7 +20,7 @@
 
 -->
 
-<chapter id="Java-Broker-Management-Managing-Entities">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Entities">
   <title>Managing Entities</title>
   <para>This section describes how to manage entities within the Broker. The principles underlying
     entity management are the same regardless of entity type. For this reason, this section begins
@@ -33,7 +28,7 @@
   <para>Since not all channels support the management of all entity type, this section commences
     with a table showing which entity type is supported by each channel.</para>
 
-  <section id="Java-Broker-Management-Managing-Entities-General">
+  <section xml:id="Java-Broker-Management-Managing-Entities-General">
     <title>General Description</title>
     <para>The following description applies to all entities within the Broker regardless of their
       type.</para>
@@ -66,8 +61,7 @@
         <listitem>
           <para>The System Context entity (the ultimate ancestor of all object) has a context too.
             It is read only and is populated with all Java System Properties. Thus it can be
-            influenced from the Broker's external environment. See <link
-              linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Opts">QPID_OPTS </link>
+            influenced from the Broker's external environment. See <link linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Opts">QPID_OPTS </link>
             environment variable.</para>
         </listitem>
         <listitem>
@@ -86,34 +80,19 @@
       features are described along with the entities key attributes, key context variables, details
       of the entities lifecycle and any other operations.</para>
   </section>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Entities-Matrix.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Broker.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-VirtualhostNodes.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Virtualhosts.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-RemoteReplicationNodes.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Exchanges.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Queues.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Consumers.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Ports.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Authentication-Providers.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Keystores.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Truststores.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Group-Providers.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Access-Control-Providers.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="management/managing/Java-Broker-Management-Managing-Plugins-HTTP.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Entities-Matrix.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Broker.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-VirtualhostNodes.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Virtualhosts.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-RemoteReplicationNodes.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Exchanges.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Queues.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Consumers.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Ports.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Authentication-Providers.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Keystores.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Truststores.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Group-Providers.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Access-Control-Providers.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/managing/Java-Broker-Management-Managing-Plugins-HTTP.xml"/>
 </chapter>

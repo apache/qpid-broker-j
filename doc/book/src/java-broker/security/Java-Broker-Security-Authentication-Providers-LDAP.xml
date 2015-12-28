@@ -1,10 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
-[
-<!ENTITY %  entities SYSTEM  "../commonEntities.xml">
-%entities;
-]>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -25,7 +19,8 @@
  under the License.
 
 -->
-<section id="Java-Broker-Security-LDAP-Provider">
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-LDAP-Provider">
     <title>Simple LDAP</title>
 
     <para> The Simple LDAP authenticates connections against a Directory (LDAP). </para>
@@ -46,10 +41,7 @@
     </itemizedlist> Additionally, the following optional fields can be specified: <itemizedlist>
         <listitem>
             <para><emphasis>LDAP context factory</emphasis> is a fully qualified class name for the
-                JNDI LDAP context factory. This class must implement the <ulink
-                    url="&oracleJdkDocUrl;javax/naming/spi/InitialContextFactory.html"
-                    >InitialContextFactory</ulink> interface and produce instances of <ulink
-                        url="&oracleJdkDocUrl;javax/naming/directory/DirContext.html">DirContext</ulink>. If
+                JNDI LDAP context factory. This class must implement the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/spi/InitialContextFactory.html">InitialContextFactory</link> interface and produce instances of <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/directory/DirContext.html">DirContext</link>. If
                 not specified a default value of <literal>com.sun.jndi.ldap.LdapCtxFactory</literal> is
                 used.</para>
         </listitem>
@@ -59,8 +51,7 @@
                 be used for both searches and authentications.</para>
         </listitem>
         <listitem>
-            <para><emphasis>Truststore name</emphasis> is a name of <link
-                linkend="Java-Broker-Management-Managing-Truststores-Attributes">configured
+            <para><emphasis>Truststore name</emphasis> is a name of <link linkend="Java-Broker-Management-Managing-Truststores-Attributes">configured
                 truststore</link>. Use this if connecting to a Directory over SSL (i.e. ldaps://)
                 which is protected by a certificate signed by a private CA (or utilising a self-signed
                 certificate).</para>
@@ -93,7 +84,6 @@
 
     <para> If the search returns a match, or is configured in <literal>bind without search</literal>
         mode, the Authentication Provider then attempts to bind to the LDAP server with the given name
-        and the password. Note that <ulink
-            url="&oracleJdkDocUrl;javax/naming/Context.html#SECURITY_AUTHENTICATION">simple security
-            authentication</ulink> is used so the Directory receives the password in the clear. </para>
+        and the password. Note that <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&oracleJdkDocUrl;javax/naming/Context.html#SECURITY_AUTHENTICATION">simple security
+            authentication</link> is used so the Directory receives the password in the clear. </para>
 </section>

@@ -1,8 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -23,10 +19,11 @@
  under the License.
 
 -->
-<chapter id="Java-Broker-High-Availability">
+
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-High-Availability">
   <title>High Availability</title>
 
-  <section id="Java-Broker-High-Availability-GeneralIntroduction">
+  <section xml:id="Java-Broker-High-Availability-GeneralIntroduction">
     <title>General Introduction</title>
     <para>The term High Availability (HA) usually refers to having a number of instances of a
       service such as a Message Broker available so that should a service unexpectedly fail, or
@@ -41,10 +38,9 @@
       the event the active node becomes unavailable. </para>
   </section>
 
-  <section id="Java-Broker-High-Availability-OverviewOfHA">
+  <section xml:id="Java-Broker-High-Availability-OverviewOfHA">
     <title>Overview of HA within the Java Broker</title>
-    <para>The Java Broker provides a HA implementation offering an <emphasis role="bold"
-        >Active/Passive</emphasis> mode of operation. When using HA, many instances of the Java
+    <para>The Java Broker provides a HA implementation offering an <emphasis role="bold">Active/Passive</emphasis> mode of operation. When using HA, many instances of the Java
       Broker work together to form an high availability group of two or more nodes.</para>
     <para>The remainder of this section now talks about the specifics of how HA is achieved in terms
       of the <link linkend="Java-Broker-Concepts">concepts</link> introduced earlier in this
@@ -76,7 +72,7 @@
       separate Broker instances. A client is connected to the virtualhost node that is in the master
       role. The two virtualhost nodes <literal>weather1</literal> and <literal>weather3</literal>
       are replicas and are receiving a stream of updates.</para>
-    <figure id="Java-Broker-High-Availability-OverviewOfHA-Figure">
+    <figure xml:id="Java-Broker-High-Availability-OverviewOfHA-Figure">
       <title>3-node group deployed across three Brokers.</title>
       <mediaobject>
         <imageobject>
@@ -88,25 +84,21 @@
       </mediaobject>
     </figure>
     <para>Currently, the only virtualhost/virtualhost node type offering HA is BDB HA. Internally,
-      this leverages the HA capabilities of the Berkeley DB JE edition. BDB JE is an <link
-        linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE">optional dependency</link> of
+      this leverages the HA capabilities of the Berkeley DB JE edition. BDB JE is an <link linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE">optional dependency</link> of
       the Broker.</para>
     <note>
       <para>The Java Broker HA solution is incompatible with the HA solution offered by the CPP
         Broker. It is not possible to co-locate Java and CPP Brokers within the same group.</para>
     </note>
   </section>
-  <section id="Java-Broker-High-Availability-CreatingGroup">
+  <section xml:id="Java-Broker-High-Availability-CreatingGroup">
     <title>Creating a group</title>
     <para>This section describes how to create a group. At a high level, creating a group involves
       first creating the first node standalone, then creating subsequent nodes referencing the first
       node so the nodes can introduce themselves and gradually the group is built up.</para>
-    <para>A group is created through either <link
-        linkend="Java-Broker-Management-Channel-Web-Console">Web Management</link> or the <link
-        linkend="Java-Broker-Management-Channel-REST-API">REST API</link>. These instructions
+    <para>A group is created through either <link linkend="Java-Broker-Management-Channel-Web-Console">Web Management</link> or the <link linkend="Java-Broker-Management-Channel-REST-API">REST API</link>. These instructions
       presume you are using Web Management. To illustrate the example it builds the group
-      illustrated in figure <xref linkend="Java-Broker-High-Availability-OverviewOfHA-Figure"
-      /></para>
+      illustrated in figure <xref linkend="Java-Broker-High-Availability-OverviewOfHA-Figure"/></para>
     <para><orderedlist>
         <listitem>
           <para>Install a Broker on each machine that will be used to host the group. As messaging
@@ -229,16 +221,15 @@
       </figure></para>
   </section>
 
-  <section id="Java-Broker-High-Availability-Behaviour">
+  <section xml:id="Java-Broker-High-Availability-Behaviour">
     <title>Behaviour of the Group</title>
     <para>This section first describes the behaviour of the group in its default configuration. It
       then goes on to talk about the various controls that are available to override it. It
-      describes the controls available that affect the <ulink
-        url="http://en.wikipedia.org/wiki/ACID#Durability">durability</ulink> of transactions and
+      describes the controls available that affect the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://en.wikipedia.org/wiki/ACID#Durability">durability</link> of transactions and
       the data consistency between the master and replicas and thus make trade offs between
       performance and reliability.</para>
 
-    <section id="Java-Broker-High-Availability-Behaviour-Default-Behaviour">
+    <section xml:id="Java-Broker-High-Availability-Behaviour-Default-Behaviour">
       <title>Default Behaviour</title>
       <para>Let's first look at the behaviour of a group in default configuration.</para>
       <para>In the default configuration, for any messaging work to be done, there must be at least
@@ -280,7 +271,7 @@
         trade off between durability and performance. We will see more about how to control this
         trade off later.</para>
     </section>
-    <section id="Java-Broker-High-Availability-Behaviour-SynchronizationPolicy">
+    <section xml:id="Java-Broker-High-Availability-Behaviour-SynchronizationPolicy">
       <title>Synchronization Policy</title>
       <para>The <emphasis>synchronization policy</emphasis> dictates what a node must do when it
         receives a transaction before it acknowledges that transaction to the rest of the
@@ -305,12 +296,11 @@
           </listitem>
         </itemizedlist></para>
       <para>It is possible to assign a one policy to the master and a different policy to the
-        replicas. These are configured as <link
-          linkend="Java-Broker-Management-Managing-Virtualhost-Attributes">attributes on the
+        replicas. These are configured as <link linkend="Java-Broker-Management-Managing-Virtualhost-Attributes">attributes on the
           virtualhost</link>. By default the master uses <emphasis>SYNC</emphasis> and replicas use
           <emphasis>NO_SYNC</emphasis>.</para>
     </section>
-    <section id="Java-Broker-High-Availability-Behaviour-NodePriority">
+    <section xml:id="Java-Broker-High-Availability-Behaviour-NodePriority">
       <title>Node Priority</title>
       <para>Node priority can be used to influence the behaviour of the election algorithm. It is
         useful in the case were you want to favour some nodes over others. For instance, if you wish
@@ -337,8 +327,7 @@
           </listitem>
         </itemizedlist>
       </para>
-      <para>Node priority is configured as an <link
-          linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
+      <para>Node priority is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
           virtualhost node</link> and can be changed at runtime and is effective immediately.</para>
       <important>
         <para>Use of the Never priority can lead to transaction loss. For example, consider a group
@@ -347,11 +336,10 @@
           running behind for some reason (perhaps a full-GC). If a Master failure were to occur at
           that moment, the replicas would elect Replica-1 even though Replica-2 had the most recent
           transaction.</para>
-        <para>Transaction loss is reported by message <link
-            linkend="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">HA-1014</link>.</para>
+        <para>Transaction loss is reported by message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">HA-1014</link>.</para>
       </important>
     </section>
-    <section id="Java-Broker-High-Availability-Behaviour-MinimumNumberOfNodes">
+    <section xml:id="Java-Broker-High-Availability-Behaviour-MinimumNumberOfNodes">
       <title>Required Minimum Number Of Nodes</title>
       <para>This controls the required minimum number of nodes to complete a transaction and to
         elect a new master. By default, the required number of nodes is set to
@@ -367,27 +355,23 @@
         just this one node?</para>
       <para>In this case, Required Number of Nodes can be reduced to 1 on the remain node, allowing
         the node to elect itself and service to be restored from the singleton. Required minimum
-        number of nodes is configured as an <link
-          linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
+        number of nodes is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
           virtualhost node</link> and can be changed at runtime and is effective immediately.</para>
       <important>
         <para>The attribute must be used cautiously. Careless use will lead to lost transactions and
-          can lead to a <ulink url="http://en.wikipedia.org/wiki/Split-brain_(computing)"
-            >split-brain</ulink> in the event of a network partition. If used to temporarily restore
+          can lead to a <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://en.wikipedia.org/wiki/Split-brain_(computing)">split-brain</link> in the event of a network partition. If used to temporarily restore
           service from fewer than quorum nodes, it is <emphasis>imperative</emphasis> to revert it
           to the Default value as the failed nodes are restored.</para>
-        <para>Transaction loss is reported by message <link
-          linkend="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">HA-1014</link>.</para>
+        <para>Transaction loss is reported by message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">HA-1014</link>.</para>
       </important>
     </section>
-    <section id="Java-Broker-High-Availability-Behaviour-DesignatedPrimary">
+    <section xml:id="Java-Broker-High-Availability-Behaviour-DesignatedPrimary">
       <title>Designated Primary</title>
       <para>This attribute applies to the groups of two only.</para>
       <para> In a group of two, if a node were to fail then in default configuration work will cease
         as quorum no longer exists. A single node cannot elect itself master. </para>
       <para>The designated primary flag allows a node in a two node group to elect itself master and
-        to operate sole. Designated Primary is configured as an <link
-          linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
+        to operate sole. Designated Primary is configured as an <link linkend="Java-Broker-Management-Managing-Virtualhost-Nodes-Attributes">attribute on the
           virtualhost node</link> and can be changed at runtime and is effective immediately.</para>
       <para>For example, consider a group of two where the master fails. Service will be interrupted
         as the remaining node cannot elect itself master. To allow it to become master, apply the
@@ -395,17 +379,15 @@
         from one node.</para>
       <important>
         <para>It is imperative not to allow designated primary to be set on both nodes at once. To
-          do so will mean, in the event of a network partition, a <ulink
-            url="http://en.wikipedia.org/wiki/Split-brain_(computing)">split-brain</ulink> will
+          do so will mean, in the event of a network partition, a <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://en.wikipedia.org/wiki/Split-brain_(computing)">split-brain</link> will
             occur.</para>
-        <para>Transaction loss is reported by message <link
-          linkend="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">HA-1014</link>.</para>
+        <para>Transaction loss is reported by message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-HA-1014">HA-1014</link>.</para>
       </important>
     </section>
   </section>
-  <section id="Java-Broker-High-Availability-NodeOperations">
+  <section xml:id="Java-Broker-High-Availability-NodeOperations">
     <title>Node Operations</title>
-    <section id="Java-Broker-High-Availability-NodeOperations-Lifecycle">
+    <section xml:id="Java-Broker-High-Availability-NodeOperations-Lifecycle">
       <title>Lifecycle</title>
       <para>Virtualhost nodes can be stopped, started and deleted.</para>
       <itemizedlist>
@@ -450,7 +432,7 @@
       <para>It is also possible to add nodes to an existing group using the procedure described
         above.</para>
     </section>
-    <section id="Java-Broker-High-Availability-NodeOperations-TransferMaster">
+    <section xml:id="Java-Broker-High-Availability-NodeOperations-TransferMaster">
       <title>Transfer Master</title>
       <para>This operation allows the mastership to be moved from node to node. This is useful for
         restoring a business as usual state after a failure.</para>
@@ -477,19 +459,18 @@
     </section>
   </section>
 
-  <section id="Java-Broker-High-Availability-ClientFailover">
+  <section xml:id="Java-Broker-High-Availability-ClientFailover">
     <title>Client failover</title>
     <para>As mentioned above, the clients need to be able to find the location of the active
       virtualhost within the group.</para>
-    <para>Clients can do this using a static technique, for example , utilising the <ulink
-        url="&qpidjmsdocClientConectionUrl;">failover feature of the Qpid connection url</ulink>
+    <para>Clients can do this using a static technique, for example , utilising the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="&qpidjmsdocClientConectionUrl;">failover feature of the Qpid connection url</link>
       where the client has a list of all the nodes, and tries each node in sequence until it
       discovers the node with the active virtualhost.</para>
     <para>Another possibility is a dynamic technique utilising a proxy or Virtual IP (VIP). These
       require other software and/or hardware and are outside the scope of this document.</para>
   </section>
 
-  <section id="Java-Broker-High-Availability-DiskSpace">
+  <section xml:id="Java-Broker-High-Availability-DiskSpace">
     <title>Disk space requirements</title>
     <para>In the case where node in a group are down, the master must keep the data they are missing
       for them to allow them to return to the replica role quickly.</para>
@@ -499,7 +480,7 @@
         <literal>je.rep.repStreamTimeout</literal>.</para>
   </section>
 
-  <section id="Java-Broker-High-Availability-Network-Requirements">
+  <section xml:id="Java-Broker-High-Availability-Network-Requirements">
     <title>Network Requirements</title>
     <para>The HA Cluster performance depends on the network bandwidth, its use by existing traffic,
       and quality of service.</para>
@@ -509,7 +490,7 @@
       in a separate network not impacted by any other traffic.</para>
   </section>
 
-  <section id="Java-Broker-High-Availability-Security">
+  <section xml:id="Java-Broker-High-Availability-Security">
     <title>Security</title>
     <para>The replication stream between the master and the replicas is insecure and can be
       intercepted by anyone having access to the replication network.</para>
@@ -517,14 +498,14 @@
       separate network protected from general access and/or utilise SSH-tunnels/IPsec.</para>
   </section>
 
-  <section id="Java-Broker-High-Availability-Backup">
+  <section xml:id="Java-Broker-High-Availability-Backup">
     <title>Backups</title>
     <para>It is recommend to use the hot backup script to periodically backup every node in the
       group. <xref linkend="Java-Broker-Backup-And-Recovery-Virtualhost-Node-BDB-HA"/>.</para>
   </section>
 
 
-  <section id="Java-Broker-High-Availability-Reset-Group-Infomational">
+  <section xml:id="Java-Broker-High-Availability-Reset-Group-Infomational">
     <title>Reset Group Information</title>
     <para>BDB JE internally stores details of the group within its database. There are some
       circumstances when resetting this information is useful.<itemizedlist>
