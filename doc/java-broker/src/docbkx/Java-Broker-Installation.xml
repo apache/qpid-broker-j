@@ -1,0 +1,172 @@
+<?xml version="1.0"?>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Installation">
+  <title>Installation</title>
+  <section role="h2" xml:id="Java-Broker-Installation-Introduction">
+    <title>Introduction</title>
+    <para>This document describes how to install the Java Broker on both Windows and UNIX
+      platforms.</para>
+  </section>
+  <section role="h2" xml:id="Java-Broker-Installation-Prerequistes">
+    <title>Prerequisites</title>
+    <section role="h3" xml:id="Java-Broker-Installation-Prerequistes-Java">
+      <title>Java Platform</title>
+      <para> The Java Broker is an 100% Java implementation and as such it can be used on any
+        operating system supporting Java 1.7  or higher<footnote><para>Java Cryptography Extension (JCE)
+          Unlimited Strength policy file are required for some features</para></footnote>. This includes Linux, Solaris, Mac OS X, and
+        Windows XP/Vista/7/8.</para>
+      <para> The broker has been tested with Java implementations from both Oracle and IBM. Whatever
+        platform you chose, it is recommended that you ensure it is patched with any critical
+        updates made available from the vendor. </para>
+      <para> Verify that your JVM is installed properly by following <link linkend="Java-Broker-Miscellaneous-JVM-Verification">these instructions.</link>
+      </para>
+    </section>
+    <section role="h3" xml:id="Java-Broker-Installation-Prerequistes-Disk">
+      <title>Disk</title>
+      <para>The Java Broker installation requires approximately 20MB of free disk space.</para>
+      <para>The Java Broker also requires a working directory. The working directory is used for the
+        message store, that is, the area of the file-system used to record messages
+        whilst they are passing through the Broker. The working directory is also used for the
+        default location of the log file. The size of the working directory will depend on the how
+        the Broker is used.</para>
+      <para>The performance of the file system hosting the work directory is key to the performance
+        of Broker as a whole. For best performance, choose a device that has low latency and one
+        that is uncontended by other applications.</para>
+      <para>Be aware that there are additional considerations if you are considering hosting the
+        working directory on NFS.</para>
+    </section>
+    <section role="h3" xml:id="Java-Broker-Installation-Prerequistes-Memory">
+      <title>Memory</title>
+      <para>Qpid caches messages in memory for performance reasons, so in general, the Broker will
+        benefit from as much memory as possible. However, on a 32bit JVM, the maximum addressable
+        memory range for a process is 4GB, after leaving space for the JVM's own use this will give
+        a maximum usable size of approximately ~3.7GB.</para>
+      <para>See <xref linkend="Java-Broker-Runtime-Memory"/> for a full description of how memory is
+        used.</para>
+    </section>
+    <section role="h3" xml:id="Java-Broker-Installation-Prerequistes-OperatingSystemAccount">
+      <title>Operating System Account</title>
+      <para>Installation or operation of Qpid does <emphasis>not</emphasis> require a privileged
+        account (i.e. root on UNIX platforms or Administrator on Windows). However it is suggested
+        that you use an dedicated account (e.g. qpid) for the installation and operation of the Java
+        Broker.</para>
+    </section>
+  </section>
+
+  <section role="h2" xml:id="Java-Broker-Installation-Download">
+    <title>Download</title>
+    <section role="h3" xml:id="Java-Broker-Installation-Download-Release">
+      <title>Broker Release</title>
+      <para>You can download the latest Java broker package from the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidDownloadUrl}">Download Page</link>. </para>
+      <para> It is recommended that you confirm the integrity of the download by verifying the PGP
+        signature matches that available on the site. Instructions are given on the download page.
+      </para>
+    </section>
+  </section>
+
+  <section role="h2" xml:id="Java-Broker-Installation-InstallationWindows">
+    <title>Installation on Windows</title>
+    <para> Firstly, verify that your JVM is installed properly by following <link linkend="Java-Broker-Miscellaneous-JVM-Verification-Windows">these instructions.</link>
+    </para>
+    <para>Now chose a directory for Qpid broker installation. This directory will be used for the
+      Qpid JARs and configuration files. It need not be the same location as the work directory used
+      for the persistent message store or the log file (you will choose this location later). For
+      the remainder this example we will assume that location c:\qpid has been chosen.</para>
+    <para>Next extract the qpid-broker-${project.version}-bin.zip package into the directory, using either
+      the zip file handling offered by Windows (right click the file and select 'Extract All') or a
+      third party tool of your choice.</para>
+    <para>The extraction of the broker package will have created a directory
+      qpid-broker\\${project.version} within c:\qpid</para>
+    <screen>
+ Directory of c:\qpid\qpid-broker\\${project.version}
+
+25/11/2015  11:29    &lt;DIR&gt;          .
+25/11/2015  11:29    &lt;DIR&gt;          ..
+25/11/2015  10:56    &lt;DIR&gt;          bin
+03/07/2015  08:06    &lt;DIR&gt;          etc
+25/11/2015  11:25    &lt;DIR&gt;          lib
+25/11/2015  10:56            28,143 LICENSE
+25/11/2015  10:56             3,409 NOTICE
+29/04/2015  09:13               116 README.txt
+3 File(s)         31,668 bytes
+5 Dir(s)  25,981,767,680 bytes free
+</screen>
+    <section role="h3" xml:id="Java-Broker-Installation-InstallationWindows-SettingQPIDWORK">
+      <title>Setting the working directory</title>
+      <para>Qpid requires a work directory. This directory is used for the default location of the
+        Qpid log file and is used for the storage of persistent messages. The work directory can be
+        set on the command-line (for the lifetime of the command interpreter), but you will normally
+        want to set the environment variable permanently via the Advanced System Settings in the
+        Control Panel.</para>
+      <screen>set QPID_WORK=C:\qpidwork</screen>
+      <para>If the directory referred to by <link linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Work">QPID_WORK</link> does not
+        exist, the Java Broker will attempt to create it on start-up.</para>
+    </section>
+  </section>
+
+  <section role="h2" xml:id="Java-Broker-Installation-InstallationUnix">
+    <title>Installation on UNIX platforms</title>
+    <para> Firstly, verify that your JVM is installed properly by following <link linkend="Java-Broker-Miscellaneous-JVM-Verification-Unix">these instructions.</link>
+    </para>
+    <para>Now chose a directory for Qpid broker installation. This directory will be used for the
+      Qpid JARs and configuration files. It need not be the same location as the work directory used
+      for the persistent message store or the log file (you will choose this location later). For
+      the remainder this example we will assume that location /usr/local/qpid has been
+      chosen.</para>
+    <para>Next extract the qpid-broker-${project.version}-bin.tgz package into the directory.</para>
+    <programlisting>mkdir /usr/local/qpid
+cd /usr/local/qpid
+tar xvzf qpid-broker-${project.version}-bin.tgz</programlisting>
+    <para>The extraction of the broker package will have created a directory
+      qpid-broker/${project.version} within /usr/local/qpid</para>
+    <screen>ls -la qpid-broker/${project.version}/
+total 56
+drwxrwxr-x. 5 alex alex  4096 Nov 25 11:43 .
+drwxrwxr-x. 3 alex alex  4096 Nov 25 11:43 ..
+drwxr-xr-x. 2 alex alex  4096 Nov 24 23:38 bin
+drwxr-xr-x. 2 alex alex  4096 Nov 24 23:38 etc
+drwxrwxr-x. 2 alex alex  4096 Nov 25 11:43 lib
+-rw-r--r--. 1 alex alex 28143 Nov 24 23:38 LICENSE
+-rw-r--r--. 1 alex alex  3409 Nov 24 23:38 NOTICE
+-rw-r--r--. 1 alex alex   116 Nov 24 23:38 README.txt
+    </screen>
+    <section role="h3" xml:id="Java-Broker-Installation-InstallationUnix-SettingQPIDWORK">
+      <title>Setting the working directory</title>
+      <para>Qpid requires a work directory. This directory is used for the default location of the
+        Qpid log file and is used for the storage of persistent messages. The work directory can be
+        set on the command-line (for the lifetime of the current shell), but you will normally want
+        to set the environment variable permanently the user's shell profile file (~/.bash_profile
+        for Bash etc).</para>
+      <screen>export QPID_WORK=/var/qpidwork
+      </screen>
+      <para>If the directory referred to by <link linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Work">QPID_WORK</link> does not
+        exist, the Java Broker will attempt to create it on start-up. </para>
+    </section>
+  </section>
+  <section role="h2" xml:id="Java-Broker-Installation-OptionalDependencies">
+    <title>Optional Dependencies</title>
+    <para>If you wish to utilise storage options using Oracle BDB JE or an External Database, see
+      <xref linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE"/> and <xref linkend="Java-Broker-Miscellaneous-Installing-External-JDBC-Driver"/> for details of
+      installing their dependencies.</para>
+  </section>
+</chapter>
