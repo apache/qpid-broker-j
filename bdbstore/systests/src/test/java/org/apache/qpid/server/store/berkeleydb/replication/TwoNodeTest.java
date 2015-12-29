@@ -180,4 +180,21 @@ public class TwoNodeTest extends QpidBrokerTestCase
         assertProducingConsuming(connection);
     }
 
+    public void testSetDesignatedAfterReplicaBeingStopped() throws Exception
+    {
+        startCluster(false);
+
+        _groupCreator.stopNode(_groupCreator.getBrokerPortNumberOfSecondaryNode());
+
+        Map<String, Object> secondaryNodeAttributes = _groupCreator.getNodeAttributes(_groupCreator.getBrokerPortNumberOfPrimary());
+        assertFalse("Expected node to NOT be set as designated primary", (Boolean) secondaryNodeAttributes.get(BDBHAVirtualHostNode.DESIGNATED_PRIMARY));
+
+        _groupCreator.setNodeAttributes(_groupCreator.getBrokerPortNumberOfPrimary(), Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, true));
+        _groupCreator.awaitNodeToAttainRole(_groupCreator.getBrokerPortNumberOfPrimary(), "MASTER" );
+
+        final Connection connection = getConnection(_positiveFailoverUrl);
+        assertNotNull("Expected to get a valid connection to primary", connection);
+        assertProducingConsuming(connection);
+    }
+
 }

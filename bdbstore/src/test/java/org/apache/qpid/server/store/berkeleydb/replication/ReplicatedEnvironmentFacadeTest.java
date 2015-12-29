@@ -926,6 +926,91 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         }
     }
 
+    public void testSetElectableGroupSizeOverrideAfterMajorityLost()  throws Exception
+    {
+        final CountDownLatch recoveredLatch = new CountDownLatch(1);
+        final CountDownLatch majorityLost = new CountDownLatch(1);
+        ReplicationGroupListener listener = new NoopReplicationGroupListener()
+        {
+            @Override
+            public void onNoMajority()
+            {
+                majorityLost.countDown();
+            }
+
+            @Override
+            public void onReplicationNodeRecovered(ReplicationNode node)
+            {
+                if (node.getName().equals(TEST_NODE_NAME))
+                {
+                    recoveredLatch.countDown();
+                }
+            }
+        };
+        ReplicatedEnvironmentFacade master = createMaster(listener);
+
+
+        int replica1Port = _portHelper.getNextAvailable();
+        String node1NodeHostPort = "localhost:" + replica1Port;
+        int replica2Port = _portHelper.getNextAvailable();
+        String node2NodeHostPort = "localhost:" + replica2Port;
+
+        master.setPermittedNodes(Arrays.asList(master.getHostPort(), node1NodeHostPort, node2NodeHostPort));
+
+        ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
+        ReplicatedEnvironmentFacade replica2 = createReplica(TEST_NODE_NAME + "_2", node2NodeHostPort, new NoopReplicationGroupListener());
+
+        replica1.close();
+        replica2.close();
+
+        assertTrue("Majority lost is undetected", majorityLost.await(2, TimeUnit.SECONDS));
+        assertEquals("Unexpected facade state", ReplicatedEnvironmentFacade.State.RESTARTING, master.getFacadeState());
+        assertEquals("Master node should not be recovered", 1, recoveredLatch.getCount());
+        master.setElectableGroupSizeOverride(1);
+        assertTrue("Master was not recovered after electable group override change", majorityLost.await(2, TimeUnit.SECONDS));
+    }
+
+    public void testSetDesignatedPrimaryAfterMajorityLost()  throws Exception
+    {
+        final CountDownLatch recoveredLatch = new CountDownLatch(1);
+        final CountDownLatch majorityLost = new CountDownLatch(1);
+        ReplicationGroupListener listener = new NoopReplicationGroupListener()
+        {
+            @Override
+            public void onNoMajority()
+            {
+                majorityLost.countDown();
+            }
+
+            @Override
+            public void onReplicationNodeRecovered(ReplicationNode node)
+            {
+                if (node.getName().equals(TEST_NODE_NAME))
+                {
+                    recoveredLatch.countDown();
+                }
+            }
+        };
+        ReplicatedEnvironmentFacade master = createMaster(listener);
+
+
+        int replica1Port = _portHelper.getNextAvailable();
+        String node1NodeHostPort = "localhost:" + replica1Port;
+        int replica2Port = _portHelper.getNextAvailable();
+        String node2NodeHostPort = "localhost:" + replica2Port;
+
+        master.setPermittedNodes(Arrays.asList(master.getHostPort(), node1NodeHostPort, node2NodeHostPort));
+
+        ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
+        replica1.close();
+
+        assertTrue("Majority lost is undetected", majorityLost.await(2, TimeUnit.SECONDS));
+        assertEquals("Unexpected facade state", ReplicatedEnvironmentFacade.State.RESTARTING, master.getFacadeState());
+        assertEquals("Master node should not be recovered", 1, recoveredLatch.getCount());
+        master.setDesignatedPrimary(true);
+        assertTrue("Master was not recovered after being assigned as designated primary", majorityLost.await(2, TimeUnit.SECONDS));
+    }
+
     private void putRecord(final ReplicatedEnvironmentFacade master, final Database db, final int keyValue,
                            final String dataValue)
     {

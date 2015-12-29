@@ -179,6 +179,48 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         assertNotNull("Last known replication transaction id should be set", node.getLastKnownReplicationTransactionId());
     }
 
+    public void testMutableAttributesAfterMajorityLost() throws Exception
+    {
+        int node1PortNumber = _portHelper.getNextAvailable();
+        int node2PortNumber = _portHelper.getNextAvailable();
+        int node3PortNumber = _portHelper.getNextAvailable();
+
+        String helperAddress = "localhost:" + node1PortNumber;
+        String groupName = "group";
+        String nodeName = "node1";
+
+        Map<String, Object> node1Attributes = _helper.createNodeAttributes(nodeName, groupName, helperAddress, helperAddress, nodeName, node1PortNumber, node2PortNumber, node3PortNumber);
+        BDBHAVirtualHostNode<?> node1 = _helper.createAndStartHaVHN(node1Attributes);
+
+        Map<String, Object> node2Attributes = _helper.createNodeAttributes("node2", groupName, "localhost:" + node2PortNumber, helperAddress, nodeName);
+        BDBHAVirtualHostNode<?> node2 = _helper.createAndStartHaVHN(node2Attributes);
+
+        Map<String, Object> node3Attributes = _helper.createNodeAttributes("node3", groupName, "localhost:" + node3PortNumber, helperAddress, nodeName);
+        BDBHAVirtualHostNode<?> node3 = _helper.createAndStartHaVHN(node3Attributes);
+
+        assertEquals("Unexpected node priority value before mutation", 1, node1.getPriority());
+        assertFalse("Unexpected designated primary value before mutation", node1.isDesignatedPrimary());
+        assertEquals("Unexpected electable group override value before mutation", 0, node1.getQuorumOverride());
+
+        node2.close();
+        node3.close();
+
+        _helper.assertNodeRole(node1, NodeRole.DETACHED);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(BDBHAVirtualHostNode.PRIORITY, 200);
+        attributes.put(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, true);
+        attributes.put(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1);
+        node1.setAttributes(attributes);
+
+        _helper.awaitForVirtualhost(node1, 30000);
+
+        assertEquals("Unexpected node priority value after mutation", 200, node1.getPriority());
+        assertTrue("Unexpected designated primary value after mutation", node1.isDesignatedPrimary());
+        assertEquals("Unexpected electable group override value after mutation", 1, node1.getQuorumOverride());
+
+    }
+
     public void testTransferMasterToSelf() throws Exception
     {
         int node1PortNumber = _portHelper.getNextAvailable();

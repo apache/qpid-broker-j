@@ -723,7 +723,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         try
         {
-            final ReplicatedEnvironment environment = getEnvironment();
+            final ReplicatedEnvironment environment = getEnvironment(false);
             final EnvironmentMutableConfig oldConfig = environment.getMutableConfig();
             final EnvironmentMutableConfig newConfig = oldConfig.setCacheSize(cacheSize);
             environment.setMutableConfig(newConfig);
@@ -860,7 +860,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         try
         {
-            ReplicatedEnvironment environment = getEnvironment();
+            ReplicatedEnvironment environment = getEnvironment(false);
             final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
             final ReplicationMutableConfig newConfig = oldConfig.setDesignatedPrimary(isPrimary);
             environment.setRepMutableConfig(newConfig);
@@ -909,7 +909,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         try
         {
-            final ReplicatedEnvironment environment = getEnvironment();
+            final ReplicatedEnvironment environment = getEnvironment(false);
             final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
             final ReplicationMutableConfig newConfig = oldConfig.setNodePriority(priority);
             environment.setRepMutableConfig(newConfig);
@@ -958,7 +958,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         try
         {
-            final ReplicatedEnvironment environment = getEnvironment();
+            final ReplicatedEnvironment environment = getEnvironment(false);
             final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
             final ReplicationMutableConfig newConfig = oldConfig.setElectableGroupSizeOverride(electableGroupOverride);
             environment.setRepMutableConfig(newConfig);
@@ -1071,7 +1071,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     private ReplicatedEnvironment getEnvironment()
     {
-        if (getFacadeState() == State.RESTARTING)
+        return getEnvironment(true);
+    }
+
+    private ReplicatedEnvironment getEnvironment(boolean throwOnRestart)
+    {
+        if (throwOnRestart && getFacadeState() == State.RESTARTING)
         {
             throw new ConnectionScopedRuntimeException("Environment is restarting");
         }
