@@ -47,19 +47,43 @@ import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.crammd5.CRAMMD5Initialiser;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainAdapterSaslServer;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdapter;
 
 @ManagedObject( category = false, type = "Plain" )
 public class PlainAuthenticationProvider
         extends ConfigModelPasswordManagingAuthenticationProvider<PlainAuthenticationProvider>
 {
     private final List<String> _mechanisms = Collections.unmodifiableList(Arrays.asList(PlainSaslServer.MECHANISM,
-                                                                                        CRAMMD5Initialiser.MECHANISM));
+                                                                                        CRAMMD5Initialiser.MECHANISM,
+                                                                                        ScramSHA1AuthenticationManager.MECHANISM,
+                                                                                        ScramSHA256AuthenticationManager.MECHANISM));
+    private final ScramSaslServerSourceAdapter _scramSha1Adapter;
+    private final ScramSaslServerSourceAdapter _scramSha256Adapter;
 
 
     @ManagedObjectFactoryConstructor
     protected PlainAuthenticationProvider(final Map<String, Object> attributes, final Broker broker)
     {
         super(attributes, broker);
+
+        ScramSaslServerSourceAdapter.PasswordSource passwordSource =
+                new ScramSaslServerSourceAdapter.PasswordSource()
+                {
+                    @Override
+                    public char[] getPassword(final String username)
+                    {
+                        ManagedUser user = getUser(username);
+
+                        return user == null ? null : user.getPassword().toCharArray();
+                    }
+                };
+
+
+
+        _scramSha1Adapter = new ScramSaslServerSourceAdapter(4096, "HmacSHA1", passwordSource);
+        _scramSha256Adapter = new ScramSaslServerSourceAdapter(4096, "HmacSHA256", passwordSource);
+
     }
 
     @Override
@@ -94,6 +118,14 @@ public class PlainAuthenticationProvider
         {
             //simply delegate to the built in CRAM-MD5 SaslServer
             return Sasl.createSaslServer(mechanism, "AMQP", localFQDN, null, new ServerCallbackHandler());
+        }
+        else if (ScramSHA1AuthenticationManager.MECHANISM.equals(mechanism))
+        {
+            return new ScramSaslServer(_scramSha1Adapter, mechanism, "HmacSHA1", "SHA-1");
+        }
+        else if(ScramSHA256AuthenticationManager.MECHANISM.equals(mechanism))
+        {
+            return new ScramSaslServer(_scramSha256Adapter, mechanism, "HmacSHA256", "SHA-256");
         }
         else
         {

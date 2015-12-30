@@ -96,14 +96,4 @@ public interface AuthenticationProvider<X extends AuthenticationProvider<X>> ext
      */
     AuthenticationResult authenticate(SaslServer server, byte[] response);
 
-    /**
-     * Authenticates a user using their username and password.
-     *
-     * @param username username
-     * @param password password
-     *
-     * @return authentication result
-     */
-    AuthenticationResult authenticate(String username, String password);
-
 }

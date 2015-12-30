@@ -116,8 +116,7 @@ import org.apache.qpid.transport.Xid;
 import org.apache.qpid.transport.network.Ticker;
 
 public class ServerSession extends Session
-        implements AuthorizationHolder,
-                   AMQSessionModel<ServerSession>, LogSubject, AsyncAutoCommitTransaction.FutureRecorder,
+        implements AMQSessionModel<ServerSession>, LogSubject, AsyncAutoCommitTransaction.FutureRecorder,
                    Deletable<ServerSession>
 
 {

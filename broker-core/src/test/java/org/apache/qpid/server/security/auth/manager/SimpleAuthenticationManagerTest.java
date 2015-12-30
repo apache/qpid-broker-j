@@ -42,7 +42,7 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
 {
     private static final String TEST_USER = "testUser";
     private static final String TEST_PASSWORD = "testPassword";
-    private AuthenticationProvider _authenticationManager;
+    private SimpleAuthenticationManager _authenticationManager;
 
     public void setUp() throws Exception
     {
@@ -60,9 +60,11 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
     public void testGetMechanisms()
     {
         List<String> mechanisms = _authenticationManager.getMechanisms();
-        assertEquals("Unexpected number of mechanisms", 2, mechanisms.size());
-        assertTrue("PLAIN was not present", mechanisms.contains("PLAIN"));
-        assertTrue("CRAM-MD5 was not present", mechanisms.contains("CRAM-MD5"));
+        assertEquals("Unexpected number of mechanisms", 4, mechanisms.size());
+        assertTrue("PLAIN was not present: " + mechanisms, mechanisms.contains("PLAIN"));
+        assertTrue("CRAM-MD5 was not present: " + mechanisms, mechanisms.contains("CRAM-MD5"));
+        assertTrue("SCRAM-SHA-1 was not present: " + mechanisms, mechanisms.contains("SCRAM-SHA-1"));
+        assertTrue("SCRAM-SHA-256 was not present: " + mechanisms, mechanisms.contains("SCRAM-SHA-256"));
     }
 
     public void testCreateSaslServerForUnsupportedMechanisms() throws Exception

@@ -66,24 +66,6 @@ public class SubjectCreatorTest extends QpidTestCase
         _subjectCreator = new SubjectCreator(_authenticationProvider, new HashSet<GroupProvider<?>>(Arrays.asList(_groupManager1, _groupManager2)),
                                              false);
         _authenticationResult = new AuthenticationResult(_userPrincipal);
-        when(_authenticationProvider.authenticate(USERNAME, PASSWORD)).thenReturn(_authenticationResult);
-    }
-
-    public void testAuthenticateUsernameAndPasswordReturnsSubjectWithUserAndGroupPrincipals()
-    {
-        final SubjectAuthenticationResult actualResult = _subjectCreator.authenticate(USERNAME, PASSWORD);
-
-        assertEquals(AuthenticationStatus.SUCCESS, actualResult.getStatus());
-
-        final Subject actualSubject = actualResult.getSubject();
-
-        assertEquals("Should contain one user principal and two groups ", 3, actualSubject.getPrincipals().size());
-
-        assertTrue(actualSubject.getPrincipals().contains(new AuthenticatedPrincipal(_userPrincipal)));
-        assertTrue(actualSubject.getPrincipals().contains(_group1));
-        assertTrue(actualSubject.getPrincipals().contains(_group2));
-
-        assertTrue(actualSubject.isReadOnly());
     }
 
     public void testSaslAuthenticationSuccessReturnsSubjectWithUserAndGroupPrincipals() throws Exception
@@ -102,24 +84,6 @@ public class SubjectCreatorTest extends QpidTestCase
         assertTrue(actualSubject.getPrincipals().contains(_group2));
 
         assertTrue(actualSubject.isReadOnly());
-    }
-
-    public void testAuthenticateUnsuccessfulWithUsernameReturnsNullSubjectAndCorrectStatus()
-    {
-        testUnsuccessfulAuthentication(AuthenticationResult.AuthenticationStatus.CONTINUE);
-        testUnsuccessfulAuthentication(AuthenticationResult.AuthenticationStatus.ERROR);
-    }
-
-    private void testUnsuccessfulAuthentication(AuthenticationStatus expectedStatus)
-    {
-        AuthenticationResult failedAuthenticationResult = new AuthenticationResult(expectedStatus);
-
-        when(_authenticationProvider.authenticate(USERNAME, PASSWORD)).thenReturn(failedAuthenticationResult);
-
-        SubjectAuthenticationResult subjectAuthenticationResult = _subjectCreator.authenticate(USERNAME, PASSWORD);
-
-        assertSame(expectedStatus, subjectAuthenticationResult.getStatus());
-        assertNull(subjectAuthenticationResult.getSubject());
     }
 
     public void testAuthenticateUnsuccessfulWithSaslServerReturnsNullSubjectAndCorrectStatus()

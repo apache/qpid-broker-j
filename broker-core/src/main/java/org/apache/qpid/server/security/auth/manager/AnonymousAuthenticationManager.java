@@ -52,7 +52,7 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
         ANONYMOUS_SUBJECT.getPrincipals().add(ANONYMOUS_PRINCIPAL);
     }
 
-    private static final AuthenticationResult ANONYMOUS_AUTHENTICATION = new AuthenticationResult(ANONYMOUS_PRINCIPAL);
+    public static final AuthenticationResult ANONYMOUS_AUTHENTICATION = new AuthenticationResult(ANONYMOUS_PRINCIPAL);
 
     @ManagedObjectFactoryConstructor
     protected AnonymousAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
@@ -101,12 +101,5 @@ public class AnonymousAuthenticationManager extends AbstractAuthenticationManage
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
     }
-
-    @Override
-    public AuthenticationResult authenticate(String username, String password)
-    {
-        return ANONYMOUS_AUTHENTICATION;
-    }
-
 
 }

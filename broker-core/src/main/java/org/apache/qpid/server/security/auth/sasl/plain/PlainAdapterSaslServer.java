@@ -28,6 +28,7 @@ import javax.security.sasl.SaslServer;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
+import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider;
 
 public class PlainAdapterSaslServer implements SaslServer
 {
@@ -50,7 +51,7 @@ public class PlainAdapterSaslServer implements SaslServer
         _passwordValidator = passwordValidator;
     }
 
-    public PlainAdapterSaslServer(final AuthenticationProvider authProvider)
+    public PlainAdapterSaslServer(final UsernamePasswordAuthenticationProvider<?> authProvider)
     {
         this(new PasswordValidator()
             {

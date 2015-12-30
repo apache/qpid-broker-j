@@ -98,10 +98,4 @@ public class ExternalAuthenticationManagerImpl extends AbstractAuthenticationMan
 
     }
 
-    @Override
-    public AuthenticationResult authenticate(String username, String password)
-    {
-        return new AuthenticationResult(new UsernamePrincipal(username));
-    }
-
 }
