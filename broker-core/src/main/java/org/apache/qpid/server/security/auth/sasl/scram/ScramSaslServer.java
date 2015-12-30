@@ -44,7 +44,7 @@ public class ScramSaslServer implements SaslServer
 
     private static final Charset ASCII = Charset.forName("ASCII");
 
-    private final AbstractScramAuthenticationManager _authManager;
+    private final ScramSaslServerSource _authManager;
     private State _state = State.INITIAL;
     private String _nonce;
     private String _username;
@@ -52,8 +52,9 @@ public class ScramSaslServer implements SaslServer
     private String _serverFirstMessage;
     private String _clientFirstMessageBare;
     private byte[] _serverSignature;
+    private ScramSaslServerSource.SaltAndSaltedPassword _saltAndPassword;
 
-    public ScramSaslServer(final AbstractScramAuthenticationManager authenticationManager,
+    public ScramSaslServer(final ScramSaslServerSource authenticationManager,
                            final String mechanism,
                            final String hmacName,
                            final String digestName)
@@ -130,8 +131,8 @@ public class ScramSaslServer implements SaslServer
         _nonce = parts[3].substring(2) + UUID.randomUUID().toString();
 
         int count = _authManager.getIterationCount();
-        byte[] saltBytes = _authManager.getSalt(_username);
-        _serverFirstMessage = "r="+_nonce+",s="+ DatatypeConverter.printBase64Binary(saltBytes)+",i=" + count;
+        _saltAndPassword = _authManager.getSaltAndSaltedPassword(_username);
+        _serverFirstMessage = "r="+_nonce+",s="+ DatatypeConverter.printBase64Binary(_saltAndPassword.getSalt())+",i=" + count;
         return _serverFirstMessage.getBytes(ASCII);
     }
 
@@ -187,7 +188,7 @@ public class ScramSaslServer implements SaslServer
 
             String authMessage = _clientFirstMessageBare + "," + _serverFirstMessage + "," + clientFinalMessageWithoutProof;
 
-            byte[] saltedPassword = _authManager.getSaltedPassword(_username);
+            byte[] saltedPassword = _saltAndPassword.getSaltedPassword();
 
             byte[] clientKey = computeHmac(saltedPassword, "Client Key");
 

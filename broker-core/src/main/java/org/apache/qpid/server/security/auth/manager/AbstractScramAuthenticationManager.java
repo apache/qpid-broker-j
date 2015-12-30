@@ -41,10 +41,11 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainAdapterSaslServer;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSource;
 
 public abstract class AbstractScramAuthenticationManager<X extends AbstractScramAuthenticationManager<X>>
         extends ConfigModelPasswordManagingAuthenticationProvider<X>
-        implements PasswordCredentialManagingAuthenticationProvider<X>
+        implements PasswordCredentialManagingAuthenticationProvider<X>, ScramSaslServerSource
 {
 
     public static final String PLAIN = "PLAIN";
@@ -212,5 +213,47 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         {
             throw new IllegalArgumentException("User names are restricted to characters in the ASCII charset");
         }
+    }
+
+    @Override
+    public SaltAndSaltedPassword getSaltAndSaltedPassword(final String username)
+    {
+        final byte[] salt = getSalt(username);
+        byte[] tmpPassword = null;
+        SaslException tmpException = null;
+
+        try
+        {
+            tmpPassword = getSaltedPassword(username);
+        }
+        catch (SaslException e)
+        {
+            tmpException = e;
+        }
+
+        final byte[] saltedPassword = tmpPassword;
+        final SaslException exception = tmpException;
+
+        return new SaltAndSaltedPassword()
+        {
+            @Override
+            public byte[] getSalt()
+            {
+                return salt;
+            }
+
+            @Override
+            public byte[] getSaltedPassword() throws SaslException
+            {
+                if(exception == null)
+                {
+                    return saltedPassword;
+                }
+                else
+                {
+                    throw exception;
+                }
+            }
+        };
     }
 }
