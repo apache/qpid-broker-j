@@ -73,8 +73,8 @@
                 trust store are supplied in the <link linkend="JMS-Client-0-8-Connection-URL">connection URL</link>.
             </para>
             <para>
-                There are two distinct mechanisms for providing the encryption trist store. Firstly you can supply a
-                standard password-protected tust store file on the file system.  The location and password for this must
+                There are two distinct mechanisms for providing the encryption trust store. Firstly you can supply a
+                standard password-protected trust store file on the file system.  The location and password for this must
                 be specified using the <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionTrustStore">
                 encryption_trust_store</link> and
                 <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionTrustStorePassword">encryption_trust_store_password

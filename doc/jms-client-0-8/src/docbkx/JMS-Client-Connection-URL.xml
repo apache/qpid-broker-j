@@ -364,11 +364,11 @@
 					<entry> String </entry>
 					<entry> Trust store password. Password used to open the Message Encryption trust store. </entry>
 				</row>
-				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionRemoreTrustStore">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionRemoteTrustStore">
 					<entry> encryption_remote_trust_store </entry>
 					<entry> String </entry>
 					<entry> Remote Trust Store. The address of a message source on the broker which will be used
-						to generate a trust store containing the X509 Certificates of potential recipients of
+						to obtain a trust store containing the X509 Certificates of potential recipients of
 						encrypted messages. </entry>
 				</row>
 				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionKeyStore">

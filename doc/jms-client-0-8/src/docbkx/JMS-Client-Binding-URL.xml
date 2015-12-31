@@ -147,9 +147,8 @@
             <row xml:id="JMS-Client-0-8-Binding-URL-Options-EncryptedRecipients">
                 <entry><para>encryptedrecipients</para></entry>
                 <entry><para>string </para></entry>
-                <entry><para>A semi-colon separated list of the names of the recipients who for whom the
-                    secret key will be made available (though encrypting with their privte key) and thus will
-                    be able to decrypt the message. </para></entry>
+                <entry><para>A semi-colon separated list of the names of the recipients who will be able to decrypt the
+                    message. </para></entry>
             </row>
         </tbody>
       </tgroup>
