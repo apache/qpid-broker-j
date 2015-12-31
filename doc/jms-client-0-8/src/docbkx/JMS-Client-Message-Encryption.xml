@@ -85,7 +85,7 @@
                 Alternatively, where available, you can configure the broker to distribute certificates from a trust
                 store (this is currently only available in the Java Broker). In order to use this method, the broker
                 details in the connection url must contain the correctly configured
-                <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionRemoreTrustStore">encryption_remote_trust_store</link>
+                <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionRemoteTrustStore">encryption_remote_trust_store</link>
                 option. Such a connection URL might look somthing like:
             </para>
             <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672?encryption_remote_trust_store='$certificates%5c/certstore''</programlisting>
