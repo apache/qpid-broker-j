@@ -353,6 +353,37 @@
 					<entry> If <literal>tcp_nodelay='true'</literal>, TCP packet batching is
 						disabled. Defaults to true since Qpid 0.14. </entry>
 				</row>
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionTrustStore">
+					<entry> encryption_trust_store </entry>
+					<entry> String </entry>
+					<entry> Path to trust store. Used when using Message Encryption this path is used for the
+					trust store containing the X509 Certificates of potential recipients.</entry>
+				</row>
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionTrustStorePassword">
+					<entry> encyrption_trust_store_password </entry>
+					<entry> String </entry>
+					<entry> Trust store password. Password used to open the Message Encryption trust store. </entry>
+				</row>
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionRemoreTrustStore">
+					<entry> encryption_remote_trust_store </entry>
+					<entry> String </entry>
+					<entry> Remote Trust Store. The address of a message source on the broker which will be used
+						to generate a trust store containing the X509 Certificates of potential recipients of
+						encrypted messages. </entry>
+				</row>
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionKeyStore">
+					<entry> encryption_key_store </entry>
+					<entry> String </entry>
+					<entry> Path to key store. Used when using Message Encryption this path is used for the
+						key store containing the certificates and private keys for all the identities which this client
+						can decrypt.</entry>
+				</row>
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionKeyStorePassword">
+					<entry> encyrption_key_store_password </entry>
+					<entry> String </entry>
+					<entry> Key store password. Password used to open the Message Encryption key store. </entry>
+				</row>
+
 			</tbody>
 		</tgroup>
 	</table>

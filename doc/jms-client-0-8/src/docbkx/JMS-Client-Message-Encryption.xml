@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-Message-Encryption">
+    <title>Message Encryption</title>
+
+    <para>
+        In some cases it is desirable to ensure no-one but the intended recipient(s) of a message will be able to read
+        its contents. Using SSL/TLS to encrypt traffic travelling between client and broker only ensures that those
+        snooping the network cannot read messages, however once the message arrives at the broker it is decrypted and
+        so anyone with access to the broker can read the message.  For such confidential information it is necessary to
+        implement a mechanism of end-to-end encryption such that the sender of the message encrypts the message before
+        sending, and the recipient(s), upon receiving the message, decrypt it with some secret known only to them.
+    </para>
+    <para>
+        Neither JMS nor AMQP provide any defined mechanism for message encryption, however it is possible for any
+        application to build a message encryption scheme on top of a JMS API. For convenience the Qpid JMS client
+        provides a built in mechanism for encryption and decrypting messages. This mechanism is currently only
+        implemented in the Qpid JMS client for AMQP 0-8/0-9/0-9-1/0-10.  If you use a different client you will be
+        unable to read encrypted messages.
+    </para>
+
+    <section xml:id="JMS-Client-Message-Encryption-Overview">
+        <title>Overview</title>
+        <para>
+            For each encrypted message which the client sends, a new message-specific secret key is generated. This
+            secret key is used encrypt the message contents using symmetric encryption (currently only AES-256 is
+            supported, although other algorithms may be added at a later date).  For each intended recipient of the
+            message, the client encrypts the secret key using the public key associated with the recipient, and adds
+            this as a message header. On receipt of an encrypted message, the client looks to see if it has a private
+            key which can decrypt the secret key. If the client is unable to decrypt the message (for instance, because
+            they were not one of the intended recipients) then the message will be presented to the application as a
+            BytesMessage containing the encrypted data.
+        </para>
+        <para>
+            In order to send an encrypted message it is necessary to know the Certificates of the intended recipients.
+            Certificates can be distributed either through out-of-band mechanisms, or the Qpid Java Broker can be used
+            to distribute them to clients.
+        </para>
+        <para>
+            In order to receive an encrypted message it is necessary to have a Certificate (which needs to be
+            distributed to those who you wish to send messages to you) and to have the private key associated with the
+            certificate so that you can decrypt messages sent to you.
+        </para>
+    </section>
+
+    <section xml:id="JMS-Client-Message-Encryption-Sending">
+    <title>Sending an Encrypted Message</title>
+        <section xml:id="JMS-Client-Message-Encryption-Sending-Setting-TrustStore">
+            <title>Providing the Trust Store</title>
+            <para>
+                In order for a connection to be capable of sending encrypted messages, it must be provided with a trust
+                store which contains the X509 certificates of the entities to which you wish to send. The details of the
+                trust store are supplied in the <link linkend="JMS-Client-0-8-Connection-URL">connection URL</link>.
+            </para>
+            <para>
+                There are two distinct mechanisms for providing the encryption trist store. Firstly you can supply a
+                standard password-protected tust store file on the file system.  The location and password for this must
+                be specified using the <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionTrustStore">
+                encryption_trust_store</link> and
+                <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionTrustStorePassword">encryption_trust_store_password
+                </link> options respectively. Such a connection URL might look somthing like:
+            </para>
+            <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672?encryption_trust_store='/home/qpid/certificates.jks'&amp;encryption_trust_store_password='password''</programlisting>
+            <para>
+                Alternatively, where available, you can configure the broker to distribute certificates from a trust
+                store (this is currently only available in the Java Broker). In order to use this method, the broker
+                details in the connection url must contain the correctly configured
+                <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionRemoreTrustStore">encryption_remote_trust_store</link>
+                option. Such a connection URL might look somthing like:
+            </para>
+            <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672?encryption_remote_trust_store='$certificates%5c/certstore''</programlisting>
+
+        </section>
+        <section xml:id="JMS-Client-Message-Encryption-Sending-Enabling-Encryption">
+            <title>Enabling Encryption</title>
+            <para>
+                Message encryption can be enabled individually on each sent message, or - using configuration - all
+                messages sent to a Destination can be encrypted.
+            </para>
+            <para>
+                In order to encrypt messages on a case by case basis, the appliation must set the boolean property
+                <literal>x-qpid-encrypt</literal> to true on the message before sending. The intended recipients of the
+                message must also be set (see
+                <link linkend="JMS-Client-Message-Encryption-Sending-Choosing-Recipients">Choosing Recipients</link>).
+            </para>
+            <programlisting>message.setBooleanProperty("x-qpid-encrypt", true);</programlisting>
+            <para>
+                In order to encrypt all messages sent to a given Destination, the option
+                <link linkend="JMS-Client-0-8-Binding-URL-Options-SendEncrypted">sendencrypted</link> can be used.  Note
+                that enabling encryption on the address can be overridden by explicitly seting the property
+                <literal>x-qpid-encrypt</literal> to false on an individual message. An example address would look like:
+            </para>
+            <programlisting>direct:///queue/queue?sendencrypted='true'</programlisting>
+        </section>
+        <section xml:id="JMS-Client-Message-Encryption-Sending-Choosing-Recipients">
+            <title>Choosing Recipients</title>
+            <para>
+                Any message which is to be sent encrypted must also have a list of recipients who the sender wishes to
+                be able to decrypt the message. The recipients must be encoded as a semi-colon separated list of the
+                names given in the respective certificates of the recipients, e.g.
+                <literal>cn=first@example.org,ou=example,o=example,l=ny,st=ny,c=us;cn=second@example.org,ou=example,o=example,l=ny,st=ny,c=us</literal>.
+            </para>
+            <para>
+                As with enabling encryption, the recipients can be set either on a per-message basis or for all messages
+                sent to a given address. If both forms are used, the former overrides the latter. To set on an individual
+                message, set the String property <literal>x-qpid-encrypt-recipients</literal>.
+            </para>
+            <programlisting>message.setStringProperty("x-qpid-encrypt-recipients", "cn=only@example.org,ou=example,o=example");</programlisting>
+            <para>
+                To set the recipients on an address, use the address option
+                <link linkend="JMS-Client-0-8-Binding-URL-Options-EncryptedRecipients">encryptedrecipients</link>.
+            </para>
+            <programlisting>direct:///queue/queue?sendencrypted='true'&amp;encryptedrecipients='cn=another@example.org,ou=example,o=example'</programlisting>
+
+        </section>
+        <section xml:id="JMS-Client-Message-Encryption-Sending-Exposing-Properties">
+            <title>Exposing Properties</title>
+            <para>
+                Message Encryption encrypts the message content and the properties set by the application.  Sometimes
+                it is important to expose properties to allow (for example) message routing or message selectors within
+                the broker to work. To enable this it is possible to specify for each message all the properties which
+                the application wishes to make available to the broker.  Note that exposing properties in this way means
+                that they are now visibe to anyone who can inspect the broker memory or file system stores.
+            </para>
+            <para>
+                To make message properties visible to the broker, set the String property
+                <literal>x-qpid-unencrypted-properties</literal> with a semi-colon separated list of the names of the
+                properties to be exposed.
+            </para>
+            <programlisting>message.setStringProperty("x-qpid-unencrypted-properties", "foo;bar;baz");</programlisting>
+        </section>
+    </section>
+    <section  xml:id="JMS-Client-Message-Encryption-Receiving">
+        <title>Receiving an Encrypted Message</title>
+        <section xml:id="JMS-Client-Message-Encryption-Sending-Setting-KeyStore">
+            <title>Providing the Key Store</title>
+            <para>
+                In order for a connection to be capable of decrypting received encrypted messages, it must be provided
+                with a key store which contains the X509 certificates and associated Private Keys of the identities
+                on behalf of which it will be able to decrypt. The details of the
+                key store are supplied in the <link linkend="JMS-Client-0-8-Connection-URL">connection URL</link>.
+                The location and password for this must
+                be specified using the <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionKeyStore">
+                encryption_key_store</link> and
+                <link linkend="JMS-Client-0-8-Connection-URL-BrokerOptions-EncryptionKeyStorePassword">encryption_trust_store_password
+                </link> options respectively. Such a connection URL might look somthing like:
+            </para>
+            <programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672?encryption_key_store='/home/qpid/identities.jks'&amp;encryption_key_store_password='password''</programlisting>
+
+
+        </section>
+    </section>
+</chapter>
