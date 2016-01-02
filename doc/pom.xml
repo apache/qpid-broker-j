@@ -48,7 +48,7 @@
         <qpidCppBook>../../AMQP-Messaging-Broker-CPP-Book/html/</qpidCppBook>
         <qpidJavaBrokerBook>../../AMQP-Messaging-Broker-Java-Book/html/</qpidJavaBrokerBook>
         <qpidJmsBook>../../Programming-In-Apache-Qpid/html/</qpidJmsBook>
-        <qpidJmsBookClientConectionUrl>../../Programming-In-Apache-Qpid/html/QpidJNDI.html#section-jms-connection-url</qpidJmsBookClientConectionUrl>
+        <qpidJmsBookClientConectionUrl>${qpidJmsBook}QpidJNDI.html#section-jms-connection-url</qpidJmsBookClientConectionUrl>
 
         <oracleJdkDocUrl>http://docs.oracle.com/javase/7/docs/api/</oracleJdkDocUrl>
         <oracleJeeDocUrl>http://docs.oracle.com/javaee/6/api/</oracleJeeDocUrl>
@@ -113,7 +113,7 @@
                             <id>docbook-html</id>
                             <phase>compile</phase>
                             <goals>
-                                <goal>generate-html</goal>
+                                <goal>generate-xhtml</goal>
                             </goals>
                         </execution>
                     </executions>
@@ -136,6 +136,22 @@
                             <parameter>
                                 <name>use.id.as.filename</name>
                                 <value>1</value>
+                            </parameter>
+                            <parameter>
+                                <name>section.autolabel</name>
+                                <value>1</value>
+                            </parameter>
+                            <parameter>
+                                <name>section.autolabel.max.depth</name>
+                                <value>3</value>
+                            </parameter>
+                            <parameter>
+                                <name>section.label.includes.component.label</name>
+                                <value>1</value>
+                            </parameter>
+                            <parameter>
+                                <name>callout.unicode</name>
+                                <value>0</value>
                             </parameter>
                         </customizationParameters>
                         <preProcess>

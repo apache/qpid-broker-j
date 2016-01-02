@@ -54,6 +54,9 @@
                         <artifactId>docbkx-maven-plugin</artifactId>
                         <configuration>
                             <includes>JMS-Performance-Test-Framework.xml</includes>
+                            <postProcess>
+                                <move file="${docbook.target}/JMS-Performance-Test-Framework.html" tofile="${docbook.target}/index.html"/>
+                            </postProcess>
                         </configuration>
                     </plugin>
                 </plugins>

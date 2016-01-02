@@ -53,6 +53,9 @@
                         <artifactId>docbkx-maven-plugin</artifactId>
                         <configuration>
                             <includes>JMS-Client-Book.xml</includes>
+                            <postProcess>
+                                <move file="${docbook.target}/JMS-Client-Book.html" tofile="${docbook.target}/index.html"/>
+                            </postProcess>
                         </configuration>
                     </plugin>
                 </plugins>

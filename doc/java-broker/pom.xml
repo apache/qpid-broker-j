@@ -52,6 +52,9 @@
                         <artifactId>docbkx-maven-plugin</artifactId>
                         <configuration>
                             <includes>AMQP-Messaging-Broker-Java-Book.xml</includes>
+                            <postProcess>
+                                <move file="${docbook.target}/AMQP-Messaging-Broker-Java-Book.html" tofile="${docbook.target}/index.html"/>
+                            </postProcess>
                         </configuration>
                     </plugin>
                 </plugins>

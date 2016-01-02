@@ -74,7 +74,7 @@
       <title>Last Value Queues (LVQ)</title>
       <para>LVQs (or conflation queues) are special queues that automatically discard any message
         when a newer message arrives with the same key value. The key is specified by arbitrary
-          <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl;javax}/jms/Message.html#getPropertyNames()">JMS message
+          <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/Message.html#getPropertyNames()">JMS message
           property</link>.</para>
       <para>An example of an LVQ might be where a queue represents prices on a stock exchange: when
         you first consume from the queue you get the latest quote for each stock, and then as new
