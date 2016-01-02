@@ -463,7 +463,7 @@
     <title>Client failover</title>
     <para>As mentioned above, the clients need to be able to find the location of the active
       virtualhost within the group.</para>
-    <para>Clients can do this using a static technique, for example , utilising the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsBookClientConectionUrl}">failover feature of the Qpid connection url</link>
+    <para>Clients can do this using a static technique, for example , utilising the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsClient08Book}JMS-Client-0-8-Connection-URL.html">failover feature of the Qpid connection url</link>
       where the client has a list of all the nodes, and tries each node in sequence until it
       discovers the node with the active virtualhost.</para>
     <para>Another possibility is a dynamic technique utilising a proxy or Virtual IP (VIP). These

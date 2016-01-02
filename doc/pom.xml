@@ -45,10 +45,11 @@
         <qpidDownloadUrlDesc>the Apache Qpid project web site</qpidDownloadUrlDesc>
         <qpidDownloadUrl>http://qpid.apache.org/download.html</qpidDownloadUrl>
 
-        <qpidCppBook>../../AMQP-Messaging-Broker-CPP-Book/html/</qpidCppBook>
-        <qpidJavaBrokerBook>../../AMQP-Messaging-Broker-Java-Book/html/</qpidJavaBrokerBook>
-        <qpidJmsBook>../../Programming-In-Apache-Qpid/html/</qpidJmsBook>
-        <qpidJmsBookClientConectionUrl>${qpidJmsBook}QpidJNDI.html#section-jms-connection-url</qpidJmsBookClientConectionUrl>
+        <qpidJavaBrokerBook>../../java-broker/book/</qpidJavaBrokerBook>
+        <qpidJmsClient08Book>../../jms-client-0-8/book/</qpidJmsClient08Book>
+
+        <qpidCppBook>../../cpp-broker/book/</qpidCppBook>
+        <qpidProgrammingBook>../../programming/book/</qpidProgrammingBook>
 
         <oracleJdkDocUrl>http://docs.oracle.com/javase/7/docs/api/</oracleJdkDocUrl>
         <oracleJeeDocUrl>http://docs.oracle.com/javaee/6/api/</oracleJeeDocUrl>

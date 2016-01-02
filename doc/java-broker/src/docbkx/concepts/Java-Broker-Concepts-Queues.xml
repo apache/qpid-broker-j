@@ -237,7 +237,7 @@
 -Dmax_prefetch=1
 </programlisting>
     <para> The prefetch can be also be adjusted on a per connection basis by adding a
-        <varname>maxprefetch</varname> value to the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsBookClientConectionUrl}">Connection URLs</link>
+        <varname>maxprefetch</varname> value to the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${qpidJmsClient08Book}JMS-Client-0-8-Connection-URL.html">Connection URLs</link>
     </para>
     <programlisting>
 amqp://guest:guest@client1/development?maxprefetch='1'&amp;brokerlist='tcp://localhost:5672'
