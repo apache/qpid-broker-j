@@ -133,6 +133,7 @@
                         <targetDirectory>${docbook.target}</targetDirectory>
                         <xincludeSupported>true</xincludeSupported>
                         <chunkedOutput>true</chunkedOutput>
+                        <showXslMessages>true</showXslMessages>
                         <customizationParameters>
                             <parameter>
                                 <name>use.id.as.filename</name>
@@ -161,6 +162,25 @@
                             </copy>
                         </preProcess>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <configuration>
+                        <descriptors>
+                            <descriptor>${project.basedir}/../src/main/assembly/html.xml</descriptor>
+                        </descriptors>
+                        <tarLongFileMode>gnu</tarLongFileMode>
+                        <appendAssemblyId>false</appendAssemblyId>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>single</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
