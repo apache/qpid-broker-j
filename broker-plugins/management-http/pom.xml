@@ -146,4 +146,42 @@
     </plugins>
   </build>
 
+
+  <profiles>
+    <profile>
+      <id>generate-sources-http-management</id>
+      <activation>
+        <property>
+          <name>generate</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>javacc-maven-plugin</artifactId>
+            <!--version specified in parent pluginManagement -->
+            <executions>
+              <execution>
+                <id>jms-selector-generated</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>javacc</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>src/main/java</outputDirectory>
+                  <sourceDirectory>src/main/grammar</sourceDirectory>
+                  <includes>
+                    <include>ConfiguredObjectFilterParser.jj</include>
+                  </includes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
 </project>

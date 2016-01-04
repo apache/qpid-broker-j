@@ -20,10 +20,7 @@
  */
 package org.apache.qpid.filter;
 
-
-/**
- * Represents a property  expression
- */
-public interface PropertyExpression<E> extends Expression<E>
+public interface PropertyExpressionFactory<E>
 {
+    PropertyExpression<E> createPropertyExpression(String value);
 }

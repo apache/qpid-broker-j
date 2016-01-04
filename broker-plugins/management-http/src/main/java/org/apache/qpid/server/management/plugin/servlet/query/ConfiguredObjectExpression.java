@@ -18,12 +18,11 @@
  * under the License.
  *
  */
-package org.apache.qpid.filter;
+package org.apache.qpid.server.management.plugin.servlet.query;
 
+import org.apache.qpid.filter.Expression;
+import org.apache.qpid.server.model.ConfiguredObject;
 
-/**
- * Represents a property  expression
- */
-public interface PropertyExpression<E> extends Expression<E>
+public interface ConfiguredObjectExpression extends Expression<ConfiguredObject<?>>
 {
 }

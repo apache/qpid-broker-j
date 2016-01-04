@@ -31,22 +31,22 @@ import java.util.List;
 /**
  * An expression which performs an operation on two expression values
  */
-public abstract class UnaryExpression implements Expression
+public abstract class UnaryExpression<T> implements Expression<T>
 {
 
     private static final BigDecimal BD_LONG_MIN_VALUE = BigDecimal.valueOf(Long.MIN_VALUE);
-    private Expression right;
+    private Expression<T> right;
 
-    public static Expression createNegate(Expression left)
+    public static <E> Expression<E> createNegate(Expression<E> left)
     {
-        return new NegativeExpression(left);
+        return new NegativeExpression<>(left);
     }
 
-    public static BooleanExpression createInExpression(PropertyExpression right, List elements, final boolean not)
+    public static <E> BooleanExpression<E> createInExpression(Expression<E> right, List<?> elements, final boolean not)
     {
 
         // Use a HashSet if there are many elements.
-        Collection t;
+        Collection<?> t;
         if (elements.size() == 0)
         {
             t = null;
@@ -57,22 +57,22 @@ public abstract class UnaryExpression implements Expression
         }
         else
         {
-            t = new HashSet(elements);
+            t = new HashSet<>(elements);
         }
 
-        final Collection inList = t;
+        final Collection<?> inList = t;
 
-        return new InExpression(right, inList, not);
+        return new InExpression<>(right, inList, not);
     }
 
-    abstract static class BooleanUnaryExpression extends UnaryExpression implements BooleanExpression
+    abstract static class BooleanUnaryExpression<E> extends UnaryExpression<E> implements BooleanExpression<E>
     {
-        public BooleanUnaryExpression(Expression left)
+        public BooleanUnaryExpression(Expression<E> left)
         {
             super(left);
         }
 
-        public boolean matches(FilterableMessage message)
+        public boolean matches(E message)
         {
             Object object = evaluate(message);
 
@@ -80,14 +80,14 @@ public abstract class UnaryExpression implements Expression
         }
     }
 
-    public static BooleanExpression createNOT(BooleanExpression left)
+    public static <E> BooleanExpression<E> createNOT(BooleanExpression<E> left)
     {
-        return new NotExpression(left);
+        return new NotExpression<>(left);
     }
 
-    public static BooleanExpression createBooleanCast(Expression left)
+    public static <E> BooleanExpression<E> createBooleanCast(Expression<E> left)
     {
-        return new BooleanCastExpression(left);
+        return new BooleanCastExpression<>(left);
     }
 
     private static Number negate(Number left)
@@ -131,12 +131,12 @@ public abstract class UnaryExpression implements Expression
         }
     }
 
-    public UnaryExpression(Expression left)
+    public UnaryExpression(Expression<T> left)
     {
         this.right = left;
     }
 
-    public Expression getRight()
+    public Expression<T> getRight()
     {
         return right;
     }
@@ -177,14 +177,14 @@ public abstract class UnaryExpression implements Expression
      */
     public abstract String getExpressionSymbol();
 
-    private static class NegativeExpression extends UnaryExpression
+    private static class NegativeExpression<E> extends UnaryExpression<E>
     {
-        public NegativeExpression(final Expression left)
+        public NegativeExpression(final Expression<E> left)
         {
             super(left);
         }
 
-        public Object evaluate(FilterableMessage message)
+        public Object evaluate(E message)
         {
             Object rvalue = getRight().evaluate(message);
             if (rvalue == null)
@@ -206,19 +206,19 @@ public abstract class UnaryExpression implements Expression
         }
     }
 
-    private static class InExpression extends BooleanUnaryExpression
+    private static class InExpression<E> extends BooleanUnaryExpression<E>
     {
-        private final Collection _inList;
+        private final Collection<?> _inList;
         private final boolean _not;
 
-        public InExpression(final PropertyExpression right, final Collection inList, final boolean not)
+        public InExpression(final Expression<E> right, final Collection<?> inList, final boolean not)
         {
             super(right);
             _inList = inList;
             _not = not;
         }
 
-        public Object evaluate(FilterableMessage message)
+        public Object evaluate(E message)
         {
 
             Object rvalue = getRight().evaluate(message);
@@ -227,12 +227,7 @@ public abstract class UnaryExpression implements Expression
                 return null;
             }
 
-            if (rvalue.getClass() != String.class)
-            {
-                return null;
-            }
-
-            if (((_inList != null) && _inList.contains(rvalue)) ^ _not)
+            if (((_inList != null) && isInList(rvalue, message)) ^ _not)
             {
                 return Boolean.TRUE;
             }
@@ -241,6 +236,25 @@ public abstract class UnaryExpression implements Expression
                 return Boolean.FALSE;
             }
 
+        }
+
+        private boolean isInList(final Object rvalue, final E message)
+        {
+            for(Object entry : _inList)
+            {
+                Object value = entry instanceof Expression ? ((Expression<E>)entry).evaluate(message) : entry;
+                if((rvalue == null && value == null) || (rvalue != null && rvalue.equals(value)))
+                {
+                    return true;
+                }
+                if(rvalue instanceof Number && value instanceof Number)
+                {
+                    Number num1 = (Number) rvalue;
+                    Number num2 = (Number) value;
+                    return num1.doubleValue() == num2.doubleValue() && num1.longValue() == num2.longValue();
+                }
+            }
+            return false;
         }
 
         public String toString()
@@ -280,14 +294,14 @@ public abstract class UnaryExpression implements Expression
         }
     }
 
-    private static class NotExpression extends BooleanUnaryExpression
+    private static class NotExpression<E> extends BooleanUnaryExpression<E>
     {
-        public NotExpression(final BooleanExpression left)
+        public NotExpression(final BooleanExpression<E> left)
         {
             super(left);
         }
 
-        public Object evaluate(FilterableMessage message)
+        public Object evaluate(E message)
         {
             Boolean lvalue = (Boolean) getRight().evaluate(message);
             if (lvalue == null)
@@ -304,14 +318,14 @@ public abstract class UnaryExpression implements Expression
         }
     }
 
-    private static class BooleanCastExpression extends BooleanUnaryExpression
+    private static class BooleanCastExpression<E> extends BooleanUnaryExpression<E>
     {
-        public BooleanCastExpression(final Expression left)
+        public BooleanCastExpression(final Expression<E> left)
         {
             super(left);
         }
 
-        public Object evaluate(FilterableMessage message)
+        public Object evaluate(E message)
         {
             Object rvalue = getRight().evaluate(message);
             if (rvalue == null)

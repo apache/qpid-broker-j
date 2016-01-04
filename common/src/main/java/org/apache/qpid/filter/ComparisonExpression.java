@@ -30,15 +30,15 @@ import java.util.regex.Pattern;
 /**
  * A filter performing a comparison of two objects
  */
-public abstract class ComparisonExpression extends BinaryExpression implements BooleanExpression
+public abstract class ComparisonExpression<T> extends BinaryExpression<T> implements BooleanExpression<T>
 {
 
-    public static BooleanExpression createBetween(Expression value, Expression left, Expression right)
+    public static <E> BooleanExpression<E> createBetween(Expression<E> value, Expression<E> left, Expression<E> right)
     {
         return LogicExpression.createAND(createGreaterThanEqual(value, left), createLessThanEqual(value, right));
     }
 
-    public static BooleanExpression createNotBetween(Expression value, Expression left, Expression right)
+    public static <E> BooleanExpression<E> createNotBetween(Expression<E> value, Expression<E> left, Expression<E> right)
     {
         return LogicExpression.createOR(createLessThan(value, left), createGreaterThan(value, right));
     }
@@ -69,16 +69,16 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
         REGEXP_CONTROL_CHARS.add('!');
     }
 
-    static class LikeExpression extends UnaryExpression implements BooleanExpression
+    static class LikeExpression<E> extends UnaryExpression<E> implements BooleanExpression<E>
     {
 
         private Pattern likePattern;
 
-        public LikeExpression(Expression right, String like, int escape)
+        public LikeExpression(Expression<E> right, String like, int escape)
         {
             super(right);
 
-            StringBuffer regexp = new StringBuffer(like.length() * 2);
+            StringBuilder regexp = new StringBuilder(like.length() * 2);
             regexp.append("\\A"); // The beginning of the input
             for (int i = 0; i < like.length(); i++)
             {
@@ -131,7 +131,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
         /**
          *  org.apache.activemq.filter.Expression#evaluate(MessageEvaluationContext)
          */
-        public Object evaluate(FilterableMessage message)
+        public Object evaluate(E message)
         {
 
             Object rv = this.getRight().evaluate(message);
@@ -150,7 +150,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
             return likePattern.matcher((String) rv).matches() ? Boolean.TRUE : Boolean.FALSE;
         }
 
-        public boolean matches(FilterableMessage message)
+        public boolean matches(E message)
         {
             Object object = evaluate(message);
 
@@ -158,7 +158,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
         }
     }
 
-    public static BooleanExpression createLike(Expression left, String right, String escape)
+    public static <E> BooleanExpression<E> createLike(Expression<E> left, String right, String escape)
     {
         if ((escape != null) && (escape.length() != 1))
         {
@@ -172,54 +172,54 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
             c = 0xFFFF & escape.charAt(0);
         }
 
-        return new LikeExpression(left, right, c);
+        return new LikeExpression<>(left, right, c);
     }
 
-    public static BooleanExpression createNotLike(Expression left, String right, String escape)
+    public static <E> BooleanExpression<E> createNotLike(Expression<E> left, String right, String escape)
     {
         return UnaryExpression.createNOT(createLike(left, right, escape));
     }
 
-    public static BooleanExpression createInFilter(Expression left, List elements)
+    public static <E> BooleanExpression<E> createInFilter(Expression<E> left, List<?> elements, boolean allowNonProperties)
     {
 
-        if (!(left instanceof PropertyExpression))
+        if (!(allowNonProperties || left instanceof PropertyExpression))
         {
             throw new SelectorParsingException("Expected a property for In expression, got: " + left);
         }
 
-        return UnaryExpression.createInExpression((PropertyExpression) left, elements, false);
+        return UnaryExpression.createInExpression(left, elements, false);
 
     }
 
-    public static BooleanExpression createNotInFilter(Expression left, List elements)
+    public static <E> BooleanExpression<E> createNotInFilter(Expression<E> left, List<?> elements, boolean allowNonProperties)
     {
 
-        if (!(left instanceof PropertyExpression))
+        if (!(allowNonProperties || left instanceof PropertyExpression))
         {
             throw new SelectorParsingException("Expected a property for In expression, got: " + left);
         }
 
-        return UnaryExpression.createInExpression((PropertyExpression) left, elements, true);
+        return UnaryExpression.createInExpression(left, elements, true);
 
     }
 
-    public static BooleanExpression createIsNull(Expression left)
+    public static <E> BooleanExpression<E> createIsNull(Expression<E> left)
     {
-        return doCreateEqual(left, ConstantExpression.NULL);
+        return doCreateEqual(left, ConstantExpression.<E>NULL());
     }
 
-    public static BooleanExpression createIsNotNull(Expression left)
+    public static <E> BooleanExpression<E> createIsNotNull(Expression<E> left)
     {
-        return UnaryExpression.createNOT(doCreateEqual(left, ConstantExpression.NULL));
+        return UnaryExpression.createNOT(doCreateEqual(left, ConstantExpression.<E>NULL()));
     }
 
-    public static BooleanExpression createNotEqual(Expression left, Expression right)
+    public static <E> BooleanExpression<E> createNotEqual(Expression<E> left, Expression<E> right)
     {
         return UnaryExpression.createNOT(createEqual(left, right));
     }
 
-    public static BooleanExpression createEqual(Expression left, Expression right)
+    public static <E> BooleanExpression<E> createEqual(Expression<E> left, Expression<E> right)
     {
         checkEqualOperand(left);
         checkEqualOperand(right);
@@ -228,17 +228,17 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
         return doCreateEqual(left, right);
     }
 
-    private static BooleanExpression doCreateEqual(Expression left, Expression right)
+    private static <E> BooleanExpression<E> doCreateEqual(Expression<E> left, Expression<E> right)
     {
-        return new EqualExpression(left, right);
+        return new EqualExpression<>(left, right);
     }
 
-    public static BooleanExpression createGreaterThan(final Expression left, final Expression right)
+    public static <E> BooleanExpression<E> createGreaterThan(final Expression<E> left, final Expression<E> right)
     {
         checkLessThanOperand(left);
         checkLessThanOperand(right);
 
-        return new ComparisonExpression(left, right)
+        return new ComparisonExpression<E>(left, right)
             {
                 protected boolean asBoolean(int answer)
                 {
@@ -252,12 +252,12 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
             };
     }
 
-    public static BooleanExpression createGreaterThanEqual(final Expression left, final Expression right)
+    public static <E> BooleanExpression<E> createGreaterThanEqual(final Expression<E> left, final Expression<E> right)
     {
         checkLessThanOperand(left);
         checkLessThanOperand(right);
 
-        return new ComparisonExpression(left, right)
+        return new ComparisonExpression<E>(left, right)
             {
                 protected boolean asBoolean(int answer)
                 {
@@ -271,12 +271,12 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
             };
     }
 
-    public static BooleanExpression createLessThan(final Expression left, final Expression right)
+    public static <E> BooleanExpression<E> createLessThan(final Expression<E> left, final Expression<E> right)
     {
         checkLessThanOperand(left);
         checkLessThanOperand(right);
 
-        return new ComparisonExpression(left, right)
+        return new ComparisonExpression<E>(left, right)
             {
 
                 protected boolean asBoolean(int answer)
@@ -292,12 +292,12 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
             };
     }
 
-    public static BooleanExpression createLessThanEqual(final Expression left, final Expression right)
+    public static <E> BooleanExpression<E> createLessThanEqual(final Expression<E> left, final Expression<E> right)
     {
         checkLessThanOperand(left);
         checkLessThanOperand(right);
 
-        return new ComparisonExpression(left, right)
+        return new ComparisonExpression<E>(left, right)
             {
 
                 protected boolean asBoolean(int answer)
@@ -317,7 +317,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
      *
      * @param expr expression to check
      */
-    public static void checkLessThanOperand(Expression expr)
+    public static <E> void checkLessThanOperand(Expression<E> expr)
     {
         if (expr instanceof ConstantExpression)
         {
@@ -343,7 +343,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
      *
      * @param expr expression to check
      */
-    public static void checkEqualOperand(Expression expr)
+    public static <E> void checkEqualOperand(Expression<E> expr)
     {
         if (expr instanceof ConstantExpression)
         {
@@ -355,12 +355,7 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
         }
     }
 
-    /**
-     *
-     * @param left
-     * @param right
-     */
-    private static void checkEqualOperandCompatability(Expression left, Expression right)
+    private static <E> void checkEqualOperandCompatability(Expression<E> left, Expression<E> right)
     {
         if ((left instanceof ConstantExpression) && (right instanceof ConstantExpression))
         {
@@ -371,12 +366,12 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
         }
     }
 
-    public ComparisonExpression(Expression left, Expression right)
+    public ComparisonExpression(Expression<T> left, Expression<T> right)
     {
         super(left, right);
     }
 
-    public Object evaluate(FilterableMessage message)
+    public Object evaluate(T message)
     {
         Comparable lv = (Comparable) getLeft().evaluate(message);
         if (lv == null)
@@ -538,21 +533,21 @@ public abstract class ComparisonExpression extends BinaryExpression implements B
 
     protected abstract boolean asBoolean(int answer);
 
-    public boolean matches(FilterableMessage message)
+    public boolean matches(T message)
     {
         Object object = evaluate(message);
 
         return (object != null) && (object == Boolean.TRUE);
     }
 
-    private static class EqualExpression extends ComparisonExpression
+    private static class EqualExpression<E> extends ComparisonExpression<E>
     {
-        public EqualExpression(final Expression left, final Expression right)
+        public EqualExpression(final Expression<E> left, final Expression<E> right)
         {
             super(left, right);
         }
 
-        public Object evaluate(FilterableMessage message)
+        public Object evaluate(E message)
         {
             Object lv = getLeft().evaluate(message);
             Object rv = getRight().evaluate(message);

@@ -28,17 +28,17 @@ import java.math.BigDecimal;
 /**
  * Represents a constant expression
  */
-public class ConstantExpression implements Expression
+public class ConstantExpression<T> implements Expression<T>
 {
 
-    static class BooleanConstantExpression extends ConstantExpression implements BooleanExpression
+    static class BooleanConstantExpression<E> extends ConstantExpression<E> implements BooleanExpression<E>
     {
         public BooleanConstantExpression(Object value)
         {
             super(value);
         }
 
-        public boolean matches(FilterableMessage message)
+        public boolean matches(E message)
         {
             Object object = evaluate(message);
 
@@ -50,9 +50,26 @@ public class ConstantExpression implements Expression
     public static final BooleanConstantExpression TRUE = new BooleanConstantExpression(Boolean.TRUE);
     public static final BooleanConstantExpression FALSE = new BooleanConstantExpression(Boolean.FALSE);
 
+
+
     private Object _value;
 
-    public static ConstantExpression createFromDecimal(String text)
+    public static <E> ConstantExpression<E> NULL()
+    {
+        return NULL;
+    }
+
+    public static <E> ConstantExpression<E> TRUE()
+    {
+        return TRUE;
+    }
+
+    public static <E> ConstantExpression<E> FALSE()
+    {
+        return FALSE;
+    }
+
+    public static <E> ConstantExpression<E> createFromDecimal(String text)
     {
 
         // Strip off the 'l' or 'L' if needed.
@@ -78,10 +95,10 @@ public class ConstantExpression implements Expression
             value = value.intValue();
         }
 
-        return new ConstantExpression(value);
+        return new ConstantExpression<>(value);
     }
 
-    public static ConstantExpression createFromHex(String text)
+    public static <E> ConstantExpression<E> createFromHex(String text)
     {
         Number value = Long.parseLong(text.substring(2), 16);
         long l = value.longValue();
@@ -90,10 +107,10 @@ public class ConstantExpression implements Expression
             value = value.intValue();
         }
 
-        return new ConstantExpression(value);
+        return new ConstantExpression<>(value);
     }
 
-    public static ConstantExpression createFromOctal(String text)
+    public static <E> ConstantExpression<E> createFromOctal(String text)
     {
         Number value = Long.parseLong(text, 8);
         long l = value.longValue();
@@ -102,14 +119,14 @@ public class ConstantExpression implements Expression
             value = value.intValue();
         }
 
-        return new ConstantExpression(value);
+        return new ConstantExpression<>(value);
     }
 
-    public static ConstantExpression createFloat(String text)
+    public static <E> ConstantExpression<E> createFloat(String text)
     {
         Number value = new Double(text);
 
-        return new ConstantExpression(value);
+        return new ConstantExpression<>(value);
     }
 
     public ConstantExpression(Object value)
@@ -117,7 +134,7 @@ public class ConstantExpression implements Expression
         this._value = value;
     }
 
-    public Object evaluate(FilterableMessage message)
+    public Object evaluate(T message)
     {
         return _value;
     }

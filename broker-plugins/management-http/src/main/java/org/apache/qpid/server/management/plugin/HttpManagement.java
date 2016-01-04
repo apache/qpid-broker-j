@@ -73,6 +73,7 @@ import org.apache.qpid.server.management.plugin.servlet.DefinedFileServlet;
 import org.apache.qpid.server.management.plugin.servlet.FileServlet;
 import org.apache.qpid.server.management.plugin.servlet.RootServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.ApiDocsServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.BrokerQueryServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.JsonValueServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LoggedOnUserPreferencesServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.LogoutServlet;
@@ -83,6 +84,7 @@ import org.apache.qpid.server.management.plugin.servlet.rest.SaslServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.StructureServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.TimeZoneServlet;
 import org.apache.qpid.server.management.plugin.servlet.rest.UserPreferencesServlet;
+import org.apache.qpid.server.management.plugin.servlet.rest.VirtualHostQueryServlet;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
 import org.apache.qpid.server.model.port.HttpPort;
@@ -261,6 +263,15 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
 
         addRestServlet(root, Broker.class);
+
+        ServletHolder queryServlet = new ServletHolder(new BrokerQueryServlet());
+        root.addServlet(queryServlet, "/api/latest/querybroker/*");
+        root.addServlet(queryServlet, "/api/v" + BrokerModel.MODEL_MAJOR_VERSION + "/querybroker/*");
+
+        ServletHolder vhQueryServlet = new ServletHolder(new VirtualHostQueryServlet());
+        root.addServlet(vhQueryServlet, "/api/latest/queryvhost/*");
+        root.addServlet(vhQueryServlet, "/api/v" + BrokerModel.MODEL_MAJOR_VERSION + "/queryvhost/*");
+
 
         ServletHolder apiDocsServlet = new ServletHolder(new ApiDocsServlet(getModel()));
         final ServletHolder rewriteSerlvet = new ServletHolder(new RewriteServlet("^(.*)$", "$1/"));

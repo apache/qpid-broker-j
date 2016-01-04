@@ -23,41 +23,41 @@ package org.apache.qpid.filter;
 /**
  * A filter performing a comparison of two objects
  */
-public abstract class LogicExpression extends BinaryExpression implements BooleanExpression
+public abstract class LogicExpression<T> extends BinaryExpression<T> implements BooleanExpression<T>
 {
 
-    public static BooleanExpression createOR(BooleanExpression lvalue, BooleanExpression rvalue)
+    public static <E> BooleanExpression<E> createOR(BooleanExpression<E> lvalue, BooleanExpression<E> rvalue)
     {
-        return new OrExpression(lvalue, rvalue);
+        return new OrExpression<>(lvalue, rvalue);
     }
 
-    public static BooleanExpression createAND(BooleanExpression lvalue, BooleanExpression rvalue)
+    public static <E> BooleanExpression<E> createAND(BooleanExpression<E> lvalue, BooleanExpression<E> rvalue)
     {
-        return new AndExpression(lvalue, rvalue);
+        return new AndExpression<>(lvalue, rvalue);
     }
 
-    public LogicExpression(BooleanExpression left, BooleanExpression right)
+    public LogicExpression(BooleanExpression<T> left, BooleanExpression<T> right)
     {
         super(left, right);
     }
 
-    public abstract Object evaluate(FilterableMessage message);
+    public abstract Object evaluate(T message);
 
-    public boolean matches(FilterableMessage message)
+    public boolean matches(T message)
     {
         Object object = evaluate(message);
 
         return (object != null) && (object == Boolean.TRUE);
     }
 
-    private static class OrExpression extends LogicExpression
+    private static class OrExpression<E> extends LogicExpression<E>
     {
-        public OrExpression(final BooleanExpression lvalue, final BooleanExpression rvalue)
+        public OrExpression(final BooleanExpression<E> lvalue, final BooleanExpression<E> rvalue)
         {
             super(lvalue, rvalue);
         }
 
-        public Object evaluate(FilterableMessage message)
+        public Object evaluate(E message)
         {
 
             Boolean lv = (Boolean) getLeft().evaluate(message);
@@ -78,14 +78,14 @@ public abstract class LogicExpression extends BinaryExpression implements Boolea
         }
     }
 
-    private static class AndExpression extends LogicExpression
+    private static class AndExpression<E> extends LogicExpression<E>
     {
-        public AndExpression(final BooleanExpression lvalue, final BooleanExpression rvalue)
+        public AndExpression(final BooleanExpression<E> lvalue, final BooleanExpression<E> rvalue)
         {
             super(lvalue, rvalue);
         }
 
-        public Object evaluate(FilterableMessage message)
+        public Object evaluate(E message)
         {
 
             Boolean lv = (Boolean) getLeft().evaluate(message);

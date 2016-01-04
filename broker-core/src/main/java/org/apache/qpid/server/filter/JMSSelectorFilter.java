@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.common.AMQPFilterTypes;
 import org.apache.qpid.filter.BooleanExpression;
+import org.apache.qpid.filter.FilterableMessage;
+import org.apache.qpid.filter.JMSMessagePropertyExpression;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
 import org.apache.qpid.filter.selector.SelectorParser;
@@ -43,7 +45,9 @@ public class JMSSelectorFilter implements MessageFilter
     public JMSSelectorFilter(String selector) throws ParseException, TokenMgrError, SelectorParsingException
     {
         _selector = selector;
-        _matcher = new SelectorParser().parse(selector);
+        SelectorParser<FilterableMessage> selectorParser = new SelectorParser<>();
+        selectorParser.setPropertyExpressionFactory(JMSMessagePropertyExpression.FACTORY);
+        _matcher = selectorParser.parse(selector);
     }
 
     @Override

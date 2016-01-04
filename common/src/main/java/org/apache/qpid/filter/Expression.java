@@ -23,13 +23,13 @@ package org.apache.qpid.filter;
 /**
  * Represents an expression
  */
-public interface Expression
+public interface Expression<T>
 {
 
     /**
-     * @param message message to evaluate
+     * @param object object to evaluate
      * @return the value of this expression
      */
-    public Object evaluate(FilterableMessage message);
+    public Object evaluate(T object);
 
 }

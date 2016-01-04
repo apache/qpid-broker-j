@@ -23,21 +23,21 @@ package org.apache.qpid.filter;
 /**
  * An expression which performs an operation on two expression values
  */
-public abstract class ArithmeticExpression extends BinaryExpression
+public abstract class ArithmeticExpression<T> extends BinaryExpression<T>
 {
 
     protected static final int INTEGER = 1;
     protected static final int LONG = 2;
     protected static final int DOUBLE = 3;
 
-    public ArithmeticExpression(Expression left, Expression right)
+    public ArithmeticExpression(Expression<T> left, Expression<T> right)
     {
         super(left, right);
     }
 
-    public static Expression createPlus(Expression left, Expression right)
+    public static <E> Expression<E> createPlus(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression(left, right)
+        return new ArithmeticExpression<E>(left, right)
             {
                 protected Object evaluate(Object lvalue, Object rvalue)
                 {
@@ -63,9 +63,9 @@ public abstract class ArithmeticExpression extends BinaryExpression
             };
     }
 
-    public static Expression createMinus(Expression left, Expression right)
+    public static <E> Expression<E> createMinus(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression(left, right)
+        return new ArithmeticExpression<E>(left, right)
             {
                 protected Object evaluate(Object lvalue, Object rvalue)
                 {
@@ -84,9 +84,9 @@ public abstract class ArithmeticExpression extends BinaryExpression
             };
     }
 
-    public static Expression createMultiply(Expression left, Expression right)
+    public static <E> Expression<E> createMultiply(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression(left, right)
+        return new ArithmeticExpression<E>(left, right)
             {
 
                 protected Object evaluate(Object lvalue, Object rvalue)
@@ -106,9 +106,9 @@ public abstract class ArithmeticExpression extends BinaryExpression
             };
     }
 
-    public static Expression createDivide(Expression left, Expression right)
+    public static <E> Expression<E> createDivide(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression(left, right)
+        return new ArithmeticExpression<E>(left, right)
             {
 
                 protected Object evaluate(Object lvalue, Object rvalue)
@@ -128,9 +128,9 @@ public abstract class ArithmeticExpression extends BinaryExpression
             };
     }
 
-    public static Expression createMod(Expression left, Expression right)
+    public static <E> Expression<E> createMod(Expression<E> left, Expression<E> right)
     {
-        return new ArithmeticExpression(left, right)
+        return new ArithmeticExpression<E>(left, right)
             {
 
                 protected Object evaluate(Object lvalue, Object rvalue)
@@ -241,7 +241,7 @@ public abstract class ArithmeticExpression extends BinaryExpression
         }
     }
 
-    public Object evaluate(FilterableMessage message)
+    public Object evaluate(T message)
     {
         Object lvalue = getLeft().evaluate(message);
         if (lvalue == null)

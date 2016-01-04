@@ -24,13 +24,13 @@ package org.apache.qpid.filter;
  * A BooleanExpression is an expression that always
  * produces a Boolean result.
  */
-public interface BooleanExpression extends Expression
+public interface BooleanExpression<E> extends Expression<E>
 {
 
     /**
-     * @param message message to match
+     * @param object object to match
      * @return true if the expression evaluates to Boolean.TRUE.
      */
-    public boolean matches(FilterableMessage message);
+    boolean matches(E object);
 
 }
