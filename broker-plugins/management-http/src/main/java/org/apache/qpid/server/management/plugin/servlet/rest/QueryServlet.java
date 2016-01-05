@@ -123,7 +123,6 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
 
                     ConfiguredObjectFilterParser parser = new ConfiguredObjectFilterParser();
                     parser.setConfiguredObjectExpressionFactory(expressionFactory);
-                    parser.allowNonPropertyInExpressions(true);
                     try
                     {
                         final BooleanExpression<ConfiguredObject> expression =
