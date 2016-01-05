@@ -29,6 +29,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -900,7 +901,7 @@ public final class QpidByteBuffer
 
         public void reset()
         {
-            _buffer.position(_mark);
+            position(_mark);
         }
     }
 
