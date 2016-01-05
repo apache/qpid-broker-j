@@ -721,23 +721,26 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     void setCacheSizeInternal(long cacheSize)
     {
-        try
+        final ReplicatedEnvironment environment = _environment.get();
+        if (environment != null)
         {
-            final ReplicatedEnvironment environment = getEnvironment(false);
-            final EnvironmentMutableConfig oldConfig = environment.getMutableConfig();
-            final EnvironmentMutableConfig newConfig = oldConfig.setCacheSize(cacheSize);
-            environment.setMutableConfig(newConfig);
-
-            LOGGER.debug("Node {} cache size has been changed to {}", _prettyGroupNodeName, cacheSize);
-        }
-        catch (RuntimeException e)
-        {
-            RuntimeException handled = handleDatabaseException("Exception on setting cache size", e);
-            if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+            try
             {
-                throw handled;
+                final EnvironmentMutableConfig oldConfig = environment.getMutableConfig();
+                final EnvironmentMutableConfig newConfig = oldConfig.setCacheSize(cacheSize);
+                environment.setMutableConfig(newConfig);
+
+                LOGGER.debug("Node {} cache size has been changed to {}", _prettyGroupNodeName, cacheSize);
             }
-            throw new ConnectionScopedRuntimeException("Cannot set cache size to " + cacheSize + " on node " + _prettyGroupNodeName, e);
+            catch (RuntimeException e)
+            {
+                RuntimeException handled = handleDatabaseException("Exception on setting cache size", e);
+                if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+                {
+                    throw handled;
+                }
+                throw new ConnectionScopedRuntimeException("Cannot set cache size to " + cacheSize + " on node " + _prettyGroupNodeName, e);
+            }
         }
     }
 
@@ -858,27 +861,32 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     void setDesignatedPrimaryInternal(final boolean isPrimary)
     {
-        try
+        ReplicatedEnvironment environment = _environment.get();
+        if (environment != null)
         {
-            ReplicatedEnvironment environment = getEnvironment(false);
-            final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
-            final ReplicationMutableConfig newConfig = oldConfig.setDesignatedPrimary(isPrimary);
-            environment.setRepMutableConfig(newConfig);
+            try
+            {
+                final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
+                final ReplicationMutableConfig newConfig = oldConfig.setDesignatedPrimary(isPrimary);
+                environment.setRepMutableConfig(newConfig);
 
-            if (LOGGER.isInfoEnabled())
+                if (LOGGER.isInfoEnabled())
+                {
+                    LOGGER.info("Node " + _prettyGroupNodeName + " successfully set designated primary : " + isPrimary);
+                }
+            }
+            catch (RuntimeException e)
             {
-                LOGGER.info("Node " + _prettyGroupNodeName + " successfully set designated primary : " + isPrimary);
+                RuntimeException handled = handleDatabaseException("Exception on setting designated primary", e);
+                if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+                {
+                    throw handled;
+                }
+                throw new ConnectionScopedRuntimeException("Cannot set designated primary to " +
+                                                           isPrimary + " on node " + _prettyGroupNodeName, handled);
             }
         }
-        catch (RuntimeException e)
-        {
-            RuntimeException handled = handleDatabaseException("Exception on setting designated primary", e);
-            if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
-            {
-                throw handled;
-            }
-            throw new ConnectionScopedRuntimeException("Cannot set designated primary to " + isPrimary + " on node " + _prettyGroupNodeName, handled);
-        }
+
     }
 
     int getPriority()
@@ -907,26 +915,33 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     void setPriorityInternal(int priority)
     {
-        try
+        final ReplicatedEnvironment environment = _environment.get();
+        if (environment != null)
         {
-            final ReplicatedEnvironment environment = getEnvironment(false);
-            final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
-            final ReplicationMutableConfig newConfig = oldConfig.setNodePriority(priority);
-            environment.setRepMutableConfig(newConfig);
+            try
+            {
+                final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
+                final ReplicationMutableConfig newConfig = oldConfig.setNodePriority(priority);
+                environment.setRepMutableConfig(newConfig);
 
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Node " + _prettyGroupNodeName + " priority has been changed to " + priority);
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.debug("Node " + _prettyGroupNodeName + " priority has been changed to " + priority);
+                }
             }
-        }
-        catch (RuntimeException e)
-        {
-            RuntimeException handled = handleDatabaseException("Exception on setting priority", e);
-            if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+            catch (RuntimeException e)
             {
-                throw handled;
+                RuntimeException handled = handleDatabaseException("Exception on setting priority", e);
+                if (handled instanceof ConnectionScopedRuntimeException
+                    || handled instanceof ServerScopedRuntimeException)
+                {
+                    throw handled;
+                }
+                throw new ConnectionScopedRuntimeException("Cannot set priority to "
+                                                           + priority
+                                                           + " on node "
+                                                           + _prettyGroupNodeName, e);
             }
-            throw new ConnectionScopedRuntimeException("Cannot set priority to " + priority + " on node " + _prettyGroupNodeName, e);
         }
     }
 
@@ -956,26 +971,36 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     void setElectableGroupSizeOverrideInternal(int electableGroupOverride)
     {
-        try
+        final ReplicatedEnvironment environment = _environment.get();
+        if (environment != null)
         {
-            final ReplicatedEnvironment environment = getEnvironment(false);
-            final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
-            final ReplicationMutableConfig newConfig = oldConfig.setElectableGroupSizeOverride(electableGroupOverride);
-            environment.setRepMutableConfig(newConfig);
+            try
+            {
+                final ReplicationMutableConfig oldConfig = environment.getRepMutableConfig();
+                final ReplicationMutableConfig newConfig = oldConfig.setElectableGroupSizeOverride(electableGroupOverride);
+                environment.setRepMutableConfig(newConfig);
 
-            if (LOGGER.isDebugEnabled())
-            {
-                LOGGER.debug("Node " + _prettyGroupNodeName + " electable group size override has been changed to " + electableGroupOverride);
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.debug("Node "
+                                 + _prettyGroupNodeName
+                                 + " electable group size override has been changed to "
+                                 + electableGroupOverride);
+                }
             }
-        }
-        catch (RuntimeException e)
-        {
-            RuntimeException handled = handleDatabaseException("Exception on setting electable group override", e);
-            if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+            catch (RuntimeException e)
             {
-                throw handled;
+                RuntimeException handled = handleDatabaseException("Exception on setting electable group override", e);
+                if (handled instanceof ConnectionScopedRuntimeException
+                    || handled instanceof ServerScopedRuntimeException)
+                {
+                    throw handled;
+                }
+                throw new ConnectionScopedRuntimeException("Cannot set electable group size to "
+                                                           + electableGroupOverride
+                                                           + " on node "
+                                                           + _prettyGroupNodeName, e);
             }
-            throw new ConnectionScopedRuntimeException("Cannot set electable group size to " + electableGroupOverride + " on node " + _prettyGroupNodeName, e);
         }
     }
 
@@ -1071,12 +1096,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     private ReplicatedEnvironment getEnvironment()
     {
-        return getEnvironment(true);
-    }
-
-    private ReplicatedEnvironment getEnvironment(boolean throwOnRestart)
-    {
-        if (throwOnRestart && getFacadeState() == State.RESTARTING)
+        if (getFacadeState() == State.RESTARTING)
         {
             throw new ConnectionScopedRuntimeException("Environment is restarting");
         }
