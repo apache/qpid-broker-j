@@ -42,7 +42,6 @@ import org.apache.qpid.filter.UnaryExpression;
  */
 public class SelectorParser<E> implements SelectorParserConstants {
     private PropertyExpressionFactory<E> _factory;
-    private boolean _allowNonPropertyInExpressions;
 
 
     public SelectorParser()
@@ -53,11 +52,6 @@ public class SelectorParser<E> implements SelectorParserConstants {
     public void setPropertyExpressionFactory(PropertyExpressionFactory<E> factory)
     {
         _factory = factory;
-    }
-
-    public void allowNonPropertyInExpressions(boolean allow)
-    {
-      _allowNonPropertyInExpressions = allow;
     }
 
     public BooleanExpression<E> parse(String sql) throws ParseException
@@ -297,7 +291,7 @@ public class SelectorParser<E> implements SelectorParserConstants {
                                             list.add( t );
                 }
                 jj_consume_token(35);
-                           left = ComparisonExpression.createInFilter(left, list, _allowNonPropertyInExpressions );
+                           left = ComparisonExpression.createInFilter(left, list, false );
                 break;
               default:
                 if (jj_2_4(2)) {
@@ -321,7 +315,7 @@ public class SelectorParser<E> implements SelectorParserConstants {
                                             list.add( t );
                   }
                   jj_consume_token(35);
-                           left = ComparisonExpression.createNotInFilter(left, list, _allowNonPropertyInExpressions);
+                           left = ComparisonExpression.createNotInFilter(left, list, false);
                 } else {
                   jj_consume_token(-1);
                   throw new ParseException();

@@ -180,27 +180,27 @@ public abstract class ComparisonExpression<T> extends BinaryExpression<T> implem
         return UnaryExpression.createNOT(createLike(left, right, escape));
     }
 
-    public static <E> BooleanExpression<E> createInFilter(Expression<E> left, List<?> elements, boolean allowNonProperties)
+    public static <E> BooleanExpression<E> createInFilter(Expression<E> left, List<?> elements, boolean allowNonJms)
     {
 
-        if (!(allowNonProperties || left instanceof PropertyExpression))
+        if (!(allowNonJms || left instanceof PropertyExpression))
         {
             throw new SelectorParsingException("Expected a property for In expression, got: " + left);
         }
 
-        return UnaryExpression.createInExpression(left, elements, false);
+        return UnaryExpression.createInExpression(left, elements, false, allowNonJms);
 
     }
 
-    public static <E> BooleanExpression<E> createNotInFilter(Expression<E> left, List<?> elements, boolean allowNonProperties)
+    public static <E> BooleanExpression<E> createNotInFilter(Expression<E> left, List<?> elements, boolean allowNonJms)
     {
 
-        if (!(allowNonProperties || left instanceof PropertyExpression))
+        if (!(allowNonJms || left instanceof PropertyExpression))
         {
             throw new SelectorParsingException("Expected a property for In expression, got: " + left);
         }
 
-        return UnaryExpression.createInExpression(left, elements, true);
+        return UnaryExpression.createInExpression(left, elements, true, allowNonJms);
 
     }
 

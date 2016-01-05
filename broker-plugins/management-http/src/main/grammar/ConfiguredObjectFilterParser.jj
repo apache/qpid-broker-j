@@ -86,8 +86,6 @@ import org.apache.qpid.server.model.ConfiguredObject;
 public class ConfiguredObjectFilterParser
 {
     private ConfiguredObjectExpressionFactory _factory;
-    private boolean _allowNonPropertyInExpressions;
-
 
     public ConfiguredObjectFilterParser()
     {
@@ -97,11 +95,6 @@ public class ConfiguredObjectFilterParser
     public void setConfiguredObjectExpressionFactory(ConfiguredObjectExpressionFactory factory)
     {
         _factory = factory;
-    }
-
-    public void allowNonPropertyInExpressions(boolean allow)
-    {
-      _allowNonPropertyInExpressions = allow;
     }
 
     public BooleanExpression<ConfiguredObject> parseWhere(String sql) throws ParseException
@@ -378,7 +371,7 @@ Expression comparisonExpression() :
 			        )*
 		        ")"
 		        {
-		           left = ComparisonExpression.createInFilter(left, list, _allowNonPropertyInExpressions );
+		           left = ComparisonExpression.createInFilter(left, list, true );
 		        }
             |
 	        	LOOKAHEAD(2)
@@ -399,7 +392,7 @@ Expression comparisonExpression() :
 			        )*
 		        ")"
 		        {
-		           left = ComparisonExpression.createNotInFilter(left, list, _allowNonPropertyInExpressions);
+		           left = ComparisonExpression.createNotInFilter(left, list, true);
 		        }
 
         )*

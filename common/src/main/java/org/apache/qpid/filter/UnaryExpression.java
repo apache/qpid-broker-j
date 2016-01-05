@@ -42,7 +42,10 @@ public abstract class UnaryExpression<T> implements Expression<T>
         return new NegativeExpression<>(left);
     }
 
-    public static <E> BooleanExpression<E> createInExpression(Expression<E> right, List<?> elements, final boolean not)
+    public static <E> BooleanExpression<E> createInExpression(Expression<E> right,
+                                                              List<?> elements,
+                                                              final boolean not,
+                                                              final boolean allowNonJms)
     {
 
         // Use a HashSet if there are many elements.
@@ -62,7 +65,7 @@ public abstract class UnaryExpression<T> implements Expression<T>
 
         final Collection<?> inList = t;
 
-        return new InExpression<>(right, inList, not);
+        return new InExpression<>(right, inList, not, allowNonJms);
     }
 
     abstract static class BooleanUnaryExpression<E> extends UnaryExpression<E> implements BooleanExpression<E>
@@ -210,19 +213,24 @@ public abstract class UnaryExpression<T> implements Expression<T>
     {
         private final Collection<?> _inList;
         private final boolean _not;
+        private final boolean _allowNonJms;
 
-        public InExpression(final Expression<E> right, final Collection<?> inList, final boolean not)
+        public InExpression(final Expression<E> right,
+                            final Collection<?> inList,
+                            final boolean not,
+                            final boolean allowNonJms)
         {
             super(right);
             _inList = inList;
             _not = not;
+            _allowNonJms = allowNonJms;
         }
 
         public Object evaluate(E message)
         {
 
             Object rvalue = getRight().evaluate(message);
-            if (rvalue == null)
+            if (rvalue == null || !(_allowNonJms || rvalue instanceof String))
             {
                 return null;
             }

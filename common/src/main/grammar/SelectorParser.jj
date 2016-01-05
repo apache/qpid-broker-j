@@ -83,8 +83,6 @@ import org.apache.qpid.filter.UnaryExpression;
 public class SelectorParser<E>
 {
     private PropertyExpressionFactory<E> _factory;
-    private boolean _allowNonPropertyInExpressions;
-
 
     public SelectorParser()
     {
@@ -94,11 +92,6 @@ public class SelectorParser<E>
     public void setPropertyExpressionFactory(PropertyExpressionFactory<E> factory)
     {
         _factory = factory;
-    }
-
-    public void allowNonPropertyInExpressions(boolean allow)
-    {
-      _allowNonPropertyInExpressions = allow;
     }
 
     public BooleanExpression<E> parse(String sql) throws ParseException
@@ -363,7 +356,7 @@ Expression comparisonExpression() :
 			        )*
 		        ")"
 		        {
-		           left = ComparisonExpression.createInFilter(left, list, _allowNonPropertyInExpressions );
+		           left = ComparisonExpression.createInFilter(left, list, false );
 		        }
             |
 	        	LOOKAHEAD(2)
@@ -384,7 +377,7 @@ Expression comparisonExpression() :
 			        )*
 		        ")"
 		        {
-		           left = ComparisonExpression.createNotInFilter(left, list, _allowNonPropertyInExpressions);
+		           left = ComparisonExpression.createNotInFilter(left, list, false);
 		        }
 
         )*

@@ -45,8 +45,6 @@ import org.apache.qpid.server.model.ConfiguredObject;
  */
 public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParserConstants {
     private ConfiguredObjectExpressionFactory _factory;
-    private boolean _allowNonPropertyInExpressions;
-
 
     public ConfiguredObjectFilterParser()
     {
@@ -56,11 +54,6 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
     public void setConfiguredObjectExpressionFactory(ConfiguredObjectExpressionFactory factory)
     {
         _factory = factory;
-    }
-
-    public void allowNonPropertyInExpressions(boolean allow)
-    {
-      _allowNonPropertyInExpressions = allow;
     }
 
     public BooleanExpression<ConfiguredObject> parseWhere(String sql) throws ParseException
@@ -309,7 +302,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
                                             list.add( right );
                 }
                 jj_consume_token(37);
-                           left = ComparisonExpression.createInFilter(left, list, _allowNonPropertyInExpressions );
+                           left = ComparisonExpression.createInFilter(left, list, true );
                 break;
               default:
                 if (jj_2_4(2)) {
@@ -333,7 +326,7 @@ public class ConfiguredObjectFilterParser implements ConfiguredObjectFilterParse
                                             list.add( right );
                   }
                   jj_consume_token(37);
-                           left = ComparisonExpression.createNotInFilter(left, list, _allowNonPropertyInExpressions);
+                           left = ComparisonExpression.createNotInFilter(left, list, true);
                 } else {
                   jj_consume_token(-1);
                   throw new ParseException();
