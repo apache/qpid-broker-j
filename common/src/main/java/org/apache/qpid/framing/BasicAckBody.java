@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicAckBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -42,13 +39,6 @@ public class BasicAckBody extends AMQMethodBodyImpl implements EncodableAMQDataB
     // Fields declared in specification
     private final long _deliveryTag; // [deliveryTag]
     private final byte _bitfield0; // [multiple]
-
-    // Constructor
-    public BasicAckBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _deliveryTag = buffer.readLong();
-        _bitfield0 = buffer.readByte();
-    }
 
     public BasicAckBody(
             long deliveryTag,
@@ -112,12 +102,12 @@ public class BasicAckBody extends AMQMethodBodyImpl implements EncodableAMQDataB
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ChannelMethodProcessor dispatcher)
     {
 
-        long deliveryTag = buffer.readLong();
-        boolean multiple = (buffer.readByte() & 0x01) != 0;
+        long deliveryTag = buffer.getLong();
+        boolean multiple = (buffer.get() & 0x01) != 0;
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicAck(deliveryTag, multiple);

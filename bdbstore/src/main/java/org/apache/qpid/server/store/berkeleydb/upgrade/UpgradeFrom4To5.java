@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.store.berkeleydb.upgrade;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -49,11 +46,9 @@ import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQProtocolVersionException;
 import org.apache.qpid.framing.AMQShortString;
-import org.apache.qpid.framing.ByteArrayDataInput;
 import org.apache.qpid.framing.ContentHeaderBody;
 import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.MessagePublishInfo;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.protocol.v0_8.MessageMetaData;
 import org.apache.qpid.server.store.StorableMessageMetaData;
@@ -677,15 +672,9 @@ public class UpgradeFrom4To5 extends AbstractStoreUpgrade
             byte[] underlying = new byte[bodySize];
             tupleInput.readFast(underlying);
 
-            try
-            {
-                return ContentHeaderBody.createFromBuffer(new ByteArrayDataInput(underlying),
-                        bodySize);
-            }
-            catch (IOException e)
-            {
-                throw new AMQFrameDecodingException(AMQConstant.INTERNAL_ERROR, e.getMessage(), e);
-            }
+            return ContentHeaderBody.createFromBuffer(QpidByteBuffer.wrap(underlying),
+                    bodySize);
+
         }
 
         @Override

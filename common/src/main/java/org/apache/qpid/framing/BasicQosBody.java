@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicQosBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,14 +40,6 @@ public class BasicQosBody extends AMQMethodBodyImpl implements EncodableAMQDataB
     private final long _prefetchSize; // [prefetchSize]
     private final int _prefetchCount; // [prefetchCount]
     private final byte _bitfield0; // [global]
-
-    // Constructor
-    public BasicQosBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _prefetchSize = EncodingUtils.readUnsignedInteger(buffer);
-        _prefetchCount = buffer.readUnsignedShort();
-        _bitfield0 = buffer.readByte();
-    }
 
     public BasicQosBody(
             long prefetchSize,
@@ -124,13 +113,13 @@ public class BasicQosBody extends AMQMethodBodyImpl implements EncodableAMQDataB
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher)
     {
 
-        long prefetchSize = EncodingUtils.readUnsignedInteger(buffer);
-        int prefetchCount = buffer.readUnsignedShort();
-        boolean global = (buffer.readByte() & 0x01) == 0x01;
+        long prefetchSize = buffer.getUnsignedInt();
+        int prefetchCount = buffer.getUnsignedShort();
+        boolean global = (buffer.get() & 0x01) == 0x01;
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicQos(prefetchSize, prefetchCount, global);

@@ -19,7 +19,6 @@
  */
 package org.apache.qpid.transport;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,7 +27,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.framing.ByteArrayDataInput;
 import org.apache.qpid.framing.HeartbeatBody;
 import org.apache.qpid.framing.ProtocolInitiation;
 import org.apache.qpid.framing.ProtocolVersion;
@@ -71,7 +69,7 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
                          -1,
                          socket.getInputStream().read());
 
-            ProtocolInitiation protocolInitiation = new ProtocolInitiation(new ByteArrayDataInput(receivedHeader));
+            ProtocolInitiation protocolInitiation = new ProtocolInitiation(QpidByteBuffer.wrap(receivedHeader));
 
             assertEquals("Unexpected protocol initialisation", _expectedProtocolInit, protocolInitiation.checkVersion());
         }

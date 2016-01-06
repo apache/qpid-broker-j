@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicCancelBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -42,13 +39,6 @@ public class BasicCancelBody extends AMQMethodBodyImpl implements EncodableAMQDa
     // Fields declared in specification
     private final AMQShortString _consumerTag; // [consumerTag]
     private final byte _bitfield0; // [nowait]
-
-    // Constructor
-    public BasicCancelBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _consumerTag = buffer.readAMQShortString();
-        _bitfield0 = buffer.readByte();
-    }
 
     public BasicCancelBody(
             AMQShortString consumerTag,
@@ -113,12 +103,12 @@ public class BasicCancelBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher)
     {
 
-        AMQShortString consumerTag = buffer.readAMQShortString();
-        boolean noWait = (buffer.readByte() & 0x01) == 0x01;
+        AMQShortString consumerTag = AMQShortString.readAMQShortString(buffer);
+        boolean noWait = (buffer.get() & 0x01) == 0x01;
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicCancel(consumerTag, noWait);

@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class QueueDeclareOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,14 +40,6 @@ public class QueueDeclareOkBody extends AMQMethodBodyImpl implements EncodableAM
     private final AMQShortString _queue; // [queue]
     private final long _messageCount; // [messageCount]
     private final long _consumerCount; // [consumerCount]
-
-    // Constructor
-    public QueueDeclareOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _queue = buffer.readAMQShortString();
-        _messageCount = EncodingUtils.readUnsignedInteger(buffer);
-        _consumerCount = EncodingUtils.readUnsignedInteger(buffer);
-    }
 
     public QueueDeclareOkBody(
             AMQShortString queue,
@@ -120,12 +109,12 @@ public class QueueDeclareOkBody extends AMQMethodBodyImpl implements EncodableAM
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ClientChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ClientChannelMethodProcessor dispatcher)
     {
-        AMQShortString queue = buffer.readAMQShortString();
-        long messageCount = EncodingUtils.readUnsignedInteger(buffer);
-        long consumerCount = EncodingUtils.readUnsignedInteger(buffer);
+        AMQShortString queue = AMQShortString.readAMQShortString(buffer);
+        long messageCount = buffer.getUnsignedInt();
+        long consumerCount = buffer.getUnsignedInt();
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveQueueDeclareOk(queue, messageCount, consumerCount);

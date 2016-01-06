@@ -26,11 +26,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.*;
 
 public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends ClientChannelMethodProcessor>>
 {
-    private List<ByteBuffer> _incompleteBuffers = new ArrayList<ByteBuffer>();
+    private QpidByteBuffer _incompleteBuffer;
 
     /**
      * Creates a new AMQP decoder.
@@ -43,42 +44,68 @@ public class ClientDecoder extends AMQDecoder<ClientMethodProcessor<? extends Cl
     }
 
     public void decodeBuffer(ByteBuffer buf)
-            throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
+            throws AMQFrameDecodingException, AMQProtocolVersionException
     {
+
         buf = buf.slice();
-        _incompleteBuffers.add(buf);
-        MarkableDataInput msg = new ByteBufferListDataInput(_incompleteBuffers);
 
-        decode(msg);
-
-
-        ListIterator<ByteBuffer> iter = _incompleteBuffers.listIterator();
-        while (iter.hasNext())
+        if(_incompleteBuffer != null)
         {
-            ByteBuffer next = iter.next();
-            if (next.hasRemaining())
+            if(buf.remaining() < _incompleteBuffer.remaining())
             {
-                if (next.position() != 0)
-                {
-                    iter.set(next.slice());
-                }
-                break;
+                _incompleteBuffer.put(buf);
+                return;
             }
             else
             {
-                iter.remove();
+                final ByteBuffer start = buf.duplicate();
+                start.limit(_incompleteBuffer.remaining());
+                buf.position(buf.position()+_incompleteBuffer.remaining());
+                _incompleteBuffer.put(start);
+                _incompleteBuffer.flip();
+                final int required = decode(_incompleteBuffer);
+
+                if(required != 0)
+                {
+                    QpidByteBuffer newBuffer = QpidByteBuffer.allocate(required + _incompleteBuffer.remaining());
+                    newBuffer.put(_incompleteBuffer);
+                    _incompleteBuffer.dispose();
+                    _incompleteBuffer = newBuffer;
+                    if(buf.hasRemaining())
+                    {
+                        decodeBuffer(buf);
+                    }
+                    return;
+                }
+                else
+                {
+                    _incompleteBuffer.dispose();
+                    _incompleteBuffer = null;
+                    if(!buf.hasRemaining())
+                    {
+                        return;
+                    }
+                }
             }
+        }
+
+        QpidByteBuffer qpidByteBuffer = QpidByteBuffer.wrap(buf);
+        final int required = decode(qpidByteBuffer);
+        if(required != 0)
+        {
+            _incompleteBuffer = QpidByteBuffer.allocate(qpidByteBuffer.remaining()+required);
+            _incompleteBuffer.put(qpidByteBuffer);
         }
 
     }
 
     void processMethod(int channelId,
-                       MarkableDataInput in)
-            throws AMQFrameDecodingException, IOException
+                       QpidByteBuffer in)
+            throws AMQFrameDecodingException
     {
         ClientMethodProcessor<? extends ClientChannelMethodProcessor> methodProcessor = getMethodProcessor();
         ClientChannelMethodProcessor channelMethodProcessor = methodProcessor.getChannelMethodProcessor(channelId);
-        final int classAndMethod = in.readInt();
+        final int classAndMethod = in.getInt();
         int classId = classAndMethod >> 16;
         int methodId = classAndMethod & 0xFFFF;
         methodProcessor.setCurrentMethod(classId, methodId);

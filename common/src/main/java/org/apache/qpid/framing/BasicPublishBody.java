@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicPublishBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -44,15 +41,6 @@ public class BasicPublishBody extends AMQMethodBodyImpl implements EncodableAMQD
     private final AMQShortString _exchange; // [exchange]
     private final AMQShortString _routingKey; // [routingKey]
     private final byte _bitfield0; // [mandatory, immediate]
-
-    // Constructor
-    public BasicPublishBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _ticket = buffer.readUnsignedShort();
-        _exchange = buffer.readAMQShortString();
-        _routingKey = buffer.readAMQShortString();
-        _bitfield0 = buffer.readByte();
-    }
 
     public BasicPublishBody(
             int ticket,
@@ -151,14 +139,14 @@ public class BasicPublishBody extends AMQMethodBodyImpl implements EncodableAMQD
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher)
     {
 
-        int ticket = buffer.readUnsignedShort();
-        AMQShortString exchange = buffer.readAMQShortString();
-        AMQShortString routingKey = buffer.readAMQShortString();
-        byte bitfield = buffer.readByte();
+        int ticket = buffer.getUnsignedShort();
+        AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        AMQShortString routingKey = AMQShortString.readAMQShortString(buffer);
+        byte bitfield = buffer.get();
 
         boolean mandatory = (bitfield & 0x01) != 0;
         boolean immediate = (bitfield & 0x02) != 0;

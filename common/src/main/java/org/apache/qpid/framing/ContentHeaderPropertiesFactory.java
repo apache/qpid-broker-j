@@ -20,10 +20,7 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataInput;
-import java.io.IOException;
-
-import org.apache.qpid.codec.MarkableDataInput;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.protocol.AMQConstant;
 
 public class ContentHeaderPropertiesFactory
@@ -40,8 +37,8 @@ public class ContentHeaderPropertiesFactory
     }
 
     public BasicContentHeaderProperties createContentHeaderProperties(int classId, int propertyFlags,
-                                                                 MarkableDataInput buffer, int size)
-             throws AMQFrameDecodingException, IOException
+                                                                      QpidByteBuffer buffer, int size)
+             throws AMQFrameDecodingException
     {
         BasicContentHeaderProperties properties;
         // AMQP version change: "Hardwired" version to major=8, minor=0

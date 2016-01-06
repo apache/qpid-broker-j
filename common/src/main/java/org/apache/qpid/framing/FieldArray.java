@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataInput;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
@@ -115,17 +113,17 @@ public class FieldArray<T> extends AbstractCollection<T>
         }
     }
 
-    public static FieldArray<?> readFromBuffer(final DataInput buffer) throws IOException
+    public static FieldArray<?> readFromBuffer(final QpidByteBuffer buffer)
     {
         ArrayList<Object> result = new ArrayList<>();
-        int size = EncodingUtils.readInteger(buffer);
-        byte[] data = new byte[size];
-        buffer.readFully(data);
-        ByteArrayDataInput slicedBuffer = new ByteArrayDataInput(data);
-        while(slicedBuffer.available() > 0)
+        int size = buffer.getInt();
+        QpidByteBuffer slicedBuffer = buffer.view(0,size);
+        buffer.position(buffer.position()+size);
+        while(slicedBuffer.hasRemaining())
         {
             result.add(AMQTypedValue.readFromBuffer(slicedBuffer).getValue());
         }
+        slicedBuffer.dispose();
         return new FieldArray<>(result);
     }
 }

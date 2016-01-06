@@ -20,28 +20,16 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataInput;
-import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class EncodingUtils
 {
     private static final Logger _logger = LoggerFactory.getLogger(EncodingUtils.class);
-
-    private static final String STRING_ENCODING = "iso8859-15";
-
-    private static final Charset _charset = Charset.forName("iso8859-15");
-
-    public static final int SIZEOF_UNSIGNED_SHORT = 2;
-    public static final int SIZEOF_UNSIGNED_INT = 4;
-    private static final boolean[] ALL_FALSE_ARRAY = new boolean[8];
 
     private EncodingUtils()
     {
@@ -64,103 +52,21 @@ public class EncodingUtils
         }
     }
 
-    public static int encodedShortStringLength(short s)
-    {
-        if (s == 0)
-        {
-            return 1 + 1;
-        }
-
-        int len = 0;
-        if (s < 0)
-        {
-            len = 1;
-            // sloppy - doesn't work of Integer.MIN_VALUE
-            s = (short) -s;
-        }
-
-        if (s > 9999)
-        {
-            return 1 + 5;
-        }
-        else if (s > 999)
-        {
-            return 1 + 4;
-        }
-        else if (s > 99)
-        {
-            return 1 + 3;
-        }
-        else if (s > 9)
-        {
-            return 1 + 2;
-        }
-        else
-        {
-            return 1 + 1;
-        }
-
-    }
-
-    public static int encodedShortStringLength(int i)
-    {
-        if (i == 0)
-        {
-            return 1 + 1;
-        }
-
-        int len = 0;
-        if (i < 0)
-        {
-            len = 1;
-            // sloppy - doesn't work of Integer.MIN_VALUE
-            i = -i;
-        }
-
-        // range is now 1 - 2147483647
-        if (i < Short.MAX_VALUE)
-        {
-            return len + encodedShortStringLength((short) i);
-        }
-        else if (i > 999999)
-        {
-            return len + 6 + encodedShortStringLength((short) (i / 1000000));
-        }
-        else // if i > 99999
-        {
-            return len + 5 + encodedShortStringLength((short) (i / 100000));
-        }
-
-    }
-
     public static int encodedShortStringLength(long l)
     {
         if (l == 0)
         {
-            return 1 + 1;
+            return 2;
         }
-
-        int len = 0;
-        if (l < 0)
+        else if(l>=1000000000000L && l<10000000000000L)
         {
-            len = 1;
-            // sloppy - doesn't work of Long.MIN_VALUE
-            l = -l;
-        }
-
-        if (l < Integer.MAX_VALUE)
-        {
-            return len + encodedShortStringLength((int) l);
-        }
-        else if (l > 9999999999L)
-        {
-            return len + 10 + encodedShortStringLength((int) (l / 10000000000L));
+            // this covers the common case of timestamps between Sep 2010 and Nov 2286
+            return 14;
         }
         else
         {
-            return len + 1 + encodedShortStringLength((int) (l / 10L));
+            return Long.toString(l).length()+1;
         }
-
     }
 
     public static int encodedShortStringLength(AMQShortString s)
@@ -246,64 +152,20 @@ public class EncodingUtils
         if (s != null)
         {
             int len = getUTF8Length(s);
-            writeUnsignedInteger(buffer, len);
+            buffer.putUnsignedInt((long) len);
             buffer.put(asUTF8Bytes(s));
 
         }
         else
         {
-            writeUnsignedInteger(buffer, 0);
+            buffer.putUnsignedInt((long) 0);
         }
     }
-
-
-    public static void writeUnsignedByte(QpidByteBuffer buffer, short b)
-    {
-        byte bv = (byte) b;
-        buffer.put(bv);
-    }
-
-    public static void writeUnsignedShort(QpidByteBuffer buffer, int s)
-    {
-        // TODO: Is this comparison safe? Do I need to cast RHS to long?
-        if (s < Short.MAX_VALUE)
-        {
-            buffer.putShort((short) s);
-        }
-        else
-        {
-            short sv = (short) s;
-            buffer.put((byte) (0xFF & (sv >> 8)));
-            buffer.put((byte) (0xFF & sv));
-        }
-    }
-
 
     public static int unsignedIntegerLength()
     {
         return 4;
     }
-
-    public static void writeUnsignedInteger(QpidByteBuffer buffer, long l)
-    {
-        // TODO: Is this comparison safe? Do I need to cast RHS to long?
-        if (l < Integer.MAX_VALUE)
-        {
-            buffer.putInt((int) l);
-        }
-        else
-        {
-            int iv = (int) l;
-
-            // FIXME: This *may* go faster if we build this into a local 4-byte array and then
-            // put the array in a single call.
-            buffer.put((byte) (0xFF & (iv >> 24)));
-            buffer.put((byte) (0xFF & (iv >> 16)));
-            buffer.put((byte) (0xFF & (iv >> 8)));
-            buffer.put((byte) (0xFF & iv));
-        }
-    }
-
 
     public static void writeFieldTableBytes(QpidByteBuffer buffer, FieldTable table)
     {
@@ -313,7 +175,7 @@ public class EncodingUtils
         }
         else
         {
-            EncodingUtils.writeUnsignedInteger(buffer, 0);
+            buffer.putUnsignedInt((long) 0);
         }
     }
 
@@ -321,18 +183,18 @@ public class EncodingUtils
     {
         if (data != null)
         {
-            writeUnsignedInteger(buffer, data.length);
+            buffer.putUnsignedInt((long) data.length);
             buffer.put(data);
         }
         else
         {
-            writeUnsignedInteger(buffer, 0);
+            buffer.putUnsignedInt((long) 0);
         }
     }
 
-    public static FieldTable readFieldTable(MarkableDataInput input) throws AMQFrameDecodingException, IOException
+    public static FieldTable readFieldTable(QpidByteBuffer input) throws AMQFrameDecodingException
     {
-        long length = ((long)(input.readInt())) & 0xFFFFFFFFL;
+        long length = input.getUnsignedInt();
         if (length == 0)
         {
             return null;
@@ -344,15 +206,9 @@ public class EncodingUtils
     }
 
 
-    public static AMQShortString readAMQShortString(DataInput buffer) throws IOException
+    public static String readLongString(QpidByteBuffer buffer)
     {
-        return AMQShortString.readFromBuffer(buffer);
-
-    }
-
-    public static String readLongString(DataInput buffer) throws IOException
-    {
-        long length = ((long)(buffer.readInt())) & 0xFFFFFFFFL;
+        long length = ((long)(buffer.getInt())) & 0xFFFFFFFFL;
         if (length == 0)
         {
             return "";
@@ -360,15 +216,15 @@ public class EncodingUtils
         else
         {
             byte[] stringBytes = new byte[(int) length];
-            buffer.readFully(stringBytes, 0, (int) length);
+            buffer.get(stringBytes, 0, (int) length);
 
             return new String(stringBytes, StandardCharsets.UTF_8);
         }
     }
 
-    public static byte[] readLongstr(DataInput buffer) throws IOException
+    public static byte[] readLongstr(QpidByteBuffer buffer)
     {
-        long length = ((long)(buffer.readInt())) & 0xFFFFFFFFL;
+        long length = ((long)(buffer.getInt())) & 0xFFFFFFFFL;
         if (length == 0)
         {
             return null;
@@ -376,45 +232,11 @@ public class EncodingUtils
         else
         {
             byte[] result = new byte[(int) length];
-            buffer.readFully(result);
+            buffer.get(result);
 
             return result;
         }
     }
-
-    public static long readTimestamp(DataInput buffer) throws IOException
-    {
-        return buffer.readLong();
-    }
-
-    public static char[] convertToHexCharArray(byte[] from)
-    {
-        int length = from.length;
-        char[] result_buff = new char[(length * 2) + 2];
-
-        result_buff[0] = '0';
-        result_buff[1] = 'x';
-
-        int bite;
-        int dest = 2;
-
-        for (int i = 0; i < length; i++)
-        {
-            bite = from[i];
-
-            if (bite < 0)
-            {
-                bite += 256;
-            }
-
-            result_buff[dest++] = hex_chars[bite >> 4];
-            result_buff[dest++] = hex_chars[bite & 0x0f];
-        }
-
-        return (result_buff);
-    }
-
-    private static char[] hex_chars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
 
     // **** new methods
 
@@ -425,21 +247,9 @@ public class EncodingUtils
         buffer.put(aBoolean ? (byte)1 : (byte)0);
     }
 
-    public static boolean readBoolean(DataInput buffer) throws IOException
-    {
-        byte packedValue = buffer.readByte();
-
-        return (packedValue == 1);
-    }
-
     public static int encodedBooleanLength()
     {
         return 1;
-    }
-
-    public static byte readByte(DataInput buffer) throws IOException
-    {
-        return buffer.readByte();
     }
 
     public static int encodedByteLength()
@@ -447,19 +257,9 @@ public class EncodingUtils
         return 1;
     }
 
-    public static short readShort(DataInput buffer) throws IOException
-    {
-        return buffer.readShort();
-    }
-
     public static int encodedShortLength()
     {
         return 2;
-    }
-
-    public static int readInteger(DataInput buffer) throws IOException
-    {
-        return buffer.readInt();
     }
 
     public static int encodedIntegerLength()
@@ -467,19 +267,9 @@ public class EncodingUtils
         return 4;
     }
 
-    public static long readLong(DataInput buffer) throws IOException
-    {
-        return buffer.readLong();
-    }
-
     public static int encodedLongLength()
     {
         return 8;
-    }
-
-    public static float readFloat(DataInput buffer) throws IOException
-    {
-        return buffer.readFloat();
     }
 
     public static int encodedFloatLength()
@@ -487,19 +277,14 @@ public class EncodingUtils
         return 4;
     }
 
-    public static double readDouble(DataInput buffer) throws IOException
-    {
-        return buffer.readDouble();
-    }
-
     public static int encodedDoubleLength()
     {
         return 8;
     }
 
-    public static byte[] readBytes(DataInput buffer) throws IOException
+    public static byte[] readBytes(QpidByteBuffer buffer)
     {
-        long length = ((long)(buffer.readInt())) & 0xFFFFFFFFL;
+        long length = buffer.getUnsignedInt();
         if (length == 0)
         {
             return null;
@@ -507,7 +292,7 @@ public class EncodingUtils
         else
         {
             byte[] dataBytes = new byte[(int)length];
-            buffer.readFully(dataBytes, 0, (int) length);
+            buffer.get(dataBytes);
 
             return dataBytes;
         }
@@ -518,12 +303,12 @@ public class EncodingUtils
         if (data != null)
         {
             // TODO: check length fits in an unsigned byte
-            writeUnsignedInteger(buffer,  (long)data.length);
+            buffer.putUnsignedInt((long)data.length);
             buffer.put(data);
         }
         else
         {
-            writeUnsignedInteger(buffer, 0L);
+            buffer.putUnsignedInt(0L);
         }
     }
 
@@ -533,29 +318,23 @@ public class EncodingUtils
         return encodedByteLength();
     }
 
-    public static char readChar(DataInput buffer) throws IOException
+    public static long readLongAsShortString(QpidByteBuffer buffer)
     {
-        // This is valid as we know that the Character is ASCII 0..127
-        return (char) buffer.readByte();
-    }
-
-    public static long readLongAsShortString(DataInput buffer) throws IOException
-    {
-        short length = (short) buffer.readUnsignedByte();
+        short length = (short) buffer.getUnsignedByte();
         short pos = 0;
         if (length == 0)
         {
             return 0L;
         }
 
-        byte digit = buffer.readByte();
+        byte digit = buffer.get();
         boolean isNegative;
         long result = 0;
         if (digit == (byte) '-')
         {
             isNegative = true;
             pos++;
-            digit = buffer.readByte();
+            digit = buffer.get();
         }
         else
         {
@@ -568,25 +347,12 @@ public class EncodingUtils
         while (pos < length)
         {
             pos++;
-            digit = buffer.readByte();
+            digit = buffer.get();
             result = (result << 3) + (result << 1);
             result += digit - (byte) '0';
         }
 
-        return result;
-    }
-
-    public static long readUnsignedInteger(DataInput buffer) throws IOException
-    {
-        long l = 0xFF & buffer.readByte();
-        l <<= 8;
-        l = l | (0xFF & buffer.readByte());
-        l <<= 8;
-        l = l | (0xFF & buffer.readByte());
-        l <<= 8;
-        l = l | (0xFF & buffer.readByte());
-
-        return l;
+        return isNegative ? -result : result;
     }
 
     public static byte[] asUTF8Bytes(CharSequence string)

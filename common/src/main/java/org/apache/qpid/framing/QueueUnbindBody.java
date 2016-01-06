@@ -31,7 +31,6 @@ import java.io.IOException;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -45,16 +44,6 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
     private final AMQShortString _exchange; // [exchange]
     private final AMQShortString _routingKey; // [routingKey]
     private final FieldTable _arguments; // [arguments]
-
-    // Constructor
-    public QueueUnbindBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _ticket = buffer.readUnsignedShort();
-        _queue = buffer.readAMQShortString();
-        _exchange = buffer.readAMQShortString();
-        _routingKey = buffer.readAMQShortString();
-        _arguments = EncodingUtils.readFieldTable(buffer);
-    }
 
     public QueueUnbindBody(
             int ticket,
@@ -147,14 +136,14 @@ public class QueueUnbindBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException, AMQFrameDecodingException
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher) throws AMQFrameDecodingException
     {
 
-        int ticket = buffer.readUnsignedShort();
-        AMQShortString queue = buffer.readAMQShortString();
-        AMQShortString exchange = buffer.readAMQShortString();
-        AMQShortString routingKey = buffer.readAMQShortString();
+        int ticket = buffer.getUnsignedShort();
+        AMQShortString queue = AMQShortString.readAMQShortString(buffer);
+        AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        AMQShortString routingKey = AMQShortString.readAMQShortString(buffer);
         FieldTable arguments = EncodingUtils.readFieldTable(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {

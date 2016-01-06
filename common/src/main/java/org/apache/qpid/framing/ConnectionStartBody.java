@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionStartBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -136,11 +133,11 @@ public class ConnectionStartBody extends AMQMethodBodyImpl implements EncodableA
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput in, final ClientMethodProcessor dispatcher)
-            throws IOException, AMQFrameDecodingException
+    public static void process(final QpidByteBuffer in, final ClientMethodProcessor dispatcher)
+            throws AMQFrameDecodingException
     {
-        short versionMajor = (short) in.readUnsignedByte();
-        short versionMinor = (short) in.readUnsignedByte();
+        short versionMajor = (short) in.getUnsignedByte();
+        short versionMinor = (short) in.getUnsignedByte();
         FieldTable serverProperties = EncodingUtils.readFieldTable(in);
         byte[] mechanisms = EncodingUtils.readBytes(in);
         byte[] locales = EncodingUtils.readBytes(in);

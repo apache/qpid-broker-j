@@ -35,7 +35,10 @@ import org.apache.qpid.framing.AMQDataBlock;
 import org.apache.qpid.framing.AMQFrame;
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQProtocolVersionException;
+import org.apache.qpid.framing.BasicContentHeaderProperties;
 import org.apache.qpid.framing.ContentBody;
+import org.apache.qpid.framing.ContentHeaderBody;
+import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.framing.FrameCreatingMethodProcessor;
 import org.apache.qpid.framing.HeartbeatBody;
 import org.apache.qpid.framing.ProtocolVersion;
@@ -72,6 +75,36 @@ public class AMQDecoderTest extends QpidTestCase
         if (frames.get(0) instanceof AMQFrame)
         {
             assertEquals(HeartbeatBody.FRAME.getBodyFrame().getFrameType(), ((AMQFrame) frames.get(0)).getBodyFrame().getFrameType());
+        }
+        else
+        {
+            fail("decode was not a frame");
+        }
+    }
+
+
+    public void testContentHeaderPropertiesFrame() throws AMQProtocolVersionException, AMQFrameDecodingException, IOException
+    {
+        final BasicContentHeaderProperties props = new BasicContentHeaderProperties();
+        final FieldTable table = new FieldTable();
+        table.setString("hello","world");
+        table.setInteger("1+1=",2);
+        props.setHeaders(table);
+        final AMQBody body = new ContentHeaderBody(props);
+        AMQFrame frame = new AMQFrame(1, body);
+        TestSender sender = new TestSender();
+        frame.writePayload(sender);
+        ByteBuffer msg = ByteBufferUtils.combine(sender.getSentBuffers());
+
+        _decoder.decodeBuffer(msg);
+        List<AMQDataBlock> frames = _methodProcessor.getProcessedMethods();
+        AMQDataBlock firstFrame = frames.get(0);
+        if (firstFrame instanceof AMQFrame)
+        {
+            assertEquals(ContentHeaderBody.TYPE, ((AMQFrame) firstFrame).getBodyFrame().getFrameType());
+            BasicContentHeaderProperties decodedProps = ((ContentHeaderBody)((AMQFrame)firstFrame).getBodyFrame()).getProperties();
+            final FieldTable headers = decodedProps.getHeaders();
+            assertEquals("world", headers.getString("hello"));
         }
         else
         {

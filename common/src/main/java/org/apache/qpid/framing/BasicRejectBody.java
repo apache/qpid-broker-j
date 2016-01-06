@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicRejectBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -42,13 +39,6 @@ public class BasicRejectBody extends AMQMethodBodyImpl implements EncodableAMQDa
     // Fields declared in specification
     private final long _deliveryTag; // [deliveryTag]
     private final byte _bitfield0; // [requeue]
-
-    // Constructor
-    public BasicRejectBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _deliveryTag = buffer.readLong();
-        _bitfield0 = buffer.readByte();
-    }
 
     public BasicRejectBody(
             long deliveryTag,
@@ -112,12 +102,12 @@ public class BasicRejectBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher)
     {
 
-        long deliveryTag = buffer.readLong();
-        boolean requeue = (buffer.readByte() & 0x01) != 0;
+        long deliveryTag = buffer.getLong();
+        boolean requeue = (buffer.get() & 0x01) != 0;
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicReject(deliveryTag, requeue);

@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class AccessRequestBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -42,13 +39,6 @@ public class AccessRequestBody extends AMQMethodBodyImpl implements EncodableAMQ
     // Fields declared in specification
     private final AMQShortString _realm; // [realm]
     private final byte _bitfield0; // [exclusive, passive, active, write, read]
-
-    // Constructor
-    public AccessRequestBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _realm = buffer.readAMQShortString();
-        _bitfield0 = buffer.readByte();
-    }
 
     public AccessRequestBody(
             AMQShortString realm,
@@ -165,11 +155,11 @@ public class AccessRequestBody extends AMQMethodBodyImpl implements EncodableAMQ
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher)
     {
-        AMQShortString realm = buffer.readAMQShortString();
-        byte bitfield = buffer.readByte();
+        AMQShortString realm = AMQShortString.readAMQShortString(buffer);
+        byte bitfield = buffer.get();
         boolean exclusive = (bitfield & 0x01) == 0x1 ;
         boolean passive = (bitfield & 0x02) == 0x2 ;
         boolean active = (bitfield & 0x04) == 0x4 ;

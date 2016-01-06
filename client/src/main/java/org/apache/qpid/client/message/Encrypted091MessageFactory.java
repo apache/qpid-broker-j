@@ -21,7 +21,6 @@
 package org.apache.qpid.client.message;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -40,9 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.QpidException;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.ByteArrayDataInput;
 
 public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
 {
@@ -144,7 +143,7 @@ public class Encrypted091MessageFactory extends AbstractJMSMessageFactory
 
                 BasicContentHeaderProperties properties = new BasicContentHeaderProperties();
                 int payloadOffset;
-                ByteArrayDataInput dataInput = new ByteArrayDataInput(unencryptedBytes);
+                QpidByteBuffer dataInput = QpidByteBuffer.wrap(unencryptedBytes);
 
                 payloadOffset = properties.read(dataInput);
 

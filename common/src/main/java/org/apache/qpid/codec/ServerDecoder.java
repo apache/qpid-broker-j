@@ -40,16 +40,16 @@ public class ServerDecoder extends AMQDecoder<ServerMethodProcessor<? extends Se
 
     public void decodeBuffer(QpidByteBuffer buf) throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
     {
-        decode(buf.asDataInput());
+        decode(buf);
     }
 
 
     void processMethod(int channelId,
-                       MarkableDataInput in)
-            throws AMQFrameDecodingException, IOException
+                       QpidByteBuffer in)
+            throws AMQFrameDecodingException
     {
         ServerMethodProcessor<? extends ServerChannelMethodProcessor> methodProcessor = getMethodProcessor();
-        final int classAndMethod = in.readInt();
+        final int classAndMethod = in.getInt();
         int classId = classAndMethod >> 16;
         int methodId = classAndMethod & 0xFFFF;
         methodProcessor.setCurrentMethod(classId, methodId);

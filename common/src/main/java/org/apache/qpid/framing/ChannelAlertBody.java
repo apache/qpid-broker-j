@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,14 +40,6 @@ public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQD
     private final int _replyCode; // [replyCode]
     private final AMQShortString _replyText; // [replyText]
     private final FieldTable _details; // [details]
-
-    // Constructor
-    public ChannelAlertBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _replyCode = buffer.readUnsignedShort();
-        _replyText = buffer.readAMQShortString();
-        _details = EncodingUtils.readFieldTable(buffer);
-    }
 
     public ChannelAlertBody(
             int replyCode,
@@ -121,13 +110,13 @@ public class ChannelAlertBody extends AMQMethodBodyImpl implements EncodableAMQD
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
+    public static void process(final QpidByteBuffer buffer,
                                final ClientChannelMethodProcessor dispatcher)
-            throws IOException, AMQFrameDecodingException
+            throws AMQFrameDecodingException
     {
 
-        int replyCode = buffer.readUnsignedShort();
-        AMQShortString replyText = buffer.readAMQShortString();
+        int replyCode = buffer.getUnsignedShort();
+        AMQShortString replyText = AMQShortString.readAMQShortString(buffer);
         FieldTable details = EncodingUtils.readFieldTable(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {

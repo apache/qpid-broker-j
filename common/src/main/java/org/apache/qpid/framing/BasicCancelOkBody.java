@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicCancelOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -41,12 +38,6 @@ public class BasicCancelOkBody extends AMQMethodBodyImpl implements EncodableAMQ
 
     // Fields declared in specification
     private final AMQShortString _consumerTag; // [consumerTag]
-
-    // Constructor
-    public BasicCancelOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _consumerTag = buffer.readAMQShortString();
-    }
 
     public BasicCancelOkBody(
             AMQShortString consumerTag
@@ -96,11 +87,10 @@ public class BasicCancelOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput in,
+    public static void process(QpidByteBuffer in,
                                final ClientChannelMethodProcessor dispatcher)
-            throws IOException
     {
-        AMQShortString consumerTag = in.readAMQShortString();
+        AMQShortString consumerTag = AMQShortString.readAMQShortString(in);
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicCancelOk(consumerTag);

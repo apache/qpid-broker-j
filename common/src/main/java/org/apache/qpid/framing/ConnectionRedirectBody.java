@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionRedirectBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,13 +40,6 @@ public class ConnectionRedirectBody extends AMQMethodBodyImpl implements Encodab
     private final AMQShortString _host; // [host]
     private final AMQShortString _knownHosts; // [knownHosts]
 
-    // Constructor
-    public ConnectionRedirectBody(MarkableDataInput buffer, ProtocolVersion protocolVersion) throws AMQFrameDecodingException, IOException
-    {
-        _ownMethodId = ProtocolVersion.v0_8.equals(protocolVersion) ? 50 : 42;
-        _host = buffer.readAMQShortString();
-        _knownHosts = buffer.readAMQShortString();
-    }
 
     public ConnectionRedirectBody(ProtocolVersion protocolVersion, AMQShortString host, AMQShortString knownHosts)
     {
@@ -108,10 +98,10 @@ public class ConnectionRedirectBody extends AMQMethodBodyImpl implements Encodab
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer, final ClientMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer, final ClientMethodProcessor dispatcher)
     {
-        AMQShortString host = buffer.readAMQShortString();
-        AMQShortString knownHosts = buffer.readAMQShortString();
+        AMQShortString host = AMQShortString.readAMQShortString(buffer);
+        AMQShortString knownHosts = AMQShortString.readAMQShortString(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveConnectionRedirect(host, knownHosts);

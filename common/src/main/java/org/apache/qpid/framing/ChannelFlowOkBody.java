@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ChannelFlowOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -41,12 +38,6 @@ public class ChannelFlowOkBody extends AMQMethodBodyImpl implements EncodableAMQ
 
     // Fields declared in specification
     private final boolean _active; // [active]
-
-    // Constructor
-    public ChannelFlowOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _active = (buffer.readByte() & 0x01) == 0x01;
-    }
 
     public ChannelFlowOkBody(boolean active)
     {
@@ -93,11 +84,10 @@ public class ChannelFlowOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
+    public static void process(final QpidByteBuffer buffer,
                                final ChannelMethodProcessor dispatcher)
-            throws IOException
     {
-        boolean active = (buffer.readByte() & 0x01) == 0x01;
+        boolean active = (buffer.get() & 0x01) == 0x01;
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveChannelFlowOk(active);

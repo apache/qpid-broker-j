@@ -24,7 +24,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 
 import org.apache.qpid.QpidException;
-import org.apache.qpid.codec.MarkableDataInput;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
 
@@ -84,14 +84,14 @@ public class HeartbeatBody implements AMQBody
     }
 
     public static void process(final int channel,
-                            final MarkableDataInput in,
+                            final QpidByteBuffer in,
                             final MethodProcessor processor,
-                            final long bodySize) throws IOException
+                            final long bodySize)
     {
 
         if(bodySize > 0)
         {
-            in.skip(bodySize);
+            in.position(in.position()+(int)bodySize);
         }
         processor.receiveHeartbeat();
     }

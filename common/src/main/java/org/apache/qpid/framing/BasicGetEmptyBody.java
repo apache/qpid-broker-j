@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicGetEmptyBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -41,12 +38,6 @@ public class BasicGetEmptyBody extends AMQMethodBodyImpl implements EncodableAMQ
 
     // Fields declared in specification
     private final AMQShortString _clusterId; // [clusterId]
-
-    // Constructor
-    public BasicGetEmptyBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _clusterId = buffer.readAMQShortString();
-    }
 
     public BasicGetEmptyBody(
             AMQShortString clusterId
@@ -96,10 +87,10 @@ public class BasicGetEmptyBody extends AMQMethodBodyImpl implements EncodableAMQ
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ClientChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ClientChannelMethodProcessor dispatcher)
     {
-        AMQShortString clusterId = buffer.readAMQShortString();
+        AMQShortString clusterId = AMQShortString.readAMQShortString(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicGetEmpty();

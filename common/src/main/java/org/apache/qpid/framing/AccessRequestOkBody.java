@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class AccessRequestOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -41,12 +38,6 @@ public class AccessRequestOkBody extends AMQMethodBodyImpl implements EncodableA
 
     // Fields declared in specification
     private final int _ticket; // [ticket]
-
-    // Constructor
-    public AccessRequestOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _ticket = buffer.readUnsignedShort();
-    }
 
     public AccessRequestOkBody(
             int ticket
@@ -95,11 +86,10 @@ public class AccessRequestOkBody extends AMQMethodBodyImpl implements EncodableA
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
+    public static void process(final QpidByteBuffer buffer,
                                final ClientChannelMethodProcessor dispatcher)
-            throws IOException
     {
-        int ticket = buffer.readUnsignedShort();
+        int ticket = buffer.getUnsignedShort();
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveAccessRequestOk(ticket);

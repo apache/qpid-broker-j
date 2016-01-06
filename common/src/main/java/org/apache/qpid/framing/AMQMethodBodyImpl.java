@@ -20,10 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-
-import java.io.DataInput;
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +75,8 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
 
         final int size = getSize();
         QpidByteBuffer buf = QpidByteBuffer.allocateDirect(size);
-        EncodingUtils.writeUnsignedShort(buf, getClazz());
-        EncodingUtils.writeUnsignedShort(buf, getMethod());
+        buf.putUnsignedShort(getClazz());
+        buf.putUnsignedShort(getMethod());
         writeMethodPayload(buf);
         buf.flip();
         sender.send(buf);
@@ -113,11 +109,6 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
     }
 
 
-    protected int readInt(DataInput buffer) throws IOException
-    {
-        return buffer.readInt();
-    }
-
     protected int getSizeOf(FieldTable table)
     {
         return EncodingUtils.encodedFieldTableLength(table);  //To change body of created methods use File | Settings | File Templates.
@@ -144,11 +135,6 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
         EncodingUtils.writeBytes(buffer,data);
     }
 
-    protected short readShort(DataInput buffer) throws IOException
-    {
-        return EncodingUtils.readShort(buffer);
-    }
-
     protected void writeShort(QpidByteBuffer buffer, short s)
     {
         buffer.putShort(s);
@@ -161,17 +147,17 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
 
     protected void writeUnsignedShort(QpidByteBuffer buffer, int s)
     {
-        EncodingUtils.writeUnsignedShort(buffer, s);
+        buffer.putUnsignedShort(s);
     }
 
     protected void writeUnsignedInteger(QpidByteBuffer buffer, long i)
     {
-        EncodingUtils.writeUnsignedInteger(buffer, i);
+        buffer.putUnsignedInt(i);
     }
 
     protected void writeUnsignedByte(QpidByteBuffer buffer, short unsignedByte)
     {
-        EncodingUtils.writeUnsignedByte(buffer, unsignedByte);
+        buffer.putUnsignedByte(unsignedByte);
     }
 
 }

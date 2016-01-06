@@ -20,33 +20,17 @@
  */
 package org.apache.qpid.server.store;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.framing.EncodingUtils;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
-import org.apache.qpid.util.ByteBufferInputStream;
 
 public class TestMessageMetaDataFactory implements MessageMetaDataType.Factory<TestMessageMetaData>
 {
     public TestMessageMetaData createMetaData(QpidByteBuffer buf)
     {
-        try
-        {
-            InputStream bbis = buf.asInputStream();
-            DataInputStream dais = new DataInputStream(bbis);
+        long id = buf.getLong();
+        int size = buf.getInt();
 
-            long id = EncodingUtils.readLong(dais);
-            int size = EncodingUtils.readInteger(dais);
-
-            return new TestMessageMetaData(id, size);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
+        return new TestMessageMetaData(id, size);
 
     }
 }

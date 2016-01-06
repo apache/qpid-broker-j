@@ -31,7 +31,6 @@ import java.io.IOException;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicRecoverBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -41,12 +40,6 @@ public class BasicRecoverBody extends AMQMethodBodyImpl implements EncodableAMQD
 
     // Fields declared in specification
     private final byte _bitfield0; // [requeue]
-
-    // Constructor
-    public BasicRecoverBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _bitfield0 = buffer.readByte();
-    }
 
     public BasicRecoverBody(
             boolean requeue
@@ -100,11 +93,11 @@ public class BasicRecoverBody extends AMQMethodBodyImpl implements EncodableAMQD
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput in,
+    public static void process(final QpidByteBuffer in,
                                final ProtocolVersion protocolVersion,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException
+                               final ServerChannelMethodProcessor dispatcher)
     {
-        boolean requeue = (in.readByte() & 0x01) == 0x01;
+        boolean requeue = (in.get() & 0x01) == 0x01;
         boolean sync = (ProtocolVersion.v0_8.equals(protocolVersion));
 
         if(!dispatcher.ignoreAllButCloseOk())

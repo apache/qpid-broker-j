@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicNackBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -42,13 +39,6 @@ public class BasicNackBody extends AMQMethodBodyImpl implements EncodableAMQData
     // Fields declared in specification
     private final long _deliveryTag; // [deliveryTag]
     private final byte _bitfield0; // [multiple]
-
-    // Constructor
-    public BasicNackBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _deliveryTag = buffer.readLong();
-        _bitfield0 = buffer.readByte();
-    }
 
     public BasicNackBody(
             long deliveryTag,
@@ -127,12 +117,12 @@ public class BasicNackBody extends AMQMethodBodyImpl implements EncodableAMQData
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ChannelMethodProcessor dispatcher)
     {
 
-        long deliveryTag = buffer.readLong();
-        byte bitfield = buffer.readByte();
+        long deliveryTag = buffer.getLong();
+        byte bitfield = buffer.get();
         boolean multiple = (bitfield & 0x01) != 0;
         boolean requeue = (bitfield & 0x02) != 0;
         if(!dispatcher.ignoreAllButCloseOk())

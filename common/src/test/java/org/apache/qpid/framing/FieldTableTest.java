@@ -479,7 +479,7 @@ public class FieldTableTest extends QpidTestCase
         // Extract the table back from the buffer again.
         try
         {
-            FieldTable extractedOuterTable = EncodingUtils.readFieldTable(buf.asDataInput());
+            FieldTable extractedOuterTable = EncodingUtils.readFieldTable(buf);
 
             FieldTable extractedTable = extractedOuterTable.getFieldTable("innerTable");
 

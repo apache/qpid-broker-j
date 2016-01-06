@@ -29,7 +29,6 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -45,8 +44,6 @@ import javax.net.ssl.SSLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.codec.MarkableDataInput;
-import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.streams.CompositeInputStream;
 
 public final class QpidByteBuffer
@@ -394,6 +391,38 @@ public final class QpidByteBuffer
         return _buffer.getFloat(index);
     }
 
+    public int getUnsignedByte()
+    {
+        return ((int)get()) & 0xFF;
+    }
+
+    public int getUnsignedShort()
+    {
+        return ((int) getShort()) & 0xffff;
+    }
+
+    public long getUnsignedInt()
+    {
+        return ((long) getInt()) & 0xffffffffL;
+    }
+
+    public void putUnsignedByte(final short s)
+    {
+        put((byte)s);
+    }
+
+
+    public void putUnsignedShort(final int i)
+    {
+        putShort((short)i);
+    }
+
+    public void putUnsignedInt(final long l)
+    {
+        putInt((int)l);
+    }
+
+
     public QpidByteBuffer slice()
     {
         return new QpidByteBuffer(_buffer.slice(), _ref);
@@ -432,11 +461,6 @@ public final class QpidByteBuffer
     public InputStream asInputStream()
     {
         return new BufferInputStream();
-    }
-
-    public MarkableDataInput asDataInput()
-    {
-        return new BufferDataInput();
     }
 
 
@@ -759,149 +783,6 @@ public final class QpidByteBuffer
         @Override
         public void close()
         {
-        }
-    }
-
-    private final class BufferDataInput implements MarkableDataInput
-    {
-        private int _mark;
-        private final int _offset;
-
-        public BufferDataInput()
-        {
-            _offset = _buffer.position();
-        }
-
-        public void readFully(byte[] b)
-        {
-            _buffer.get(b);
-        }
-
-        public void readFully(byte[] b, int off, int len)
-        {
-            _buffer.get(b, 0, len);
-        }
-
-        public QpidByteBuffer readAsByteBuffer(int len)
-        {
-            final QpidByteBuffer view = view(0, len);
-            skipBytes(len);
-            return view;
-        }
-
-        public int skipBytes(int n)
-        {
-            _buffer.position(_buffer.position()+n);
-            return _buffer.position()-_offset;
-        }
-
-        public boolean readBoolean()
-        {
-            return _buffer.get() != 0;
-        }
-
-        public byte readByte()
-        {
-            return _buffer.get();
-        }
-
-        public int readUnsignedByte()
-        {
-            return ((int) _buffer.get()) & 0xFF;
-        }
-
-        public short readShort()
-        {
-            return _buffer.getShort();
-        }
-
-        public int readUnsignedShort()
-        {
-            return ((int) _buffer.getShort()) & 0xffff;
-        }
-
-        public char readChar()
-        {
-            return (char) _buffer.getChar();
-        }
-
-        public int readInt()
-        {
-            return _buffer.getInt();
-        }
-
-        public long readLong()
-        {
-            return _buffer.getLong();
-        }
-
-        public float readFloat()
-        {
-            return _buffer.getFloat();
-        }
-
-        public double readDouble()
-        {
-            return _buffer.getDouble();
-        }
-
-        public AMQShortString readAMQShortString()
-        {
-            return AMQShortString.readAMQShortString(_buffer);
-        }
-
-        public String readLine()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        public String readUTF()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        public int available()
-        {
-            return _buffer.remaining();
-        }
-
-
-        public long skip(long i)
-        {
-            _buffer.position(_buffer.position()+(int)i);
-            return i;
-        }
-
-        public int read(byte[] b)
-        {
-            readFully(b);
-            return b.length;
-        }
-
-        public int position()
-        {
-            return _buffer.position()-_offset;
-        }
-
-        public void position(int position)
-        {
-            _buffer.position(position + _offset);
-        }
-
-        public int length()
-        {
-            return _buffer.limit();
-        }
-
-
-        public void mark(int readAhead)
-        {
-            _mark = position();
-        }
-
-        public void reset()
-        {
-            position(_mark);
         }
     }
 

@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicGetBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,14 +40,6 @@ public class BasicGetBody extends AMQMethodBodyImpl implements EncodableAMQDataB
     private final int _ticket; // [ticket]
     private final AMQShortString _queue; // [queue]
     private final byte _bitfield0; // [noAck]
-
-    // Constructor
-    public BasicGetBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _ticket = buffer.readUnsignedShort();
-        _queue = buffer.readAMQShortString();
-        _bitfield0 = buffer.readByte();
-    }
 
     public BasicGetBody(
             int ticket,
@@ -125,14 +114,13 @@ public class BasicGetBody extends AMQMethodBodyImpl implements EncodableAMQDataB
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
+    public static void process(final QpidByteBuffer buffer,
                                final ServerChannelMethodProcessor dispatcher)
-            throws IOException
     {
 
-        int ticket = buffer.readUnsignedShort();
-        AMQShortString queue = buffer.readAMQShortString();
-        boolean noAck = (buffer.readByte() & 0x01) != 0;
+        int ticket = buffer.getUnsignedShort();
+        AMQShortString queue = AMQShortString.readAMQShortString(buffer);
+        boolean noAck = (buffer.get() & 0x01) != 0;
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicGet(queue, noAck);

@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -44,16 +41,6 @@ public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableA
     private final AMQShortString _replyText; // [replyText]
     private final int _classId; // [classId]
     private final int _methodId; // [methodId]
-
-    // Constructor
-    public ConnectionCloseBody(MarkableDataInput buffer, ProtocolVersion protocolVersion) throws AMQFrameDecodingException, IOException
-    {
-        _ownMethodId = ProtocolVersion.v0_8.equals(protocolVersion) ? 60 : 50;
-        _replyCode = buffer.readUnsignedShort();
-        _replyText = buffer.readAMQShortString();
-        _classId = buffer.readUnsignedShort();
-        _methodId = buffer.readUnsignedShort();
-    }
 
     public ConnectionCloseBody(ProtocolVersion protocolVersion,
                                int replyCode,
@@ -134,12 +121,12 @@ public class ConnectionCloseBody extends AMQMethodBodyImpl implements EncodableA
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer, final MethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer, final MethodProcessor dispatcher)
     {
-        int replyCode = buffer.readUnsignedShort();
-        AMQShortString replyText = buffer.readAMQShortString();
-        int classId = buffer.readUnsignedShort();
-        int methodId = buffer.readUnsignedShort();
+        int replyCode = buffer.getUnsignedShort();
+        AMQShortString replyText = AMQShortString.readAMQShortString(buffer);
+        int classId = buffer.getUnsignedShort();
+        int methodId = buffer.getUnsignedShort();
         dispatcher.receiveConnectionClose(replyCode, replyText, classId, methodId);
     }
 }

@@ -20,15 +20,12 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.DataInput;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 /**
  * AMQTypedValue combines together a native Java Object value, and an {@link AMQType}, as a fully typed AMQP parameter
@@ -67,7 +64,7 @@ public abstract class AMQTypedValue
             _value = type.toNativeValue(value);
         }
 
-        private GenericTypedValue(AMQType type, MarkableDataInput buffer) throws IOException
+        private GenericTypedValue(AMQType type, QpidByteBuffer buffer)
         {
             _type = type;
             _value = type.readValueFromBuffer(buffer);
@@ -131,9 +128,9 @@ public abstract class AMQTypedValue
             _value = value;
         }
 
-        public LongTypedValue(DataInput buffer) throws IOException
+        public LongTypedValue(QpidByteBuffer buffer)
         {
-            _value = EncodingUtils.readLong(buffer);
+            _value = buffer.getLong();
         }
 
         public AMQType getType()
@@ -199,9 +196,9 @@ public abstract class AMQTypedValue
     }
 
 
-    public static AMQTypedValue readFromBuffer(MarkableDataInput buffer) throws IOException
+    public static AMQTypedValue readFromBuffer(QpidByteBuffer buffer)
     {
-        AMQType type = AMQTypeMap.getType(buffer.readByte());
+        AMQType type = AMQTypeMap.getType(buffer.get());
 
         switch(type)
         {
@@ -209,7 +206,7 @@ public abstract class AMQTypedValue
                 return new LongTypedValue(buffer);
 
             case INT:
-                int value = EncodingUtils.readInteger(buffer);
+                int value = buffer.getInt();
                 return createAMQTypedValue(value);
 
             default:

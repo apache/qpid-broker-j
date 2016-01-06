@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ChannelCloseOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -41,11 +38,6 @@ public class ChannelCloseOkBody extends AMQMethodBodyImpl implements EncodableAM
     public static final int METHOD_ID = 41;
 
     // Fields declared in specification
-
-    // Constructor
-    public ChannelCloseOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-    }
 
     private ChannelCloseOkBody()
     {

@@ -31,7 +31,6 @@ import java.io.IOException;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ExchangeDeleteBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,14 +42,6 @@ public class ExchangeDeleteBody extends AMQMethodBodyImpl implements EncodableAM
     private final int _ticket; // [ticket]
     private final AMQShortString _exchange; // [exchange]
     private final byte _bitfield0; // [ifUnused, nowait]
-
-    // Constructor
-    public ExchangeDeleteBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _ticket = buffer.readUnsignedShort();
-        _exchange = buffer.readAMQShortString();
-        _bitfield0 = buffer.readByte();
-    }
 
     public ExchangeDeleteBody(
             int ticket,
@@ -138,14 +129,13 @@ public class ExchangeDeleteBody extends AMQMethodBodyImpl implements EncodableAM
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
+    public static void process(final QpidByteBuffer buffer,
                                final ServerChannelMethodProcessor dispatcher)
-            throws IOException
     {
 
-        int ticket = buffer.readUnsignedShort();
-        AMQShortString exchange = buffer.readAMQShortString();
-        byte bitfield = buffer.readByte();
+        int ticket = buffer.getUnsignedShort();
+        AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        byte bitfield = buffer.get();
         boolean ifUnused = (bitfield & 0x01) == 0x01;
         boolean nowait = (bitfield & 0x02) == 0x02;
         if(!dispatcher.ignoreAllButCloseOk())

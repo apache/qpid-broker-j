@@ -28,7 +28,7 @@ import java.security.PrivilegedExceptionAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.codec.MarkableDataInput;
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.codec.ServerDecoder;
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -49,8 +49,8 @@ public class BrokerDecoder extends ServerDecoder
     }
 
     @Override
-    protected void processFrame(final int channelId, final byte type, final long bodySize, final MarkableDataInput in)
-            throws AMQFrameDecodingException, IOException
+    protected void processFrame(final int channelId, final byte type, final long bodySize, final QpidByteBuffer in)
+            throws AMQFrameDecodingException
     {
         long startTime = 0;
         try
@@ -83,11 +83,7 @@ public class BrokerDecoder extends ServerDecoder
                 catch (PrivilegedActionException e)
                 {
                     Throwable cause = e.getCause();
-                    if(cause instanceof IOException)
-                    {
-                        throw (IOException) cause;
-                    }
-                    else if(cause instanceof AMQFrameDecodingException)
+                    if(cause instanceof AMQFrameDecodingException)
                     {
                         throw (AMQFrameDecodingException) cause;
                     }
@@ -112,8 +108,8 @@ public class BrokerDecoder extends ServerDecoder
     }
 
 
-    private void doProcessFrame(final int channelId, final byte type, final long bodySize, final MarkableDataInput in)
-            throws AMQFrameDecodingException, IOException
+    private void doProcessFrame(final int channelId, final byte type, final long bodySize, final QpidByteBuffer in)
+            throws AMQFrameDecodingException
     {
         super.processFrame(channelId, type, bodySize, in);
 

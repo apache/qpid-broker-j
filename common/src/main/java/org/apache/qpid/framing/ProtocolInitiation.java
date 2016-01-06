@@ -20,14 +20,12 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.transport.ByteBufferSender;
 
 public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQDataBlock
@@ -63,16 +61,17 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
              pv.equals(ProtocolVersion.v0_91) ? 1 : pv.getMinorVersion());
     }
 
-    public ProtocolInitiation(MarkableDataInput in) throws IOException
+    public ProtocolInitiation(QpidByteBuffer in)
     {
         _protocolHeader = new byte[4];
-        in.read(_protocolHeader);
+        in.get(_protocolHeader);
 
-        _protocolClass = in.readByte();
-        _protocolInstance = in.readByte();
-        _protocolMajor = in.readByte();
-        _protocolMinor = in.readByte();
+        _protocolClass = in.get();
+        _protocolInstance = in.get();
+        _protocolMajor = in.get();
+        _protocolMinor = in.get();
     }
+
 
     public long getSize()
     {
@@ -143,13 +142,11 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
         /**
          *
          * @param in input buffer
-         * @return true if we have enough data to decode the PI frame fully, false if more
-         * data is required
-         * @throws IOException if there is an issue reading the input
+         * @return number of extra octets of data required data to decode the PI frame fully
          */
-        public boolean decodable(MarkableDataInput in) throws IOException
+        public int decodable(QpidByteBuffer in)
         {
-            return (in.available() >= 8);
+            return (in.remaining() >= 8) ? 0 : 8 - in.remaining();
         }
 
     }

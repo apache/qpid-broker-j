@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ChannelOpenBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -39,13 +36,6 @@ public class ChannelOpenBody extends AMQMethodBodyImpl implements EncodableAMQDa
     public static final int CLASS_ID =  20;
     public static final int METHOD_ID = 10;
 
-
-    // Constructor
-    public ChannelOpenBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        // ignore unused OOB string
-        buffer.readAMQShortString();
-    }
 
     public ChannelOpenBody()
     {
@@ -83,10 +73,10 @@ public class ChannelOpenBody extends AMQMethodBodyImpl implements EncodableAMQDa
     }
 
     public static void process(final int channelId,
-                                final MarkableDataInput buffer,
-                                final ServerMethodProcessor dispatcher) throws IOException
+                                final QpidByteBuffer buffer,
+                                final ServerMethodProcessor dispatcher)
     {
-        buffer.readAMQShortString();
+        AMQShortString.readAMQShortString(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveChannelOpen(channelId);

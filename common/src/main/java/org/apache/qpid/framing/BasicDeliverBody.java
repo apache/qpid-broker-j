@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicDeliverBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -45,16 +42,6 @@ public class BasicDeliverBody extends AMQMethodBodyImpl implements EncodableAMQD
     private final byte _bitfield0; // [redelivered]
     private final AMQShortString _exchange; // [exchange]
     private final AMQShortString _routingKey; // [routingKey]
-
-    // Constructor
-    public BasicDeliverBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _consumerTag = buffer.readAMQShortString();
-        _deliveryTag = buffer.readLong();
-        _bitfield0 = buffer.readByte();
-        _exchange = buffer.readAMQShortString();
-        _routingKey = buffer.readAMQShortString();
-    }
 
     public BasicDeliverBody(
             AMQShortString consumerTag,
@@ -152,15 +139,15 @@ public class BasicDeliverBody extends AMQMethodBodyImpl implements EncodableAMQD
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ClientChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ClientChannelMethodProcessor dispatcher)
     {
 
-        AMQShortString consumerTag = buffer.readAMQShortString();
-        long deliveryTag = buffer.readLong();
-        boolean redelivered = (buffer.readByte() & 0x01) != 0;
-        AMQShortString exchange = buffer.readAMQShortString();
-        AMQShortString routingKey = buffer.readAMQShortString();
+        AMQShortString consumerTag = AMQShortString.readAMQShortString(buffer);
+        long deliveryTag = buffer.getLong();
+        boolean redelivered = (buffer.get() & 0x01) != 0;
+        AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        AMQShortString routingKey = AMQShortString.readAMQShortString(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicDeliver(consumerTag, deliveryTag, redelivered, exchange, routingKey);

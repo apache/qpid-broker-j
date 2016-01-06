@@ -31,7 +31,6 @@ import java.io.IOException;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -42,7 +41,7 @@ public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQ
     public static final ChannelOpenOkBody INSTANCE_0_8 = new ChannelOpenOkBody(true);
     public static final ChannelOpenOkBody INSTANCE_0_9 = new ChannelOpenOkBody(false);
 
-    public static ChannelOpenOkBody getInstance(ProtocolVersion protocolVersion, MarkableDataInput input)
+    public static ChannelOpenOkBody getInstance(ProtocolVersion protocolVersion, QpidByteBuffer input)
             throws IOException
     {
         final boolean isAMQP08 = ProtocolVersion.v0_8.equals(protocolVersion);
@@ -96,9 +95,9 @@ public class ChannelOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQ
         return "[ChannelOpenOkBody]";
     }
 
-    public static void process(final MarkableDataInput in,
+    public static void process(final QpidByteBuffer in,
                                final ProtocolVersion protocolVersion,
-                               final ClientChannelMethodProcessor dispatcher) throws IOException
+                               final ClientChannelMethodProcessor dispatcher)
     {
         if(!ProtocolVersion.v0_8.equals(protocolVersion))
         {

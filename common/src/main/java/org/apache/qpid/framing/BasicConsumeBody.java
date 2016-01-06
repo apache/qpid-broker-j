@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicConsumeBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -45,16 +42,6 @@ public class BasicConsumeBody extends AMQMethodBodyImpl implements EncodableAMQD
     private final AMQShortString _consumerTag; // [consumerTag]
     private final byte _bitfield0; // [noLocal, noAck, exclusive, nowait]
     private final FieldTable _arguments; // [arguments]
-
-    // Constructor
-    public BasicConsumeBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _ticket = buffer.readUnsignedShort();
-        _queue = buffer.readAMQShortString();
-        _consumerTag = buffer.readAMQShortString();
-        _bitfield0 = buffer.readByte();
-        _arguments = EncodingUtils.readFieldTable(buffer);
-    }
 
     public BasicConsumeBody(
             int ticket,
@@ -191,15 +178,15 @@ public class BasicConsumeBody extends AMQMethodBodyImpl implements EncodableAMQD
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
+    public static void process(final QpidByteBuffer buffer,
                                final ServerChannelMethodProcessor dispatcher)
-            throws IOException, AMQFrameDecodingException
+            throws AMQFrameDecodingException
     {
 
-        int ticket = buffer.readUnsignedShort();
-        AMQShortString queue = buffer.readAMQShortString();
-        AMQShortString consumerTag = buffer.readAMQShortString();
-        byte bitfield = buffer.readByte();
+        int ticket = buffer.getUnsignedShort();
+        AMQShortString queue = AMQShortString.readAMQShortString(buffer);
+        AMQShortString consumerTag = AMQShortString.readAMQShortString(buffer);
+        byte bitfield = buffer.get();
 
         boolean noLocal = (bitfield & 0x01) == 0x01;
         boolean noAck = (bitfield & 0x02) == 0x02;

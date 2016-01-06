@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class QueueUnbindOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -40,11 +37,6 @@ public class QueueUnbindOkBody extends AMQMethodBodyImpl implements EncodableAMQ
     public static final int METHOD_ID = 51;
 
     // Fields declared in specification
-
-    // Constructor
-    public QueueUnbindOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-    }
 
     public QueueUnbindOkBody(
                             )

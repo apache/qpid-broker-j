@@ -20,19 +20,10 @@
  */
 package org.apache.qpid.codec;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInput;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ListIterator;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.framing.*;
 import org.apache.qpid.protocol.AMQConstant;
 
@@ -51,7 +42,7 @@ import org.apache.qpid.protocol.AMQConstant;
 public abstract class AMQDecoder<T extends MethodProcessor>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AMQDecoder.class);
-    private static final int MAX_BUFFERS_LIMIT = 10;
+    public static final int FRAME_HEADER_SIZE = 7;
     private final T _methodProcessor;
 
     /** Holds the protocol initiation decoder. */
@@ -99,60 +90,56 @@ public abstract class AMQDecoder<T extends MethodProcessor>
         return _methodProcessor;
     }
 
-    protected void decode(final MarkableDataInput msg) throws IOException, AMQFrameDecodingException
+    protected final int decode(final QpidByteBuffer buf) throws AMQFrameDecodingException
     {
         // If this is the first read then we may be getting a protocol initiation back if we tried to negotiate
         // an unsupported version
-        if(_firstRead && msg.available()>0)
+        if(_firstRead && buf.hasRemaining())
         {
-            msg.mark(1);
             _firstRead = false;
-            if(!_expectProtocolInitiation && (((int)msg.readByte()) &0xff) > 8)
+            if(!_expectProtocolInitiation && (((int)buf.get(buf.position())) &0xff) > 8)
             {
                 _expectProtocolInitiation = true;
             }
-            msg.reset();
         }
 
-        boolean enoughData = true;
-        while (enoughData)
+        int required = 0;
+        while (required == 0)
         {
             if(!_expectProtocolInitiation)
             {
-                enoughData = decodable(msg);
-                if (enoughData)
+                required = decodable(buf);
+                if (required == 0)
                 {
-                    processInput(msg);
+                    processInput(buf);
                 }
             }
             else
             {
-                enoughData = _piDecoder.decodable(msg);
-                if (enoughData)
+                required = _piDecoder.decodable(buf);
+                if (required == 0)
                 {
-                    _methodProcessor.receiveProtocolHeader(new ProtocolInitiation(msg));
+                    _methodProcessor.receiveProtocolHeader(new ProtocolInitiation(buf));
                 }
 
             }
         }
+        return required;
     }
 
 
-    private boolean decodable(final MarkableDataInput in) throws AMQFrameDecodingException, IOException
+    private int decodable(final QpidByteBuffer in) throws AMQFrameDecodingException
     {
-        final int remainingAfterAttributes = in.available() - (1 + 2 + 4 + 1);
+        final int remainingAfterAttributes = in.remaining() - FRAME_HEADER_SIZE;
         // type, channel, body length and end byte
         if (remainingAfterAttributes < 0)
         {
-            return false;
+            return -remainingAfterAttributes;
         }
-
-        in.mark(8);
-        in.skip(1 + 2);
 
 
         // Get an unsigned int, lifted from MINA ByteBuffer getUnsignedInt()
-        final long bodySize = in.readInt() & 0xffffffffL;
+        final long bodySize = ((long)in.getInt(in.position()+3)) & 0xffffffffL;
         if (bodySize > _maxFrameSize)
         {
             throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR,
@@ -161,18 +148,19 @@ public abstract class AMQDecoder<T extends MethodProcessor>
                                                 + " is larger than negotiated maximum of  "
                                                 + _maxFrameSize);
         }
-        in.reset();
-        return (remainingAfterAttributes >= bodySize);
+
+        long required = (1L+bodySize)-remainingAfterAttributes;
+        return required > 0 ? (int) required : 0;
 
     }
 
-    private void processInput(final MarkableDataInput in)
-            throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
+    private void processInput(final QpidByteBuffer in)
+            throws AMQFrameDecodingException, AMQProtocolVersionException
     {
-        final byte type = in.readByte();
+        final byte type = in.get();
 
-        final int channel = in.readUnsignedShort();
-        final long bodySize = EncodingUtils.readUnsignedInteger(in);
+        final int channel = in.getUnsignedShort();
+        final long bodySize = in.getUnsignedInt();
 
         // bodySize can be zero
         if ((channel < 0) || (bodySize < 0))
@@ -184,7 +172,7 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
         processFrame(channel, type, bodySize, in);
 
-        byte marker = in.readByte();
+        byte marker = in.get();
         if ((marker & 0xFF) != 0xCE)
         {
             throw new AMQFrameDecodingException(AMQConstant.FRAME_ERROR,
@@ -194,8 +182,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
     }
 
-    protected void processFrame(final int channel, final byte type, final long bodySize, final MarkableDataInput in)
-            throws AMQFrameDecodingException, IOException
+    protected void processFrame(final int channel, final byte type, final long bodySize, final QpidByteBuffer in)
+            throws AMQFrameDecodingException
     {
         switch (type)
         {
@@ -218,8 +206,8 @@ public abstract class AMQDecoder<T extends MethodProcessor>
 
 
     abstract void processMethod(int channelId,
-                               MarkableDataInput in)
-            throws AMQFrameDecodingException, IOException;
+                               QpidByteBuffer in)
+            throws AMQFrameDecodingException;
 
     AMQFrameDecodingException newUnknownMethodException(final int classId,
                                                         final int methodId,

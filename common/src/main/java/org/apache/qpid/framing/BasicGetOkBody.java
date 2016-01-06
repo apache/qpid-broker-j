@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicGetOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -45,16 +42,6 @@ public class BasicGetOkBody extends AMQMethodBodyImpl implements EncodableAMQDat
     private final AMQShortString _exchange; // [exchange]
     private final AMQShortString _routingKey; // [routingKey]
     private final long _messageCount; // [messageCount]
-
-    // Constructor
-    public BasicGetOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _deliveryTag = buffer.readLong();
-        _bitfield0 = buffer.readByte();
-        _exchange = buffer.readAMQShortString();
-        _routingKey = buffer.readAMQShortString();
-        _messageCount = EncodingUtils.readUnsignedInteger(buffer);
-    }
 
     public BasicGetOkBody(
             long deliveryTag,
@@ -151,14 +138,14 @@ public class BasicGetOkBody extends AMQMethodBodyImpl implements EncodableAMQDat
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ClientChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ClientChannelMethodProcessor dispatcher)
     {
-        long deliveryTag = buffer.readLong();
-        boolean redelivered = (buffer.readByte() & 0x01) != 0;
-        AMQShortString exchange = buffer.readAMQShortString();
-        AMQShortString routingKey = buffer.readAMQShortString();
-        long messageCount = EncodingUtils.readUnsignedInteger(buffer);
+        long deliveryTag = buffer.getLong();
+        boolean redelivered = (buffer.get() & 0x01) != 0;
+        AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        AMQShortString routingKey = AMQShortString.readAMQShortString(buffer);
+        long messageCount = buffer.getUnsignedInt();
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicGetOk(deliveryTag, redelivered, exchange, routingKey, messageCount);

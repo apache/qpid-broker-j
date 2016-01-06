@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class QueuePurgeOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -41,12 +38,6 @@ public class QueuePurgeOkBody extends AMQMethodBodyImpl implements EncodableAMQD
 
     // Fields declared in specification
     private final long _messageCount; // [messageCount]
-
-    // Constructor
-    public QueuePurgeOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _messageCount = EncodingUtils.readUnsignedInteger(buffer);
-    }
 
     public QueuePurgeOkBody(
             long messageCount
@@ -95,10 +86,10 @@ public class QueuePurgeOkBody extends AMQMethodBodyImpl implements EncodableAMQD
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ClientChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ClientChannelMethodProcessor dispatcher)
     {
-        long messageCount = EncodingUtils.readUnsignedInteger(buffer);
+        long messageCount = buffer.getUnsignedInt();
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveQueuePurgeOk(messageCount);

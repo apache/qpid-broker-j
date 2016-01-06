@@ -20,14 +20,12 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.framing.AMQFrameDecodingException;
 import org.apache.qpid.framing.AMQProtocolVersionException;
 import org.apache.qpid.framing.AMQShortString;
@@ -207,14 +205,13 @@ public class MessageMetaData implements StorableMessageMetaData
         {
             try
             {
-                MarkableDataInput dataInput = buf.asDataInput();
-                int size = EncodingUtils.readInteger(dataInput);
-                ContentHeaderBody chb = ContentHeaderBody.createFromBuffer(dataInput, size);
-                final AMQShortString exchange = EncodingUtils.readAMQShortString(dataInput);
-                final AMQShortString routingKey = EncodingUtils.readAMQShortString(dataInput);
+                int size = buf.getInt();
+                ContentHeaderBody chb = ContentHeaderBody.createFromBuffer(buf, size);
+                final AMQShortString exchange = AMQShortString.readAMQShortString(buf);
+                final AMQShortString routingKey = AMQShortString.readAMQShortString(buf);
 
-                final byte flags = EncodingUtils.readByte(dataInput);
-                long arrivalTime = EncodingUtils.readLong(dataInput);
+                final byte flags = buf.get();
+                long arrivalTime = buf.getLong();
 
                 MessagePublishInfo publishBody =
                         new MessagePublishInfo(exchange,
@@ -224,7 +221,7 @@ public class MessageMetaData implements StorableMessageMetaData
 
                 return new MessageMetaData(publishBody, chb, arrivalTime);
             }
-            catch (IOException | AMQFrameDecodingException | AMQProtocolVersionException e)
+            catch (AMQFrameDecodingException | AMQProtocolVersionException e)
             {
                 throw new ConnectionScopedRuntimeException(e);
             }

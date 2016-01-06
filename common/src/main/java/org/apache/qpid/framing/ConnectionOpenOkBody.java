@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionOpenOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -42,11 +39,6 @@ public class ConnectionOpenOkBody extends AMQMethodBodyImpl implements Encodable
     // Fields declared in specification
     private final AMQShortString _knownHosts; // [knownHosts]
 
-    // Constructor
-    public ConnectionOpenOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _knownHosts = buffer.readAMQShortString();
-    }
 
     public ConnectionOpenOkBody(
             AMQShortString knownHosts
@@ -96,9 +88,9 @@ public class ConnectionOpenOkBody extends AMQMethodBodyImpl implements Encodable
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer, final ClientMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer, final ClientMethodProcessor dispatcher)
     {
-        AMQShortString knownHosts = buffer.readAMQShortString();
+        AMQShortString knownHosts = AMQShortString.readAMQShortString(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveConnectionOpenOk(knownHosts);

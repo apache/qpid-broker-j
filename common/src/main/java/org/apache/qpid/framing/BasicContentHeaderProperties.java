@@ -20,13 +20,10 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.transport.ByteBufferSender;
 
 public class BasicContentHeaderProperties
@@ -320,15 +317,15 @@ public class BasicContentHeaderProperties
         }
     }
 
-    public int read(MarkableDataInput input) throws IOException
+    public int read(QpidByteBuffer input)
     {
 
-        _propertyFlags = input.readUnsignedShort();
+        _propertyFlags = input.getUnsignedShort();
         int length = 2;
         if ((_propertyFlags & (CONTENT_TYPE_MASK)) != 0)
         {
             length++;
-            _contentType = EncodingUtils.readAMQShortString(input);
+            _contentType = AMQShortString.readAMQShortString(input);
             if(_contentType != null)
             {
                 length += _contentType.length();
@@ -338,7 +335,7 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & ENCODING_MASK) != 0)
         {
             length++;
-            _encoding = EncodingUtils.readAMQShortString(input);
+            _encoding = AMQShortString.readAMQShortString(input);
             if(_encoding != null)
             {
                 length += _encoding.length();
@@ -347,7 +344,7 @@ public class BasicContentHeaderProperties
 
         if ((_propertyFlags & HEADERS_MASK) != 0)
         {
-            int fieldTableLength = input.readInt();
+            int fieldTableLength = input.getInt();
 
             _headers = new FieldTable(input, fieldTableLength);
 
@@ -357,20 +354,20 @@ public class BasicContentHeaderProperties
 
         if ((_propertyFlags & DELIVERY_MODE_MASK) != 0)
         {
-            _deliveryMode = input.readByte();
+            _deliveryMode = input.get();
             length++;
         }
 
         if ((_propertyFlags & PRIORITY_MASK) != 0)
         {
-            _priority = input.readByte();
+            _priority = input.get();
             length++;
         }
 
         if ((_propertyFlags & CORRELATION_ID_MASK) != 0)
         {
             length++;
-            _correlationId = EncodingUtils.readAMQShortString(input);
+            _correlationId = AMQShortString.readAMQShortString(input);
             if(_correlationId != null)
             {
                 length += _correlationId.length();
@@ -380,7 +377,7 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & REPLY_TO_MASK) != 0)
         {
             length++;
-            _replyTo = EncodingUtils.readAMQShortString(input);
+            _replyTo = AMQShortString.readAMQShortString(input);
             if(_replyTo != null)
             {
                 length += _replyTo.length();
@@ -390,7 +387,7 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & EXPIRATION_MASK) != 0)
         {
             length++;
-            AMQShortString expiration = EncodingUtils.readAMQShortString(input);
+            AMQShortString expiration = AMQShortString.readAMQShortString(input);
             if(expiration != null)
             {
                 length += expiration.length();
@@ -401,7 +398,7 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & MESSAGE_ID_MASK) != 0)
         {
             length++;
-            _messageId = EncodingUtils.readAMQShortString(input);
+            _messageId = AMQShortString.readAMQShortString(input);
             if(_messageId != null)
             {
                 length += _messageId.length();
@@ -410,14 +407,14 @@ public class BasicContentHeaderProperties
 
         if ((_propertyFlags & TIMESTAMP_MASK) != 0)
         {
-            _timestamp = input.readLong();
+            _timestamp = input.getLong();
             length += 8;
         }
 
         if ((_propertyFlags & TYPE_MASK) != 0)
         {
             length++;
-            _type = EncodingUtils.readAMQShortString(input);
+            _type = AMQShortString.readAMQShortString(input);
             if(_type != null)
             {
                 length += _type.length();
@@ -427,7 +424,7 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & USER_ID_MASK) != 0)
         {
             length++;
-            _userId = EncodingUtils.readAMQShortString(input);
+            _userId = AMQShortString.readAMQShortString(input);
             if(_userId != null)
             {
                 length += _userId.length();
@@ -437,7 +434,7 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & APPLICATION_ID_MASK) != 0)
         {
             length++;
-            _appId = EncodingUtils.readAMQShortString(input);
+            _appId = AMQShortString.readAMQShortString(input);
             if(_appId != null)
             {
                 length += _appId.length();
@@ -447,7 +444,7 @@ public class BasicContentHeaderProperties
         if ((_propertyFlags & CLUSTER_ID_MASK) != 0)
         {
             length++;
-            _clusterId = EncodingUtils.readAMQShortString(input);
+            _clusterId = AMQShortString.readAMQShortString(input);
             if(_clusterId != null)
             {
                 length += _clusterId.length();
@@ -480,7 +477,7 @@ public class BasicContentHeaderProperties
 
     }
 
-    public synchronized void populatePropertiesFromBuffer(MarkableDataInput buffer, int propertyFlags, int size) throws AMQFrameDecodingException, IOException
+    public synchronized void populatePropertiesFromBuffer(QpidByteBuffer buffer, int propertyFlags, int size) throws AMQFrameDecodingException
     {
         _propertyFlags = propertyFlags;
 
@@ -492,58 +489,55 @@ public class BasicContentHeaderProperties
         {
             _encodedForm.dispose();
         }
-        _encodedForm = buffer.readAsByteBuffer(size);
+        _encodedForm = buffer.view(0,size);
 
         final QpidByteBuffer byteBuffer = _encodedForm.slice();
-        decode(byteBuffer.asDataInput());
+        decode(byteBuffer);
         byteBuffer.dispose();
+        buffer.position(buffer.position()+size);
 
     }
 
-    private void decode(MarkableDataInput buffer) throws IOException, AMQFrameDecodingException
+    private void decode(QpidByteBuffer buffer) throws AMQFrameDecodingException
     {
-        int headersOffset = 0;
-
         if ((_propertyFlags & (CONTENT_TYPE_MASK)) != 0)
         {
-            _contentType = buffer.readAMQShortString();
-            headersOffset += EncodingUtils.encodedShortStringLength(_contentType);
+            _contentType = AMQShortString.readAMQShortString(buffer);
         }
 
         if ((_propertyFlags & ENCODING_MASK) != 0)
         {
-            _encoding = buffer.readAMQShortString();
-            headersOffset += EncodingUtils.encodedShortStringLength(_encoding);
+            _encoding = AMQShortString.readAMQShortString(buffer);
         }
 
         if ((_propertyFlags & HEADERS_MASK) != 0)
         {
-            long length = EncodingUtils.readUnsignedInteger(buffer);
+            long length = buffer.getUnsignedInt();
 
-            QpidByteBuffer buf = _encodedForm.view(headersOffset+4, (int)length);
+            QpidByteBuffer buf = buffer.view(0, (int)length);
             _headers = new FieldTable(buf);
             buf.dispose();
-            buffer.skipBytes((int)length);
+            buffer.position(buffer.position()+(int)length);
         }
 
         if ((_propertyFlags & DELIVERY_MODE_MASK) != 0)
         {
-            _deliveryMode = buffer.readByte();
+            _deliveryMode = buffer.get();
         }
 
         if ((_propertyFlags & PRIORITY_MASK) != 0)
         {
-            _priority = buffer.readByte();
+            _priority = buffer.get();
         }
 
         if ((_propertyFlags & CORRELATION_ID_MASK) != 0)
         {
-            _correlationId = buffer.readAMQShortString();
+            _correlationId = AMQShortString.readAMQShortString(buffer);
         }
 
         if ((_propertyFlags & REPLY_TO_MASK) != 0)
         {
-            _replyTo = buffer.readAMQShortString();
+            _replyTo = AMQShortString.readAMQShortString(buffer);
         }
 
         if ((_propertyFlags & EXPIRATION_MASK) != 0)
@@ -553,34 +547,33 @@ public class BasicContentHeaderProperties
 
         if ((_propertyFlags & MESSAGE_ID_MASK) != 0)
         {
-            _messageId = buffer.readAMQShortString();
+            _messageId = AMQShortString.readAMQShortString(buffer);
         }
 
         if ((_propertyFlags & TIMESTAMP_MASK) != 0)
         {
-            _timestamp = EncodingUtils.readTimestamp(buffer);
+            _timestamp = buffer.getLong();
         }
 
         if ((_propertyFlags & TYPE_MASK) != 0)
         {
-            _type = buffer.readAMQShortString();
+            _type = AMQShortString.readAMQShortString(buffer);
         }
 
         if ((_propertyFlags & USER_ID_MASK) != 0)
         {
-            _userId = buffer.readAMQShortString();
+            _userId = AMQShortString.readAMQShortString(buffer);
         }
 
         if ((_propertyFlags & APPLICATION_ID_MASK) != 0)
         {
-            _appId = buffer.readAMQShortString();
+            _appId = AMQShortString.readAMQShortString(buffer);
         }
 
         if ((_propertyFlags & CLUSTER_ID_MASK) != 0)
         {
-            _clusterId = buffer.readAMQShortString();
+            _clusterId = AMQShortString.readAMQShortString(buffer);
         }
-
 
     }
 

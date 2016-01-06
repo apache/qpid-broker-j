@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
@@ -40,12 +39,12 @@ public class ContentHeaderBody implements AMQBody
     /** must never be null */
     private final BasicContentHeaderProperties _properties;
 
-    public ContentHeaderBody(MarkableDataInput buffer, long size) throws AMQFrameDecodingException, IOException
+    public ContentHeaderBody(QpidByteBuffer buffer, long size) throws AMQFrameDecodingException
     {
-        buffer.readUnsignedShort();
-        buffer.readUnsignedShort();
-        _bodySize = buffer.readLong();
-        int propertyFlags = buffer.readUnsignedShort();
+        buffer.getUnsignedShort();
+        buffer.getUnsignedShort();
+        _bodySize = buffer.getLong();
+        int propertyFlags = buffer.getUnsignedShort();
         ContentHeaderPropertiesFactory factory = ContentHeaderPropertiesFactory.getInstance();
         _properties = factory.createContentHeaderProperties(CLASS_ID, propertyFlags, buffer, (int)size - 14);
 
@@ -77,8 +76,8 @@ public class ContentHeaderBody implements AMQBody
      * @throws AMQProtocolVersionException if there is a version issue
      * @throws IOException if there is an IO issue
      */
-    public static ContentHeaderBody createFromBuffer(MarkableDataInput buffer, long size)
-        throws AMQFrameDecodingException, AMQProtocolVersionException, IOException
+    public static ContentHeaderBody createFromBuffer(QpidByteBuffer buffer, long size)
+        throws AMQFrameDecodingException, AMQProtocolVersionException
     {
         ContentHeaderBody body = new ContentHeaderBody(buffer, size);
         
@@ -94,10 +93,10 @@ public class ContentHeaderBody implements AMQBody
     public long writePayload(final ByteBufferSender sender)
     {
         QpidByteBuffer data = QpidByteBuffer.allocateDirect(HEADER_SIZE);
-        EncodingUtils.writeUnsignedShort(data, CLASS_ID);
-        EncodingUtils.writeUnsignedShort(data, 0);
+        data.putUnsignedShort(CLASS_ID);
+        data.putUnsignedShort(0);
         data.putLong(_bodySize);
-        EncodingUtils.writeUnsignedShort(data, _properties.getPropertyFlags());
+        data.putUnsignedShort(_properties.getPropertyFlags());
         data.flip();
         sender.send(data);
         data.dispose();
@@ -106,10 +105,10 @@ public class ContentHeaderBody implements AMQBody
 
     public long writePayload(final QpidByteBuffer buf)
     {
-        EncodingUtils.writeUnsignedShort(buf, CLASS_ID);
-        EncodingUtils.writeUnsignedShort(buf, 0);
+        buf.putUnsignedShort(CLASS_ID);
+        buf.putUnsignedShort(0);
         buf.putLong(_bodySize);
-        EncodingUtils.writeUnsignedShort(buf, _properties.getPropertyFlags());
+        buf.putUnsignedShort(_properties.getPropertyFlags());
         return HEADER_SIZE + _properties.writePropertyListPayload(buf);
     }
 
@@ -165,15 +164,15 @@ public class ContentHeaderBody implements AMQBody
         _bodySize = bodySize;
     }
 
-    public static void process(final MarkableDataInput buffer,
+    public static void process(final QpidByteBuffer buffer,
                                final ChannelMethodProcessor methodProcessor, final long size)
-            throws IOException, AMQFrameDecodingException
+            throws AMQFrameDecodingException
     {
 
-        int classId = buffer.readUnsignedShort();
-        buffer.readUnsignedShort();
-        long bodySize = buffer.readLong();
-        int propertyFlags = buffer.readUnsignedShort();
+        int classId = buffer.getUnsignedShort();
+        buffer.getUnsignedShort();
+        long bodySize = buffer.getLong();
+        int propertyFlags = buffer.getUnsignedShort();
 
         BasicContentHeaderProperties properties;
 

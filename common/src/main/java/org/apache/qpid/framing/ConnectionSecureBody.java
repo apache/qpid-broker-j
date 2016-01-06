@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionSecureBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -42,11 +39,6 @@ public class ConnectionSecureBody extends AMQMethodBodyImpl implements Encodable
     // Fields declared in specification
     private final byte[] _challenge; // [challenge]
 
-    // Constructor
-    public ConnectionSecureBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _challenge = EncodingUtils.readBytes(buffer);
-    }
 
     public ConnectionSecureBody(
             byte[] challenge
@@ -96,8 +88,8 @@ public class ConnectionSecureBody extends AMQMethodBodyImpl implements Encodable
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput in, final ClientMethodProcessor dispatcher)
-            throws IOException, AMQFrameDecodingException
+    public static void process(final QpidByteBuffer in, final ClientMethodProcessor dispatcher)
+            throws AMQFrameDecodingException
 
     {
         byte[] challenge = EncodingUtils.readBytes(in);

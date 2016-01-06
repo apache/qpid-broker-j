@@ -31,7 +31,6 @@ import java.io.IOException;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicReturnBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -44,15 +43,6 @@ public class BasicReturnBody extends AMQMethodBodyImpl implements EncodableAMQDa
     private final AMQShortString _replyText; // [replyText]
     private final AMQShortString _exchange; // [exchange]
     private final AMQShortString _routingKey; // [routingKey]
-
-    // Constructor
-    public BasicReturnBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _replyCode = buffer.readUnsignedShort();
-        _replyText = buffer.readAMQShortString();
-        _exchange = buffer.readAMQShortString();
-        _routingKey = buffer.readAMQShortString();
-    }
 
     public BasicReturnBody(
             int replyCode,
@@ -134,14 +124,14 @@ public class BasicReturnBody extends AMQMethodBodyImpl implements EncodableAMQDa
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ClientChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ClientChannelMethodProcessor dispatcher)
     {
 
-        int replyCode = buffer.readUnsignedShort();
-        AMQShortString replyText = buffer.readAMQShortString();
-        AMQShortString exchange = buffer.readAMQShortString();
-        AMQShortString routingKey = buffer.readAMQShortString();
+        int replyCode = buffer.getUnsignedShort();
+        AMQShortString replyText = AMQShortString.readAMQShortString(buffer);
+        AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        AMQShortString routingKey = AMQShortString.readAMQShortString(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveBasicReturn(replyCode, replyText, exchange, routingKey);

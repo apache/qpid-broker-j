@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.framing;
 
+import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 import java.io.ByteArrayInputStream;
@@ -82,7 +83,7 @@ public class BasicContentHeaderPropertiesTest extends QpidTestCase
 
     public void testPopulatePropertiesFromBuffer() throws Exception
     {
-        ByteArrayDataInput buf = new ByteArrayDataInput(new byte[300]);
+        QpidByteBuffer buf = QpidByteBuffer.wrap(new byte[300]);
         _testProperties.populatePropertiesFromBuffer(buf, 99, 99);
     }
 

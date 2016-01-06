@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionSecureOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -41,12 +38,6 @@ public class ConnectionSecureOkBody extends AMQMethodBodyImpl implements Encodab
 
     // Fields declared in specification
     private final byte[] _response; // [response]
-
-    // Constructor
-    public ConnectionSecureOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _response = EncodingUtils.readBytes(buffer);
-    }
 
     public ConnectionSecureOkBody(
             byte[] response
@@ -96,7 +87,7 @@ public class ConnectionSecureOkBody extends AMQMethodBodyImpl implements Encodab
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput in, final ServerMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer in, final ServerMethodProcessor dispatcher)
     {
         byte[] response = EncodingUtils.readBytes(in);
         if(!dispatcher.ignoreAllButCloseOk())

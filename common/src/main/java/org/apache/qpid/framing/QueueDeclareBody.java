@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class QueueDeclareBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -44,15 +41,6 @@ public class QueueDeclareBody extends AMQMethodBodyImpl implements EncodableAMQD
     private final AMQShortString _queue; // [queue]
     private final byte _bitfield0; // [passive, durable, exclusive, autoDelete, nowait]
     private final FieldTable _arguments; // [arguments]
-
-    // Constructor
-    public QueueDeclareBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _ticket = buffer.readUnsignedShort();
-        _queue = buffer.readAMQShortString();
-        _bitfield0 = buffer.readByte();
-        _arguments = EncodingUtils.readFieldTable(buffer);
-    }
 
     public QueueDeclareBody(
             int ticket,
@@ -191,13 +179,13 @@ public class QueueDeclareBody extends AMQMethodBodyImpl implements EncodableAMQD
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException, AMQFrameDecodingException
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher) throws AMQFrameDecodingException
     {
 
-        int ticket = buffer.readUnsignedShort();
-        AMQShortString queue = buffer.readAMQShortString();
-        byte bitfield = buffer.readByte();
+        int ticket = buffer.getUnsignedShort();
+        AMQShortString queue = AMQShortString.readAMQShortString(buffer);
+        byte bitfield = buffer.get();
 
         boolean passive = (bitfield & 0x01 ) == 0x01;
         boolean durable = (bitfield & 0x02 ) == 0x02;

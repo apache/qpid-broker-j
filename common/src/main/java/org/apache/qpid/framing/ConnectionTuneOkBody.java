@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionTuneOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,14 +40,6 @@ public class ConnectionTuneOkBody extends AMQMethodBodyImpl implements Encodable
     private final int _channelMax; // [channelMax]
     private final long _frameMax; // [frameMax]
     private final int _heartbeat; // [heartbeat]
-
-    // Constructor
-    public ConnectionTuneOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _channelMax = buffer.readUnsignedShort();
-        _frameMax = EncodingUtils.readUnsignedInteger(buffer);
-        _heartbeat = buffer.readUnsignedShort();
-    }
 
     public ConnectionTuneOkBody(
             int channelMax,
@@ -119,12 +108,12 @@ public class ConnectionTuneOkBody extends AMQMethodBodyImpl implements Encodable
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer, final ServerMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer, final ServerMethodProcessor dispatcher)
     {
 
-        int channelMax = buffer.readUnsignedShort();
-        long frameMax = EncodingUtils.readUnsignedInteger(buffer);
-        int heartbeat = buffer.readUnsignedShort();
+        int channelMax = buffer.getUnsignedShort();
+        long frameMax = buffer.getUnsignedInt();
+        int heartbeat = buffer.getUnsignedShort();
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveConnectionTuneOk(channelMax, frameMax, heartbeat);

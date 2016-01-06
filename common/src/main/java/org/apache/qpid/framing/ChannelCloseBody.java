@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ChannelCloseBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -44,15 +41,6 @@ public class ChannelCloseBody extends AMQMethodBodyImpl implements EncodableAMQD
     private final AMQShortString _replyText; // [replyText]
     private final int _classId; // [classId]
     private final int _methodId; // [methodId]
-
-    // Constructor
-    public ChannelCloseBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _replyCode = buffer.readUnsignedShort();
-        _replyText = buffer.readAMQShortString();
-        _classId = buffer.readUnsignedShort();
-        _methodId = buffer.readUnsignedShort();
-    }
 
     public ChannelCloseBody(
             int replyCode,
@@ -132,14 +120,14 @@ public class ChannelCloseBody extends AMQMethodBodyImpl implements EncodableAMQD
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ChannelMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer,
+                               final ChannelMethodProcessor dispatcher)
     {
 
-        int replyCode = buffer.readUnsignedShort();
-        AMQShortString replyText = buffer.readAMQShortString();
-        int classId = buffer.readUnsignedShort();
-        int methodId = buffer.readUnsignedShort();
+        int replyCode = buffer.getUnsignedShort();
+        AMQShortString replyText = AMQShortString.readAMQShortString(buffer);
+        int classId = buffer.getUnsignedShort();
+        int methodId = buffer.getUnsignedShort();
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveChannelClose(replyCode, replyText, classId, methodId);

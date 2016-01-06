@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ConnectionOpenBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,14 +40,6 @@ public class ConnectionOpenBody extends AMQMethodBodyImpl implements EncodableAM
     private final AMQShortString _virtualHost; // [virtualHost]
     private final AMQShortString _capabilities; // [capabilities]
     private final boolean _insist; // [insist]
-
-    // Constructor
-    public ConnectionOpenBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _virtualHost = buffer.readAMQShortString();
-        _capabilities = buffer.readAMQShortString();
-        _insist = (buffer.readByte() & 0x01) == 0x01;
-    }
 
     public ConnectionOpenBody(
             AMQShortString virtualHost,
@@ -121,12 +110,12 @@ public class ConnectionOpenBody extends AMQMethodBodyImpl implements EncodableAM
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer, final ServerMethodProcessor dispatcher) throws IOException
+    public static void process(final QpidByteBuffer buffer, final ServerMethodProcessor dispatcher)
     {
 
-        AMQShortString virtualHost = buffer.readAMQShortString();
-        AMQShortString capabilities = buffer.readAMQShortString();
-        boolean insist = (buffer.readByte() & 0x01) == 0x01;
+        AMQShortString virtualHost = AMQShortString.readAMQShortString(buffer);
+        AMQShortString capabilities = AMQShortString.readAMQShortString(buffer);
+        boolean insist = (buffer.get() & 0x01) == 0x01;
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveConnectionOpen(virtualHost, capabilities, insist);

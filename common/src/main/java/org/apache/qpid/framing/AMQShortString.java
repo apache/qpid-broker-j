@@ -21,8 +21,6 @@
 
 package org.apache.qpid.framing;
 
-import java.io.DataInput;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -98,20 +96,6 @@ public final class AMQShortString implements Comparable<AMQShortString>
         _asString = string == null ? "" : string;
     }
 
-    private AMQShortString(DataInput data, final int length) throws IOException
-    {
-        if (length > MAX_LENGTH)
-        {
-            throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
-        }
-        byte[] dataBytes = new byte[length];
-        data.readFully(dataBytes);
-        _data = dataBytes;
-        _offset = 0;
-        _length = length;
-
-    }
-
     public static AMQShortString readAMQShortString(ByteBuffer buffer)
     {
         int length = ((int) buffer.get()) & 0xff;
@@ -138,6 +122,34 @@ public final class AMQShortString implements Comparable<AMQShortString>
             return new AMQShortString(data, 0, length);
         }
     }
+
+    public static AMQShortString readAMQShortString(QpidByteBuffer buffer)
+    {
+        int length = ((int) buffer.get()) & 0xff;
+        if(length == 0)
+        {
+            return null;
+        }
+        else
+        {
+            if (length > MAX_LENGTH)
+            {
+                throw new IllegalArgumentException("Cannot create AMQShortString with number of octets over 255!");
+            }
+            if(length > buffer.remaining())
+            {
+                throw new IllegalArgumentException("Cannot create AMQShortString with length "
+                                                   + length + " from a ByteBuffer with only "
+                                                   + buffer.remaining()
+                                                   + " bytes.");
+
+            }
+            byte[] data = new byte[length];
+            buffer.get(data);
+            return new AMQShortString(data, 0, length);
+        }
+    }
+
 
     public AMQShortString(byte[] data, final int offset, final int length)
     {
@@ -169,20 +181,6 @@ public final class AMQShortString implements Comparable<AMQShortString>
 
         return (char) _data[_offset + index];
 
-    }
-
-    public static AMQShortString readFromBuffer(DataInput buffer) throws IOException
-    {
-        final int length = buffer.readUnsignedByte();
-        if (length == 0)
-        {
-            return null;
-        }
-        else
-        {
-
-            return new AMQShortString(buffer, length);
-        }
     }
 
     public byte[] getBytes()

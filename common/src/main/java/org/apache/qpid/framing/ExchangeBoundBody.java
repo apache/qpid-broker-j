@@ -31,7 +31,6 @@ import java.io.IOException;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ExchangeBoundBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -43,14 +42,6 @@ public class ExchangeBoundBody extends AMQMethodBodyImpl implements EncodableAMQ
     private final AMQShortString _exchange; // [exchange]
     private final AMQShortString _routingKey; // [routingKey]
     private final AMQShortString _queue; // [queue]
-
-    // Constructor
-    public ExchangeBoundBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _exchange = buffer.readAMQShortString();
-        _routingKey = buffer.readAMQShortString();
-        _queue = buffer.readAMQShortString();
-    }
 
     public ExchangeBoundBody(
             AMQShortString exchange,
@@ -122,14 +113,13 @@ public class ExchangeBoundBody extends AMQMethodBodyImpl implements EncodableAMQ
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
+    public static void process(final QpidByteBuffer buffer,
                                final ServerChannelMethodProcessor dispatcher)
-            throws IOException
     {
 
-        AMQShortString exchange = buffer.readAMQShortString();
-        AMQShortString routingKey = buffer.readAMQShortString();
-        AMQShortString queue = buffer.readAMQShortString();
+        AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        AMQShortString routingKey = AMQShortString.readAMQShortString(buffer);
+        AMQShortString queue = AMQShortString.readAMQShortString(buffer);
         if(!dispatcher.ignoreAllButCloseOk())
         {
             dispatcher.receiveExchangeBound(exchange, routingKey, queue);

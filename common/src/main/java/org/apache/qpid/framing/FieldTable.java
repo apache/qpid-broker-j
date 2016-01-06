@@ -20,7 +20,6 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.AMQPInvalidClassException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class FieldTable
 {
@@ -50,7 +48,6 @@ public class FieldTable
     private Map<AMQShortString, AMQTypedValue> _properties = null;
     private long _encodedSize;
     private static final int INITIAL_HASHMAP_CAPACITY = 16;
-    private static final int INITIAL_ENCODED_FORM_SIZE = 256;
     private final boolean _strictAMQP;
 
     public FieldTable()
@@ -76,10 +73,11 @@ public class FieldTable
         }
     }
 
-    public FieldTable(MarkableDataInput input, int len) throws IOException
+    public FieldTable(QpidByteBuffer input, int len)
     {
         this();
-        _encodedForm = input.readAsByteBuffer(len);
+        _encodedForm = input.view(0,len);
+        input.position(input.position()+len);
         _encodedSize = len;
     }
 
@@ -134,12 +132,6 @@ public class FieldTable
         {
             _logger.error("Error decoding FieldTable in deferred decoding mode ", e);
             throw new IllegalArgumentException(e);
-        }
-        catch (IOException e)
-        {
-            _logger.error("Unexpected IO exception decoding field table");
-            throw new IllegalArgumentException(e);
-
         }
     }
 
@@ -834,7 +826,7 @@ public class FieldTable
             }
         }
 
-        EncodingUtils.writeUnsignedInteger(buffer, getEncodedSize());
+        buffer.putUnsignedInt(getEncodedSize());
 
         putDataInBuffer(buffer);
     }
@@ -1142,11 +1134,10 @@ public class FieldTable
     }
 
 
-    private void setFromBuffer() throws AMQFrameDecodingException, IOException
+    private void setFromBuffer() throws AMQFrameDecodingException
     {
 
         final QpidByteBuffer slice = _encodedForm.slice();
-        MarkableDataInput dataInput = slice.asDataInput();
 
         if (_encodedSize > 0)
         {
@@ -1157,12 +1148,12 @@ public class FieldTable
             do
             {
 
-                final AMQShortString key = dataInput.readAMQShortString();
-                AMQTypedValue value = AMQTypedValue.readFromBuffer(dataInput);
+                final AMQShortString key = AMQShortString.readAMQShortString(slice);
+                AMQTypedValue value = AMQTypedValue.readFromBuffer(slice);
                 _properties.put(key, value);
 
             }
-            while (dataInput.available() > 0);
+            while (slice.hasRemaining());
 
         }
         slice.dispose();

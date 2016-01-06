@@ -20,12 +20,10 @@
  */
 package org.apache.qpid.framing;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 import org.apache.qpid.protocol.AMQVersionAwareProtocolSession;
 import org.apache.qpid.transport.ByteBufferSender;
 
@@ -93,12 +91,11 @@ public class ContentBody implements AMQBody
         }
     }
 
-    public static void process(final MarkableDataInput in,
+    public static void process(final QpidByteBuffer in,
                                final ChannelMethodProcessor methodProcessor, final long bodySize)
-            throws IOException
     {
 
-        QpidByteBuffer payload = in.readAsByteBuffer((int) bodySize);
+        QpidByteBuffer payload = in.view(0, (int) bodySize);
 
         if(!methodProcessor.ignoreAllButCloseOk())
         {
@@ -106,6 +103,7 @@ public class ContentBody implements AMQBody
         }
 
         payload.dispose();
+        in.position(in.position()+(int)bodySize);
     }
 
     public static AMQFrame createAMQFrame(int channelId, ContentBody body)

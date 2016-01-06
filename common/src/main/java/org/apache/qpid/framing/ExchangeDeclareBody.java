@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class ExchangeDeclareBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -45,16 +42,6 @@ public class ExchangeDeclareBody extends AMQMethodBodyImpl implements EncodableA
     private final AMQShortString _type; // [type]
     private final byte _bitfield0; // [passive, durable, autoDelete, internal, nowait]
     private final FieldTable _arguments; // [arguments]
-
-    // Constructor
-    public ExchangeDeclareBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-        _ticket = buffer.readUnsignedShort();
-        _exchange = buffer.readAMQShortString();
-        _type = buffer.readAMQShortString();
-        _bitfield0 = buffer.readByte();
-        _arguments = EncodingUtils.readFieldTable(buffer);
-    }
 
     public ExchangeDeclareBody(
             int ticket,
@@ -204,14 +191,14 @@ public class ExchangeDeclareBody extends AMQMethodBodyImpl implements EncodableA
         return buf.toString();
     }
 
-    public static void process(final MarkableDataInput buffer,
-                               final ServerChannelMethodProcessor dispatcher) throws IOException, AMQFrameDecodingException
+    public static void process(final QpidByteBuffer buffer,
+                               final ServerChannelMethodProcessor dispatcher) throws AMQFrameDecodingException
     {
 
-        int ticket = buffer.readUnsignedShort();
-        AMQShortString exchange = buffer.readAMQShortString();
-        AMQShortString type = buffer.readAMQShortString();
-        byte bitfield = buffer.readByte();
+        int ticket = buffer.getUnsignedShort();
+        AMQShortString exchange = AMQShortString.readAMQShortString(buffer);
+        AMQShortString type = AMQShortString.readAMQShortString(buffer);
+        byte bitfield = buffer.get();
         boolean passive = (bitfield & 0x1) == 0x1;
         boolean durable = (bitfield & 0x2) == 0x2;
         boolean autoDelete = (bitfield & 0x4) == 0x4;

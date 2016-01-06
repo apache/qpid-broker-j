@@ -27,11 +27,8 @@
 
 package org.apache.qpid.framing;
 
-import java.io.IOException;
-
 import org.apache.qpid.QpidException;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.codec.MarkableDataInput;
 
 public class BasicQosOkBody extends AMQMethodBodyImpl implements EncodableAMQDataBlock, AMQMethodBody
 {
@@ -40,11 +37,6 @@ public class BasicQosOkBody extends AMQMethodBodyImpl implements EncodableAMQDat
     public static final int METHOD_ID = 11;
 
     // Fields declared in specification
-
-    // Constructor
-    public BasicQosOkBody(MarkableDataInput buffer) throws AMQFrameDecodingException, IOException
-    {
-    }
 
     public BasicQosOkBody(
                          )
