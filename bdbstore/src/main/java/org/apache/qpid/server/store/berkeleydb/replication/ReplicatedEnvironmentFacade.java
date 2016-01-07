@@ -742,6 +742,14 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 throw new ConnectionScopedRuntimeException("Cannot set cache size to " + cacheSize + " on node " + _prettyGroupNodeName, e);
             }
         }
+        else
+        {
+            throw new ConnectionScopedRuntimeException("Cannot set cache size to "
+                                                       + cacheSize
+                                                       + " on node "
+                                                       + _prettyGroupNodeName
+                                                       + " as environment does not exist");
+        }
     }
 
 
@@ -878,7 +886,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             catch (RuntimeException e)
             {
                 RuntimeException handled = handleDatabaseException("Exception on setting designated primary", e);
-                if (handled instanceof ConnectionScopedRuntimeException || handled instanceof ServerScopedRuntimeException)
+                if (handled instanceof ConnectionScopedRuntimeException
+                    || handled instanceof ServerScopedRuntimeException)
                 {
                     throw handled;
                 }
@@ -886,7 +895,14 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                                                            isPrimary + " on node " + _prettyGroupNodeName, handled);
             }
         }
-
+        else
+        {
+            throw new ConnectionScopedRuntimeException("Cannot set designated primary to "
+                                                       + isPrimary
+                                                       + " on node "
+                                                       + _prettyGroupNodeName
+                                                       + " as environment does not exist");
+        }
     }
 
     int getPriority()
@@ -942,6 +958,14 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                                                            + " on node "
                                                            + _prettyGroupNodeName, e);
             }
+        }
+        else
+        {
+            throw new ConnectionScopedRuntimeException("Cannot set priority to "
+                                                       + priority
+                                                       + " on node "
+                                                       + _prettyGroupNodeName
+                                                       + " as environment does not exists");
         }
     }
 
@@ -1001,6 +1025,14 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                                                            + " on node "
                                                            + _prettyGroupNodeName, e);
             }
+        }
+        else
+        {
+            throw new ConnectionScopedRuntimeException("Cannot set electable group size to "
+                                                       + electableGroupOverride
+                                                       + " on node "
+                                                       + _prettyGroupNodeName
+                                                       + " as environment does not exists");
         }
     }
 
