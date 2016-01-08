@@ -30,7 +30,6 @@ public class Delivery
 {
     private boolean _complete;
     private boolean _settled;
-    private final List<Transfer> _transfers = new ArrayList<Transfer>(1);
     private final UnsignedInteger _deliveryId;
     private final Binary _deliveryTag;
     private final LinkEndpoint _linkEndpoint;
@@ -66,7 +65,6 @@ public class Delivery
 
     public void addTransfer(Transfer transfer)
     {
-        _transfers.add(transfer);
         if(Boolean.TRUE.equals(transfer.getAborted()) || !Boolean.TRUE.equals(transfer.getMore()))
         {
             setComplete(true);
@@ -75,11 +73,6 @@ public class Delivery
         {
             setSettled(true);
         }
-    }
-
-    public List<Transfer> getTransfers()
-    {
-        return _transfers;
     }
 
     public UnsignedInteger getDeliveryId()
