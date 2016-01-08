@@ -37,6 +37,38 @@ public class MessageConsumerCloseTest  extends QpidBrokerTestCase
 {
     private volatile Exception _exception;
 
+    /**
+     * JMS Session says "The content of a transaction's input and output units is simply those messages that have
+     * been produced and consumed within the session's current transaction.".  Closing a consumer must not therefore
+     * prevent previously received messages from being committed.
+     */
+    public void testConsumerCloseAndSessionCommit() throws Exception
+    {
+        Connection connection = getConnection();
+        connection.start();
+        final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+        Destination destination = getTestQueue();
+        MessageConsumer consumer1 = session.createConsumer(destination);
+        sendMessage(session, destination, 2);
+
+
+        Message message = consumer1.receive(RECEIVE_TIMEOUT);
+        assertNotNull("First message is not received", message);
+        assertEquals("First message unexpected has unexpected property", 0, message.getIntProperty(INDEX));
+        consumer1.close();
+
+        session.commit();
+
+        MessageConsumer consumer2 = session.createConsumer(destination);
+        message = consumer2.receive(RECEIVE_TIMEOUT);
+        assertNotNull("Second message is not received", message);
+        assertEquals("Second message unexpected has unexpected property", 1, message.getIntProperty(INDEX));
+
+        message = consumer2.receive(100l);
+        assertNull("Unexpected third message", message);
+    }
+
+
     public void testConsumerCloseAndSessionRollback() throws Exception
     {
         Connection connection = getConnection();
@@ -106,6 +138,41 @@ public class MessageConsumerCloseTest  extends QpidBrokerTestCase
 
         assertNotNull("Message three was null", msg3);
         assertEquals("Message three has unexpected content", 2, msg3.getIntProperty(INDEX));
+        session.commit();
+    }
+
+    public void testMessagesReceivedBeforeConsumerCloseAreRedeliveredAfterRollback() throws Exception
+    {
+        Connection connection = getConnection();
+        final Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        Destination destination = getTestQueue();
+        MessageConsumer consumer = session.createConsumer(destination);
+
+        int messageNumber = 4;
+        connection.start();
+        sendMessage(session, destination, messageNumber);
+
+        for(int i = 0; i < messageNumber/2 ; i++)
+        {
+            Message message = consumer.receive(RECEIVE_TIMEOUT);
+            assertNotNull("Message [" + i +"] was null", message);
+            assertEquals("Message [" + i +"] has unexpected content", i, message.getIntProperty(INDEX));
+        }
+
+        consumer.close();
+
+        session.rollback();
+
+        MessageConsumer consumer2 = session.createConsumer(destination);
+
+        for(int i = 0; i < messageNumber ; i++)
+        {
+            Message message = consumer2.receive(RECEIVE_TIMEOUT);
+            assertNotNull("Message [" + i +"] was null", message);
+            assertEquals("Message [" + i +"] has unexpected content", i, message.getIntProperty(INDEX));
+        }
+
         session.commit();
     }
 }

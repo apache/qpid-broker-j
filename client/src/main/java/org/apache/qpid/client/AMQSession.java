@@ -27,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -201,12 +200,6 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     private int _nextTag = 1;
 
     private final Map<Integer,C> _consumers = new ConcurrentHashMap<>();
-
-    /**
-     * Contains a list of consumers which have been removed but which might still have
-     * messages to acknowledge, eg in client ack or transacted modes
-     */
-    private CopyOnWriteArrayList<C> _removedConsumers = new CopyOnWriteArrayList<C>();
 
     /** Provides a count of consumers on destinations, in order to be able to know if a destination has consumers. */
     private ConcurrentMap<Destination, AtomicInteger> _destinationConsumerCount =
@@ -945,7 +938,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
     private void rejectPending(C consumer)
     {
         // Reject messages on pre-receive queue
-        consumer.rollbackPendingMessages();
+        consumer.releasePendingMessages();
 
         // Reject messages on pre-dispatch queue
         rejectMessagesForConsumerTag(consumer.getConsumerTag());
@@ -2177,13 +2170,6 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                     }
                 }
             }
-
-            // Consumers that are closed in a transaction must be stored
-            // so that messages they have received can be acknowledged on commit
-            if (_transacted)
-            {
-                _removedConsumers.add(consumer);
-            }
         }
     }
 
@@ -3386,7 +3372,7 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                 {
                     if (!consumer.isBrowseOnly())
                     {
-                        consumer.rollback();
+                        consumer.releasePendingMessages();
                     }
                     else
                     {
@@ -3394,13 +3380,6 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
                         consumer.clearReceiveQueue();
                     }
 
-                }
-
-                for (int i = 0; i < _removedConsumers.size(); i++)
-                {
-                    // Sends acknowledgement to server
-                    _removedConsumers.get(i).rollback();
-                    _removedConsumers.remove(i);
                 }
 
                 setConnectionStopped(isStopped);
