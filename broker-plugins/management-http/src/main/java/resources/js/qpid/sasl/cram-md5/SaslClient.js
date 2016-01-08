@@ -22,18 +22,14 @@ define(["dojo/_base/declare",
         "dojox/encoding/base64",
         "dojox/encoding/digests/_base",
         "dojox/encoding/digests/MD5",
-        "dojo/Deferred",
-        "qpid/sasl/SaslClient",
+        "qpid/sasl/CredentialBasedSaslClient",
         "qpid/sasl/UsernamePasswordProvider"],
-       function(declare, lang, base64, digestsBase, MD5, Deferred, SaslClient, UsernamePasswordProvider)
+       function(declare, lang, base64, digestsBase, MD5, SaslClient, UsernamePasswordProvider)
        {
-           var deferred = new Deferred();
-           deferred.resolve("initialized");
            return declare("qpid.sasl.SaslClientCramMD5",
                           [SaslClient],
                           {
                               _state:            "initial",
-                              initialized:       function() { return deferred.promise;},
                               getMechanismName:  function() {return "CRAM-MD5";},
                               isComplete:        function() {return this._state == "completed";},
                               getPriority:       function() {return 3;},
@@ -41,7 +37,7 @@ define(["dojo/_base/declare",
                                                  {
                                                     if (this._state == "initial")
                                                     {
-                                                      this._initial(data);
+                                                      this.initialize(data.username, data.password);
                                                       this._state = "initiated";
                                                       return {
                                                                  mechanism: this.getMechanismName()
@@ -65,35 +61,30 @@ define(["dojo/_base/declare",
                                                       var id = data.id;
 
                                                       var response = base64.encode(this._encodeUTF8( digest ));
-                                                      this._state = "generated";
+                                                      this._state = "completed";
                                                       return {
                                                                  id: id,
                                                                  response: response
                                                              };
-                                                    }
-                                                    else if (this._state == "generated")
-                                                    {
-                                                      this._state = "completed";
-                                                      return null;
                                                     }
                                                     else
                                                     {
                                                       throw {message: "Unexpected state '" + this._state +
                                                                       ". Cannot handle challenge!"};
                                                     }
-                                                             },
-                              toString:           function() { return "[SaslClientCramMD5]";},
-                              getCredentials:     function()
-                                                  {
+                                                 },
+                              toString:          function() { return "[SaslClientCramMD5]";},
+                              getCredentials:    function()
+                                                 {
                                                       return UsernamePasswordProvider.get();
-                                                  },
-                              _initial   :        function(data)
-                                                  {
-                                                     this._password = data.password;
-                                                     this._username = data.username;
-                                                  },
-                              _encodeUTF8:        function (str)
-                                                  {
+                                                 },
+                              initialize   :     function(username, password)
+                                                 {
+                                                     this._password = password;
+                                                     this._username = username;
+                                                 },
+                              _encodeUTF8:       function (str)
+                                                 {
                                                       var byteArray = [];
                                                       for (var i = 0; i < str.length; i++)
                                                       {
@@ -111,7 +102,7 @@ define(["dojo/_base/declare",
                                                           }
                                                       }
                                                       return byteArray;
-                                                  }
+                                                 }
             });
        }
 );

@@ -28,11 +28,10 @@ define(["dojo/_base/declare",
             return declare("qpid.sasl.SaslClientCramMD5Hex", [SaslClientCramMD5],{
                  getMechanismName:   function() {return "CRAM-MD5-HEX";},
                  getPriority:        function() {return 2;},
-                 _initial:           function(data)
+                 initialize:         function(username, password)
                                      {
-                                        var hashedPassword = MD5(data.password, digestsBase.outputTypes.Hex);
-                                        this._password = hashedPassword;
-                                        this._username = data.username;
+                                        var hashedPassword = MD5(password, digestsBase.outputTypes.Hex);
+                                        this.inherited(arguments, [username, hashedPassword]);
                                      },
                  toString:           function() { return "[SaslClientCramMD5Hex]";}
             });

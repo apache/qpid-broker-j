@@ -20,17 +20,13 @@
 define(["dojo/_base/declare",
         "dojo/_base/lang",
         "dojox/encoding/base64",
-        "dojo/Deferred",
-        "qpid/sasl/SaslClient",
+        "qpid/sasl/CredentialBasedSaslClient",
         "qpid/sasl/UsernamePasswordProvider"],
-       function(declare, lang, base64, Deferred, SaslClient, UsernamePasswordProvider)
+       function(declare, lang, base64, SaslClient, UsernamePasswordProvider)
        {
-            var deferred = new Deferred();
-            deferred.resolve("initialized");
             return declare("qpid.sasl.SaslClientPlain", [SaslClient], {
                  _state:             "initial",
                  getMechanismName:   function() {return "PLAIN";},
-                 initialized:        function() { return deferred.promise; },
                  isComplete:         function() {return this._state == "completed";},
                  getPriority:        function() {return 1;},
                  getResponse:        function(challenge)
@@ -41,16 +37,11 @@ define(["dojo/_base/declare",
                                                                     .concat([0])
                                                                     .concat(this._encodeUTF8(challenge.password));
                                              var plainResponse = base64.encode(responseArray);
-                                             this._state = "generated"
+                                             this._state = "completed"
                                              return  {
                                                          mechanism: this.getMechanismName(),
                                                          response: plainResponse
                                                      };
-                                         }
-                                         else if (this._state == "generated")
-                                         {
-                                             this._state = "completed";
-                                             return null;
                                          }
                                          else
                                          {

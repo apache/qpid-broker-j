@@ -25,6 +25,14 @@ define(["dijit/registry",
             return {
                         get: function()
                              {
+                                 if (registry.byId("username") == null)
+                                 {
+                                    // it is not a login page
+                                    // redirecting to login.html
+                                    window.location = "login.html";
+                                    return;
+                                 }
+
                                  return {
                                             username: registry.byId("username").value,
                                             password: registry.byId("password").value

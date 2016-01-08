@@ -24,7 +24,7 @@ define(["dojo/_base/declare",
         "dojo/request/script",
         "dojox/uuid/generateRandomUuid",
         "dojo/Deferred",
-        "qpid/sasl/SaslClient",
+        "qpid/sasl/CredentialBasedSaslClient",
         "qpid/sasl/UsernamePasswordProvider"],
         function(declare, lang, base64, json, script, uuid, Deferred, SaslClient, UsernamePasswordProvider)
         {
@@ -101,7 +101,7 @@ define(["dojo/_base/declare",
           var digest = null;
           var hmac = null;
           var gs2_header= "n,,";
-          var deferred = new Deferred();
+          var initialized = new Deferred();
           return declare("qpid.sasl.ShaSaslClient",
                          [SaslClient],
                          {
@@ -123,28 +123,27 @@ define(["dojo/_base/declare",
                                                         script.get("js/crypto-js/enc-base64-min.js").then(
                                                           function()
                                                           {
-                                                            deferred.resolve("initialized");
+                                                            initialized.resolve(true);
                                                           },
                                                           function(error)
                                                           {
-                                                            deferred.reject("initialization failure: " + error);
+                                                            initialized.reject(error);
                                                             scriptLoadError(error);
                                                           }
                                                          );
                                                       },
                                                       function(error)
                                                       {
-                                                        deferred.reject("error");
+                                                        initialized.reject("error");
                                                         scriptLoadError(error);
                                                       }
                                                     );
                                                  },
-                             initialized:        function() { return deferred.promise; },
                              getMechanismName:   function() { return this._mechanism;},
                              isComplete:         function() { return this._state == "completed";},
                              getResponse:        function(data)
                                                  {
-                                                    if (deferred.promise.isResolved())
+                                                    if (initialized.promise.isResolved())
                                                     {
                                                         return this._getResponse(data);
                                                     }
@@ -242,7 +241,25 @@ define(["dojo/_base/declare",
                              toString:           function() { return "[SaslClient" + this.getMechanismName() + "]";},
                              getCredentials:     function()
                                                  {
-                                                    return UsernamePasswordProvider.get();
+                                                    var credentials = new Deferred();
+                                                    var successHandler = function(data)
+                                                                         {
+                                                                            credentials.resolve(data);
+                                                                         };
+                                                    var errorHandler = function(data)
+                                                                       {
+                                                                        credentials.reject(data)
+                                                                       };
+                                                    initialized.then(function(initData)
+                                                                     {
+                                                                       dojo.when(UsernamePasswordProvider.get())
+                                                                           .then(function(data)
+                                                                                 {
+                                                                                   successHandler(data);
+                                                                                 },
+                                                                                 errorHandler);
+                                                                     },errorHandler);
+                                                    return credentials.promise;
                                                  }
                  }
           );

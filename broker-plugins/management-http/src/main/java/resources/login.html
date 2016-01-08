@@ -80,19 +80,48 @@
             <div data-dojo-type="dijit.form.Form" method="POST" id="loginForm">
                 <script type="dojo/on" data-dojo-event="submit" data-dojo-args="e">
                     e.preventDefault()
-                    if(this.validate()){
-                        require(["qpid/sasl/Authenticator","qpid/management/Management"], function(sasl, Management){
-                            var management = new Management();
-                            var redirectIfAuthenticated = function redirectIfAuthenticated(){
-                                sasl.getUser(management, function(data){
-                                    if(data.user){
-                                        window.location = "index.html";
-                                    }
-                                });
-                            };
+                    if(this.validate())
+                    {
+                        require(["qpid/management/Management", "dojo/json"],
+                                function(Management, json)
+                                {
+                                    var redirectIfAuthenticated = function redirectIfAuthenticated(data)
+                                    {
+                                        if(data.user)
+                                        {
 
-                            sasl.authenticate(management, redirectIfAuthenticated);
-                        });
+                                            window.location = "index.html";
+                                        }
+                                        else
+                                        {
+                                            alert("User identifier is not found! Authentication failed!");
+                                        }
+                                    };
+                                    var errorHandler = function errorHandler(error)
+                                    {
+                                        if (error.response)
+                                        {
+                                            if(error.response.status == 401)
+                                            {
+                                                alert("Authentication Failed");
+                                            }
+                                            else if(error.response.status == 403)
+                                            {
+                                                alert("Authorization Failed");
+                                            }
+                                            else
+                                            {
+                                                alert(error.message);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            alert(error.message ? error.message : "Authentication failed:" + json.stringify(error));
+                                        }
+                                    };
+                                    var management = new Management("", errorHandler);
+                                    management.authenticate(true).then(redirectIfAuthenticated);
+                                });
                     }
                     return false;
                 </script>

@@ -18,71 +18,14 @@
  * under the License.
  *
  */
-define(["dojo/_base/lang"], function (lang)
+define(["dojo/_base/lang", "dojo/Deferred", "dojo/json"], function (lang, Deferred, json)
 {
-    var saslServiceUrl = "service/sasl";
-    var errorHandler = function errorHandler(error)
-    {
-        if (error.response)
-        {
-            if(error.response.status == 401)
-            {
-                alert("Authentication Failed");
-            }
-            else if(error.response.status == 403)
-            {
-                alert("Authorization Failed");
-            }
-            else
-            {
-                alert(error.message);
-            }
-        }
-        else
-        {
-            alert(error.message ? error.message : error);
-        }
-    }
 
-    var authenticate = function (management, saslClient, data, authenticationSuccessCallback, authenticationFailureCallback)
-    {
-        var response = null;
-        try
-        {
-            response = saslClient.getResponse(data);
-        }
-        catch(e)
-        {
-            authenticationFailureCallback(e);
-            return;
-        }
-
-        if (saslClient.isComplete())
-        {
-            authenticationSuccessCallback();
-        }
-        else
-        {
-            management.submit({
-                                  url: saslServiceUrl,
-                                  data: response,
-                                  headers: {},
-                                  method: "POST"
-                              }).then(function (challenge)
-                                      {
-                                        authenticate(management,
-                                                     saslClient,
-                                                     challenge,
-                                                     authenticationSuccessCallback,
-                                                     authenticationFailureCallback);
-                                      },
-                                      authenticationFailureCallback);
-        }
-    }
-
-    var loadSaslClients = function loadSaslClients(management, availableMechanisms, saslClients, onLastLoaded)
+    var loadSaslClients = function loadSaslClients(availableMechanisms, management, onLastLoaded, errorHandler)
     {
         var mechanisms = lang.clone(availableMechanisms);
+        var saslClients = [];
+
         var handleMechanisms = function handleMechanisms()
         {
             if (mechanisms.length == 0)
@@ -91,109 +34,95 @@ define(["dojo/_base/lang"], function (lang)
             }
             else
             {
-                loadSaslClients(management, mechanisms, saslClients, onLastLoaded);
+                loadSaslClient();
             }
         }
 
-        var mechanism = mechanisms.shift();
-        if (mechanism)
+        var loadSaslClient = function loadSaslClient()
         {
-          var url = "qpid/sasl/" + encodeURIComponent(mechanism.toLowerCase()) + "/SaslClient";
-          management.get({url:"js/" + url + ".js",
-                          handleAs: "text",
-                          headers: { "Content-Type": "text/plain"}})
-                    .then(function(data)
-                          {
-                              require([url],
-                                      function(SaslClient)
-                                      {
-                                          try
-                                          {
-                                              var saslClient = new SaslClient();
-                                              saslClient.initialized().then(function()
-                                                                            {
-                                                                                saslClients.push(saslClient);
-                                                                                handleMechanisms();
-                                                                            },
-                                                                            function(e)
-                                                                            {
-                                                                                errorHandler("Unexpected error on " +
-                                                                                             "loading of mechanism " +
-                                                                                             mechanism + ": ", e);
-                                                                                handleMechanisms();
-                                                                            }
-                                                                           );
-
-                                          }
-                                          catch(e)
-                                          {
-                                              errorHandler("Unexpected error on loading of mechanism " + mechanism +
-                                                           ": ", e);
-                                              handleMechanisms();
-                                          }
-                                      });
-                          },
-                          function(data)
-                          {
-                              if (data.response.status != 404 )
+            var mechanism = mechanisms.shift();
+            if (mechanism)
+            {
+              var url = "qpid/sasl/" + encodeURIComponent(mechanism.toLowerCase()) + "/SaslClient";
+              management.get({url:"js/" + url + ".js",
+                              handleAs: "text",
+                              headers: { "Content-Type": "text/plain"}})
+                        .then(function(data)
                               {
-                                  errorHandler("Unexpected error on loading mechanism " + mechanism + ": ", data);
+                                  require([url],
+                                          function(SaslClient)
+                                          {
+                                              try
+                                              {
+                                                  var saslClient = new SaslClient();
+                                                  saslClients.push(saslClient);
+                                              }
+                                              catch(e)
+                                              {
+                                                  console.error("Unexpected error on loading of mechanism " +
+                                                                mechanism + ": " + json.stringify(e));
+                                              }
+                                              finally
+                                              {
+                                                handleMechanisms();
+                                              }
+                                          });
+                              },
+                              function(data)
+                              {
+                                  if (data.response.status != 404 )
+                                  {
+                                      console.error("Unexpected error on loading mechanism " +
+                                                   mechanism +
+                                                   ": " +
+                                                   json.stringify(data));
+                                  }
+                                  handleMechanisms();
                               }
-                              handleMechanisms();
-                          }
-                    );
+                        );
+            }
+            else
+            {
+                handleMechanisms();
+            }
         }
-        else
-        {
-            handleMechanisms();
-        }
+
+        handleMechanisms();
     }
 
     return {
-              authenticate:   function(management, authenticationSuccessCallback)
+              authenticate:   function(mechanisms, management)
                               {
-                                  management.get({url: saslServiceUrl})
-                                            .then(function(data)
-                                                  {
-                                                     var saslClients = [];
-                                                     loadSaslClients(management,
-                                                                     data.mechanisms,
-                                                                     saslClients,
-                                                                     function (saslClients)
-                                                                     {
-                                                                        saslClients.sort(function(c1, c2)
-                                                                                         {
-                                                                                           return c2.getPriority() -
-                                                                                                  c1.getPriority();
-                                                                                         });
-                                                                        if (saslClients.length > 0)
-                                                                        {
-                                                                          var saslClient = saslClients[0];
-                                                                          dojo.when(saslClient.getCredentials())
-                                                                              .then(function(data)
-                                                                                    {
-                                                                                        authenticate(management,
-                                                                                                     saslClient,
-                                                                                                     data,
-                                                                                                     authenticationSuccessCallback,
-                                                                                                     errorHandler);
-                                                                                    },
-                                                                                    errorHandler);
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                          errorHandler("No SASL client available for " +
-                                                                                       data.mechanisms);
-                                                                        }
-                                                                     });
-                                                  },
-                                                  errorHandler);
-                              },
-              getUser:        function(management, authenticationSuccessCallback)
-                              {
-                                  management.get({url: saslServiceUrl})
-                                            .then(authenticationSuccessCallback,
-                                                  errorHandler);
+                                   var deferred = new Deferred();
+                                   var successCallback = function(data)
+                                                         {
+                                                           deferred.resolve(data);
+                                                         };
+                                   var failureCallback = function(data)
+                                                         {
+                                                           deferred.reject(data);
+                                                         };
+                                   loadSaslClients(mechanisms,
+                                                   management,
+                                                   function (saslClients)
+                                                   {
+                                                      if (saslClients.length > 0)
+                                                      {
+                                                        saslClients.sort(function(c1, c2)
+                                                                         {
+                                                                           return c2.getPriority() - c1.getPriority();
+                                                                         });
+                                                        saslClients[0].authenticate(management).then(successCallback,
+                                                                                                     failureCallback);
+                                                      }
+                                                      else
+                                                      {
+                                                        failureCallback({message:"No SASL client available for " +
+                                                                                      data.mechanisms});
+                                                      }
+                                                   },
+                                                   failureCallback);
+                                   return deferred.promise;
                               }
            };
 });

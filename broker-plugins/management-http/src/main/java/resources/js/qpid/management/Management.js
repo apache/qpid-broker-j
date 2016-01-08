@@ -24,10 +24,12 @@ define(["dojo/_base/lang",
         "dojo/io-query",
         "dojo/json",
         "dojo/promise/Promise",
+        "dojo/Deferred",
+        "qpid/sasl/Authenticator",
         "qpid/common/metadata",
         "qpid/common/timezone",
         "qpid/management/UserPreferences"],
-  function (lang, array, xhr, ioQuery, json, Promise, Metadata, Timezone, UserPreferences)
+  function (lang, array, xhr, ioQuery, json, Promise, Deferred, sasl, Metadata, Timezone, UserPreferences)
   {
 
     function shallowCopy(source, target, excludes)
@@ -480,6 +482,63 @@ define(["dojo/_base/lang",
     {
         this.userPreferences = new UserPreferences(this);
         this.userPreferences.load(callback, callback);
+    };
+
+    var saslServiceUrl = "service/sasl";
+
+    Management.prototype.getSaslStatus = function()
+    {
+        return this.get({url: saslServiceUrl});
+    }
+
+    Management.prototype.sendSaslResponse = function(response)
+    {
+        return this.submit({
+                              url: saslServiceUrl,
+                              data: response,
+                              headers: {},
+                              method: "POST"
+                           });
+    };
+
+    Management.prototype.authenticate = function(forceAuthentication)
+    {
+        var that = this;
+        var deferred = new Deferred();
+        var successCallback = function(data)
+                              {
+                                that.getSaslStatus().then(function(saslData)
+                                                          {
+                                                            if (saslData.user)
+                                                            {
+                                                                deferred.resolve(saslData);
+                                                            }
+                                                            else
+                                                            {
+                                                                deferred.reject({message: "User identifier is not found!"
+                                                                                          + " Authentication failed!"});
+                                                            }
+                                                          },
+                                                          failureCallback);
+                              };
+        var failureCallback = function(data)
+                              {
+                                deferred.reject(data);
+                              };
+        this.getSaslStatus().then(function(data)
+                                             {
+                                                if (data.user && !forceAuthentication)
+                                                {
+                                                    deferred.resolve(data);
+                                                }
+                                                else
+                                                {
+                                                    sasl.authenticate(data.mechanisms, that).then(successCallback,
+                                                                                                  failureCallback);
+                                                }
+                                             },
+                                             failureCallback);
+        return deferred.promise;
     };
 
     return Management;

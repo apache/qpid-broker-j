@@ -63,13 +63,15 @@
         require([
                     "dojo/parser",
                     "dojo/query",
-                    "qpid/authorization/checkUser",
                     "qpid/common/ConsoleHelper",
                     "qpid/management/Management",
                     "qpid/common/util",
                     "qpid/management/treeView",
                     "qpid/management/controller",
                     "qpid/common/updater",
+                    "dojox/html/entities",
+                    "dijit/registry",
+                    "dojo/dom",
                     "dijit/layout/BorderContainer",
                     "dijit/layout/TabContainer",
                     "dijit/layout/ContentPane",
@@ -77,18 +79,36 @@
                     "dijit/Menu",
                     "dijit/MenuItem",
                     "qpid/common/footer"
-                    ], function(parser, query, User, ConsoleHelper, Management, util, treeView, controller, updater){
+                    ], function(parser, query, ConsoleHelper, Management, util, treeView, controller, updater, entities, registry, dom){
                         parser.parse();
                         qpidManagementHelper = ConsoleHelper;
                         management = new Management("",util.xhrErrorHandler);
-                        management.init(function()
+                        management.authenticate().then(function(data)
                         {
-                            updater.registerUpdateIntervalListener(management.userPreferences);
-                            qpidManagementHelper.management = management;
-                            User.getUserAndUpdateUI(management);
-                            controller.init(management);
-                            treeView.create(getContextPath() + 'service/structure', management, query('div[qpid-type="treeView"]')[0]);
-                            dijit.Tooltip.defaultPosition = ["after-centered", "below-centered"];
+                          if(data.user)
+                          {
+                            var userName = entities.encode(String(data.user));
+                            var controlButton = registry.byId("authenticatedUserControls");
+                            if (controlButton)
+                            {
+                              controlButton.set("label", userName);
+                            }
+                            dom.byId("authenticatedUser").innerHTML = userName;
+                            dom.byId("login").style.display = "inline";
+                            management.init(function()
+                            {
+                              updater.registerUpdateIntervalListener(management.userPreferences);
+                              qpidManagementHelper.management = management;
+                              controller.init(management);
+                              treeView.create(getContextPath() + 'service/structure', management, query('div[qpid-type="treeView"]')[0]);
+                              dijit.Tooltip.defaultPosition = ["after-centered", "below-centered"];
+                            });
+                          }
+                          else
+                          {
+                            alert("User identifier is not found! Re-authenticate!");
+                            window.location = "logout";
+                          }
                         });
                     });
     </script>

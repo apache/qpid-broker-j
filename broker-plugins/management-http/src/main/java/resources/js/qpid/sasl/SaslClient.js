@@ -38,28 +38,15 @@ define(["dojo/_base/lang"],
                                                       // returns: string
                                                       throw new TypeError("abstract");
                                                   },
-                                getResponse:      function(challenge)
+                                authenticate:     function(management)
                                                   {
                                                       // summary:
-                                                      //        Generates response for given challenge
+                                                      //        Authenticates and invokes callback function
+                                                      //                                  on successful authentication
                                                       // description:
-                                                      //        Handles given challenge represented as
-                                                      //       JSON object and generates response in
-                                                      //       JSON format.
-                                                      //       Method can be called multiple times
-                                                      //       for different challenges.
-                                                      //       Throws exception on various errors or
-                                                      //       authentication failures.
-                                                      // returns: JSON objectSa
-                                                      throw new TypeError("abstract");
-                                                  },
-                                isComplete:       function()
-                                                  {
-                                                      // summary:
-                                                      //        Returns true when response for last challenge is generated.
-                                                      // description:
-                                                      //        Returns true when challenge handling is complete
-                                                      // returns: boolean
+                                                      //        Performs SASL authentication as required by algorithm
+                                                      //        and returns promise
+                                                      // returns: promise
                                                       throw new TypeError("abstract");
                                                   },
                                 getPriority:      function()
@@ -78,28 +65,6 @@ define(["dojo/_base/lang"],
                                                       // returns: string
                                                       //        Returns `[object SaslClient]`.
                                                       return "[object SaslClient]";
-                                                  },
-                                initialized:      function()
-                                                  {
-                                                      // summary:
-                                                      //        Finish instance initialization.
-                                                      // description:
-                                                      //        Method must be called once before
-                                                      //        getResponse in order to finish initialization.
-                                                      //        dojo/promise/Promise is returned
-                                                      // returns: promise
-                                                      throw new TypeError("abstract");
-                                                  },
-                                getCredentials:   function()
-                                                  {
-                                                      // summary:
-                                                      //        Returns initial credentials
-                                                      //       to start authentication
-                                                      // description:
-                                                      //        Provides initial credentials as Promise or
-                                                      //        JSON object to start authentication process
-                                                      // returns: promise
-                                                      throw new TypeError("abstract");
                                                   }
                                 });
        });
