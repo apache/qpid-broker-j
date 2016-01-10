@@ -29,8 +29,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.MessageSource;
@@ -45,7 +43,6 @@ import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.virtualhost.HouseKeepingTask;
 import org.apache.qpid.server.virtualhost.NodeAutoCreationPolicy;
-import org.apache.qpid.server.virtualhost.VirtualHostConnectionListener;
 
 @ManagedObject( defaultType = "ProvidedStore", description = VirtualHost.CLASS_DESCRIPTION)
 public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<X>, StatisticsGatherer,
@@ -228,10 +225,6 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     MessageSource getAttainedMessageSource(String name);
 
-    int removeQueue(Queue<?> queue);
-
-    ListenableFuture<Integer> removeQueueAsync(Queue<?> queue);
-
     Exchange getAttainedExchange(String name);
 
     MessageDestination getAttainedMessageDestination(String name);
@@ -280,6 +273,4 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     long getTotalQueueDepthBytes();
 
-    void addConnectionAssociationListener(VirtualHostConnectionListener listener);
-    void removeConnectionAssociationListener(VirtualHostConnectionListener listener);
 }

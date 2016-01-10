@@ -202,7 +202,10 @@ public interface Queue<X extends Queue<X>> extends ConfiguredObject<X>,
 
     void visit(QueueEntryVisitor visitor);
 
-    ListenableFuture<Integer> deleteAndReturnCount();
+    ListenableFuture<Integer> deleteAndReturnCountAsync();
+
+    int deleteAndReturnCount();
+
 
     void setNotificationListener(QueueNotificationListener listener);
 

@@ -47,7 +47,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
     public void testAutoDeleteQueue() throws Exception
     {
         getQueue().close();
-        getQueue().deleteAndReturnCount();
+        getQueue().delete();
         Map<String,Object> queueAttributes = new HashMap<>();
         queueAttributes.put(Queue.NAME, getQname());
         queueAttributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);

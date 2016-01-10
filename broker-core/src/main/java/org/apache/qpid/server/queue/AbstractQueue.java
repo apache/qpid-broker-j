@@ -20,7 +20,6 @@ package org.apache.qpid.server.queue;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.security.AccessControlContext;
 import java.security.AccessControlException;
 import java.security.AccessController;
@@ -525,7 +524,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                  @Override
                                  public Void run()
                                  {
-                                     getVirtualHost().removeQueue(AbstractQueue.this);
+                                     AbstractQueue.this.delete();
                                      return null;
                                  }
                              });
@@ -954,7 +953,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                                  @Override
                                  public Object run()
                                  {
-                                     getVirtualHost().removeQueue(AbstractQueue.this);
+                                     AbstractQueue.this.delete();
                                      return null;
                                  }
                              });
@@ -1909,7 +1908,14 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         _deleteTaskList.remove(task);
     }
 
-    public ListenableFuture<Integer> deleteAndReturnCount()
+    @Override
+    public int deleteAndReturnCount()
+    {
+        return doSync(deleteAndReturnCountAsync());
+    }
+
+    @Override
+    public ListenableFuture<Integer> deleteAndReturnCountAsync()
     {
         // Check access
         _virtualHost.getSecurityManager().authoriseDelete(this);
@@ -1951,6 +1957,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         routeToAlternate(entries);
 
                         preSetAlternateExchange();
+                        _alternateExchange = null;
 
                         performQueueDeleteTasks();
                         deleted();
@@ -1959,6 +1966,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         getEventLogger().message(_logSubject, QueueMessages.DELETED());
 
                         _deleteFuture.set(queueDepthMessages);
+                        setState(State.DELETED);
                     }
                     catch(Throwable e)
                     {
@@ -3067,14 +3075,13 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)
     private ListenableFuture<Void> doDelete()
     {
-        ListenableFuture<Integer> removeFuture = _virtualHost.removeQueueAsync(this);
+        ListenableFuture<Integer> removeFuture = deleteAndReturnCountAsync();
         return doAfter(removeFuture, new Runnable()
         {
             @Override
             public void run()
             {
-                preSetAlternateExchange();
-                setState(State.DELETED);
+
             }
         });
 

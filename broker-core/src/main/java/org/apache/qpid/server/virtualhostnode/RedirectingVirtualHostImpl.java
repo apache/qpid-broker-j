@@ -345,20 +345,6 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public ListenableFuture<Integer> removeQueueAsync(final Queue<?> queue)
-    {
-        throwUnsupportedForRedirector();
-        return null;
-    }
-
-    @Override
-    public int removeQueue(final Queue<?> queue)
-    {
-        throwUnsupportedForRedirector();
-        return 0;
-    }
-
-    @Override
     public Collection<Exchange<?>> getExchanges()
     {
         return Collections.emptyList();
@@ -540,18 +526,6 @@ class RedirectingVirtualHostImpl
     {
         throw new IllegalStateException("The virtual host state of " + getState()
                                         + " does not permit this operation.");
-    }
-
-    @Override
-    public void addConnectionAssociationListener(VirtualHostConnectionListener listener)
-    {
-
-    }
-
-    @Override
-    public void removeConnectionAssociationListener(VirtualHostConnectionListener listener)
-    {
-
     }
 
 }

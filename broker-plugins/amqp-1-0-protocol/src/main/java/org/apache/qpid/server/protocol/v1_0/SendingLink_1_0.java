@@ -69,6 +69,7 @@ import org.apache.qpid.server.filter.JMSSelectorFilter;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.model.Binding;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ExclusivityPolicy;
 import org.apache.qpid.server.model.LifetimePolicy;
@@ -429,12 +430,12 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
             {
                 try
                 {
-                    _vhost.removeQueue((Queue<?>)_queue);
+                    ((ConfiguredObject<?>)_queue).delete();
                 }
                 catch (AccessControlException e)
                 {
                     //TODO
-                    _logger.error("Error registering subscription", e);
+                    _logger.error("Error unregistering subscription", e);
                 }
             }
 

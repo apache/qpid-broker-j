@@ -344,20 +344,6 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
     }
 
     @Override
-    public ListenableFuture<Integer> removeQueueAsync(final Queue<?> queue)
-    {
-        throwUnsupportedForReplica();
-        return null;
-    }
-
-    @Override
-    public int removeQueue(final Queue<?> queue)
-    {
-        throwUnsupportedForReplica();
-        return 0;
-    }
-
-    @Override
     public Collection<Exchange<?>> getExchanges()
     {
         return Collections.emptyList();
@@ -541,15 +527,4 @@ public class BDBHAReplicaVirtualHostImpl extends AbstractConfiguredObject<BDBHAR
                                         + " does not permit this operation.");
     }
 
-    @Override
-    public void addConnectionAssociationListener(VirtualHostConnectionListener listener)
-    {
-
-    }
-
-    @Override
-    public void removeConnectionAssociationListener(VirtualHostConnectionListener listener)
-    {
-
-    }
 }

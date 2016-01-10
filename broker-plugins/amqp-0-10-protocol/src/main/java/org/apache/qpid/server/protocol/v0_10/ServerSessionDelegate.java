@@ -1529,7 +1529,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
                     try
                     {
-                        virtualHost.removeQueue(queue);
+                        queue.delete();
                     }
                     catch (AccessControlException e)
                     {

@@ -108,7 +108,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
 
     private final Set<AMQPConnection<?>> _connections = newSetFromMap(new ConcurrentHashMap<AMQPConnection<?>, Boolean>());
-    private final Set<VirtualHostConnectionListener> _connectionAssociationListeners = new CopyOnWriteArraySet<>();
     private final AccessControlContext _housekeepingJobContext;
     private final AccessControlContext _fileSystemSpaceCheckerJobContext;
 
@@ -854,18 +853,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     {
         Collection children = getChildren(Queue.class);
         return children;
-    }
-
-    @Override
-    public int removeQueue(Queue<?> queue)
-    {
-        return doSync(removeQueueAsync(queue));
-    }
-
-    @Override
-    public ListenableFuture<Integer> removeQueueAsync(final Queue<?> queue)
-    {
-        return queue.deleteAndReturnCount();
     }
 
     public Queue<?> createQueue(Map<String, Object> attributes) throws QueueExistsException
@@ -1885,10 +1872,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
                 connection.setScheduler(_networkConnectionScheduler);
 
-                for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
-                {
-                    listener.connectionAssociated(connection);
-                }
                 return Futures.immediateFuture(null);
             }
 
@@ -1926,13 +1909,8 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             @Override
             public ListenableFuture<Void> execute()
             {
-                if (_connections.remove(connection))
-                {
-                    for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
-                    {
-                        listener.connectionRemoved(connection);
-                    }
-                }
+                _connections.remove(connection);
+
                 return Futures.immediateFuture(null);
             }
 
@@ -2114,18 +2092,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
             scheduleHouseKeepingTask(getHousekeepingCheckPeriod(), _fileSystemSpaceChecker);
         }
-    }
-
-    @Override
-    public void addConnectionAssociationListener(VirtualHostConnectionListener listener)
-    {
-        _connectionAssociationListeners.add(listener);
-    }
-
-    @Override
-    public void removeConnectionAssociationListener(VirtualHostConnectionListener listener)
-    {
-        _connectionAssociationListeners.remove(listener);
     }
 
     @StateTransition( currentState = { State.STOPPED, State.ERRORED }, desiredState = State.ACTIVE )

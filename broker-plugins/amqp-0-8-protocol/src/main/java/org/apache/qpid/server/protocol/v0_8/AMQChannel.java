@@ -3453,7 +3453,7 @@ public class AMQChannel
                 {
                     try
                     {
-                        int purged = virtualHost.removeQueue(queue);
+                        int purged = queue.deleteAndReturnCount();
 
                         if (!nowait || _connection.isSendQueueDeleteOkRegardless())
                         {
