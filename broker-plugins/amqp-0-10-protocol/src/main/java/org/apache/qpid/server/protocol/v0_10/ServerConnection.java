@@ -418,12 +418,13 @@ public class ServerConnection extends Connection
     @Override
     public void closed()
     {
+        performDeleteTasks();
+        closeSubscriptions();
+
         if(_virtualHost != null)
         {
             _virtualHost.deregisterConnection(_amqpConnection);
         }
-        performDeleteTasks();
-        closeSubscriptions();
         super.closed();
 
         getEventLogger().message(isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
