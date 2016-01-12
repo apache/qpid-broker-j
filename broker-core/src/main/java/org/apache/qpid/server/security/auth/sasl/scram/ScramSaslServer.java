@@ -34,8 +34,6 @@ import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.qpid.server.security.auth.manager.AbstractScramAuthenticationManager;
-
 public class ScramSaslServer implements SaslServer
 {
     public final String _mechanism;
@@ -188,25 +186,24 @@ public class ScramSaslServer implements SaslServer
 
             String authMessage = _clientFirstMessageBare + "," + _serverFirstMessage + "," + clientFinalMessageWithoutProof;
 
-            byte[] saltedPassword = _saltAndPassword.getSaltedPassword();
 
-            byte[] clientKey = computeHmac(saltedPassword, "Client Key");
-
-            byte[] storedKey = MessageDigest.getInstance(_digestName).digest(clientKey);
+            byte[] storedKey = _saltAndPassword.getStoredKey();
 
             byte[] clientSignature = computeHmac(storedKey, authMessage);
 
-            byte[] clientProof = clientKey.clone();
-            for(int i = 0 ; i < clientProof.length; i++)
+            for(int i = 0 ; i < proofBytes.length; i++)
             {
-                clientProof[i] ^= clientSignature[i];
+                proofBytes[i] ^= clientSignature[i];
             }
 
-            if(!Arrays.equals(clientProof, proofBytes))
+            final byte[] storedKeyFromClient = MessageDigest.getInstance(_digestName).digest(proofBytes);
+
+            if(!Arrays.equals(storedKeyFromClient, storedKey))
             {
                 throw new SaslException("Authentication failed");
             }
-            byte[] serverKey = computeHmac(saltedPassword, "Server Key");
+
+            byte[] serverKey = _saltAndPassword.getServerKey();
             String finalResponse = "v=" + DatatypeConverter.printBase64Binary(computeHmac(serverKey, authMessage));
 
             return finalResponse.getBytes(ASCII);
@@ -260,13 +257,13 @@ public class ScramSaslServer implements SaslServer
     private byte[] computeHmac(final byte[] key, final String string)
             throws SaslException, UnsupportedEncodingException
     {
-        Mac mac = createSha1Hmac(key);
+        Mac mac = createShaHmac(key);
         mac.update(string.getBytes(ASCII));
         return mac.doFinal();
     }
 
 
-    private Mac createSha1Hmac(final byte[] keyBytes)
+    private Mac createShaHmac(final byte[] keyBytes)
             throws SaslException
     {
         try

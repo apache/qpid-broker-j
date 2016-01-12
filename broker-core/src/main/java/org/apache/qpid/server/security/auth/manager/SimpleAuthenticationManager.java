@@ -47,6 +47,8 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainPasswordCallback;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
+import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdapter;
 
 @ManagedObject( category = false, type = "Simple", register = false )
 public class SimpleAuthenticationManager extends AbstractAuthenticationManager<SimpleAuthenticationManager> implements PreferencesSupportingAuthenticationProvider
@@ -55,12 +57,30 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
 
     private static final String PLAIN_MECHANISM = "PLAIN";
     private static final String CRAM_MD5_MECHANISM = "CRAM-MD5";
+    private static final String SCRAM_SHA1_MECHANISM = ScramSHA1AuthenticationManager.MECHANISM;
+    private static final String SCRAM_SHA256_MECHANISM = ScramSHA256AuthenticationManager.MECHANISM;
 
     private final Map<String, String> _users = Collections.synchronizedMap(new HashMap<String, String>());
+    private final ScramSaslServerSourceAdapter _scramSha1Adapter;
+    private final ScramSaslServerSourceAdapter _scramSha256Adapter;
 
     public SimpleAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
     {
         super(attributes, broker);
+        ScramSaslServerSourceAdapter.PasswordSource passwordSource =
+                new ScramSaslServerSourceAdapter.PasswordSource()
+                {
+                    @Override
+                    public char[] getPassword(final String username)
+                    {
+                        String password = _users.get(username);
+                        return password == null ? null : password.toCharArray();
+                    }
+                };
+
+        _scramSha1Adapter = new ScramSaslServerSourceAdapter(4096, "HmacSHA1", "SHA-1", passwordSource);
+        _scramSha256Adapter = new ScramSaslServerSourceAdapter(4096, "HmacSHA256", "SHA-256", passwordSource);
+
     }
 
 
@@ -72,7 +92,7 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     @Override
     public List<String> getMechanisms()
     {
-        return Collections.unmodifiableList(Arrays.asList(PLAIN_MECHANISM, CRAM_MD5_MECHANISM));
+        return Collections.unmodifiableList(Arrays.asList(PLAIN_MECHANISM, CRAM_MD5_MECHANISM, SCRAM_SHA1_MECHANISM, SCRAM_SHA256_MECHANISM));
     }
 
     @Override
@@ -85,6 +105,14 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
         else if (CRAM_MD5_MECHANISM.equals(mechanism))
         {
             return Sasl.createSaslServer(mechanism, "AMQP", localFQDN, null, new SimpleCramMd5CallbackHandler());
+        }
+        else if (SCRAM_SHA1_MECHANISM.equals(mechanism))
+        {
+            return new ScramSaslServer(_scramSha1Adapter, mechanism, "HmacSHA1", "SHA-1");
+        }
+        else if(ScramSHA256AuthenticationManager.MECHANISM.equals(mechanism))
+        {
+            return new ScramSaslServer(_scramSha256Adapter, mechanism, "HmacSHA256", "SHA-256");
         }
         else
         {

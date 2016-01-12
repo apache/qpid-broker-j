@@ -30,7 +30,9 @@ public interface ScramSaslServerSource
     {
         byte[] getSalt();
 
-        byte[] getSaltedPassword() throws SaslException;
+        byte[] getStoredKey() throws SaslException;
+
+        byte[] getServerKey() throws SaslException;
     }
 
     SaltAndSaltedPassword getSaltAndSaltedPassword(String username);
