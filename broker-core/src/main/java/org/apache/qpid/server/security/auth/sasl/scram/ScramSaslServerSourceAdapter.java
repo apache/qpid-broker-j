@@ -20,15 +20,15 @@
  */
 package org.apache.qpid.server.security.auth.sasl.scram;
 
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.sasl.SaslException;
-
-import org.apache.qpid.server.security.auth.database.PlainPasswordFilePrincipalDatabase;
 
 public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
 {
@@ -38,6 +38,7 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
     private final String _hmacName;
     private final SecureRandom _random = new SecureRandom();
     private final PasswordSource _passwordSource;
+    private final String _digestName;
 
     public interface PasswordSource
     {
@@ -46,11 +47,13 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
 
     public ScramSaslServerSourceAdapter(final int iterationCount,
                                         final String hmacName,
+                                        final String digestName,
                                         final PasswordSource passwordSource)
     {
         _iterationCount = iterationCount;
         _hmacName = hmacName;
         _passwordSource = passwordSource;
+        _digestName = digestName;
     }
 
     @Override
@@ -59,13 +62,82 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
         return _iterationCount;
     }
 
+    private Mac createShaHmac(final byte[] keyBytes)
+    {
+        try
+        {
+            SecretKeySpec key = new SecretKeySpec(keyBytes, _hmacName);
+            Mac mac = Mac.getInstance(_hmacName);
+            mac.init(key);
+            return mac;
+        }
+        catch (NoSuchAlgorithmException | InvalidKeyException e)
+        {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    private byte[] computeHmac(final byte[] key, final String string)
+    {
+        Mac mac = createShaHmac(key);
+        mac.update(string.getBytes(StandardCharsets.US_ASCII));
+        return mac.doFinal();
+    }
+
     @Override
     public SaltAndSaltedPassword getSaltAndSaltedPassword(final String username)
     {
         final char[] password = _passwordSource.getPassword(username);
-
+        final byte[] storedKey;
+        final byte[] serverKey;
         final byte[] salt = new byte[32];
         _random.nextBytes(salt);
+
+        if(password != null)
+        {
+            try
+            {
+                byte[] passwordAsBytes = new byte[password.length];
+                for (int i = 0; i < password.length; i++)
+                {
+                    passwordAsBytes[i] = (byte) password[i];
+                }
+
+                Mac mac = createShaHmac(passwordAsBytes);
+
+                mac.update(salt);
+                mac.update(INT_1);
+                byte[] saltedPassword = mac.doFinal();
+
+                byte[] previous = null;
+                for (int i = 1; i < getIterationCount(); i++)
+                {
+                    mac.update(previous != null ? previous : saltedPassword);
+                    previous = mac.doFinal();
+                    for (int x = 0; x < saltedPassword.length; x++)
+                    {
+                        saltedPassword[x] ^= previous[x];
+                    }
+                }
+
+                byte[] clientKey = computeHmac(saltedPassword, "Client Key");
+
+                storedKey = MessageDigest.getInstance(_digestName).digest(clientKey);
+
+                serverKey = computeHmac(saltedPassword, "Server Key");
+            }
+            catch (NoSuchAlgorithmException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
+
+        }
+        else
+        {
+            storedKey = null;
+            serverKey = null;
+        }
+
         return new SaltAndSaltedPassword()
         {
             @Override
@@ -75,52 +147,26 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
             }
 
             @Override
-            public byte[] getSaltedPassword() throws SaslException
+            public byte[] getStoredKey() throws SaslException
             {
-                if(password == null)
+                if(storedKey == null)
                 {
                     throw new SaslException("Authentication Failed");
                 }
-                byte[] passwordAsBytes = new byte[password.length];
-                for(int i = 0; i< password.length; i++)
-                {
-                    passwordAsBytes[i] = (byte) password[i];
-                }
-                Mac mac = createShaHmac(passwordAsBytes);
-
-                mac.update(salt);
-                mac.update(INT_1);
-                byte[] result = mac.doFinal();
-
-                byte[] previous = null;
-                for(int i = 1; i < getIterationCount(); i++)
-                {
-                    mac.update(previous != null? previous: result);
-                    previous = mac.doFinal();
-                    for(int x = 0; x < result.length; x++)
-                    {
-                        result[x] ^= previous[x];
-                    }
-                }
-
-                return result;
-
+                return storedKey;
             }
 
-            private Mac createShaHmac(final byte[] keyBytes)
+            @Override
+            public byte[] getServerKey() throws SaslException
             {
-                try
+
+                if(serverKey == null)
                 {
-                    SecretKeySpec key = new SecretKeySpec(keyBytes, _hmacName);
-                    Mac mac = Mac.getInstance(_hmacName);
-                    mac.init(key);
-                    return mac;
+                    throw new SaslException("Authentication Failed");
                 }
-                catch (NoSuchAlgorithmException | InvalidKeyException e)
-                {
-                    throw new IllegalArgumentException(e.getMessage(), e);
-                }
+                return serverKey;
             }
+
 
         };
     }
