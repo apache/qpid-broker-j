@@ -172,7 +172,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                     if(!addr.startsWith("/") && addr.contains("/"))
                     {
                         String[] parts = addr.split("/",2);
-                        Exchange<?> exchg = getVirtualHost().getAttainedExchange(parts[0]);
+                        Exchange<?> exchg = getVirtualHost().getAttainedChildFromAddress(Exchange.class, parts[0]);
                         if(exchg != null)
                         {
                             ExchangeDestination exchangeDestination =
@@ -196,7 +196,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         }
                         else
                         {
-                            Exchange<?> exchg = getVirtualHost().getAttainedExchange(addr);
+                            Exchange<?> exchg = getVirtualHost().getAttainedChildFromAddress(Exchange.class, addr);
                             if(exchg != null)
                             {
                                 destination = new ExchangeDestination(exchg, source.getDurable(), source.getExpiryPolicy());
@@ -340,7 +340,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         else if(!addr.startsWith("/") && addr.contains("/"))
                         {
                             String[] parts = addr.split("/",2);
-                            Exchange<?> exchange = getVirtualHost().getAttainedExchange(parts[0]);
+                            Exchange<?> exchange = getVirtualHost().getAttainedChildFromAddress(Exchange.class, parts[0]);
                             if(exchange != null)
                             {
                                 ExchangeDestination exchangeDestination =
@@ -369,7 +369,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                             }
                             else
                             {
-                                Queue<?> queue = getVirtualHost().getAttainedQueue(addr);
+                                Queue<?> queue = getVirtualHost().getAttainedChildFromAddress(Queue.class, addr);
                                 if(queue != null)
                                 {
 
@@ -492,7 +492,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
 
             // TODO convert AMQP 1-0 node properties to queue attributes
 
-            queue = getVirtualHost().createQueue(attributes);
+            queue = getVirtualHost().createChild(Queue.class, attributes);
         }
         catch (AccessControlException e)
         {

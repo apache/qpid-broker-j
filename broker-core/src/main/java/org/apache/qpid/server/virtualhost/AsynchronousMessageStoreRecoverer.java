@@ -21,6 +21,7 @@
 package org.apache.qpid.server.virtualhost;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -110,7 +111,8 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
             _logSubject = new MessageStoreLogSubject(virtualHost.getName(), _store.getClass().getSimpleName());
 
             _maxMessageId = _store.getNextMessageId();
-            _recoveringQueues.addAll(_virtualHost.getQueues());
+            Collection children = _virtualHost.getChildren(Queue.class);
+            _recoveringQueues.addAll((Collection<? extends Queue<?>>) children);
 
         }
 

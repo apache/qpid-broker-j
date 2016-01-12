@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -150,7 +151,7 @@ public class MessageConverter_1_0_to_v0_10 implements MessageConverter<Message_1
                 String[] parts = origReplyTo.split("/",2);
                 replyTo = new ReplyTo(parts[0],parts[1]);
             }
-            else if(vhost.getAttainedExchange(origReplyTo) != null)
+            else if(vhost.getAttainedChildFromAddress(Exchange.class, origReplyTo) != null)
             {
                 replyTo = new ReplyTo(origReplyTo,"");
             }

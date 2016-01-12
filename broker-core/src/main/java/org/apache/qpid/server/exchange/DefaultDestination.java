@@ -59,14 +59,14 @@ public class DefaultDestination implements MessageDestination
         {
             routingAddress = "";
         }
-        final Queue<?> q = _virtualHost.getAttainedQueue(routingAddress);
+        final Queue<?> q = _virtualHost.getAttainedChildFromAddress(Queue.class, routingAddress);
         if(q == null)
         {
             routingAddress = _virtualHost.getLocalAddress(routingAddress);
             if(routingAddress.contains("/") && !routingAddress.startsWith("/"))
             {
                 String[] parts = routingAddress.split("/",2);
-                Exchange<?> exchange = _virtualHost.getAttainedExchange(parts[0]);
+                Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, parts[0]);
                 if(exchange != null)
                 {
                     return exchange.send(message, parts[1], instanceProperties, txn, postEnqueueAction);
@@ -74,7 +74,7 @@ public class DefaultDestination implements MessageDestination
             }
             else if(!routingAddress.contains("/"))
             {
-                Exchange<?> exchange = _virtualHost.getAttainedExchange(routingAddress);
+                Exchange<?> exchange = _virtualHost.getAttainedChildFromAddress(Exchange.class, routingAddress);
                 if(exchange != null)
                 {
                     return exchange.send(message, "", instanceProperties, txn, postEnqueueAction);

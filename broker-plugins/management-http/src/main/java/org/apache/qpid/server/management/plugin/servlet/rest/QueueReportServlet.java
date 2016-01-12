@@ -88,7 +88,7 @@ public class QueueReportServlet extends AbstractServlet
     {
         Queue queue = null;
 
-        for(Queue<?> q : vhost.getQueues())
+        for(Queue<?> q : vhost.getChildren(Queue.class))
         {
 
             if(q.getName().equals(queueName))

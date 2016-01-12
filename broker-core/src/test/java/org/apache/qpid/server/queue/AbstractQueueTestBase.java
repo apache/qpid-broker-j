@@ -95,7 +95,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         attributes.put(Queue.NAME, _qname);
         attributes.put(Queue.OWNER, _owner);
 
-        _queue = _virtualHost.createQueue(attributes);
+        _queue = _virtualHost.createChild(Queue.class, attributes);
 
         _exchange = (DirectExchange) _virtualHost.getChildByName(Exchange.class, ExchangeDefaults.DIRECT_EXCHANGE_NAME);
     }
@@ -122,7 +122,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         {
             Map<String,Object> attributes = new HashMap<>(_arguments);
 
-            _queue =  _virtualHost.createQueue(attributes);
+            _queue =  _virtualHost.createChild(Queue.class, attributes);
             assertNull("Queue was created", _queue);
         }
         catch (IllegalArgumentException e)
@@ -133,7 +133,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
 
         Map<String,Object> attributes = new HashMap<>(_arguments);
         attributes.put(Queue.NAME, "differentName");
-        _queue =  _virtualHost.createQueue(attributes);
+        _queue =  _virtualHost.createChild(Queue.class, attributes);
         assertNotNull("Queue was not created", _queue);
     }
 
@@ -837,7 +837,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         attributes.put(Queue.NAME,"testTtlOverrideMaximumTTl");
         attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 10000l);
 
-        Queue<?> queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertEquals("TTL has not been overridden", 60000l, getExpirationOnQueue(queue, 50000l, 0l));
 
@@ -859,7 +859,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         attributes.put(Queue.NAME,"testTtlOverrideMinimumTTl");
         attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000l);
 
-        queue = _virtualHost.createQueue(attributes);
+        queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertEquals("TTL has been overridden incorrectly", 0l, getExpirationOnQueue(queue, 50000l, 0l));
 
@@ -883,7 +883,7 @@ abstract class AbstractQueueTestBase extends QpidTestCase
         attributes.put(Queue.MINIMUM_MESSAGE_TTL, 10000l);
         attributes.put(Queue.MAXIMUM_MESSAGE_TTL, 20000l);
 
-        queue = _virtualHost.createQueue(attributes);
+        queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertEquals("TTL has not been overridden", 70000l, getExpirationOnQueue(queue, 50000l, 0l));
 

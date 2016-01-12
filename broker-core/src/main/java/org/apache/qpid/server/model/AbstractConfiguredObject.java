@@ -73,6 +73,7 @@ import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.util.Strings;
 
 public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> implements ConfiguredObject<X>
@@ -2602,6 +2603,34 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     protected final void authoriseDelete(ConfiguredObject<?> object)
     {
         getSecurityManager().authoriseDelete(object);
+    }
+
+    protected final <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final String name)
+    {
+        ListenableFuture<C> attainedChildByName = getAttainedChildByName(childClass, name);
+        try
+        {
+            return (C) doSync(attainedChildByName, VirtualHost.DEFAULT_AWAIT_ATTAINMENT_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (TimeoutException e)
+        {
+            LOGGER.warn("Gave up waiting for {} '{}' to attain state. Check object's state via Management.", childClass.getSimpleName(), name);
+            return null;
+        }
+    }
+
+    protected final <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final UUID id)
+    {
+        ListenableFuture<C> attainedChildByName = getAttainedChildById(childClass, id);
+        try
+        {
+            return (C) doSync(attainedChildByName, VirtualHost.DEFAULT_AWAIT_ATTAINMENT_TIMEOUT, TimeUnit.MILLISECONDS);
+        }
+        catch (TimeoutException e)
+        {
+            LOGGER.warn("Gave up waiting for {} with ID {} to attain state. Check object's state via Management.", childClass.getSimpleName(), id);
+            return null;
+        }
     }
 
     protected SecurityManager getSecurityManager()

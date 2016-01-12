@@ -120,7 +120,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
     private void verifyRegisteredQueueCount(int count)
     {
-        assertEquals("Queue was not registered in virtualhost", count, _virtualHost.getQueues().size());
+        assertEquals("Queue was not registered in virtualhost", count, _virtualHost.getChildren(Queue.class).size());
     }
 
 
@@ -138,7 +138,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(PriorityQueue.PRIORITIES, 5);
 
 
-        Queue<?> queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertEquals("Queue not a priority queue", PriorityQueueImpl.class, queue.getClass());
         verifyQueueRegistered("testPriorityQueue");
@@ -156,7 +156,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.NAME, queueName);
 
 
-        Queue<?> queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
         assertEquals("Queue not a simple queue", StandardQueueImpl.class, queue.getClass());
         verifyQueueRegistered(queueName);
 
@@ -188,7 +188,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.NAME, queueName);
         attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, true);
 
-        Queue<?> queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
         Exchange<?> altExchange = queue.getAlternateExchange();
         assertNotNull("Queue should have an alternate exchange as DLQ is enabled", altExchange);
@@ -228,7 +228,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, true);
         attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, 5);
 
-        Queue<?> queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertEquals("Unexpected maximum delivery count", 5, queue.getMaximumDeliveryAttempts());
         Exchange<?> altExchange = queue.getAlternateExchange();
@@ -270,7 +270,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.NAME, queueName);
         attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, false);
 
-        Queue<?> queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertNull("Queue should not have an alternate exchange as DLQ is disabled", queue.getAlternateExchange());
         assertNull("The alternate exchange should still not exist", _virtualHost.getChildByName(Exchange.class, dlExchangeName));
@@ -303,7 +303,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.LIFETIME_POLICY, LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS);
 
         //create an autodelete queue
-        Queue<?> queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
         assertEquals("Queue should be autodelete",
                      LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS,
                      queue.getLifetimePolicy());
@@ -329,7 +329,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
         attributes.put(Queue.MAXIMUM_DELIVERY_ATTEMPTS, (Object) 5);
 
-        final Queue<?> queue = _virtualHost.createQueue(attributes);
+        final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertNotNull("The queue was not registered as expected ", queue);
         assertEquals("Maximum delivery count not as expected", 5, queue.getMaximumDeliveryAttempts());
@@ -347,7 +347,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.ID, UUID.randomUUID());
         attributes.put(Queue.NAME, "testMaximumDeliveryCountDefault");
 
-        final Queue<?> queue = _virtualHost.createQueue(attributes);
+        final Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
 
         assertNotNull("The queue was not registered as expected ", queue);
         assertEquals("Maximum delivery count not as expected", 0, queue.getMaximumDeliveryAttempts());
@@ -365,7 +365,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
             Map<String,Object> attributes = new HashMap<String, Object>();
             attributes.put(Queue.ID, UUID.randomUUID());
 
-            _virtualHost.createQueue(attributes);
+            _virtualHost.createChild(Queue.class, attributes);
             fail("queue with null name can not be created!");
         }
         catch (Exception e)
@@ -394,7 +394,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
             attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, true);
 
-            _virtualHost.createQueue(attributes);
+            _virtualHost.createChild(Queue.class, attributes);
             fail("queue with DLQ name having more than 255 characters can not be created!");
         }
         catch (Exception e)
@@ -424,7 +424,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
 
             attributes.put(AbstractVirtualHost.CREATE_DLQ_ON_CREATION, (Object) true);
 
-            _virtualHost.createQueue(attributes);
+            _virtualHost.createChild(Queue.class, attributes);
             fail("queue with DLE name having more than 255 characters can not be created!");
         }
         catch (Exception e)
@@ -444,7 +444,7 @@ public class VirtualHostQueueCreationTest extends QpidTestCase
         attributes.put(Queue.MESSAGE_GROUP_KEY,"mykey");
         attributes.put(Queue.MESSAGE_GROUP_SHARED_GROUPS, true);
 
-        Queue<?> queue = _virtualHost.createQueue(attributes);
+        Queue<?> queue = _virtualHost.createChild(Queue.class, attributes);
         assertEquals("mykey", queue.getAttribute(Queue.MESSAGE_GROUP_KEY));
         assertEquals(Boolean.TRUE, queue.getAttribute(Queue.MESSAGE_GROUP_SHARED_GROUPS));
     }

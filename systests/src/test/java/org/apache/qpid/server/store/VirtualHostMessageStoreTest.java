@@ -195,7 +195,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
     public void testQueueExchangeAndBindingCreation() throws Exception
     {
-        assertEquals("Should not be any existing queues", 0,  _virtualHost.getQueues().size());
+        assertEquals("Should not be any existing queues", 0,  _virtualHost.getChildren(Queue.class).size());
 
         createAllQueues();
         createAllTopicQueues();
@@ -235,7 +235,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         validateMessageOnTopics(2, true);
 
         assertEquals("Not all queues correctly registered",
-                10, _virtualHost.getQueues().size());
+                10, _virtualHost.getChildren(Queue.class).size());
     }
 
     public void testMessagePersistence() throws Exception
@@ -259,7 +259,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         testMessagePersistence();
 
         assertEquals("Incorrect number of queues registered after recovery",
-                6,  _virtualHost.getQueues().size());
+                6,  _virtualHost.getChildren(Queue.class).size());
 
         //clear the queue
         _virtualHost.getChildByName(Queue.class, durableQueueName).clearQueue();
@@ -281,7 +281,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     public void testQueuePersistence() throws Exception
     {
         assertEquals("Should not be any existing queues",
-                0, _virtualHost.getQueues().size());
+                0, _virtualHost.getChildren(Queue.class).size());
 
         //create durable and non durable queues/topics
         createAllQueues();
@@ -291,7 +291,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         reloadVirtualHost();
 
         assertEquals("Incorrect number of queues registered after recovery",
-                6,  _virtualHost.getQueues().size());
+                6,  _virtualHost.getChildren(Queue.class).size());
 
         //Validate the non-Durable Queues were not recovered.
         assertNull("Non-Durable queue still registered:" + priorityQueueName,
@@ -322,12 +322,12 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         createQueue(durableQueueName, false, true, false, false);
 
         assertEquals("Incorrect number of queues registered before recovery",
-                1,  _virtualHost.getQueues().size());
+                1,  _virtualHost.getChildren(Queue.class).size());
 
         reloadVirtualHost();
 
         assertEquals("Incorrect number of queues registered after first recovery",
-                1,  _virtualHost.getQueues().size());
+                1,  _virtualHost.getChildren(Queue.class).size());
 
         //test that removing the queue means it is not recovered next time
 
@@ -337,7 +337,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         reloadVirtualHost();
 
         assertEquals("Incorrect number of queues registered after second recovery",
-                0,  _virtualHost.getQueues().size());
+                0,  _virtualHost.getChildren(Queue.class).size());
         assertNull("Durable queue was not removed:" + durableQueueName,
                 _virtualHost.getChildByName(Queue.class, durableQueueName));
     }
@@ -349,12 +349,12 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
      */
     public void testExchangePersistence() throws Exception
     {
-        int origExchangeCount = _virtualHost.getExchanges().size();
+        int origExchangeCount = _virtualHost.getChildren(Exchange.class).size();
 
         Map<String, Exchange<?>> oldExchanges = createExchanges();
 
         assertEquals("Incorrect number of exchanges registered before recovery",
-                origExchangeCount + 3, _virtualHost.getExchanges().size());
+                origExchangeCount + 3, _virtualHost.getChildren(Exchange.class).size());
 
         reloadVirtualHost();
 
@@ -369,17 +369,17 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
      */
     public void testDurableExchangeRemoval() throws Exception
     {
-        int origExchangeCount = _virtualHost.getExchanges().size();
+        int origExchangeCount = _virtualHost.getChildren(Exchange.class).size();
 
         createExchange(ExchangeDefaults.DIRECT_EXCHANGE_CLASS, directExchangeName, true);
 
         assertEquals("Incorrect number of exchanges registered before recovery",
-                origExchangeCount + 1,  _virtualHost.getExchanges().size());
+                origExchangeCount + 1,  _virtualHost.getChildren(Exchange.class).size());
 
         reloadVirtualHost();
 
         assertEquals("Incorrect number of exchanges registered after first recovery",
-                origExchangeCount + 1,  _virtualHost.getExchanges().size());
+                origExchangeCount + 1,  _virtualHost.getChildren(Exchange.class).size());
 
         //test that removing the exchange means it is not recovered next time
 
@@ -390,7 +390,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         reloadVirtualHost();
 
         assertEquals("Incorrect number of exchanges registered after second recovery",
-                     origExchangeCount, _virtualHost.getExchanges().size());
+                     origExchangeCount, _virtualHost.getChildren(Exchange.class).size());
         assertNull("Durable exchange was not removed:" + directExchangeName,
                    _virtualHost.getChildByName(Exchange.class, directExchangeName));
     }
@@ -403,7 +403,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
      */
     public void testBindingPersistence() throws Exception
     {
-        int origExchangeCount = _virtualHost.getExchanges().size();
+        int origExchangeCount = _virtualHost.getChildren(Exchange.class).size();
 
         createAllQueues();
         createAllTopicQueues();
@@ -419,7 +419,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         bindAllTopicQueuesToExchange(topicExchange, topicRouting);
 
         assertEquals("Incorrect number of exchanges registered before recovery",
-                origExchangeCount + 3, _virtualHost.getExchanges().size());
+                origExchangeCount + 3, _virtualHost.getChildren(Exchange.class).size());
 
         reloadVirtualHost();
 
@@ -470,7 +470,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
      */
     private void validateExchanges(int originalNumExchanges, Map<String, Exchange<?>> oldExchanges)
     {
-        Collection<Exchange<?>> exchanges = _virtualHost.getExchanges();
+        Collection<Exchange> exchanges = _virtualHost.getChildren(Exchange.class);
         Collection<String> exchangeNames = new ArrayList<String>(exchanges.size());
         for(Exchange<?> exchange : exchanges)
         {
@@ -491,14 +491,14 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
 
         // There should only be the original exchanges + our 2 recovered durable exchanges
         assertEquals("Incorrect number of exchanges available",
-                originalNumExchanges + 2, _virtualHost.getExchanges().size());
+                originalNumExchanges + 2, _virtualHost.getChildren(Exchange.class).size());
     }
 
     /** Validates the Durable queues and their properties are as expected following recovery */
     private void validateBindingProperties()
     {
 
-        assertEquals("Incorrect number of (durable) queues following recovery", 6, _virtualHost.getQueues().size());
+        assertEquals("Incorrect number of (durable) queues following recovery", 6, _virtualHost.getChildren(Queue.class).size());
 
         validateBindingProperties(_virtualHost.getChildByName(Queue.class, durablePriorityQueueName).getBindings(), false);
         validateBindingProperties(_virtualHost.getChildByName(Queue.class, durablePriorityTopicQueueName).getBindings(), true);
@@ -696,7 +696,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
                                              @Override
                                              public Queue<?> run()
                                              {
-                                                 return _virtualHost.createQueue(queueArguments);
+                                                 return _virtualHost.createChild(Queue.class, queueArguments);
 
                                              }
                                          });
@@ -731,7 +731,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
         attributes.put(org.apache.qpid.server.model.Exchange.LIFETIME_POLICY,
                 durable ? LifetimePolicy.DELETE_ON_NO_LINKS : LifetimePolicy.PERMANENT);
         attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_EXCHANGE, null);
-        exchange = _virtualHost.createExchange(attributes);
+        exchange = _virtualHost.createChild(Exchange.class, attributes);
 
         return exchange;
     }

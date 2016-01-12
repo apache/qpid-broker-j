@@ -881,7 +881,7 @@ public class ServerSessionDelegate extends SessionDelegate
                     attributes.put(org.apache.qpid.server.model.Exchange.LIFETIME_POLICY,
                                    method.getAutoDelete() ? LifetimePolicy.DELETE_ON_NO_LINKS : LifetimePolicy.PERMANENT);
                     attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_EXCHANGE, method.getAlternateExchange());
-                    virtualHost.createExchange(attributes);
+                    virtualHost.createChild(Exchange.class, attributes);;
                 }
                 catch(ReservedExchangeNameException e)
                 {
@@ -949,7 +949,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
     private Exchange<?> getExchange(Session session, String exchangeName)
     {
-        return getVirtualHost(session).getAttainedExchange(exchangeName);
+        return getVirtualHost(session).getAttainedChildFromAddress(Exchange.class, exchangeName);
     }
 
     private MessageDestination getDestinationForMessage(Session ssn, MessageTransfer xfr)
@@ -1095,8 +1095,8 @@ public class ServerSessionDelegate extends SessionDelegate
                 {
                     method.setBindingKey(method.getQueue());
                 }
-                Queue<?> queue = virtualHost.getAttainedQueue(method.getQueue());
-                Exchange<?> exchange = virtualHost.getAttainedExchange(exchangeName);
+                Queue<?> queue = virtualHost.getAttainedChildFromAddress(Queue.class, method.getQueue());
+                Exchange<?> exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, exchangeName);
                 if(queue == null)
                 {
                     exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1155,8 +1155,8 @@ public class ServerSessionDelegate extends SessionDelegate
         }
         else
         {
-            Queue<?> queue = virtualHost.getAttainedQueue(method.getQueue());
-            Exchange<?> exchange = virtualHost.getAttainedExchange(method.getExchange());
+            Queue<?> queue = virtualHost.getAttainedChildFromAddress(Queue.class, method.getQueue());
+            Exchange<?> exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, method.getExchange());
             if(queue == null)
             {
                 exception(session, method, ExecutionErrorCode.NOT_FOUND, "Queue: '" + method.getQueue() + "' not found");
@@ -1195,7 +1195,7 @@ public class ServerSessionDelegate extends SessionDelegate
         if(!nameNullOrEmpty(method.getExchange()))
         {
             isDefaultExchange = false;
-            exchange = virtualHost.getAttainedExchange(method.getExchange());
+            exchange = virtualHost.getAttainedChildFromAddress(Exchange.class, method.getExchange());
 
             if(exchange == null)
             {
@@ -1376,7 +1376,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
     private Queue<?> getQueue(Session session, String queue)
     {
-        return getVirtualHost(session).getAttainedQueue(queue);
+        return getVirtualHost(session).getAttainedChildFromAddress(Queue.class, queue);
     }
 
     @Override
@@ -1394,7 +1394,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
         if(method.getPassive())
         {
-            queue = virtualHost.getAttainedQueue(queueName);
+            queue = virtualHost.getAttainedChildFromAddress(Queue.class, queueName);
 
             if (queue == null)
             {
@@ -1466,7 +1466,7 @@ public class ServerSessionDelegate extends SessionDelegate
 
                 arguments.put(Queue.EXCLUSIVE, exclusivityPolicy);
 
-                queue = virtualHost.createQueue(arguments);
+                queue = virtualHost.createChild(Queue.class, arguments);
 
             }
             catch(QueueExistsException qe)

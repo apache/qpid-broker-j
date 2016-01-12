@@ -437,25 +437,10 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         when(queue.getId()).thenReturn(queueId);
         when(queue.getName()).thenReturn("test-queue");
         when(_virtualHost.getAttainedQueue(queueId)).thenReturn(queue);
-        when(_virtualHost.getAttainedQueue("test-queue")).thenReturn(queue);
+        when(_virtualHost.getAttainedChildFromAddress(Queue.class, "test-queue")).thenReturn(queue);
         return queue;
     }
 
-
-    private final class QueueIdMatcher extends ArgumentMatcher<TransactionLogResource>
-    {
-        private UUID _queueId;
-        public QueueIdMatcher(UUID queueId)
-        {
-            _queueId = queueId;
-        }
-
-        @Override
-        public boolean matches(Object argument)
-        {
-            return argument instanceof TransactionLogResource && _queueId.equals( ((TransactionLogResource)argument).getId() );
-        }
-    }
 
     private final class MessageEnqueueRecordMatcher extends ArgumentMatcher<MessageEnqueueRecord>
     {

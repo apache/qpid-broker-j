@@ -85,12 +85,10 @@ public class SynchronousMessageStoreRecoverer implements MessageStoreRecoverer
         {
             eventLogger.message(logSubject, TransactionLogMessages.RECOVERED(entry.getValue(), entry.getKey()));
             eventLogger.message(logSubject, TransactionLogMessages.RECOVERY_COMPLETE(entry.getKey(), true));
-            virtualHost.getAttainedQueue(entry.getKey()).completeRecovery();
+            virtualHost.getAttainedChildFromAddress(Queue.class, entry.getKey()).completeRecovery();
         }
 
-        Collection<Queue<?>> allQueues = virtualHost.getQueues();
-
-        for(Queue<?> q : allQueues)
+        for(Queue<?> q : virtualHost.getChildren(Queue.class))
         {
             if(!queueRecoveries.containsKey(q.getName()))
             {

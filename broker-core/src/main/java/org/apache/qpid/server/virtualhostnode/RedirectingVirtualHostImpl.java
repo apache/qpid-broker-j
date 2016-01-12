@@ -40,13 +40,11 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Connection;
-import org.apache.qpid.server.model.Exchange;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.State;
-import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.LinkRegistry;
@@ -156,28 +154,15 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public Exchange<?> createExchange(final Map<String, Object> attributes)
-    {
-        throwUnsupportedForRedirector();
-        return null;
-    }
-
-    @Override
     public MessageDestination getAttainedMessageDestination(final String name)
     {
         return null;
     }
 
     @Override
-    public Exchange<?> getAttainedExchange(final String name)
+    public <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(final Class<T> childClass,
+                                                                         final String address)
     {
-        return null;
-    }
-
-    @Override
-    public Queue<?> createQueue(final Map<String, Object> attributes)
-    {
-        throwUnsupportedForRedirector();
         return null;
     }
 
@@ -185,12 +170,6 @@ class RedirectingVirtualHostImpl
     public void executeTransaction(final TransactionalOperation op)
     {
         throwUnsupportedForRedirector();
-    }
-
-    @Override
-    public Collection<String> getExchangeTypeNames()
-    {
-        return getObjectFactory().getSupportedTypes(Exchange.class);
     }
 
     @Override
@@ -302,12 +281,6 @@ class RedirectingVirtualHostImpl
     }
 
     @Override
-    public Collection<VirtualHostAlias> getAliases()
-    {
-        return Collections.emptyList();
-    }
-
-    @Override
     public Collection<Connection<?>> getConnections()
     {
         return Collections.emptyList();
@@ -315,12 +288,6 @@ class RedirectingVirtualHostImpl
 
     @Override
     public Connection<?> getConnection(String name)
-    {
-        return null;
-    }
-
-    @Override
-    public Queue<?> getAttainedQueue(final String name)
     {
         return null;
     }
@@ -337,18 +304,6 @@ class RedirectingVirtualHostImpl
         return null;
     }
 
-
-    @Override
-    public Collection<Queue<?>> getQueues()
-    {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public Collection<Exchange<?>> getExchanges()
-    {
-        return Collections.emptyList();
-    }
 
     @Override
     public DurableConfigurationStore getDurableConfigurationStore()

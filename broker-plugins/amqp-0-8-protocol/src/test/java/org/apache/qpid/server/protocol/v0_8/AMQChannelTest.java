@@ -123,7 +123,7 @@ public class AMQChannelTest extends QpidTestCase
         String testExchangeName = getTestName();
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(true);
-        doReturn(exchange).when(_virtualHost).getAttainedExchange(testExchangeName);
+        doReturn(exchange).when(_virtualHost).getAttainedChildFromAddress(Exchange.class, testExchangeName);
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
 
@@ -138,7 +138,7 @@ public class AMQChannelTest extends QpidTestCase
     {
         Exchange<?> exchange = mock(Exchange.class);
         when(exchange.hasBindings()).thenReturn(false);
-        doReturn(exchange).when(_virtualHost).getAttainedExchange(getTestName());
+        doReturn(exchange).when(_virtualHost).getAttainedChildFromAddress(Exchange.class, getTestName());
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _messageStore);
         channel.receiveExchangeDelete(AMQShortString.valueOf(getTestName()), true, false);

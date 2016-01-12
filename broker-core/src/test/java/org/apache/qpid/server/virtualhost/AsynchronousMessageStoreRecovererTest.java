@@ -21,6 +21,7 @@
 package org.apache.qpid.server.virtualhost;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -65,7 +66,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
         doThrow(exception).when(_storeReader).visitMessageInstances(any(TransactionLogResource.class),
                                                                                              any(MessageInstanceHandler.class));
         Queue<?> queue = mock(Queue.class);
-        when(_virtualHost.getQueues()).thenReturn(Collections.singleton(queue));
+        when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Collections.singleton(queue));
 
         AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
         ListenableFuture<Void> result = recoverer.recover(_virtualHost);
@@ -83,7 +84,7 @@ public class AsynchronousMessageStoreRecovererTest extends QpidTestCase
     public void testRecoveryEmptyQueue() throws Exception
     {
         Queue<?> queue = mock(Queue.class);
-        when(_virtualHost.getQueues()).thenReturn(Collections.singleton(queue));
+        when(_virtualHost.getChildren(eq(Queue.class))).thenReturn(Collections.singleton(queue));
 
         AsynchronousMessageStoreRecoverer recoverer = new AsynchronousMessageStoreRecoverer();
         ListenableFuture<Void> result = recoverer.recover(_virtualHost);

@@ -189,19 +189,6 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
 
     Broker<?> getBroker();
 
-    //children
-    Collection<VirtualHostAlias> getAliases();
-    Collection<Queue<?>> getQueues();
-    Collection<Exchange<?>> getExchanges();
-
-    Exchange<?> createExchange(Map<String, Object> attributes)
-            throws AccessControlException, IllegalArgumentException;
-
-    Queue<?> createQueue(Map<String, Object> attributes)
-            throws AccessControlException, IllegalArgumentException;
-
-    Collection<String> getExchangeTypeNames();
-
     @ManagedOperation(nonModifying = true)
     Collection<? extends Connection<?>> getConnections();
 
@@ -219,15 +206,14 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     void registerConnection(AMQPConnection<?> connection);
     void deregisterConnection(AMQPConnection<?> connection);
 
-    Queue<?> getAttainedQueue(String name);
-
     Queue<?> getAttainedQueue(UUID id);
 
     MessageSource getAttainedMessageSource(String name);
 
-    Exchange getAttainedExchange(String name);
-
     MessageDestination getAttainedMessageDestination(String name);
+
+    <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(Class<T> childClass,
+                                                                  String address);
 
     MessageDestination getDefaultDestination();
 

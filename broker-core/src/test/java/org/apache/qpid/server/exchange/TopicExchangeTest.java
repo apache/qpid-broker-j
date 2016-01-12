@@ -92,7 +92,7 @@ public class TopicExchangeTest extends QpidTestCase
     {
         Map<String,Object> attributes = new HashMap<>();
         attributes.put(Queue.NAME, name);
-        return _vhost.createQueue(attributes);
+        return _vhost.createChild(Queue.class, attributes);
     }
 
     public void testNoRoute() throws Exception

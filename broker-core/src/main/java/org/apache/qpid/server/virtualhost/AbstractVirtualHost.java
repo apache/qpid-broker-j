@@ -145,7 +145,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
 
     private final EventLogger _eventLogger;
 
-    private final List<VirtualHostAlias> _aliases = new ArrayList<VirtualHostAlias>();
     private final VirtualHostNode<?> _virtualHostNode;
 
     private final AtomicLong _targetSize = new AtomicLong(100 * 1024 * 1024);
@@ -570,19 +569,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public <C extends ConfiguredObject> Collection<C> getChildren(Class<C> clazz)
-    {
-        if(clazz == VirtualHostAlias.class)
-        {
-            return (Collection<C>) getAliases();
-        }
-        else
-        {
-            return super.getChildren(clazz);
-        }
-    }
-
-    @Override
     protected <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(Class<C> childClass, Map<String, Object> attributes, ConfiguredObject... otherParents)
     {
         checkVHostStateIsActive();
@@ -605,11 +591,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             return getObjectFactory().createAsync(childClass, attributes, this);
         }
         throw new IllegalArgumentException("Cannot create a child of class " + childClass.getSimpleName());
-    }
-
-    public Collection<String> getExchangeTypeNames()
-    {
-        return getObjectFactory().getSupportedTypes(Exchange.class);
     }
 
 
@@ -741,27 +722,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
     @Override
-    public Queue<?> getAttainedQueue(String name)
-    {
-        Queue<?> child = awaitChildClassToAttainState(Queue.class, name);
-        if(child == null && getGlobalAddressDomains() != null)
-        {
-            for(String domain : getGlobalAddressDomains())
-            {
-                if(name.startsWith(domain + "/"))
-                {
-                    child = awaitChildClassToAttainState(Queue.class, name.substring(domain.length()));
-                    if(child != null)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-        return child;
-    }
-
-    @Override
     public MessageSource getAttainedMessageSource(final String name)
     {
         MessageSource messageSource = _systemNodeSources.get(name);
@@ -771,22 +731,11 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         }
         if(messageSource == null)
         {
-            messageSource = autoCreateSource(name);
+            messageSource = autoCreateNode(name, MessageSource.class, false);
         }
         return messageSource;
     }
 
-    private MessageSource autoCreateSource(final String name)
-    {
-        return autoCreateNode(name, MessageSource.class, false);
-    }
-
-
-    private MessageDestination autoCreateDestination(final String name)
-    {
-        return autoCreateNode(name, MessageDestination.class, true);
-
-    }
 
     private <T> T autoCreateNode(final String name, final Class<T> clazz, boolean publish)
     {
@@ -848,18 +797,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return _broker;
     }
 
-    @Override
-    public Collection<Queue<?>> getQueues()
-    {
-        Collection children = getChildren(Queue.class);
-        return children;
-    }
-
-    public Queue<?> createQueue(Map<String, Object> attributes) throws QueueExistsException
-    {
-        return (Queue<?> )createChild(Queue.class, attributes);
-    }
-
     private ListenableFuture<? extends Queue<?>> addQueueAsync(Map<String, Object> attributes) throws QueueExistsException
     {
         if (shouldCreateDLQ(attributes))
@@ -895,30 +832,32 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         MessageDestination destination = _systemNodeDestinations.get(name);
         if(destination == null)
         {
-            destination = getAttainedExchange(name);
+            destination = getAttainedChildFromAddress(Exchange.class, name);
         }
         if(destination == null)
         {
-            destination = getAttainedQueue(name);
+            destination = getAttainedChildFromAddress(Queue.class, name);
         }
         if(destination == null)
         {
-            destination = autoCreateDestination(name);
+
+            destination = autoCreateNode(name, MessageDestination.class, true);
         }
         return destination;
     }
 
     @Override
-    public Exchange<?> getAttainedExchange(String name)
+    public <T extends ConfiguredObject<?>> T getAttainedChildFromAddress(final Class<T> childClass,
+                                                                         final String address)
     {
-        Exchange<?> child = awaitChildClassToAttainState(Exchange.class, name);
+        T child = awaitChildClassToAttainState(childClass, address);
         if(child == null && getGlobalAddressDomains() != null)
         {
             for(String domain : getGlobalAddressDomains())
             {
-                if(name.startsWith(domain + "/"))
+                if(address.startsWith(domain + "/"))
                 {
-                    child = awaitChildClassToAttainState(Exchange.class, name.substring(domain.length()));
+                    child = awaitChildClassToAttainState(childClass, address.substring(domain.length()));
                     if(child != null)
                     {
                         break;
@@ -929,54 +868,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         return child;
     }
 
-    private <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final String name)
-    {
-        ListenableFuture<C> attainedChildByName = getAttainedChildByName(childClass, name);
-        try
-        {
-            return (C) doSync(attainedChildByName, DEFAULT_AWAIT_ATTAINMENT_TIMEOUT, TimeUnit.MILLISECONDS);
-        }
-        catch (TimeoutException e)
-        {
-            _logger.warn("Gave up waiting for {} '{}' to attain state. Check object's state via Management.", childClass.getSimpleName(), name);
-            return null;
-        }
-    }
-
-    private <C extends ConfiguredObject> C awaitChildClassToAttainState(final Class<C> childClass, final UUID id)
-    {
-        ListenableFuture<C> attainedChildByName = getAttainedChildById(childClass, id);
-        try
-        {
-            return (C) doSync(attainedChildByName, DEFAULT_AWAIT_ATTAINMENT_TIMEOUT, TimeUnit.MILLISECONDS);
-        }
-        catch (TimeoutException e)
-        {
-            _logger.warn("Gave up waiting for {} with ID {} to attain state. Check object's state via Management.", childClass.getSimpleName(), id);
-            return null;
-        }
-    }
-
     @Override
     public MessageDestination getDefaultDestination()
     {
         return _defaultDestination;
-    }
-
-    @Override
-    public Collection<Exchange<?>> getExchanges()
-    {
-        Collection children = getChildren(Exchange.class);
-        return children;
-    }
-
-
-    @Override
-    public Exchange<?> createExchange(Map<String,Object> attributes)
-            throws ExchangeExistsException, ReservedExchangeNameException,
-                   NoFactoryForTypeException
-    {
-        return (Exchange<?>) createChild(Exchange.class, attributes);
     }
 
 
@@ -1338,7 +1233,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             Broker<?> broker = virtualHostNode.getParent(Broker.class);
             broker.assignTargetSizes();
 
-            for (Queue<?> q : getQueues())
+            for (Queue<?> q : getChildren(Queue.class))
             {
                 if (q.getState() == State.ACTIVE)
                 {
@@ -1545,13 +1440,13 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public long getQueueCount()
     {
-        return getQueues().size();
+        return getChildren(Queue.class).size();
     }
 
     @Override
     public long getExchangeCount()
     {
-        return getExchanges().size();
+        return getChildren(Exchange.class).size();
     }
 
     @Override
@@ -1663,11 +1558,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                 });
     }
 
-    public Collection<VirtualHostAlias> getAliases()
-    {
-        return Collections.unmodifiableCollection(_aliases);
-    }
-
     private String createDLQ(final String queueName)
     {
         final String dlExchangeName = getDeadLetterExchangeName(queueName);
@@ -1687,7 +1577,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             attributes.put(org.apache.qpid.server.model.Exchange.LIFETIME_POLICY,
                            false ? LifetimePolicy.DELETE_ON_NO_LINKS : LifetimePolicy.PERMANENT);
             attributes.put(org.apache.qpid.server.model.Exchange.ALTERNATE_EXCHANGE, null);
-            dlExchange = createExchange(attributes);
+            dlExchange = (Exchange<?>) createChild(Exchange.class, attributes);;
         }
         catch(ExchangeExistsException e)
         {
@@ -1822,7 +1712,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private void allocateTargetSizeToQueues()
     {
         long targetSize = _targetSize.get();
-        Collection<Queue<?>> queues = getQueues();
+        Collection<Queue> queues = getChildren(Queue.class);
         long totalSize = calculateTotalEnqueuedSize(queues);
         _logger.debug("Allocating target size to queues, total target: {} ; total enqueued size {}", targetSize, totalSize);
         if(targetSize > 0l)
@@ -1840,7 +1730,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @Override
     public long getTotalQueueDepthBytes()
     {
-        return calculateTotalEnqueuedSize(getQueues());
+        return calculateTotalEnqueuedSize(getChildren(Queue.class));
     }
 
 
@@ -1935,7 +1825,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     }
 
 
-    private long calculateTotalEnqueuedSize(final Collection<Queue<?>> queues)
+    private long calculateTotalEnqueuedSize(final Collection<Queue> queues)
     {
         long total = 0;
         for(Queue<?> queue : queues)
