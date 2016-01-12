@@ -22,6 +22,7 @@ package org.apache.qpid.systest.rest;
 
 import static org.apache.qpid.server.management.plugin.servlet.rest.RestServlet.SC_UNPROCESSABLE_ENTITY;
 
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.Collection;
@@ -270,26 +271,43 @@ public class PortRestTest extends QpidRestTestCase
         Asserts.assertPortAttributes(portData, State.QUIESCED);
     }
 
-    public void testNewPortErroredIfPortNumberInUse() throws Exception
+    public void testDeletePort() throws Exception
     {
         String ampqPortName = TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT;
         Map<String, Object> portData = getRestTestHelper().getJsonAsSingletonList("port/" + getRestTestHelper().encodeAsUTF(ampqPortName));
-        int amqpPort = (Integer)portData.get(Port.PORT);
-
-        ServerSocket socket = new ServerSocket(0);
-        int occupiedPort = socket.getLocalPort();
+        assertFalse("Port data are not found", portData.isEmpty());
 
         int deleteResponseCode = getRestTestHelper().submitRequest("port/" + ampqPortName, "DELETE");
         assertEquals("Port deletion should be allowed", 200, deleteResponseCode);
 
-        String newPortName = "reused-port";
-        Map<String, Object> attributes = new HashMap<String, Object>();
-        attributes.put(Port.NAME, newPortName);
-        attributes.put(Port.PORT, occupiedPort);  // port in use
-        attributes.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+        getRestTestHelper().submitRequest("port/" + getRestTestHelper().encodeAsUTF(ampqPortName), "GET", HttpServletResponse.SC_NOT_FOUND);
+    }
 
-        int responseCode = getRestTestHelper().submitRequest("port/" + newPortName, "PUT", attributes);
-        assertEquals("Unexpected response code for port creation", SC_UNPROCESSABLE_ENTITY, responseCode);
-        getRestTestHelper().submitRequest("port/" + getRestTestHelper().encodeAsUTF(newPortName), "GET", HttpServletResponse.SC_NOT_FOUND);
+    public void testNewPortCreationFailsWhenPortIsAlreadyBound() throws Exception
+    {
+        ServerSocket serverSocket = new ServerSocket();
+        serverSocket.setReuseAddress(true);
+        serverSocket.bind(new InetSocketAddress(0));
+        try
+        {
+            int occupiedPort = serverSocket.getLocalPort();
+            getLogger().debug("Testing port configured object creation for already occupied port {}", occupiedPort);
+
+            String newPortName = "reused-port";
+            Map<String, Object> attributes = new HashMap<String, Object>();
+            attributes.put(Port.NAME, newPortName);
+            attributes.put(Port.PORT, occupiedPort);  // port in use
+            attributes.put(Port.AUTHENTICATION_PROVIDER, TestBrokerConfiguration.ENTRY_NAME_AUTHENTICATION_PROVIDER);
+
+            int responseCode = getRestTestHelper().submitRequest("port/" + newPortName, "PUT", attributes);
+            assertEquals("Unexpected response code for port creation", SC_UNPROCESSABLE_ENTITY, responseCode);
+            getRestTestHelper().submitRequest("port/" + getRestTestHelper().encodeAsUTF(newPortName),
+                                              "GET",
+                                              HttpServletResponse.SC_NOT_FOUND);
+        }
+        finally
+        {
+            serverSocket.close();
+        }
     }
 }
