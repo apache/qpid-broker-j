@@ -102,8 +102,7 @@ public abstract class AbstractPasswordFilePrincipalDatabase<U extends PasswordPr
 
 
     /**
-     * Looks up the password for a specified user in the password file. Note this code is <b>not</b> secure since it
-     * creates strings of passwords. It should be modified to create only char arrays which get nulled out.
+     * Looks up the password for a specified user in the password file.
      *
      * @param name The principal name to lookup
      *

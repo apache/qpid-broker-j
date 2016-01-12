@@ -34,8 +34,7 @@ public class ScramSHA256AuthenticationManager
     public static final String PROVIDER_TYPE = "SCRAM-SHA-256";
     private static final String HMAC_NAME = "HmacSHA256";
 
-    static final Charset ASCII = Charset.forName("ASCII");
-    private static final String MECHANISM = "SCRAM-SHA-256";
+    public static final String MECHANISM = "SCRAM-SHA-256";
     private static final String DIGEST_NAME = "SHA-256";
 
 
