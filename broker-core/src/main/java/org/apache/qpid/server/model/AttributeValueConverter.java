@@ -122,6 +122,12 @@ abstract class AttributeValueConverter<T>
                                                                           (String) value);
                 try
                 {
+                    interpolated = interpolated.replaceAll("\\s","");
+                    if(!interpolated.matches("[A-Za-z0-9+/]*[=]*"))
+                    {
+                        throw new IllegalArgumentException("Cannot convert string '"+ interpolated+ "'to a byte[] - it does not appear to be base64 data");
+                    }
+
                     return DatatypeConverter.parseBase64Binary(interpolated);
                 }
                 catch(ArrayIndexOutOfBoundsException e)
@@ -175,6 +181,8 @@ abstract class AttributeValueConverter<T>
             else if(value instanceof String)
             {
                 String strValue = AbstractConfiguredObject.interpolate(object, (String) value);
+                // convert all line endings to UNIX style
+                strValue = strValue.replaceAll("\r\n","\n").replaceAll("\r","\n");
                 if(strValue.contains(BEGIN_CERTIFICATE))
                 {
                     strValue = strValue.substring(strValue.indexOf(BEGIN_CERTIFICATE) + BEGIN_CERTIFICATE.length());
@@ -182,8 +190,13 @@ abstract class AttributeValueConverter<T>
                     {
                         strValue = strValue.substring(0,strValue.indexOf(END_CERTIFICATE));
                     }
-                    strValue = strValue.replaceAll("\\s","");
+                    else
+                    {
+                        // contains begin but not end - invalid
+                        return null;
+                    }
                 }
+
                 return convert(BINARY_CONVERTER.convert(strValue, object),object);
             }
             else if(value == null)
@@ -196,7 +209,6 @@ abstract class AttributeValueConverter<T>
             }
         }
     };
-
 
     static final AttributeValueConverter<Long> LONG_CONVERTER = new AttributeValueConverter<Long>()
     {
