@@ -45,10 +45,6 @@ public class ExceptionHandlingFilter implements Filter
     public void init(FilterConfig filterConfig) throws ServletException
     {
         _uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-        if (_uncaughtExceptionHandler == null)
-        {
-            throw new IllegalStateException("no uncaught exception handler set");
-        }
     }
 
     @Override
