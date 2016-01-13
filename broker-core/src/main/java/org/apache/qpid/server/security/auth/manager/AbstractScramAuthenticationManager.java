@@ -193,7 +193,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         else
         {
             updateStoredPasswordFormatIfNecessary(user);
-            return DatatypeConverter.parseBase64Binary(user.getPassword().split(",")[2]);
+            return DatatypeConverter.parseBase64Binary(user.getPassword().split(",")[3]);
         }
     }
 
