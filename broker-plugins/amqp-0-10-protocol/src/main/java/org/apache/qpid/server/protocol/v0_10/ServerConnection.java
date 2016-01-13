@@ -419,7 +419,6 @@ public class ServerConnection extends Connection
     public void closed()
     {
         performDeleteTasks();
-        closeSubscriptions();
 
         if(_virtualHost != null)
         {
@@ -428,14 +427,6 @@ public class ServerConnection extends Connection
         super.closed();
 
         getEventLogger().message(isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
-    }
-
-    private void closeSubscriptions()
-    {
-        for (Session ssn : getChannels())
-        {
-            ((ServerSession)ssn).unregisterSubscriptions();
-        }
     }
 
     private void markAllSessionsClosed()
