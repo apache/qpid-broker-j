@@ -224,16 +224,7 @@ public class CoalescingCommiter implements Committer
                 }
                 finally
                 {
-                    LOGGER.error("Closing store environment", e);
-
-                    try
-                    {
-                        _environmentFacade.close();
-                    }
-                    catch (Exception ex)
-                    {
-                        LOGGER.error("Exception closing store environment", ex);
-                    }
+                    _environmentFacade.flushLogFailed(e);
                 }
             }
             finally

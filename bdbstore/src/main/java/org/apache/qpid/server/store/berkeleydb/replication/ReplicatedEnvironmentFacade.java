@@ -719,6 +719,16 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         }
     }
 
+    @Override
+    public void flushLogFailed(final RuntimeException e)
+    {
+        LOGGER.warn("Syncing data to disk failed", e);
+        if (!(e instanceof ConnectionScopedRuntimeException))
+        {
+            throw e;
+        }
+    }
+
     void setCacheSizeInternal(long cacheSize)
     {
         final ReplicatedEnvironment environment = _environment.get();
