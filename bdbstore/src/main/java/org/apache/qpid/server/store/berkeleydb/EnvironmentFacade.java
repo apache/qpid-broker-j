@@ -71,4 +71,5 @@ public interface EnvironmentFacade
 
     void setCacheSize(long cacheSize);
 
+    void flushLogFailed(RuntimeException failure);
 }

@@ -226,6 +226,21 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         environment.setMutableConfig(mutableConfig);
     }
 
+    @Override
+    public void flushLogFailed(final RuntimeException e)
+    {
+        LOGGER.error("Closing store environment due to failure on syncing data to disk", e);
+
+        try
+        {
+            close();
+        }
+        catch (Exception ex)
+        {
+            LOGGER.error("Exception closing store environment", ex);
+        }
+    }
+
     private void closeSequences()
     {
         RuntimeException firstThrownException = null;
