@@ -976,11 +976,6 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         final CountDownLatch majorityLost = new CountDownLatch(1);
         ReplicationGroupListener listener = new NoopReplicationGroupListener()
         {
-            @Override
-            public void onNoMajority()
-            {
-                majorityLost.countDown();
-            }
 
             @Override
             public void onReplicationNodeRecovered(ReplicationNode node)
@@ -991,8 +986,21 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
                 }
             }
         };
-        ReplicatedEnvironmentFacade master = createMaster(listener);
 
+        TestStateChangeListener stateChangeListener = new TestStateChangeListener(State.MASTER)
+        {
+            @Override
+            public void stateChange(StateChangeEvent stateChangeEvent) throws RuntimeException
+            {
+                super.stateChange(stateChangeEvent);
+                if (stateChangeEvent.getState() == State.DETACHED)
+                {
+                    majorityLost.countDown();
+                }
+            }
+        };
+        ReplicatedEnvironmentFacade master = addNode(stateChangeListener, listener);
+        assertTrue("Environment was not created", stateChangeListener.awaitForStateChange(LISTENER_TIMEOUT, TimeUnit.SECONDS));
 
         int replica1Port = _portHelper.getNextAvailable();
         String node1NodeHostPort = "localhost:" + replica1Port;
