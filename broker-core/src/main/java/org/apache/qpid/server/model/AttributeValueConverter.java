@@ -22,12 +22,14 @@ package org.apache.qpid.server.model;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -145,21 +147,19 @@ abstract class AttributeValueConverter<T>
 
     static final AttributeValueConverter<Certificate> CERTIFICATE_CONVERTER = new AttributeValueConverter<Certificate>()
     {
-        private static final String BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----\n";
-        private static final String END_CERTIFICATE = "\n-----END CERTIFICATE-----";
-
         private final CertificateFactory _certFactory;
 
         {
             try
             {
-                _certFactory=CertificateFactory.getInstance("X.509");
+                _certFactory = CertificateFactory.getInstance("X.509");
             }
             catch (CertificateException e)
             {
                 throw new ServerScopedRuntimeException(e);
             }
         }
+
         @Override
         public Certificate convert(final Object value, final ConfiguredObject object)
         {
@@ -181,23 +181,7 @@ abstract class AttributeValueConverter<T>
             else if(value instanceof String)
             {
                 String strValue = AbstractConfiguredObject.interpolate(object, (String) value);
-                // convert all line endings to UNIX style
-                strValue = strValue.replaceAll("\r\n","\n").replaceAll("\r","\n");
-                if(strValue.contains(BEGIN_CERTIFICATE))
-                {
-                    strValue = strValue.substring(strValue.indexOf(BEGIN_CERTIFICATE) + BEGIN_CERTIFICATE.length());
-                    if(strValue.contains(END_CERTIFICATE))
-                    {
-                        strValue = strValue.substring(0,strValue.indexOf(END_CERTIFICATE));
-                    }
-                    else
-                    {
-                        // contains begin but not end - invalid
-                        return null;
-                    }
-                }
-
-                return convert(BINARY_CONVERTER.convert(strValue, object),object);
+                return convert(strValue.getBytes(StandardCharsets.UTF_8), object);
             }
             else if(value == null)
             {
