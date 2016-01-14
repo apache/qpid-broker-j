@@ -77,7 +77,7 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     @Override
     public boolean readyForRead()
     {
-        return _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_WRAP && (_status == null || _status.getStatus() != SSLEngineResult.Status.CLOSED);
+        return _sslEngine.getHandshakeStatus() != SSLEngineResult.HandshakeStatus.NEED_WRAP;
     }
 
     @Override
@@ -95,8 +95,10 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
             _status = _netInputBuffer.decryptSSL(_sslEngine, _applicationBuffer);
             if (_status.getStatus() == SSLEngineResult.Status.CLOSED)
             {
-                // KW If SSLEngine changes state to CLOSED, what will ever set _closed to true?
-                LOGGER.debug("SSLEngine closed");
+                int remaining = _netInputBuffer.remaining();
+                _netInputBuffer.position(_netInputBuffer.limit());
+                // We'd usually expect no more bytes to be sent following a close_notify
+                LOGGER.debug("SSLEngine closed, discarded {} byte(s)", remaining);
             }
 
             tasksRun = runSSLEngineTasks(_status);
