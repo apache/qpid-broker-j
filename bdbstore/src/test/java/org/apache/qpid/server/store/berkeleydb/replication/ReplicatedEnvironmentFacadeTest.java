@@ -1012,7 +1012,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         ReplicatedEnvironmentFacade replica1 = createReplica(TEST_NODE_NAME + "_1", node1NodeHostPort, new NoopReplicationGroupListener());
         replica1.close();
 
-        assertTrue("Majority lost is undetected", majorityLost.await(2, TimeUnit.SECONDS));
+        assertTrue("Majority lost is undetected", majorityLost.await(10, TimeUnit.SECONDS));
         assertEquals("Unexpected facade state", ReplicatedEnvironmentFacade.State.RESTARTING, master.getFacadeState());
         assertEquals("Master node should not be recovered", 1, recoveredLatch.getCount());
         master.setDesignatedPrimary(true);

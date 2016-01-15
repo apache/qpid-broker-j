@@ -780,12 +780,10 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
     public void testValidateOnCreateForAlreadyBoundAddress() throws Exception
     {
-        ServerSocket serverSocket = null;
-        try
+        try(ServerSocket serverSocket = new ServerSocket())
         {
-            serverSocket = new ServerSocket();
             serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress(0));
+            serverSocket.bind(new InetSocketAddress("localhost", 0));
             int node1PortNumber = serverSocket.getLocalPort();
 
             Map<String, Object> attributes = _helper.createNodeAttributes("node1", "group", "localhost:" + node1PortNumber,
@@ -799,13 +797,6 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
             {
                 assertEquals("Unexpected exception on attempt to create node with already bound address",
                         String.format("Cannot bind to address '%s'. Address is already in use.", "localhost:" + node1PortNumber), e.getMessage());
-            }
-        }
-        finally
-        {
-            if (serverSocket != null)
-            {
-                serverSocket.close();
             }
         }
     }
