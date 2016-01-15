@@ -188,11 +188,12 @@ public class RestServlet extends AbstractServlet
 
         final Model model = getBroker().getModel();
         boolean wildcard = false;
+        Class<? extends ConfiguredObject> parentType = Broker.class;
         for(int i = 0; i < _hierarchy.length; i++)
         {
-            if(i == 0 || model.getChildTypes(_hierarchy[i - 1]).contains(_hierarchy[i]))
+            if(model.getChildTypes(parentType).contains(_hierarchy[i]))
             {
-
+                parentType = _hierarchy[i];
                 for(ConfiguredObject<?> parent : parents)
                 {
                     if(names.size() > i
