@@ -963,7 +963,7 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
         replica1.close();
         replica2.close();
 
-        assertTrue("Majority lost is undetected", majorityLost.await(2, TimeUnit.SECONDS));
+        assertTrue("Majority lost is undetected", majorityLost.await(10, TimeUnit.SECONDS));
         assertEquals("Unexpected facade state", ReplicatedEnvironmentFacade.State.RESTARTING, master.getFacadeState());
         assertEquals("Master node should not be recovered", 1, recoveredLatch.getCount());
         master.setElectableGroupSizeOverride(1);
