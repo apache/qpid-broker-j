@@ -101,7 +101,7 @@ public class SecurityLayerFactory
             {
                 _engine = sslCtx.createSSLEngine();
                 _engine.setUseClientMode(true);
-                SSLUtil.removeSSLv3Support(_engine);
+                SSLUtil.updateProtocolSupport(_engine);
             }
             catch(Exception e)
             {

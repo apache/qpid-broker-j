@@ -27,6 +27,7 @@ import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -118,9 +119,29 @@ class WebSocketProvider implements AcceptingTransport
         }
         else if (_transport == Transport.WSS)
         {
-            SslContextFactory factory = new SslContextFactory();
+            SslContextFactory factory = new SslContextFactory()
+                                        {
+                                            public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
+                                            {
+                                                List<String> selectedProtocols = new ArrayList<>(Arrays.asList(enabledProtocols));
+                                                SSLUtil.updateEnabledProtocols(selectedProtocols, supportedProtocols);
+
+                                                return selectedProtocols.toArray(new String[selectedProtocols.size()]);
+                                            }
+
+                                        };
             factory.setSslContext(_sslContext);
-            factory.addExcludeProtocols(SSLUtil.SSLV3_PROTOCOL);
+
+            if(_port.getDisabledCipherSuites() != null)
+            {
+                factory.addExcludeCipherSuites(_port.getDisabledCipherSuites().toArray(new String[_port.getDisabledCipherSuites().size()]));
+            }
+
+            if(_port.getEnabledCipherSuites() != null && !_port.getEnabledCipherSuites().isEmpty())
+            {
+                factory.setIncludeCipherSuites(_port.getEnabledCipherSuites().toArray(new String[_port.getEnabledCipherSuites().size()]));
+            }
+
             factory.setNeedClientAuth(_port.getNeedClientAuth());
             factory.setWantClientAuth(_port.getWantClientAuth());
             connector = new SslSelectChannelConnector(factory);

@@ -87,7 +87,7 @@ public class QpidSslRMIServerSocketFactory extends SslRMIServerSocketFactory
                                                          socket.getPort(),
                                                          true);
                 sslSocket.setUseClientMode(false);
-                SSLUtil.removeSSLv3Support(sslSocket);
+                SSLUtil.updateProtocolSupport(sslSocket);
                 SSLUtil.updateEnabledCipherSuites(sslSocket, _enabledCipherSuites, _disabledCipherSuites);
                 return sslSocket;
             }

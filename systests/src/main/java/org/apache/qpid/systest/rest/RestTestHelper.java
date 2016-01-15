@@ -67,6 +67,7 @@ import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class RestTestHelper
 {
@@ -157,7 +158,9 @@ public class RestTestHelper
                                                          CERT_ALIAS_APP1);
 
 
-                SSLContext sslContext = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
+                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[SSLUtil.getEnabledSSlProtocols().length-1]);
+
+                sslContext.init(keyManagers, trustManagers, null);
 
                 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
@@ -188,7 +191,9 @@ public class RestTestHelper
                         SSLContextFactory.getKeyManagers(null, null, null, null, null);
 
 
-                SSLContext sslContext = SSLContextFactory.buildClientContext(trustManagers, keyManagers);
+                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[SSLUtil.getEnabledSSlProtocols().length-1]);
+
+                sslContext.init(keyManagers, trustManagers, null);
 
                 SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
