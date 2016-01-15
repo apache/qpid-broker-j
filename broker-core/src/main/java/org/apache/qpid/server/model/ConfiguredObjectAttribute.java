@@ -46,6 +46,8 @@ public abstract class ConfiguredObjectAttribute<C extends ConfiguredObject, T> e
 
     public abstract boolean isOversized();
 
+    public abstract boolean updateAttributeDespiteUnchangedValue();
+
     public abstract String getOversizedAltText();
 
     public abstract String getDescription();

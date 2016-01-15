@@ -597,7 +597,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(originalType, object.getType());
     }
 
-    public void testAttributeSetListenerFiring()
+    public void testSetAttributesFiresListener()
     {
         final String objectName = "listenerFiring";
 
@@ -649,6 +649,55 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(3, listenerCount.get());
         delta = updates.remove(TestSingleton.STRING_VALUE);
         assertEquals("null=>third", delta);
+    }
+
+    public void testSetAttributesInterpolateValues()
+    {
+        setTestSystemProperty("foo1", "myValue1");
+        setTestSystemProperty("foo2", "myValue2");
+        setTestSystemProperty("foo3", null);
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(ConfiguredObject.NAME, getTestName());
+        attributes.put(TestSingleton.STRING_VALUE, "${foo1}");
+
+        final TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+
+        final AtomicInteger listenerCount = new AtomicInteger();
+        object.addChangeListener(new NoopConfigurationChangeListener()
+        {
+            @Override
+            public void attributeSet(final ConfiguredObject<?> object,
+                                     final String attributeName,
+                                     final Object oldAttributeValue,
+                                     final Object newAttributeValue)
+            {
+                listenerCount.incrementAndGet();
+            }
+        });
+
+        assertEquals("myValue1", object.getStringValue());
+        assertEquals("${foo1}", object.getActualAttributes().get(TestSingleton.STRING_VALUE));
+
+        // Update the actual value ${foo1} => ${foo2}
+        object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "${foo2}"));
+        assertEquals(1, listenerCount.get());
+
+        assertEquals("myValue2", object.getStringValue());
+        assertEquals("${foo2}", object.getActualAttributes().get(TestSingleton.STRING_VALUE));
+
+        // No change
+        object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "${foo2}"));
+        assertEquals(1, listenerCount.get());
+
+        // Update the actual value ${foo2} => ${foo3} (which doesn't have a value)
+        object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "${foo3}"));
+        // TODO KW - I would expect this to be equivilent to the above, but it is not because setAttribute wants the
+        // effective value as the expected.
+        //object.setAttribute(TestSingleton.STRING_VALUE, "${foo2}", "${foo3}");
+        assertEquals(2, listenerCount.get());
+        assertEquals("${foo3}", object.getStringValue());
+        assertEquals("${foo3}", object.getActualAttributes().get(TestSingleton.STRING_VALUE));
     }
 
     private static class NoopConfigurationChangeListener implements ConfigurationChangeListener
