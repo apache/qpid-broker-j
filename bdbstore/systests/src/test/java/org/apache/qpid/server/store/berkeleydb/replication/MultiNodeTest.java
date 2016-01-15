@@ -51,7 +51,6 @@ import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
-import org.apache.qpid.test.utils.BrokerHolder;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestUtils;
 import org.apache.qpid.util.FileUtils;
@@ -216,13 +215,25 @@ public class MultiNodeTest extends QpidBrokerTestCase
     {
         final Connection connection = getConnection(_positiveFailoverUrl);
 
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
-
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
         LOGGER.info("Active connection port " + activeBrokerPort);
 
         final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
         LOGGER.info("Update role attribute on inactive broker on port " + inactiveBrokerPort);
+
+        // transfer mastership 3 times in order to verify
+        // that repeated mastership transfer to the same node works, See QPID-6996
+        transferMasterFromLocalNode(connection, inactiveBrokerPort, activeBrokerPort);
+        transferMasterFromLocalNode(connection, activeBrokerPort, inactiveBrokerPort);
+        transferMasterFromLocalNode(connection, inactiveBrokerPort, activeBrokerPort);
+    }
+
+    private void transferMasterFromLocalNode(final Connection connection,
+                                             final int inactiveBrokerPort,
+                                             final int activeBrokerPort) throws Exception
+    {
+        _failoverListener = new FailoverAwaitingListener();
+        ((AMQConnection)connection).setConnectionListener(_failoverListener);
 
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(inactiveBrokerPort);
         assertEquals("Inactive broker has unexpected role", "REPLICA", attributes.get(BDBHAVirtualHostNode.ROLE));
@@ -251,6 +262,20 @@ public class MultiNodeTest extends QpidBrokerTestCase
 
         final int inactiveBrokerPort = _groupCreator.getPortNumberOfAnInactiveBroker(connection);
         LOGGER.info("Update role attribute on inactive broker on port " + inactiveBrokerPort);
+
+        // transfer mastership 3 times in order to verify
+        // that repeated mastership transfer to the same node works, See QPID-6996
+        transferMasterFromRemoteNode(connection, activeBrokerPort, inactiveBrokerPort);
+        transferMasterFromRemoteNode(connection, inactiveBrokerPort, activeBrokerPort);
+        transferMasterFromRemoteNode(connection, activeBrokerPort, inactiveBrokerPort);
+    }
+
+    private void transferMasterFromRemoteNode(final Connection connection,
+                                              final int activeBrokerPort,
+                                              final int inactiveBrokerPort) throws Exception
+    {
+        _failoverListener = new FailoverAwaitingListener();
+        ((AMQConnection)connection).setConnectionListener(_failoverListener);
 
         _groupCreator.awaitNodeToAttainRole(activeBrokerPort, inactiveBrokerPort, "REPLICA");
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort, inactiveBrokerPort);

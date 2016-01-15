@@ -61,7 +61,7 @@ public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends
     @ManagedAttribute(defaultValue = "0")
     int getQuorumOverride();
 
-    @ManagedAttribute(persist = false, defaultValue = "WAITING")
+    @ManagedAttribute(persist = false, defaultValue = "WAITING", updateAttributeDespiteUnchangedValue = true)
     NodeRole getRole();
 
     @DerivedAttribute
