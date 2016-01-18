@@ -26,7 +26,7 @@ public interface ScramSaslServerSource
 {
     int getIterationCount();
 
-    interface SaltAndSaltedPassword
+    interface SaltAndPasswordKeys
     {
         byte[] getSalt();
 
@@ -35,6 +35,6 @@ public interface ScramSaslServerSource
         byte[] getServerKey() throws SaslException;
     }
 
-    SaltAndSaltedPassword getSaltAndSaltedPassword(String username);
+    SaltAndPasswordKeys getSaltAndPasswordKeys(String username);
 
 }

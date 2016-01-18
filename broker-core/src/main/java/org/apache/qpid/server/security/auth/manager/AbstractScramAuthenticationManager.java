@@ -112,97 +112,45 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         if(user != null)
         {
             updateStoredPasswordFormatIfNecessary(user);
-            String[] usernamePassword = user.getPassword().split(",");
-            byte[] salt = DatatypeConverter.parseBase64Binary(usernamePassword[0]);
+            SaltAndPasswordKeys saltAndPasswordKeys = getSaltAndPasswordKeys(username);
             try
             {
-                byte[] saltedPassword = createSaltedPassword(salt, password);
+                byte[] saltedPassword = createSaltedPassword(saltAndPasswordKeys.getSalt(), password);
                 byte[] clientKey = computeHmac(saltedPassword, "Client Key");
 
                 byte[] storedKey = MessageDigest.getInstance(getDigestName()).digest(clientKey);
 
                 byte[] serverKey = computeHmac(saltedPassword, "Server Key");
 
-                if(Arrays.equals(DatatypeConverter.parseBase64Binary(usernamePassword[2]), storedKey)
-                   && Arrays.equals(DatatypeConverter.parseBase64Binary(usernamePassword[3]), serverKey))
-
+                if(Arrays.equals(saltAndPasswordKeys.getStoredKey(), storedKey)
+                   && Arrays.equals(saltAndPasswordKeys.getServerKey(), serverKey))
                 {
                     return new AuthenticationResult(new UsernamePrincipal(username));
                 }
             }
-            catch (IllegalArgumentException | NoSuchAlgorithmException e)
+            catch (IllegalArgumentException | NoSuchAlgorithmException | SaslException e)
             {
                 return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR,e);
             }
-
         }
 
         return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
-
-
     }
 
-
+    @Override
     public int getIterationCount()
     {
         return _iterationCount;
     }
 
-    public byte[] getSalt(final String username)
-    {
-        ManagedUser user = getUser(username);
-
-        if(user == null)
-        {
-            // don't disclose that the user doesn't exist, just generate random data so the failure is indistinguishable
-            // from the "wrong password" case
-
-            byte[] salt = new byte[32];
-            _random.nextBytes(salt);
-            return salt;
-        }
-        else
-        {
-            return DatatypeConverter.parseBase64Binary(user.getPassword().split(",")[0]);
-        }
-    }
-
     private static final byte[] INT_1 = new byte[]{0, 0, 0, 1};
-
-    private byte[] getStoredKey(final String username) throws SaslException
-    {
-        ManagedUser user = getUser(username);
-        if(user == null)
-        {
-            throw new SaslException("Authentication Failed");
-        }
-        else
-        {
-            updateStoredPasswordFormatIfNecessary(user);
-            return DatatypeConverter.parseBase64Binary(user.getPassword().split(",")[2]);
-        }
-    }
-
-    private byte[] getServerKey(final String username) throws SaslException
-    {
-        ManagedUser user = getUser(username);
-        if(user == null)
-        {
-            throw new SaslException("Authentication Failed");
-        }
-        else
-        {
-            updateStoredPasswordFormatIfNecessary(user);
-            return DatatypeConverter.parseBase64Binary(user.getPassword().split(",")[3]);
-        }
-    }
-
 
     private void updateStoredPasswordFormatIfNecessary(final ManagedUser user)
     {
-        if(user.getPassword().split(",").length<4)
+        final String[] passwordFields = user.getPassword().split(",");
+        if(passwordFields.length < 4)
         {
-            byte[] saltedPassword = DatatypeConverter.parseBase64Binary(user.getPassword().split(",")[1]);
+            byte[] saltedPassword = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SALTED_PASSWORD.ordinal()]);
 
             try
             {
@@ -212,7 +160,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
 
                 byte[] serverKey = computeHmac(saltedPassword, "Server Key");
 
-                String password = user.getPassword().split(",")[0] + ",,"
+                String password = passwordFields[PasswordField.SALT.ordinal()] + ",,"
                                   + DatatypeConverter.printBase64Binary(storedKey) + ","
                                   + DatatypeConverter.printBase64Binary(serverKey);
 
@@ -277,8 +225,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     {
         try
         {
-            byte[] salt = new byte[32];
-            _random.nextBytes(salt);
+            byte[] salt = generateSalt();
             byte[] saltedPassword = createSaltedPassword(salt, password);
             byte[] clientKey = computeHmac(saltedPassword, "Client Key");
 
@@ -305,36 +252,41 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     }
 
     @Override
-    public SaltAndSaltedPassword getSaltAndSaltedPassword(final String username)
+    public SaltAndPasswordKeys getSaltAndPasswordKeys(final String username)
     {
-        final byte[] salt = getSalt(username);
-        SaslException tmpException = null;
+        ManagedUser user = getUser(username);
 
-        byte[] tmpStoredKey = null;
-        byte[] tmpServerKey = null;
+        final byte[] salt;
+        final byte[] storedKey;
+        final byte[] serverKey;
+        final SaslException exception;
 
-        try
+        if(user == null)
         {
-            tmpStoredKey = getStoredKey(username);
-            tmpServerKey = getServerKey(username);
+            // don't disclose that the user doesn't exist, just generate random data so the failure is indistinguishable
+            // from the "wrong password" case.
+            salt = generateSalt();
+            storedKey = null;
+            serverKey = null;
+            exception = new SaslException("Authentication Failed");
         }
-        catch (SaslException e)
+        else
         {
-            tmpException = e;
+            updateStoredPasswordFormatIfNecessary(user);
+            final String[] passwordFields = user.getPassword().split(",");
+            salt = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SALT.ordinal()]);
+            storedKey = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.STORED_KEY.ordinal()]);
+            serverKey = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SERVER_KEY.ordinal()]);
+            exception = null;
         }
 
-        final byte[] storedKey = tmpStoredKey;
-        final byte[] serverKey = tmpServerKey;
-        final SaslException exception = tmpException;
-
-        return new SaltAndSaltedPassword()
+        return new SaltAndPasswordKeys()
         {
             @Override
             public byte[] getSalt()
             {
                 return salt;
             }
-
 
             @Override
             public byte[] getStoredKey() throws SaslException
@@ -356,5 +308,17 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                 return serverKey;
             }
         };
+    }
+
+    private byte[] generateSalt()
+    {
+        byte[] tmpSalt = new byte[32];
+        _random.nextBytes(tmpSalt);
+        return tmpSalt;
+    }
+
+    private enum PasswordField
+    {
+        SALT, SALTED_PASSWORD, STORED_KEY, SERVER_KEY
     }
 }
