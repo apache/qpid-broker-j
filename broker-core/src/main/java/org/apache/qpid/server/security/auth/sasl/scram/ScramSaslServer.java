@@ -50,7 +50,7 @@ public class ScramSaslServer implements SaslServer
     private String _serverFirstMessage;
     private String _clientFirstMessageBare;
     private byte[] _serverSignature;
-    private ScramSaslServerSource.SaltAndSaltedPassword _saltAndPassword;
+    private ScramSaslServerSource.SaltAndPasswordKeys _saltAndPassword;
 
     public ScramSaslServer(final ScramSaslServerSource authenticationManager,
                            final String mechanism,
@@ -129,7 +129,7 @@ public class ScramSaslServer implements SaslServer
         _nonce = parts[3].substring(2) + UUID.randomUUID().toString();
 
         int count = _authManager.getIterationCount();
-        _saltAndPassword = _authManager.getSaltAndSaltedPassword(_username);
+        _saltAndPassword = _authManager.getSaltAndPasswordKeys(_username);
         _serverFirstMessage = "r="+_nonce+",s="+ DatatypeConverter.printBase64Binary(_saltAndPassword.getSalt())+",i=" + count;
         return _serverFirstMessage.getBytes(ASCII);
     }

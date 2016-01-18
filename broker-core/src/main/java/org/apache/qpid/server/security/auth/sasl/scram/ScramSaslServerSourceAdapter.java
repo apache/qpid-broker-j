@@ -85,7 +85,7 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
     }
 
     @Override
-    public SaltAndSaltedPassword getSaltAndSaltedPassword(final String username)
+    public SaltAndPasswordKeys getSaltAndPasswordKeys(final String username)
     {
         final char[] password = _passwordSource.getPassword(username);
         final byte[] storedKey;
@@ -138,7 +138,7 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
             serverKey = null;
         }
 
-        return new SaltAndSaltedPassword()
+        return new SaltAndPasswordKeys()
         {
             @Override
             public byte[] getSalt()
