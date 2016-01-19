@@ -279,9 +279,9 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             // the HA durability configuration to influence resulting behaviour.
             tx.commit(_realMessageStoreDurability);
         }
-        catch (DatabaseException de)
+        catch (RuntimeException de)
         {
-            throw handleDatabaseException("Got DatabaseException on commit, closing environment", de);
+            handleCommitException(tx, de);
         }
 
         if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
@@ -301,9 +301,9 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             // the HA durability configuration to influence resulting behaviour.
             tx.commit(_realMessageStoreDurability);
         }
-        catch (DatabaseException de)
+        catch (RuntimeException de)
         {
-            throw handleDatabaseException("Got DatabaseException on commit, closing environment", de);
+            handleCommitException(tx, de);
         }
 
         if (_coalescingCommiter != null && _realMessageStoreDurability.getLocalSync() == SyncPolicy.NO_SYNC
@@ -1820,6 +1820,18 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             // it should never happen as we set default UncaughtExceptionHandler in main
             e.printStackTrace();
             Runtime.getRuntime().halt(1);
+        }
+    }
+
+    private void handleCommitException(final Transaction tx, RuntimeException e)
+    {
+        if (e instanceof IllegalStateException && !tx.isValid())
+        {
+            throw new ConnectionScopedRuntimeException("Commit aborted", e);
+        }
+        else
+        {
+            throw handleDatabaseException("Commit failed", e);
         }
     }
 
