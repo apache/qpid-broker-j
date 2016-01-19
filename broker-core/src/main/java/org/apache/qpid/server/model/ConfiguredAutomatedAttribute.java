@@ -148,6 +148,12 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
     }
 
     @Override
+    public boolean updateAttributeDespiteUnchangedValue()
+    {
+        return _annotation.updateAttributeDespiteUnchangedValue();
+    }
+
+    @Override
     public String getOversizedAltText()
     {
         return _annotation.oversizedAltText();

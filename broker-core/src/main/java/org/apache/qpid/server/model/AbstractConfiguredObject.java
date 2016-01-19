@@ -1684,18 +1684,21 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         });
     }
 
-
     protected boolean changeAttribute(final String name, final Object expected, final Object desired)
     {
         synchronized (_attributes)
         {
             Object currentValue = getAttribute(name);
-            if((currentValue == null && expected == null)
-               || (currentValue != null && currentValue.equals(expected)))
+            Object actualValue = _attributes.get(name);
+
+            ConfiguredObjectAttribute<?,?> attr = _attributeTypes.get(name);
+
+            if(attr.updateAttributeDespiteUnchangedValue() ||
+               (((currentValue == null && expected == null) || (currentValue != null && currentValue.equals(expected))) &&
+                ((actualValue != null && !actualValue.equals(desired)) || (actualValue == null && desired != null))))
             {
                 //TODO: don't put nulls
                 _attributes.put(name, desired);
-                ConfiguredObjectAttribute<?,?> attr = _attributeTypes.get(name);
                 if(attr != null && attr.isAutomated())
                 {
                     automatedSetValue(name, desired);
@@ -2503,10 +2506,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     Object desired = entry.getValue();
                     Object expected = getAttribute(attributeName);
-                    Object currentValue = _attributes.get(attributeName);
-                    if (((currentValue != null && !currentValue.equals(desired))
-                         || (currentValue == null && desired != null))
-                        && changeAttribute(attributeName, expected, desired))
+                    if (changeAttribute(attributeName, expected, desired))
                     {
                         attributeSet(attributeName, expected, desired);
                     }

@@ -41,4 +41,5 @@ public @interface ManagedAttribute
     /** If true, the model attribute value cannot be mutated after construction. */
     boolean immutable() default false;
 
+    boolean updateAttributeDespiteUnchangedValue() default false;
 }

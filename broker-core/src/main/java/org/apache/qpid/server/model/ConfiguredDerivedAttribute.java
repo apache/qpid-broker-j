@@ -73,6 +73,12 @@ public class ConfiguredDerivedAttribute<C extends ConfiguredObject, T>  extends 
     }
 
     @Override
+    public boolean updateAttributeDespiteUnchangedValue()
+    {
+        return false;
+    }
+
+    @Override
     public String getOversizedAltText()
     {
         return "";

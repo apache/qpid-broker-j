@@ -41,7 +41,7 @@ public interface BDBHARemoteReplicationNode<X extends BDBHARemoteReplicationNode
     @DerivedAttribute
     String getAddress();
 
-    @ManagedAttribute(persist = false)
+    @ManagedAttribute(persist = false, updateAttributeDespiteUnchangedValue = true)
     NodeRole getRole();
 
     @DerivedAttribute
