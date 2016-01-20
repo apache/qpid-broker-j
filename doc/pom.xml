@@ -134,6 +134,8 @@
                         <xincludeSupported>true</xincludeSupported>
                         <chunkedOutput>true</chunkedOutput>
                         <showXslMessages>true</showXslMessages>
+                        <xhtmlCustomization>../src/main/docbkx/docbook-xhtml.xsl</xhtmlCustomization>
+                        <htmlStylesheet>./css/style.css</htmlStylesheet>
                         <customizationParameters>
                             <parameter>
                                 <name>use.id.as.filename</name>
@@ -159,6 +161,9 @@
                         <preProcess>
                             <copy todir="${docbook.target}/images" failOnError="false">
                                 <fileset dir="${docbook.src}/images" />
+                            </copy>
+                            <copy todir="${docbook.target}/css" failOnError="false">
+                                <fileset dir="${project.basedir}/../src/main/docbkx/css" />
                             </copy>
                         </preProcess>
                     </configuration>
