@@ -323,7 +323,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
                 source.setDistributionMode(StdDistMode.COPY);
 
-                qd = new QueueDestination(queue);
+                qd = new QueueDestination(queue, name);
             }
             catch (QueueExistsException e)
             {

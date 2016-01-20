@@ -659,8 +659,21 @@ public class SecurityManager
         }
     }
 
-    public void authorisePublish(final boolean immediate, String routingKey, String exchangeName, String virtualHostName, Subject currentSubject)
+    public void authorisePublish(final boolean immediate,
+                                 String routingKey,
+                                 String exchangeName,
+                                 String virtualHostName,
+                                 Subject currentSubject,
+                                 final String messageUserId,
+                                 final AMQPConnection<?> connection)
     {
+        if(!connection.isAuthorizedMessagePrincipal(messageUserId))
+        {
+            throw new AccessControlException("The user id of the message '"
+                                             + messageUserId
+                                             + "' is not valid on a connection authenticated as  "
+                                             + connection.getAuthorizedPrincipal().getName());
+        }
         PublishAccessCheckCacheEntry key = new PublishAccessCheckCacheEntry(immediate, routingKey, exchangeName, virtualHostName);
         PublishAccessCheck check = _publishAccessCheckCache.get(key);
         if (check == null)

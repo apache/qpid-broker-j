@@ -31,11 +31,13 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
 {
     private static final Accepted ACCEPTED = new Accepted();
     private static final Outcome[] OUTCOMES = new Outcome[] { ACCEPTED };
+    private final String _address;
 
 
-    public QueueDestination(Queue<?> queue)
+    public QueueDestination(Queue<?> queue, final String address)
     {
         super(queue);
+        _address = address;
     }
 
     public Outcome[] getOutcomes()
@@ -84,4 +86,15 @@ public class QueueDestination extends MessageSourceDestination implements Sendin
         return (Queue<?>) super.getQueue();
     }
 
+    @Override
+    public String getRoutingAddress(Message_1_0 message)
+    {
+        return "";
+    }
+
+    @Override
+    public String getAddress()
+    {
+        return _address;
+    }
 }

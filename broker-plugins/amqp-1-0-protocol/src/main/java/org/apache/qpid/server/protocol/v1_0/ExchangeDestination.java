@@ -34,17 +34,19 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
     private static final Accepted ACCEPTED = new Accepted();
     public static final Rejected REJECTED = new Rejected();
     private static final Outcome[] OUTCOMES = { ACCEPTED, REJECTED};
+    private final String _address;
 
     private Exchange<?> _exchange;
     private TerminusDurability _durability;
     private TerminusExpiryPolicy _expiryPolicy;
     private String _initialRoutingAddress;
 
-    public ExchangeDestination(Exchange<?> exchange, TerminusDurability durable, TerminusExpiryPolicy expiryPolicy)
+    public ExchangeDestination(Exchange<?> exchange, TerminusDurability durable, TerminusExpiryPolicy expiryPolicy, String address)
     {
         _exchange = exchange;
         _durability = durable;
         _expiryPolicy = expiryPolicy;
+        _address = address;
     }
 
     public Outcome[] getOutcomes()
@@ -77,6 +79,25 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
                     return null;
                 }};
 
+        int enqueues = _exchange.send(message,
+                                      getRoutingAddress(message),
+                                      instanceProperties,
+                                      txn,
+                                      null);
+
+
+        return enqueues == 0 ? REJECTED : ACCEPTED;
+    }
+
+    @Override
+    public String getAddress()
+    {
+        return _address;
+    }
+
+    @Override
+    public String getRoutingAddress(final Message_1_0 message)
+    {
         String routingAddress;
         MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
         if(_initialRoutingAddress == null)
@@ -115,14 +136,7 @@ public class ExchangeDestination implements ReceivingDestination, SendingDestina
                 routingAddress = _initialRoutingAddress;
             }
         }
-        int enqueues = _exchange.send(message,
-                                      routingAddress,
-                                      instanceProperties,
-                                      txn,
-                                      null);
-
-
-        return enqueues == 0 ? REJECTED : ACCEPTED;
+        return routingAddress;
     }
 
     TerminusDurability getDurability()

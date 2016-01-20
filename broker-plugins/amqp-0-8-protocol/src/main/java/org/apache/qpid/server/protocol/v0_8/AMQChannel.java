@@ -128,8 +128,6 @@ public class AMQChannel
     private final DefaultQueueAssociationClearingTask
             _defaultQueueAssociationClearingTask = new DefaultQueueAssociationClearingTask();
 
-    private final boolean _messageAuthorizationRequired;
-
     private final int _channelId;
 
 
@@ -242,7 +240,6 @@ public class AMQChannel
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);
 
         _maxUncommittedInMemorySize = connection.getVirtualHost().getContextValue(Long.class, Connection.MAX_UNCOMMITTED_IN_MEMORY_SIZE);
-        _messageAuthorizationRequired = connection.getVirtualHost().getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH);
         _logSubject = new ChannelLogSubject(this);
 
         _messageStore = messageStore;
@@ -397,12 +394,6 @@ public class AMQChannel
 
     public void setPublishFrame(MessagePublishInfo info, final MessageDestination e)
     {
-        String routingKey = AMQShortString.toString(info.getRoutingKey());
-        VirtualHost<?> virtualHost = getVirtualHost();
-        SecurityManager securityManager = virtualHost.getSecurityManager();
-
-        securityManager.authorisePublish(info.isImmediate(), routingKey, e.getName(), virtualHost.getName(), _subject);
-
         _currentMessage = new IncomingMessage(info);
         _currentMessage.setMessageDestination(e);
     }
@@ -424,59 +415,63 @@ public class AMQChannel
         // check and deliver if header says body length is zero
         if (_currentMessage.allContentReceived())
         {
-            if(_confirmOnPublish)
-            {
-                _confirmedMessageCounter++;
-            }
-            Runnable finallyAction = null;
-            ContentHeaderBody contentHeader = _currentMessage.getContentHeader();
+            MessagePublishInfo info = _currentMessage.getMessagePublishInfo();
+            String routingKey = AMQShortString.toString(info.getRoutingKey());
+            VirtualHost<?> virtualHost = getVirtualHost();
 
-            long bodySize = _currentMessage.getSize();
-            long timestamp = contentHeader.getProperties().getTimestamp();
-
+            SecurityManager securityManager = virtualHost.getSecurityManager();
             try
             {
+                ContentHeaderBody contentHeader = _currentMessage.getContentHeader();
+                securityManager.authorisePublish(info.isImmediate(),
+                                                 routingKey,
+                                                 _currentMessage.getDestination().getName(),
+                                                 virtualHost.getName(),
+                                                 _subject,
+                                                 AMQShortString.toString(contentHeader.getProperties().getUserId()),
+                                                 _connection);
 
-                final MessagePublishInfo messagePublishInfo = _currentMessage.getMessagePublishInfo();
-                final MessageDestination destination = _currentMessage.getDestination();
-
-                final MessageMetaData messageMetaData =
-                        new MessageMetaData(messagePublishInfo,
-                                            contentHeader,
-                                            getConnection().getLastReadTime());
-
-                final MessageHandle<MessageMetaData> handle = _messageStore.addMessage(messageMetaData);
-                int bodyCount = _currentMessage.getBodyCount();
-                if(bodyCount > 0)
+                if (_confirmOnPublish)
                 {
-                    long bodyLengthReceived = 0;
-                    for(int i = 0 ; i < bodyCount ; i++)
-                    {
-                        ContentBody contentChunk = _currentMessage.getContentChunk(i);
-                        handle.addContent(contentChunk.getPayload());
-                        bodyLengthReceived += contentChunk.getSize();
-                        contentChunk.dispose();
-                    }
+                    _confirmedMessageCounter++;
                 }
-                final StoredMessage<MessageMetaData> storedMessage = handle.allContentAdded();
+                Runnable finallyAction = null;
 
-                final AMQMessage amqMessage = createAMQMessage(storedMessage);
-                MessageReference reference = amqMessage.newReference();
+                long bodySize = _currentMessage.getSize();
+                long timestamp = contentHeader.getProperties().getTimestamp();
+
                 try
                 {
 
-                    _currentMessage = null;
+                    final MessagePublishInfo messagePublishInfo = _currentMessage.getMessagePublishInfo();
+                    final MessageDestination destination = _currentMessage.getDestination();
 
-                    if(!checkMessageUserId(contentHeader))
+                    final MessageMetaData messageMetaData =
+                            new MessageMetaData(messagePublishInfo,
+                                                contentHeader,
+                                                getConnection().getLastReadTime());
+
+                    final MessageHandle<MessageMetaData> handle = _messageStore.addMessage(messageMetaData);
+                    int bodyCount = _currentMessage.getBodyCount();
+                    if (bodyCount > 0)
                     {
-                        if(_confirmOnPublish)
+                        for (int i = 0; i < bodyCount; i++)
                         {
-                            _connection.writeFrame(new AMQFrame(_channelId, new BasicNackBody(_confirmedMessageCounter, false, false)));
+                            ContentBody contentChunk = _currentMessage.getContentChunk(i);
+                            handle.addContent(contentChunk.getPayload());
+                            contentChunk.dispose();
                         }
-                        _transaction.addPostTransactionAction(new WriteReturnAction(AMQConstant.ACCESS_REFUSED, "Access Refused", amqMessage));
                     }
-                    else
+                    final StoredMessage<MessageMetaData> storedMessage = handle.allContentAdded();
+
+                    final AMQMessage amqMessage = createAMQMessage(storedMessage);
+                    MessageReference reference = amqMessage.newReference();
+                    try
                     {
+
+                        _currentMessage = null;
+
+
                         final boolean immediate = messagePublishInfo.isImmediate();
 
                         final InstanceProperties instanceProperties =
@@ -485,7 +480,7 @@ public class AMQChannel
                                     @Override
                                     public Object getProperty(final Property prop)
                                     {
-                                        switch(prop)
+                                        switch (prop)
                                         {
                                             case EXPIRATION:
                                                 return amqMessage.getExpiration();
@@ -507,13 +502,13 @@ public class AMQChannel
                                                         instanceProperties, _transaction,
                                                         immediate ? _immediateAction : _capacityCheckAction
                                                        );
-                        if(enqueues == 0)
+                        if (enqueues == 0)
                         {
                             finallyAction = handleUnroutableMessage(amqMessage);
                         }
                         else
                         {
-                            if(_confirmOnPublish)
+                            if (_confirmOnPublish)
                             {
                                 BasicAckBody responseBody = _connection.getMethodRegistry()
                                         .createBasicAckBody(_confirmedMessageCounter, false);
@@ -522,23 +517,29 @@ public class AMQChannel
                             incrementUncommittedMessageSize(storedMessage);
                             incrementOutstandingTxnsIfNecessary();
                         }
+
                     }
+                    finally
+                    {
+                        reference.release();
+                        if (finallyAction != null)
+                        {
+                            finallyAction.run();
+                        }
+                    }
+
                 }
                 finally
                 {
-                    reference.release();
-                    if(finallyAction != null)
-                    {
-                        finallyAction.run();
-                    }
+                    _connection.registerMessageReceived(bodySize, timestamp);
+                    _currentMessage = null;
                 }
-
             }
-            finally
+            catch (AccessControlException e)
             {
-                _connection.registerMessageReceived(bodySize, timestamp);
-                _currentMessage = null;
+                _connection.sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), getChannelId());
             }
+
         }
 
     }
@@ -1372,9 +1373,7 @@ public class AMQChannel
 
     private boolean checkMessageUserId(ContentHeaderBody header)
     {
-        AMQShortString userID = header.getProperties().getUserId();
-        return (!_messageAuthorizationRequired || _connection.getAuthorizedPrincipal().getName().equals(userID == null? "" : userID.toString()));
-
+        return _connection.isAuthorizedMessagePrincipal(AMQShortString.toString(header.getProperties().getUserId()));
     }
 
     @Override

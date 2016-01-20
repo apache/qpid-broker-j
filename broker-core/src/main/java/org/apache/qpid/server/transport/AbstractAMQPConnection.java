@@ -42,6 +42,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.connection.ConnectionPrincipal;
@@ -104,6 +105,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private volatile AccessControlContext _accessControllerContext;
     private volatile Thread _ioThread;
 
+    private boolean _messageAuthorizationRequired;
+
+
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,
                                   AmqpPort<?> port,
@@ -122,6 +126,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _connectionId = connectionId;
         _aggregateTicker = aggregateTicker;
         _subject.getPrincipals().add(new ConnectionPrincipal(this));
+
         updateAccessControllerContext();
 
         _messagesDelivered = new StatisticsCounter("messages-delivered-" + getConnectionId());
@@ -472,9 +477,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
     }
 
-    public void virtualHostAssociated()
+    final public void virtualHostAssociated()
     {
         getVirtualHost().registerConnection(this);
+        _messageAuthorizationRequired = getVirtualHost().getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH);
     }
 
     @Override
@@ -663,6 +669,11 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     protected abstract EventLogger getEventLogger();
+
+    public final boolean isAuthorizedMessagePrincipal(final String userId)
+    {
+        return !_messageAuthorizationRequired || getAuthorizedPrincipal().getName().equals(userId == null? "" : userId);
+    }
 
     private class SlowConnectionOpenTicker implements Ticker
     {

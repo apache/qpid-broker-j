@@ -69,4 +69,6 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     void reserveOutboundMessageSpace(long size);
 
     boolean isIOThread();
+
+    boolean isAuthorizedMessagePrincipal(String messageUserId);
 }

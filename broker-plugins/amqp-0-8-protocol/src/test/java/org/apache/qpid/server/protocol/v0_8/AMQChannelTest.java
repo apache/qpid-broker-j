@@ -21,6 +21,7 @@
 package org.apache.qpid.server.protocol.v0_8;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -114,7 +115,6 @@ public class AMQChannelTest extends QpidTestCase
         when(_amqConnection.getProtocolOutputConverter()).thenReturn(_protocolOutputConverter);
         when(_amqConnection.getBroker()).thenReturn((Broker) _broker);
         when(_amqConnection.getMethodRegistry()).thenReturn(new MethodRegistry(ProtocolVersion.v0_9));
-
         _messageDestination = mock(MessageDestination.class);
     }
 
@@ -168,7 +168,7 @@ public class AMQChannelTest extends QpidTestCase
     public void testPublishContentHeaderWhenMessageAuthorizationFails() throws Exception
     {
         when(_virtualHost.getDefaultDestination()).thenReturn(mock(MessageDestination.class));
-        when(_virtualHost.getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH)).thenReturn(true);
+        when(_virtualHost.getContextValue(eq(Boolean.class), eq(Broker.BROKER_MSG_AUTH))).thenReturn(true);
         when(_virtualHost.getMessageStore()).thenReturn(new NullMessageStore()
         {
             @Override
@@ -184,6 +184,7 @@ public class AMQChannelTest extends QpidTestCase
                                                         authenticatedUser,
                                                         Collections.<Principal>emptySet(),
                                                         Collections.<Principal>emptySet()));
+        _amqConnection.virtualHostAssociated();
 
         int channelId = 1;
         AMQChannel channel = new AMQChannel(_amqConnection, channelId, _virtualHost.getMessageStore());
@@ -193,12 +194,7 @@ public class AMQChannelTest extends QpidTestCase
         channel.receiveBasicPublish(AMQShortString.EMPTY_STRING, AMQShortString.EMPTY_STRING, false, false);
         channel.receiveMessageHeader(properties, 0);
 
-        verify(_protocolOutputConverter).writeReturn(any(MessagePublishInfo.class),
-                                                     any(ContentHeaderBody.class),
-                                                     any(MessageContentSource.class),
-                                                     eq(channelId),
-                                                     eq(AMQConstant.ACCESS_REFUSED.getCode()),
-                                                     eq(AMQShortString.valueOf("Access Refused")));
+        verify(_amqConnection).sendConnectionClose(eq(AMQConstant.ACCESS_REFUSED), anyString(), eq(channelId));
         verifyZeroInteractions(_messageDestination);
     }
 
@@ -218,6 +214,7 @@ public class AMQChannelTest extends QpidTestCase
 
         Set<Principal> authenticatedUser = Collections.<Principal>singleton(new AuthenticatedPrincipal("user"));
         _amqConnection.setAuthorizedSubject(new Subject(true, authenticatedUser, Collections.<Principal>emptySet(),  Collections.<Principal>emptySet()));
+        _amqConnection.virtualHostAssociated();
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 

@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_10;
 
+import java.nio.charset.StandardCharsets;
 import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -377,6 +378,12 @@ public class ServerSessionDelegate extends SessionDelegate
         return queue.verifySessionAccess(session);
     }
 
+    private static String getMessageUserId(MessageTransfer xfr)
+    {
+        byte[] userIdBytes = xfr.getHeader() == null ? null : xfr.getHeader().getMessageProperties() == null ? null : xfr.getHeader().getMessageProperties().getUserId();
+        return userIdBytes == null ? null : new String(userIdBytes, StandardCharsets.UTF_8);
+    }
+
     @Override
     public void messageTransfer(Session ssn, final MessageTransfer xfr)
     {
@@ -416,7 +423,9 @@ public class ServerSessionDelegate extends SessionDelegate
                                               messageMetaData.getRoutingKey(),
                                               destination.getName(),
                                               virtualHost.getName(),
-                                              serverSession.getAuthorizedSubject());
+                                              serverSession.getAuthorizedSubject(),
+                                              getMessageUserId(xfr),
+                                              serverSession.getAMQPConnection());
                 }
                 catch (AccessControlException e)
                 {

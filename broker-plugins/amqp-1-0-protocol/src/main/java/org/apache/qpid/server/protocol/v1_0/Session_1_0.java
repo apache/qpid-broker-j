@@ -176,7 +176,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         if(exchg != null)
                         {
                             ExchangeDestination exchangeDestination =
-                                    new ExchangeDestination(exchg, source.getDurable(), source.getExpiryPolicy());
+                                    new ExchangeDestination(exchg, source.getDurable(), source.getExpiryPolicy(), parts[0]);
                             exchangeDestination.setInitialRoutingAddress(parts[1]);
                             destination = exchangeDestination;
 
@@ -199,7 +199,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                             Exchange<?> exchg = getVirtualHost().getAttainedChildFromAddress(Exchange.class, addr);
                             if(exchg != null)
                             {
-                                destination = new ExchangeDestination(exchg, source.getDurable(), source.getExpiryPolicy());
+                                destination = new ExchangeDestination(exchg, source.getDurable(), source.getExpiryPolicy(), addr);
                             }
                             else
                             {
@@ -335,7 +335,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                         {
                             MessageDestination messageDestination = getVirtualHost().getDefaultDestination();
                             destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
-                                                                       target.getExpiryPolicy());
+                                                                       target.getExpiryPolicy(), "");
                         }
                         else if(!addr.startsWith("/") && addr.contains("/"))
                         {
@@ -346,7 +346,8 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                                 ExchangeDestination exchangeDestination =
                                         new ExchangeDestination(exchange,
                                                                 target.getDurable(),
-                                                                target.getExpiryPolicy());
+                                                                target.getExpiryPolicy(),
+                                                                parts[0]);
 
                                 exchangeDestination.setInitialRoutingAddress(parts[1]);
 
@@ -365,7 +366,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                             if(messageDestination != null)
                             {
                                 destination = new NodeReceivingDestination(messageDestination, target.getDurable(),
-                                                                           target.getExpiryPolicy());
+                                                                           target.getExpiryPolicy(), addr);
                             }
                             else
                             {
@@ -373,7 +374,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
                                 if(queue != null)
                                 {
 
-                                    destination = new QueueDestination(queue);
+                                    destination = new QueueDestination(queue, addr);
                                 }
                                 else
                                 {

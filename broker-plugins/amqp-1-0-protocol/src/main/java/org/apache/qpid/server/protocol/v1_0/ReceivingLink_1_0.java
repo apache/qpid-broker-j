@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
+import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,12 +38,16 @@ import org.apache.qpid.amqp_1_0.type.UnsignedInteger;
 import org.apache.qpid.amqp_1_0.type.messaging.Target;
 import org.apache.qpid.amqp_1_0.type.messaging.TerminusDurability;
 import org.apache.qpid.amqp_1_0.type.transaction.TransactionalState;
+import org.apache.qpid.amqp_1_0.type.transport.AmqpError;
 import org.apache.qpid.amqp_1_0.type.transport.Detach;
+import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.amqp_1_0.type.transport.ReceiverSettleMode;
 import org.apache.qpid.amqp_1_0.type.transport.Transfer;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.server.message.MessageReference;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.store.MessageHandle;
 import org.apache.qpid.server.store.StoredMessage;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -171,74 +176,102 @@ public class ReceivingLink_1_0 implements ReceivingLinkListener, Link_1_0, Deliv
             fragments = null;
 
             MessageReference<Message_1_0> reference = message.newReference();
-
-            Binary transactionId = null;
-            if(xfrState != null)
+            try
             {
-                if(xfrState instanceof TransactionalState)
+                Binary transactionId = null;
+                if (xfrState != null)
                 {
-                    transactionId = ((TransactionalState)xfrState).getTxnId();
+                    if (xfrState instanceof TransactionalState)
+                    {
+                        transactionId = ((TransactionalState) xfrState).getTxnId();
+                    }
+                }
+
+                ServerTransaction transaction = null;
+                if (transactionId != null)
+                {
+                    transaction = getSession().getTransaction(transactionId);
+                }
+                else
+                {
+                    Session_1_0 session = getSession();
+                    transaction = session != null
+                            ? session.getTransaction(null)
+                            : new AutoCommitTransaction(_vhost.getMessageStore());
+                }
+
+                final SecurityManager securityManager = _vhost.getSecurityManager();
+                try
+                {
+                    securityManager.authorisePublish(false,
+                                                     _destination.getRoutingAddress(message),
+                                                     _destination.getAddress(),
+                                                     _vhost.getName(),
+                                                     _attachment.getSession().getSubject(),
+                                                     message.getMessageHeader().getUserId(),
+                                                     _attachment.getSession().getAMQPConnection());
+
+                    Outcome outcome = _destination.send(message, transaction);
+
+                    DeliveryState resultantState;
+
+                    if (transactionId == null)
+                    {
+                        resultantState = (DeliveryState) outcome;
+                    }
+                    else
+                    {
+                        TransactionalState transactionalState = new TransactionalState();
+                        transactionalState.setOutcome(outcome);
+                        transactionalState.setTxnId(transactionId);
+                        resultantState = transactionalState;
+
+                    }
+
+
+                    boolean settled = transaction instanceof AutoCommitTransaction && ReceiverSettleMode.FIRST.equals(
+                            getReceivingSettlementMode()                                                             );
+
+                    if (!settled)
+                    {
+                        _unsettledMap.put(deliveryTag, outcome);
+                    }
+
+                    getEndpoint().updateDisposition(deliveryTag, resultantState, settled);
+
+                    getSession().getAMQPConnection()
+                            .registerMessageReceived(message.getSize(), message.getArrivalTime());
+
+                    if (!(transaction instanceof AutoCommitTransaction))
+                    {
+                        ServerTransaction.Action a;
+                        transaction.addPostTransactionAction(new ServerTransaction.Action()
+                        {
+                            public void postCommit()
+                            {
+                                getEndpoint().updateDisposition(deliveryTag, null, true);
+                            }
+
+                            public void onRollback()
+                            {
+                                getEndpoint().updateDisposition(deliveryTag, null, true);
+                            }
+                        });
+                    }
+                }
+                catch (AccessControlException e)
+                {
+                    final Error err = new Error();
+                    err.setCondition(AmqpError.NOT_ALLOWED);
+                    err.setDescription(e.getMessage());
+                    _attachment.getEndpoint().close(err);
+
                 }
             }
-
-            ServerTransaction transaction = null;
-            if(transactionId != null)
+            finally
             {
-                transaction = getSession().getTransaction(transactionId);
+                reference.release();
             }
-            else
-            {
-                Session_1_0 session = getSession();
-                transaction = session != null ? session.getTransaction(null) : new AutoCommitTransaction(_vhost.getMessageStore());
-            }
-
-            Outcome outcome = _destination.send(message, transaction);
-
-            DeliveryState resultantState;
-
-            if(transactionId == null)
-            {
-                resultantState = (DeliveryState) outcome;
-            }
-            else
-            {
-                TransactionalState transactionalState = new TransactionalState();
-                transactionalState.setOutcome(outcome);
-                transactionalState.setTxnId(transactionId);
-                resultantState = transactionalState;
-
-            }
-
-
-            boolean settled = transaction instanceof AutoCommitTransaction && ReceiverSettleMode.FIRST.equals(getReceivingSettlementMode());
-
-            if(!settled)
-            {
-                _unsettledMap.put(deliveryTag, outcome);
-            }
-
-            getEndpoint().updateDisposition(deliveryTag, resultantState, settled);
-
-            getSession().getAMQPConnection().registerMessageReceived(message.getSize(), message.getArrivalTime());
-
-            if(!(transaction instanceof AutoCommitTransaction))
-            {
-                ServerTransaction.Action a;
-                transaction.addPostTransactionAction(new ServerTransaction.Action()
-                {
-                    public void postCommit()
-                    {
-                        getEndpoint().updateDisposition(deliveryTag, null, true);
-                    }
-
-                    public void onRollback()
-                    {
-                        getEndpoint().updateDisposition(deliveryTag, null, true);
-                    }
-                });
-            }
-
-            reference.release();
         }
     }
 

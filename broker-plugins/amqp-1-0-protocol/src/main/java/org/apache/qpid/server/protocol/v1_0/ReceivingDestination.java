@@ -32,4 +32,8 @@ public interface ReceivingDestination extends Destination
     Outcome send(Message_1_0 message, ServerTransaction txn);
 
     int getCredit();
+
+    String getRoutingAddress(Message_1_0 message);
+
+    String getAddress();
 }

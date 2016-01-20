@@ -38,12 +38,17 @@ public class NodeReceivingDestination implements ReceivingDestination
     private MessageDestination _destination;
     private TerminusDurability _durability;
     private TerminusExpiryPolicy _expiryPolicy;
+    private final String _address;
 
-    public NodeReceivingDestination(MessageDestination destination, TerminusDurability durable, TerminusExpiryPolicy expiryPolicy)
+    public NodeReceivingDestination(MessageDestination destination,
+                                    TerminusDurability durable,
+                                    TerminusExpiryPolicy expiryPolicy,
+                                    final String address)
     {
         _destination = destination;
         _durability = durable;
         _expiryPolicy = expiryPolicy;
+        _address = address;
     }
 
     public Outcome[] getOutcomes()
@@ -77,8 +82,25 @@ public class NodeReceivingDestination implements ReceivingDestination
                 }};
 
         String routingAddress;
+        routingAddress = getRoutingAddress(message);
+
+        int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, null);
+
+
+        return enqueues == 0 ? REJECTED : ACCEPTED;
+    }
+
+    @Override
+    public String getAddress()
+    {
+        return _address;
+    }
+
+    @Override
+    public String getRoutingAddress(final Message_1_0 message)
+    {
         MessageMetaData_1_0.MessageHeader_1_0 messageHeader = message.getMessageHeader();
-        routingAddress = messageHeader.getSubject();
+        String routingAddress = messageHeader.getSubject();
         if(routingAddress == null)
         {
             if (messageHeader.getHeader("routing-key") instanceof String)
@@ -99,11 +121,7 @@ public class NodeReceivingDestination implements ReceivingDestination
                 routingAddress = "";
             }
         }
-
-        int enqueues = _destination.send(message, routingAddress, instanceProperties, txn, null);
-
-
-        return enqueues == 0 ? REJECTED : ACCEPTED;
+        return routingAddress;
     }
 
     TerminusDurability getDurability()
