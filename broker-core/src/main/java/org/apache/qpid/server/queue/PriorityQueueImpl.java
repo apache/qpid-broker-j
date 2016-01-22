@@ -65,7 +65,8 @@ public class PriorityQueueImpl extends OutOfOrderQueue<PriorityQueueImpl> implem
     protected LogMessage getCreatedLogMessage()
     {
         String ownerString = getOwner();
-        return QueueMessages.CREATED(ownerString,
+        return QueueMessages.CREATED(getId().toString(),
+                                     ownerString,
                                      getPriorities(),
                                      ownerString != null,
                                      getLifetimePolicy() != LifetimePolicy.PERMANENT,

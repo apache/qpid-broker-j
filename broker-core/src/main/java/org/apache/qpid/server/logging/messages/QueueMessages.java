@@ -183,12 +183,12 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1001 : Create :[ Owner: {0}][ AutoDelete][ Durable][ Transient][ Priority: {1,number,#}]</pre>
+     * <pre>QUE-1001 : Create : ID: {0}[ Owner: {1}][ AutoDelete][ Durable][ Transient][ Priority: {2,number,#}]</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage CREATED(String param1, Number param2, boolean opt1, boolean opt2, boolean opt3, boolean opt4, boolean opt5)
+    public static LogMessage CREATED(String param1, String param2, Number param3, boolean opt1, boolean opt2, boolean opt3, boolean opt4, boolean opt5)
     {
         String rawMessage = _messages.getString("CREATED");
         StringBuffer msg = new StringBuffer();
@@ -202,7 +202,7 @@ public class QueueMessages
         if (parts.length > 1)
         {
 
-            // Add Option : Owner: {0}.
+            // Add Option : Owner: {1}.
             end = parts[1].indexOf(']');
             if (opt1)
             {
@@ -242,7 +242,7 @@ public class QueueMessages
             // Use 'end + 1' to remove the ']' from the output
             msg.append(parts[4].substring(end + 1));
 
-            // Add Option : Priority: {1,number,#}.
+            // Add Option : Priority: {2,number,#}.
             end = parts[5].indexOf(']');
             if (opt5)
             {
@@ -255,7 +255,7 @@ public class QueueMessages
 
         rawMessage = msg.toString();
 
-        final Object[] messageArguments = {param1, param2};
+        final Object[] messageArguments = {param1, param2, param3};
         // Create a new MessageFormat to ensure thread safety.
         // Sharing a MessageFormat and using applyPattern is not thread safe
         MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
@@ -304,16 +304,21 @@ public class QueueMessages
 
     /**
      * Log a Queue message of the Format:
-     * <pre>QUE-1002 : Deleted</pre>
+     * <pre>QUE-1002 : Deleted : ID: {0}</pre>
      * Optional values are contained in [square brackets] and are numbered
      * sequentially in the method call.
      *
      */
-    public static LogMessage DELETED()
+    public static LogMessage DELETED(String param1)
     {
         String rawMessage = _messages.getString("DELETED");
 
-        final String message = rawMessage;
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
 
         return new LogMessage()
         {

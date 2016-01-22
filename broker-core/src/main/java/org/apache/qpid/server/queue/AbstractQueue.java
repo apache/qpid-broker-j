@@ -502,7 +502,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     protected LogMessage getCreatedLogMessage()
     {
         String ownerString = getOwner();
-        return QueueMessages.CREATED(ownerString,
+        return QueueMessages.CREATED(getId().toString(),
+                                     ownerString,
                                      0,
                                      ownerString != null,
                                      getLifetimePolicy() != LifetimePolicy.PERMANENT,
@@ -1963,7 +1964,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         deleted();
 
                         //Log Queue Deletion
-                        getEventLogger().message(_logSubject, QueueMessages.DELETED());
+                        getEventLogger().message(_logSubject, QueueMessages.DELETED(getId().toString()));
 
                         _deleteFuture.set(queueDepthMessages);
                         setState(State.DELETED);
