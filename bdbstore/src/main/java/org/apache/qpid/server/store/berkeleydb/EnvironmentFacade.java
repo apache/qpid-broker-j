@@ -45,6 +45,9 @@ public interface EnvironmentFacade
         // Turn off stats generation - feature introduced (and on by default) from BDB JE 5.0.84
         put(EnvironmentConfig.STATS_COLLECT, "false");
         put(EnvironmentConfig.CLEANER_UPGRADE_TO_LOG_VERSION, "-1");
+        // Automatic cleaner adjustment has been seen to stop the cleaner working at all, disable it
+        // Newer versions of BDB JE 6.3 ignore this setting.
+        put(EnvironmentConfig.CLEANER_ADJUST_UTILIZATION, "false");
     }});
 
     void upgradeIfNecessary(ConfiguredObject<?> parent);
