@@ -72,9 +72,7 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
     static
     {
         Set<String> excludes = new HashSet<>(ENVCONFIG_DEFAULTS.keySet());
-        excludes.addAll(Arrays.asList(EnvironmentConfig.FILE_LOGGING_LEVEL,
-                                      EnvironmentConfig.CONSOLE_LOGGING_LEVEL,
-                                      EnvironmentConfig.MAX_MEMORY,
+        excludes.addAll(Arrays.asList(EnvironmentConfig.MAX_MEMORY,
                                       EnvironmentConfig.MAX_MEMORY_PERCENT
                                       ));
         PARAMS_SET_BY_DEFAULT = Collections.unmodifiableSet(excludes);
@@ -105,8 +103,6 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);
         envConfig.setCacheMode(CacheMode.EVICT_LN);
-        envConfig.setConfigParam(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
-        envConfig.setConfigParam(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
         envConfig.setLoggingHandler(new Slf4jLoggingHandler("["+configuration.getName()+"]"));
 
         Map<String, String> params = new HashMap<>(EnvironmentFacade.ENVCONFIG_DEFAULTS);

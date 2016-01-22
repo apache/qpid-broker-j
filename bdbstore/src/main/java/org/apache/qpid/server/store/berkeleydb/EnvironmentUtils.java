@@ -192,18 +192,18 @@ final public class EnvironmentUtils
                         if(!currentlySetInEnv || !contextValue.equals(mutableConfig.getConfigParam(paramName)))
                         {
                             mutableConfig.setConfigParam(paramName, contextValue);
-                            LOGGER.debug("Setting BDB configuration parameter '%1' to value '%2'.", param, contextValue);
+                            LOGGER.debug("Setting BDB configuration parameter '{}' to value '{}'.", param, contextValue);
                         }
                     }
                     else if(currentlySetInEnv && !paramsSetByDefault.contains(paramName))
                     {
                         mutableConfig.setConfigParam(paramName, param.getDefault());
-                        LOGGER.debug("Setting BDB configuration parameter '%1' to its default value.", param);
+                        LOGGER.debug("Setting BDB configuration parameter '{}' to its default value.", param);
                     }
                 }
                 catch (IllegalArgumentException e)
                 {
-                    LOGGER.warn("Unable to set BDB configuration parameter '%1' to value '%2'.", param, contextValue, e);
+                    LOGGER.warn("Unable to set BDB configuration parameter '{}' to value '{}'.", param, contextValue, e);
                 }
 
             }

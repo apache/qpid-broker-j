@@ -176,9 +176,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         excludes.addAll(REPCONFIG_DEFAULTS.keySet());
 
-        excludes.addAll(Arrays.asList(EnvironmentConfig.FILE_LOGGING_LEVEL,
-                                      EnvironmentConfig.CONSOLE_LOGGING_LEVEL,
-                                      EnvironmentConfig.MAX_MEMORY,
+        excludes.addAll(Arrays.asList(EnvironmentConfig.MAX_MEMORY,
                                       EnvironmentConfig.MAX_MEMORY_PERCENT
                                      ));
         PARAMS_SET_BY_DEFAULT = Collections.unmodifiableSet(excludes);
@@ -1525,8 +1523,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         envConfig.setExceptionListener(new ExceptionListener());
         envConfig.setDurability(_defaultDurability);
         envConfig.setCacheMode(CacheMode.EVICT_LN);
-        envConfig.setConfigParam(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
-        envConfig.setConfigParam(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
         envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + _configuration.getName() + "]"));
 
         for (Map.Entry<String, String> configItem : environmentParameters.entrySet())
