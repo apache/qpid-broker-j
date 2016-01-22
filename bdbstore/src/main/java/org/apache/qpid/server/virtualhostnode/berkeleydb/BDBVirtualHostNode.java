@@ -23,7 +23,7 @@ package org.apache.qpid.server.virtualhostnode.berkeleydb;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 
-public interface BDBVirtualHostNode<X extends BDBVirtualHostNode<X>> extends org.apache.qpid.server.model.VirtualHostNode<X>, org.apache.qpid.server.store.FileBasedSettings, BDBEnvironmentContainer
+public interface BDBVirtualHostNode<X extends BDBVirtualHostNode<X>> extends org.apache.qpid.server.model.VirtualHostNode<X>, org.apache.qpid.server.store.FileBasedSettings, BDBEnvironmentContainer<X>
 {
     String STORE_PATH = "storePath";
 

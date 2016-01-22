@@ -72,4 +72,16 @@ public interface EnvironmentFacade
     void setCacheSize(long cacheSize);
 
     void flushLogFailed(RuntimeException failure);
+
+    void updateMutableConfig(ConfiguredObject<?> object);
+
+    int cleanLog();
+
+    void checkpoint(final boolean force);
+
+    Map<String,Map<String,Object>> getEnvironmentStatistics(boolean reset);
+
+    Map<String, Object> getTransactionStatistics(boolean reset);
+
+    Map<String,Object> getDatabaseStatistics(String database, boolean reset);
 }

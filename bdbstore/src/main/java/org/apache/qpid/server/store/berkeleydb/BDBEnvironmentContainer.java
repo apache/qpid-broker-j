@@ -19,7 +19,31 @@
 
 package org.apache.qpid.server.store.berkeleydb;
 
-public interface BDBEnvironmentContainer
+import java.util.Map;
+
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ManagedOperation;
+import org.apache.qpid.server.model.Param;
+
+public interface BDBEnvironmentContainer<X extends ConfiguredObject<X>> extends ConfiguredObject<X>
 {
     void setBDBCacheSize(long cacheSize);
+
+    @ManagedOperation(description = "Update BDB mutable configuration from settings in context variables")
+    void updateMutableConfig();
+
+    @ManagedOperation(description = "Instruct BDB to attempt to clean up its log files")
+    int cleanLog();
+
+    @ManagedOperation(description = "Instruct BDB to perform a checkpoint operation")
+    void checkpoint(@Param(name = "force", defaultValue = "false") boolean force);
+
+    @ManagedOperation(description = "Get the BDB environment statistics", nonModifying = true)
+    Map<String,Map<String,Object>> environmentStatistics(@Param(name="reset", defaultValue = "false", description = "If true, reset the statistics") boolean reset);
+
+    @ManagedOperation(description = "Get the BDB transaction statistics", nonModifying = true)
+    Map<String, Object> transactionStatistics(@Param(name="reset", defaultValue = "false", description = "If true, reset the statistics")boolean reset);
+
+    @ManagedOperation(description = "Get the BDB database statistics", nonModifying = true)
+    Map<String, Object> databaseStatistics(@Param(name="database", description = "database table for which to retrieve statistics")String database, @Param(name="reset", defaultValue = "false", description = "If true, reset the statistics") boolean reset);
 }

@@ -21,14 +21,19 @@
 package org.apache.qpid.server.store.berkeleydb;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.sleepycat.je.CacheMode;
+import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -42,6 +47,7 @@ import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +66,20 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
 
     private final Committer _committer;
     private final File _environmentPath;
+
+    private static final Set<String> PARAMS_SET_BY_DEFAULT;
+
+    static
+    {
+        Set<String> excludes = new HashSet<>(ENVCONFIG_DEFAULTS.keySet());
+        excludes.addAll(Arrays.asList(EnvironmentConfig.FILE_LOGGING_LEVEL,
+                                      EnvironmentConfig.CONSOLE_LOGGING_LEVEL,
+                                      EnvironmentConfig.MAX_MEMORY,
+                                      EnvironmentConfig.MAX_MEMORY_PERCENT
+                                      ));
+        PARAMS_SET_BY_DEFAULT = Collections.unmodifiableSet(excludes);
+    }
+
 
     public StandardEnvironmentFacade(StandardEnvironmentConfiguration configuration)
     {
@@ -238,6 +258,45 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         {
             LOGGER.error("Exception closing store environment", ex);
         }
+    }
+
+    @Override
+    public void updateMutableConfig(final ConfiguredObject<?> object)
+    {
+        EnvironmentUtils.updateMutableConfig(getEnvironment(), PARAMS_SET_BY_DEFAULT, false, object);
+    }
+
+    @Override
+    public int cleanLog()
+    {
+        return getEnvironment().cleanLog();
+    }
+
+    @Override
+    public void checkpoint(final boolean force)
+    {
+        CheckpointConfig ckptConfig = new CheckpointConfig();
+        ckptConfig.setForce(force);
+        getEnvironment().checkpoint(ckptConfig);
+    }
+
+    @Override
+    public Map<String,Map<String,Object>> getEnvironmentStatistics(boolean reset)
+    {
+        return EnvironmentUtils.getEnvironmentStatistics(getEnvironment(), reset);
+    }
+
+
+    @Override
+    public Map<String,Object> getDatabaseStatistics(String database, boolean reset)
+    {
+        return EnvironmentUtils.getDatabaseStatistics(getEnvironment(), database, reset);
+    }
+
+    @Override
+    public Map<String, Object> getTransactionStatistics(boolean reset)
+    {
+        return EnvironmentUtils.getTransactionStatistics(getEnvironment(), reset);
     }
 
     private void closeSequences()
