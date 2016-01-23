@@ -19,7 +19,6 @@
  */
 package org.apache.qpid.server.store.berkeleydb.replication;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringWriter;

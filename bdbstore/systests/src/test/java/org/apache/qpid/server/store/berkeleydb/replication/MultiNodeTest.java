@@ -50,6 +50,7 @@ import org.apache.qpid.jms.ConnectionListener;
 import org.apache.qpid.jms.ConnectionURL;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHARemoteReplicationNode;
 import org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNode;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestUtils;
@@ -139,8 +140,6 @@ public class MultiNodeTest extends QpidBrokerTestCase
     {
         final Connection connection = getConnection(_negativeFailoverUrl);
 
-        ((AMQConnection)connection).setConnectionListener(_failoverListener);
-
         Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
 
         final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
@@ -174,6 +173,58 @@ public class MultiNodeTest extends QpidBrokerTestCase
         {
             // PASS
         }
+    }
+
+    /**
+     * JE requires that transactions are ended before the ReplicatedEnvironment is closed.  This
+     * test ensures that open messaging transactions are correctly rolled-back as quorum is lost,
+     * and later the node rejoins the group in either master or replica role.
+     */
+    public void testQuorumLostAndRestored_OriginalMasterRejoinsTheGroup() throws Exception
+    {
+        final Connection connection = getConnection(_positiveFailoverUrl);
+
+        ((AMQConnection)connection).setConnectionListener(_failoverListener);
+
+        Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
+
+        final int activeBrokerPort = _groupCreator.getBrokerPortNumberFromConnection(connection);
+        ports.remove(activeBrokerPort);
+
+        Session session1 = connection.createSession(true, Session.SESSION_TRANSACTED);
+        Session session2 = connection.createSession(true, Session.SESSION_TRANSACTED);
+
+        Destination dest = session1.createQueue(getTestQueueName());
+        session1.createConsumer(dest).close();
+
+        MessageProducer producer1 = session1.createProducer(dest);
+        producer1.send(session1.createMessage());
+        MessageProducer producer2 = session2.createProducer(dest);
+        producer2.send(session2.createMessage());
+
+        // Leave transactions open, this will leave two store transactions open on the store
+
+        // Stop all other nodes
+        for (Integer p : ports)
+        {
+            _groupCreator.stopNode(p);
+        }
+
+        // Await the old master discovering that it is all alone
+        _groupCreator.awaitNodeToAttainRole(activeBrokerPort, "WAITING");
+
+        // Restart all other nodes
+        for (Integer p : ports)
+        {
+            _groupCreator.startNode(p);
+        }
+
+        _failoverListener.awaitFailoverCompletion(20000);
+
+        Map<String, Object> attrs = _groupCreator.getNodeAttributes(activeBrokerPort);
+        String roleInGroup = (String) attrs.get(BDBHARemoteReplicationNode.ROLE);
+        assertTrue("Original master should have rejoined the group as either MASTER or REPLICA, but " + roleInGroup,
+                   "MASTER".equals(roleInGroup) || "REPLICA".equals(roleInGroup));
     }
 
     public void testPersistentMessagesAvailableAfterFailover() throws Exception
