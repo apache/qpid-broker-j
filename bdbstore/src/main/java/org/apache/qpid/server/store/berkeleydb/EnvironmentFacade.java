@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -51,6 +52,9 @@ public interface EnvironmentFacade
         // Newer versions of BDB JE 6.3 ignore this setting.
         put(EnvironmentConfig.CLEANER_ADJUST_UTILIZATION, "false");
     }});
+
+    String CACHE_MODE_PROPERTY_NAME = "qpid.bdb.cache_mode";
+    CacheMode CACHE_MODE_DEFAULT = CacheMode.EVICT_LN;
 
     void upgradeIfNecessary(ConfiguredObject<?> parent);
 

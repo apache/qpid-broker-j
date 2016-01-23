@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.DatabaseConfig;
@@ -153,5 +154,24 @@ public class BDBUtils
         }
 
         return targetMap;
+    }
+
+    public static CacheMode getCacheMode(final ConfiguredObject<?> object)
+    {
+        if (object.getContextKeys(false).contains(EnvironmentFacade.CACHE_MODE_PROPERTY_NAME))
+        {
+            try
+            {
+                return object.getContextValue(CacheMode.class, EnvironmentFacade.CACHE_MODE_PROPERTY_NAME);
+            }
+            catch (IllegalArgumentException iae)
+            {
+                LOGGER.warn("Failed to parse {} as {}",
+                            object.getContextValue(String.class, EnvironmentFacade.CACHE_MODE_PROPERTY_NAME),
+                            CacheMode.class,
+                            iae);
+            }
+        }
+        return EnvironmentFacade.CACHE_MODE_DEFAULT;
     }
 }
