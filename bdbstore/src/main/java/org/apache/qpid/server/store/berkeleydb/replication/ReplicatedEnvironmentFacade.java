@@ -94,6 +94,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     public static final String MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME = "qpid.bdb.ha.master_transfer_interval";
     public static final String DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME = "qpid.bdb.ha.db_ping_socket_timeout";
     public static final String REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME = "qpid.bdb.ha.remote_node_monitor_interval";
+    public static final String REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME = "qpid.bdb.ha.remote_node_monitor_timeout";
     public static final String ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME = "qpid.bdb.ha.environment_restart_retry_limit";
     public static final String EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME = "qpid.bdb.ha.executor_shutdown_timeout";
 
@@ -102,6 +103,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private static final int DEFAULT_MASTER_TRANSFER_TIMEOUT = 1000 * 60;
     private static final int DEFAULT_DB_PING_SOCKET_TIMEOUT = 1000;
     private static final int DEFAULT_REMOTE_NODE_MONITOR_INTERVAL = 1000;
+    private static final int DEFAULT_REMOTE_NODE_MONITOR_TIMEOUT = 1000;
     private static final int DEFAULT_ENVIRONMENT_RESTART_RETRY_LIMIT = 3;
     private static final int DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT = 5000;
 
@@ -110,9 +112,16 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     /**
      * Qpid monitors the health of the other nodes in the group.  This controls the length of time
-     * between each scan of the all the nodes.
+     * between each scan of the all the other nodes.  For a master, this health check allows the
+     * node is discover it has become partitioned without awaiting a persistent business transaction.
      */
     private final int _remoteNodeMonitorInterval;
+
+    /**
+     * Qpid uses DbPing to establish the health of other nodes in the group.  This controls the length
+     * of time the check will await the response from DbPing before assuming the node is unavailable
+     */
+    private final int _remoteNodeMonitorTimeout;
 
     /**
      * Qpid uses DbPing to establish the health of other nodes in the group.  This controls the socket timeout
@@ -229,6 +238,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         _masterTransferTimeout = configuration.getFacadeParameter(MASTER_TRANSFER_TIMEOUT_PROPERTY_NAME, DEFAULT_MASTER_TRANSFER_TIMEOUT);
         _dbPingSocketTimeout = configuration.getFacadeParameter(DB_PING_SOCKET_TIMEOUT_PROPERTY_NAME, DEFAULT_DB_PING_SOCKET_TIMEOUT);
         _remoteNodeMonitorInterval = configuration.getFacadeParameter(REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME, DEFAULT_REMOTE_NODE_MONITOR_INTERVAL);
+        _remoteNodeMonitorTimeout = configuration.getFacadeParameter(REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME, DEFAULT_REMOTE_NODE_MONITOR_TIMEOUT);
         _environmentRestartRetryLimit = configuration.getFacadeParameter(ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME, DEFAULT_ENVIRONMENT_RESTART_RETRY_LIMIT);
         _executorShutdownTimeout = configuration.getFacadeParameter(EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME, DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT);
 
@@ -2025,7 +2035,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 Future<Void> future = entry.getValue();
                 try
                 {
-                    future.get(_remoteNodeMonitorInterval, TimeUnit.MILLISECONDS);
+                    future.get(_remoteNodeMonitorTimeout, TimeUnit.MILLISECONDS);
                     if (_currentlyTimedOutNodes.remove(node) != null)
                     {
                         LOGGER.warn("Node '" + nodeName + "' from group " + _configuration.getGroupName()

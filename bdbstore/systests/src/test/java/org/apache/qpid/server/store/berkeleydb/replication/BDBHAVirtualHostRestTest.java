@@ -57,6 +57,7 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
     public void setUp() throws Exception
     {
         setTestSystemProperty(ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_INTERVAL_PROPERTY_NAME, "1000");
+        setTestSystemProperty(ReplicatedEnvironmentFacade.REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME, "1000");
 
         _hostName = "ha";
         _nodeName = "node1";
