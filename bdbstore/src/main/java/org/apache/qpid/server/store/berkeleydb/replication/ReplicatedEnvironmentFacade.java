@@ -47,12 +47,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Durability;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.sleepycat.je.Durability.ReplicaAckPolicy;
 import com.sleepycat.je.Durability.SyncPolicy;
 import com.sleepycat.je.EnvironmentConfig;
@@ -196,7 +197,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private final File _environmentDirectory;
 
     private final ExecutorService _environmentJobExecutor;
-    private final ExecutorService _stateChangeExecutor;
+    private final ListeningExecutorService _stateChangeExecutor;
     private final ScheduledExecutorService _groupChangeExecutor;
     private final AtomicReference<State> _state = new AtomicReference<State>(State.OPENING);
     private final ConcurrentMap<String, ReplicationNode> _remoteReplicationNodes = new ConcurrentHashMap<String, ReplicationNode>();
@@ -247,7 +248,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
         // we relay on this executor being single-threaded as we need to restart and mutate the environment in one thread
         _environmentJobExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Environment-" + _prettyGroupNodeName));
-        _stateChangeExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("StateChange-" + _prettyGroupNodeName));
+        _stateChangeExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(new DaemonThreadFactory("StateChange-" + _prettyGroupNodeName)));
         _groupChangeExecutor = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() + 1, new DaemonThreadFactory("Group-Change-Learner:" + _prettyGroupNodeName));
 
         // create environment in a separate thread to avoid renaming of the current thread by JE
@@ -473,10 +474,34 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         {
             if (dbe != null && LOGGER.isDebugEnabled())
             {
-                LOGGER.debug("Environment restarting due to exception " + dbe.getMessage(), dbe);
+                LOGGER.debug("Environment restarting due to exception {}", dbe.getMessage(), dbe);
             }
 
-            _environmentJobExecutor.execute(new Runnable()
+            // Tell the virtualhostnode that we are no longer attached to the group.  It will close the virtualhost,
+            // closing the connections, housekeeping etc meaning all transactions are finished before we
+            // restart the environment.
+            _stateChangeExecutor.submit(new Callable<Void>()
+            {
+                @Override
+                public Void call() throws Exception
+                {
+                    StateChangeListener listener = _stateChangeListener.get();
+                    if (listener != null && _state.get() == State.RESTARTING)
+                    {
+                        try
+                        {
+                            StateChangeEvent detached = new StateChangeEvent(ReplicatedEnvironment.State.DETACHED, NameIdPair.NULL);
+                            listener.stateChange(detached);
+                        }
+                        catch (Throwable t)
+                        {
+                            handleUncaughtExceptionInExecutorService(t);
+                        }
+                    }
+
+                    return null;
+                }
+            }).addListener(new Runnable()
             {
                 @Override
                 public void run()
@@ -495,7 +520,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                         catch(EnvironmentFailureException e)
                         {
                             LOGGER.warn("Failure whilst trying to restart environment (attempt number "
-                                    + attemptNumber + " of " + _environmentRestartRetryLimit + ")", e);
+                                    + "{} of {})", attemptNumber, _environmentRestartRetryLimit, e);
                             lastException = e;
                         }
                         catch (Exception e)
@@ -516,11 +541,15 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                         }
                     }
                 }
-            });
+            }, _environmentJobExecutor);
+        }
+        else if (_state.equals(State.RESTARTING))
+        {
+            LOGGER.debug("Environment restart already in progress, ignoring restart request.");
         }
         else
         {
-            LOGGER.info("Cannot restart environment because of facade state: " + _state.get());
+            LOGGER.debug("Ignoring restart because the environment because state is {}", _state.get());
         }
     }
 
@@ -1237,28 +1266,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     private void restartEnvironment()
     {
         LOGGER.info("Restarting environment");
-
-        StateChangeListener stateChangeListener = _stateChangeListener.get();
-
-        if (stateChangeListener != null)
-        {
-            _stateChangeExecutor.submit(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        StateChangeEvent detached = new StateChangeEvent(ReplicatedEnvironment.State.DETACHED, NameIdPair.NULL);
-                        stateChanged(detached);
-                    }
-                    catch (Throwable e)
-                    {
-                        handleUncaughtExceptionInExecutorService(e);
-                    }
-                }
-            });
-        }
 
         closeEnvironmentOnRestart();
 
