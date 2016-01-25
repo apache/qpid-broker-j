@@ -25,6 +25,7 @@ import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -437,32 +438,34 @@ public class GroupCreator
         }
     }
 
-    public void awaitNodeToAttainRole(int brokerPort, String desiredRole) throws Exception
+    public void awaitNodeToAttainRole(int brokerPort, String... desiredRole) throws Exception
     {
         awaitNodeToAttainRole(brokerPort, brokerPort, desiredRole);
     }
 
-    public void awaitNodeToAttainRole(int localNodePort, int remoteNodePort, String desiredRole) throws Exception
+    public void awaitNodeToAttainRole(int localNodePort, int remoteNodePort, String... desiredRole) throws Exception
     {
         awaitNodeToAttainAttributeValue(localNodePort, remoteNodePort, BDBHARemoteReplicationNode.ROLE, desiredRole);
     }
 
-    public void awaitNodeToAttainAttributeValue(int localNodePort, int remoteNodePort, String attributeName, String desiredValue) throws Exception
+    public void awaitNodeToAttainAttributeValue(int localNodePort, int remoteNodePort, String attributeName, String... desiredValue) throws Exception
     {
         final long startTime = System.currentTimeMillis();
         Map<String, Object> data = Collections.emptyMap();
 
-        while(!desiredValue.equals(data.get(attributeName)) && (System.currentTimeMillis() - startTime) < 30000)
+        List<String> desiredValues = Arrays.asList( desiredValue );
+        while(!desiredValues.contains(data.get(attributeName)) && (System.currentTimeMillis() - startTime) < 30000)
         {
-            LOGGER.debug("Awaiting node '" + getNodeNameForBrokerPort(remoteNodePort) + "' to transit into " + desiredValue + " role");
+            LOGGER.debug("Awaiting node '" + getNodeNameForBrokerPort(remoteNodePort) + "' attribute " +
+                         attributeName  + " to have value set to any of " + desiredValues);
             data = getNodeAttributes(localNodePort, remoteNodePort);
-            if (!desiredValue.equals(data.get(attributeName)))
+            if (!desiredValue.equals(String.valueOf(data.get(attributeName))))
             {
                 Thread.sleep(1000);
             }
         }
         LOGGER.debug("Node '" + getNodeNameForBrokerPort(remoteNodePort) + "' attribute  '" + attributeName + "' is " + data.get(attributeName));
-        Assert.assertEquals("Unexpected " + attributeName + " at " + localNodePort, desiredValue, data.get(attributeName));
+        Assert.assertTrue("Unexpected " + attributeName + " at " + localNodePort, desiredValues.contains(String.valueOf(data.get(attributeName))));
     }
 
     public RestTestHelper createRestTestHelper(int brokerPort)
@@ -491,6 +494,16 @@ public class GroupCreator
             permittedNodes.add(hostName + ":" + port);
         }
         return permittedNodes;
+    }
+
+    public Map<Integer, String> groupThreadumps()
+    {
+        Map<Integer,String> threadDumps = new HashMap<>();
+        for(GroupMember m: _members.values())
+        {
+            threadDumps.put(m._amqpPort, m._brokerHolder.dumpThreads());
+        }
+        return threadDumps;
     }
 
     private class GroupMember
