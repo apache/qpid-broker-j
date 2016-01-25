@@ -1363,6 +1363,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             LOGGER.info("Node priority " + priority);
             LOGGER.info("Quorum override " + quorumOverride);
             LOGGER.info("Permitted node list " + _permittedNodes);
+
         }
 
         Map<String, String> replicationEnvironmentParameters = new HashMap<>(ReplicatedEnvironmentFacade.REPCONFIG_DEFAULTS);
@@ -1391,10 +1392,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         envConfig.setTransactional(true);
         envConfig.setExceptionListener(new ExceptionListener());
         envConfig.setDurability(_defaultDurability);
-        envConfig.setCacheMode(CacheMode.EVICT_LN);
+        envConfig.setCacheMode(_configuration.getCacheMode());
         envConfig.setConfigParam(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
         envConfig.setConfigParam(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
         envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + _configuration.getName() + "]"));
+
+        LOGGER.info("Cache mode {}", envConfig.getCacheMode());
 
         for (Map.Entry<String, String> configItem : environmentParameters.entrySet())
         {

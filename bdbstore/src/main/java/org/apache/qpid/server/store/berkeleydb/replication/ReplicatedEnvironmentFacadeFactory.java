@@ -22,6 +22,8 @@ package org.apache.qpid.server.store.berkeleydb.replication;
 
 import java.util.Map;
 
+import com.sleepycat.je.CacheMode;
+
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.berkeleydb.BDBUtils;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
@@ -47,6 +49,12 @@ public class ReplicatedEnvironmentFacadeFactory implements EnvironmentFacadeFact
             public String getStorePath()
             {
                 return settings.getStorePath();
+            }
+
+            @Override
+            public CacheMode getCacheMode()
+            {
+                return BDBUtils.getCacheMode(parent);
             }
 
             @Override

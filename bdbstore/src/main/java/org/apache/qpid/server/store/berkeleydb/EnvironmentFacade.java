@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -44,7 +45,13 @@ public interface EnvironmentFacade
         put(EnvironmentConfig.LOCK_N_LOCK_TABLES, "7");
         // Turn off stats generation - feature introduced (and on by default) from BDB JE 5.0.84
         put(EnvironmentConfig.STATS_COLLECT, "false");
+        // Automatic cleaner adjustment has been seen to stop the cleaner working at all, disable it
+        // Newer versions of BDB JE 6.3 ignore this setting.
+        put(EnvironmentConfig.CLEANER_ADJUST_UTILIZATION, "false");
     }});
+
+    String CACHE_MODE_PROPERTY_NAME = "qpid.bdb.cache_mode";
+    CacheMode CACHE_MODE_DEFAULT = CacheMode.EVICT_LN;
 
     void upgradeIfNecessary(ConfiguredObject<?> parent);
 

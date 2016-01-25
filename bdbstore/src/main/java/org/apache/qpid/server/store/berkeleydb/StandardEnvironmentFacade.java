@@ -84,10 +84,12 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);
-        envConfig.setCacheMode(CacheMode.EVICT_LN);
+        envConfig.setCacheMode(configuration.getCacheMode());
         envConfig.setConfigParam(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
         envConfig.setConfigParam(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
         envConfig.setLoggingHandler(new Slf4jLoggingHandler("["+configuration.getName()+"]"));
+
+        LOGGER.debug("Cache mode {}", envConfig.getCacheMode());
 
         Map<String, String> params = new HashMap<>(EnvironmentFacade.ENVCONFIG_DEFAULTS);
         params.putAll(configuration.getParameters());

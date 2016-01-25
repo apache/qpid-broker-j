@@ -22,6 +22,7 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import java.util.Map;
 
+import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.rep.impl.RepParams;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.store.FileBasedSettings;
@@ -57,6 +58,12 @@ public class StandardEnvironmentFacadeFactory implements EnvironmentFacadeFactor
             public String getStorePath()
             {
                 return storeLocation;
+            }
+
+            @Override
+            public CacheMode getCacheMode()
+            {
+                return BDBUtils.getCacheMode(parent);
             }
 
             @Override

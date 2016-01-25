@@ -21,9 +21,12 @@ package org.apache.qpid.server.store.berkeleydb;
 
 import java.util.Map;
 
+import com.sleepycat.je.CacheMode;
+
 public interface StandardEnvironmentConfiguration
 {
     String getName();
     String getStorePath();
+    CacheMode getCacheMode();
     Map<String, String> getParameters();
 }
