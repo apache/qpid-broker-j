@@ -1,8 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "../../commonEntities.xml">
-%entities;
-]>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,21 +20,19 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Queues">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Queues">
   <title>Queues</title>
   <para><link linkend="Java-Broker-Concepts-Queues">Queues</link> are named entities that
     hold/buffer messages for later delivery to consumer applications.</para>
   <para>Queues can be managed using the HTTP, JMX or AMQP channels.</para>
-  <section id="Java-Broker-Management-Managing-Queues-Types">
+  <section xml:id="Java-Broker-Management-Managing-Queues-Types">
     <title>Types</title>
     <para>The Broker supports four different queue types, each with different delivery semantics.<itemizedlist>
         <listitem>
-          <para><link linkend="Java-Broker-Concepts-Queues-Types-Standard"
-              >Standard</link> - a simple First-In-First-Out (FIFO) queue</para>
+          <para><link linkend="Java-Broker-Concepts-Queues-Types-Standard">Standard</link> - a simple First-In-First-Out (FIFO) queue</para>
         </listitem>
         <listitem>
-          <para><link linkend="Java-Broker-Concepts-Queues-Types-Priority"
-              >Priority</link> - delivery order depends on the priority of each message</para>
+          <para><link linkend="Java-Broker-Concepts-Queues-Types-Priority">Priority</link> - delivery order depends on the priority of each message</para>
         </listitem>
         <listitem>
           <para><link linkend="Java-Broker-Concepts-Queues-Types-Sorted">Sorted</link> -
@@ -51,7 +45,7 @@
         </listitem>
       </itemizedlist></para>
   </section>
-  <section id="Java-Broker-Management-Managing-Queues-Attributes">
+  <section xml:id="Java-Broker-Management-Managing-Queues-Attributes">
     <title>Attributes</title>
     <para><itemizedlist>
         <listitem>
@@ -59,11 +53,7 @@
             name when they wish to subscribe to queue to receive messages from it.</para>
         </listitem>
         <listitem>
-          <para><emphasis>Type of the queue</emphasis>. Can be either <link
-              linkend="Java-Broker-Concepts-Queues-Types-Standard">standard</link>, <link
-              linkend="Java-Broker-Concepts-Queues-Types-Priority">priority</link>, <link
-              linkend="Java-Broker-Concepts-Queues-Types-Sorted">sorted</link>, or <link
-              linkend="Java-Broker-Concepts-Queues-Types-LVQ">lvq</link>.</para>
+          <para><emphasis>Type of the queue</emphasis>. Can be either <link linkend="Java-Broker-Concepts-Queues-Types-Standard">standard</link>, <link linkend="Java-Broker-Concepts-Queues-Types-Priority">priority</link>, <link linkend="Java-Broker-Concepts-Queues-Types-Sorted">sorted</link>, or <link linkend="Java-Broker-Concepts-Queues-Types-LVQ">lvq</link>.</para>
         </listitem>
         <listitem>
           <para><emphasis>Durable</emphasis>. Whether the queue survives a restart. Messages on a
@@ -90,20 +80,17 @@
         <listitem>
           <para><emphasis>Alerting Thresholds</emphasis>. Queues have the ability to alert on a
             variety of conditions: total queue depth exceeded a number or size, message age exceeded
-            a threshold, message size exceeded a threshold. These thresholds are soft. See <xref
-              linkend="Java-Broker-Appendix-Queue-Alerts"/></para>
+            a threshold, message size exceeded a threshold. These thresholds are soft. See <xref linkend="Java-Broker-Appendix-Queue-Alerts"/></para>
         </listitem>
         <listitem>
-          <para><emphasis>Maximum Delivery Count/Alternate Exchange</emphasis>. See <xref
-              linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages"/></para>
+          <para><emphasis>Maximum Delivery Count/Alternate Exchange</emphasis>. See <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages"/></para>
         </listitem>
         <listitem>
-          <para><emphasis>Message Groups</emphasis>. See <xref
-              linkend="Java-Broker-Concepts-Queues-Message-Grouping"/></para>
+          <para><emphasis>Message Groups</emphasis>. See <xref linkend="Java-Broker-Concepts-Queues-Message-Grouping"/></para>
         </listitem>
       </itemizedlist></para>
   </section>
-  <section id="Java-Broker-Management-Managing-Queue-Children">
+  <section xml:id="Java-Broker-Management-Managing-Queue-Children">
     <title>Children</title>
     <para>
       <itemizedlist>
@@ -113,7 +100,7 @@
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Queue-Lifecycle">
+  <section xml:id="Java-Broker-Management-Managing-Queue-Lifecycle">
     <title>Lifecycle</title>
     <para>Not supported</para>
   </section>

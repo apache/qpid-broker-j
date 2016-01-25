@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,15 +20,12 @@
 
 -->
 
-<chapter id="Java-Broker-Runtime">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime">
   <title>Runtime</title>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Log-Files.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="runtime/Java-Broker-Runtime-Disk-Space-Management.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="runtime/Java-Broker-Runtime-Producer-Transaction-Timeout.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="runtime/Java-Broker-Runtime-Handling-Undeliverable-Messages.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Disk-Space-Management.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Producer-Transaction-Timeout.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Handling-Undeliverable-Messages.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Close-On-No-Route.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Flow-To-Disk.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="runtime/Java-Broker-Runtime-Background-Recovery.xml"/>

@@ -19,7 +19,8 @@
  under the License.
 
 -->
-<section id="Java-Broker-Concepts-Broker">
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Concepts-Broker">
   <title>Broker</title>
   <para>The <emphasis>Broker</emphasis> is the outermost entity within the system.</para>
   <para>The Broker is backed by storage. This storage is used to record the durable entities that exist beneath it.</para>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,12 +20,12 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Consumers">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Consumers">
   <title>Consumers</title>
   <para>A Consumer represents an application's live <emphasis>subcription</emphasis> to a queue.  Its presence
     in the model indicates that an application is currently connected to the queue <emphasis>at this moment</emphasis>.
   </para>
-  <section id="Java-Broker-Management-Managing-Consumers-Context">
+  <section xml:id="Java-Broker-Management-Managing-Consumers-Context">
     <title>Context</title>
     <para>
       <itemizedlist>

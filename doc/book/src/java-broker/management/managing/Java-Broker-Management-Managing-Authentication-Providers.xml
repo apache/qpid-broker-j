@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -22,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Authentication-Providers">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Authentication-Providers">
     <title>Authentication Providers</title>
     <para>
         <link linkend="Java-Broker-Concepts-Authentication-Providers">Authentication
@@ -30,35 +28,26 @@
         authenticate connections.</para>
     <para>See <xref linkend="Java-Broker-Security-Authentication-Providers"/></para>
 
-    <section id="Java-Broker-Management-Managing-Authentication-Providers-Types">
+    <section xml:id="Java-Broker-Management-Managing-Authentication-Providers-Types">
         <title>Types</title>
         <para> The following authentication providers are supported: <itemizedlist>
-                <listitem><para><link linkend="Java-Broker-Security-Anonymous-Provider"
-                            >Anonymous</link>: allows anonymous connections to the
+                <listitem><para><link linkend="Java-Broker-Security-Anonymous-Provider">Anonymous</link>: allows anonymous connections to the
                     Broker</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-External-Provider"
-                            >External</link>: delegates to external mechanisms such as SSL Client
+                <listitem><para><link linkend="Java-Broker-Security-External-Provider">External</link>: delegates to external mechanisms such as SSL Client
                         Certificate Authentication</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-Kerberos-Provider"
-                            >Kerberos</link>: uses Kerberos to authenticate connections via
+                <listitem><para><link linkend="Java-Broker-Security-Kerberos-Provider">Kerberos</link>: uses Kerberos to authenticate connections via
                         GSS-API.</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-LDAP-Provider"
-                        >SimpleLDAP</link>: authenticate users against an LDAP
+                <listitem><para><link linkend="Java-Broker-Security-LDAP-Provider">SimpleLDAP</link>: authenticate users against an LDAP
                     server.</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-ScramSha-Providers"
-                            >ScramSha</link>: authenticate users against credentials stored in a
+                <listitem><para><link linkend="Java-Broker-Security-ScramSha-Providers">ScramSha</link>: authenticate users against credentials stored in a
                         local database</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-Plain-Provider"
-                            >Plain</link>: authenticate users against credentials stored in a local 
+                <listitem><para><link linkend="Java-Broker-Security-Plain-Provider">Plain</link>: authenticate users against credentials stored in a local 
                             database.</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-PlainPasswordFile-Provider"
-                            >PlainPasswordFile</link>: authenticate users against credentials stored
+                <listitem><para><link linkend="Java-Broker-Security-PlainPasswordFile-Provider">PlainPasswordFile</link>: authenticate users against credentials stored
                         in plain text in a local file.</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-MD5-Provider"
-                            >MD5</link>: authenticate users against credentials
+                <listitem><para><link linkend="Java-Broker-Security-MD5-Provider">MD5</link>: authenticate users against credentials
                         stored in a local database.</para></listitem>
-                <listitem><para><link linkend="Java-Broker-Security-Base64MD5PasswordFile-Provider"
-                            >Base64MD5PasswordFile</link>: authenticate users against credentials
+                <listitem><para><link linkend="Java-Broker-Security-Base64MD5PasswordFile-Provider">Base64MD5PasswordFile</link>: authenticate users against credentials
                         stored encoded in a local file.</para></listitem>
             </itemizedlist>
             </para>
@@ -66,7 +55,7 @@
                 be created, deleted and passwords reset.</para>
     </section>
 
-    <section id="Java-Broker-Management-Managing-Authentication-Providers-Attributes">
+    <section xml:id="Java-Broker-Management-Managing-Authentication-Providers-Attributes">
         <title>Attributes</title>
         <para>
             <itemizedlist>
@@ -77,11 +66,11 @@
         </para>
         <para>Other attributes are provider specific.</para>
     </section>
-    <section id="Java-Broker-Management-Managing-Authentication-Providers-Children">
+    <section xml:id="Java-Broker-Management-Managing-Authentication-Providers-Children">
         <title>Children</title>
         <para>None</para>
     </section>
-    <section id="Java-Broker-Management-Managing-Authentication-Providers-Lifecycle">
+    <section xml:id="Java-Broker-Management-Managing-Authentication-Providers-Lifecycle">
         <title>Lifecycle</title>
         <para>Not supported</para>
         <important>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Ports">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Ports">
     <title>Ports</title>
     <para>Ports provide TCP/IP connectivity for messaging and management. A port is defined to use a
         protocol. This can be an AMQP protocol for messaging or HTTP/JMX for management.</para>
@@ -30,7 +30,7 @@
     <para>Any number of ports defined to use AMQP or HTTP protocols can be defined. JMX is limited
         to a single port instance per JMX protocol type.</para>
     <para>Ports can only be managed by the HTTP management channel.</para>
-    <section id="Java-Broker-Management-Managing-Ports-Context">
+    <section xml:id="Java-Broker-Management-Managing-Ports-Context">
         <title>Context</title>
         <para>
             <itemizedlist>
@@ -49,7 +49,7 @@
             </itemizedlist>
         </para>
     </section>
-    <section id="Java-Broker-Management-Managing-Ports-Attributes">
+    <section xml:id="Java-Broker-Management-Managing-Ports-Attributes">
         <title>Attributes</title>
         <para><itemizedlist>
                 <listitem>
@@ -63,8 +63,7 @@
                         single network interface.</para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Authentication Provider</emphasis>. The <link
-                            linkend="Java-Broker-Concepts-Authentication-Providers">authentication
+                    <para><emphasis>Authentication Provider</emphasis>. The <link linkend="Java-Broker-Concepts-Authentication-Providers">authentication
                             provider</link> used to authenticate incoming connections.</para>
                 </listitem>
                 <listitem>
@@ -85,22 +84,19 @@
                     <para>SSLv3 is disabled by default.</para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Keystore</emphasis>. <link
-                            linkend="Java-Broker-Management-Managing-Keystores">Keystore</link>
+                    <para><emphasis>Keystore</emphasis>. <link linkend="Java-Broker-Management-Managing-Keystores">Keystore</link>
                         containing the Broker's private key. Required if SSL is in use.</para>
                 </listitem>
                 <listitem>
                     <para><emphasis>Want/Need Client Auth</emphasis>. Client authentication can be
                         either accepted if offered (want), or demanded (need). When Client
                         Certificate Authentication is in use a Truststore must be configured. When
-                        using Client Certificate Authentication it may be desirable to use the <link
-                            linkend="Java-Broker-Security-External-Provider">External Authentication
+                        using Client Certificate Authentication it may be desirable to use the <link linkend="Java-Broker-Security-External-Provider">External Authentication
                             Provider</link>.</para>
                     <para>JMX does not support client authentication.</para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Truststore</emphasis>. <link
-                            linkend="Java-Broker-Management-Managing-Truststores">Trust store</link>
+                    <para><emphasis>Truststore</emphasis>. <link linkend="Java-Broker-Management-Managing-Truststores">Trust store</link>
                         contain an issuer certificate or the public keys of the clients themselves
                         if peers only is desired.</para>
                 </listitem>
@@ -120,7 +116,7 @@
                 </listitem>
         </itemizedlist></para>
     </section>
-    <section id="Java-Broker-Management-Managing-Ports-Children">
+    <section xml:id="Java-Broker-Management-Managing-Ports-Children">
         <title>Children</title>
         <para>
             <itemizedlist>
@@ -130,7 +126,7 @@
             </itemizedlist>
         </para>
     </section>
-    <section id="Java-Broker-Management-Managing-Ports-Lifecycle">
+    <section xml:id="Java-Broker-Management-Managing-Ports-Lifecycle">
         <title>Lifecycle</title>
         <para>Not supported</para>
         <important>

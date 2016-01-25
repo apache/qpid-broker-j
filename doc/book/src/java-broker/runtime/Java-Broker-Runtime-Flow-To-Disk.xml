@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Runtime-Flow-To-Disk">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Flow-To-Disk">
   <title>Flow to Disk</title>
   <para>Flow to disk limits the amount of <link linkend="Java-Broker-Runtime-Memory">direct and heap memory</link>
     that can be occupied by messages. Once this
@@ -39,9 +39,7 @@
   <para>Flow to disk is configured by Broker context variable
       <literal>broker.flowToDiskThreshold</literal>. It is expressed as a size in bytes and defaults
     to 40% of the JVM maximum heap size.</para>
-  <para>Log message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-BRK-1014"
-      >BRK-1014</link> is written when the feature activates. Once the total space of all messages
-    decreases below the threshold, the message <link
-      linkend="Java-Broker-Appendix-Operation-Logging-Message-BRK-1015">BRK-1015</link> is written
+  <para>Log message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-BRK-1014">BRK-1014</link> is written when the feature activates. Once the total space of all messages
+    decreases below the threshold, the message <link linkend="Java-Broker-Appendix-Operation-Logging-Message-BRK-1015">BRK-1015</link> is written
     to show that the feature is no longer active.</para>
 </section>

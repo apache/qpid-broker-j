@@ -1,8 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,7 +20,7 @@
 
 -->
 
-<appendix id="Java-Broker-Appendix-Environment-Variables">
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Appendix-Environment-Variables">
   <title>Environment Variables</title>
   <para>The following table describes the environment variables understood by the Qpid scripts
     contained within the <literal>/bin</literal> directory within the Broker distribution.</para>
@@ -41,7 +37,7 @@
         </row>
       </thead>
       <tbody>
-        <row id="Java-Broker-Appendix-Environment-Variables-Qpid-Home">
+        <row xml:id="Java-Broker-Appendix-Environment-Variables-Qpid-Home">
           <entry>QPID_HOME</entry>
           <entry>
             <para>None</para>
@@ -58,7 +54,7 @@
               of the script itself.</para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-Environment-Variables-Qpid-Work">
+        <row xml:id="Java-Broker-Appendix-Environment-Variables-Qpid-Work">
           <entry>QPID_WORK</entry>
           <entry>
             <para>User's home directory</para>
@@ -70,21 +66,20 @@
             <para>For example, <literal>QPID_WORK=/var/qpidwork</literal>.</para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-Environment-Variables-Qpid-Opts">
+        <row xml:id="Java-Broker-Appendix-Environment-Variables-Qpid-Opts">
           <entry>QPID_OPTS</entry>
           <entry>
             <para>None</para>
           </entry>
           <entry>
-            <para>This is the preferred mechanism for passing Java <link
-                linkend="Java-Broker-Appendix-System-Properties">system properties</link> to the
+            <para>This is the preferred mechanism for passing Java <link linkend="Java-Broker-Appendix-System-Properties">system properties</link> to the
               Broker. The value must be a list of system properties each separate by a space.
                   <literal>-D<replaceable>name1</replaceable>=<replaceable>value1</replaceable>
                   -D<replaceable>name2</replaceable>=<replaceable>value2</replaceable></literal>.
             </para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-Environment-Variables-Qpid-Java-Gc">
+        <row xml:id="Java-Broker-Appendix-Environment-Variables-Qpid-Java-Gc">
           <entry>QPID_JAVA_GC</entry>
           <entry>
             <literal>-XX:+HeapDumpOnOutOfMemoryError -XX:+UseConcMarkSweepGC</literal>
@@ -95,7 +90,7 @@
             <para>Refer to the JVM's documentation for details.</para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-Environment-Variables-Qpid-Java-Mem">
+        <row xml:id="Java-Broker-Appendix-Environment-Variables-Qpid-Java-Mem">
           <entry>QPID_JAVA_MEM</entry>
           <entry>
             <literal>-Xmx512m -XX:MaxDirectMemorySize=1536m</literal>
@@ -113,7 +108,7 @@
             <para>Refer to the JVM's documentation for details.</para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-Environment-Variables-Java-Opts">
+        <row xml:id="Java-Broker-Appendix-Environment-Variables-Java-Opts">
           <entry>JAVA_OPTS</entry>
           <entry>None</entry>
           <entry>

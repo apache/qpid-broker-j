@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Management-Channel-AMQP-Intrinstic">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel-AMQP-Intrinstic">
     <title>AMQP Intrinstic Management</title>
     <para>The AMQP protocols 0-8..0-10 allow for creation, deletion and query of Exchanges, Queue
         and Bindings.</para>

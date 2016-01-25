@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,11 +20,11 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Plugin-HTTP">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Plugin-HTTP">
     <title>HTTP Plugin</title>
     <para>The HTTP Plugin provides the <link linkend="Java-Broker-Management-Channel-HTTP">HTTP management channel</link> comprising of the <link linkend="Java-Broker-Management-Channel-Web-Console">Web
         Management Console</link> and the <link linkend="Java-Broker-Management-Channel-REST-API">REST API</link>.</para>
-    <section id="Java-Broker-Management-Managing-Plugin-HTTP-Attributes">
+    <section xml:id="Java-Broker-Management-Managing-Plugin-HTTP-Attributes">
         <title>Attributes</title>
         <para>
             <itemizedlist>
@@ -51,11 +51,11 @@
             </itemizedlist>
         </para>
     </section>
-    <section id="Java-Broker-Management-Managing-Plugin-HTTP-Children">
+    <section xml:id="Java-Broker-Management-Managing-Plugin-HTTP-Children">
         <title>Children</title>
         <para>None</para>
     </section>
-    <section id="Java-Broker-Management-Managing-Plugin-HTTP-Lifecycle">
+    <section xml:id="Java-Broker-Management-Managing-Plugin-HTTP-Lifecycle">
         <title>Lifecycle</title>
         <para>Not supported<important><para>NOTE: Changes to the Session Timeout attribute only take
                     effect at broker restart. </para></important></para>

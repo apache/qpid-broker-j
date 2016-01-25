@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Management-Channel-Web-Console">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel-Web-Console">
     <title>Web Management Console</title>
     <para> The Web Management Console provides a simple and intuitive interface for the Management
         and Control of the Broker. From here, all aspects of the Broker can be controlled,
@@ -41,7 +41,7 @@
     </para>
     <para>The remainder of the section provides an introduction to the web management console and
         its use.</para>
-    <section id="Java-Broker-Management-Channel-Web-Console-Accessing">
+    <section xml:id="Java-Broker-Management-Channel-Web-Console-Accessing">
         <title>Accessing the Console</title>
         <para>The Web Management Console is provided by the HTTP Management Plugin. Providing the
             HTTP Management Plugin is in its default configuration, the Web Management Console can
@@ -54,8 +54,7 @@
             <title>Web Management Console - Authentication</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="images/Management-Web-Auth.png" format="PNG" scalefit="1"
-                        width="900px"/>
+                    <imagedata fileref="images/Management-Web-Auth.png" format="PNG" scalefit="1" width="900px"/>
                 </imageobject>
                 <textobject>
                     <phrase>Web Console Authentication</phrase>
@@ -63,7 +62,7 @@
             </mediaobject>
         </figure>
     </section>
-    <section id="Java-Broker-Management-Channel-Web-Console-Orientation">
+    <section xml:id="Java-Broker-Management-Channel-Web-Console-Orientation">
         <title>Orientation</title>
         <para>After you have logged on you will see a screen similar to the following. The elements
             of the screen are now explained.</para>
@@ -71,8 +70,7 @@
             <title>Web Management Orientation - Console</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="images/Management-Web-Console.png" format="PNG" scalefit="1"
-                        width="900px"/>
+                    <imagedata fileref="images/Management-Web-Console.png" format="PNG" scalefit="1" width="900px"/>
                 </imageobject>
                 <textobject>
                     <phrase>The Web Console</phrase>
@@ -107,12 +105,11 @@
                 </listitem>
             </itemizedlist>
         </para>
-        <figure id="Java-Broker-Management-Channel-Web-Console-Orientation-Tab">
+        <figure xml:id="Java-Broker-Management-Channel-Web-Console-Orientation-Tab">
             <title>Web Management Orientation - Tab</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="images/Management-Web-Tab.png" format="PNG" scalefit="1"
-                        width="900px"/>
+                    <imagedata fileref="images/Management-Web-Tab.png" format="PNG" scalefit="1" width="900px"/>
                 </imageobject>
                 <textobject>
                     <phrase>A tab within the Web Consle</phrase>
@@ -140,10 +137,10 @@
             </itemizedlist>
         </para>
     </section>
-    <section id="Java-Broker-Management-Channel-Web-Console-Managing-Entities">
+    <section xml:id="Java-Broker-Management-Channel-Web-Console-Managing-Entities">
         <title>Managing Entities</title>
         <para>All the Entities of the Broker of can be managed through the Web Console.</para>
-        <section id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Add">
+        <section xml:id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Add">
             <title>Adding Entities</title>
             <para>To <emphasis>add</emphasis> a new entity, click the <literal>Add</literal> button
                 on the Child Panel on the Parent's tab. Clicking the Add button causes an add
@@ -153,12 +150,11 @@
                 details about the attribute and any default value (which may be expressed in terms
                 of a context variable) that will take effect if you leave the attribute unset. An
                 example add dialogue is shown in the figure that follows.</para>
-            <figure id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Add-Dialogue">
+            <figure xml:id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Add-Dialogue">
                 <title>Web Management Orientation - Add Dialogue</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="images/Management-Web-Add-Dialogue.png" format="PNG"
-                            scalefit="1"/>
+                        <imagedata fileref="images/Management-Web-Add-Dialogue.png" format="PNG" scalefit="1"/>
                     </imageobject>
                     <textobject>
                         <phrase>Example add dialogue showing field level help</phrase>
@@ -166,7 +162,7 @@
                 </mediaobject>
             </figure>
         </section>
-        <section id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Edit">
+        <section xml:id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Edit">
             <title>Editing Entities</title>
             <para>To <emphasis>edit</emphasis> an existing entity, click the <literal>Edit</literal>
                 button on the tab corresponding to the Entity itself. Editing an entity lets you
@@ -174,12 +170,11 @@
                 edit dialogue have field level help that give more details about the attribute and
                 any default value. An example edit dialogue is shown in the figure that
                 follows.</para>
-            <figure id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Edit-Dialogue">
+            <figure xml:id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Edit-Dialogue">
                 <title>Web Management Orientation - Edit Dialogue</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="images/Management-Web-Edit-Dialogue.png" format="PNG"
-                            scalefit="1"/>
+                        <imagedata fileref="images/Management-Web-Edit-Dialogue.png" format="PNG" scalefit="1"/>
                     </imageobject>
                     <textobject>
                         <phrase>Example edit dialogue</phrase>
@@ -187,28 +182,25 @@
                 </mediaobject>
             </figure>
         </section>
-        <section id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Delete">
+        <section xml:id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Delete">
             <title>Deleting Entities</title>
             <para>To <emphasis>remove</emphasis> an existing entity, click the
                     <literal>Delete</literal> button on the tab corresponding to the Entity itself.
                 For some child types, you can select many children from the parent's type and delete
                 many children at once.</para>
         </section>
-        <section id="Java-Broker-Management-Channel-Web-Console-Managing-Context-Variables">
+        <section xml:id="Java-Broker-Management-Channel-Web-Console-Managing-Context-Variables">
             <title>Context Variables</title>
-            <para>All Entities within the Broker have the ability to have <link
-                    linkend="Java-Broker-Management-Managing-Entities-General">context
+            <para>All Entities within the Broker have the ability to have <link linkend="Java-Broker-Management-Managing-Entities-General">context
                     variables</link> associated with them.</para>
             <para>Most add and edit dialogues have the ability to make context variable assignments.
                 To add/change/remove a context variable, click the Context Variable panel to expand
                 it.</para>
-            <figure
-                id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Context-Variables-Dialogue">
+            <figure xml:id="Java-Broker-Management-Channel-Web-Console-Managing-Entities-Context-Variables-Dialogue">
                 <title>Web Management Orientation - Context Variables</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="images/Management-Web-ContextVar.png" format="PNG"
-                            scalefit="1"/>
+                        <imagedata fileref="images/Management-Web-ContextVar.png" format="PNG" scalefit="1"/>
                     </imageobject>
                     <textobject>
                         <phrase>Editting Context Variables</phrase>

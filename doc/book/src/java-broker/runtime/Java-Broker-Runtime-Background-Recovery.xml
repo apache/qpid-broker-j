@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Runtime-Background-Recovery">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Runtime-Background-Recovery">
   <title>Background Recovery</title>
   <para>On startup of the Broker, or restart of a Virtualhost, the Broker restores all durable
     queues and their messages from disk. In the Broker's default mode the Virtualhosts do not become
@@ -34,15 +34,12 @@
     still to be recovered from disk. There is an exception for the out of order queue types whilst
     background recovery is in flight. For instance, with priority queues older lower priority
     messages may be delivered before newer, higher priority.</para>
-  <para>To activate the feature, set a <link
-      linkend="Java-Broker-Management-Managing-Entities-General">context variable</link>
+  <para>To activate the feature, set a <link linkend="Java-Broker-Management-Managing-Entities-General">context variable</link>
     <literal>use_async_message_store_recovery</literal> at the desired Virtualhost, or at Broker or
     higher to enable the feature broker-wide.</para>
   <note>
     <para>The background recovery feature does not write operational log messages to indicate its
-      progress. This means messages <link
-        linkend="Java-Broker-Appendix-Operation-Logging-Message-MST-1004">MST-1004</link> and <link
-        linkend="Java-Broker-Appendix-Operation-Logging-Message-MST-1005">MST-1005</link> will not
+      progress. This means messages <link linkend="Java-Broker-Appendix-Operation-Logging-Message-MST-1004">MST-1004</link> and <link linkend="Java-Broker-Appendix-Operation-Logging-Message-MST-1005">MST-1005</link> will not
       be seen.</para>
   </note>
 </section>

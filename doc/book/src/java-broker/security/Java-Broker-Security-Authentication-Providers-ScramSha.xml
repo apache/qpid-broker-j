@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -21,13 +19,13 @@
  under the License.
 
 -->
-<section id="Java-Broker-Security-ScramSha-Providers">
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-ScramSha-Providers">
     <title>SCRAM SHA</title>
     <para>The SCRAM SHA Providers uses the Broker configuration itself to store the database of
         users. The users'
         passwords are stored as salted SHA digested password. This can be further encrypted using the
-        facilities described in <xref linkend="Java-Broker-Security-Configuration-Encryption"
-        />.</para>
+        facilities described in <xref linkend="Java-Broker-Security-Configuration-Encryption"/>.</para>
     <para>There are two variants of this provider, SHA1 and SHA256. SHA256 is recommended whenever
         possible. SHA1 is provided with compatibility with clients utilising JDK 1.6 (which does not
         support SHA256).</para>

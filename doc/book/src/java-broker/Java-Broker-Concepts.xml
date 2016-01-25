@@ -20,27 +20,17 @@
 
 -->
 
-<chapter id="Java-Broker-Concepts">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Concepts">
   <title>Concepts</title>
 
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Overview.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Broker.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Virtualhost-Nodes.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-RemoteReplicationNodes.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Virtualhosts.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Exchanges.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Queues.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Ports.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Authentication-Providers.xml"/>
-  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude"
-    href="concepts/Java-Broker-Concepts-Other-Services.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Overview.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Broker.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Virtualhost-Nodes.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-RemoteReplicationNodes.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Virtualhosts.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Exchanges.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Queues.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Ports.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Authentication-Providers.xml"/>
+  <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="concepts/Java-Broker-Concepts-Other-Services.xml"/>
 </chapter>

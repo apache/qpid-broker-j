@@ -1,8 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,13 +20,11 @@
 
 -->
 
-<appendix id="Java-Broker-Appendix-System-Properties">
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Appendix-System-Properties">
   <title>System Properties</title>
   <para>The following table describes the Java system properties used by the Broker to control
     various optional behaviours.</para>
-  <para>The preferred method of enabling these system properties is using the <link
-      linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Opts"
-      ><literal>QPID_OPTS</literal></link> environment variable described in the previous
+  <para>The preferred method of enabling these system properties is using the <link linkend="Java-Broker-Appendix-Environment-Variables-Qpid-Opts"><literal>QPID_OPTS</literal></link> environment variable described in the previous
     section.</para>
   <table pgwide="1">
     <title>System properties</title>
@@ -43,35 +37,33 @@
         </row>
       </thead>
       <tbody>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Heartbeat-Timeout-Factor">
+        <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Heartbeat-Timeout-Factor">
           <entry>qpid.broker_heartbeat_timeout_factor</entry>
           <entry>2</entry>
           <entry>Factor to determine the maximum length of that may elapse between heartbeats being
             received from the peer before a connection is deemed to have been broken.</entry>
         </row>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Dead-Letter-Exchange-Suffix">
+        <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Dead-Letter-Exchange-Suffix">
           <entry>qpid.broker_dead_letter_exchange_suffix</entry>
           <entry>_DLE</entry>
-          <entry>Used with the <xref
-              linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues"/>
+          <entry>Used with the <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues"/>
             feature. Governs the suffix used when generating a name for a Dead Letter
             Exchange.</entry>
         </row>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Dead-Letter-Queue-Suffix">
+        <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Dead-Letter-Queue-Suffix">
           <entry>qpid.broker_dead_letter_queue_suffix</entry>
           <entry>_DLQ</entry>
-          <entry>Used with the <xref
-              linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues"/>
+          <entry>Used with the <xref linkend="Java-Broker-Runtime-Handling-Undeliverable-Messages-Dead-Letter-Queues"/>
             feature. Governs the suffix used when generating a name for a Dead Letter Queue.</entry>
         </row>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Status-Updates">
+        <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Status-Updates">
           <entry>qpid.broker_status_updates</entry>
           <entry>true</entry>
           <entry>
             <para>If set true, the Broker will produce operational logging messages.</para>
           </entry>
         </row>
-        <row id="Java-Broker-Appendix-System-Properties-Broker-Disabled-Features">
+        <row xml:id="Java-Broker-Appendix-System-Properties-Broker-Disabled-Features">
           <entry>qpid.broker_disabled_features</entry>
           <entry>none</entry>
           <entry>

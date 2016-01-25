@@ -1,10 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE chapter PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd"
-[
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -26,17 +20,17 @@
 
 -->
 
-<chapter id="JMS-Client-0-8-Connection-URL">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-Connection-URL">
 	<title>Connection URLs</title>
 	<para> In JNDI properties, a Connection URL specifies options for a connection. The format for a
 		Connection URL is: </para>
 
-	<programlisting><![CDATA[amqp://[<user>:<pass>@][<clientid>]/[<virtualhost>][?<option>='<value>'[&<option>='<value>']*]]]></programlisting>
+	<programlisting>amqp://[&lt;user&gt;:&lt;pass&gt;@][&lt;clientid&gt;]/[&lt;virtualhost&gt;][?&lt;option&gt;='&lt;value&gt;'[&amp;&lt;option&gt;='&lt;value&gt;']*]</programlisting>
 	<para> For instance, the following Connection URL specifies a user name, a password, a client
 		ID, a virtual host ("test"), a broker list with a single broker: a TCP host with the host
 		name <quote>localhost</quote> using port 5672: </para>
 
-	<programlisting><![CDATA[amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672']]></programlisting>
+	<programlisting>amqp://username:password@clientid/test?brokerlist='tcp://localhost:5672'</programlisting>
 
 	<important>
 		<title>Connection option quoting</title>
@@ -45,7 +39,7 @@
 	</important>
 
 	<para>The Connection URL supports the following options:</para>
-	<table pgwide="1" id="JMS-Client-0-8-Connection-URL-Options">
+	<table pgwide="1" xml:id="JMS-Client-0-8-Connection-URL-Options">
 		<title>Connection URL Options</title>
 		<tgroup cols="3">
 			<thead>
@@ -56,25 +50,24 @@
 				</row>
 			</thead>
 			<tbody>
-				<row id="JMS-Client-0-8-Connection-URL-ConnectionOptions-Brokerlist">
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-Brokerlist">
 					<entry> brokerlist </entry>
 					<entry> see below </entry>
 					<entry> List of one or more broker addresses. </entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-ConnectionOptions-Maxprefetch">
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-Maxprefetch">
 					<entry> maxprefetch </entry>
 					<entry> integer </entry>
 					<entry>
 						<para> The maximum number of pre-fetched messages per Session. If not
 							specified, default value of 500 is used. </para>
 						<para> Note: You can also set the default per-session prefetch value on a
-							client-wide basis by configuring the client using <link
-								linkend="JMS-Client-0-8-System-Properties">Java system
+							client-wide basis by configuring the client using <link linkend="JMS-Client-0-8-System-Properties">Java system
 								properties.</link>
 						</para>
 					</entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-ConnectionOptions-SyncPublish">
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-SyncPublish">
 					<entry> sync_publish </entry>
 					<entry> String </entry>
 					<entry> 
@@ -93,14 +86,14 @@
 					<entry> A sync command is sent after every acknowledgement to guarantee that it
 						has been received. </entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-ConnectionOptions-UseLegacyMap">
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-UseLegacyMap">
 					<entry> use_legacy_map_msg_format </entry>
 					<entry> Boolean </entry>
 					<entry> If you are using JMS Map messages and deploying a new client with any
 						JMS client older than 0.8 release, you must set this to true to ensure the
 						older clients can understand the map message encoding. </entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-ConnectionOptions-Failover">
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-Failover">
 					<entry> failover </entry>
 					<entry> {'singlebroker' | 'roundrobin'
 						,<!-- Cpp/0-10 only | 'failover_exchange' --> | 'nofailover' |
@@ -128,13 +121,11 @@
 							multiple brokers, or <literal>singlebroker</literal> otherwise. </para>
 					</entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-ConnectionOptions-CloseWhenNoRoute">
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-CloseWhenNoRoute">
 					<entry> closeWhenNoRoute </entry>
 					<entry> boolean </entry>
 					<entry>
-						<para>See <xref
-								linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-CloseWhenNoRoute"
-							/>.</para>
+						<para>See <xref linkend="JMS-Client-0-8-Client-Understanding-MessageProducer-CloseWhenNoRoute"/>.</para>
 					</entry>
 				</row>
 				<row>
@@ -148,12 +139,12 @@
 						<para> Introduced in version 0.22. </para>
 					</entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-ConnectionOptions-CompressMessages">
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-CompressMessages">
 					<entry>compressMessages</entry>
 					<entry>Boolean</entry>
 					<entry><para>Controls whether the client will compress messages before they they are sent.</para></entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-ConnectionOptions-MessageCompressionThresholdSize">
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-MessageCompressionThresholdSize">
 					<entry>messageCompressionThresholdSize</entry>
 					<entry>Integer</entry>
 					<entry><para>The payload size beyond which the client will start to compress message payloads.</para></entry>
@@ -163,10 +154,10 @@
 	</table>
 	<para> Broker lists are specified using a URL in this format: </para>
 
-	<programlisting><![CDATA[brokerlist='<transport>://<host>[:<port>][?<param>='<value>'[&<param>='<value>']*]']]></programlisting>
+	<programlisting>brokerlist='&lt;transport&gt;://&lt;host&gt;[:&lt;port&gt;][?&lt;param&gt;='&lt;value&gt;'[&amp;&lt;param&gt;='&lt;value&gt;']*]'</programlisting>
 	<para> For instance, this is a typical broker list: </para>
 
-	<programlisting><![CDATA[brokerlist='tcp://localhost:5672']]></programlisting>
+	<programlisting>brokerlist='tcp://localhost:5672'</programlisting>
 
 	<para> A broker list can contain more than one broker address separated by semicolons (;). If so, the connection is made to
 		the first broker in the list that is available.
@@ -178,18 +169,18 @@
 		<title>Broker Lists</title>
 		<para>A broker list can specify properties to be used when connecting to the broker. This
 			broker list specifies options for configuring heartbeating</para>
-		<programlisting><![CDATA[amqp://guest:guest@test/test?brokerlist='tcp://ip1:5672?heartbeat='5'']]></programlisting>
+		<programlisting>amqp://guest:guest@test/test?brokerlist='tcp://ip1:5672?heartbeat='5''</programlisting>
 
 		<para>This broker list specifies some SSL options</para>
 
-		<programlisting><![CDATA[amqp://guest:guest@test/test?brokerlist='tcp://ip1:5672?ssl='true'&ssl_cert_alias='cert1'']]></programlisting>
+		<programlisting>amqp://guest:guest@test/test?brokerlist='tcp://ip1:5672?ssl='true'&amp;ssl_cert_alias='cert1''</programlisting>
 
 		<para> This broker list specifies two brokers using the connectdelay and retries broker
 			options. It also illustrates the failover connection URL property. </para>
 
-		<programlisting><![CDATA[amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
-	  &brokerlist='tcp://ip1:5672?retries='5'&connectdelay='2000';tcp://ip2:5672?retries='5'&connectdelay='2000''
-	  ]]></programlisting>
+		<programlisting>amqp://guest:guest@/test?failover='roundrobin?cyclecount='2''
+	  &amp;brokerlist='tcp://ip1:5672?retries='5'&amp;connectdelay='2000';tcp://ip2:5672?retries='5'&amp;connectdelay='2000''
+	  </programlisting>
 	</example>
 
 	<important>
@@ -212,7 +203,7 @@
 				</row>
 			</thead>
 			<tbody>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-Heartbeat">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-Heartbeat">
 					<entry> heartbeat </entry>
 					<entry> Long </entry>
 					<entry> Frequency of heartbeat messages (in seconds). A value of 0 disables
@@ -266,25 +257,25 @@
 							URL option <literal>ssl</literal>.</para>
 					</entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-TrustStore">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-TrustStore">
 					<entry> trust_store </entry>
 					<entry> String </entry>
 					<entry> Path to trust store. Used when using SSL and the Broker's certificate is
 						signed by a private-CA (or a self-signed certificate),</entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-TrustStorePassword">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-TrustStorePassword">
 					<entry> trust_store_password </entry>
 					<entry> String </entry>
 					<entry> Trust store password. Password used to open the trust store. </entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-TrustedCertsPath">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-TrustedCertsPath">
 					<entry> trusted_certs_path </entry>
 					<entry> String </entry>
                                         <entry> Path to a file containing trusted peer certificates(in PEM or DER format).
                                                 Used when supplying the trust information for TLS client auth using PEM/DER
                                                 files rather than a Java KeyStore. </entry>
                                 </row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-KeyStore">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-KeyStore">
 					<entry> key_store </entry>
 					<entry> String </entry>
 					<entry> Path to key store . Used when using SSL and the client must authenticate
@@ -292,13 +283,13 @@
 							<literal>ssl_cert_alias</literal> must be used to identify the
 						certificate that the client must present to the Broker.</entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-KeyStorePassword">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-KeyStorePassword">
 					<entry> key_store_password </entry>
 					<entry> String </entry>
 					<entry> Key store password. Password used to open the key store. </entry>
                                 </row>
 
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertPath">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertPath">
 					<entry> client_cert_path </entry>
 					<entry> String </entry>
                                         <entry> Path to the client certificate file (in PEM or DER format). Used as an 
@@ -306,14 +297,14 @@
                                                 for TLS client auth. When used, the <literal>client_cert_priv_key_path</literal>
                                                 must also be supplied. </entry>
                                 </row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertPrivKeyPath">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertPrivKeyPath">
 					<entry> client_cert_priv_key_path </entry>
 					<entry> String </entry>
                                         <entry> Path to the client certificate private key file (in PEM or DER format).
                                                 Used when supplying the key information for TLS client auth using PEM/DER
                                                 files rather than a Java KeyStore. </entry>
                                 </row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertsIntermediaryCertPath">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-ClientCertsIntermediaryCertPath">
 					<entry> client_cert_intermediary_cert_path </entry>
 					<entry> String </entry>
                                         <entry> Path to a file containing any intermediary certificates (in PEM or DER format).
@@ -322,7 +313,7 @@
                                                 are required in the certificate chain. </entry>
                                 </row>
 
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-SslCertAlias">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-SslCertAlias">
 					<entry> ssl_cert_alias </entry>
 					<entry> String </entry>
 					<entry> If multiple certificates are present in the keystore, the alias will be
@@ -336,19 +327,19 @@
 							<literal>ssl_verify_hostname='false'</literal>.
 					</entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-Retries">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-Retries">
 					<entry> retries </entry>
 					<entry> Integer </entry>
 					<entry> The number of times to retry connection to each broker in the broker
 						list. Defaults to 1. </entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-ConnectDelay">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-ConnectDelay">
 					<entry> connectdelay </entry>
 					<entry> integer </entry>
 					<entry> Length of time (in milliseconds) to wait before attempting to reconnect.
 						Defaults to 0. </entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-ConnectTimeout">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-ConnectTimeout">
 					<entry> connecttimeout </entry>
 					<entry> integer </entry>
 					<entry> Length of time (in milliseconds) to wait for the socket connection to
@@ -356,7 +347,7 @@
 						attempt will block until established or an error occurs. Defaults to 30000.
 					</entry>
 				</row>
-				<row id="JMS-Client-0-8-Connection-URL-BrokerOptions-TcpNoDelay">
+				<row xml:id="JMS-Client-0-8-Connection-URL-BrokerOptions-TcpNoDelay">
 					<entry> tcp_nodelay </entry>
 					<entry> Boolean </entry>
 					<entry> If <literal>tcp_nodelay='true'</literal>, TCP packet batching is

@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -21,11 +19,11 @@
  under the License.
 
 -->
-<section id="Java-Broker-Security-Plain-Provider">
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-Plain-Provider">
     <title>Plain</title>
     <para>The Plain Provider uses the Broker configuration itself to store the database of users
-        (unlike the <link linkend="Java-Broker-Security-PlainPasswordFile-Provider"
-            >PlainPasswordFile</link>, there is no separate password file). As the name suggests,
+        (unlike the <link linkend="Java-Broker-Security-PlainPasswordFile-Provider">PlainPasswordFile</link>, there is no separate password file). As the name suggests,
         the user data (including password) is not hashed in any way. In order to provide encryption,
         the facilities described in <xref linkend="Java-Broker-Security-Configuration-Encryption"/>
         must be used.</para>

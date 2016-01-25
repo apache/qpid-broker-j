@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<section id="Java-Broker-Concepts-Virtualhosts">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Concepts-Virtualhosts">
   <title>Virtualhosts</title>
   <para>A virtualhost is a namespace in which messaging is performed. Virtualhosts are independent;
     the messaging that goes on within one virtualhost is independent of any messaging that goes on

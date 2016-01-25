@@ -20,7 +20,7 @@
 
 -->
 
-<book xmlns:xi="http://www.w3.org/2001/XInclude">
+<book xmlns="http://docbook.org/ns/docbook" version="5.0">
   <title>JMS Performance Test Framework</title>
   <chapter>
     <para>
@@ -33,7 +33,7 @@
       This document explains how to use the framework.
     </para>
 
-    <section id="how-it-works">
+    <section xml:id="how-it-works">
       <title>How it works</title>
       <para>
         First, you need to <emphasis>run a message broker</emphasis>. This can be Qpid, ActiveMQ etc
@@ -60,7 +60,7 @@
       </para>
     </section>
 
-    <section id="test-definitions">
+    <section xml:id="test-definitions">
       <title>Test definitions</title>
       <para>
         Test definition files specify details about the messages to send,
@@ -79,7 +79,7 @@
       </para>
     </section>
 
-    <section id="example-usage">
+    <section xml:id="example-usage">
       <title>Example usage</title>
       <para>
         The <filename>perftests/etc/</filename> folder contains shell scripts that can be used to run the performance
@@ -88,7 +88,7 @@
       </para>
     </section>
 
-    <section id="instructions">
+    <section xml:id="instructions">
       <title>Instructions</title>
       <para>
         <itemizedlist>
@@ -114,7 +114,7 @@
         </itemizedlist>
       </para>
 
-      <section id="running-clients-in-a-separate-process">
+      <section xml:id="running-clients-in-a-separate-process">
         <title>Running the clients in a separate process</title>
         <para>
           When using a large number of clients, you may get more representative
@@ -138,7 +138,7 @@
       </section>
     </section>
 
-    <section id="writing-results-to-a-jdbc-database">
+    <section xml:id="writing-results-to-a-jdbc-database">
       <title>Writing results to a JDBC database</title>
       <para>
         For most use cases, writing results to a CSV file is acceptable. However, there are some cases
@@ -163,7 +163,7 @@
       </para>
     </section>
 
-    <section id="caveats-for-non-qpid-jms-providers">
+    <section xml:id="caveats-for-non-qpid-jms-providers">
       <title>Caveats for non-Qpid JMS providers</title>
       <para>
         If you are not using the Qpid broker, you must create one or more queues before
@@ -194,7 +194,7 @@
       </para>
     </section>
 
-    <section id="when-production-is-slower-than-consumption">
+    <section xml:id="when-production-is-slower-than-consumption">
       <title>When message production is slower than consumption</title>
       <para>
         A given test configuration may cause messages to be produced faster than they are consumed.
@@ -207,7 +207,7 @@
           <listitem>
             Use your JMS provider's built-in features for throttling incoming messages.
             In the case of Qpid, this is done by configuring the queue to enforce flow control, like so:
-            <screen><![CDATA[
+            <screen>
     {
       "_tests":[
       {
@@ -224,14 +224,14 @@
         ],
         ...
       }
-    }]]>
+    }
             </screen>
           </listitem>
         </itemizedlist>
       </para>
     </section>
 
-    <section id="visualising-test-results">
+    <section xml:id="visualising-test-results">
       <title>Visualising test results</title>
       <para>
        The module visualisation-jfc can be used to generate charts as .png files from the results
@@ -264,7 +264,7 @@
           </itemizedlist>
         </para>
       </section>
-      <section id="visualising-test-results-queries">
+      <section xml:id="visualising-test-results-queries">
         <title>Queries</title>
         <para>
           The query in the chart definition file is an ANSI SQL query. If reading from a CSV file the SQL table name

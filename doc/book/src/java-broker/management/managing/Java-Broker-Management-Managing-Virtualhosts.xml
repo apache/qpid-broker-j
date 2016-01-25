@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,18 +20,17 @@
 
 -->
 
-<section id="Java-Broker-Management-Managing-Virtualhosts">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Managing-Virtualhosts">
   <title>VirtualHosts</title>
   <para>A virtualhost is a independent namespace in which messaging is performed. Virtualhosts are
     responsible for the storage of message data.</para>
   <para>Virtualhosts can only be managed by the HTTP management channel.</para>
-  <section id="Java-Broker-Management-Managing-Virtualhosts-Types">
+  <section xml:id="Java-Broker-Management-Managing-Virtualhosts-Types">
     <title>Types</title>
     <para>The following virtualhost types are supported. <itemizedlist>
         <listitem>
           <para>BDB - Virtualhost backed with Oracle BDB <footnote>
-              <para>Oracle BDB JE is optional. See <xref
-                  linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE"/>.</para>
+              <para>Oracle BDB JE is optional. See <xref linkend="Java-Broker-Miscellaneous-Installing-Oracle-BDB-JE"/>.</para>
             </footnote></para>
         </listitem>
         <listitem>
@@ -42,8 +41,7 @@
         </listitem>
         <listitem>
           <para>JDBC - Virtualhost backed with an external database <footnote>
-              <para>JDBC 4.0 compatible drivers must be available. See <xref
-                  linkend="Java-Broker-Miscellaneous-Installing-External-JDBC-Driver"/></para>
+              <para>JDBC 4.0 compatible drivers must be available. See <xref linkend="Java-Broker-Miscellaneous-Installing-External-JDBC-Driver"/></para>
             </footnote></para>
         </listitem>
         <listitem>
@@ -58,19 +56,18 @@
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Virtualhost-Context">
+  <section xml:id="Java-Broker-Management-Managing-Virtualhost-Context">
     <title>Context</title>
     <para>
       <itemizedlist>
         <listitem>
-          <para><emphasis>use_async_message_store_recovery</emphasis> Controls the <link
-              linkend="Java-Broker-Runtime-Background-Recovery">background recovery</link>
+          <para><emphasis>use_async_message_store_recovery</emphasis> Controls the <link linkend="Java-Broker-Runtime-Background-Recovery">background recovery</link>
             feature.</para>
         </listitem>
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Virtualhost-Attributes">
+  <section xml:id="Java-Broker-Management-Managing-Virtualhost-Attributes">
     <title>Attributes</title>
     <para>
       <itemizedlist>
@@ -85,8 +82,7 @@
         <listitem>
           <para><emphasis>Store overflow/underflow</emphasis>. Some virtualhosts have the ability to
             limit the of the cumulative size of all the messages contained within the store. This
-            feature is described in detail <xref linkend="Java-Broker-Runtime-Disk-Space-Management"
-            />.</para>
+            feature is described in detail <xref linkend="Java-Broker-Runtime-Disk-Space-Management"/>.</para>
         </listitem>
         <listitem>
           <para><emphasis>Connection thread pool size</emphasis>. Number of worker threads
@@ -101,17 +97,15 @@
         </listitem>
         <listitem>
           <para><emphasis>Store transaction timeouts</emphasis>. Warns of long running producer
-            transactions. See <xref linkend="Java-Broker-Runtime-Producer-Transaction-Timeout"
-            /></para>
+            transactions. See <xref linkend="Java-Broker-Runtime-Producer-Transaction-Timeout"/></para>
         </listitem>
         <listitem>
-          <para><emphasis>Synchronization policy</emphasis>. HA only. See <xref
-              linkend="Java-Broker-High-Availability-Behaviour-SynchronizationPolicy"/></para>
+          <para><emphasis>Synchronization policy</emphasis>. HA only. See <xref linkend="Java-Broker-High-Availability-Behaviour-SynchronizationPolicy"/></para>
         </listitem>
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Virtualhost-Children">
+  <section xml:id="Java-Broker-Management-Managing-Virtualhost-Children">
     <title>Children</title>
     <para>
       <itemizedlist>
@@ -128,7 +122,7 @@
       </itemizedlist>
     </para>
   </section>
-  <section id="Java-Broker-Management-Managing-Virtualhost-Lifecycle">
+  <section xml:id="Java-Broker-Management-Managing-Virtualhost-Lifecycle">
     <title>Lifecycle</title>
     <para>
       <itemizedlist>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,7 +20,7 @@
 
 -->
 
-<chapter id="Java-Broker-Management-Channel">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Management-Channel">
   <title>Management Channels</title>
   <para>The Broker can be managed over a number of different channels.</para>
   <itemizedlist>
@@ -46,4 +46,3 @@
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/channels/Java-Broker-Management-Channel-AMQP-Intrinsic.xml"/>
   <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="management/channels/Java-Broker-Management-Channel-QMF.xml"/>
 </chapter>
-

@@ -1,8 +1,4 @@
 <?xml version="1.0"?>
-<!DOCTYPE entities [
-<!ENTITY %  entities SYSTEM  "commonEntities.xml">
-%entities;
-]>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -24,10 +20,10 @@
 
 -->
 
-<chapter id="Java-Broker-Getting-Started">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Getting-Started">
   <title>Getting Started</title>
 
-  <section role="h2" id="Java-Broker-Getting-Started-Introduction">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-Introduction">
     <title>Introduction</title>
     <para>
       This section describes how to start and stop the Java Broker, and outlines the various command line options.
@@ -39,12 +35,12 @@
       <xref linkend="Java-Broker-Management-Channel-Web-Console"/>.
     </para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-Starting-Stopping-Windows">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-Starting-Stopping-Windows">
     <title>Starting/Stopping the broker on Windows</title>
     <para>Firstly change to the installation directory used during the <link linkend="Java-Broker-Installation-InstallationWindows">installation</link>
       and ensure that the <link linkend="Java-Broker-Installation-InstallationWindows-SettingQPIDWORK">QPID_WORK environment variable is set</link>.</para>
     <para>Now use the <command>qpid-server.bat</command> to start the server</para>
-    <programlisting><![CDATA[bin\qpid-server.bat]]></programlisting>
+    <programlisting>bin\qpid-server.bat</programlisting>
     <para>Output similar to the following will be seen:</para>
     <screen>[Broker] BRK-1006 : Using configuration : C:\qpidwork\config.json
 [Broker] BRK-1001 : Startup : Version: &qpidCurrentRelease; Build: 1478262
@@ -62,12 +58,12 @@
       from the <link linkend="Java-Broker-Management-Channel-JMX">JMX management plugin</link>.
     </para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-Starting-Stopping-Unix">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-Starting-Stopping-Unix">
     <title>Starting/Stopping the broker on Unix</title>
     <para>Firstly change to the installation directory used during the <link linkend="Java-Broker-Installation-InstallationUnix">installation</link>
       and ensure that the <link linkend="Java-Broker-Installation-InstallationUnix-SettingQPIDWORK">QPID_WORK environment variable is set</link>.</para>
     <para>Now use the <command>qpid-server</command> script to start the server:</para>
-    <programlisting><![CDATA[bin/qpid-server]]></programlisting>
+    <programlisting>bin/qpid-server</programlisting>
     <para>Output similar to the following will be seen:</para>
     <screen>[Broker] BRK-1006 : Using configuration : /var/qpidwork/config.json
 [Broker] BRK-1001 : Startup : Version: &qpidCurrentRelease; Build: exported
@@ -85,7 +81,7 @@
       the <link linkend="Java-Broker-Management-Channel-REST-API-Operations">REST operation broker/shutdown</link> or the 
       Shutdown MBean from the <link linkend="Java-Broker-Management-Channel-JMX">JMX management plugin</link>.</para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-Logging">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-Logging">
     <title>Log file</title>
     <para>The Java Broker writes a log file to record both details of its normal operation and any exceptional
       conditions.  By default the log file is written within the log subdirectory beneath the work directory
@@ -93,7 +89,7 @@
       <computeroutput>%QPID_WORK%\log\qpid.log</computeroutput> (Windows).</para>
     <para>For details of how to control the logging, see <xref linkend="Java-Broker-Runtime-Logging"/></para>
   </section>
-  <section role="h2" id="Java-Broker-Getting-Started-CommandLine">
+  <section role="h2" xml:id="Java-Broker-Getting-Started-CommandLine">
     <title>Using the command line</title>
     <para>The Java Broker understands a number of command line options which may be used to customise the configuration.</para>
     <para>

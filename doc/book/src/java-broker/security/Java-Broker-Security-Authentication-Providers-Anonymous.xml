@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
-                    "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -21,7 +19,8 @@
  under the License.
 
 -->
-<section id="Java-Broker-Security-Anonymous-Provider">
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-Anonymous-Provider">
   <title>Anonymous</title>
 
   <para> The Anonymous Authentication Provider will allow users to connect with or without

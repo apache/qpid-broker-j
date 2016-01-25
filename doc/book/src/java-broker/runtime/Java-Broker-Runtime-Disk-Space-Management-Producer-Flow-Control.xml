@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,10 +20,10 @@
 
 -->
 
-<section id="Qpid-Producer-Flow-Control">
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Qpid-Producer-Flow-Control">
     <title>Producer Flow Control</title>
 
-    <section role="h2" id="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control-GeneralInformation">
+    <section role="h2" xml:id="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control-GeneralInformation">
         <title>General Information</title>
         <para>
             The Java Broker supports a flow control mechanism to which can be used to prevent either a single queue
@@ -31,7 +31,7 @@
             next.
         </para>
     </section>
-    <section role="h2" id="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control-ServerConfiguration">
+    <section role="h2" xml:id="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control-ServerConfiguration">
         <title>Server Configuration</title>
         <section role="h3">
             <title>Configuring a Queue to use flow control</title>
@@ -111,8 +111,7 @@ MESSAGE [con:2(guest@anonymous(713889609)/test)/ch:1] [con:2(guest@anonymous(713
 
             <para>
                 The Broker will also impose flow control if the filesystem hosting a virtualhost
-                exceeds a <link
-                    linkend="Java-Broker-Management-Managing-Broker-Context-StoreFilesystemMaxUsagePercent">
+                exceeds a <link linkend="Java-Broker-Management-Managing-Broker-Context-StoreFilesystemMaxUsagePercent">
                     configured percentage.</link>.
             </para>
 
@@ -135,7 +134,7 @@ MESSAGE [con:2(guest@anonymous(713889609)/test)/ch:1] [con:2(guest@anonymous(713
     </section><!-- Server configuration -->
 
 
-    <section role="h2" id="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control-ClientImpact">
+    <section role="h2" xml:id="Java-Broker-Runtime-Disk-Space-Management-Producer-Flow-Control-ClientImpact">
         <title>Client impact and configuration</title>
         <para>
             If a producer sends to a queue which is overfull, the broker will respond by

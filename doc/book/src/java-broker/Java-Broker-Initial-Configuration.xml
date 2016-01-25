@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0"?>
 <!--
 
  Licensed to the Apache Software Foundation (ASF) under one
@@ -20,15 +20,14 @@
 
 -->
 
-<chapter id="Java-Broker-Initial-Configuration">
+<chapter xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Initial-Configuration">
     <title>Initial Configuration</title>
 
 
-    <section id="Java-Broker-Initial-Configuration-Introduction">
+    <section xml:id="Java-Broker-Initial-Configuration-Introduction">
         <title>Introduction</title>
         <para>This section describes how to perform initial configuration on the command line. Once
-            the Broker is started, subsequent management is performed using the <link
-                linkend="Java-Broker-Management-Channel">Management interfaces</link></para>
+            the Broker is started, subsequent management is performed using the <link linkend="Java-Broker-Management-Channel">Management interfaces</link></para>
         <para> The configuration for each component is stored as an entry in the broker
             configuration store, currently implemented as a JSON file which persists changes to
             disk, BDB or Derby database or an in-memory store which does not. The following
@@ -68,20 +67,15 @@
 
         <para> Broker startup involves two configuration related items, the 'Initial Configuration'
             and the Configuration Store. When the broker is started, if a Configuration Store does
-            not exist at the current <link linkend="Java-Broker-Initial-Configuration-Location"
-                >store location</link> then one will be initialised with the current <link
-                linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
-                Configuration'</link>. Unless otherwise requested to <link
-                linkend="Java-Broker-Initial-Configuration-Location">overwrite the configuration
+            not exist at the current <link linkend="Java-Broker-Initial-Configuration-Location">store location</link> then one will be initialised with the current <link linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
+                Configuration'</link>. Unless otherwise requested to <link linkend="Java-Broker-Initial-Configuration-Location">overwrite the configuration
                 store</link> then subsequent broker restarts will use the existing configuration
             store and ignore the contents of the 'Initial Configuration'. </para>
     </section>
 
-    <section id="Java-Broker-Initial-Configuration-Location">
+    <section xml:id="Java-Broker-Initial-Configuration-Location">
         <title>Configuration Store Location</title>
-        <para> The broker will default to using <link
-                linkend="Java-Broker-Initial-Configuration-Configuration-Properties"
-                >${qpid.work_dir}</link>/config.json as the path for its configuration store unless
+        <para> The broker will default to using <link linkend="Java-Broker-Initial-Configuration-Configuration-Properties">${qpid.work_dir}</link>/config.json as the path for its configuration store unless
             otherwise instructed. </para>
         <para> The command line argument <emphasis>-sp</emphasis> (or
                 <emphasis>--store-path</emphasis>) can optionally be used to specify a different
@@ -91,34 +85,30 @@ $ ./qpid-server -sp ./my-broker-configuration.json
         </screen>
 
         <para> If no configuration store exists at the specified/defaulted location when the broker
-            starts then one will be initialised using the current <link
-                linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
+            starts then one will be initialised using the current <link linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
                 Configuration'</link>. </para>
     </section>
 
-    <section id="Java-Broker-Initial-Configuration-Initial-Config-Location">
+    <section xml:id="Java-Broker-Initial-Configuration-Initial-Config-Location">
         <title>'Initial Configuration' Location</title>
         <para> The 'Initial Configuration' JSON file is used when initialising new broker
             configuration stores. The broker will default to using an internal file within its jar
             unless otherwise instructed. </para>
         <para> The command line argument <emphasis>-icp </emphasis> (or
                 <emphasis>--initial-config-path</emphasis>) can be used to override the brokers
-            internal file and supply a <link
-                linkend="Java-Broker-Initial-Configuration-Create-Initial-Config">user-created
+            internal file and supply a <link linkend="Java-Broker-Initial-Configuration-Create-Initial-Config">user-created
                 one</link>:</para>
         <screen>
 $ ./qpid-server -icp ./my-initial-configuration.json
         </screen>
 
-        <para> If a Configuration Store already exists at the current <link
-                linkend="Java-Broker-Initial-Configuration-Location">store location</link> then the
-            current 'Initial Configuration' will be ignored unless otherwise requested to <link
-                linkend="Java-Broker-Initial-Configuration-Location">overwrite the configuration
+        <para> If a Configuration Store already exists at the current <link linkend="Java-Broker-Initial-Configuration-Location">store location</link> then the
+            current 'Initial Configuration' will be ignored unless otherwise requested to <link linkend="Java-Broker-Initial-Configuration-Location">overwrite the configuration
                 store</link>
         </para>
     </section>
 
-    <section id="Java-Broker-Initial-Configuration-Create-Initial-Config">
+    <section xml:id="Java-Broker-Initial-Configuration-Create-Initial-Config">
         <title>Creating an 'Initial Configuration' JSON File</title>
 
         <para> It is possible to have the broker output its default internal 'Initial Configuration'
@@ -136,25 +126,19 @@ $ ./qpid-server -cic ./initial-config.json
             Store output as an initial configuration. Typically 'Initial Configuration' files would
             not to contain IDs for the configured entities, so that IDs will be generated when the
             configuration store is initialised and prevent use of the same IDs across multiple
-            brokers, however it may prove useful to include IDs if using the Memory <link
-                linkend="Java-Broker-Initial-Configuration-Type">Configuration Store Type</link>. </para>
-        <para> It can be useful to use <link
-                linkend="Java-Broker-Initial-Configuration-Configuration-Properties">Configuration
+            brokers, however it may prove useful to include IDs if using the Memory <link linkend="Java-Broker-Initial-Configuration-Type">Configuration Store Type</link>. </para>
+        <para> It can be useful to use <link linkend="Java-Broker-Initial-Configuration-Configuration-Properties">Configuration
                 Properties</link> within 'Initial Configuration' files to allow a degree of
             customisation with an otherwise fixed file. </para>
-        <para> For an example file, see <xref
-                linkend="Java-Broker-Initial-Configuration-Example"
-            />
+        <para> For an example file, see <xref linkend="Java-Broker-Initial-Configuration-Example"/>
         </para>
 
     </section>
 
-    <section id="Java-Broker-Initial-Configuration-Overwrite-Config-Store">
+    <section xml:id="Java-Broker-Initial-Configuration-Overwrite-Config-Store">
         <title>Overwriting An Existing Configuration Store</title>
-        <para> If a configuration store already exists at the configured <link
-                linkend="Java-Broker-Initial-Configuration-Location">store location</link> then it
-            is used and the current <link
-                linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
+        <para> If a configuration store already exists at the configured <link linkend="Java-Broker-Initial-Configuration-Location">store location</link> then it
+            is used and the current <link linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
                 Configuration'</link> is ignored. </para>
         <para> The command line argument <emphasis>-os</emphasis> (or
                 <emphasis>--overwrite-store</emphasis>) can be used to force a new broker
@@ -165,12 +149,11 @@ $ ./qpid-server -os -icp ./my-initial-configuration.json
         </screen>
         <para> This can be useful to effectively play configuration into one or more broker to
             pre-configure them to a particular state, or alternatively to ensure a broker is always
-            started with a fixed configuration. In the latter case, use of the Memory <link
-                linkend="Java-Broker-Initial-Configuration-Type">Configuration Store Type</link> may
+            started with a fixed configuration. In the latter case, use of the Memory <link linkend="Java-Broker-Initial-Configuration-Type">Configuration Store Type</link> may
             also be useful. </para>
     </section>
 
-    <section id="Java-Broker-Initial-Configuration-Type">
+    <section xml:id="Java-Broker-Initial-Configuration-Type">
         <title>Configuration Store Type</title>
         <para> There are currently several implementations of the pluggable Broker Configuration Store:
             <variablelist>
@@ -181,8 +164,7 @@ $ ./qpid-server -os -icp ./my-initial-configuration.json
                 <varlistentry>
                     <term>Memory</term>
                     <listitem><para>operates only in-memory and so does not retain changes across broker
-                        restarts and always relies on the current <link
-                                linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
+                        restarts and always relies on the current <link linkend="Java-Broker-Initial-Configuration-Initial-Config-Location">'Initial
                             Configuration'</link> to provide the configuration to start the broker with.
                     </para></listitem>
                 </varlistentry>
@@ -219,7 +201,7 @@ $ ./qpid-server -st JDBC \
         </screen>
     </section>
 
-    <section id="Java-Broker-Initial-Configuration-Configuration-Properties">
+    <section xml:id="Java-Broker-Initial-Configuration-Configuration-Properties">
         <title>Customising Configuration using Configuration Properties</title>
         <para> It is possible for 'Initial Configuration' (and Configuration Store) files to contain
             ${properties} that can be resolved to String values at startup, allowing a degree of
@@ -282,9 +264,7 @@ $ ./qpid-server -st JDBC \
             </table>
         </para>
 
-        <para> Use of these core properties can be seen in the <link
-                linkend="Java-Broker-Initial-Configuration-Example"
-                >default 'Initial Configuration' example</link>. </para>
+        <para> Use of these core properties can be seen in the <link linkend="Java-Broker-Initial-Configuration-Example">default 'Initial Configuration' example</link>. </para>
 
         <para> Configuration Properties can be set on the command line using the
                 <emphasis>-prop</emphasis> (or <emphasis>--configuration-property</emphasis>)
@@ -297,21 +277,20 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
             is specified with the value 10000, overriding the default value of 5672, and similarly
             the value 10001 is used to override the default HTTP port number of 8080. When using the
             'Initial Configuration' to initialise a new Configuration Store (either at first broker
-            startup, when requesting to <link linkend="Java-Broker-Initial-Configuration-Location"
-                >overwrite the configuration store</link>) these new values will be used for the
+            startup, when requesting to <link linkend="Java-Broker-Initial-Configuration-Location">overwrite the configuration store</link>) these new values will be used for the
             port numbers instead. </para>
         <para> NOTE: When running the broker on Windows and starting it via the qpid-server.bat
             file, the "name=value" argument MUST be quoted. </para>
 
     </section>
 
-    <section id="Java-Broker-Initial-Configuration-Example">
+    <section xml:id="Java-Broker-Initial-Configuration-Example">
         <title>Example of JSON 'Initial Configuration'</title>
         <para> An example of the default 'Initial Configuration' JSON file the broker uses is
             provided below:</para>
         <example>
             <title>JSON 'Initial configuration' File</title>
-            <programlisting><![CDATA[
+            <programlisting>
 {
   "name": "${broker.name}",
   "modelVersion": "6.0",
@@ -408,7 +387,7 @@ $ ./qpid-server -prop "qpid.amqp_port=10000" -prop "qpid.http_port=10001"
     "name" : "jmxManagement"
   } ]
 }
-]]></programlisting>
+</programlisting>
             <para>In the configuration above the following entries are stored: <itemizedlist>
                     <listitem>
                         <para> Authentication Provider of type
