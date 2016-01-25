@@ -53,7 +53,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.store.berkeleydb.logging.Slf4jLoggingHandler;
-import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class StandardEnvironmentFacade implements EnvironmentFacade
 {
@@ -159,12 +158,13 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         {
             tx.commitNoSync();
         }
-        catch (RuntimeException de)
+        catch (DatabaseException de)
         {
             LOGGER.error("Got DatabaseException on commit, closing environment", de);
 
             closeEnvironmentSafely();
-            handleCommitException(tx, de);
+
+            throw handleDatabaseException("Got DatabaseException on commit", de);
         }
         _committer.commit(tx, syncCommit);
     }
@@ -176,12 +176,13 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         {
             tx.commitNoSync();
         }
-        catch (RuntimeException de)
+        catch (DatabaseException de)
         {
             LOGGER.error("Got DatabaseException on commit, closing environment", de);
 
             closeEnvironmentSafely();
-            handleCommitException(tx, de);
+
+            throw handleDatabaseException("Got DatabaseException on commit", de);
         }
         return _committer.commitAsync(tx, val);
     }
@@ -495,18 +496,6 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         if (cachedHandle != null)
         {
             cachedHandle.close();
-        }
-    }
-
-    private void handleCommitException(final Transaction tx, RuntimeException e)
-    {
-        if (e instanceof IllegalStateException && !tx.isValid())
-        {
-            throw new ConnectionScopedRuntimeException("Commit aborted", e);
-        }
-        else
-        {
-            throw handleDatabaseException("Commit failed", e);
         }
     }
 }
