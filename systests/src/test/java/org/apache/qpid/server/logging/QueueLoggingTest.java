@@ -112,7 +112,9 @@ public class QueueLoggingTest extends AbstractTestLogging
         // Message Should be a QUE-1002
         validateMessageID("QUE-1002", log);
 
-        assertEquals("Log Message is incorrect ", "Deleted", getMessageString(fromMessage(log)));
+        final String actual = getMessageString(fromMessage(log));
+        assertTrue("Log message does not contain expected message. actual : " + actual,
+                   actual.contains("Deleted"));
 
         assertEquals("Queue Delete not for created queue:", createdQueueName,
                      AbstractTestLogSubject.getSlice("qu", fromSubject(log)));
@@ -172,7 +174,9 @@ public class QueueLoggingTest extends AbstractTestLogging
            // Message Should be a QUE-1002
            validateMessageID("QUE-1002", log);
 
-           assertEquals("Log Message is incorrect ", "Deleted", getMessageString(fromMessage(log)));
+           final String actual = getMessageString(fromMessage(log));
+           assertTrue("Log message does not contain expected message. actual : " + actual,
+                        actual.contains("Deleted"));
 
            assertEquals("Queue Delete not for created queue:", createdQueueName,
                         AbstractTestLogSubject.getSlice("qu", fromSubject(log)));
