@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -244,13 +245,17 @@ public class BDBBackup
                         }
                     });
 
+            if (fileSet == null || fileSet.length == 0)
+            {
+                throw new StoreException("There are no BDB log files to backup in the '" + fromdir + "' directory.");
+            }
+
+            // The files must be copied in alphabetical order (numerical in effect)
+            Arrays.sort(fileSet);
+
             // Open them all for reading.
             fileInputStreams = new FileInputStream[fileSet.length];
 
-            if (fileSet.length == 0)
-            {
-                throw new StoreException("There are no BDB log files to backup in the " + fromdir + " directory.");
-            }
 
             for (int i = 0; i < fileSet.length; i++)
             {
