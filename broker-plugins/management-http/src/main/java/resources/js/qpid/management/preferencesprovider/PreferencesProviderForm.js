@@ -202,6 +202,6 @@ function (util, declare, array, domConstruct, win, query, json, _WidgetBase,
         {
             this._toggleWidgets(this.preferencesProviderTypeWidget.value);
         }
-    },
+    }
   });
 });

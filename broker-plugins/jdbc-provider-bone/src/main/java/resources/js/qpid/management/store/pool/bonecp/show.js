@@ -19,15 +19,11 @@
  *
  */
 define(["dojo/_base/xhr",
-        "dojo/_base/lang",
-        "dojo/_base/connect",
         "dojo/parser",
-        "dojo/string",
         "dojox/html/entities",
         "dojo/query",
-        "dojo/json",
         "dojo/domReady!"],
-  function (xhr, lang, connect, parser, json, entities, query, json)
+  function (xhr, parser, entities, query)
   {
     var fieldNames = ["maxConnectionsPerPartition", "minConnectionsPerPartition", "partitionCount"];
 
