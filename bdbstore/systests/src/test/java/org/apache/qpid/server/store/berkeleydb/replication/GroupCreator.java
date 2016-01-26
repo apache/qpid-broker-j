@@ -451,21 +451,25 @@ public class GroupCreator
     public void awaitNodeToAttainAttributeValue(int localNodePort, int remoteNodePort, String attributeName, String... desiredValue) throws Exception
     {
         final long startTime = System.currentTimeMillis();
-        Map<String, Object> data = Collections.emptyMap();
-
         List<String> desiredValues = Arrays.asList( desiredValue );
-        while(!desiredValues.contains(data.get(attributeName)) && (System.currentTimeMillis() - startTime) < 30000)
+        String attributeValue = null;
+        while((System.currentTimeMillis() - startTime) < 30000)
         {
             LOGGER.debug("Awaiting node '" + getNodeNameForBrokerPort(remoteNodePort) + "' attribute " +
                          attributeName  + " to have value set to any of " + desiredValues);
-            data = getNodeAttributes(localNodePort, remoteNodePort);
-            if (!desiredValue.equals(String.valueOf(data.get(attributeName))))
+            Map<String, Object> data = getNodeAttributes(localNodePort, remoteNodePort);
+            attributeValue = String.valueOf(data.get(attributeName));
+            if (desiredValues.contains(attributeValue))
+            {
+                break;
+            }
+            else
             {
                 Thread.sleep(1000);
             }
         }
-        LOGGER.debug("Node '" + getNodeNameForBrokerPort(remoteNodePort) + "' attribute  '" + attributeName + "' is " + data.get(attributeName));
-        Assert.assertTrue("Unexpected " + attributeName + " at " + localNodePort, desiredValues.contains(String.valueOf(data.get(attributeName))));
+        LOGGER.debug("Node '" + getNodeNameForBrokerPort(remoteNodePort) + "' attribute  '" + attributeName + "' is " + attributeValue);
+        Assert.assertTrue("Unexpected " + attributeName + " at " + localNodePort, desiredValues.contains(attributeValue));
     }
 
     public RestTestHelper createRestTestHelper(int brokerPort)
