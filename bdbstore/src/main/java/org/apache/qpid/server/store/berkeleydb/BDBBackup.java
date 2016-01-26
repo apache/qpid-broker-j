@@ -25,6 +25,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -68,7 +70,7 @@ import org.apache.qpid.util.FileUtils;
  * backup as a standalone utility against log files, when a broker is not running, using the {@link #takeBackup(String,
  *String,com.sleepycat.je.Environment)} method.
  * <p>
- * A seperate backup machanism is provided by the {@link #takeBackupNoLock(String,String)} method which can take a
+ * A separate backup machanism is provided by the {@link #takeBackupNoLock(String,String)} method which can take a
  * hot backup against a running broker. This works by finding out the set of files to copy, and then opening them all to
  * read, and repeating this process until a consistent set of open files is obtained. This is done to avoid the
  * situation where the BDB cleanup thread deletes a file, between the directory listing and opening of the file to copy.
@@ -94,7 +96,7 @@ public class BDBBackup
             { "todir", "The path to the directory to save the backed up bdb log files to.", "dir", "true" }
         };
 
-    /** Defines the timeout to terminate the backup operation on if it fails to complete. One minte. */
+    /** Defines the timeout to terminate the backup operation on if it fails to complete. One minute. */
     public static final long TIMEOUT = 60000;
 
     /**
@@ -243,13 +245,17 @@ public class BDBBackup
                         }
                     });
 
+            if (fileSet == null || fileSet.length == 0)
+            {
+                throw new StoreException("There are no BDB log files to backup in the '" + fromdir + "' directory.");
+            }
+
+            // The files must be copied in alphabetical order (numerical in effect)
+            Arrays.sort(fileSet);
+
             // Open them all for reading.
             fileInputStreams = new FileInputStream[fileSet.length];
 
-            if (fileSet.length == 0)
-            {
-                throw new StoreException("There are no BDB log files to backup in the " + fromdir + " directory.");
-            }
 
             for (int i = 0; i < fileSet.length; i++)
             {
@@ -280,7 +286,7 @@ public class BDBBackup
                     break;
                 }
 
-                // A consistent set has been opened if all files were sucesfully opened for reading.
+                // A consistent set has been opened if all files were successfully opened for reading.
                 if (i == (fileSet.length - 1))
                 {
                     consistentSet = true;
@@ -303,19 +309,11 @@ public class BDBBackup
             File destFile = new File(todir + File.separator + fileSet[j].getName());
             try
             {
-                FileUtils.copy(fileSet[j], destFile);
+                Files.copy(fileInputStreams[j], destFile.toPath());
             }
-            catch (RuntimeException re)
+            catch (IOException ioe)
             {
-                Throwable cause = re.getCause();
-                if ((cause != null) && (cause instanceof IOException))
-                {
-                    throw new StoreException(re.getMessage() + " fromDir:" + fromdir + " toDir:" + toDirFile, cause);
-                }
-                else
-                {
-                    throw re;
-                }
+                throw new StoreException(ioe.getMessage() + " fromDir:" + fromdir + " toDir:" + toDirFile, ioe);
             }
 
             backedUpFileNames.add(destFile.getName());
