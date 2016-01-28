@@ -117,6 +117,12 @@ public final class IoSender implements Runnable, ByteBufferSender
         return result;
     }
 
+    @Override
+    public boolean isDirectBufferPreferred()
+    {
+        return false;
+    }
+
     public void send(QpidByteBuffer buf)
     {
         checkNotAlreadyClosed();

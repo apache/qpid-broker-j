@@ -143,6 +143,12 @@ public class SSLSender implements ByteBufferSender
         delegate.flush();
     }
 
+    @Override
+    public boolean isDirectBufferPreferred()
+    {
+        return false;
+    }
+
     public void send(QpidByteBuffer appData)
     {
         appData = appData.duplicate();

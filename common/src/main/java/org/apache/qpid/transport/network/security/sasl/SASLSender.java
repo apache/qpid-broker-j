@@ -71,6 +71,12 @@ public class SASLSender extends SASLEncryptor implements ByteBufferSender
        delegate.flush();
     }
 
+    @Override
+    public boolean isDirectBufferPreferred()
+    {
+        return false;
+    }
+
     public void send(QpidByteBuffer buf)
     {
         if (closed.get())

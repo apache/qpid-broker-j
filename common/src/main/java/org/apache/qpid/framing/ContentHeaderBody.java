@@ -92,7 +92,7 @@ public class ContentHeaderBody implements AMQBody
     @Override
     public long writePayload(final ByteBufferSender sender)
     {
-        QpidByteBuffer data = QpidByteBuffer.allocateDirect(HEADER_SIZE);
+        QpidByteBuffer data = QpidByteBuffer.allocate(sender.isDirectBufferPreferred(), HEADER_SIZE);
         data.putUnsignedShort(CLASS_ID);
         data.putUnsignedShort(0);
         data.putLong(_bodySize);

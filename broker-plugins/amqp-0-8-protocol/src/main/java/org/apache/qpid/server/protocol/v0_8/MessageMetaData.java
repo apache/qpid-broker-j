@@ -140,6 +140,12 @@ public class MessageMetaData implements StorableMessageMetaData
         _contentHeaderBody.writePayload(new ByteBufferSender()
                                         {
                                             @Override
+                                            public boolean isDirectBufferPreferred()
+                                            {
+                                                return true;
+                                            }
+
+                                            @Override
                                             public void send(final QpidByteBuffer msg)
                                             {
                                                 buffers.add(msg.duplicate());

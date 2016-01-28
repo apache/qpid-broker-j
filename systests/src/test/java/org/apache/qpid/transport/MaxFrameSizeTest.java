@@ -396,6 +396,12 @@ public class MaxFrameSizeTest extends QpidBrokerTestCase
         }
 
         @Override
+        public boolean isDirectBufferPreferred()
+        {
+            return false;
+        }
+
+        @Override
         public void send(final QpidByteBuffer msg)
         {
             _sentBuffers.add(msg.duplicate());

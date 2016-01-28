@@ -124,6 +124,12 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         return new ByteBufferSender()
         {
             @Override
+            public boolean isDirectBufferPreferred()
+            {
+                return sender.isDirectBufferPreferred();
+            }
+
+            @Override
             public void send(final QpidByteBuffer msg)
             {
                 updateLastWriteTime();

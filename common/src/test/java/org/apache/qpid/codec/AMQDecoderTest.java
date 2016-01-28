@@ -248,6 +248,12 @@ public class AMQDecoderTest extends QpidTestCase
         private final Collection<QpidByteBuffer> _sentBuffers = new ArrayList<>();
 
         @Override
+        public boolean isDirectBufferPreferred()
+        {
+            return false;
+        }
+
+        @Override
         public void send(final QpidByteBuffer msg)
         {
             _sentBuffers.add(msg.duplicate());

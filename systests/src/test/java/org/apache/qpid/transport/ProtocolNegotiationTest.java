@@ -240,6 +240,12 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
         }
 
         @Override
+        public boolean isDirectBufferPreferred()
+        {
+            return false;
+        }
+
+        @Override
         public void send(final QpidByteBuffer msg)
         {
             byte[] data = new byte[msg.remaining()];

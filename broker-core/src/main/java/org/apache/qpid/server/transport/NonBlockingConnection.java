@@ -507,6 +507,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     }
 
     @Override
+    public boolean isDirectBufferPreferred()
+    {
+        return true;
+    }
+
+    @Override
     public void send(final QpidByteBuffer msg)
     {
 

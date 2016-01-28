@@ -467,7 +467,7 @@ public class BasicContentHeaderProperties
         else
         {
             int propertyListSize = getPropertyListSize();
-            QpidByteBuffer buf = QpidByteBuffer.allocateDirect(propertyListSize);
+            QpidByteBuffer buf = QpidByteBuffer.allocate(sender.isDirectBufferPreferred(), propertyListSize);
             writePropertyListPayload(buf);
             buf.flip();
             sender.send(buf);

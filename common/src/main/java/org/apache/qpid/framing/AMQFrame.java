@@ -58,7 +58,7 @@ public class AMQFrame extends AMQDataBlock implements EncodableAMQDataBlock
     @Override
     public long writePayload(final ByteBufferSender sender)
     {
-        QpidByteBuffer frameHeader = QpidByteBuffer.allocateDirect(HEADER_SIZE);
+        QpidByteBuffer frameHeader = QpidByteBuffer.allocate(sender.isDirectBufferPreferred(), HEADER_SIZE);
 
         frameHeader.put(_bodyFrame.getFrameType());
         frameHeader.putUnsignedShort(_channel);

@@ -74,7 +74,7 @@ public abstract class AMQMethodBodyImpl implements AMQMethodBody
     {
 
         final int size = getSize();
-        QpidByteBuffer buf = QpidByteBuffer.allocateDirect(size);
+        QpidByteBuffer buf = QpidByteBuffer.allocate(sender.isDirectBufferPreferred(), size);
         buf.putUnsignedShort(getClazz());
         buf.putUnsignedShort(getMethod());
         writeMethodPayload(buf);

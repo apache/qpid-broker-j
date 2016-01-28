@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.client.transport;
 
+import static org.mockito.Mockito.mock;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -40,11 +42,11 @@ public class TestNetworkConnection implements NetworkConnection
     private int _port = 1;
     private SocketAddress _localAddress = null;
     private SocketAddress _remoteAddress = null;
-    private final MockSender _sender;
+    private final ByteBufferSender _sender;
 
     public TestNetworkConnection()
     {
-        _sender = new MockSender();
+        _sender = mock(ByteBufferSender.class);
     }
 
 

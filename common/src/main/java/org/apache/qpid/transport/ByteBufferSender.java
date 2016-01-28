@@ -24,6 +24,7 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 
 public interface ByteBufferSender
 {
+    boolean isDirectBufferPreferred();
 
     void send(QpidByteBuffer msg);
 

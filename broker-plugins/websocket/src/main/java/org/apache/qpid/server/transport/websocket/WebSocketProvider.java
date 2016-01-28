@@ -365,6 +365,12 @@ class WebSocketProvider implements AcceptingTransport
         }
 
         @Override
+        public boolean isDirectBufferPreferred()
+        {
+            return false;
+        }
+
+        @Override
         public void send(final QpidByteBuffer msg)
         {
             if (msg.remaining() > 0)
