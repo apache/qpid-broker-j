@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<appendix xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="JMS-Client-0-8-Appendix-Maven">
+  <title>Minimal Maven POM</title>
+  <para> The following is a minimal Maven POM required to use the Qpid Client. It is suitable for
+    use with the <link linkend="JMS-Client-0-8-Examples">examples</link> included in this
+    book.</para>
+
+  <example>
+    <title>Minimal Maven POM </title>
+    <programlisting>
+
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+  &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+  &lt;groupId&gt;test&lt;/groupId&gt;
+  &lt;artifactId&gt;test&lt;/artifactId&gt;
+  &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;${qpidClientGroupId}&lt;/groupId&gt;
+      &lt;artifactId&gt;${qpidClientArtefactId}&lt;/artifactId&gt;
+      &lt;version&gt;${project.version}&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+      &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+      &lt;version&gt;1.6.4&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;org.apache.geronimo.specs&lt;/groupId&gt;
+      &lt;artifactId&gt;geronimo-jms_1.1_spec&lt;/artifactId&gt;
+      &lt;version&gt;1.1.1&lt;/version&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+&lt;/project&gt;
+
+  </programlisting>
+  </example>
+  <para>Note: We use the SLF4J Binding for Log4J12 here, but any SLF4J Binding could be used
+    instead. Similarly, Geronimo JMS Spec is used, but any dependency that provides the JMS 1.1
+    specification could be substituted.</para>
+</appendix>
