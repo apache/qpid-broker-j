@@ -277,11 +277,11 @@ public class Connection_1_0 implements ConnectionEventListener
 
     public void closed()
     {
+        performCloseTasks();
         if (_vhost != null)
         {
             _vhost.deregisterConnection(_amqpConnection);
         }
-        performCloseTasks();
         closeReceived();
     }
 

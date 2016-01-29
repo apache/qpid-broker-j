@@ -459,23 +459,15 @@ public class ServerConnection extends Connection implements AuthorizationHolder
     @Override
     public void closed()
     {
+        performDeleteTasks();
+
         if(_virtualHost != null)
         {
             _virtualHost.deregisterConnection(_amqpConnection);
         }
-        performDeleteTasks();
-        closeSubscriptions();
         super.closed();
 
         getEventLogger().message(isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
-    }
-
-    private void closeSubscriptions()
-    {
-        for (Session ssn : getChannels())
-        {
-            ((ServerSession)ssn).unregisterSubscriptions();
-        }
     }
 
     private void markAllSessionsClosed()

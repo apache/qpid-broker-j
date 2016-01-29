@@ -798,12 +798,13 @@ public class AMQPConnection_0_8
             }
             finally
             {
+                performDeleteTasks();
+
                 if (_virtualHost != null)
                 {
                     _virtualHost.deregisterConnection(this);
                 }
 
-                performDeleteTasks();
             }
         }
         catch (ConnectionScopedRuntimeException | TransportException e)
