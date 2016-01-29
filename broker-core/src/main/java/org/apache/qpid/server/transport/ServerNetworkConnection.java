@@ -24,4 +24,6 @@ import org.apache.qpid.transport.network.NetworkConnection;
 public interface ServerNetworkConnection extends NetworkConnection
 {
     void reserveOutboundMessageSpace(long size);
+
+    String getTransportInfo();
 }

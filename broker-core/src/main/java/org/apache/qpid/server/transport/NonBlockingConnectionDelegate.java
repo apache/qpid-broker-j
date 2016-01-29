@@ -46,4 +46,6 @@ interface NonBlockingConnectionDelegate
     void shutdownInput();
 
     void shutdownOutput();
+
+    String getTransportInfo();
 }

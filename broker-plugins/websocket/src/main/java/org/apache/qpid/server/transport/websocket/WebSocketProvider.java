@@ -449,6 +449,12 @@ class WebSocketProvider implements AcceptingTransport
             }
         }
 
+        @Override
+        public String getTransportInfo()
+        {
+            return _connection.getProtocol();
+        }
+
         void setPeerCertificate(final Certificate certificate)
         {
             _certificate = certificate;

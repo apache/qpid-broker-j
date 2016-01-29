@@ -107,7 +107,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     private boolean _messageAuthorizationRequired;
 
-
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,
                                   AmqpPort<?> port,
@@ -185,14 +184,22 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _network;
     }
 
+    @Override
     public final AmqpPort<?> getPort()
     {
         return _port;
     }
 
+    @Override
     public final Transport getTransport()
     {
         return _transport;
+    }
+
+    @Override
+    public String getTransportInfo()
+    {
+        return _network.getTransportInfo();
     }
 
     @Override

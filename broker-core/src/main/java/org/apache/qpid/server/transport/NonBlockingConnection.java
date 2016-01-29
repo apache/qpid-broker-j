@@ -212,6 +212,12 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         }
     }
 
+    @Override
+    public String getTransportInfo()
+    {
+        return _delegate.getTransportInfo();
+    }
+
     boolean wantsRead()
     {
         return _fullyWritten;
