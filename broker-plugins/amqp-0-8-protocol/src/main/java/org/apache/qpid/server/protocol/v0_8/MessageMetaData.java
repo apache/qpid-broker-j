@@ -20,9 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v0_8;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
@@ -38,7 +36,6 @@ import org.apache.qpid.server.message.AMQMessageHeader;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 import org.apache.qpid.server.store.StorableMessageMetaData;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
-import org.apache.qpid.transport.ByteBufferSender;
 
 /**
  * Encapsulates a publish body and a content header. In the context of the message store these are treated as a
@@ -128,58 +125,6 @@ public class MessageMetaData implements StorableMessageMetaData
 
 
         return dest.position()-oldPosition;
-    }
-
-    @Override
-    public Collection<QpidByteBuffer> asByteBuffers()
-    {
-        final List<QpidByteBuffer> buffers = new ArrayList<>();
-        QpidByteBuffer buf = QpidByteBuffer.allocateDirect(4);
-        buffers.add(buf);
-        buf.putInt(0, _contentHeaderBody.getSize());
-        _contentHeaderBody.writePayload(new ByteBufferSender()
-                                        {
-                                            @Override
-                                            public boolean isDirectBufferPreferred()
-                                            {
-                                                return true;
-                                            }
-
-                                            @Override
-                                            public void send(final QpidByteBuffer msg)
-                                            {
-                                                buffers.add(msg.duplicate());
-                                            }
-
-                                            @Override
-                                            public void flush()
-                                            {
-
-                                            }
-
-                                            @Override
-                                            public void close()
-                                            {
-
-                                            }
-                                        });
-        buf = QpidByteBuffer.allocateDirect(9+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getExchange())+EncodingUtils.encodedShortStringLength(_messagePublishInfo.getRoutingKey()));
-        EncodingUtils.writeShortStringBytes(buf, _messagePublishInfo.getExchange());
-        EncodingUtils.writeShortStringBytes(buf, _messagePublishInfo.getRoutingKey());
-        byte flags = 0;
-        if(_messagePublishInfo.isMandatory())
-        {
-            flags |= MANDATORY_FLAG;
-        }
-        if(_messagePublishInfo.isImmediate())
-        {
-            flags |= IMMEDIATE_FLAG;
-        }
-        buf.put(flags);
-        buf.putLong(_arrivalTime);
-        buf.flip();
-        buffers.add(buf);
-        return buffers;
     }
 
     public int getContentSize()

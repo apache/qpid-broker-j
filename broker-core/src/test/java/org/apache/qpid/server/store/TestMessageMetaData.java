@@ -20,9 +20,6 @@
  */
 package org.apache.qpid.server.store;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.plugin.MessageMetaDataType;
 
@@ -97,12 +94,4 @@ public class TestMessageMetaData implements StorableMessageMetaData
         return dest.position() - oldPosition;
     };
 
-    @Override
-    public Collection<QpidByteBuffer> asByteBuffers()
-    {
-        QpidByteBuffer buf = QpidByteBuffer.allocateDirect(getStorableSize());
-        writeToBuffer(buf);
-        buf.position(0);
-        return Collections.singleton(buf);
-    }
 }

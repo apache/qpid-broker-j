@@ -30,11 +30,8 @@ import org.apache.qpid.transport.MessageDeliveryMode;
 import org.apache.qpid.transport.MessageProperties;
 import org.apache.qpid.transport.MessageTransfer;
 import org.apache.qpid.transport.Struct;
-import org.apache.qpid.transport.codec.BBEncoder;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -166,24 +163,6 @@ public class MessageMetaData_0_10 implements StorableMessageMetaData
         final int length = buf.limit();
         buf.dispose();
         return length;
-    }
-
-    @Override
-    public Collection<QpidByteBuffer> asByteBuffers()
-    {
-        QpidByteBuffer buf = _encoded;
-
-        if(buf == null)
-        {
-            buf = encodeAsBuffer();
-            _encoded = buf;
-        }
-
-        buf = buf.duplicate();
-
-        buf.position(0);
-
-        return Collections.singleton(buf);
     }
 
     public int getContentSize()

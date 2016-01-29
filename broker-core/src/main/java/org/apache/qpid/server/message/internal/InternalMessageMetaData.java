@@ -27,8 +27,6 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.util.Collection;
-import java.util.Collections;
 
 public class InternalMessageMetaData implements StorableMessageMetaData
 {
@@ -76,12 +74,6 @@ public class InternalMessageMetaData implements StorableMessageMetaData
     {
         dest.put(_headerBytes);
         return _headerBytes.length;
-    }
-
-    @Override
-    public Collection<QpidByteBuffer> asByteBuffers()
-    {
-        return Collections.singleton(QpidByteBuffer.wrap(_headerBytes));
     }
 
     @Override

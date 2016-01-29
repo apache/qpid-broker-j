@@ -351,24 +351,6 @@ public class MessageMetaData_1_0 implements StorableMessageMetaData
         return length;
     }
 
-    @Override
-    public Collection<QpidByteBuffer> asByteBuffers()
-    {
-        QpidByteBuffer buf = _encoded;
-
-        if(buf == null)
-        {
-            buf = encodeAsBuffer();
-            _encoded = buf;
-        }
-
-        buf = buf.duplicate();
-
-        buf.position(0);
-
-        return Collections.singleton(buf);
-    }
-
     public int getContentSize()
     {
         QpidByteBuffer buf = _encoded;
