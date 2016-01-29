@@ -40,6 +40,8 @@ import com.sleepycat.je.Durability;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.rep.ReplicatedEnvironment;
 import com.sleepycat.je.rep.ReplicationConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
@@ -65,6 +67,8 @@ import org.apache.qpid.util.FileUtils;
 
 public class BDBHAVirtualHostNodeTest extends QpidTestCase
 {
+    private final static Logger LOGGER = LoggerFactory.getLogger(BDBHAVirtualHostNodeTest.class);
+
     private BDBHAVirtualHostNodeTestHelper _helper;
     private PortHelper _portHelper = new PortHelper();
 
@@ -597,12 +601,13 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         String groupName = "group";
         String nodeName = "node";
 
-        Map<String, Object> nodeAttributes = _helper.createNodeAttributes(nodeName, groupName, helperAddress, helperAddress, nodeName, nodePortNumber, intruderPortNumber);
+        Map<String, Object> nodeAttributes = _helper.createNodeAttributes(nodeName,
+                                                                          groupName,
+                                                                          helperAddress,
+                                                                          helperAddress,
+                                                                          nodeName,
+                                                                          nodePortNumber);
         BDBHAVirtualHostNode<?> node = _helper.createAndStartHaVHN(nodeAttributes);
-
-        Map<String, Object> intruderAttributes = _helper.createNodeAttributes("intruder", groupName, "localhost:" + intruderPortNumber, helperAddress, nodeName);
-        intruderAttributes.put(BDBHAVirtualHostNode.PRIORITY, 0);
-        BDBHAVirtualHostNode<?> intruder = _helper.createAndStartHaVHN(intruderAttributes);
 
         final CountDownLatch stopLatch = new CountDownLatch(1);
         ConfigurationChangeListener listener = new NoopConfigurationChangeListener()
@@ -618,17 +623,51 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         };
         node.addChangeListener(listener);
 
-        List<String> permittedNodes = new ArrayList<String>();
-        permittedNodes.add(helperAddress);
-        node.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.PERMITTED_NODES, permittedNodes));
+        File environmentPathFile = new File(_helper.getMessageStorePath() + File.separator + "intruder");
+        Durability durability = Durability.parse((String) nodeAttributes.get(BDBHAVirtualHostNode.DURABILITY));
+        joinIntruder(intruderPortNumber, "intruder", groupName, helperAddress, durability, environmentPathFile);
 
-        assertTrue("Intruder protection was not triggered during expected timeout", stopLatch.await(10, TimeUnit.SECONDS));
+        LOGGER.debug("Permitted and intruder nodes are created");
 
-        // test that if management mode is enabled then the node can start without exception
+        assertTrue("Intruder protection was not triggered during expected timeout",
+                   stopLatch.await(10, TimeUnit.SECONDS));
+
+        LOGGER.debug("Master node transited into ERRORED state due to intruder protection");
         when(_helper.getBroker().isManagementMode()).thenReturn(true);
-        node.start();
 
-        _helper.awaitForAttributeChange(node, AbstractConfiguredObject.STATE, State.ERRORED);
+        LOGGER.debug("Starting node in management mode");
+
+        final CountDownLatch stateChangeLatch = new CountDownLatch(1);
+        final CountDownLatch roleChangeLatch = new CountDownLatch(1);
+        node.addChangeListener(new NoopConfigurationChangeListener()
+        {
+            @Override
+            public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+            {
+                if (newState == State.ERRORED)
+                {
+                    stateChangeLatch.countDown();
+                }
+            }
+
+            @Override
+            public void attributeSet(final ConfiguredObject<?> object,
+                                     final String attributeName,
+                                     final Object oldAttributeValue,
+                                     final Object newAttributeValue)
+            {
+                if (BDBHAVirtualHostNode.ROLE.equals(attributeName) && NodeRole.DETACHED.equals(NodeRole.DETACHED))
+                {
+                    roleChangeLatch.countDown();
+                }
+            }
+        });
+        node.start();
+        LOGGER.debug("Node is started");
+
+        // verify that intruder detection is triggered after restart and environment is closed
+        assertTrue("Node state was not set to ERRORED", stateChangeLatch.await(10, TimeUnit.SECONDS));
+        assertTrue("Node role was not set to DETACHED", roleChangeLatch.await(10, TimeUnit.SECONDS));
     }
 
     public void testPermittedNodesChangedOnReplicaNodeOnlyOnceAfterBeingChangedOnMaster() throws Exception
@@ -725,14 +764,28 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
         String node2Name = "node2";
         File environmentPathFile = new File(_helper.getMessageStorePath() + File.separator + node2Name);
+        Durability durability = Durability.parse((String) node1Attributes.get(BDBHAVirtualHostNode.DURABILITY));
+        joinIntruder(node2PortNumber, node2Name, groupName, helperAddress, durability, environmentPathFile);
+
+        assertTrue("Intruder protection was not triggered during expected timeout", stopLatch.await(20, TimeUnit.SECONDS));
+    }
+
+    private void joinIntruder(final int nodePortNumber,
+                              final String nodeName,
+                              final String groupName,
+                              final String helperAddress,
+                              final Durability durability,
+                              final File environmentPathFile)
+    {
         environmentPathFile.mkdirs();
 
-        ReplicationConfig replicationConfig = new ReplicationConfig(groupName, node2Name, "localhost:" + node2PortNumber );
+        ReplicationConfig replicationConfig = new ReplicationConfig(groupName, nodeName, "localhost:" + nodePortNumber );
+        replicationConfig.setNodePriority(0);
         replicationConfig.setHelperHosts(helperAddress);
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);
-        envConfig.setDurability(Durability.parse((String) node1Attributes.get(BDBHAVirtualHostNode.DURABILITY)));
+        envConfig.setDurability(durability);
 
         ReplicatedEnvironment intruder = null;
         String originalThreadName = Thread.currentThread().getName();
@@ -754,8 +807,6 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
                 Thread.currentThread().setName(originalThreadName);
             }
         }
-
-        assertTrue("Intruder protection was not triggered during expected timeout", stopLatch.await(20, TimeUnit.SECONDS));
     }
 
     public void testValidateOnCreateForNonExistingHelperNode() throws Exception
