@@ -73,6 +73,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.Param;
 import org.apache.qpid.server.model.RemoteReplicationNode;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -1376,6 +1377,80 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         abstract void perform();
     }
 
+    @Override
+    public void updateMutableConfig()
+    {
+        getSecurityManager().authoriseUpdate(getBroker());
+        ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
+        if (environmentFacade != null)
+        {
+            environmentFacade.updateMutableConfig(this);
+        }
+    }
+
+    @Override
+    public int cleanLog()
+    {
+        getSecurityManager().authoriseUpdate(getBroker());
+        ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
+        if (environmentFacade != null)
+        {
+            return environmentFacade.cleanLog();
+        }
+        return 0;
+    }
+
+    @Override
+    public void checkpoint(final boolean force)
+    {
+        getSecurityManager().authoriseUpdate(getBroker());
+        ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
+        if (environmentFacade != null)
+        {
+            environmentFacade.checkpoint(force);
+        }
+    }
+
+    @Override
+    public Map<String, Map<String, Object>> environmentStatistics(final boolean reset)
+    {
+        ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
+        if (environmentFacade != null)
+        {
+            return environmentFacade.getEnvironmentStatistics(reset);
+        }
+        else
+        {
+            return Collections.emptyMap();
+        }
+    }
+
+    @Override
+    public Map<String, Object> transactionStatistics(final boolean reset)
+    {
+        ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
+        if (environmentFacade != null)
+        {
+            return environmentFacade.getTransactionStatistics(reset);
+        }
+        else
+        {
+            return Collections.emptyMap();
+        }
+    }
+    @Override
+    public Map<String, Object> databaseStatistics(String database, final boolean reset)
+    {
+        ReplicatedEnvironmentFacade environmentFacade = getReplicatedEnvironmentFacade();
+        if (environmentFacade != null)
+        {
+            return environmentFacade.getDatabaseStatistics(database, reset);
+        }
+        else
+        {
+            return Collections.emptyMap();
+        }
+    }
     public static Map<String, Collection<String>> getSupportedChildTypes()
     {
         return Collections.singletonMap(VirtualHost.class.getSimpleName(), (Collection<String>) Collections.singleton(BDBHAVirtualHostImpl.VIRTUAL_HOST_TYPE));

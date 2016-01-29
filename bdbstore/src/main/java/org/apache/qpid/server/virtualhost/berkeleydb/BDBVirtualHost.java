@@ -28,7 +28,7 @@ import org.apache.qpid.server.store.SizeMonitoringSettings;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 
-public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings, BDBEnvironmentContainer
+public interface BDBVirtualHost<X extends BDBVirtualHost<X>> extends VirtualHostImpl<X, AMQQueue<?>, ExchangeImpl<?>>, org.apache.qpid.server.store.FileBasedSettings, SizeMonitoringSettings, BDBEnvironmentContainer<X>
 {
 
     String STORE_PATH = "storePath";

@@ -28,7 +28,7 @@ import org.apache.qpid.server.store.berkeleydb.HASettings;
 import org.apache.qpid.server.store.berkeleydb.BDBEnvironmentContainer;
 
 
-public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends BDBVirtualHostNode<X>, HASettings, BDBEnvironmentContainer
+public interface BDBHAVirtualHostNode<X extends BDBHAVirtualHostNode<X>> extends BDBVirtualHostNode<X>, HASettings
 {
     public static final String GROUP_NAME = "groupName";
     public static final String ADDRESS = "address";

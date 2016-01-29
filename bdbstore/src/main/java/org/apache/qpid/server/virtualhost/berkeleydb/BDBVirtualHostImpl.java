@@ -20,6 +20,7 @@
  */
 package org.apache.qpid.server.virtualhost.berkeleydb;
 
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -30,6 +31,7 @@ import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.berkeleydb.BDBMessageStore;
 import org.apache.qpid.server.store.berkeleydb.EnvironmentFacade;
 import org.apache.qpid.server.store.berkeleydb.BDBCacheSizeSetter;
+import org.apache.qpid.server.store.berkeleydb.replication.ReplicatedEnvironmentFacade;
 import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 
 @ManagedObject(category = false, type = BDBVirtualHostImpl.VIRTUAL_HOST_TYPE)
@@ -91,5 +93,97 @@ public class BDBVirtualHostImpl extends AbstractVirtualHost<BDBVirtualHostImpl> 
                 environmentFacade.setCacheSize(cacheSize);
             }
         }
+    }
+
+    @Override
+    public void updateMutableConfig()
+    {
+        getSecurityManager().authoriseUpdate(this);
+        BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
+        if (bdbMessageStore != null)
+        {
+            EnvironmentFacade environmentFacade = bdbMessageStore.getEnvironmentFacade();
+            if (environmentFacade != null)
+            {
+                environmentFacade.updateMutableConfig(this);
+            }
+        }
+    }
+
+    @Override
+    public int cleanLog()
+    {
+        getSecurityManager().authoriseUpdate(this);
+        BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
+        if (bdbMessageStore != null)
+        {
+            EnvironmentFacade environmentFacade = bdbMessageStore.getEnvironmentFacade();
+            if (environmentFacade != null)
+            {
+                return environmentFacade.cleanLog();
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    public void checkpoint(final boolean force)
+    {
+        getSecurityManager().authoriseUpdate(this);
+        BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
+        if (bdbMessageStore != null)
+        {
+            EnvironmentFacade environmentFacade = bdbMessageStore.getEnvironmentFacade();
+            if (environmentFacade != null)
+            {
+                environmentFacade.checkpoint(force);
+            }
+        }
+    }
+
+    @Override
+    public Map<String, Map<String, Object>> environmentStatistics(final boolean reset)
+    {
+        BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
+        if (bdbMessageStore != null)
+        {
+            EnvironmentFacade environmentFacade = bdbMessageStore.getEnvironmentFacade();
+            if (environmentFacade != null)
+            {
+                return environmentFacade.getEnvironmentStatistics(reset);
+            }
+        }
+        return Collections.emptyMap();
+    }
+
+
+    @Override
+    public Map<String, Object> transactionStatistics(final boolean reset)
+    {
+        BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
+        if (bdbMessageStore != null)
+        {
+            EnvironmentFacade environmentFacade = bdbMessageStore.getEnvironmentFacade();
+            if (environmentFacade != null)
+            {
+                return environmentFacade.getTransactionStatistics(reset);
+            }
+        }
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public Map<String, Object> databaseStatistics(String database, final boolean reset)
+    {
+        BDBMessageStore bdbMessageStore = (BDBMessageStore) getMessageStore();
+        if (bdbMessageStore != null)
+        {
+            EnvironmentFacade environmentFacade = bdbMessageStore.getEnvironmentFacade();
+            if (environmentFacade != null)
+            {
+                return environmentFacade.getDatabaseStatistics(database, reset);
+            }
+        }
+        return Collections.emptyMap();
     }
 }

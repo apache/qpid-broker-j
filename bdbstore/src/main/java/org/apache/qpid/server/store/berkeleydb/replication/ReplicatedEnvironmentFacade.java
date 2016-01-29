@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,24 +48,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseException;
-import com.sleepycat.je.Durability;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.sleepycat.je.*;
 import com.sleepycat.je.Durability.ReplicaAckPolicy;
 import com.sleepycat.je.Durability.SyncPolicy;
-import com.sleepycat.je.EnvironmentConfig;
-import com.sleepycat.je.EnvironmentFailureException;
-import com.sleepycat.je.EnvironmentMutableConfig;
-import com.sleepycat.je.ExceptionEvent;
-import com.sleepycat.je.LogWriteException;
-import com.sleepycat.je.Sequence;
-import com.sleepycat.je.SequenceConfig;
-import com.sleepycat.je.Transaction;
-import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.rep.*;
 import com.sleepycat.je.rep.impl.node.NameIdPair;
 import com.sleepycat.je.rep.util.DbPing;
@@ -75,6 +63,7 @@ import com.sleepycat.je.rep.vlsn.VLSNRange;
 import com.sleepycat.je.utilint.PropUtil;
 import com.sleepycat.je.utilint.VLSN;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.store.berkeleydb.EnvironmentUtils;
 import org.apache.qpid.server.store.berkeleydb.upgrade.Upgrader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,6 +178,21 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
           */
         put(ReplicationConfig.CONSISTENCY_POLICY, NoConsistencyRequiredPolicy.NAME);
     }});
+
+    private static final Set<String> PARAMS_SET_BY_DEFAULT;
+
+    static
+    {
+        Set<String> excludes = new HashSet<>(ENVCONFIG_DEFAULTS.keySet());
+
+        excludes.addAll(REPCONFIG_DEFAULTS.keySet());
+
+        excludes.addAll(Arrays.asList(EnvironmentConfig.MAX_MEMORY,
+                                      EnvironmentConfig.MAX_MEMORY_PERCENT
+                                     ));
+        PARAMS_SET_BY_DEFAULT = Collections.unmodifiableSet(excludes);
+    }
+
 
     public static final String PERMITTED_NODE_LIST = "permittedNodes";
 
@@ -720,7 +724,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
     {
         LOGGER.debug("Submitting a job to set cache size on {} to {}", _prettyGroupNodeName, cacheSize);
 
-        Future<Void> future = _environmentJobExecutor.submit(new Callable<Void>()
+        Callable<Void> task = new Callable<Void>()
         {
             @Override
             public Void call()
@@ -728,11 +732,134 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 setCacheSizeInternal(cacheSize);
                 return null;
             }
-        });
-        int timeout = 1;
+        };
+        submitEnvironmentTask(1, task, "setting cache size");
+    }
+
+    @Override
+    public void updateMutableConfig(final ConfiguredObject<?> object)
+    {
+        LOGGER.debug("Submitting a job to set update mutable config on {}", _prettyGroupNodeName);
+
+        Callable<Void> task = new Callable<Void>()
+        {
+            @Override
+            public Void call()
+            {
+                EnvironmentUtils.updateMutableConfig(getEnvironment(), PARAMS_SET_BY_DEFAULT, true, object);
+                return null;
+            }
+        };
+        submitEnvironmentTask(5, task, "updating mutable config");
+
+    }
+
+
+    @Override
+    public int cleanLog()
+    {
+        LOGGER.debug("Submitting a job to clean log files on {} ", _prettyGroupNodeName);
+        int timeout = 5;
+
+        Callable<Integer> task = new Callable<Integer>()
+        {
+            @Override
+            public Integer call()
+            {
+                return getEnvironment().cleanLog();
+            }
+        };
+
+
+        Integer fileCount = submitEnvironmentTask(timeout, task, "cleaning log files");
+        return fileCount == null ? 0 : fileCount;
+    }
+
+    @Override
+    public void checkpoint(final boolean force)
+    {
+        LOGGER.debug("Submitting a job to perform checkpoint on {} ", _prettyGroupNodeName);
+        int timeout = 5;
+
+        Callable<Void> task = new Callable<Void>()
+        {
+            @Override
+            public Void call()
+            {
+                CheckpointConfig checkpointConfig = new CheckpointConfig();
+                checkpointConfig.setForce(force);
+                getEnvironment().checkpoint(checkpointConfig);
+                return null;
+            }
+        };
+
+        submitEnvironmentTask(timeout, task, "perform checkpoint");
+    }
+
+    @Override
+    public Map<String, Map<String, Object>> getEnvironmentStatistics(final boolean reset)
+    {
+        LOGGER.debug("Submitting a job to get environment statistics on {} ", _prettyGroupNodeName);
+        int timeout = 5;
+
+        Callable<Map<String,Map<String,Object>>> task = new Callable<Map<String,Map<String,Object>>>()
+        {
+            @Override
+            public Map<String,Map<String,Object>> call()
+            {
+                return EnvironmentUtils.getEnvironmentStatistics(getEnvironment(), reset);
+
+            }
+        };
+
+        return submitEnvironmentTask(timeout, task, "get environment statistics");
+    }
+
+    @Override
+    public Map<String, Object> getTransactionStatistics(final boolean reset)
+    {
+        LOGGER.debug("Submitting a job to get transaction statistics on {} ", _prettyGroupNodeName);
+        int timeout = 5;
+
+        Callable<Map<String,Object>> task = new Callable<Map<String,Object>>()
+        {
+            @Override
+            public Map<String,Object> call()
+            {
+                return EnvironmentUtils.getTransactionStatistics(getEnvironment(), reset);
+            }
+        };
+
+        return submitEnvironmentTask(timeout, task, "get transaction statistics");
+    }
+
+    @Override
+    public Map<String,Object> getDatabaseStatistics(final String database, final boolean reset)
+    {
+        LOGGER.debug("Submitting a job to get database statistics for {} on {} ", database, _prettyGroupNodeName);
+        int timeout = 5;
+
+        Callable<Map<String,Object>> task = new Callable<Map<String,Object>>()
+        {
+            @Override
+            public Map<String, Object> call()
+            {
+
+                return EnvironmentUtils.getDatabaseStatistics(getEnvironment(), database, reset);
+            }
+        };
+
+        return submitEnvironmentTask(timeout, task, "get database statistics for '" + database + "'");
+
+    }
+
+
+    private <T> T submitEnvironmentTask(final int timeout, final Callable<T> task, String action)
+    {
+        Future<T> future = _environmentJobExecutor.submit(task);
         try
         {
-            future.get(timeout, TimeUnit.SECONDS);
+            return future.get(timeout, TimeUnit.SECONDS);
         }
         catch (InterruptedException e)
         {
@@ -744,19 +871,24 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             if (cause instanceof Error)
             {
                 throw (Error) cause;
-            } else if (cause instanceof RuntimeException)
+            }
+            else if (cause instanceof RuntimeException)
             {
                 throw (RuntimeException) cause;
-            } else
+            }
+            else
             {
-                throw new ConnectionScopedRuntimeException("Unexpected exception while setting cache size", e);
+                throw new ConnectionScopedRuntimeException("Unexpected exception while " + action, e);
             }
         }
         catch (TimeoutException e)
         {
-            LOGGER.info("setting of cache size on {} timed out after {} seconds", _prettyGroupNodeName, timeout);
+            LOGGER.info("{}  on {} timed out after {} seconds", action, _prettyGroupNodeName, timeout);
         }
+
+        return null;
     }
+
 
     @Override
     public void flushLogFailed(final RuntimeException e)
@@ -1410,8 +1542,6 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         envConfig.setExceptionListener(new ExceptionListener());
         envConfig.setDurability(_defaultDurability);
         envConfig.setCacheMode(_configuration.getCacheMode());
-        envConfig.setConfigParam(EnvironmentConfig.FILE_LOGGING_LEVEL, "OFF");
-        envConfig.setConfigParam(EnvironmentConfig.CONSOLE_LOGGING_LEVEL, "OFF");
         envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + _configuration.getName() + "]"));
 
         LOGGER.info("Cache mode {}", envConfig.getCacheMode());
