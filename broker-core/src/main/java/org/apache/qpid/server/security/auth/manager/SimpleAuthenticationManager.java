@@ -51,7 +51,9 @@ import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServer;
 import org.apache.qpid.server.security.auth.sasl.scram.ScramSaslServerSourceAdapter;
 
 @ManagedObject( category = false, type = "Simple", register = false )
-public class SimpleAuthenticationManager extends AbstractAuthenticationManager<SimpleAuthenticationManager> implements PreferencesSupportingAuthenticationProvider
+public class SimpleAuthenticationManager extends AbstractAuthenticationManager<SimpleAuthenticationManager>
+        implements UsernamePasswordAuthenticationProvider<SimpleAuthenticationManager>,
+                   PreferencesSupportingAuthenticationProvider
 {
     private static final Logger _logger = LoggerFactory.getLogger(SimpleAuthenticationManager.class);
 
@@ -67,6 +69,7 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
     public SimpleAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
     {
         super(attributes, broker);
+
         ScramSaslServerSourceAdapter.PasswordSource passwordSource =
                 new ScramSaslServerSourceAdapter.PasswordSource()
                 {
@@ -80,7 +83,6 @@ public class SimpleAuthenticationManager extends AbstractAuthenticationManager<S
 
         _scramSha1Adapter = new ScramSaslServerSourceAdapter(4096, "HmacSHA1", "SHA-1", passwordSource);
         _scramSha256Adapter = new ScramSaslServerSourceAdapter(4096, "HmacSHA256", "SHA-256", passwordSource);
-
     }
 
 

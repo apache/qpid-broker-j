@@ -53,7 +53,6 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.security.AuthorizationHolder;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -69,7 +68,7 @@ import org.apache.qpid.transport.Option;
 import org.apache.qpid.transport.ProtocolEvent;
 import org.apache.qpid.transport.Session;
 
-public class ServerConnection extends Connection implements AuthorizationHolder
+public class ServerConnection extends Connection
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerConnection.class);
     public static final long CLOSE_OK_TIMEOUT = 10000l;

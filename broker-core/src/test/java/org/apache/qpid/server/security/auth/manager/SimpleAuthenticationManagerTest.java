@@ -42,7 +42,7 @@ public class SimpleAuthenticationManagerTest extends QpidTestCase
 {
     private static final String TEST_USER = "testUser";
     private static final String TEST_PASSWORD = "testPassword";
-    private AuthenticationProvider _authenticationManager;
+    private SimpleAuthenticationManager _authenticationManager;
 
     public void setUp() throws Exception
     {

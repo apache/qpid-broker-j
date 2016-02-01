@@ -79,11 +79,8 @@ public class PlainAuthenticationProvider
                     }
                 };
 
-
-
         _scramSha1Adapter = new ScramSaslServerSourceAdapter(4096, "HmacSHA1", "SHA-1", passwordSource);
         _scramSha256Adapter = new ScramSaslServerSourceAdapter(4096, "HmacSHA256", "SHA-256", passwordSource);
-
     }
 
     @Override

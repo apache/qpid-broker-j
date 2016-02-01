@@ -25,8 +25,11 @@ import java.util.Map;
 
 import javax.security.auth.login.AccountNotFoundException;
 
+import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider;
+
 @ManagedAnnotation
-public interface PasswordCredentialManagingAuthenticationProvider<X extends PasswordCredentialManagingAuthenticationProvider<X>> extends AuthenticationProvider<X>, ManagedInterface
+public interface PasswordCredentialManagingAuthenticationProvider<X extends PasswordCredentialManagingAuthenticationProvider<X>>
+        extends AuthenticationProvider<X>, UsernamePasswordAuthenticationProvider<X>, ManagedInterface
 {
     boolean createUser(String username, String password, Map<String, String> attributes);
 

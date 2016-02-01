@@ -64,7 +64,12 @@ public class SubjectCreator
         _secure = secure;
     }
 
-   /**
+    public AuthenticationProvider<?> getAuthenticationProvider()
+    {
+        return _authenticationProvider;
+    }
+
+    /**
     * Gets the known SASL mechanisms
     *
     * @return SASL mechanism names, space separated.
@@ -120,17 +125,7 @@ public class SubjectCreator
         }
     }
 
-    /**
-     * Authenticates a user using their username and password.
-     */
-    public SubjectAuthenticationResult authenticate(String username, String password)
-    {
-        final AuthenticationResult authenticationResult = _authenticationProvider.authenticate(username, password);
-
-        return createResultWithGroups(username, authenticationResult);
-    }
-
-    private SubjectAuthenticationResult createResultWithGroups(String username, final AuthenticationResult authenticationResult)
+    public SubjectAuthenticationResult createResultWithGroups(String username, final AuthenticationResult authenticationResult)
     {
         if(authenticationResult.getStatus() == AuthenticationStatus.SUCCESS)
         {
@@ -148,6 +143,8 @@ public class SubjectCreator
             return new SubjectAuthenticationResult(authenticationResult);
         }
     }
+
+
 
     public Subject createSubjectWithGroups(Principal principal)
     {

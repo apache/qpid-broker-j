@@ -96,12 +96,6 @@ public class KerberosAuthenticationManager extends AbstractAuthenticationManager
         }
     }
 
-    @Override
-    public AuthenticationResult authenticate(String username, String password)
-    {
-        return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR);
-    }
-
     private static class GssApiCallbackHandler implements CallbackHandler
     {
 
