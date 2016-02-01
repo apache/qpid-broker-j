@@ -137,4 +137,10 @@ public class NonBlockingConnectionUndecidedDelegate implements NonBlockingConnec
     public void shutdownOutput()
     {
     }
+
+    @Override
+    public String getTransportInfo()
+    {
+        return "";
+    }
 }

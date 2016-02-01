@@ -82,6 +82,9 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     Transport getTransport();
 
     @DerivedAttribute
+    String getTransportInfo();
+
+    @DerivedAttribute
     Protocol getProtocol();
 
     @DerivedAttribute

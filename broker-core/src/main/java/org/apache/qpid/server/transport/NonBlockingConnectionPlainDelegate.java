@@ -152,4 +152,10 @@ public class NonBlockingConnectionPlainDelegate implements NonBlockingConnection
     {
 
     }
+
+    @Override
+    public String getTransportInfo()
+    {
+        return "";
+    }
 }

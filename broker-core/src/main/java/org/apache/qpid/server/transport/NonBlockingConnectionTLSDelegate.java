@@ -30,6 +30,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLSession;
+
 import java.io.IOException;
 import java.security.Principal;
 import java.security.cert.Certificate;
@@ -372,4 +374,10 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
 
     }
 
+    @Override
+    public String getTransportInfo()
+    {
+        SSLSession session = _sslEngine.getSession();
+        return session.getProtocol() + " ; " + session.getCipherSuite() ;
+    }
 }
