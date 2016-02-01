@@ -56,12 +56,10 @@ public class SSLClientCertPreemptiveAuthenticator implements HttpRequestPreempti
            && Collections.list(request.getAttributeNames()).contains(CERTIFICATE_ATTRIBUTE_NAME))
         {
             ExternalAuthenticationManager<?> externalAuthManager = (ExternalAuthenticationManager<?>)authenticationProvider;
-            Principal principal = null;
-            X509Certificate[] certificates =
-                    (X509Certificate[]) request.getAttribute("javax.servlet.request.X509Certificate");
+            X509Certificate[] certificates = (X509Certificate[]) request.getAttribute(CERTIFICATE_ATTRIBUTE_NAME);
             if(certificates != null && certificates.length != 0)
             {
-                principal = certificates[0].getSubjectX500Principal();
+                Principal principal = certificates[0].getSubjectX500Principal();
 
                 if(!externalAuthManager.getUseFullDN())
                 {
