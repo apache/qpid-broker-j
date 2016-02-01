@@ -33,6 +33,8 @@ public interface ScramSaslServerSource
         byte[] getStoredKey() throws SaslException;
 
         byte[] getServerKey() throws SaslException;
+
+        int getIterationCount() throws SaslException;
     }
 
     SaltAndPasswordKeys getSaltAndPasswordKeys(String username);

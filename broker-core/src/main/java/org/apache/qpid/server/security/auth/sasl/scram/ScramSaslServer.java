@@ -128,9 +128,8 @@ public class ScramSaslServer implements SaslServer
         }
         _nonce = parts[3].substring(2) + UUID.randomUUID().toString();
 
-        int count = _authManager.getIterationCount();
         _saltAndPassword = _authManager.getSaltAndPasswordKeys(_username);
-        _serverFirstMessage = "r="+_nonce+",s="+ DatatypeConverter.printBase64Binary(_saltAndPassword.getSalt())+",i=" + count;
+        _serverFirstMessage = "r="+_nonce+",s="+ DatatypeConverter.printBase64Binary(_saltAndPassword.getSalt())+",i=" + DatatypeConverter.printInt(_saltAndPassword.getIterationCount());
         return _serverFirstMessage.getBytes(ASCII);
     }
 
