@@ -21,6 +21,10 @@
 package org.apache.qpid.server.management.plugin.filter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -34,14 +38,25 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
+import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 public class RedirectingAuthorisationFilter implements Filter
 {
-    public static String DEFAULT_LOGIN_URL = "login.html";
-    public static String INIT_PARAM_LOGIN_URL = "login-url";
 
-    private String _loginUrl = DEFAULT_LOGIN_URL;
+    private static final Collection<HttpRequestInteractiveAuthenticator> AUTHENTICATORS;
+    static
+    {
+        List<HttpRequestInteractiveAuthenticator> authenticators = new ArrayList<>();
+        for(HttpRequestInteractiveAuthenticator authenticator : (new QpidServiceLoader()).instancesOf(HttpRequestInteractiveAuthenticator.class))
+        {
+            authenticators.add(authenticator);
+        }
+        AUTHENTICATORS = Collections.unmodifiableList(authenticators);
+    }
+
+
     private Broker _broker;
     private HttpManagementConfiguration _managementConfiguration;
 
@@ -53,11 +68,6 @@ public class RedirectingAuthorisationFilter implements Filter
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        String loginUrl = config.getInitParameter(INIT_PARAM_LOGIN_URL);
-        if (loginUrl != null)
-        {
-            _loginUrl = loginUrl;
-        }
         ServletContext servletContext = config.getServletContext();
         _broker = HttpManagementUtil.getBroker(servletContext);
         _managementConfiguration = HttpManagementUtil.getManagementConfiguration(servletContext);
@@ -76,7 +86,24 @@ public class RedirectingAuthorisationFilter implements Filter
         }
         catch(SecurityException e)
         {
-            httpResponse.sendRedirect(_loginUrl);
+            HttpRequestInteractiveAuthenticator.AuthenticationHandler handler = null;
+            for(HttpRequestInteractiveAuthenticator authenticator : AUTHENTICATORS)
+            {
+                handler = authenticator.getAuthenticationHandler(httpRequest, _managementConfiguration);
+                if(handler != null)
+                {
+                    break;
+                };
+            }
+
+            if(handler != null)
+            {
+                handler.handleAuthentication(httpResponse);
+            }
+            else
+            {
+                httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN);
+            }
         }
     }
 
