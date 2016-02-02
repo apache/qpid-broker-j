@@ -37,6 +37,7 @@ import org.apache.qpid.server.model.GroupProvider;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
+import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticationProvider;
 
 /**
  * Creates a {@link Subject} formed by the {@link Principal}'s returned from:
@@ -123,6 +124,16 @@ public class SubjectCreator
         {
             return new SubjectAuthenticationResult(authenticationResult);
         }
+    }
+
+    public SubjectAuthenticationResult authenticate(String username, String password)
+    {
+        if (_authenticationProvider instanceof UsernamePasswordAuthenticationProvider)
+        {
+            final AuthenticationResult authenticationResult = ((UsernamePasswordAuthenticationProvider)_authenticationProvider).authenticate(username, password);
+            return createResultWithGroups(username, authenticationResult);
+        }
+        return new SubjectAuthenticationResult(new AuthenticationResult(AuthenticationStatus.ERROR));
     }
 
     public SubjectAuthenticationResult createResultWithGroups(String username, final AuthenticationResult authenticationResult)
