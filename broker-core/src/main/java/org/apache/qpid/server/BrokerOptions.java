@@ -238,6 +238,11 @@ public class BrokerOptions
     {
         if(_initialConfigurationLocation == null)
         {
+            String overriddenDefaultConfigurationLocation = System.getProperty("qpid.initialConfigurationLocation");
+            if (overriddenDefaultConfigurationLocation != null)
+            {
+                return BrokerOptions.class.getClassLoader().getResource(overriddenDefaultConfigurationLocation).toExternalForm();
+            }
             return DEFAULT_INITIAL_CONFIG_LOCATION;
         }
 
