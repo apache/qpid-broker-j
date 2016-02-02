@@ -44,8 +44,7 @@ public class BrokerRestHttpsTest extends QpidRestTestCase
         super.setUp();
         _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpsPort());
         _restTestHelper.setUseSsl(true);
-        setSystemProperty("javax.net.ssl.trustStore", TRUSTSTORE);
-        setSystemProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
+        _restTestHelper.setTruststore(TRUSTSTORE, TRUSTSTORE_PASSWORD);
     }
 
     @Override

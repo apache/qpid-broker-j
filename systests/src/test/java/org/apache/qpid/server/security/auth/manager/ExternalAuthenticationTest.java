@@ -50,6 +50,7 @@ import org.apache.qpid.server.security.FileTrustStore;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
+import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class ExternalAuthenticationTest extends QpidBrokerTestCase
 {
@@ -158,7 +159,7 @@ public class ExternalAuthenticationTest extends QpidBrokerTestCase
 
         try
         {
-            getExternalSSLConnection(false);
+            getExternalSSLConnection(false, "&ssl_cert_alias='" + TestSSLConstants.CERT_ALIAS_UNTRUSTED_CLIENT + "'");
             fail("Connection should not succeed");
         }
         catch (JMSException e)

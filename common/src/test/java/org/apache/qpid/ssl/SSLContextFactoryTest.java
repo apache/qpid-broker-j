@@ -18,6 +18,7 @@
 package org.apache.qpid.ssl;
 
 import org.apache.qpid.test.utils.QpidTestCase;
+import org.apache.qpid.test.utils.TestSSLConstants;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -29,15 +30,9 @@ import java.io.IOException;
 
 public class SSLContextFactoryTest extends QpidTestCase
 {
-    private static final String BROKER_KEYSTORE_PATH = TEST_RESOURCES_DIR + "/ssl/java_broker_keystore.jks";
-    private static final String CLIENT_KEYSTORE_PATH = TEST_RESOURCES_DIR + "/ssl/java_client_keystore.jks";
-    private static final String CLIENT_TRUSTSTORE_PATH = TEST_RESOURCES_DIR + "/ssl/java_client_truststore.jks";
-    private static final String STORE_PASSWORD = "password";
     private static final String STORE_TYPE = "JKS";
     private static final String DEFAULT_KEY_MANAGER_ALGORITHM = KeyManagerFactory.getDefaultAlgorithm();
     private static final String DEFAULT_TRUST_MANAGER_ALGORITHM = TrustManagerFactory.getDefaultAlgorithm();
-    private static final String CERT_ALIAS_APP1 = "app1";
-
 
     public void testTrustStoreDoesNotExist() throws Exception
     {
@@ -49,13 +44,13 @@ public class SSLContextFactoryTest extends QpidTestCase
 
             trustManagers =
                     SSLContextFactory.getTrustManagers("/path/to/nothing",
-                                                       STORE_PASSWORD,
+                                                       TestSSLConstants.TRUSTSTORE_PASSWORD,
                                                        STORE_TYPE,
                                                        DEFAULT_TRUST_MANAGER_ALGORITHM);
 
             keyManagers =
-                    SSLContextFactory.getKeyManagers(CLIENT_KEYSTORE_PATH,
-                                                     STORE_PASSWORD,
+                    SSLContextFactory.getKeyManagers(TestSSLConstants.KEYSTORE,
+                                                     TestSSLConstants.KEYSTORE_PASSWORD,
                                                      STORE_TYPE,
                                                      DEFAULT_KEY_MANAGER_ALGORITHM,
                                                      null);
@@ -78,8 +73,8 @@ public class SSLContextFactoryTest extends QpidTestCase
         final KeyManager[] keyManagers;
 
         trustManagers =
-                SSLContextFactory.getTrustManagers(CLIENT_TRUSTSTORE_PATH,
-                                                   STORE_PASSWORD,
+                SSLContextFactory.getTrustManagers(TestSSLConstants.TRUSTSTORE,
+                                                   TestSSLConstants.TRUSTSTORE_PASSWORD,
                                                    STORE_TYPE,
                                                    DEFAULT_TRUST_MANAGER_ALGORITHM);
 
@@ -98,14 +93,14 @@ public class SSLContextFactoryTest extends QpidTestCase
         final KeyManager[] keyManagers;
 
         trustManagers =
-                SSLContextFactory.getTrustManagers(CLIENT_TRUSTSTORE_PATH,
-                                                   STORE_PASSWORD,
+                SSLContextFactory.getTrustManagers(TestSSLConstants.TRUSTSTORE,
+                                                   TestSSLConstants.TRUSTSTORE_PASSWORD,
                                                    STORE_TYPE,
                                                    DEFAULT_TRUST_MANAGER_ALGORITHM);
 
         keyManagers =
-                SSLContextFactory.getKeyManagers(CLIENT_KEYSTORE_PATH,
-                                                 STORE_PASSWORD,
+                SSLContextFactory.getKeyManagers(TestSSLConstants.KEYSTORE,
+                                                 TestSSLConstants.KEYSTORE_PASSWORD,
                                                  STORE_TYPE,
                                                  DEFAULT_KEY_MANAGER_ALGORITHM,
                                                  null);
@@ -122,17 +117,17 @@ public class SSLContextFactoryTest extends QpidTestCase
         final KeyManager[] keyManagers;
 
         trustManagers =
-                SSLContextFactory.getTrustManagers(CLIENT_TRUSTSTORE_PATH,
-                                                   STORE_PASSWORD,
+                SSLContextFactory.getTrustManagers(TestSSLConstants.TRUSTSTORE,
+                                                   TestSSLConstants.TRUSTSTORE_PASSWORD,
                                                    STORE_TYPE,
                                                    DEFAULT_TRUST_MANAGER_ALGORITHM);
 
         keyManagers =
-                SSLContextFactory.getKeyManagers(CLIENT_KEYSTORE_PATH,
-                                                 STORE_PASSWORD,
+                SSLContextFactory.getKeyManagers(TestSSLConstants.KEYSTORE,
+                                                 TestSSLConstants.KEYSTORE_PASSWORD,
                                                  STORE_TYPE,
                                                  DEFAULT_KEY_MANAGER_ALGORITHM,
-                                                 CERT_ALIAS_APP1);
+                                                 TestSSLConstants.CERT_ALIAS_APP1);
 
 
         SSLContext context = SSLContextFactory.buildClientContext(trustManagers, keyManagers);

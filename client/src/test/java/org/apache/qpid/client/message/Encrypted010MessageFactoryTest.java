@@ -125,7 +125,7 @@ public class Encrypted010MessageFactoryTest extends QpidTestCase
             final List<MessageEncryptionHelper.KeyTransportRecipientInfo> recipientInfo =
                     _encryptionHelper.getKeyTransportRecipientInfo(Collections.singletonList(((X509Certificate) _keyStore
                             .getCertificate(
-                                    "app1")).getSubjectX500Principal().getName(
+                                    TestSSLConstants.CERT_ALIAS_APP1)).getSubjectX500Principal().getName(
                             X500Principal.CANONICAL)), _secretKeySpec);
 
             List<List<Object>> recipientHeader = new ArrayList<>();

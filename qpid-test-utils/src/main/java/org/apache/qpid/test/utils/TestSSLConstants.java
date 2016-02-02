@@ -26,9 +26,13 @@ public interface TestSSLConstants
     String TRUSTSTORE = "test-profiles/test_resources/ssl/java_client_truststore.jks";
     String TRUSTSTORE_PASSWORD = "password";
 
+    String CERT_ALIAS_APP1 = "app1";
+    String CERT_ALIAS_APP2 = "app2";
+    String CERT_ALIAS_UNTRUSTED_CLIENT = "untrusted_client";
+
     String BROKER_KEYSTORE = "test-profiles/test_resources/ssl/java_broker_keystore.jks";
     String BROKER_KEYSTORE_PASSWORD = "password";
-    Object BROKER_KEYSTORE_ALIAS = "rootca";
+    String BROKER_KEYSTORE_ALIAS = "rootca";
 
     String BROKER_PEERSTORE = "test-profiles/test_resources/ssl/java_broker_peerstore.jks";
     String BROKER_PEERSTORE_PASSWORD = "password";

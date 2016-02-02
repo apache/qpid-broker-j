@@ -57,13 +57,11 @@ import org.apache.qpid.server.model.VirtualHostNameAlias;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.test.utils.TestFileUtils;
+import org.apache.qpid.test.utils.TestSSLConstants;
 
 public class SSLTest extends QpidBrokerTestCase
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SSLTest.class);
-
-    private static final String CERT_ALIAS_APP1 = "app1";
-    private static final String CERT_ALIAS_APP2 = "app2";
 
     @Override
     protected void setUp() throws Exception
@@ -279,7 +277,7 @@ public class SSLTest extends QpidBrokerTestCase
 
             String url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:" +
                          getDefaultBroker().getAmqpTlsPort() +
-                         "?ssl='true'&ssl_cert_alias='" + CERT_ALIAS_APP1 + "''";
+                         "?ssl='true'&ssl_cert_alias='" + TestSSLConstants.CERT_ALIAS_APP1 + "''";
 
             AMQTestConnection_0_10 con = new AMQTestConnection_0_10(url);
             org.apache.qpid.transport.Connection transportCon = con.getConnection();
@@ -289,7 +287,7 @@ public class SSLTest extends QpidBrokerTestCase
 
             url = "amqp://guest:guest@test/?brokerlist='tcp://localhost:" +
                   getDefaultBroker().getAmqpTlsPort() +
-                  "?ssl='true'&ssl_cert_alias='" + CERT_ALIAS_APP2 + "''";
+                  "?ssl='true'&ssl_cert_alias='" + TestSSLConstants.CERT_ALIAS_APP2 + "''";
 
             con = new AMQTestConnection_0_10(url);
             transportCon = con.getConnection();
@@ -599,7 +597,7 @@ public class SSLTest extends QpidBrokerTestCase
         File privateKeyFile = TestFileUtils.createTempFile(this, ".private-key.der");
         try(FileOutputStream kos = new FileOutputStream(privateKeyFile))
         {
-            Key pvt = ks.getKey(CERT_ALIAS_APP1, KEYSTORE_PASSWORD.toCharArray());
+            Key pvt = ks.getKey(TestSSLConstants.CERT_ALIAS_APP1, KEYSTORE_PASSWORD.toCharArray());
             kos.write("-----BEGIN PRIVATE KEY-----\n".getBytes());
             String base64encoded = DatatypeConverter.printBase64Binary(pvt.getEncoded());
             while(base64encoded.length() > 76)
@@ -618,7 +616,7 @@ public class SSLTest extends QpidBrokerTestCase
 
         try(FileOutputStream cos = new FileOutputStream(certificateFile))
         {
-            Certificate[] chain = ks.getCertificateChain(CERT_ALIAS_APP1);
+            Certificate[] chain = ks.getCertificateChain(TestSSLConstants.CERT_ALIAS_APP1);
             for(Certificate pub : chain)
             {
                 cos.write("-----BEGIN CERTIFICATE-----\n".getBytes());

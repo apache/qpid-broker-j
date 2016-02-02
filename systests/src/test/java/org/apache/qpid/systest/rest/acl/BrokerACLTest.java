@@ -284,7 +284,7 @@ public class BrokerACLTest extends QpidRestTestCase
 
         assertKeyStoreExistence(keyStoreName, false);
 
-        int responseCode = createKeyStore(keyStoreName, "app1");
+        int responseCode = createKeyStore(keyStoreName, TestSSLConstants.CERT_ALIAS_APP1);
         assertEquals("keyStore creation should be allowed", 201, responseCode);
 
         assertKeyStoreExistence(keyStoreName, true);
@@ -298,7 +298,7 @@ public class BrokerACLTest extends QpidRestTestCase
 
         assertKeyStoreExistence(keyStoreName, false);
 
-        int responseCode = createKeyStore(keyStoreName, "app1");
+        int responseCode = createKeyStore(keyStoreName, TestSSLConstants.CERT_ALIAS_APP1);
         assertEquals("keyStore creation should be allowed", 403, responseCode);
 
         assertKeyStoreExistence(keyStoreName, false);
@@ -312,7 +312,7 @@ public class BrokerACLTest extends QpidRestTestCase
 
         assertKeyStoreExistence(keyStoreName, false);
 
-        int responseCode = createKeyStore(keyStoreName, "app1");
+        int responseCode = createKeyStore(keyStoreName, TestSSLConstants.CERT_ALIAS_APP1);
         assertEquals("keyStore creation should be allowed", 201, responseCode);
 
         assertKeyStoreExistence(keyStoreName, true);
@@ -333,7 +333,7 @@ public class BrokerACLTest extends QpidRestTestCase
 
         assertKeyStoreExistence(keyStoreName, false);
 
-        int responseCode = createKeyStore(keyStoreName, "app1");
+        int responseCode = createKeyStore(keyStoreName, TestSSLConstants.CERT_ALIAS_APP1);
         assertEquals("keyStore creation should be allowed", 201, responseCode);
 
         assertKeyStoreExistence(keyStoreName, true);
@@ -351,8 +351,8 @@ public class BrokerACLTest extends QpidRestTestCase
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
         String keyStoreName = getTestName();
-        String initialCertAlias = "app1";
-        String updatedCertAlias = "app2";
+        String initialCertAlias = TestSSLConstants.CERT_ALIAS_APP1;
+        String updatedCertAlias = TestSSLConstants.CERT_ALIAS_APP2;
 
         assertKeyStoreExistence(keyStoreName, false);
 
@@ -378,8 +378,8 @@ public class BrokerACLTest extends QpidRestTestCase
         getRestTestHelper().setUsernameAndPassword(ALLOWED_USER, ALLOWED_USER);
 
         String keyStoreName = getTestName();
-        String initialCertAlias = "app1";
-        String updatedCertAlias = "app2";
+        String initialCertAlias = TestSSLConstants.CERT_ALIAS_APP1;
+        String updatedCertAlias = TestSSLConstants.CERT_ALIAS_APP2;
 
         assertKeyStoreExistence(keyStoreName, false);
 

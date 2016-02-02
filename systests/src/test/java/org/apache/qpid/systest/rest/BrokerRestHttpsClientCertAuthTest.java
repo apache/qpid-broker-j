@@ -24,6 +24,7 @@ import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
 import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
+import static org.apache.qpid.test.utils.TestSSLConstants.CERT_ALIAS_APP1;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,11 +45,6 @@ public class BrokerRestHttpsClientCertAuthTest extends QpidRestTestCase
     {
         setSystemProperty("javax.net.debug", "ssl");
         super.setUp();
-        setSystemProperty("javax.net.ssl.trustStore", TRUSTSTORE);
-        setSystemProperty("javax.net.ssl.trustStorePassword", TRUSTSTORE_PASSWORD);
-        setSystemProperty("javax.net.ssl.keystore", KEYSTORE);
-        setSystemProperty("javax.net.ssl.keyStorePassword", KEYSTORE_PASSWORD);
-
     }
 
     @Override
@@ -80,6 +76,10 @@ public class BrokerRestHttpsClientCertAuthTest extends QpidRestTestCase
     {
         _restTestHelper = new RestTestHelper(getDefaultBroker().getHttpsPort());
         _restTestHelper.setUseSslAuth(true);
+        _restTestHelper.setTruststore(TRUSTSTORE, TRUSTSTORE_PASSWORD);
+        _restTestHelper.setKeystore(KEYSTORE, KEYSTORE_PASSWORD);
+        _restTestHelper.setClientAuthAlias(CERT_ALIAS_APP1);
+
         Map<String, Object> saslData = getRestTestHelper().getJsonAsMap("/service/sasl");
 
         Asserts.assertAttributesPresent(saslData, "user");

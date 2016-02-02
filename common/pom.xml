@@ -75,6 +75,12 @@
         <testResource>
             <directory>${basedir}/src/test/resources</directory>
         </testResource>
+      <testResource>
+        <directory>${basedir}/../</directory>
+        <includes>
+          <include>test-profiles/**/*.jks</include>
+        </includes>
+      </testResource>
     </testResources>
 
     <plugins>

@@ -18,11 +18,6 @@
  */
 package org.apache.qpid.systest.rest;
 
-import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE;
-import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
-import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE;
-import static org.apache.qpid.test.utils.TestSSLConstants.TRUSTSTORE_PASSWORD;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,14 +30,11 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.KeyManager;
@@ -77,7 +69,6 @@ public class RestTestHelper
     public static final String API_BASE = "/api/latest/";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestTestHelper.class);
-    private static final String CERT_ALIAS_APP1 = "app1";
 
     private int _httpPort;
 
@@ -91,6 +82,14 @@ public class RestTestHelper
     private boolean _useSslAuth;
     static final String[] EXPECTED_QUEUES = { "queue", "ping" };
     private final int _connectTimeout = Integer.getInteger("qpid.resttest_connection_timeout", 30000);
+
+    private String _truststore;
+    private String _truststorePassword;
+
+    private String _keystore;
+    private String _keystorePassword;
+
+    private String _clientAuthAlias;
 
     public RestTestHelper(int httpPort)
     {
@@ -123,6 +122,23 @@ public class RestTestHelper
         return new URL(getManagementURL() + path);
     }
 
+    public void setKeystore(final String keystore, final String keystorePassword)
+    {
+        _keystore = keystore;
+        _keystorePassword = keystorePassword;
+    }
+
+    public void setTruststore(final String truststore, final String truststorePassword)
+    {
+        _truststore = truststore;
+        _truststorePassword = truststorePassword;
+    }
+
+    public void setClientAuthAlias(final String clientAuthAlias)
+    {
+        _clientAuthAlias = clientAuthAlias;
+    }
+
     public HttpURLConnection openManagementConnection(String path, String method) throws IOException
     {
         if (!path.startsWith("/"))
@@ -144,18 +160,22 @@ public class RestTestHelper
                 final KeyManager[] keyManagers;
 
                 trustManagers =
-                        SSLContextFactory.getTrustManagers(TRUSTSTORE,
-                                                           TRUSTSTORE_PASSWORD,
+                        SSLContextFactory.getTrustManagers(_truststore,
+                                                           _truststorePassword,
                                                            KeyStore.getDefaultType(),
                                                            TrustManagerFactory.getDefaultAlgorithm());
 
+                if (_keystore == null)
+                {
+                    throw new IllegalStateException("Cannot use SSL client auth without providing a keystore");
+                }
+
                 keyManagers =
-                        SSLContextFactory.getKeyManagers(KEYSTORE,
-                                                         KEYSTORE_PASSWORD,
+                        SSLContextFactory.getKeyManagers(_keystore,
+                                                         _keystorePassword,
                                                          KeyStore.getDefaultType(),
                                                          KeyManagerFactory.getDefaultAlgorithm(),
-                                                         CERT_ALIAS_APP1);
-
+                                                         _clientAuthAlias);
 
                 final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[SSLUtil.getEnabledSSlProtocols().length-1]);
 
@@ -170,7 +190,7 @@ public class RestTestHelper
                 throw new RuntimeException(e);
             }
         }
-        else if(_useSsl)
+        else if (_useSsl)
         {
             try
             {
@@ -181,8 +201,8 @@ public class RestTestHelper
                 final KeyManager[] keyManagers;
 
                 trustManagers =
-                        SSLContextFactory.getTrustManagers(TRUSTSTORE,
-                                                           TRUSTSTORE_PASSWORD,
+                        SSLContextFactory.getTrustManagers(_truststore,
+                                                           _truststorePassword,
                                                            KeyStore.getDefaultType(),
                                                            TrustManagerFactory.getDefaultAlgorithm());
 

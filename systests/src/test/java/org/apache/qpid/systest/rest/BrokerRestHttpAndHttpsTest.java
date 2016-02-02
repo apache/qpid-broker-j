@@ -78,8 +78,13 @@ public class BrokerRestHttpAndHttpsTest extends QpidRestTestCase
 
     private Collection<String> getMechanisms(final boolean useSsl) throws IOException
     {
-        _restTestHelper = new RestTestHelper(useSsl? getDefaultBroker().getHttpsPort() : getDefaultBroker().getHttpPort());
+        _restTestHelper = new RestTestHelper(useSsl ? getDefaultBroker().getHttpsPort() : getDefaultBroker().getHttpPort());
         _restTestHelper.setUseSsl(useSsl);
+        if (useSsl)
+        {
+            _restTestHelper.setTruststore(TRUSTSTORE, TRUSTSTORE_PASSWORD);
+        }
+
         Map<String, Object> mechanisms = _restTestHelper.getJsonAsMap("/service/sasl");
         return (Collection<String>) mechanisms.get("mechanisms");
     }
