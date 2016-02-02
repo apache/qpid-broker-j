@@ -152,9 +152,10 @@ public class Main
 
     protected void execute() throws Exception
     {
-        BrokerOptions options = new BrokerOptions();
-
         String initialProperties = _commandLine.getOptionValue(OPTION_INITIAL_SYSTEM_PROPERTIES.getOpt());
+        Broker.populateSystemPropertiesFromDefaults(initialProperties);
+
+        BrokerOptions options = new BrokerOptions();
         if (initialProperties != null)
         {
             options.setInitialSystemProperties(initialProperties);
