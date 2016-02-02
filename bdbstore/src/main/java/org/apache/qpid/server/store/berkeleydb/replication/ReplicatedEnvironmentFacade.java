@@ -40,7 +40,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -202,7 +202,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
 
     private final ExecutorService _environmentJobExecutor;
     private final ListeningExecutorService _stateChangeExecutor;
-    private final ScheduledExecutorService _groupChangeExecutor;
+    private final ScheduledThreadPoolExecutor _groupChangeExecutor;
     private final AtomicReference<State> _state = new AtomicReference<State>(State.OPENING);
     private final ConcurrentMap<String, ReplicationNode> _remoteReplicationNodes = new ConcurrentHashMap<String, ReplicationNode>();
     private final AtomicReference<ReplicationGroupListener> _replicationGroupListener = new AtomicReference<ReplicationGroupListener>();
@@ -253,7 +253,7 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         // we relay on this executor being single-threaded as we need to restart and mutate the environment in one thread
         _environmentJobExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory("Environment-" + _prettyGroupNodeName));
         _stateChangeExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor(new DaemonThreadFactory("StateChange-" + _prettyGroupNodeName)));
-        _groupChangeExecutor = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors() + 1, new DaemonThreadFactory("Group-Change-Learner:" + _prettyGroupNodeName));
+        _groupChangeExecutor = new ScheduledThreadPoolExecutor(1, new DaemonThreadFactory("Group-Change-Learner:" + _prettyGroupNodeName));
 
         // create environment in a separate thread to avoid renaming of the current thread by JE
         EnvHomeRegistry.getInstance().registerHome(_environmentDirectory);
@@ -265,6 +265,11 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 public void run()
                 {
                     populateExistingRemoteReplicationNodes();
+                    int groupSize = _remoteReplicationNodes.size() + 1;
+                    if (groupSize > 0)
+                    {
+                        _groupChangeExecutor.setCorePoolSize(groupSize + 1);
+                    }
                     _groupChangeExecutor.submit(new RemoteNodeStateLearner());
                 }
             });
@@ -2063,6 +2068,9 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                 Set<ReplicationNode> nodes = new HashSet<ReplicationNode>(group.getNodes());
                 String localNodeName = getNodeName();
 
+                int knownRemoteNodeNumber = _remoteReplicationNodes.size();
+                int groupSize = nodes.size();
+
                 Map<String, ReplicationNode> removalMap = new HashMap<String, ReplicationNode>(_remoteReplicationNodes);
                 for (ReplicationNode replicationNode : nodes)
                 {
@@ -2115,6 +2123,13 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                             replicationGroupListener.onReplicationNodeRemovedFromGroup(replicationNodeEntry.getValue());
                         }
                     }
+                }
+
+                if (shouldContinue && knownRemoteNodeNumber + 1 != groupSize)
+                {
+                    int poolSize = groupSize + 1;
+                    LOGGER.debug("Setting group change executor core pool size to {}", poolSize);
+                    _groupChangeExecutor.setCorePoolSize(poolSize);
                 }
             }
             return shouldContinue;
