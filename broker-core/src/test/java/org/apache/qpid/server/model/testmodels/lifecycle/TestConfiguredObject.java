@@ -42,6 +42,7 @@ import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.testmodels.TestSecurityManager;
+import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 import org.apache.qpid.server.security.SecurityManager;
 
@@ -219,7 +220,9 @@ public class TestConfiguredObject extends AbstractConfiguredObject
                     return TestConfiguredObjectModel.class.getSimpleName();
                 }
             };
-            _configuredObjectTypeRegistry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration), CATEGORIES,
+            _configuredObjectTypeRegistry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration),
+                                                                             Collections.<ConfiguredObjectAttributeInjector>emptySet(),
+                                                                             CATEGORIES,
                                                                              _configuredObjectFactory);
         }
 

@@ -73,7 +73,6 @@ import org.apache.qpid.server.security.encryption.ConfigurationSecretEncrypter;
 import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
-import org.apache.qpid.server.virtualhost.AbstractVirtualHost;
 import org.apache.qpid.util.Strings;
 
 public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> implements ConfiguredObject<X>
@@ -284,7 +283,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         Object durableObj = attributes.get(DURABLE);
         _durable = AttributeValueConverter.BOOLEAN_CONVERTER.convert(durableObj == null
-                                                                             ? ((ConfiguredAutomatedAttribute) (_attributeTypes
+                                                                             ? ((ConfiguredSettableAttribute) (_attributeTypes
                 .get(DURABLE))).defaultValue()
                                                                              : durableObj, this);
 
@@ -314,9 +313,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
         for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())
         {
-            if(attr.isAutomated())
+            if(!attr.isDerived())
             {
-                ConfiguredAutomatedAttribute<?,?> autoAttr = (ConfiguredAutomatedAttribute<?,?>)attr;
+                ConfiguredSettableAttribute<?,?> autoAttr = (ConfiguredSettableAttribute<?,?>)attr;
                 if (autoAttr.isMandatory() && !(_attributes.containsKey(attr.getName())
                                             || !"".equals(autoAttr.defaultValue())))
                 {
@@ -432,7 +431,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    private boolean checkValidValues(final ConfiguredAutomatedAttribute attribute, final Object desiredValue)
+    private boolean checkValidValues(final ConfiguredSettableAttribute attribute, final Object desiredValue)
     {
         for (Object validValue : attribute.validValues())
         {
@@ -1066,9 +1065,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())
         {
-            if (attr.isAutomated())
+            if (!attr.isDerived())
             {
-                ConfiguredAutomatedAttribute autoAttr = (ConfiguredAutomatedAttribute) attr;
+                ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute) attr;
                 if (autoAttr.hasValidValues())
                 {
                     Object desiredValueOrDefault = autoAttr.getValue(this);
@@ -1112,22 +1111,25 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         for (ConfiguredObjectAttribute<?, ?> attr : _attributeTypes.values())
         {
-            if (attr.isAutomated())
-            {
-                unresolved.add(attr);
-            }
-            else if(attr.isDerived())
+            if(attr.isDerived())
             {
                 derived.add(attr);
+            }
+            else
+            {
+                unresolved.add(attr);
             }
         }
 
         // If there is a context attribute, resolve it first, so that other attribute values
         // may support values containing references to context keys.
         ConfiguredObjectAttribute<?, ?> contextAttribute = _attributeTypes.get("context");
-        if (contextAttribute != null && contextAttribute.isAutomated())
+        if (contextAttribute != null && !contextAttribute.isDerived())
         {
-            resolveAutomatedAttribute((ConfiguredAutomatedAttribute<?, ?>) contextAttribute);
+            if(contextAttribute.isAutomated())
+            {
+                resolveAutomatedAttribute((ConfiguredSettableAttribute<?, ?>) contextAttribute);
+            }
             unresolved.remove(contextAttribute);
         }
 
@@ -1143,7 +1145,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
                 if(!(dependsOn(attr, unresolved) || (!derived.isEmpty() && dependsOn(attr, derived))))
                 {
-                    resolveAutomatedAttribute((ConfiguredAutomatedAttribute<?, ?>) attr);
+                    if(attr.isAutomated())
+                    {
+                        resolveAutomatedAttribute((ConfiguredSettableAttribute<?, ?>) attr);
+                    }
                     attrIter.remove();
                     changed = true;
                 }
@@ -1162,9 +1167,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                               final Set<ConfiguredObjectAttribute<?, ?>> unresolved)
     {
         Object value = _attributes.get(attr.getName());
-        if(value == null && !"".equals(((ConfiguredAutomatedAttribute)attr).defaultValue()))
+        if(value == null && !"".equals(((ConfiguredSettableAttribute)attr).defaultValue()))
         {
-            value = ((ConfiguredAutomatedAttribute)attr).defaultValue();
+            value = ((ConfiguredSettableAttribute)attr).defaultValue();
         }
         if(value instanceof String)
         {
@@ -1183,7 +1188,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         return false;
     }
 
-    private void resolveAutomatedAttribute(final ConfiguredAutomatedAttribute<?, ?> autoAttr)
+    private void resolveAutomatedAttribute(final ConfiguredSettableAttribute<?, ?> autoAttr)
     {
         String attrName = autoAttr.getName();
         if (_attributes.containsKey(attrName))
@@ -1581,7 +1586,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     public final Object getAttribute(String name)
     {
         ConfiguredObjectAttribute<X,?> attr = (ConfiguredObjectAttribute<X, ?>) _attributeTypes.get(name);
-        if(attr != null && (attr.isAutomated() || attr.isDerived()))
+        if(attr != null)
         {
             Object value = attr.getValue((X)this);
             if(value != null && !SecurityManager.isSystemProcess() && attr.isSecureValue(value))
@@ -1592,11 +1597,6 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             {
                 return value;
             }
-        }
-        else if(attr != null)
-        {
-            Object value = getActualAttribute(name);
-            return value;
         }
         else
         {
@@ -2524,9 +2524,9 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     {
         for(ConfiguredObjectAttribute<?,?> attr : _attributeTypes.values())
         {
-            if (attr.isAutomated() && changedAttributes.contains(attr.getName()))
+            if (!attr.isDerived() && changedAttributes.contains(attr.getName()))
             {
-                ConfiguredAutomatedAttribute autoAttr = (ConfiguredAutomatedAttribute) attr;
+                ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute) attr;
 
                 if (autoAttr.isImmutable() && !Objects.equals(autoAttr.getValue(this), autoAttr.getValue(proxyForValidation)))
                 {
@@ -2868,15 +2868,23 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     return null;
                 }
             }
-            throw new UnsupportedOperationException("This class is only intended for value validation, and only getters on managed attributes are permitted.");
+            else if(method.getName().equals("getActualAttributes") && (args == null || args.length == 0))
+            {
+                return Collections.unmodifiableMap(_attributes);
+            }
+            else
+            {
+                throw new UnsupportedOperationException(
+                        "This class is only intended for value validation, and only getters on managed attributes are permitted.");
+            }
         }
 
         protected Object getValue(final ConfiguredObjectAttribute attribute)
         {
             Object value;
-            if(attribute.isAutomated())
+            if(!attribute.isDerived())
             {
-                ConfiguredAutomatedAttribute autoAttr = (ConfiguredAutomatedAttribute) attribute;
+                ConfiguredSettableAttribute autoAttr = (ConfiguredSettableAttribute) attribute;
                 value = _attributes.get(attribute.getName());
                 if (value == null && !"".equals(autoAttr.defaultValue()))
                 {
@@ -2899,7 +2907,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         {
             for(ConfiguredObjectAttribute attribute : _attributeTypes.values())
             {
-                if(attribute.getGetter().getName().equals(method.getName())
+                if((attribute instanceof ConfiguredObjectMethodAttribute) && ((ConfiguredObjectMethodAttribute)attribute).getGetter().getName().equals(method.getName())
                    && !Modifier.isStatic(method.getModifiers()))
                 {
                     return attribute;

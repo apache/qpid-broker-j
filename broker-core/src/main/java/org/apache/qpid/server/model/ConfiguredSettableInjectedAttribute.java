@@ -33,32 +33,58 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extends ConfiguredObjectMethodAttribute<C,T>
-        implements ConfiguredSettableAttribute<C, T>
+public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
+        extends ConfiguredObjectInjectedAttributeOrStatistic<C,T> implements ConfiguredSettableAttribute<C,T>, ConfiguredObjectInjectedAttribute<C,T>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredAutomatedAttribute.class);
 
-    private final ManagedAttribute _annotation;
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredSettableInjectedAttribute.class);
+
     private final Method _validValuesMethod;
     private final Pattern _secureValuePattern;
+    private final String _defaultValue;
+    private final boolean _secure;
+    private final boolean _persisted;
+    private final boolean _immutable;
+    private final boolean _oversized;
+    private final String _oversizedAltText;
+    private final String _description;
+    private final String[] _validValues;
 
-    ConfiguredAutomatedAttribute(final Class<C> clazz,
-                                 final Method getter,
-                                 final ManagedAttribute annotation)
+    public ConfiguredSettableInjectedAttribute(final String name,
+                                        final Class<T> type,
+                                        final Type genericType,
+                                        final String defaultValue,
+                                        final boolean secure,
+                                        final boolean persisted,
+                                        final boolean immutable,
+                                        final String secureValueFilter,
+                                        final boolean oversized,
+                                        final String oversizedAltText,
+                                        final String description,
+                                        final String[] validValues,
+                                        final TypeValidator typeValidator)
     {
-        super(clazz, getter);
-        _annotation = annotation;
+        super(name, type, genericType, typeValidator);
+
+        _defaultValue = defaultValue;
+        _secure = secure;
+        _persisted = persisted;
+        _immutable = immutable;
+        _oversized = oversized;
+        _oversizedAltText = oversizedAltText;
+        _description = description;
+        _validValues = validValues;
+
         Method validValuesMethod = null;
 
-        if(_annotation.validValues().length == 1)
+        if(_validValues != null && _validValues.length == 1)
         {
-            String validValue = _annotation.validValues()[0];
+            String validValue = _validValues[0];
 
-            validValuesMethod = getValidValuesMethod(validValue, clazz);
+            validValuesMethod = getValidValuesMethod(validValue);
         }
         _validValuesMethod = validValuesMethod;
 
-        String secureValueFilter = _annotation.secureValueFilter();
         if (secureValueFilter == null || "".equals(secureValueFilter))
         {
             _secureValuePattern = null;
@@ -69,15 +95,14 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         }
     }
 
-    private Method getValidValuesMethod(final String validValue, final Class<C> clazz)
+    private Method getValidValuesMethod(final String validValue)
     {
         if(validValue.matches("([\\w][\\w\\d_]+\\.)+[\\w][\\w\\d_\\$]*#[\\w\\d_]+\\s*\\(\\s*\\)"))
         {
-            String function = validValue;
             try
             {
-                String className = function.split("#")[0].trim();
-                String methodName = function.split("#")[1].split("\\(")[0].trim();
+                String className = validValue.split("#")[0].trim();
+                String methodName = validValue.split("#")[1].split("\\(")[0].trim();
                 Class<?> validValueCalculatingClass = Class.forName(className);
                 Method method = validValueCalculatingClass.getMethod(methodName);
                 if (Modifier.isStatic(method.getModifiers()) && Modifier.isPublic(method.getModifiers()))
@@ -99,7 +124,7 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
             }
             catch (ClassNotFoundException | NoSuchMethodException e)
             {
-                LOGGER.warn("The validValues of the " + getName() + " attribute in class " + clazz.getSimpleName()
+                LOGGER.warn("The validValues of the " + getName()
                             + " has value '" + validValue + "' which looks like it should be a method,"
                             + " but no such method could be used.", e );
             }
@@ -109,7 +134,7 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
 
     public boolean isAutomated()
     {
-        return true;
+        return false;
     }
 
     public boolean isDerived()
@@ -117,55 +142,52 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         return false;
     }
 
-    @Override
     public String defaultValue()
     {
-        return _annotation.defaultValue();
+        return _defaultValue;
     }
 
     public boolean isSecure()
     {
-        return _annotation.secure();
+        return _secure;
     }
 
-    @Override
     public boolean isMandatory()
     {
-        return _annotation.mandatory();
+        return false;
     }
 
-    @Override
     public boolean isImmutable()
     {
-        return _annotation.immutable();
+        return _immutable;
     }
 
     public boolean isPersisted()
     {
-        return _annotation.persist();
+        return _persisted;
     }
 
     @Override
     public boolean isOversized()
     {
-        return _annotation.oversize();
+        return _oversized;
     }
 
     @Override
     public boolean updateAttributeDespiteUnchangedValue()
     {
-        return _annotation.updateAttributeDespiteUnchangedValue();
+        return false;
     }
 
     @Override
     public String getOversizedAltText()
     {
-        return _annotation.oversizedAltText();
+        return _oversizedAltText;
     }
 
     public String getDescription()
     {
-        return _annotation.description();
+        return _description;
     }
 
     public Pattern getSecureValueFilter()
@@ -174,6 +196,13 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
     }
 
     @Override
+    public boolean isSecureValue(final Object value)
+    {
+        Pattern filter;
+        return isSecure() &&
+               ((filter = getSecureValueFilter()) == null || filter.matcher(String.valueOf(value)).matches());
+    }
+
     public Collection<String> validValues()
     {
         if(_validValuesMethod != null)
@@ -190,14 +219,25 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
         }
         else
         {
-            return Arrays.asList(_annotation.validValues());
+            return _validValues == null ? Collections.<String>emptySet() : Arrays.asList(_validValues);
         }
     }
 
     /** Returns true iff this attribute has valid values defined */
-    @Override
     public boolean hasValidValues()
     {
         return validValues() != null && validValues().size() > 0;
     }
+
+    @Override
+    public final T getValue(final C configuredObject)
+    {
+        Object value = configuredObject.getActualAttributes().get(getName());
+        if(value == null)
+        {
+            value = defaultValue();
+        }
+        return convert(value, configuredObject);
+    }
+
 }

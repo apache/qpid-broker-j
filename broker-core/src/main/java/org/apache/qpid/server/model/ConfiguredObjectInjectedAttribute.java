@@ -20,31 +20,6 @@
  */
 package org.apache.qpid.server.model;
 
-import java.util.regex.Pattern;
-
-public interface ConfiguredObjectAttribute<C extends ConfiguredObject, T>  extends ConfiguredObjectAttributeOrStatistic<C,T>
+public interface ConfiguredObjectInjectedAttribute<C extends ConfiguredObject, T> extends InjectedAttributeOrStatistic<C,T>, ConfiguredObjectAttribute<C,T>
 {
-
-    boolean isAutomated();
-
-    boolean isDerived();
-
-    boolean isSecure();
-
-    boolean isPersisted();
-
-    boolean isOversized();
-
-    boolean updateAttributeDespiteUnchangedValue();
-
-    String getOversizedAltText();
-
-    String getDescription();
-
-    Pattern getSecureValueFilter();
-
-    boolean isSecureValue(Object value);
-
-    T convert(Object value, C object);
-
 }

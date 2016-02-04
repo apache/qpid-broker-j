@@ -60,11 +60,11 @@ public abstract class AbstractUnresolvedObject<C extends ConfiguredObject<C>> im
                 {
                     addUnresolvedObject((Class<? extends ConfiguredObject>) attributeType,
                                         attribute.getName(),
-                                        attribute.isAutomated() && ((ConfiguredAutomatedAttribute<? super C,?>)attribute).isMandatory());
+                                        attribute.isAutomated() && ((ConfiguredSettableAttribute<? super C,?>)attribute).isMandatory());
                 }
                 else if (Collection.class.isAssignableFrom(attributeType))
                 {
-                    Type returnType = attribute.getGetter().getGenericReturnType();
+                    Type returnType = attribute.getGenericType();
                     Class<? extends ConfiguredObject> attrClass = getMemberType(returnType);
                     if (attrClass != null)
                     {

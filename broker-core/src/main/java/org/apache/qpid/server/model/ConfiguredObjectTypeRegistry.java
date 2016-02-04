@@ -48,6 +48,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 import org.apache.qpid.server.plugin.ConfiguredObjectTypeFactory;
 import org.apache.qpid.server.util.Action;
@@ -197,12 +198,15 @@ public class ConfiguredObjectTypeRegistry
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<String, Collection<String>>>());
 
     private final ConfiguredObjectFactory _objectFactory;
+    private final Iterable<ConfiguredObjectAttributeInjector> _attributeInjectors;
 
     public ConfiguredObjectTypeRegistry(Iterable<ConfiguredObjectRegistration> configuredObjectRegistrations,
+                                        final Iterable<ConfiguredObjectAttributeInjector> attributeInjectors,
                                         Collection<Class<? extends ConfiguredObject>> categoriesRestriction,
                                         final ConfiguredObjectFactory objectFactory)
     {
         _objectFactory = objectFactory;
+        _attributeInjectors = attributeInjectors;
         Set<Class<? extends ConfiguredObject>> categories = new HashSet<>();
         Set<Class<? extends ConfiguredObject>> types = new HashSet<>();
 
@@ -671,6 +675,24 @@ public class ConfiguredObjectTypeRegistry
         {
             processMethod(clazz, attributeSet, statisticSet, operationsSet, method);
         }
+
+        for(ConfiguredObjectAttributeInjector injector : _attributeInjectors)
+        {
+            for(ConfiguredObjectInjectedAttribute<?,?> attr : injector.getInjectedAttributes())
+            {
+                if(attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                {
+                    attributeSet.add(attr);
+                }
+            }
+            for(ConfiguredObjectInjectedStatistic<?,?> attr : injector.getInjectedStatistics())
+            {
+                if(attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                {
+                    statisticSet.add(attr);
+                }
+            }
+        }
     }
 
     private <X extends ConfiguredObject> void processMethod(final Class<X> clazz,
@@ -707,7 +729,7 @@ public class ConfiguredObjectTypeRegistry
         {
             throw new ServerScopedRuntimeException("Can only define ManagedStatistics on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
         }
-        ConfiguredObjectStatistic statistic = new ConfiguredObjectStatistic(clazz, m, statAnnotation);
+        ConfiguredObjectStatistic statistic = new ConfiguredObjectMethodStatistic(clazz, m, statAnnotation);
         if(statisticSet.contains(statistic))
         {
             statisticSet.remove(statistic);
@@ -726,7 +748,7 @@ public class ConfiguredObjectTypeRegistry
             throw new ServerScopedRuntimeException("Can only define DerivedAttributes on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
         }
 
-        ConfiguredObjectAttribute<?,?> attribute = new ConfiguredDerivedAttribute<>(clazz, m, annotation);
+        ConfiguredObjectAttribute<?,?> attribute = new ConfiguredDerivedMethodAttribute<>(clazz, m, annotation);
         if(attributeSet.contains(attribute))
         {
             attributeSet.remove(attribute);
@@ -811,6 +833,16 @@ public class ConfiguredObjectTypeRegistry
                 fieldMap.put(attr.getName(), findField(attr, clazz));
             }
 
+        }
+        for(ConfiguredObjectAttributeInjector injector : _attributeInjectors)
+        {
+            for(ConfiguredObjectInjectedAttribute<?,?> attr : injector.getInjectedAttributes())
+            {
+                if(!attrMap.containsKey(attr.getName()) && attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                {
+                    attrMap.put(attr.getName(), attr);
+                }
+            }
         }
         _allAttributeTypes.put(clazz, attrMap);
         _allAutomatedFields.put(clazz, fieldMap);

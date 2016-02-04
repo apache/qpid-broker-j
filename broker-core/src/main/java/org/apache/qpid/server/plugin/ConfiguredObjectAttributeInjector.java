@@ -18,33 +18,15 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.plugin;
 
-import java.util.regex.Pattern;
+import java.util.Collection;
 
-public interface ConfiguredObjectAttribute<C extends ConfiguredObject, T>  extends ConfiguredObjectAttributeOrStatistic<C,T>
+import org.apache.qpid.server.model.ConfiguredObjectInjectedAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectInjectedStatistic;
+
+public interface ConfiguredObjectAttributeInjector extends Pluggable
 {
-
-    boolean isAutomated();
-
-    boolean isDerived();
-
-    boolean isSecure();
-
-    boolean isPersisted();
-
-    boolean isOversized();
-
-    boolean updateAttributeDespiteUnchangedValue();
-
-    String getOversizedAltText();
-
-    String getDescription();
-
-    Pattern getSecureValueFilter();
-
-    boolean isSecureValue(Object value);
-
-    T convert(Object value, C object);
-
+    Collection<ConfiguredObjectInjectedAttribute<?,?>> getInjectedAttributes();
+    Collection<ConfiguredObjectInjectedStatistic<?,?>> getInjectedStatistics();
 }

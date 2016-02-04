@@ -39,12 +39,12 @@ import javax.servlet.http.HttpServletResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import org.apache.qpid.server.model.ConfiguredAutomatedAttribute;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectStatistic;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
+import org.apache.qpid.server.model.ConfiguredSettableAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OperationParameter;
@@ -167,9 +167,9 @@ public class MetaDataServlet extends AbstractServlet
             {
                 attrDetails.put("derived", attribute.isDerived());
             }
-            if (attribute.isAutomated())
+            if (!attribute.isDerived())
             {
-                ConfiguredAutomatedAttribute automatedAttribute = (ConfiguredAutomatedAttribute) attribute;
+                ConfiguredSettableAttribute automatedAttribute = (ConfiguredSettableAttribute) attribute;
                 if (!"".equals(automatedAttribute.defaultValue()))
                 {
                     attrDetails.put("defaultValue", automatedAttribute.defaultValue());
@@ -184,7 +184,7 @@ public class MetaDataServlet extends AbstractServlet
                 }
                 if (!(automatedAttribute.validValues()).isEmpty())
                 {
-                    Collection<String> validValues = ((ConfiguredAutomatedAttribute<?, ?>) attribute).validValues();
+                    Collection<String> validValues = ((ConfiguredSettableAttribute<?, ?>) attribute).validValues();
 
                     Collection<Object> convertedValues = new ArrayList<>(validValues.size());
                     for (String value : validValues)
