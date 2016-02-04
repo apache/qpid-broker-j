@@ -36,6 +36,7 @@ import javax.security.sasl.SaslServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.security.auth.manager.AbstractScramAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA1AuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ScramSHA256AuthenticationManager;
@@ -65,7 +66,7 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
     private final ScramSaslServerSourceAdapter _scramSha256Adapter;
 
 
-    public PlainPasswordFilePrincipalDatabase()
+    public PlainPasswordFilePrincipalDatabase(AuthenticationProvider<?> authenticationProvider)
     {
         PlainInitialiser plainInitialiser = new PlainInitialiser();
         plainInitialiser.initialise(this);
@@ -88,8 +89,9 @@ public class PlainPasswordFilePrincipalDatabase extends AbstractPasswordFilePrin
                     }
                 };
 
-        _scramSha1Adapter = new ScramSaslServerSourceAdapter(AbstractScramAuthenticationManager.DEFAULT_ITERATION_COUNT, "HmacSHA1", "SHA-1", passwordSource);
-        _scramSha256Adapter = new ScramSaslServerSourceAdapter(AbstractScramAuthenticationManager.DEFAULT_ITERATION_COUNT, "HmacSHA256", "SHA-256", passwordSource);
+        final int scramIterationCount = authenticationProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
+        _scramSha1Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA1", "SHA-1", passwordSource);
+        _scramSha256Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA256", "SHA-256", passwordSource);
     }
 
 

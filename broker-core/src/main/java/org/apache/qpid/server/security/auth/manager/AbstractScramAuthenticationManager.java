@@ -154,6 +154,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
 
     private void updateStoredPasswordFormatIfNecessary(final ManagedUser user)
     {
+        final int oldDefaultIterationCount = 4096;
         final String[] passwordFields = user.getPassword().split(",");
         if (passwordFields.length == 2)
         {
@@ -171,7 +172,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                                   + "," // remove previously insecure salted password field
                                   + DatatypeConverter.printBase64Binary(storedKey) + ","
                                   + DatatypeConverter.printBase64Binary(serverKey) + ","
-                                  + DatatypeConverter.printInt(getIterationCount());
+                                  + oldDefaultIterationCount;
 
                 user.setPassword(password);
             }
@@ -186,7 +187,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                     + "," // remove previously insecure salted password field
                     + passwordFields[PasswordField.STORED_KEY.ordinal()] + ","
                     + passwordFields[PasswordField.SERVER_KEY.ordinal()] + ","
-                    + DatatypeConverter.printInt(getIterationCount());
+                    + oldDefaultIterationCount;
             user.setPassword(password);
         }
         else if (passwordFields.length != 5)
@@ -259,7 +260,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                    + "," // leave insecure salted password field blank
                    + DatatypeConverter.printBase64Binary(storedKey) + ","
                    + DatatypeConverter.printBase64Binary(serverKey) + ","
-                   + DatatypeConverter.printInt(iterationCount);
+                   + iterationCount;
         }
         catch (NoSuchAlgorithmException e)
         {
@@ -304,7 +305,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
             salt = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SALT.ordinal()]);
             storedKey = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.STORED_KEY.ordinal()]);
             serverKey = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SERVER_KEY.ordinal()]);
-            iterationCount = DatatypeConverter.parseInt(passwordFields[PasswordField.ITERATION_COUNT.ordinal()]);
+            iterationCount = Integer.parseInt(passwordFields[PasswordField.ITERATION_COUNT.ordinal()]);
             exception = null;
         }
 

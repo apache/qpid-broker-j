@@ -40,6 +40,7 @@ import javax.security.sasl.SaslServer;
 import javax.security.sasl.SaslServerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationStatus;
@@ -124,7 +125,9 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 
     public void testInitialiseWhenPasswordFileNotFound() throws Exception
     {
-        _principalDatabase = new PlainPasswordFilePrincipalDatabase();
+        AuthenticationProvider mockAuthProvider = mock(AuthenticationProvider.class);
+        when(mockAuthProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
+        _principalDatabase = new PlainPasswordFilePrincipalDatabase(mockAuthProvider);
         setupManager(true);
         try
         {
@@ -140,7 +143,9 @@ public class PrincipalDatabaseAuthenticationManagerTest extends QpidTestCase
 
     public void testInitialiseWhenPasswordFileExists() throws Exception
     {
-        _principalDatabase = new PlainPasswordFilePrincipalDatabase();
+        AuthenticationProvider mockAuthProvider = mock(AuthenticationProvider.class);
+        when(mockAuthProvider.getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)).thenReturn(4096);
+        _principalDatabase = new PlainPasswordFilePrincipalDatabase(mockAuthProvider);
         setupManager(true);
 
         File f = new File(_passwordFileLocation);

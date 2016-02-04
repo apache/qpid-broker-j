@@ -42,6 +42,6 @@ public class PlainPasswordDatabaseAuthenticationManager extends PrincipalDatabas
     @Override
     protected PrincipalDatabase createDatabase()
     {
-        return new PlainPasswordFilePrincipalDatabase();
+        return new PlainPasswordFilePrincipalDatabase(this);
     }
 }

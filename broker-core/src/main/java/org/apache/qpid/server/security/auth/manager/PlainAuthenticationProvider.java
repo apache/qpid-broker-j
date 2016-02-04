@@ -80,9 +80,9 @@ public class PlainAuthenticationProvider
                 };
 
 
-
-        _scramSha1Adapter = new ScramSaslServerSourceAdapter(AbstractScramAuthenticationManager.DEFAULT_ITERATION_COUNT, "HmacSHA1", "SHA-1", passwordSource);
-        _scramSha256Adapter = new ScramSaslServerSourceAdapter(AbstractScramAuthenticationManager.DEFAULT_ITERATION_COUNT, "HmacSHA256", "SHA-256", passwordSource);
+        final int scramIterationCount = getContextValue(Integer.class, AbstractScramAuthenticationManager.QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
+        _scramSha1Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA1", "SHA-1", passwordSource);
+        _scramSha256Adapter = new ScramSaslServerSourceAdapter(scramIterationCount, "HmacSHA256", "SHA-256", passwordSource);
 
     }
 
