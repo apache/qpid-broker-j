@@ -54,6 +54,12 @@ public class TestModel extends Model
     {
         this(objectFactory, Collections.<ConfiguredObjectAttributeInjector>emptySet());
     }
+
+    public TestModel(final ConfiguredObjectFactory objectFactory, ConfiguredObjectAttributeInjector injector)
+    {
+        this(objectFactory, Collections.singleton(injector));
+    }
+
     public TestModel(final ConfiguredObjectFactory objectFactory, Set<ConfiguredObjectAttributeInjector> attributeInjectors)
     {
         _objectFactory = objectFactory == null ? new ConfiguredObjectFactoryImpl(this) : objectFactory;

@@ -685,11 +685,20 @@ public class ConfiguredObjectTypeRegistry
                     attributeSet.add(attr);
                 }
             }
+
             for(ConfiguredObjectInjectedStatistic<?,?> attr : injector.getInjectedStatistics())
             {
                 if(attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
                 {
                     statisticSet.add(attr);
+                }
+            }
+
+            for(ConfiguredObjectInjectedOperation<?> operation : injector.getInjectedOperations())
+            {
+                if(operation.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                {
+                    operationsSet.add(operation);
                 }
             }
         }
@@ -786,7 +795,7 @@ public class ConfiguredObjectTypeRegistry
             throw new ServerScopedRuntimeException("Can only define ManagedOperations on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
         }
 
-        ConfiguredObjectOperation<?> operation = new ConfiguredObjectOperation<>(clazz, m, this);
+        ConfiguredObjectOperation<?> operation = new ConfiguredObjectMethodOperation<>(clazz, m, this);
         Iterator<ConfiguredObjectOperation<?>> iter = operationSet.iterator();
         while(iter.hasNext())
         {

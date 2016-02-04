@@ -23,10 +23,12 @@ package org.apache.qpid.server.plugin;
 import java.util.Collection;
 
 import org.apache.qpid.server.model.ConfiguredObjectInjectedAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectInjectedOperation;
 import org.apache.qpid.server.model.ConfiguredObjectInjectedStatistic;
 
 public interface ConfiguredObjectAttributeInjector extends Pluggable
 {
     Collection<ConfiguredObjectInjectedAttribute<?,?>> getInjectedAttributes();
     Collection<ConfiguredObjectInjectedStatistic<?,?>> getInjectedStatistics();
+    Collection<ConfiguredObjectInjectedOperation<?>> getInjectedOperations();
 }

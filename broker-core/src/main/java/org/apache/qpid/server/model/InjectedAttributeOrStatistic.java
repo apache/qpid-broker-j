@@ -20,12 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
-public interface InjectedAttributeOrStatistic<C extends ConfiguredObject, T> extends ConfiguredObjectAttributeOrStatistic<C, T>
+public interface InjectedAttributeOrStatistic<C extends ConfiguredObject, T> extends InjectedAttributeStatisticOrOperation<C>, ConfiguredObjectAttributeOrStatistic<C, T>
 {
-    boolean appliesToConfiguredObjectType(Class<? extends ConfiguredObject<?>> type);
 
-    interface TypeValidator
-    {
-        boolean appliesToType(Class<? extends ConfiguredObject<?>> type);
-    }
 }

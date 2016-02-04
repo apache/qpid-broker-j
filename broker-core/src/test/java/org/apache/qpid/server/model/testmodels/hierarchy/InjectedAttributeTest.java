@@ -21,22 +21,14 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
-import java.security.AccessControlException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
-import org.apache.qpid.server.store.ConfiguredObjectRecord;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class InjectedAttributeTest extends QpidTestCase
@@ -47,12 +39,37 @@ public class InjectedAttributeTest extends QpidTestCase
 
         private Collection<ConfiguredObjectInjectedAttribute<?, ?>> _injectedAttributes;
         private Collection<ConfiguredObjectInjectedStatistic<?, ?>> _injectedStatistics;
+        private Collection<ConfiguredObjectInjectedOperation<?>> _injectedOperations;
+
+        private TestInjector(ConfiguredObjectInjectedAttribute<?, ?> attribute)
+        {
+            this(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>singletonList(attribute),
+                 Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptyList(),
+                 Collections.<ConfiguredObjectInjectedOperation<?>>emptyList());
+        }
+
+        private TestInjector(ConfiguredObjectInjectedStatistic<?, ?> statistic)
+        {
+            this(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>emptyList(),
+                 Collections.<ConfiguredObjectInjectedStatistic<?, ?>>singletonList(statistic),
+                 Collections.<ConfiguredObjectInjectedOperation<?>>emptyList());
+        }
+
+
+        private TestInjector(ConfiguredObjectInjectedOperation<?> operation)
+        {
+            this(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>emptyList(),
+                 Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptyList(),
+                 Collections.<ConfiguredObjectInjectedOperation<?>>singletonList(operation));
+        }
 
         private TestInjector(final Collection<ConfiguredObjectInjectedAttribute<?, ?>> injectedAttributes,
-                             final Collection<ConfiguredObjectInjectedStatistic<?, ?>> injectedStatistics)
+                             final Collection<ConfiguredObjectInjectedStatistic<?, ?>> injectedStatistics,
+                             final Collection<ConfiguredObjectInjectedOperation<?>> injectedOperations)
         {
             _injectedAttributes = injectedAttributes;
             _injectedStatistics = injectedStatistics;
+            _injectedOperations = injectedOperations;
         }
 
         @Override
@@ -65,6 +82,12 @@ public class InjectedAttributeTest extends QpidTestCase
         public Collection<ConfiguredObjectInjectedStatistic<?, ?>> getInjectedStatistics()
         {
             return _injectedStatistics;
+        }
+
+        @Override
+        public Collection<ConfiguredObjectInjectedOperation<?>> getInjectedOperations()
+        {
+            return _injectedOperations;
         }
 
         @Override
@@ -101,8 +124,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                              null,
                                                                              validator);
 
-        TestModel model = new TestModel(null, Collections.<ConfiguredObjectAttributeInjector>singleton(new TestInjector(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>singletonList(
-                attrInjector), Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptySet())));
+        TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
@@ -150,8 +172,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                              new String[] { "42", "49" },
                                                                              validator);
 
-        TestModel model = new TestModel(null, Collections.<ConfiguredObjectAttributeInjector>singleton(new TestInjector(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>singletonList(
-                attrInjector), Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptySet())));
+        TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
@@ -199,8 +220,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                             "",
                                                                             validator);
 
-        TestModel model = new TestModel(null, Collections.<ConfiguredObjectAttributeInjector>singleton(new TestInjector(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>singletonList(
-                attrInjector), Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptySet())));
+        TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
@@ -233,7 +253,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                            StatisticType.POINT_IN_TIME,
                                                                            "What is 6 x 9?");
 
-        TestModel model = new TestModel(null, Collections.<ConfiguredObjectAttributeInjector>singleton(new TestInjector(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>emptyList(), Collections.<ConfiguredObjectInjectedStatistic<?, ?>>singletonList(statInjector))));
+        TestModel model = new TestModel(null, new TestInjector(statInjector));
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
@@ -243,8 +263,54 @@ public class InjectedAttributeTest extends QpidTestCase
     }
 
 
+    public void testInjectedOperation() throws Exception
+    {
+
+        Method method = InjectedAttributeTest.class.getDeclaredMethod("fly", TestCar.class, Integer.TYPE);
+        InjectedAttributeOrStatistic.TypeValidator validator =
+                new InjectedAttributeOrStatistic.TypeValidator()
+                {
+                    @Override
+                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
+                    {
+                        return TestCar.class.isAssignableFrom(type);
+                    }
+                };
+
+        final OperationParameter[] params = new OperationParameter[1];
+        params[0] = new OperationParameterFromInjection("height", Integer.TYPE, Integer.TYPE, "", "", new String[0]);
+        final ConfiguredObjectInjectedOperation<?> operationInjector =
+                new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true, params, method, validator);
+
+        TestModel model = new TestModel(null, new TestInjector(operationInjector));
+
+        TestCar testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
+
+        final Map<String, ConfiguredObjectOperation<?>> allOperations =
+                model.getTypeRegistry().getOperations(testCar.getClass());
+
+        assertTrue("Operation fly(int height) is missing", allOperations.containsKey("fly"));
+
+        final ConfiguredObjectOperation foundOperation = allOperations.get("fly");
+
+        Object result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 0));
+
+        assertEquals("Car should be able to fly at 0m", Boolean.TRUE, result);
+
+        result = foundOperation.perform(testCar, Collections.<String, Object>singletonMap("height", 5000));
+
+        assertEquals("Car should not be able to fly at 5000m", Boolean.FALSE, result);
+    }
+
+
+
     public static int getMeaningOfLife(TestCar<?> car)
     {
         return 42;
+    }
+
+    public static boolean fly(TestCar<?> car, int height)
+    {
+        return height == 0;
     }
 }
