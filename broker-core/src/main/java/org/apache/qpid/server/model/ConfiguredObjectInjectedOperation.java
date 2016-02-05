@@ -43,12 +43,14 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
     private final String _name;
     private final String _description;
     private final boolean _nonModifying;
+    private final Object[] _staticParams;
 
     public ConfiguredObjectInjectedOperation(final String name,
                                              final String description,
                                              final boolean nonModifying,
                                              final OperationParameter[] parameters,
                                              final Method operation,
+                                             final Object[] staticParams,
                                              final TypeValidator validator)
     {
         _operation = operation;
@@ -56,6 +58,7 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
         _description = description;
         _nonModifying = nonModifying;
         _validator = validator;
+        _staticParams = staticParams == null ? new Object[0] : staticParams;
 
         _params = parameters == null ? Collections.<OperationParameter>emptyList() : Arrays.asList(parameters);
 
@@ -67,16 +70,29 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
 
         _validNames = Collections.unmodifiableSet(validNames);
 
-        Class<?>[] opParameterTypes = operation.getParameterTypes();
+        final Class<?>[] opParameterTypes = operation.getParameterTypes();
+
         if(!(Modifier.isStatic(operation.getModifiers())
              && Modifier.isPublic(operation.getModifiers())
-             && opParameterTypes.length == _params.size() + 1
+             && opParameterTypes.length == _params.size() + _staticParams.length + 1
              && ConfiguredObject.class.isAssignableFrom(opParameterTypes[0])))
         {
             throw new IllegalArgumentException("Passed method must be public and static.  The first parameter must derive from ConfiguredObject, and the rest of the parameters must match the passed in specifications");
         }
 
-        int paramId = 1;
+        for(int i = 0; i < _staticParams.length; i++)
+        {
+            if(opParameterTypes[i+1].isPrimitive() && _staticParams[i] == null)
+            {
+                throw new IllegalArgumentException("Static parameter has null value, but the " + opParameterTypes[i+1].getSimpleName() + " type is a primitive");
+            }
+            if(!AttributeValueConverter.convertPrimitiveToBoxed(opParameterTypes[i+1]).isAssignableFrom(_staticParams[i].getClass()))
+            {
+                throw new IllegalArgumentException("Static parameter cannot be assigned value as it is of incompatible type");
+            }
+        }
+
+        int paramId = 1+_staticParams.length;
         for(OperationParameter parameter : _params)
         {
             if(!opParameterTypes[paramId].isAssignableFrom(parameter.getType()))
@@ -119,8 +135,15 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
             {
                 throw new IllegalArgumentException("Parameters " + providedNames + " are not accepted by " + getName());
             }
-            Object[] paramValues = new Object[1+_params.size()];
+            Object[] paramValues = new Object[1+_staticParams.length+_params.size()];
             paramValues[0] = subject;
+
+
+            for(int i = 0; i < _staticParams.length; i++)
+            {
+                paramValues[i+1] = _staticParams[i];
+            }
+
             for (int i = 0; i < _params.size(); i++)
             {
                 OperationParameter param = _params.get(i);
@@ -143,7 +166,7 @@ public class ConfiguredObjectInjectedOperation<C extends ConfiguredObject> imple
                 try
                 {
                     final Object convertedVal = converter.convert(providedVal, subject);
-                    paramValues[i+1] = convertedVal;
+                    paramValues[i+1+_staticParams.length] = convertedVal;
                 }
                 catch (IllegalArgumentException e)
                 {

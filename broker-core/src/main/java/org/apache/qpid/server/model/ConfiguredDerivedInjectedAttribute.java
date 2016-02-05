@@ -43,9 +43,11 @@ public class ConfiguredDerivedInjectedAttribute<C extends ConfiguredObject, T>
     private final String _oversizedAltText;
     private final String _description;
     private final Method _method;
+    private final Object[] _staticParams;
 
     public ConfiguredDerivedInjectedAttribute(final String name,
                                               final Method method,
+                                              final Object[] staticParams,
                                               final boolean secure,
                                               final boolean persisted,
                                               final String secureValueFilter,
@@ -57,14 +59,31 @@ public class ConfiguredDerivedInjectedAttribute<C extends ConfiguredObject, T>
         super(name, (Class<T>) AttributeValueConverter.getTypeFromMethod(method),
               method.getGenericReturnType(), typeValidator);
 
-        if(!(method.getParameterTypes().length == 1
+        _staticParams = staticParams == null ? new Object[0] : staticParams;
+
+        if(!(method.getParameterTypes().length == 1 + _staticParams.length
              && ConfiguredObject.class.isAssignableFrom(method.getParameterTypes()[0])
              && Modifier.isStatic(method.getModifiers())))
         {
-            throw new IllegalArgumentException("Injected derived attribute method must be static, and have a single argument which inherits from ConfiguredObject");
+            throw new IllegalArgumentException("Injected derived attribute method must be static, and have an initial argument which inherits from ConfiguredObject");
         }
         _method = method;
         method.setAccessible(true);
+
+        final Class<?>[] methodParamTypes = method.getParameterTypes();
+        for(int i = 0; i < _staticParams.length; i++)
+        {
+            if(methodParamTypes[i+1].isPrimitive() && _staticParams[i] == null)
+            {
+                throw new IllegalArgumentException("Static parameter has null value, but the " + methodParamTypes[i+1].getSimpleName() + " type is a primitive");
+            }
+            if(!AttributeValueConverter.convertPrimitiveToBoxed(methodParamTypes[i+1]).isAssignableFrom(_staticParams[i].getClass()))
+            {
+                throw new IllegalArgumentException("Static parameter cannot be assigned value as it is of incompatible type");
+            }
+        }
+
+
         _secure = secure;
         _persisted = persisted;
         _oversized = oversized;
@@ -144,7 +163,14 @@ public class ConfiguredDerivedInjectedAttribute<C extends ConfiguredObject, T>
     {
         try
         {
-            return (T) _method.invoke(null, configuredObject);
+            Object[] params = new Object[1+_staticParams.length];
+            params[0] = configuredObject;
+            for(int i = 0; i < _staticParams.length; i++)
+            {
+                params[i+1] = _staticParams[i];
+            }
+
+            return (T) _method.invoke(null, params);
         }
         catch (IllegalAccessException e)
         {

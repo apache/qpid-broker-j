@@ -40,27 +40,43 @@ final public class ConfiguredObjectInjectedStatistic<C extends ConfiguredObject,
     private final StatisticUnit _units;
     private final StatisticType _type;
     private final String _label;
+    private final Object[] _staticParams;
 
     public ConfiguredObjectInjectedStatistic(final String name,
-                                      final Method method,
-                                      final String description,
-                                      final TypeValidator typeValidator,
-                                      final StatisticUnit units,
-                                      final StatisticType type,
-                                      final String label)
+                                             final Method method,
+                                             final Object[] staticParams,
+                                             final String description,
+                                             final TypeValidator typeValidator,
+                                             final StatisticUnit units,
+                                             final StatisticType type,
+                                             final String label)
     {
         super(name,
               (Class<T>) AttributeValueConverter.getTypeFromMethod(method), method.getGenericReturnType(), typeValidator);
         _units = units;
         _type = type;
         _label = label;
-        if(!(method.getParameterTypes().length == 1
+        _staticParams = staticParams == null ? new Object[0] : staticParams;
+        if(!(method.getParameterTypes().length == 1 + _staticParams.length
              && ConfiguredObject.class.isAssignableFrom(method.getParameterTypes()[0])
              && Modifier.isStatic(method.getModifiers())
              && Number.class.isAssignableFrom(AttributeValueConverter.getTypeFromMethod(method))))
         {
-            throw new IllegalArgumentException("Injected statistic method must be static, have a single argument which inherits from ConfiguredObject, and return a Number");
+            throw new IllegalArgumentException("Injected statistic method must be static, have first argument which inherits from ConfiguredObject, and return a Number");
         }
+        final Class<?>[] methodParamTypes = method.getParameterTypes();
+        for(int i = 0; i < _staticParams.length; i++)
+        {
+            if(methodParamTypes[i+1].isPrimitive() && _staticParams[i] == null)
+            {
+                throw new IllegalArgumentException("Static parameter has null value, but the " + methodParamTypes[i+1].getSimpleName() + " type is a primitive");
+            }
+            if(!AttributeValueConverter.convertPrimitiveToBoxed(methodParamTypes[i+1]).isAssignableFrom(_staticParams[i].getClass()))
+            {
+                throw new IllegalArgumentException("Static parameter cannot be assigned value as it is of incompatible type");
+            }
+        }
+
         _method = method;
         method.setAccessible(true);
         _description = description;
@@ -95,7 +111,13 @@ final public class ConfiguredObjectInjectedStatistic<C extends ConfiguredObject,
     {
         try
         {
-            return (T) _method.invoke(null, configuredObject);
+            Object[] params = new Object[1+_staticParams.length];
+            params[0] = configuredObject;
+            for(int i = 0; i < _staticParams.length; i++)
+            {
+                params[i+1] = _staticParams[i];
+            }
+            return (T) _method.invoke(null, params);
         }
         catch (IllegalAccessException e)
         {

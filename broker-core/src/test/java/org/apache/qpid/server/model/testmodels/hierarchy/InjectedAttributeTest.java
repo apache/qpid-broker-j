@@ -21,9 +21,12 @@
 package org.apache.qpid.server.model.testmodels.hierarchy;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
@@ -41,26 +44,25 @@ public class InjectedAttributeTest extends QpidTestCase
         private Collection<ConfiguredObjectInjectedStatistic<?, ?>> _injectedStatistics;
         private Collection<ConfiguredObjectInjectedOperation<?>> _injectedOperations;
 
-        private TestInjector(ConfiguredObjectInjectedAttribute<?, ?> attribute)
+        private TestInjector(ConfiguredObjectInjectedAttribute<?, ?>... attributes)
         {
-            this(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>singletonList(attribute),
+            this(Arrays.asList(attributes),
                  Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptyList(),
                  Collections.<ConfiguredObjectInjectedOperation<?>>emptyList());
         }
 
-        private TestInjector(ConfiguredObjectInjectedStatistic<?, ?> statistic)
+        private TestInjector(ConfiguredObjectInjectedStatistic<?, ?>... statistics)
         {
             this(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>emptyList(),
-                 Collections.<ConfiguredObjectInjectedStatistic<?, ?>>singletonList(statistic),
+                 Arrays.asList(statistics),
                  Collections.<ConfiguredObjectInjectedOperation<?>>emptyList());
         }
 
-
-        private TestInjector(ConfiguredObjectInjectedOperation<?> operation)
+        private TestInjector(ConfiguredObjectInjectedOperation<?>... operations)
         {
             this(Collections.<ConfiguredObjectInjectedAttribute<?, ?>>emptyList(),
                  Collections.<ConfiguredObjectInjectedStatistic<?, ?>>emptyList(),
-                 Collections.<ConfiguredObjectInjectedOperation<?>>singletonList(operation));
+                 Arrays.asList(operations));
         }
 
         private TestInjector(final Collection<ConfiguredObjectInjectedAttribute<?, ?>> injectedAttributes,
@@ -212,7 +214,7 @@ public class InjectedAttributeTest extends QpidTestCase
         final ConfiguredDerivedInjectedAttribute<?, ?> attrInjector =
                 new ConfiguredDerivedInjectedAttribute<TestCar<?>, Integer>("meaningOfLife",
                                                                             method,
-                                                                            false,
+                                                                            null, false,
                                                                             false,
                                                                             "",
                                                                             false,
@@ -247,7 +249,7 @@ public class InjectedAttributeTest extends QpidTestCase
         final ConfiguredObjectInjectedStatistic<?, ?> statInjector =
                 new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("meaningOfLife",
                                                                            method,
-                                                                           "",
+                                                                           null, "",
                                                                            validator,
                                                                            StatisticUnit.COUNT,
                                                                            StatisticType.POINT_IN_TIME,
@@ -260,6 +262,47 @@ public class InjectedAttributeTest extends QpidTestCase
         final Map<String, Number> statistics = testCar.getStatistics();
         assertEquals("incorrect number of statistics", 1, statistics.size());
         assertEquals("incorrect statistic value", 42, statistics.get("meaningOfLife"));
+    }
+
+
+    public void testInjectedStatisticWithParameters() throws Exception
+    {
+
+        Method method = InjectedAttributeTest.class.getDeclaredMethod("getWhatISent", TestCar.class, Integer.TYPE);
+        InjectedAttributeOrStatistic.TypeValidator validator =
+                new InjectedAttributeOrStatistic.TypeValidator()
+                {
+                    @Override
+                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
+                    {
+                        return TestCar.class.isAssignableFrom(type);
+                    }
+                };
+
+        final ConfiguredObjectInjectedStatistic<?, ?> statInjector1 =
+                new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("whatISent1",
+                                                                           method,
+                                                                           new Object[] { 1 }, "",
+                                                                           validator,
+                                                                           StatisticUnit.COUNT,
+                                                                           StatisticType.POINT_IN_TIME,
+                                                                           "One");
+        final ConfiguredObjectInjectedStatistic<?, ?> statInjector2 =
+                new ConfiguredObjectInjectedStatistic<TestCar<?>, Integer>("whatISent2",
+                                                                           method,
+                                                                           new Object[] { 2 }, "",
+                                                                           validator,
+                                                                           StatisticUnit.COUNT,
+                                                                           StatisticType.POINT_IN_TIME,
+                                                                           "Two");
+        TestModel model = new TestModel(null, new TestInjector(statInjector1, statInjector2));
+
+        TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
+
+        final Map<String, Number> statistics = testCar.getStatistics();
+        assertEquals("incorrect number of statistics", 2, statistics.size());
+        assertEquals("incorrect statistic value", 1, statistics.get("whatISent1"));
+        assertEquals("incorrect statistic value", 2, statistics.get("whatISent2"));
     }
 
 
@@ -280,7 +323,7 @@ public class InjectedAttributeTest extends QpidTestCase
         final OperationParameter[] params = new OperationParameter[1];
         params[0] = new OperationParameterFromInjection("height", Integer.TYPE, Integer.TYPE, "", "", new String[0]);
         final ConfiguredObjectInjectedOperation<?> operationInjector =
-                new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true, params, method, validator);
+                new ConfiguredObjectInjectedOperation<TestCar<?>>("fly", "", true, params, method, null, validator);
 
         TestModel model = new TestModel(null, new TestInjector(operationInjector));
 
@@ -302,6 +345,49 @@ public class InjectedAttributeTest extends QpidTestCase
         assertEquals("Car should not be able to fly at 5000m", Boolean.FALSE, result);
     }
 
+    public void testInjectedOperationWithStaticParams() throws Exception
+    {
+
+        Method method = InjectedAttributeTest.class.getDeclaredMethod("saySomething", TestCar.class, String.class, Integer.TYPE);
+        InjectedAttributeOrStatistic.TypeValidator validator =
+                new InjectedAttributeOrStatistic.TypeValidator()
+                {
+                    @Override
+                    public boolean appliesToType(final Class<? extends ConfiguredObject<?>> type)
+                    {
+                        return TestCar.class.isAssignableFrom(type);
+                    }
+                };
+
+        final OperationParameter[] params = new OperationParameter[1];
+        params[0] = new OperationParameterFromInjection("count", Integer.TYPE, Integer.TYPE, "", "", new String[0]);
+
+        final ConfiguredObjectInjectedOperation<?> hello =
+                new ConfiguredObjectInjectedOperation<TestCar<?>>("sayHello", "", true, params, method, new String[] { "Hello"}, validator);
+        final ConfiguredObjectInjectedOperation<?> goodbye =
+                new ConfiguredObjectInjectedOperation<TestCar<?>>("sayGoodbye", "", true, params, method, new String[] { "Goodbye"}, validator);
+
+        TestModel model = new TestModel(null, new TestInjector(hello, goodbye));
+
+        TestCar testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
+
+        final Map<String, ConfiguredObjectOperation<?>> allOperations =
+                model.getTypeRegistry().getOperations(testCar.getClass());
+
+        assertTrue("Operation sayHello(int count) is missing", allOperations.containsKey("sayHello"));
+        assertTrue("Operation sayGoodbye(int count) is missing", allOperations.containsKey("sayGoodbye"));
+
+        final ConfiguredObjectOperation helloOperation = allOperations.get("sayHello");
+        final ConfiguredObjectOperation goodbyeOperation = allOperations.get("sayGoodbye");
+
+        Object result = helloOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 3));
+
+        assertEquals("Car should say 'Hello' 3 times", Arrays.asList("Hello", "Hello", "Hello"), result);
+
+        result = goodbyeOperation.perform(testCar, Collections.<String, Object>singletonMap("count", 1));
+
+        assertEquals("Car say 'Goodbye' once", Collections.singletonList("Goodbye"), result);
+    }
 
 
     public static int getMeaningOfLife(TestCar<?> car)
@@ -309,8 +395,24 @@ public class InjectedAttributeTest extends QpidTestCase
         return 42;
     }
 
+
+    public static int getWhatISent(TestCar<?> car, int whatIsent)
+    {
+        return whatIsent;
+    }
+
     public static boolean fly(TestCar<?> car, int height)
     {
         return height == 0;
+    }
+
+    public static List<String> saySomething(TestCar<?> car, String whatToSay, int count)
+    {
+        List<String> list = new ArrayList<>();
+        for(int i = 0; i < count; i++)
+        {
+            list.add(whatToSay);
+        }
+        return list;
     }
 }
