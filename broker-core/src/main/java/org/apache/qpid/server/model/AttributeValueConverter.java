@@ -29,6 +29,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -101,6 +102,30 @@ abstract class AttributeValueConverter<T>
             else
             {
                 throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a UUID");
+            }
+        }
+    };
+
+    static final AttributeValueConverter<URI> URI_CONVERTER = new AttributeValueConverter<URI>()
+    {
+        @Override
+        URI convert(final Object value, final ConfiguredObject object)
+        {
+            if(value instanceof URI)
+            {
+                return (URI) value;
+            }
+            else if(value instanceof String)
+            {
+                return URI.create(AbstractConfiguredObject.interpolate(object, (String) value));
+            }
+            else if(value == null)
+            {
+                return null;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a URI");
             }
         }
     };
@@ -530,6 +555,10 @@ abstract class AttributeValueConverter<T>
         else if(type == UUID.class)
         {
             return (AttributeValueConverter<X>) UUID_CONVERTER;
+        }
+        else if(type == URI.class)
+        {
+            return (AttributeValueConverter<X>) URI_CONVERTER;
         }
         else if(type == byte[].class)
         {

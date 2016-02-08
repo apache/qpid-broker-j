@@ -317,6 +317,10 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             return true;
         }
 
+        if(typeUtils.isSameType(type,elementUtils.getTypeElement("java.net.URI").asType()))
+        {
+            return true;
+        }
 
         if(typeUtils.isSameType(type,elementUtils.getTypeElement("java.security.cert.Certificate").asType()))
         {
