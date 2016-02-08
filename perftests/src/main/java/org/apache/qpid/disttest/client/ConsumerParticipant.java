@@ -179,13 +179,9 @@ public class ConsumerParticipant implements Participant
      */
     private boolean processMessage(Message message)
     {
-        if (!_collectingData.get())
+        if (!_collectingData.get() && _expectedNumberOfMessages == 0)
         {
             // If we are performing a run with fixed number of messages we may receive a message before the startDataCollection command.
-            if (_expectedNumberOfMessages > 0)
-            {
-                _totalNumberOfMessagesReceived.incrementAndGet();
-            }
             _jmsDelegate.commitOrAcknowledgeMessageIfNecessary(_command.getSessionName(), message);
             return true;
         }
