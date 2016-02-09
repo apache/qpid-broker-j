@@ -168,7 +168,7 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     long getMaximumDirectMemorySize();
 
     @DerivedAttribute(description = "JVM arguments specified on startup")
-    List<String> getJVMArguments();
+    List<String> getJvmArguments();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
                       units = StatisticUnit.COUNT,

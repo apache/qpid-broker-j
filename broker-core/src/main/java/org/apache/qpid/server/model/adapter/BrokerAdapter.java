@@ -128,7 +128,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private final long _maximumHeapHize = Runtime.getRuntime().maxMemory();
     private final long _maximumDirectMemorySize = getMaxDirectMemorySize();
     private final BufferPoolMXBean _bufferPoolMXBean;
-    private final List<String> _inputArguments;
+    private final List<String> _jvmArguments;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -173,7 +173,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
             }
         }
         _bufferPoolMXBean = bufferPoolMXBean;
-        _inputArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
+        _jvmArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
     }
 
     private void updateEncrypter(final String encryptionProviderType)
@@ -1060,9 +1060,9 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     }
 
     @Override
-    public List<String> getJVMArguments()
+    public List<String> getJvmArguments()
     {
-        return _inputArguments;
+        return _jvmArguments;
     }
 
     @Override

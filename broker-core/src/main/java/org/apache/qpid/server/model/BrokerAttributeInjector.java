@@ -82,7 +82,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                                                                  "",
                                                                  false,
                                                                  "",
-                                                                 "Maximum size of memory pool",
+                                                                 "Maximum size of memory pool " + memoryPoolMXBean.getName(),
                                                                  _typeValidator);
                 attributes.add(injectedStatistic);
             }
@@ -113,7 +113,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                         new ConfiguredObjectInjectedStatistic<>(statisticName,
                                                                 getMemoryPoolUsed,
                                                                 new Object[]{memoryPoolMXBean},
-                                                                "Usage of memory in pool",
+                                                                "Usage of memory in pool " + memoryPoolMXBean.getName(),
                                                                 _typeValidator,
                                                                 StatisticUnit.BYTES,
                                                                 StatisticType.POINT_IN_TIME,
@@ -139,7 +139,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                         new ConfiguredObjectInjectedStatistic<>(jvmGCCollectionTimeStatisticName,
                                                                 getGCCollectionTime,
                                                                 new Object[]{garbageCollectorMXBean},
-                                                                "Cumulative time in ms taken by GC to perform collections",
+                                                                "Cumulative time in ms taken to perform collections for GC " + garbageCollectorMXBean.getName(),
                                                                 _typeValidator,
                                                                 StatisticUnit.COUNT,
                                                                 StatisticType.CUMULATIVE,
@@ -161,7 +161,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                         new ConfiguredObjectInjectedStatistic<>(jvmGCCollectionCountStatisticName,
                                                                 getGCCollectionCount,
                                                                 new Object[]{garbageCollectorMXBean},
-                                                                "Cumulative number of GC collections",
+                                                                "Cumulative number of collections for GC " + garbageCollectorMXBean.getName(),
                                                                 _typeValidator,
                                                                 StatisticUnit.COUNT,
                                                                 StatisticType.CUMULATIVE,
