@@ -25,5 +25,5 @@ import java.util.Set;
 @ManagedObject
 public interface GroupProvider<X extends GroupProvider<X>> extends ConfiguredObject<X>
 {
-    Set<Principal> getGroupPrincipalsForUser(String username);
+    Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal);
 }

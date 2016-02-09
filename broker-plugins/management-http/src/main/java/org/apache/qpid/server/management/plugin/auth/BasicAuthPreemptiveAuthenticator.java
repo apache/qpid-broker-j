@@ -29,7 +29,6 @@ import javax.xml.bind.DatatypeConverter;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpRequestPreemptiveAuthenticator;
 import org.apache.qpid.server.model.AuthenticationProvider;
-import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -75,8 +74,7 @@ public class BasicAuthPreemptiveAuthenticator implements HttpRequestPreemptiveAu
                         String username = credentials[0];
                         String password = credentials[1];
                         AuthenticationResult authenticationResult = namePasswdAuthProvider.authenticate(username, password);
-                        SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(username,
-                                                                                                   authenticationResult);
+                        SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
 
                         return result.getSubject();
 

@@ -256,7 +256,16 @@ public class OAuth2AuthenticationProviderImpl
                                                                                       responseMap.get("error_description")));
                     return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
                 }
-                return getAuthenticationResult(responseMap);
+
+                Object accessTokenObject = responseMap.get("access_token");
+                if (accessTokenObject == null)
+                {
+                    IllegalStateException e = new IllegalStateException("Token endpoint response did not include 'access_token'");
+                    return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
+                }
+                String accessToken = String.valueOf(accessTokenObject);
+
+                return authenticateViaAccessToken(accessToken);
             }
             catch (JsonProcessingException e)
             {
@@ -266,7 +275,7 @@ public class OAuth2AuthenticationProviderImpl
                 return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, ise);
             }
         }
-        catch (IOException | IdentityResolverException e)
+        catch (IOException e)
         {
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
@@ -277,7 +286,9 @@ public class OAuth2AuthenticationProviderImpl
     {
         try
         {
-            return new AuthenticationResult(new AuthenticatedPrincipal(_identityResolverService.getUserPrincipal(this, accessToken)));
+            final Principal userPrincipal = _identityResolverService.getUserPrincipal(this, accessToken);
+            OAuth2UserPrincipal oauthUserPrincipal = new OAuth2UserPrincipal(userPrincipal.getName(), accessToken);
+            return new AuthenticationResult(oauthUserPrincipal);
         }
         catch (IOException | IdentityResolverException e)
         {
@@ -339,20 +350,7 @@ public class OAuth2AuthenticationProviderImpl
         return _scope;
     }
 
-    private AuthenticationResult getAuthenticationResult(Map<String, Object> tokenEndpointResponse)
-            throws IOException, IdentityResolverException
-    {
-        final Object accessTokenObject = tokenEndpointResponse.get("access_token");
-        if (accessTokenObject == null)
-        {
-            final IllegalStateException e = new IllegalStateException("Token endpoint response did not include 'access_token'");
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-        }
-        String accessToken = String.valueOf(accessTokenObject);
-
-        return new AuthenticationResult(new AuthenticatedPrincipal(_identityResolverService.getUserPrincipal(this, accessToken)));
-    }
-
+    @SuppressWarnings("unused")
     public static Collection<String> validIdentityResolvers()
     {
         return new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).keySet();

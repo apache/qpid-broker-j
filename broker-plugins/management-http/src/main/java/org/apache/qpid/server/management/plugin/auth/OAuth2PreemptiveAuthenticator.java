@@ -61,15 +61,9 @@ public class OAuth2PreemptiveAuthenticator implements HttpRequestPreemptiveAuthe
         {
             OAuth2AuthenticationProvider<?> oAuth2AuthProvider = (OAuth2AuthenticationProvider<?>) authenticationProvider;
             AuthenticationResult authenticationResult = oAuth2AuthProvider.authenticateViaAccessToken(accessToken);
-            Principal mainPrincipal = authenticationResult.getMainPrincipal();
-            if (mainPrincipal == null)
-            {
-                LOGGER.debug("Preemptive OAuth2 authentication failed", authenticationResult.getCause());
-                return null;
-            }
 
             SubjectCreator subjectCreator = authenticationProvider.getSubjectCreator(request.isSecure());
-            SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(mainPrincipal.getName(), authenticationResult);
+            SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
 
             return result.getSubject();
         }

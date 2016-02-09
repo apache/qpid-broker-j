@@ -33,7 +33,6 @@ import java.util.UUID;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -313,9 +312,10 @@ public class FileBasedGroupProviderImpl
         return Futures.immediateFuture(null);
     }
 
-    public Set<Principal> getGroupPrincipalsForUser(String username)
+    @Override
+    public Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal)
     {
-        Set<String> groups = _groupDatabase == null ? Collections.<String>emptySet(): _groupDatabase.getGroupsForUser(username);
+        Set<String> groups = _groupDatabase == null ? Collections.<String>emptySet() : _groupDatabase.getGroupsForUser(userPrincipal.getName());
         if (groups.isEmpty())
         {
             return Collections.emptySet();

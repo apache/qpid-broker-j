@@ -125,11 +125,8 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
 
                     private void createSubject(final AuthenticationResult authenticationResult)
                     {
-                        String username = authenticationResult.getMainPrincipal().getName();
-
                         SubjectCreator subjectCreator = oauth2Provider.getSubjectCreator(request.isSecure());
-                        SubjectAuthenticationResult
-                                result = subjectCreator.createResultWithGroups(username, authenticationResult);
+                        SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
 
                         Subject subject = result.getSubject();
 
