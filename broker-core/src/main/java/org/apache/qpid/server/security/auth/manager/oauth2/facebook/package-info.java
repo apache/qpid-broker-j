@@ -20,25 +20,22 @@
  */
 
 /**
- * Identity resolver utilising Google's OAuth 2.0 userinfo endpoint
+ * Identity resolver utilising Facebook's OAuth 2.0  API
  * <p>
- * To use Google as an authentication provider, the OAuth2Authentication
+ * To use Facebook as an authentication provider, the OAuth2Authentication
  * needs to be configured to co-operate with the identity resolver like so:
  *
  * <pre>
  * "type" : "OAuth2",
- * "authorizationEndpointURI" : "https://accounts.google.com/o/oauth2/v2/auth",
- * "tokenEndpointURI" : "https://www.googleapis.com/oauth2/v4/token",
+ * "authorizationEndpointURI" : "https://www.facebook.com/dialog/oauth",
+ * "tokenEndpointURI" : "https://graph.facebook.com/v2.5/oauth/access_token",
  * "tokenEndpointNeedsAuth" : false,
- * "identityResolverType" : "GoogleUserInfo",
- * "identityResolverEndpointURI" : "https://www.googleapis.com/oauth2/v3/userinfo",
+ * "identityResolverType" : "Facebook",
+ * "identityResolverEndpointURI" : "https://graph.facebook.com/v2.5/me",
  * "clientId" : "......",
  * "clientSecret" : "....",
- * "scope" : "profile"
  * </pre>
  *
- * Note that when configuring the Authorized redirect URIs in the Google Developer Console
- * include the trailing slash e.g. https://localhost:8080/.
  * </p>
  */
-package org.apache.qpid.server.security.auth.manager.oauth2.google;
+package org.apache.qpid.server.security.auth.manager.oauth2.facebook;

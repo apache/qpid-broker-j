@@ -43,8 +43,9 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     @ManagedAttribute( description = "Identity resolver endpoint URI", mandatory = true )
     URI getIdentityResolverEndpointURI();
 
-    @ManagedAttribute( description = "The type of the IdentityResolverFactory", mandatory = true )
-    String getIdentityResolverFactoryType();
+    @ManagedAttribute( description = "The type of the IdentityResolver", mandatory = true,
+            validValues = {"org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProviderImpl#validIdentityResolvers()"})
+    String getIdentityResolverType();
 
     @ManagedAttribute( description = "Client ID to identify qpid to the OAuth endpoints", mandatory = true )
     String getClientId();

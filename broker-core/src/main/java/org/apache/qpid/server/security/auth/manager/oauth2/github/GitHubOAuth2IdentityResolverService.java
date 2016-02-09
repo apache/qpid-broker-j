@@ -19,7 +19,7 @@
  *
  */
 
-package org.apache.qpid.server.security.auth.manager.oauth2.google;
+package org.apache.qpid.server.security.auth.manager.oauth2.github;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,23 +46,19 @@ import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2IdentityResolve
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2Utils;
 
 /**
- * An identity resolver that calls Google's userinfo endpoint https://www.googleapis.com/oauth2/v3/userinfo.
+ * An identity resolver that calls GitHubs's user API https://developer.github.com/v3/users/
  *
- * It requires that the authentication request includes the scope 'profile' in order that 'sub'
- * (the user identifier) appears in userinfo's response.
+ * It requires that the authentication request includes the scope 'user'
  *
- * For endpoint is documented:
- *
- * https://developers.google.com/identity/protocols/OpenIDConnect
  */
 @PluggableService
-public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolverService
+public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolverService
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GoogleOAuth2IdentityResolverService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GitHubOAuth2IdentityResolverService.class);
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
-    public static final String TYPE = "GoogleUserInfo";
-
+    public static final String TYPE = "GitHubUser";
+    
     private final ObjectMapper _objectMapper = new ObjectMapper();
 
     @Override
@@ -74,9 +70,9 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
     @Override
     public void validate(final OAuth2AuthenticationProvider<?> authProvider) throws IllegalConfigurationException
     {
-        if (!Sets.newHashSet(authProvider.getScope().split("\\s")).contains("profile"))
+        if (!Sets.newHashSet(authProvider.getScope().split("\\s")).contains("user"))
         {
-            throw new IllegalConfigurationException("This identity resolver requires that scope 'profile' is included in"
+            throw new IllegalConfigurationException("This identity resolver requires that scope 'user' is included in"
                                                + " the authentication request.");
         }
     }
@@ -85,7 +81,6 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
     public Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authenticationProvider,
                                       String accessToken) throws IOException, IdentityResolverException
     {
-
         URI userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI();
         TrustStore trustStore = authenticationProvider.getTrustStore();
 
@@ -99,8 +94,8 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
 
         connection.setRequestProperty("Accept-Charset", UTF8);
         connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF8);
-        connection.setRequestProperty("Accept", "application/json");
-        connection.setRequestProperty("Authorization", "Bearer " + accessToken);
+        connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
+        connection.setRequestProperty("Authorization", "token " + accessToken);
 
         connection.connect();
 
@@ -127,14 +122,14 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
                         userInfoEndpoint, responseCode));
             }
 
-            final String googleId = responseMap.get("sub");
-            if (googleId == null)
+            final String githubId = responseMap.get("login");
+            if (githubId == null)
             {
                 throw new IdentityResolverException(String.format(
-                        "Identity resolver '%s' failed, response did not include 'sub'",
+                        "Identity resolver '%s' failed, response did not include 'login'",
                         userInfoEndpoint));
             }
-            return new UsernamePrincipal(googleId);
+            return new UsernamePrincipal(githubId);
         }
     }
 }

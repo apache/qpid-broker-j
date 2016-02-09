@@ -24,7 +24,13 @@ package org.apache.qpid.server.security.auth.manager.oauth2;
 import java.io.IOException;
 import java.security.Principal;
 
-public interface OAuth2IdentityResolverService
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+import org.apache.qpid.server.plugin.Pluggable;
+
+public interface OAuth2IdentityResolverService extends Pluggable
 {
-    Principal getUserPrincipal(String accessToken) throws IOException, IdentityResolverException;
+    void validate(final OAuth2AuthenticationProvider<?> authProvider) throws IllegalConfigurationException;
+
+    Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authProvider,
+                               String accessToken) throws IOException, IdentityResolverException;
 }

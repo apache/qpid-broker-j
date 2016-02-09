@@ -38,54 +38,60 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.oauth2.IdentityResolverException;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2IdentityResolverService;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2Utils;
 
+@PluggableService
 public class CloudFoundryOAuth2IdentityResolverService implements OAuth2IdentityResolverService
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(CloudFoundryOAuth2IdentityResolverService.class);
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
-    private final OAuth2AuthenticationProvider _authenticationProvider;
-    private final URI _checkTokenEndpointURI;
-    private final TrustStore _trustStore;
-    private final String _clientId;
-    private final String _clientSecret;
+    public static final String TYPE = "CloudFoundryIdentityResolver";
+
     private final ObjectMapper _objectMapper = new ObjectMapper();
 
-    public CloudFoundryOAuth2IdentityResolverService(final OAuth2AuthenticationProvider authenticationProvider)
+    @Override
+    public String getType()
     {
-        _authenticationProvider = authenticationProvider;
-        _checkTokenEndpointURI = _authenticationProvider.getIdentityResolverEndpointURI();
-        _trustStore = _authenticationProvider.getTrustStore();
-        _clientId = _authenticationProvider.getClientId();
-        _clientSecret = _authenticationProvider.getClientSecret();
+        return TYPE;
     }
 
     @Override
-    public Principal getUserPrincipal(final String accessToken) throws IOException, IdentityResolverException
+    public void validate(final OAuth2AuthenticationProvider<?> authProvider) throws IllegalConfigurationException
     {
-        URL checkTokenEndpoint;
+    }
+
+    @Override
+    public Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authenticationProvider,
+                                      final String accessToken) throws IOException, IdentityResolverException
+    {
+        URI checkTokenEndpointURI = authenticationProvider.getIdentityResolverEndpointURI();
+        TrustStore trustStore = authenticationProvider.getTrustStore();
+        String clientId = authenticationProvider.getClientId();
+        String clientSecret = authenticationProvider.getClientSecret();
+        URL checkTokenEndpoint = checkTokenEndpointURI.toURL();
         HttpsURLConnection connection;
-        checkTokenEndpoint = _checkTokenEndpointURI.toURL();
 
         LOGGER.debug("About to call identity service '{}'", checkTokenEndpoint);
 
         connection = (HttpsURLConnection) checkTokenEndpoint.openConnection();
-        if (_trustStore != null)
+        if (trustStore != null)
         {
-            OAuth2Utils.setTrustedCertificates(connection, _trustStore);
+            OAuth2Utils.setTrustedCertificates(connection, trustStore);
         }
 
         connection.setDoOutput(true); // makes sure to use POST
         connection.setRequestProperty("Accept-Charset", UTF8);
         connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF8);
         connection.setRequestProperty("Accept", "application/json");
-        String encoded = DatatypeConverter.printBase64Binary((_clientId + ":" + _clientSecret).getBytes());
+        String encoded = DatatypeConverter.printBase64Binary((clientId + ":" + clientSecret).getBytes());
         connection.setRequestProperty("Authorization", "Basic " + encoded);
 
         final Map<String,String> requestParameters = Collections.singletonMap("token", accessToken);
@@ -96,7 +102,6 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
         {
             output.write(OAuth2Utils.buildRequestQuery(requestParameters).getBytes(UTF8));
             output.close();
-
             try (InputStream input = connection.getInputStream())
             {
                 int responseCode = connection.getResponseCode();

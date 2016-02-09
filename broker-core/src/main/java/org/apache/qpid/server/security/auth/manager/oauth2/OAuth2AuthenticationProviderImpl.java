@@ -26,10 +26,13 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.security.sasl.SaslException;
@@ -41,10 +44,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AbstractAuthenticationManager;
@@ -84,7 +90,7 @@ public class OAuth2AuthenticationProviderImpl
     private String _scope;
 
     @ManagedAttributeField
-    private String _identityResolverFactoryType;
+    private String _identityResolverType;
 
     private OAuth2IdentityResolverService _identityResolverService;
 
@@ -99,9 +105,40 @@ public class OAuth2AuthenticationProviderImpl
     protected void onOpen()
     {
         super.onOpen();
-        String type = getIdentityResolverFactoryType();
-        OAuth2IdentityResolverServiceFactory factory = OAuth2IdentityResolverServiceFactory.FACTORIES.get(type);
-        _identityResolverService = factory.createIdentityResolverService(this);
+        String type = getIdentityResolverType();
+        _identityResolverService = new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(type);
+
+    }
+
+    @Override
+    protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
+    {
+        super.validateChange(proxyForValidation, changedAttributes);
+        validateResolver((OAuth2AuthenticationProvider<?>)proxyForValidation);
+    }
+
+
+    @Override
+    public void onValidate()
+    {
+        super.onValidate();
+        validateResolver(this);
+    }
+
+
+    private void validateResolver(final OAuth2AuthenticationProvider<?> provider)
+    {
+        final OAuth2IdentityResolverService identityResolverService =
+                new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(provider.getIdentityResolverType());
+
+        if(identityResolverService == null)
+        {
+            throw new IllegalConfigurationException("Unknown identity resolver " + provider.getType());
+        }
+        else
+        {
+            identityResolverService.validate(provider);
+        }
     }
 
     @Override
@@ -235,7 +272,7 @@ public class OAuth2AuthenticationProviderImpl
     {
         try
         {
-            return new AuthenticationResult(new AuthenticatedPrincipal(_identityResolverService.getUserPrincipal(accessToken)));
+            return new AuthenticationResult(new AuthenticatedPrincipal(_identityResolverService.getUserPrincipal(this, accessToken)));
         }
         catch (IOException | IdentityResolverException e)
         {
@@ -268,9 +305,9 @@ public class OAuth2AuthenticationProviderImpl
     }
 
     @Override
-    public String getIdentityResolverFactoryType()
+    public String getIdentityResolverType()
     {
-        return _identityResolverFactoryType;
+        return _identityResolverType;
     }
 
     @Override
@@ -308,7 +345,12 @@ public class OAuth2AuthenticationProviderImpl
         }
         String accessToken = String.valueOf(accessTokenObject);
 
-        return new AuthenticationResult(new AuthenticatedPrincipal(_identityResolverService.getUserPrincipal(accessToken)));
+        return new AuthenticationResult(new AuthenticatedPrincipal(_identityResolverService.getUserPrincipal(this, accessToken)));
+    }
+
+    public static Collection<String> validIdentityResolvers()
+    {
+        return new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).keySet();
     }
 
 }

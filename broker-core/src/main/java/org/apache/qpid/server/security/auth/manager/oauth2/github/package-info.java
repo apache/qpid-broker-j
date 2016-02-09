@@ -20,25 +20,23 @@
  */
 
 /**
- * Identity resolver utilising Google's OAuth 2.0 userinfo endpoint
+ * Identity resolver utilising GitHub's OAuth 2.0 user API
  * <p>
- * To use Google as an authentication provider, the OAuth2Authentication
+ * To use GitHub as an authentication provider, the OAuth2Authentication
  * needs to be configured to co-operate with the identity resolver like so:
  *
  * <pre>
  * "type" : "OAuth2",
- * "authorizationEndpointURI" : "https://accounts.google.com/o/oauth2/v2/auth",
- * "tokenEndpointURI" : "https://www.googleapis.com/oauth2/v4/token",
+ * "authorizationEndpointURI" : "https://github.com/login/oauth/authorize",
+ * "tokenEndpointURI" : "https://github.com/login/oauth/access_token",
  * "tokenEndpointNeedsAuth" : false,
- * "identityResolverType" : "GoogleUserInfo",
- * "identityResolverEndpointURI" : "https://www.googleapis.com/oauth2/v3/userinfo",
+ * "identityResolverType" : "GitHubUser",
+ * "identityResolverEndpointURI" : "https://api.github.com/user",
  * "clientId" : "......",
  * "clientSecret" : "....",
- * "scope" : "profile"
+ * "scope" : "user"
  * </pre>
  *
- * Note that when configuring the Authorized redirect URIs in the Google Developer Console
- * include the trailing slash e.g. https://localhost:8080/.
  * </p>
  */
-package org.apache.qpid.server.security.auth.manager.oauth2.google;
+package org.apache.qpid.server.security.auth.manager.oauth2.github;
