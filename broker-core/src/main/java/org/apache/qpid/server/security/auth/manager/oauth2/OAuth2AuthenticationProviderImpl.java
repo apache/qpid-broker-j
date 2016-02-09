@@ -93,6 +93,8 @@ public class OAuth2AuthenticationProviderImpl
     private String _identityResolverType;
 
     private OAuth2IdentityResolverService _identityResolverService;
+    private int _connectTimeout;
+    private int _readTimeout;
 
     @ManagedObjectFactoryConstructor
     protected OAuth2AuthenticationProviderImpl(final Map<String, Object> attributes,
@@ -107,7 +109,8 @@ public class OAuth2AuthenticationProviderImpl
         super.onOpen();
         String type = getIdentityResolverType();
         _identityResolverService = new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(type);
-
+        _connectTimeout = getContextValue(Integer.class, AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
+        _readTimeout = getContextValue(Integer.class, AUTHENTICATION_OAUTH2_READ_TIMEOUT);
     }
 
     @Override
@@ -200,6 +203,8 @@ public class OAuth2AuthenticationProviderImpl
             LOGGER.debug("About to call token endpoint '{}'", tokenEndpoint);
 
             connection = (HttpsURLConnection) tokenEndpoint.openConnection();
+            connection.setConnectTimeout(_connectTimeout);
+            connection.setReadTimeout(_readTimeout);
 
             if (getTrustStore() != null)
             {
@@ -237,7 +242,7 @@ public class OAuth2AuthenticationProviderImpl
             output.write(body);
             output.close();
 
-            try (InputStream input = connection.getInputStream())
+            try (InputStream input = OAuth2Utils.getResponseStream(connection))
             {
                 final int responseCode = connection.getResponseCode();
                 LOGGER.debug("Call to token endpoint '{}' complete, response code : {}", tokenEndpoint, responseCode);
@@ -352,5 +357,4 @@ public class OAuth2AuthenticationProviderImpl
     {
         return new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).keySet();
     }
-
 }

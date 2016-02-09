@@ -58,7 +58,7 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
     private static final String UTF8 = StandardCharsets.UTF_8.name();
 
     public static final String TYPE = "GitHubUser";
-    
+
     private final ObjectMapper _objectMapper = new ObjectMapper();
 
     @Override
@@ -83,10 +83,15 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
     {
         URI userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI();
         TrustStore trustStore = authenticationProvider.getTrustStore();
+        int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
+        int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
 
         LOGGER.debug("About to call identity service '{}'", userInfoEndpoint);
 
         HttpsURLConnection connection = (HttpsURLConnection) userInfoEndpoint.toURL().openConnection();
+        connection.setConnectTimeout(connectTimeout);
+        connection.setReadTimeout(readTimeout);
+
         if (trustStore != null)
         {
             OAuth2Utils.setTrustedCertificates(connection, trustStore);
@@ -99,7 +104,7 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
 
         connection.connect();
 
-        try (InputStream input = connection.getInputStream())
+        try (InputStream input = OAuth2Utils.getResponseStream(connection))
         {
             int responseCode = connection.getResponseCode();
             LOGGER.debug("Call to identity service '{}' complete, response code : {}",

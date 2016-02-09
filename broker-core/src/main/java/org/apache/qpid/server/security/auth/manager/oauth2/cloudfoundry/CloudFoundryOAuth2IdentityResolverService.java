@@ -77,11 +77,17 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
         String clientId = authenticationProvider.getClientId();
         String clientSecret = authenticationProvider.getClientSecret();
         URL checkTokenEndpoint = checkTokenEndpointURI.toURL();
+        int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
+        int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
+
         HttpsURLConnection connection;
 
         LOGGER.debug("About to call identity service '{}'", checkTokenEndpoint);
 
         connection = (HttpsURLConnection) checkTokenEndpoint.openConnection();
+        connection.setConnectTimeout(connectTimeout);
+        connection.setReadTimeout(readTimeout);
+
         if (trustStore != null)
         {
             OAuth2Utils.setTrustedCertificates(connection, trustStore);
@@ -102,7 +108,8 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
         {
             output.write(OAuth2Utils.buildRequestQuery(requestParameters).getBytes(UTF8));
             output.close();
-            try (InputStream input = connection.getInputStream())
+
+            try (InputStream input = OAuth2Utils.getResponseStream(connection))
             {
                 int responseCode = connection.getResponseCode();
                 LOGGER.debug("Call to identity service '{}' complete, response code : {}", checkTokenEndpoint, responseCode);

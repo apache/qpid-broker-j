@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
 import org.apache.qpid.server.model.ManagedAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
@@ -31,6 +32,14 @@ import org.apache.qpid.server.security.auth.AuthenticationResult;
 @ManagedObject( category = false, type = "OAuth2" )
 public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProvider<T>> extends AuthenticationProvider<T>
 {
+    String AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT = "qpid.authentication.oauth2.connectTimeout";
+    @ManagedContextDefault(name = AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT)
+    int DEFAULT_AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT = 60000;
+
+    String AUTHENTICATION_OAUTH2_READ_TIMEOUT = "qpid.authentication.oauth2.readTimeout";
+    @ManagedContextDefault(name = AUTHENTICATION_OAUTH2_READ_TIMEOUT)
+    int DEFAULT_AUTHENTICATION_OAUTH2_READ_TIMEOUT = 60000;
+
     @ManagedAttribute( description = "Redirect URI to obtain authorization code grant", mandatory = true )
     URI getAuthorizationEndpointURI();
 

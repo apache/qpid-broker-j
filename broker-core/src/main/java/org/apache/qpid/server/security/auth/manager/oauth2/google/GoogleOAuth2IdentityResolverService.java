@@ -85,13 +85,17 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
     public Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authenticationProvider,
                                       String accessToken) throws IOException, IdentityResolverException
     {
-
         URI userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI();
         TrustStore trustStore = authenticationProvider.getTrustStore();
+        int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
+        int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
 
         LOGGER.debug("About to call identity service '{}'", userInfoEndpoint);
 
         HttpsURLConnection connection = (HttpsURLConnection) userInfoEndpoint.toURL().openConnection();
+        connection.setConnectTimeout(connectTimeout);
+        connection.setReadTimeout(readTimeout);
+
         if (trustStore != null)
         {
             OAuth2Utils.setTrustedCertificates(connection, trustStore);
@@ -104,7 +108,7 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
 
         connection.connect();
 
-        try (InputStream input = connection.getInputStream())
+        try (InputStream input = OAuth2Utils.getResponseStream(connection))
         {
             int responseCode = connection.getResponseCode();
             LOGGER.debug("Call to identity service '{}' complete, response code : {}",

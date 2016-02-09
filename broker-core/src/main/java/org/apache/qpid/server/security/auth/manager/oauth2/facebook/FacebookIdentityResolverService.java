@@ -77,11 +77,16 @@ public class FacebookIdentityResolverService implements OAuth2IdentityResolverSe
                                       String accessToken) throws IOException, IdentityResolverException
     {
         URI userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI();
+        int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
+        int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
 
         LOGGER.debug("About to call identity service '{}'", userInfoEndpoint);
 
         TrustStore trustStore = authenticationProvider.getTrustStore();
         HttpsURLConnection connection = (HttpsURLConnection) userInfoEndpoint.toURL().openConnection();
+        connection.setConnectTimeout(connectTimeout);
+        connection.setReadTimeout(readTimeout);
+
         if (trustStore != null)
         {
             OAuth2Utils.setTrustedCertificates(connection, trustStore);
@@ -94,7 +99,7 @@ public class FacebookIdentityResolverService implements OAuth2IdentityResolverSe
 
         connection.connect();
 
-        try (InputStream input = connection.getInputStream())
+        try (InputStream input = OAuth2Utils.getResponseStream(connection))
         {
             int responseCode = connection.getResponseCode();
             LOGGER.debug("Call to identity service '{}' complete, response code : {}",

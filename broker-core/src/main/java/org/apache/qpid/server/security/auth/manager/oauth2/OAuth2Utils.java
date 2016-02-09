@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -118,6 +120,23 @@ public class OAuth2Utils
         catch (UnsupportedEncodingException e)
         {
             throw new ServerScopedRuntimeException("Failed to encode as UTF-8", e);
+        }
+    }
+
+    public static InputStream getResponseStream(final HttpsURLConnection connection) throws IOException
+    {
+        try
+        {
+            return connection.getInputStream();
+        }
+        catch (IOException ioe)
+        {
+            InputStream errorStream = connection.getErrorStream();
+            if (errorStream != null)
+            {
+                return errorStream;
+            }
+            throw ioe;
         }
     }
 }
