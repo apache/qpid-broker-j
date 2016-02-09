@@ -38,6 +38,7 @@ import java.util.Set;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectMethodAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -229,7 +230,7 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
         final Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes =
                 typeRegistry.getAttributeTypes(TestChild.class);
-        final ConfiguredObjectAttribute longAttr = mock(ConfiguredObjectAttribute.class);
+        final ConfiguredObjectAttribute longAttr = mock(ConfiguredObjectMethodAttribute.class);
         when(longAttr.isOversized()).thenReturn(true);
         when(longAttr.getOversizedAltText()).thenReturn("");
         when(attributeTypes.get(eq("longAttr"))).thenReturn(longAttr);
@@ -310,7 +311,7 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         Model model = createTestModel();
         ConfiguredObjectTypeRegistry typeRegistry = model.getTypeRegistry();
         Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes = typeRegistry.getAttributeTypes(TestChild.class);
-        ConfiguredObjectAttribute secureAttribute = mock(ConfiguredObjectAttribute.class);
+        ConfiguredObjectAttribute secureAttribute = mock(ConfiguredObjectMethodAttribute.class);
         when(secureAttribute.isSecure()).thenReturn(true);
         when(secureAttribute.isSecureValue(any())).thenReturn(true);
         when(attributeTypes.get(eq("secureAttribute"))).thenReturn(secureAttribute);
@@ -391,7 +392,7 @@ public class ConfiguredObjectToMapConverterTest extends QpidTestCase
         when(model.getChildTypes(ConfiguredObject.class)).thenReturn(list);
         final ConfiguredObjectTypeRegistry typeRegistry = mock(ConfiguredObjectTypeRegistry.class);
         final Map<String, ConfiguredObjectAttribute<?, ?>> attrTypes = mock(Map.class);
-        when(attrTypes.get(any(String.class))).thenReturn(mock(ConfiguredObjectAttribute.class));
+        when(attrTypes.get(any(String.class))).thenReturn(mock(ConfiguredObjectMethodAttribute.class));
         when(typeRegistry.getAttributeTypes(any(Class.class))).thenReturn(attrTypes);
         when(model.getTypeRegistry()).thenReturn(typeRegistry);
         return model;

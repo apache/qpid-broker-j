@@ -20,22 +20,17 @@
  */
 package org.apache.qpid.server.model;
 
-import java.lang.reflect.Type;
-import java.util.List;
+import java.util.Collection;
 
-public interface OperationParameter
+public interface ConfiguredSettableAttribute<C extends ConfiguredObject, T> extends ConfiguredObjectAttribute<C,T>
 {
-    String getName();
+    String defaultValue();
 
-    String getDefaultValue();
+    boolean isMandatory();
 
-    String getDescription();
+    boolean isImmutable();
 
-    List<String> getValidValues();
+    Collection<String> validValues();
 
-    Class<?> getType();
-
-    Type getGenericType();
-
-    boolean isCompatible(OperationParameter that);
+    boolean hasValidValues();
 }

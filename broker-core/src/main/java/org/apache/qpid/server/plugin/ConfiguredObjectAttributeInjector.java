@@ -18,24 +18,17 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
+package org.apache.qpid.server.plugin;
 
-import java.lang.reflect.Type;
-import java.util.List;
+import java.util.Collection;
 
-public interface OperationParameter
+import org.apache.qpid.server.model.ConfiguredObjectInjectedAttribute;
+import org.apache.qpid.server.model.ConfiguredObjectInjectedOperation;
+import org.apache.qpid.server.model.ConfiguredObjectInjectedStatistic;
+
+public interface ConfiguredObjectAttributeInjector extends Pluggable
 {
-    String getName();
-
-    String getDefaultValue();
-
-    String getDescription();
-
-    List<String> getValidValues();
-
-    Class<?> getType();
-
-    Type getGenericType();
-
-    boolean isCompatible(OperationParameter that);
+    Collection<ConfiguredObjectInjectedAttribute<?,?>> getInjectedAttributes();
+    Collection<ConfiguredObjectInjectedStatistic<?,?>> getInjectedStatistics();
+    Collection<ConfiguredObjectInjectedOperation<?>> getInjectedOperations();
 }

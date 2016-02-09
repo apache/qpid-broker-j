@@ -23,12 +23,14 @@ package org.apache.qpid.server.model.testmodels.hierarchy;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 
 public class TestModel extends Model
@@ -50,11 +52,23 @@ public class TestModel extends Model
 
     public TestModel(final ConfiguredObjectFactory objectFactory)
     {
+        this(objectFactory, Collections.<ConfiguredObjectAttributeInjector>emptySet());
+    }
+
+    public TestModel(final ConfiguredObjectFactory objectFactory, ConfiguredObjectAttributeInjector injector)
+    {
+        this(objectFactory, Collections.singleton(injector));
+    }
+
+    public TestModel(final ConfiguredObjectFactory objectFactory, Set<ConfiguredObjectAttributeInjector> attributeInjectors)
+    {
         _objectFactory = objectFactory == null ? new ConfiguredObjectFactoryImpl(this) : objectFactory;
 
         ConfiguredObjectRegistration configuredObjectRegistration = new ConfiguredObjectRegistrationImpl();
 
-        _registry = new ConfiguredObjectTypeRegistry(Collections.singletonList(configuredObjectRegistration), Collections.EMPTY_LIST, _objectFactory);
+        _registry = new ConfiguredObjectTypeRegistry(Collections.singletonList(configuredObjectRegistration),
+                                                     attributeInjectors,
+                                                     Collections.EMPTY_LIST, _objectFactory);
     }
 
 

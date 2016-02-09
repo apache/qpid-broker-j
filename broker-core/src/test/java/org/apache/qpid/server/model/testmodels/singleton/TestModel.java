@@ -27,6 +27,7 @@ import org.apache.qpid.server.model.ConfiguredObjectFactory;
 import org.apache.qpid.server.model.ConfiguredObjectFactoryImpl;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.Model;
+import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.ConfiguredObjectRegistration;
 
 public class TestModel extends Model
@@ -62,7 +63,9 @@ public class TestModel extends Model
                 return "org.apache.qpid.server.model.testmodels.attribute";
             }
         };
-        _registry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration), getSupportedCategories(), _objectFactory);
+        _registry = new ConfiguredObjectTypeRegistry(Arrays.asList(configuredObjectRegistration),
+                                                     Collections.<ConfiguredObjectAttributeInjector>emptySet(),
+                                                     getSupportedCategories(), _objectFactory);
     }
 
 

@@ -20,22 +20,12 @@
  */
 package org.apache.qpid.server.model;
 
-import java.lang.reflect.Type;
-import java.util.List;
-
-public interface OperationParameter
+public interface InjectedAttributeStatisticOrOperation<C extends ConfiguredObject>
 {
-    String getName();
+    boolean appliesToConfiguredObjectType(Class<? extends ConfiguredObject<?>> type);
 
-    String getDefaultValue();
-
-    String getDescription();
-
-    List<String> getValidValues();
-
-    Class<?> getType();
-
-    Type getGenericType();
-
-    boolean isCompatible(OperationParameter that);
+    interface TypeValidator
+    {
+        boolean appliesToType(Class<? extends ConfiguredObject<?>> type);
+    }
 }

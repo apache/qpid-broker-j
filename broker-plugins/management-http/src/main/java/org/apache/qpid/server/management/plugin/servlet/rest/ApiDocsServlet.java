@@ -28,10 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfiguredAutomatedAttribute;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
+import org.apache.qpid.server.model.ConfiguredSettableAttribute;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OperationParameter;
@@ -395,8 +395,8 @@ public class ApiDocsServlet extends AbstractServlet
     {
         final Class type = attribute.getType();
         return renderType(type,
-                attribute instanceof ConfiguredAutomatedAttribute && ((ConfiguredAutomatedAttribute)attribute).hasValidValues()
-                        ?  ((ConfiguredAutomatedAttribute)attribute).validValues() : null);
+                attribute instanceof ConfiguredSettableAttribute && ((ConfiguredSettableAttribute)attribute).hasValidValues()
+                        ?  ((ConfiguredSettableAttribute)attribute).validValues() : null);
 
     }
 

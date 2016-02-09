@@ -51,6 +51,13 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
         _securityManager = new TestSecurityManager(this);
     }
 
+    public TestStandardCarImpl(final Map<String, Object> attributes, TestModel model)
+    {
+        super(parentsMap(), attributes, newTaskExecutor(), model);
+        _securityManager = new TestSecurityManager(this);
+    }
+
+
     private static CurrentThreadTaskExecutor newTaskExecutor()
     {
         CurrentThreadTaskExecutor currentThreadTaskExecutor = new CurrentThreadTaskExecutor();

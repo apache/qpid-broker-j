@@ -23,14 +23,14 @@ package org.apache.qpid.server.model;
 import java.lang.reflect.Method;
 import java.util.regex.Pattern;
 
-public class ConfiguredDerivedAttribute<C extends ConfiguredObject, T>  extends ConfiguredObjectAttribute<C,T>
+public class ConfiguredDerivedMethodAttribute<C extends ConfiguredObject, T>  extends ConfiguredObjectMethodAttribute<C,T>
 {
     private final DerivedAttribute _annotation;
     private final Pattern _secureValuePattern;
 
-    ConfiguredDerivedAttribute(final Class<C> clazz,
-                               final Method getter,
-                               final DerivedAttribute annotation)
+    ConfiguredDerivedMethodAttribute(final Class<C> clazz,
+                                     final Method getter,
+                                     final DerivedAttribute annotation)
     {
         super(clazz, getter);
         _annotation = annotation;

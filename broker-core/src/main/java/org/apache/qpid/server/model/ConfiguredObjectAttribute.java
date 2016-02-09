@@ -20,73 +20,31 @@
  */
 package org.apache.qpid.server.model;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.regex.Pattern;
 
-public abstract class ConfiguredObjectAttribute<C extends ConfiguredObject, T> extends ConfiguredObjectAttributeOrStatistic<C,T>
+public interface ConfiguredObjectAttribute<C extends ConfiguredObject, T>  extends ConfiguredObjectAttributeOrStatistic<C,T>
 {
-    ConfiguredObjectAttribute(Class<C> clazz,
-                              final Method getter)
-    {
-        super(getter);
-        if(getter.getParameterTypes().length != 0)
-        {
-            throw new IllegalArgumentException("ManagedAttribute annotation should only be added to no-arg getters");
-        }
-    }
 
-    public abstract boolean isAutomated();
+    boolean isAutomated();
 
-    public abstract boolean isDerived();
+    boolean isDerived();
 
-    public abstract boolean isSecure();
+    boolean isSecure();
 
-    public abstract boolean isPersisted();
+    boolean isPersisted();
 
-    public abstract boolean isOversized();
+    boolean isOversized();
 
-    public abstract boolean updateAttributeDespiteUnchangedValue();
+    boolean updateAttributeDespiteUnchangedValue();
 
-    public abstract String getOversizedAltText();
+    String getOversizedAltText();
 
-    public abstract String getDescription();
+    String getDescription();
 
-    public abstract Pattern getSecureValueFilter();
+    Pattern getSecureValueFilter();
 
-    public boolean isSecureValue(Object value)
-    {
-        if (isSecure())
-        {
-            Pattern filter = getSecureValueFilter();
-            if (filter == null)
-            {
-                return  true;
-            }
-            else
-            {
-                return filter.matcher(String.valueOf(value)).matches();
-            }
-        }
-        return false;
-    }
+    boolean isSecureValue(Object value);
 
-    public T convert(final Object value, C object)
-    {
-        final AttributeValueConverter<T> converter = getConverter();
-        try
-        {
-            return converter.convert(value, object);
-        }
-        catch (IllegalArgumentException iae)
-        {
-            Type returnType = getGetter().getGenericReturnType();
-            String simpleName = returnType instanceof Class ? ((Class) returnType).getSimpleName() : returnType.toString();
+    T convert(Object value, C object);
 
-            throw new IllegalArgumentException("Cannot convert '" + value
-                                               + "' into a " + simpleName
-                                               + " for attribute " + getName()
-                                               + " (" + iae.getMessage() + ")", iae);
-        }
-    }
 }

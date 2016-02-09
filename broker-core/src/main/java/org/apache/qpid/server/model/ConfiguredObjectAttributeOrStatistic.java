@@ -20,83 +20,17 @@
  */
 package org.apache.qpid.server.model;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 
-import org.apache.qpid.server.util.ServerScopedRuntimeException;
-
-abstract class ConfiguredObjectAttributeOrStatistic<C extends ConfiguredObject, T>
+public interface ConfiguredObjectAttributeOrStatistic<C extends ConfiguredObject, T>
 {
+    String getName();
 
-    private final String _name;
-    private final Class<T> _type;
-    private final AttributeValueConverter<T> _converter;
-    private final Method _getter;
+    Class<T> getType();
 
-    ConfiguredObjectAttributeOrStatistic(final Method getter)
-    {
+    Type getGenericType();
 
-        _getter = getter;
-        _type = (Class<T>) AttributeValueConverter.getTypeFromMethod(getter);
-        _name = AttributeValueConverter.getNameFromMethod(getter, getType());
-        _converter = AttributeValueConverter.getConverter(getType(), getter.getGenericReturnType());
+    T getValue(C configuredObject);
 
-    }
-
-    public String getName()
-    {
-        return _name;
-    }
-
-    public Class<T> getType()
-    {
-        return _type;
-    }
-
-    public T getValue(C configuredObject)
-    {
-        try
-        {
-            return (T) getGetter().invoke(configuredObject);
-        }
-        catch (IllegalAccessException e)
-        {
-            // This should never happen as it would imply a getter which is not public
-            throw new ServerScopedRuntimeException("Unable to get value for '"+getName()
-                                                   +"' from configured object of category "
-                                                   + configuredObject.getCategoryClass().getSimpleName(), e);
-        }
-        catch (InvocationTargetException e)
-        {
-            Throwable targetException = e.getTargetException();
-            if(targetException instanceof RuntimeException)
-            {
-                throw (RuntimeException)targetException;
-            }
-            else if(targetException instanceof Error)
-            {
-                throw (Error)targetException;
-            }
-            else
-            {
-                // This should never happen as it would imply a getter which is declaring a checked exception
-                throw new ServerScopedRuntimeException("Unable to get value for '"+getName()
-                                                       +"' from configured object of category "
-                                                       + configuredObject.getCategoryClass().getSimpleName(), e);
-            }
-        }
-
-    }
-
-    public Method getGetter()
-    {
-        return _getter;
-    }
-
-    public AttributeValueConverter<T> getConverter()
-    {
-        return _converter;
-    }
-
-
+    AttributeValueConverter<T> getConverter();
 }
