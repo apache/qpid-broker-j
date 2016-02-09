@@ -125,6 +125,8 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
     @DerivedAttribute
     State getState();
 
+    @DerivedAttribute
+    long getLastOpenedTime();
 
     /**
      * Add a listener which will be informed of all changes to this configuration object

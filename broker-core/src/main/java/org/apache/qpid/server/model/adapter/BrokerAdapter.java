@@ -20,11 +20,19 @@
  */
 package org.apache.qpid.server.model.adapter;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.management.BufferPoolMXBean;
+import java.lang.management.LockInfo;
 import java.lang.management.ManagementFactory;
+import java.lang.management.MonitorInfo;
 import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.security.AccessControlException;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -118,6 +126,10 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private final boolean _virtualHostPropertiesNodeEnabled;
     private Collection<BrokerLogger> _brokerLoggersToClose;
     private int _networkBufferSize = DEFAULT_NETWORK_BUFFER_SIZE;
+    private final long _maximumHeapHize = Runtime.getRuntime().maxMemory();
+    private final long _maximumDirectMemorySize = getMaxDirectMemorySize();
+    private final BufferPoolMXBean _bufferPoolMXBean;
+    private final List<String> _jvmArguments;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -150,6 +162,19 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         _dataDelivered = new StatisticsCounter("bytes-delivered");
         _messagesReceived = new StatisticsCounter("messages-received");
         _dataReceived = new StatisticsCounter("bytes-received");
+
+        BufferPoolMXBean bufferPoolMXBean = null;
+        List<BufferPoolMXBean> bufferPoolMXBeans = ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
+        for(BufferPoolMXBean mBean : bufferPoolMXBeans)
+        {
+            if (mBean.getName().equals("direct"))
+            {
+                bufferPoolMXBean = mBean;
+                break;
+            }
+        }
+        _bufferPoolMXBean = bufferPoolMXBean;
+        _jvmArguments = ManagementFactory.getRuntimeMXBean().getInputArguments();
     }
 
     private void updateEncrypter(final String encryptionProviderType)
@@ -308,6 +333,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public void initiateShutdown()
     {
         _securityManager.authorise(Operation.SHUTDOWN, this);
+        getEventLogger().message(BrokerMessages.OPERATION("initiateShutdown"));
         _parent.closeAsync();
     }
 
@@ -983,5 +1009,223 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public int getNetworkBufferSize()
     {
         return _networkBufferSize;
+    }
+
+    @Override
+    public int getNumberOfLiveThreads()
+    {
+        return ManagementFactory.getThreadMXBean().getThreadCount();
+    }
+
+    @Override
+    public long getMaximumHeapMemorySize()
+    {
+        return _maximumHeapHize;
+    }
+
+    @Override
+    public long getUsedHeapMemorySize()
+    {
+        return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+    }
+
+    @Override
+    public long getMaximumDirectMemorySize()
+    {
+        return _maximumDirectMemorySize;
+    }
+
+    @Override
+    public long getUsedDirectMemorySize()
+    {
+        if (_bufferPoolMXBean == null)
+        {
+            return -1;
+        }
+        return _bufferPoolMXBean.getMemoryUsed();
+    }
+
+    @Override
+    public long getDirectMemoryTotalCapacity()
+    {
+        if (_bufferPoolMXBean == null)
+        {
+            return -1;
+        }
+        return _bufferPoolMXBean.getTotalCapacity();
+    }
+
+    @Override
+    public int getNumberOfObjectsPendingFinalization()
+    {
+        return ManagementFactory.getMemoryMXBean().getObjectPendingFinalizationCount();
+    }
+
+    @Override
+    public List<String> getJvmArguments()
+    {
+        return _jvmArguments;
+    }
+
+    @Override
+    public void performGC()
+    {
+        _securityManager.authorise(Operation.CONFIGURE, this);
+        getEventLogger().message(BrokerMessages.OPERATION("performGC"));
+        System.gc();
+    }
+
+    @Override
+    public Content getThreadStackTraces(boolean appendToLog)
+    {
+        _securityManager.authorise(Operation.CONFIGURE, this);
+        getEventLogger().message(BrokerMessages.OPERATION("getThreadStackTraces"));
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
+        StringBuilder threadDump = new StringBuilder();
+        for (ThreadInfo threadInfo : threadInfos)
+        {
+            threadDump.append(getThreadStackTraces(threadInfo));
+        }
+        long[] deadLocks = threadMXBean.findDeadlockedThreads();
+        if (deadLocks != null && deadLocks.length > 0)
+        {
+            ThreadInfo[] deadlockedThreads = threadMXBean.getThreadInfo(deadLocks);
+            threadDump.append(System.lineSeparator()).append("Deadlock is detected!").append(System.lineSeparator());
+            for (ThreadInfo threadInfo : deadlockedThreads)
+            {
+                threadDump.append(getThreadStackTraces(threadInfo));
+            }
+        }
+        String threadStackTraces = threadDump.toString();
+        if (appendToLog)
+        {
+            LOGGER.warn("Thread dump:{} {}", System.lineSeparator(), threadStackTraces);
+        }
+        return new ThreadStackContent(threadStackTraces);
+    }
+
+    @Override
+    public Content findThreadStackTraces(String threadNameFindExpression)
+    {
+        _securityManager.authorise(Operation.CONFIGURE, this);
+        getEventLogger().message(BrokerMessages.OPERATION("findThreadStackTraces"));
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
+        StringBuilder threadDump = new StringBuilder();
+        Pattern pattern = threadNameFindExpression == null || threadNameFindExpression.equals("") ? null : Pattern.compile(
+                threadNameFindExpression);
+        for (ThreadInfo threadInfo : threadInfos)
+        {
+            if (pattern== null || pattern.matcher(threadInfo.getThreadName()).find())
+            {
+                threadDump.append(getThreadStackTraces(threadInfo));
+            }
+        }
+        return new ThreadStackContent(threadDump.toString());
+    }
+
+    private String getThreadStackTraces(final ThreadInfo threadInfo)
+    {
+        String lineSeparator = System.lineSeparator();
+        StringBuilder dump = new StringBuilder();
+        dump.append("\"").append(threadInfo.getThreadName()).append("\"").append(" Id=")
+            .append(threadInfo.getThreadId()).append( " ").append(threadInfo.getThreadState());
+        if (threadInfo.getLockName() != null)
+        {
+            dump.append(" on ").append(threadInfo.getLockName());
+        }
+        if (threadInfo.getLockOwnerName() != null)
+        {
+            dump.append(" owned by \"").append(threadInfo.getLockOwnerName())
+                .append("\" Id=").append(threadInfo.getLockOwnerId());
+        }
+        if (threadInfo.isSuspended())
+        {
+            dump.append(" (suspended)");
+        }
+        if (threadInfo.isInNative())
+        {
+            dump.append(" (in native)");
+        }
+        dump.append(lineSeparator);
+        StackTraceElement[] stackTrace = threadInfo.getStackTrace();
+        for (int i = 0; i < stackTrace.length; i++)
+        {
+            StackTraceElement stackTraceElement = stackTrace[i];
+            dump.append("    at ").append(stackTraceElement.toString()).append(lineSeparator);
+
+            LockInfo lockInfo = threadInfo.getLockInfo();
+            if (i == 0 && lockInfo != null)
+            {
+                Thread.State threadState = threadInfo.getThreadState();
+                switch (threadState)
+                {
+                    case BLOCKED:
+                        dump.append("    -  blocked on ").append(lockInfo).append(lineSeparator);
+                        break;
+                    case WAITING:
+                        dump.append("    -  waiting on ").append(lockInfo).append(lineSeparator);
+                        break;
+                    case TIMED_WAITING:
+                        dump.append("    -  waiting on ").append(lockInfo).append(lineSeparator);
+                        break;
+                    default:
+                }
+            }
+
+            for (MonitorInfo mi : threadInfo.getLockedMonitors())
+            {
+                if (mi.getLockedStackDepth() == i)
+                {
+                    dump.append("    -  locked ").append(mi).append(lineSeparator);
+                }
+            }
+        }
+
+        LockInfo[] locks = threadInfo.getLockedSynchronizers();
+        if (locks.length > 0)
+        {
+            dump.append(lineSeparator).append("    Number of locked synchronizers = ").append(locks.length);
+            dump.append(lineSeparator);
+            for (LockInfo li : locks)
+            {
+                dump.append("    - " + li);
+                dump.append(lineSeparator);
+            }
+        }
+        dump.append(lineSeparator);
+        return dump.toString();
+    }
+
+    public static class ThreadStackContent implements Content, CustomRestHeaders
+    {
+        private final String _threadStackTraces;
+
+        public ThreadStackContent(final String threadStackTraces)
+        {
+            _threadStackTraces = threadStackTraces;
+        }
+
+        @Override
+        public void write(final OutputStream outputStream) throws IOException
+        {
+            if (_threadStackTraces != null)
+            {
+                outputStream.write(_threadStackTraces.getBytes(Charset.forName("UTF-8")));
+            }
+        }
+
+        @RestContentHeader("Content-Type")
+        public String getContentType()
+        {
+            return "text/plain;charset=utf-8";
+        }
+
+        @RestContentHeader("Content-Length")
+        public long getSize()
+        {
+            return _threadStackTraces == null ? 0 : _threadStackTraces.length();
+        }
     }
 }

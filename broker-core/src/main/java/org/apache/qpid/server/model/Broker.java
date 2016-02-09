@@ -21,6 +21,7 @@
 package org.apache.qpid.server.model;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
@@ -165,6 +166,61 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @ManagedOperation(nonModifying = true, description = "Initiates an orderly shutdown of the Broker.")
     void initiateShutdown();
+
+    @DerivedAttribute(description = "Maximum heap memory size")
+    long getMaximumHeapMemorySize();
+
+    @DerivedAttribute(description = "Maximum direct memory size which can be consumed by broker")
+    long getMaximumDirectMemorySize();
+
+    @DerivedAttribute(description = "JVM arguments specified on startup")
+    List<String> getJvmArguments();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
+                      units = StatisticUnit.COUNT,
+                      label = "Live threads",
+                      description = "Number of live threads")
+    int getNumberOfLiveThreads();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
+                      units = StatisticUnit.BYTES,
+                      label = "Used Heap Memory Size",
+                      description = "Size of used heap memory")
+    long getUsedHeapMemorySize();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
+                      units = StatisticUnit.BYTES,
+                      label = "Used Direct Memory Size",
+                      description = "Size of used direct memory")
+    long getUsedDirectMemorySize();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
+                      units = StatisticUnit.BYTES,
+                      label = "Direct Memory Total Capacity",
+                      description = "Total capacity of direct memory allocated for the Broker process")
+    long getDirectMemoryTotalCapacity();
+
+    @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME,
+                      units = StatisticUnit.COUNT,
+                      label = "Number Of Object Pending Finalization",
+                      description = "Number of objects pending finalization")
+    int getNumberOfObjectsPendingFinalization();
+
+    @ManagedOperation(nonModifying = true, description = "Initiates garbage collection")
+    void performGC();
+
+    @ManagedOperation(nonModifying = true,
+                      description = "Collects thread stack traces and dead locks. Dumps stack traces into logs if requested")
+    Content getThreadStackTraces(@Param(name="appendToLog",
+                                        defaultValue = "false",
+                                        description = "If true, appends stack traces into logs")
+                                 boolean appendToLog);
+
+    @ManagedOperation(nonModifying = true,
+            description = "Collects thread stack traces for the threads with names containing matching characters for given regular expression")
+    Content findThreadStackTraces(@Param(name="threadNameFindExpression",
+                                        description = "Regular expression to find threads with names containing matching characters")
+                                 String threadNameFindExpression);
 
     //children
     Collection<VirtualHostNode<?>> getVirtualHostNodes();

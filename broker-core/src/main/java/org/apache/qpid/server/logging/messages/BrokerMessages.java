@@ -54,6 +54,7 @@ public class BrokerMessages
     public static final String FLOW_TO_DISK_ACTIVE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.flow_to_disk_active";
     public static final String MAX_MEMORY_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.max_memory";
     public static final String PLATFORM_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.platform";
+    public static final String OPERATION_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.operation";
     public static final String PROCESS_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.process";
     public static final String SHUTTING_DOWN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.shutting_down";
     public static final String MANAGEMENT_MODE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "broker.management_mode";
@@ -73,6 +74,7 @@ public class BrokerMessages
         LoggerFactory.getLogger(FLOW_TO_DISK_ACTIVE_LOG_HIERARCHY);
         LoggerFactory.getLogger(MAX_MEMORY_LOG_HIERARCHY);
         LoggerFactory.getLogger(PLATFORM_LOG_HIERARCHY);
+        LoggerFactory.getLogger(OPERATION_LOG_HIERARCHY);
         LoggerFactory.getLogger(PROCESS_LOG_HIERARCHY);
         LoggerFactory.getLogger(SHUTTING_DOWN_LOG_HIERARCHY);
         LoggerFactory.getLogger(MANAGEMENT_MODE_LOG_HIERARCHY);
@@ -570,6 +572,64 @@ public class BrokerMessages
             public String getLogHierarchy()
             {
                 return PLATFORM_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a Broker message of the Format:
+     * <pre>BRK-1018 : Operation : {0}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage OPERATION(String param1)
+    {
+        String rawMessage = _messages.getString("OPERATION");
+
+        final Object[] messageArguments = {param1};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return OPERATION_LOG_HIERARCHY;
             }
 
             @Override

@@ -177,6 +177,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     private boolean _openComplete;
     private boolean _openFailed;
     private volatile State _state = State.UNINITIALIZED;
+    private volatile long _lastOpenedTime;
 
     protected static Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> parentsMap(ConfiguredObject<?>... parents)
     {
@@ -946,6 +947,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 }
             });
             _openComplete = true;
+            _lastOpenedTime = System.currentTimeMillis();
         }
     }
 
@@ -2730,6 +2732,11 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
+    @Override
+    public final long getLastOpenedTime()
+    {
+        return _lastOpenedTime;
+    }
     //=========================================================================================
 
     static String interpolate(ConfiguredObject<?> object, String value)
