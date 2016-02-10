@@ -115,7 +115,6 @@ public class FacebookIdentityResolverService implements OAuth2IdentityResolverSe
         HttpURLConnection connection = connectionBuilder.build();
 
         connection.setRequestProperty("Accept-Charset", UTF8);
-        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF8);
         connection.setRequestProperty("Accept", "application/json");
         connection.setRequestProperty("Authorization", "Bearer " + accessToken);
 

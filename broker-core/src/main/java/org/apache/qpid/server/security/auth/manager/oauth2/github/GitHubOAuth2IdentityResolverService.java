@@ -121,7 +121,6 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
         HttpURLConnection connection = connectionBuilder.build();
 
         connection.setRequestProperty("Accept-Charset", UTF8);
-        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF8);
         connection.setRequestProperty("Accept", "application/vnd.github.v3+json");
         connection.setRequestProperty("Authorization", "token " + accessToken);
 

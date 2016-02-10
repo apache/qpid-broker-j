@@ -260,16 +260,11 @@ public class OAuth2AuthenticationProviderImpl
             requestBody.put("response_type", "token");
             body = OAuth2Utils.buildRequestQuery(requestBody).getBytes(UTF8);
             connection.connect();
-        }
-        catch (IOException e)
-        {
-            return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
-        }
 
-        try (OutputStream output = connection.getOutputStream())
-        {
-            output.write(body);
-            output.close();
+            try (OutputStream output = connection.getOutputStream())
+            {
+                output.write(body);
+            }
 
             try (InputStream input = OAuth2Utils.getResponseStream(connection))
             {
@@ -283,6 +278,7 @@ public class OAuth2AuthenticationProviderImpl
                                                                                       responseCode,
                                                                                       responseMap.get("error"),
                                                                                       responseMap.get("error_description")));
+                    LOGGER.error("Call to token endpoint failed", e);
                     return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
                 }
 
@@ -290,6 +286,7 @@ public class OAuth2AuthenticationProviderImpl
                 if (accessTokenObject == null)
                 {
                     IllegalStateException e = new IllegalStateException("Token endpoint response did not include 'access_token'");
+                    LOGGER.error("Unexpected token endpoint response", e);
                     return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
                 }
                 String accessToken = String.valueOf(accessTokenObject);
@@ -299,13 +296,14 @@ public class OAuth2AuthenticationProviderImpl
             catch (JsonProcessingException e)
             {
                 IllegalStateException ise = new IllegalStateException(String.format("Token endpoint '%s' did not return json",
-                                                                                    tokenEndpoint),
-                                                                      e);
+                                                                                    tokenEndpoint), e);
+                LOGGER.error("Unexpected token endpoint response", e);
                 return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, ise);
             }
         }
         catch (IOException e)
         {
+            LOGGER.error("Call to token endpoint failed", e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
     }
@@ -321,6 +319,7 @@ public class OAuth2AuthenticationProviderImpl
         }
         catch (IOException | IdentityResolverException e)
         {
+            LOGGER.error("Call to identity resolver failed", e);
             return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
         }
     }

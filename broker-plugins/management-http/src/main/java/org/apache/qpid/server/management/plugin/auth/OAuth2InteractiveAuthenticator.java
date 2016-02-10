@@ -20,6 +20,8 @@
 package org.apache.qpid.server.management.plugin.auth;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -53,6 +55,8 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
     private static final int STATE_NONCE_BIT_SIZE = 256;
     private static final String STATE_NAME = "stateNonce";
     private static final String TYPE = "OAuth2";
+    private static final String ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE = "originalRequestURI";
+    private static final String REDIRECT_URI_SESSION_ATTRIBUTE = "redirectURI";
 
     private SecureRandom _random = new SecureRandom();
 
@@ -110,7 +114,8 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                     LOGGER.warn("Deny login attempt with wrong state: {}", state);
                     return new FailedAuthenticationHandler(401, "Received request with wrong state: " + state);
                 }
-                final String redirectUri = (String) httpSession.getAttribute("redirectUri");
+                final String redirectUri = (String) httpSession.getAttribute(REDIRECT_URI_SESSION_ATTRIBUTE);
+                final String originalRequestUri = (String) httpSession.getAttribute(ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE);
                 return new AuthenticationHandler()
                 {
                     @Override
@@ -119,8 +124,8 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                         AuthenticationResult authenticationResult = oauth2Provider.authenticateViaAuthorizationCode(authorizationCode, redirectUri);
                         createSubject(authenticationResult);
 
-                        LOGGER.debug("Successful login. Redirect to original resource {}", redirectUri);
-                        response.sendRedirect(redirectUri);
+                        LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
+                        response.sendRedirect(originalRequestUri);
                     }
 
                     private void createSubject(final AuthenticationResult authenticationResult)
@@ -161,9 +166,11 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                                                  final OAuth2AuthenticationProvider oauth2Provider)
     {
         final String redirectUri = getRedirectUri(request);
+        final String originalRequestUri = getOriginalRequestUri(request);
         final String authorizationEndpoint = oauth2Provider.getAuthorizationEndpointURI().toString();
         final HttpSession httpSession = request.getSession();
-        httpSession.setAttribute("redirectUri", redirectUri);
+        httpSession.setAttribute(REDIRECT_URI_SESSION_ATTRIBUTE, redirectUri);
+        httpSession.setAttribute(ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE, originalRequestUri);
 
         Map<String, String> queryArgs = new HashMap<>();
         queryArgs.put("client_id", oauth2Provider.getClientId());
@@ -175,12 +182,30 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
             queryArgs.put("scope", oauth2Provider.getScope());
         }
 
-        // TODO: currently we assume, but don't check, that the authorizationEndpointURI does not contain a query string
         StringBuilder urlBuilder = new StringBuilder(authorizationEndpoint);
-        urlBuilder.append("?");
+        String query = oauth2Provider.getAuthorizationEndpointURI().getQuery();
+        if (query == null)
+        {
+            urlBuilder.append("?");
+        }
+        else if (query.length() > 0)
+        {
+            urlBuilder.append("&");
+        }
         urlBuilder.append(OAuth2Utils.buildRequestQuery(queryArgs));
 
         return urlBuilder.toString();
+    }
+
+    private String getOriginalRequestUri(final HttpServletRequest request)
+    {
+        StringBuffer originalRequestURL = request.getRequestURL();
+        final String queryString = request.getQueryString();
+        if (queryString != null)
+        {
+            originalRequestURL.append("?").append(queryString);
+        }
+        return originalRequestURL.toString();
     }
 
     private Map<String, String> getRequestParameters(final HttpServletRequest request)
@@ -208,13 +233,26 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
 
     private String getRedirectUri(final HttpServletRequest request)
     {
-        StringBuffer redirectUri = request.getRequestURL();
-        final String queryString = request.getQueryString();
-        if (queryString != null)
+        String servletPath = request.getServletPath() != null ? request.getServletPath() : "";
+        String pathInfo = request.getPathInfo() != null ? request.getPathInfo() : "";
+        final String requestURL = request.getRequestURL().toString();
+        try
         {
-            redirectUri.append(queryString);
+            URI redirectURI = new URI(requestURL);
+            String redirectString = redirectURI.normalize().toString();
+            if (!redirectString.endsWith(servletPath + pathInfo))
+            {
+                throw new IllegalStateException(String.format("RequestURL has unexpected format '%s'", redirectString));
+            }
+            redirectString = redirectString.substring(0, redirectString.length() - (servletPath.length() + pathInfo.length()));
+
+            return redirectString;
         }
-        return redirectUri.toString();
+        catch (URISyntaxException e)
+        {
+            throw new IllegalStateException(String.format("RequestURL has unexpected format '%s'",
+                                                          requestURL), e);
+        }
     }
 
     private String createState(HttpSession session)
