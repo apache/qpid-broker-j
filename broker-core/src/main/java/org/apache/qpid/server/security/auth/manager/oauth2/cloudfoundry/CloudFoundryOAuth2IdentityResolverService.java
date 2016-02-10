@@ -141,4 +141,28 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
             }
         }
     }
+
+    @Override
+    public URI getDefaultAuthorizationEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        return null;
+    }
+
+    @Override
+    public URI getDefaultTokenEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        return null;
+    }
+
+    @Override
+    public URI getDefaultIdentityResolverEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        return null;
+    }
+
+    @Override
+    public String getDefaultScope(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        return "";
+    }
 }

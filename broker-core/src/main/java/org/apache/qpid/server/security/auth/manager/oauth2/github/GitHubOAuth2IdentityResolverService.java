@@ -24,6 +24,7 @@ package org.apache.qpid.server.security.auth.manager.oauth2.github;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Map;
@@ -136,5 +137,51 @@ public class GitHubOAuth2IdentityResolverService implements OAuth2IdentityResolv
             }
             return new UsernamePrincipal(githubId);
         }
+    }
+
+
+    @Override
+    public URI getDefaultAuthorizationEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        try
+        {
+            return new URI("https://github.com/login/oauth/authorize");
+        }
+        catch (URISyntaxException e)
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public URI getDefaultTokenEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        try
+        {
+            return new URI("https://github.com/login/oauth/access_token");
+        }
+        catch (URISyntaxException e)
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public URI getDefaultIdentityResolverEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        try
+        {
+            return new URI("https://api.github.com/user");
+        }
+        catch (URISyntaxException e)
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public String getDefaultScope(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        return "user";
     }
 }

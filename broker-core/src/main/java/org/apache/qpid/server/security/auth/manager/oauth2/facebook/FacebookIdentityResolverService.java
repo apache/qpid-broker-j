@@ -132,4 +132,49 @@ public class FacebookIdentityResolverService implements OAuth2IdentityResolverSe
             return new UsernamePrincipal(facebookId);
         }
     }
+
+    @Override
+    public URI getDefaultAuthorizationEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        try
+        {
+            return new URI("https://www.facebook.com/dialog/oauth");
+        }
+        catch (URISyntaxException e)
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public URI getDefaultTokenEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        try
+        {
+            return new URI("https://graph.facebook.com/v2.5/oauth/access_token");
+        }
+        catch (URISyntaxException e)
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public URI getDefaultIdentityResolverEndpointURI(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        try
+        {
+            return new URI("https://graph.facebook.com/v2.5/me");
+        }
+        catch (URISyntaxException e)
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public String getDefaultScope(final OAuth2AuthenticationProvider<?> oAuth2AuthenticationProvider)
+    {
+        return "";
+    }
 }

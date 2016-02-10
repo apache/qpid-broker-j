@@ -1084,6 +1084,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                 + autoAttr.validValues());
                     }
                 }
+                if(autoAttr.isMandatory() && autoAttr.getValue(this) == null)
+                {
+                    throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
+                                                            + "' instance of "+ getClass().getName()
+                                                            + " named '" + getName() + "'"
+                                                            + " cannot be null, as it is mandatory");
+                }
 
             }
         }
@@ -2550,6 +2557,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     }
                 }
 
+                if(autoAttr.isMandatory() && autoAttr.getValue(proxyForValidation) == null)
+                {
+                    throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
+                                                            + "' instance of "+ getClass().getName()
+                                                            + " named '" + getName() + "'"
+                                                            + " cannot be null, as it is mandatory");
+                }
 
             }
 

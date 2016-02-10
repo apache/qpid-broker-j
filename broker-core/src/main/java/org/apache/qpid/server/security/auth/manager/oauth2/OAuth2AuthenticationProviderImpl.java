@@ -350,6 +350,37 @@ public class OAuth2AuthenticationProviderImpl
         return _scope;
     }
 
+    @Override
+    public URI getDefaultAuthorizationEndpointURI()
+    {
+        final OAuth2IdentityResolverService identityResolverService =
+                new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(getIdentityResolverType());
+        return identityResolverService == null ? null : identityResolverService.getDefaultAuthorizationEndpointURI(this);
+    }
+
+    @Override
+    public URI getDefaultTokenEndpointURI()
+    {
+        final OAuth2IdentityResolverService identityResolverService =
+                new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(getIdentityResolverType());
+        return identityResolverService == null ? null : identityResolverService.getDefaultTokenEndpointURI(this);
+    }
+
+    @Override
+    public URI getDefaultIdentityResolverEndpointURI()
+    {
+        final OAuth2IdentityResolverService identityResolverService =
+                new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(getIdentityResolverType());
+        return identityResolverService == null ? null : identityResolverService.getDefaultIdentityResolverEndpointURI(this);
+    }
+
+    @Override
+    public String getDefaultScope()
+    {
+        final OAuth2IdentityResolverService identityResolverService =
+                new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(getIdentityResolverType());
+        return identityResolverService == null ? null : identityResolverService.getDefaultScope(this);    }
+
     @SuppressWarnings("unused")
     public static Collection<String> validIdentityResolvers()
     {
