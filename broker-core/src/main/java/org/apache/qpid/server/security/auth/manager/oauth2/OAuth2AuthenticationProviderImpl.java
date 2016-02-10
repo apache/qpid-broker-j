@@ -22,11 +22,12 @@ package org.apache.qpid.server.security.auth.manager.oauth2;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 import javax.xml.bind.DatatypeConverter;
@@ -51,9 +51,10 @@ import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
-import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AbstractAuthenticationManager;
+import org.apache.qpid.server.util.ConnectionBuilder;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class OAuth2AuthenticationProviderImpl
         extends AbstractAuthenticationManager<OAuth2AuthenticationProviderImpl>
@@ -118,6 +119,7 @@ public class OAuth2AuthenticationProviderImpl
     {
         super.validateChange(proxyForValidation, changedAttributes);
         validateResolver((OAuth2AuthenticationProvider<?>)proxyForValidation);
+        validateSecureEndpoints((OAuth2AuthenticationProvider<?>)proxyForValidation);
     }
 
 
@@ -126,6 +128,23 @@ public class OAuth2AuthenticationProviderImpl
     {
         super.onValidate();
         validateResolver(this);
+        validateSecureEndpoints(this);
+    }
+
+    private void validateSecureEndpoints(final OAuth2AuthenticationProvider<?> provider)
+    {
+        if (!"https".equals(provider.getAuthorizationEndpointURI().getScheme()))
+        {
+            throw new IllegalConfigurationException(String.format("Authorization endpoint is not secure: '%s'", provider.getAuthorizationEndpointURI()));
+        }
+        if (!"https".equals(provider.getTokenEndpointURI().getScheme()))
+        {
+            throw new IllegalConfigurationException(String.format("Token endpoint is not secure: '%s'", provider.getTokenEndpointURI()));
+        }
+        if (!"https".equals(provider.getIdentityResolverEndpointURI().getScheme()))
+        {
+            throw new IllegalConfigurationException(String.format("Identity resolver endpoint is not secure: '%s'", provider.getIdentityResolverEndpointURI()));
+        }
     }
 
 
@@ -194,22 +213,32 @@ public class OAuth2AuthenticationProviderImpl
     public AuthenticationResult authenticateViaAuthorizationCode(final String authorizationCode, final String redirectUri)
     {
         URL tokenEndpoint;
-        HttpsURLConnection connection;
+        HttpURLConnection connection;
         byte[] body;
         try
         {
             tokenEndpoint = getTokenEndpointURI().toURL();
 
-            LOGGER.debug("About to call token endpoint '{}'", tokenEndpoint);
 
-            connection = (HttpsURLConnection) tokenEndpoint.openConnection();
-            connection.setConnectTimeout(_connectTimeout);
-            connection.setReadTimeout(_readTimeout);
-
+            ConnectionBuilder connectionBuilder = new ConnectionBuilder(tokenEndpoint);
+            connectionBuilder.setConnectTimeout(_connectTimeout).setReadTimeout(_readTimeout);
             if (getTrustStore() != null)
             {
-                OAuth2Utils.setTrustedCertificates(connection, getTrustStore());
+                try
+                {
+                    connectionBuilder.setTrustMangers(getTrustStore().getTrustManagers());
+                }
+                catch (GeneralSecurityException e)
+                {
+                    throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
+                }
             }
+            connectionBuilder.setEnabledTlsProtocols(getContextValue(List.class, String.class, AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS))
+                    .setDisabledTlsProtocols(getContextValue(List.class, String.class, AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS))
+                    .setEnabledCipherSuites(getContextValue(List.class, String.class, AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES))
+                    .setDisabledCipherSuites(getContextValue(List.class, String.class, AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES));
+            LOGGER.debug("About to call token endpoint '{}'", tokenEndpoint);
+            connection = connectionBuilder.build();
 
             connection.setDoOutput(true); // makes sure to use POST
             connection.setRequestProperty("Accept-Charset", UTF8);

@@ -23,14 +23,16 @@ package org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.xml.bind.DatatypeConverter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -46,6 +48,8 @@ import org.apache.qpid.server.security.auth.manager.oauth2.IdentityResolverExcep
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2IdentityResolverService;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2Utils;
+import org.apache.qpid.server.util.ConnectionBuilder;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 @PluggableService
 public class CloudFoundryOAuth2IdentityResolverService implements OAuth2IdentityResolverService
@@ -72,26 +76,41 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
     public Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authenticationProvider,
                                       final String accessToken) throws IOException, IdentityResolverException
     {
-        URI checkTokenEndpointURI = authenticationProvider.getIdentityResolverEndpointURI();
+        URL checkTokenEndpoint = authenticationProvider.getIdentityResolverEndpointURI().toURL();
         TrustStore trustStore = authenticationProvider.getTrustStore();
         String clientId = authenticationProvider.getClientId();
         String clientSecret = authenticationProvider.getClientSecret();
-        URL checkTokenEndpoint = checkTokenEndpointURI.toURL();
         int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
         int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
+        List<String> enabledTlsProtocols =
+                authenticationProvider.getContextValue(List.class, String.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS);
+        List<String> disabledTlsProtocols =
+                authenticationProvider.getContextValue(List.class, String.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS);
+        List<String> enabledCipherSuites =
+                authenticationProvider.getContextValue(List.class, String.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES);
+        List<String> disabledCipherSuites =
+                authenticationProvider.getContextValue(List.class, String.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES);
 
-        HttpsURLConnection connection;
-
-        LOGGER.debug("About to call identity service '{}'", checkTokenEndpoint);
-
-        connection = (HttpsURLConnection) checkTokenEndpoint.openConnection();
-        connection.setConnectTimeout(connectTimeout);
-        connection.setReadTimeout(readTimeout);
-
+        ConnectionBuilder connectionBuilder = new ConnectionBuilder(checkTokenEndpoint);
+        connectionBuilder.setConnectTimeout(connectTimeout).setReadTimeout(readTimeout);
         if (trustStore != null)
         {
-            OAuth2Utils.setTrustedCertificates(connection, trustStore);
+            try
+            {
+                connectionBuilder.setTrustMangers(trustStore.getTrustManagers());
+            }
+            catch (GeneralSecurityException e)
+            {
+                throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
+            }
         }
+        connectionBuilder.setEnabledTlsProtocols(enabledTlsProtocols)
+                .setDisabledTlsProtocols(disabledTlsProtocols)
+                .setEnabledCipherSuites(enabledCipherSuites)
+                .setDisabledCipherSuites(disabledCipherSuites);
+
+        LOGGER.debug("About to call identity service '{}'", checkTokenEndpoint);
+        HttpURLConnection connection = connectionBuilder.build();
 
         connection.setDoOutput(true); // makes sure to use POST
         connection.setRequestProperty("Accept-Charset", UTF8);

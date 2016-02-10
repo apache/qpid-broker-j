@@ -23,13 +23,15 @@ package org.apache.qpid.server.security.auth.manager.oauth2.google;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
-
-import javax.net.ssl.HttpsURLConnection;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +47,8 @@ import org.apache.qpid.server.security.auth.manager.oauth2.IdentityResolverExcep
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProvider;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2IdentityResolverService;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2Utils;
+import org.apache.qpid.server.util.ConnectionBuilder;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 /**
  * An identity resolver that calls Google's userinfo endpoint https://www.googleapis.com/oauth2/v3/userinfo.
@@ -86,21 +90,39 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
     public Principal getUserPrincipal(final OAuth2AuthenticationProvider<?> authenticationProvider,
                                       String accessToken) throws IOException, IdentityResolverException
     {
-        URI userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI();
+        URL userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI().toURL();
         TrustStore trustStore = authenticationProvider.getTrustStore();
         int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
         int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
+        List<String> enabledTlsProtocols =
+                authenticationProvider.getContextValue(List.class, String.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS);
+        List<String> disabledTlsProtocols =
+                authenticationProvider.getContextValue(List.class, String.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS);
+        List<String> enabledCipherSuites =
+                authenticationProvider.getContextValue(List.class, String.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES);
+        List<String> disabledCipherSuites =
+                authenticationProvider.getContextValue(List.class, String.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES);
 
-        LOGGER.debug("About to call identity service '{}'", userInfoEndpoint);
-
-        HttpsURLConnection connection = (HttpsURLConnection) userInfoEndpoint.toURL().openConnection();
-        connection.setConnectTimeout(connectTimeout);
-        connection.setReadTimeout(readTimeout);
-
+        ConnectionBuilder connectionBuilder = new ConnectionBuilder(userInfoEndpoint);
+        connectionBuilder.setConnectTimeout(connectTimeout).setReadTimeout(readTimeout);
         if (trustStore != null)
         {
-            OAuth2Utils.setTrustedCertificates(connection, trustStore);
+            try
+            {
+                connectionBuilder.setTrustMangers(trustStore.getTrustManagers());
+            }
+            catch (GeneralSecurityException e)
+            {
+                throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
+            }
         }
+        connectionBuilder.setEnabledTlsProtocols(enabledTlsProtocols)
+                .setDisabledTlsProtocols(disabledTlsProtocols)
+                .setEnabledCipherSuites(enabledCipherSuites)
+                .setDisabledCipherSuites(disabledCipherSuites);
+
+        LOGGER.debug("About to call identity service '{}'", userInfoEndpoint);
+        HttpURLConnection connection = connectionBuilder.build();
 
         connection.setRequestProperty("Accept-Charset", UTF8);
         connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + UTF8);
