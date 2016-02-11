@@ -39,7 +39,7 @@ import org.apache.qpid.server.logging.messages.BrokerMessages;
 import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.server.plugin.PluggableService;
 import org.apache.qpid.server.security.access.Operation;
-import org.apache.qpid.server.util.ParameterizedTypeImpl;
+import org.apache.qpid.server.util.ParameterizedTypes;
 
 @PluggableService
 public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjector
@@ -278,10 +278,7 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
             final OperationParameter[] params =
                     new OperationParameter[]{new OperationParameterFromInjection("options",
                                                                                  Map.class,
-                                                                                 new ParameterizedTypeImpl(
-                                                                                         Map.class,
-                                                                                         String.class,
-                                                                                         String.class),
+                                                                                 ParameterizedTypes.MAP_OF_STRING_STRING,
                                                                                  "",
                                                                                  "JVM options map",
                                                                                  new String[0])};

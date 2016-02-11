@@ -19,6 +19,8 @@
 
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
+import static org.apache.qpid.server.util.ParameterizedTypes.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -54,6 +56,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AbstractAuthenticationManager;
 import org.apache.qpid.server.util.ConnectionBuilder;
+import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class OAuth2AuthenticationProviderImpl
@@ -233,10 +236,10 @@ public class OAuth2AuthenticationProviderImpl
                     throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
                 }
             }
-            connectionBuilder.setEnabledTlsProtocols(getContextValue(List.class, String.class, AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS))
-                    .setDisabledTlsProtocols(getContextValue(List.class, String.class, AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS))
-                    .setEnabledCipherSuites(getContextValue(List.class, String.class, AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES))
-                    .setDisabledCipherSuites(getContextValue(List.class, String.class, AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES));
+            connectionBuilder.setEnabledTlsProtocols(getContextValue(List.class, LIST_OF_STRINGS, AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS))
+                    .setDisabledTlsProtocols(getContextValue(List.class, LIST_OF_STRINGS, AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS))
+                    .setEnabledCipherSuites(getContextValue(List.class, LIST_OF_STRINGS, AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES))
+                    .setDisabledCipherSuites(getContextValue(List.class, LIST_OF_STRINGS, AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES));
             LOGGER.debug("About to call token endpoint '{}'", tokenEndpoint);
             connection = connectionBuilder.build();
 

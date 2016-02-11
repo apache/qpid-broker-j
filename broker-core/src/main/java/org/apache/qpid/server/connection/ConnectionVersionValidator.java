@@ -20,8 +20,6 @@
  */
 package org.apache.qpid.server.connection;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -35,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
+import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -128,28 +127,8 @@ public class ConnectionVersionValidator implements ConnectionValidator
         if (virtualHost.getContextKeys(false).contains(variableName))
         {
             return (List<String>) virtualHost.getContextValue(List.class,
-                                                              new ParameterizedType()
-                                                              {
-                                                                  @Override
-                                                                  public Type[] getActualTypeArguments()
-                                                                  {
-                                                                      return new Type[]{String.class};
-                                                                  }
-
-                                                                  @Override
-                                                                  public Type getRawType()
-                                                                  {
-                                                                      return List.class;
-                                                                  }
-
-                                                                  @Override
-                                                                  public Type getOwnerType()
-                                                                  {
-                                                                      return null;
-                                                                  }
-                                                              },
-                                                              variableName
-                                                             );
+                                                              ParameterizedTypes.LIST_OF_STRINGS,
+                                                              variableName);
         }
         else
         {
