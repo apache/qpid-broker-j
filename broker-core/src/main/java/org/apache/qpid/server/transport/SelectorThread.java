@@ -134,7 +134,7 @@ class SelectorThread extends Thread
                     toBeScheduled.add(connection);
                     try
                     {
-                        connection.getSocketChannel().register(_selector, 0);
+                        connection.getSocketChannel().register(_selector, 0, connection);
                     }
                     catch (ClosedChannelException | CancelledKeyException e)
                     {
@@ -171,7 +171,7 @@ class SelectorThread extends Thread
 
                     try
                     {
-                        channel.register(_selector, 0);
+                        channel.register(_selector, 0, transport);
                     }
                     catch (ClosedChannelException e)
                     {
@@ -216,7 +216,7 @@ class SelectorThread extends Thread
                     {
                         try
                         {
-                            key.channel().register(_selector, 0);
+                            key.channel().register(_selector, 0, connection);
                         }
                         catch (ClosedChannelException e)
                         {
@@ -433,6 +433,11 @@ class SelectorThread extends Thread
             @Override
             public void run()
             {
+                if (LOGGER.isDebugEnabled())
+                {
+                    LOGGER.debug("Cancelling selector on accepting port {} ",
+                                 socketChannel.socket().getLocalSocketAddress());
+                }
                 SelectionKey selectionKey = socketChannel.keyFor(_selectionTasks[0].getSelector());
                 if (selectionKey != null)
                 {
