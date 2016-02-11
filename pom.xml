@@ -875,7 +875,9 @@
                   <goal>single</goal>
                 </goals>
                 <configuration>
-                  <formats>tar.gz</formats>
+                  <formats>
+                    <format>tar.gz</format>
+                  </formats>
                   <tarLongFileMode>gnu</tarLongFileMode>
                   <finalName>qpid-java-${project.version}</finalName>
                   <appendAssemblyId>false</appendAssemblyId>
