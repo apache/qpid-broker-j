@@ -47,7 +47,7 @@ public interface HttpManagementConfiguration<X extends HttpManagementConfigurati
 
     String QPID_HELP_URL = "qpid.helpURL";
     @ManagedContextDefault(name = QPID_HELP_URL)
-    String DEFAULT_HELP_URL = "http://qpid.apache.org/releases/qpid-${qpid.version}/java-broker/book";
+    String DEFAULT_HELP_URL = "http://qpid.apache.org/releases/qpid-java-${qpid.version}/java-broker/book/index.html";
 
     String HTTP_MANAGEMENT_COMPRESS_RESPONSES = "httpManagement.compressResponses";
     @ManagedContextDefault(name = HTTP_MANAGEMENT_COMPRESS_RESPONSES)
