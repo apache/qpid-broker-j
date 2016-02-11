@@ -879,7 +879,10 @@
                   <goal>single</goal>
                 </goals>
                 <configuration>
-                  <skipAssembly>true</skipAssembly>
+                  <formats>tar.gz</formats>
+                  <tarLongFileMode>gnu</tarLongFileMode>
+                  <finalName>qpid-java-${project.version}</finalName>
+                  <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
               </execution>
             </executions>
