@@ -833,7 +833,7 @@ public class AMQPConnection_0_8
             @Override
             public Object run()
             {
-                getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
+                getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _state, true));
                 _network.close();
                 return null;
             }

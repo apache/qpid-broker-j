@@ -23,6 +23,7 @@ package org.apache.qpid.client.state;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.AMQTimeoutException;
 import org.apache.qpid.QpidException;
 import org.apache.qpid.client.failover.FailoverException;
 import org.apache.qpid.client.util.BlockingWaiter;
@@ -113,9 +114,13 @@ public class StateWaiter extends BlockingWaiter<AMQState>
             {
                 return (AMQState) block(timeout);
             }
+            catch (AMQTimeoutException e)
+            {
+                throw new AMQTimeoutException("Waiting for " + timeout + "ms to attain one of the states " + _awaitStates + "; current state is " + _stateManager.getCurrentState(), e);
+            }
             catch (FailoverException e)
             {
-                _logger.error("Failover occured whilst waiting for states:" + _awaitStates);
+                _logger.error("Failover occurred whilst waiting for states:" + _awaitStates);
 
                 return null;
             }
@@ -125,7 +130,7 @@ public class StateWaiter extends BlockingWaiter<AMQState>
             //Prevent any more errors being notified to this waiter.
             close();
 
-            //Remove the waiter from the notifcation list in the statee manager
+            //Remove the waiter from the notification list in the state manager
             _stateManager.removeWaiter(this);
         }
     }
