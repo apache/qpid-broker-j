@@ -592,7 +592,7 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         @Override
         public void readerIdle()
         {
-            _broker.getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
+            _broker.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Protocol header not sent within timeout period", true));
             _network.close();
         }
 

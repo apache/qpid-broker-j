@@ -195,7 +195,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
             @Override
             public Object run()
             {
-                _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
+                _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("", false));
                 _network.close();
                 return null;
             }

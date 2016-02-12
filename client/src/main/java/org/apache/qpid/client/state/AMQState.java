@@ -26,35 +26,10 @@ package org.apache.qpid.client.state;
  */
 public enum AMQState
 {
-
-    CONNECTION_NOT_STARTED(1, "CONNECTION_NOT_STARTED"),
-
-    CONNECTION_NOT_TUNED(2, "CONNECTION_NOT_TUNED"),
-
-    CONNECTION_NOT_OPENED(3, "CONNECTION_NOT_OPENED"),
-
-    CONNECTION_OPEN(4, "CONNECTION_OPEN"),
-
-    CONNECTION_CLOSING(5, "CONNECTION_CLOSING"),
-
-    CONNECTION_CLOSED(6, "CONNECTION_CLOSED");
-
-
-    private final int _id;
-
-    private final String _name;
-
-    private AMQState(int id, String name)
-    {
-        _id = id;
-        _name = name;
-    }
-
-    public String toString()
-    {
-        return "AMQState: id = " + _id + " name: " + _name;
-    }
-
-
-
+    CONNECTION_NOT_STARTED,
+    CONNECTION_NOT_TUNED,
+    CONNECTION_NOT_OPENED,
+    CONNECTION_OPEN,
+    CONNECTION_CLOSING,
+    CONNECTION_CLOSED;
 }

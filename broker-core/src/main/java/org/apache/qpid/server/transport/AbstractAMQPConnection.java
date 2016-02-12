@@ -699,7 +699,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
                 {
                     _logger.warn("Connection has taken more than {} ms to establish identity.  Closing as possible DoS.",
                                  _allowedTime);
-                    getEventLogger().message(ConnectionMessages.IDLE_CLOSE());
+                    getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Protocol authentication not established within timeout period", true));
                     _network.close();
                 }
                 else
