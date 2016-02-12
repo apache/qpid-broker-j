@@ -20,8 +20,10 @@
 package org.apache.qpid.server.management.plugin.auth;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.AccessControlException;
 import java.security.SecureRandom;
 import java.util.Collections;
@@ -210,6 +212,39 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
         {
             return null;
         }
+    }
+
+    @Override
+    public LogoutHandler getLogoutHandler(final HttpServletRequest request,
+                                          final HttpManagementConfiguration configuration)
+    {
+        if (configuration.getAuthenticationProvider(request) instanceof OAuth2AuthenticationProvider)
+        {
+            final OAuth2AuthenticationProvider oauth2Provider =
+                    (OAuth2AuthenticationProvider) configuration.getAuthenticationProvider(request);
+
+            try
+            {
+                if (oauth2Provider.getLogoutURI() != null)
+                {
+                    final URL logoutUri = oauth2Provider.getLogoutURI().toURL();
+                    return new LogoutHandler()
+                    {
+                        @Override
+                        public void handleLogout(final HttpServletResponse response) throws IOException
+                        {
+                            response.sendRedirect(logoutUri.toString());
+                        }
+                    };
+                }
+            }
+            catch (MalformedURLException e)
+            {
+                throw new IllegalStateException(String.format("LogoutURI has unexpected format '%s'",
+                                                              oauth2Provider.getLogoutURI()), e);
+            }
+        }
+        return null;
     }
 
     private String buildAuthorizationRedirectURL(final HttpServletRequest request,

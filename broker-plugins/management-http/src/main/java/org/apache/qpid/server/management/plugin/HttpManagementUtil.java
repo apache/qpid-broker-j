@@ -70,11 +70,6 @@ public class HttpManagementUtil
      */
     public static final String ATTR_MANAGEMENT_CONFIGURATION = "Qpid.managementConfiguration";
 
-    /**
-     * Default management entry URL
-     */
-    public static final String ENTRY_POINT_PATH = "/management";
-
     private static final String ATTR_LOGIN_LOGOUT_REPORTER = "Qpid.loginLogoutReporter";
     private static final String ATTR_SUBJECT = "Qpid.subject";
     private static final String ATTR_LOG_ACTOR = "Qpid.logActor";

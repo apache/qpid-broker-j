@@ -73,6 +73,9 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
             validValues = {"org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationProviderImpl#validIdentityResolvers()"})
     String getIdentityResolverType();
 
+    @ManagedAttribute( description = "Redirect URI used when the user leaves the Web Management Console. If not specified, an internal page is used instead.")
+    URI getLogoutURI();
+
     @ManagedAttribute( description = "Client ID to identify qpid to the OAuth endpoints", mandatory = true )
     String getClientId();
 

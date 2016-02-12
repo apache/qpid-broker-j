@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
 import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -108,6 +109,8 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     public static final String HTTPS_SASL_AUTHENTICATION_ENABLED = "httpsSaslAuthenticationEnabled";
 
     public static final String PLUGIN_TYPE = "MANAGEMENT-HTTP";
+
+    public static final String DEFAULT_LOGOUT_URL = "/logout.html";
 
     private static final String OPERATIONAL_LOGGING_NAME = "Web";
 
@@ -258,7 +261,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         root.addFilter(restAuthorizationFilter, "/apidocs/*", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(restAuthorizationFilter, "/service/*", EnumSet.of(DispatcherType.REQUEST));
 
-        root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), HttpManagementUtil.ENTRY_POINT_PATH, EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/index.html", EnumSet.of(DispatcherType.REQUEST));
         root.addFilter(new FilterHolder(new RedirectingAuthorisationFilter()), "/", EnumSet.of(DispatcherType.REQUEST));
 
@@ -290,7 +292,6 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         root.addServlet(new ServletHolder(new SaslServlet()), "/service/sasl");
 
-        root.addServlet(new ServletHolder(new DefinedFileServlet("index.html")), HttpManagementUtil.ENTRY_POINT_PATH);
         root.addServlet(new ServletHolder(new RootServlet("/","/apidocs/","index.html")), "/");
         root.addServlet(new ServletHolder(new LogoutServlet()), "/logout");
 

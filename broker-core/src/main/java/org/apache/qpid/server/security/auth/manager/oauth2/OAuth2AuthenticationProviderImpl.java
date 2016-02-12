@@ -19,7 +19,7 @@
 
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
-import static org.apache.qpid.server.util.ParameterizedTypes.*;
+import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,7 +56,6 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AbstractAuthenticationManager;
 import org.apache.qpid.server.util.ConnectionBuilder;
-import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class OAuth2AuthenticationProviderImpl
@@ -80,6 +79,9 @@ public class OAuth2AuthenticationProviderImpl
 
     @ManagedAttributeField
     private boolean _tokenEndpointNeedsAuth;
+
+    @ManagedAttributeField
+    private URI _logoutURI;
 
     @ManagedAttributeField
     private String _clientId;
@@ -343,6 +345,12 @@ public class OAuth2AuthenticationProviderImpl
     public URI getIdentityResolverEndpointURI()
     {
         return _identityResolverEndpointURI;
+    }
+
+    @Override
+    public URI getLogoutURI()
+    {
+        return _logoutURI;
     }
 
     @Override
