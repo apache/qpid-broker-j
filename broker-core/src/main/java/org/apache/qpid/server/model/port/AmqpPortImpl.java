@@ -333,6 +333,13 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public void onValidate()
     {
         super.onValidate();
+        Collection<VirtualHostAlias> aliases = getChildren(VirtualHostAlias.class);
+        if (aliases.size() == 0)
+        {
+            LOGGER.warn("{} has no virtualhost aliases defined.  No AMQP connections will be possible"
+                        + " through this port until at least one alias is added.", this);
+        }
+
         validateThreadPoolSettings(this);
     }
 
