@@ -118,7 +118,7 @@ public class ConnectionBuilder
             final SSLContext sslContext;
             try
             {
-                sslContext = SSLContext.getInstance("TLS");
+                sslContext = SSLUtil.tryGetSSLContext();
                 sslContext.init(null, _trustMangers, null);
             }
             catch (GeneralSecurityException e)

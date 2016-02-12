@@ -27,7 +27,6 @@ import java.security.Principal;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -54,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngine;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
@@ -64,6 +64,7 @@ import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
@@ -119,28 +120,24 @@ class WebSocketProvider implements AcceptingTransport
         }
         else if (_transport == Transport.WSS)
         {
+            final List<String> tlsProtocolWhiteList = _port.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+            final List<String> tlsProtocolBlackList = _port.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
             SslContextFactory factory = new SslContextFactory()
                                         {
+                                            @Override
                                             public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
                                             {
-                                                List<String> selectedProtocols = new ArrayList<>(Arrays.asList(enabledProtocols));
-                                                SSLUtil.updateEnabledProtocols(selectedProtocols, supportedProtocols);
-
-                                                return selectedProtocols.toArray(new String[selectedProtocols.size()]);
+                                                return SSLUtil.filterEnabledProtocols(enabledProtocols, supportedProtocols, tlsProtocolWhiteList, tlsProtocolBlackList);
                                             }
 
+                                            @Override
+                                            public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
+                                            {
+                                                return SSLUtil.filterEnabledCipherSuites(enabledCipherSuites, supportedCipherSuites,
+                                                                                         _port.getCipherSuiteWhiteList(), _port.getCipherSuiteBlackList());
+                                            }
                                         };
             factory.setSslContext(_sslContext);
-
-            if(_port.getDisabledCipherSuites() != null)
-            {
-                factory.addExcludeCipherSuites(_port.getDisabledCipherSuites().toArray(new String[_port.getDisabledCipherSuites().size()]));
-            }
-
-            if(_port.getEnabledCipherSuites() != null && !_port.getEnabledCipherSuites().isEmpty())
-            {
-                factory.setIncludeCipherSuites(_port.getEnabledCipherSuites().toArray(new String[_port.getEnabledCipherSuites().size()]));
-            }
 
             factory.setNeedClientAuth(_port.getNeedClientAuth());
             factory.setWantClientAuth(_port.getWantClientAuth());

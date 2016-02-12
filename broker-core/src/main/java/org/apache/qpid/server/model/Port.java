@@ -21,9 +21,12 @@
 package org.apache.qpid.server.model;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import com.google.common.util.concurrent.ListenableFuture;
+
+import org.apache.qpid.configuration.CommonProperties;
 
 @ManagedObject( description = Port.CLASS_DESCRIPTION )
 public interface Port<X extends Port<X>> extends ConfiguredObject<X>
@@ -70,17 +73,11 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     @ManagedAttribute
     Collection<TrustStore> getTrustStores();
 
-    @ManagedContextDefault(name = "qpid.port.enabledCipherSuites" )
-    String DEFAULT_ENABLED_CIPHER_SUITES="[]";
+    @ManagedAttribute( defaultValue = "${" + CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST + "}")
+    List<String> getCipherSuiteWhiteList();
 
-    @ManagedAttribute( defaultValue = "${qpid.port.enabledCipherSuites}")
-    Collection<String> getEnabledCipherSuites();
-
-    @ManagedContextDefault(name = "qpid.port.disabledCipherSuites" )
-    String DEFAULT_DISABLED_CIPHER_SUITES="[]";
-
-    @ManagedAttribute( defaultValue = "${qpid.port.disabledCipherSuites}")
-    Collection<String> getDisabledCipherSuites();
+    @ManagedAttribute( defaultValue = "${" + CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST + "}")
+    List<String> getCipherSuiteBlackList();
 
     Collection<Connection> getConnections();
 

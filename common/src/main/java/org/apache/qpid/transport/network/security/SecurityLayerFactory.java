@@ -20,11 +20,16 @@
  */
 package org.apache.qpid.transport.network.security;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.ssl.SSLContextFactory;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.ConnectionSettings;
@@ -97,17 +102,41 @@ public class SecurityLayerFactory
                 _hostname = settings.getHost();
             }
 
+            List<String> protocolWhiteList =
+                    getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST,
+                                            CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT);
+            List<String> protocolBlackList =
+                    getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST,
+                                            CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST_DEFAULT);
+            List<String> cipherSuiteWhiteList =
+                    getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
+                                            CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST_DEFAULT);
+            List<String> cipherSuiteBlackList =
+                    getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST,
+                                            CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT);
             try
             {
                 _engine = sslCtx.createSSLEngine();
                 _engine.setUseClientMode(true);
-                SSLUtil.updateProtocolSupport(_engine);
+                SSLUtil.updateEnabledTlsProtocols(_engine, protocolWhiteList, protocolBlackList);
+                SSLUtil.updateEnabledCipherSuites(_engine, cipherSuiteWhiteList, cipherSuiteBlackList);
             }
             catch(Exception e)
             {
                 throw new TransportException("Error creating SSL Engine", e);
             }
 
+        }
+
+        private List<String> getSystemPropertyAsList(final String propertyName, final String defaultValue)
+        {
+            String listAsString = System.getProperty(propertyName, defaultValue);
+            List<String> listOfStrings = Collections.emptyList();
+            if(listAsString != null && !"".equals(listAsString))
+            {
+                listOfStrings = Arrays.asList(listAsString.split("\\s*,\\s*"));
+            }
+            return listOfStrings;
         }
 
         public ByteBufferSender sender(ByteBufferSender delegate)

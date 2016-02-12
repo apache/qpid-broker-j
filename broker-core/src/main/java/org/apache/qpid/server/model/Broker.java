@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 import java.util.Collection;
 import java.util.List;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.EventLoggerProvider;
 import org.apache.qpid.server.model.adapter.BrokerAdapter;
@@ -87,6 +88,18 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @ManagedContextDefault(name = BROKER_MSG_AUTH)
     boolean DEFAULT_BROKER_MSG_AUTH = false;
+
+    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST)
+    String DEFAULT_SECURITY_TLS_PROTOCOL_WHITE_LIST = "[\"TLSv1\\\\.[0-9]+\"]";
+
+    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST)
+    String DEFAULT_SECURITY_TLS_PROTOCOL_BLACK_LIST = "[\"TLSv1\\\\.0\"]";
+
+    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST)
+    String DEFAULT_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST = "[]";
+
+    @ManagedContextDefault(name = CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST)
+    String DEFAULT_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "[]";
 
     @DerivedAttribute
     String getBuildVersion();

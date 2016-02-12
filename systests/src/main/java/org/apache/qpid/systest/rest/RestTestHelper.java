@@ -177,7 +177,7 @@ public class RestTestHelper
                                                          KeyManagerFactory.getDefaultAlgorithm(),
                                                          _clientAuthAlias);
 
-                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[SSLUtil.getEnabledSSlProtocols().length-1]);
+                final SSLContext sslContext = SSLUtil.tryGetSSLContext();
 
                 sslContext.init(keyManagers, trustManagers, null);
 
@@ -209,8 +209,7 @@ public class RestTestHelper
                 keyManagers =
                         SSLContextFactory.getKeyManagers(null, null, null, null, null);
 
-
-                final SSLContext sslContext = SSLContext.getInstance(SSLUtil.getEnabledSSlProtocols()[SSLUtil.getEnabledSSlProtocols().length-1]);
+                final SSLContext sslContext = SSLUtil.tryGetSSLContext();
 
                 sslContext.init(keyManagers, trustManagers, null);
 
