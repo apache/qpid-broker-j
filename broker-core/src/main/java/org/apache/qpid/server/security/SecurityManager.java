@@ -304,7 +304,7 @@ public class SecurityManager
             }
         }))
         {
-            throw new AccessControlException("User not authorised for management");
+            throw new AccessControlException("User is not authorised for management");
         }
     }
 

@@ -82,4 +82,10 @@ public class OAuth2UserPrincipal implements Principal
         result = 31 * result + _name.hashCode();
         return result;
     }
+
+    @Override
+    public String toString()
+    {
+        return getName();
+    }
 }

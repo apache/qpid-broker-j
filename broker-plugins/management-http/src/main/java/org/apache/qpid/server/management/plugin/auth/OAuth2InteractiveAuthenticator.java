@@ -22,6 +22,7 @@ package org.apache.qpid.server.management.plugin.auth;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.AccessControlException;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -159,13 +160,23 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                     public void handleAuthentication(final HttpServletResponse response) throws IOException
                     {
                         AuthenticationResult authenticationResult = oauth2Provider.authenticateViaAuthorizationCode(authorizationCode, redirectUri);
-                        createSubject(authenticationResult);
+                        try
+                        {
+                            Subject subject = createSubject(authenticationResult);
+                            authoriseManagement(subject);
+                            HttpManagementUtil.saveAuthorisedSubject(httpSession, subject);
 
-                        LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
-                        response.sendRedirect(originalRequestUri);
+                            LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
+                            response.sendRedirect(originalRequestUri);
+                        }
+                        catch (AccessControlException e)
+                        {
+                            LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
+                            response.sendError(403, "User is not authorised for management");
+                        }
                     }
 
-                    private void createSubject(final AuthenticationResult authenticationResult)
+                    private Subject createSubject(final AuthenticationResult authenticationResult)
                     {
                         SubjectCreator subjectCreator = oauth2Provider.getSubjectCreator(request.isSecure());
                         SubjectAuthenticationResult result = subjectCreator.createResultWithGroups(authenticationResult);
@@ -184,11 +195,13 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                                               original.getPrivateCredentials());
                         subject.getPrincipals().add(new ServletConnectionPrincipal(request));
                         subject.setReadOnly();
+                        return subject;
+                    }
 
+                    private void authoriseManagement(final Subject subject)
+                    {
                         Broker broker = (Broker) oauth2Provider.getParent(Broker.class);
                         HttpManagementUtil.assertManagementAccess(broker.getSecurityManager(), subject);
-
-                        HttpManagementUtil.saveAuthorisedSubject(httpSession, subject);
                     }
                 };
             }
