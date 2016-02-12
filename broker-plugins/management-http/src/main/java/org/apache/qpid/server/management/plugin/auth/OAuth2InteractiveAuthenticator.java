@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,6 +59,23 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
     private static final String ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE = "originalRequestURI";
     private static final String REDIRECT_URI_SESSION_ATTRIBUTE = "redirectURI";
 
+    /** Authentication Endpoint error responses https://tools.ietf.org/html/rfc6749#section-4.2.1 */
+    private static final Map<String, Integer> ERROR_RESPONSES;
+
+    static
+    {
+        // Authentication Enpoint
+        Map<String, Integer> errorResponses = new HashMap<>();
+        errorResponses.put("invalid_request", 400);
+        errorResponses.put("unauthorized_client", 400);
+        errorResponses.put("unsupported_response_type", 400);
+        errorResponses.put("invalid_scope", 400);
+        errorResponses.put("access_denied", 403);
+        errorResponses.put("server_error", 500);
+        errorResponses.put("temporarily_unavailable", 503);
+        ERROR_RESPONSES = Collections.unmodifiableMap(errorResponses);
+    }
+
     private SecureRandom _random = new SecureRandom();
 
     @Override
@@ -84,6 +102,25 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                 return new FailedAuthenticationHandler(400, "Some request parameters are included more than once " + request, e);
             }
 
+            String error = requestParameters.get("error");
+            if (error != null)
+            {
+                int responseCode = decodeErrorAsResponseCode(error);
+                String errorDescription = requestParameters.get("error_description");
+                if (responseCode == 403)
+                {
+                    LOGGER.debug("Resource owner denies the access request");
+                    return new FailedAuthenticationHandler(responseCode, "Resource owner denies the access request");
+
+                }
+                else
+                {
+                    LOGGER.warn("Authorization endpoint failed, error : '{}', error description '{}'",
+                                error, errorDescription);
+                    return new FailedAuthenticationHandler(responseCode, String.format("Authorization request failed :'%s'", error));
+                }
+            }
+
             final String authorizationCode = requestParameters.get("code");
             if (authorizationCode == null)
             {
@@ -106,7 +143,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                 if (state == null)
                 {
                     LOGGER.warn("Deny login attempt with wrong state: {}", state);
-                    return new FailedAuthenticationHandler(400, "no state set on request with authorization code grant: "
+                    return new FailedAuthenticationHandler(400, "No state set on request with authorization code grant: "
                                                            + request);
                 }
                 if (!checkState(httpSession, state))
@@ -270,6 +307,11 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
         String nonce = (String) session.getAttribute(STATE_NAME);
         session.removeAttribute(STATE_NAME);
         return state != null && state.equals(nonce);
+    }
+
+    private int decodeErrorAsResponseCode(final String error)
+    {
+        return ERROR_RESPONSES.containsKey(error) ? ERROR_RESPONSES.get(error) : 500;
     }
 
     class FailedAuthenticationHandler implements AuthenticationHandler
