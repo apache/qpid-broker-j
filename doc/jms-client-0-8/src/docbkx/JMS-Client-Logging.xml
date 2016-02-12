@@ -53,7 +53,7 @@
     <para>If you are using Apache Log4j with a log4j.properties file, this simply means adding (or
       changing) the following line:</para>
     <screen>
-      org.apache.qpid=DEBUG
+      log4j.logger.org.apache.qpid=DEBUG
     </screen>
     <para>If you are using another logging framework, or you are using Log4j but configuring in
       another manner, refer to the documentation accompanying the logging framework for details of
