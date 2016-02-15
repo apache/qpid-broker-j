@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
@@ -37,8 +39,8 @@ import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 public class QpidSslRMIServerSocketFactory extends SslRMIServerSocketFactory
 {
     private final SSLContext _sslContext;
-    private final Collection<String> _enabledCipherSuites;
-    private final Collection<String> _disabledCipherSuites;
+    private final List<String> _enabledCipherSuites;
+    private final List<String> _disabledCipherSuites;
     private final Action<Integer> _portAllocationAction;
 
     /**
@@ -63,8 +65,8 @@ public class QpidSslRMIServerSocketFactory extends SslRMIServerSocketFactory
         }
 
         _sslContext = sslContext;
-        _enabledCipherSuites = enabledCipherSuites;
-        _disabledCipherSuites = disabledCipherSuites;
+        _enabledCipherSuites = new ArrayList(enabledCipherSuites);
+        _disabledCipherSuites = new ArrayList(disabledCipherSuites);
         _portAllocationAction = action;
 
         //TODO: settings + implementation for SSL client auth, updating equals and hashCode appropriately.
