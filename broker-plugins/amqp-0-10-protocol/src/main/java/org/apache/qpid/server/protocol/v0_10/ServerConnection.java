@@ -77,7 +77,7 @@ public class ServerConnection extends Connection
     private Principal _authorizedPrincipal = null;
     private final long _connectionId;
     private final Object _reference = new Object();
-    private VirtualHostImpl<?,?,?> _virtualHost;
+    private volatile VirtualHostImpl<?,?,?> _virtualHost;
     private final AmqpPort<?> _port;
     private final AtomicLong _lastIoTime = new AtomicLong();
     private boolean _blocking;
@@ -458,15 +458,20 @@ public class ServerConnection extends Connection
     @Override
     public void closed()
     {
-        performDeleteTasks();
-
-        if(_virtualHost != null)
+        try
         {
-            _virtualHost.deregisterConnection(_amqpConnection);
+            performDeleteTasks();
+            super.closed();
         }
-        super.closed();
+        finally
+        {
+            if(_virtualHost != null)
+            {
+                _virtualHost.deregisterConnection(_amqpConnection);
+            }
+            getEventLogger().message(isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
+        }
 
-        getEventLogger().message(isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
     }
 
     private void markAllSessionsClosed()
