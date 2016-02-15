@@ -81,7 +81,7 @@ public class OAuth2AuthenticationProviderImpl
     private boolean _tokenEndpointNeedsAuth;
 
     @ManagedAttributeField
-    private URI _logoutURI;
+    private URI _postLogoutURI;
 
     @ManagedAttributeField
     private String _clientId;
@@ -125,6 +125,7 @@ public class OAuth2AuthenticationProviderImpl
         super.validateChange(proxyForValidation, changedAttributes);
         validateResolver((OAuth2AuthenticationProvider<?>)proxyForValidation);
         validateSecureEndpoints((OAuth2AuthenticationProvider<?>)proxyForValidation);
+        validatePostLogoutURI(this);
     }
 
 
@@ -134,6 +135,7 @@ public class OAuth2AuthenticationProviderImpl
         super.onValidate();
         validateResolver(this);
         validateSecureEndpoints(this);
+        validatePostLogoutURI(this);
     }
 
     private void validateSecureEndpoints(final OAuth2AuthenticationProvider<?> provider)
@@ -152,6 +154,17 @@ public class OAuth2AuthenticationProviderImpl
         }
     }
 
+    private void validatePostLogoutURI(final OAuth2AuthenticationProvider<?> provider)
+    {
+        if (provider.getPostLogoutURI() != null)
+        {
+            String scheme = provider.getPostLogoutURI().getScheme();
+            if (!"https".equals(scheme) && !"http".equals(scheme))
+            {
+                throw new IllegalConfigurationException(String.format("Post logout URI does not have a http or https scheme: '%s'", provider.getPostLogoutURI()));
+            }
+        }
+    }
 
     private void validateResolver(final OAuth2AuthenticationProvider<?> provider)
     {
@@ -348,9 +361,9 @@ public class OAuth2AuthenticationProviderImpl
     }
 
     @Override
-    public URI getLogoutURI()
+    public URI getPostLogoutURI()
     {
-        return _logoutURI;
+        return _postLogoutURI;
     }
 
     @Override

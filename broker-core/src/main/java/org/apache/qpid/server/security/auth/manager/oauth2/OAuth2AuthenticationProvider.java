@@ -74,7 +74,7 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     String getIdentityResolverType();
 
     @ManagedAttribute( description = "Redirect URI used when the user leaves the Web Management Console. If not specified, an internal page is used instead.")
-    URI getLogoutURI();
+    URI getPostLogoutURI();
 
     @ManagedAttribute( description = "Client ID to identify qpid to the OAuth endpoints", mandatory = true )
     String getClientId();

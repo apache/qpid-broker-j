@@ -20,10 +20,8 @@
 package org.apache.qpid.server.management.plugin.auth;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.AccessControlException;
 import java.security.SecureRandom;
 import java.util.Collections;
@@ -62,12 +60,12 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
     private static final String ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE = "originalRequestURI";
     private static final String REDIRECT_URI_SESSION_ATTRIBUTE = "redirectURI";
 
-    /** Authentication Endpoint error responses https://tools.ietf.org/html/rfc6749#section-4.2.1 */
+    /** Authentication Endpoint error responses https://tools.ietf.org/html/rfc6749#section-4.2.2.1 */
     private static final Map<String, Integer> ERROR_RESPONSES;
 
     static
     {
-        // Authentication Enpoint
+        // Authentication Endpoint
         Map<String, Integer> errorResponses = new HashMap<>();
         errorResponses.put("invalid_request", 400);
         errorResponses.put("unauthorized_client", 400);
@@ -223,25 +221,17 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
             final OAuth2AuthenticationProvider oauth2Provider =
                     (OAuth2AuthenticationProvider) configuration.getAuthenticationProvider(request);
 
-            try
+            if (oauth2Provider.getPostLogoutURI() != null)
             {
-                if (oauth2Provider.getLogoutURI() != null)
+                final String postLogoutRedirect = oauth2Provider.getPostLogoutURI().toString();
+                return new LogoutHandler()
                 {
-                    final URL logoutUri = oauth2Provider.getLogoutURI().toURL();
-                    return new LogoutHandler()
+                    @Override
+                    public void handleLogout(final HttpServletResponse response) throws IOException
                     {
-                        @Override
-                        public void handleLogout(final HttpServletResponse response) throws IOException
-                        {
-                            response.sendRedirect(logoutUri.toString());
-                        }
-                    };
-                }
-            }
-            catch (MalformedURLException e)
-            {
-                throw new IllegalStateException(String.format("LogoutURI has unexpected format '%s'",
-                                                              oauth2Provider.getLogoutURI()), e);
+                        response.sendRedirect(postLogoutRedirect);
+                    }
+                };
             }
         }
         return null;

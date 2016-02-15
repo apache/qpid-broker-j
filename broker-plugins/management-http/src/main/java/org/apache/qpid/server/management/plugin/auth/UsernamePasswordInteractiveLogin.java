@@ -35,11 +35,11 @@ import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticati
 @PluggableService
 public class UsernamePasswordInteractiveLogin implements HttpRequestInteractiveAuthenticator
 {
-    // TODO: When we refactor web management and adopt a web fragments, move login.html and login.html
-    // to WEB-INF/ and dispatch (forward) to them, rather than client side redirect.
-    // This would keep the login/logout pages private and inaccessible when using auth providers
+    // TODO: When we refactor web management and adopt web fragments, move login.html (and logout.html)
+    // to WEB-INF/ and dispatch (forward) to them, rather than using a client side redirect.
+    // This would keep the login/logout pages private and inaccessible to the user when using auth providers
     // such as Ouath2.
-    private static final String DEFAULT_LOGIN_URL = "login.html";
+    private static final String DEFAULT_LOGIN_URL = "/login.html";
 
     private static final AuthenticationHandler REDIRECT_HANDLER = new AuthenticationHandler()
     {
