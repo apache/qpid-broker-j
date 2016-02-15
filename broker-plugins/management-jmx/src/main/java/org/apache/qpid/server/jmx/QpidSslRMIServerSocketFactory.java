@@ -65,8 +65,8 @@ public class QpidSslRMIServerSocketFactory extends SslRMIServerSocketFactory
         }
 
         _sslContext = sslContext;
-        _enabledCipherSuites = new ArrayList(enabledCipherSuites);
-        _disabledCipherSuites = new ArrayList(disabledCipherSuites);
+        _enabledCipherSuites = enabledCipherSuites == null ? null : new ArrayList(enabledCipherSuites);
+        _disabledCipherSuites = disabledCipherSuites == null ? null : new ArrayList(disabledCipherSuites);
         _portAllocationAction = action;
 
         //TODO: settings + implementation for SSL client auth, updating equals and hashCode appropriately.
