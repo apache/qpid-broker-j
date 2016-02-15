@@ -582,12 +582,12 @@ public class SSLUtil
         return filteredList.toArray(new String[filteredList.size()]);
     }
 
-    public static SSLContext tryGetSSLContext()
+    public static SSLContext tryGetSSLContext() throws NoSuchAlgorithmException
     {
         return tryGetSSLContext(TLS_PROTOCOL_PREFERENCES);
     }
 
-    public static SSLContext tryGetSSLContext(final String[] protocols)
+    public static SSLContext tryGetSSLContext(final String[] protocols) throws NoSuchAlgorithmException
     {
         for (String protocol : protocols)
         {
@@ -600,7 +600,7 @@ public class SSLUtil
                 // pass and try the next protocol in the list
             }
         }
-        throw new RuntimeException(String.format("Could not create SSLContext with one of the requested protocols: %s",
-                                                 Arrays.toString(protocols)));
+        throw new NoSuchAlgorithmException(String.format("Could not create SSLContext with one of the requested protocols: %s",
+                                                         Arrays.toString(protocols)));
     }
 }
