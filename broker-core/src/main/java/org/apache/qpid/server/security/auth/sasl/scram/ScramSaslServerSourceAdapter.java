@@ -91,6 +91,7 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
         final byte[] storedKey;
         final byte[] serverKey;
         final byte[] salt = new byte[32];
+        final int iterationCount = getIterationCount();
         _random.nextBytes(salt);
 
         if(password != null)
@@ -110,7 +111,7 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
                 byte[] saltedPassword = mac.doFinal();
 
                 byte[] previous = null;
-                for (int i = 1; i < getIterationCount(); i++)
+                for (int i = 1; i < iterationCount; i++)
                 {
                     mac.update(previous != null ? previous : saltedPassword);
                     previous = mac.doFinal();
@@ -165,6 +166,12 @@ public class ScramSaslServerSourceAdapter implements ScramSaslServerSource
                     throw new SaslException("Authentication Failed");
                 }
                 return serverKey;
+            }
+
+            @Override
+            public int getIterationCount() throws SaslException
+            {
+                return iterationCount;
             }
 
 

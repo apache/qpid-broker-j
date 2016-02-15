@@ -39,7 +39,9 @@ import javax.xml.bind.DatatypeConverter;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.PasswordCredentialManagingAuthenticationProvider;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
@@ -57,7 +59,11 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     public static final String PLAIN = "PLAIN";
     private final SecureRandom _random = new SecureRandom();
 
-    private int _iterationCount = 4096;
+    public static final String QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT = "qpid.auth.scram.iteration_count";
+    @ManagedContextDefault(name = QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT)
+    public static final int DEFAULT_ITERATION_COUNT = 4096;
+
+    private int _iterationCount = DEFAULT_ITERATION_COUNT;
 
 
     protected AbstractScramAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
@@ -68,6 +74,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.QUIESCED }, desiredState = State.ACTIVE )
     protected ListenableFuture<Void> activate()
     {
+        _iterationCount = getContextValue(Integer.class, QPID_AUTHMANAGER_SCRAM_ITERATION_COUNT);
         for(ManagedUser user : getUserMap().values())
         {
             updateStoredPasswordFormatIfNecessary(user);
@@ -115,7 +122,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
             SaltAndPasswordKeys saltAndPasswordKeys = getSaltAndPasswordKeys(username);
             try
             {
-                byte[] saltedPassword = createSaltedPassword(saltAndPasswordKeys.getSalt(), password);
+                byte[] saltedPassword = createSaltedPassword(saltAndPasswordKeys.getSalt(), password, saltAndPasswordKeys.getIterationCount());
                 byte[] clientKey = computeHmac(saltedPassword, "Client Key");
 
                 byte[] storedKey = MessageDigest.getInstance(getDigestName()).digest(clientKey);
@@ -147,8 +154,9 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
 
     private void updateStoredPasswordFormatIfNecessary(final ManagedUser user)
     {
+        final int oldDefaultIterationCount = 4096;
         final String[] passwordFields = user.getPassword().split(",");
-        if(passwordFields.length < 4)
+        if (passwordFields.length == 2)
         {
             byte[] saltedPassword = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SALTED_PASSWORD.ordinal()]);
 
@@ -160,9 +168,11 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
 
                 byte[] serverKey = computeHmac(saltedPassword, "Server Key");
 
-                String password = passwordFields[PasswordField.SALT.ordinal()] + ",,"
+                String password = passwordFields[PasswordField.SALT.ordinal()] + ","
+                                  + "," // remove previously insecure salted password field
                                   + DatatypeConverter.printBase64Binary(storedKey) + ","
-                                  + DatatypeConverter.printBase64Binary(serverKey);
+                                  + DatatypeConverter.printBase64Binary(serverKey) + ","
+                                  + oldDefaultIterationCount;
 
                 user.setPassword(password);
             }
@@ -171,9 +181,22 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                 throw new IllegalArgumentException(e);
             }
         }
+        else if (passwordFields.length == 4)
+        {
+            String password = passwordFields[PasswordField.SALT.ordinal()] + ","
+                    + "," // remove previously insecure salted password field
+                    + passwordFields[PasswordField.STORED_KEY.ordinal()] + ","
+                    + passwordFields[PasswordField.SERVER_KEY.ordinal()] + ","
+                    + oldDefaultIterationCount;
+            user.setPassword(password);
+        }
+        else if (passwordFields.length != 5)
+        {
+            throw new IllegalConfigurationException("password field for user '" + user.getName() + "' has unrecognised format.");
+        }
     }
 
-    private byte[] createSaltedPassword(byte[] salt, String password)
+    private byte[] createSaltedPassword(byte[] salt, String password, int iterationCount)
     {
         Mac mac = createShaHmac(password.getBytes(ASCII));
 
@@ -182,7 +205,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         byte[] result = mac.doFinal();
 
         byte[] previous = null;
-        for(int i = 1; i < getIterationCount(); i++)
+        for(int i = 1; i < iterationCount; i++)
         {
             mac.update(previous != null? previous: result);
             previous = mac.doFinal();
@@ -225,16 +248,19 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     {
         try
         {
+            final int iterationCount = getIterationCount();
             byte[] salt = generateSalt();
-            byte[] saltedPassword = createSaltedPassword(salt, password);
+            byte[] saltedPassword = createSaltedPassword(salt, password, iterationCount);
             byte[] clientKey = computeHmac(saltedPassword, "Client Key");
 
             byte[] storedKey = MessageDigest.getInstance(getDigestName()).digest(clientKey);
             byte[] serverKey = computeHmac(saltedPassword, "Server Key");
 
-            return DatatypeConverter.printBase64Binary(salt) + ",,"
+            return DatatypeConverter.printBase64Binary(salt) + ","
+                   + "," // leave insecure salted password field blank
                    + DatatypeConverter.printBase64Binary(storedKey) + ","
-                   + DatatypeConverter.printBase64Binary(serverKey);
+                   + DatatypeConverter.printBase64Binary(serverKey) + ","
+                   + iterationCount;
         }
         catch (NoSuchAlgorithmException e)
         {
@@ -259,6 +285,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
         final byte[] salt;
         final byte[] storedKey;
         final byte[] serverKey;
+        final int iterationCount;
         final SaslException exception;
 
         if(user == null)
@@ -268,6 +295,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
             salt = generateSalt();
             storedKey = null;
             serverKey = null;
+            iterationCount = -1;
             exception = new SaslException("Authentication Failed");
         }
         else
@@ -277,6 +305,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
             salt = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SALT.ordinal()]);
             storedKey = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.STORED_KEY.ordinal()]);
             serverKey = DatatypeConverter.parseBase64Binary(passwordFields[PasswordField.SERVER_KEY.ordinal()]);
+            iterationCount = Integer.parseInt(passwordFields[PasswordField.ITERATION_COUNT.ordinal()]);
             exception = null;
         }
 
@@ -307,6 +336,16 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                 }
                 return serverKey;
             }
+
+            @Override
+            public int getIterationCount() throws SaslException
+            {
+                if(iterationCount < 0)
+                {
+                    throw exception;
+                }
+                return iterationCount;
+            }
         };
     }
 
@@ -319,6 +358,6 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
 
     private enum PasswordField
     {
-        SALT, SALTED_PASSWORD, STORED_KEY, SERVER_KEY
+        SALT, SALTED_PASSWORD, STORED_KEY, SERVER_KEY, ITERATION_COUNT
     }
 }
