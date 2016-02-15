@@ -64,6 +64,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     public static final int DEFAULT_ITERATION_COUNT = 4096;
 
     private int _iterationCount = DEFAULT_ITERATION_COUNT;
+    private boolean _doNotCreateStoredPasswordBecauseItIsBeingUpgraded;
 
 
     protected AbstractScramAuthenticationManager(final Map<String, Object> attributes, final Broker broker)
@@ -173,8 +174,9 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                                   + DatatypeConverter.printBase64Binary(storedKey) + ","
                                   + DatatypeConverter.printBase64Binary(serverKey) + ","
                                   + oldDefaultIterationCount;
-
+                _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = true;
                 user.setPassword(password);
+                _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = false;
             }
             catch (NoSuchAlgorithmException e)
             {
@@ -188,7 +190,9 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                     + passwordFields[PasswordField.STORED_KEY.ordinal()] + ","
                     + passwordFields[PasswordField.SERVER_KEY.ordinal()] + ","
                     + oldDefaultIterationCount;
+            _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = true;
             user.setPassword(password);
+            _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = false;
         }
         else if (passwordFields.length != 5)
         {
@@ -246,6 +250,11 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
     @Override
     protected String createStoredPassword(final String password)
     {
+        if (_doNotCreateStoredPasswordBecauseItIsBeingUpgraded)
+        {
+            return password;
+        }
+
         try
         {
             final int iterationCount = getIterationCount();
