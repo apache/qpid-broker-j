@@ -690,7 +690,7 @@ define(["dojo/_base/xhr",
 
            util.nodeAddressOrContextVarRegexp = function(constraints)
            {
-             return "^(([0-9a-zA-Z.-_]|::)+:[0-9]{1,5})|" + singleContextVarRegexp + "$";
+             return "^(([0-9a-zA-Z.\\-_]|::)+:[0-9]{1,5})|" + singleContextVarRegexp + "$";
            }
 
            util.resizeContentAreaAndRepositionDialog = function(contentNode, dialog)
