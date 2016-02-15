@@ -21,6 +21,7 @@
 package org.apache.qpid.server;
 
 import java.io.File;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.apache.qpid.server.configuration.BrokerProperties;
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.SystemConfig;
 
@@ -217,7 +219,13 @@ public class BrokerOptions
             String overriddenDefaultConfigurationLocation = System.getProperty("qpid.initialConfigurationLocation");
             if (overriddenDefaultConfigurationLocation != null)
             {
-                return BrokerOptions.class.getClassLoader().getResource(overriddenDefaultConfigurationLocation).toExternalForm();
+                URL resource = BrokerOptions.class.getClassLoader().getResource(overriddenDefaultConfigurationLocation);
+                if (resource == null)
+                {
+                    throw new IllegalArgumentException(String.format("Initial configuration '%s' is not found",
+                                                                          overriddenDefaultConfigurationLocation));
+                }
+                return resource.toExternalForm();
             }
             return DEFAULT_INITIAL_CONFIG_LOCATION;
         }
