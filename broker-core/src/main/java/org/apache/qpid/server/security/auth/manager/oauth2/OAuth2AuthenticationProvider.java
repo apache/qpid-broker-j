@@ -41,22 +41,6 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     @ManagedContextDefault(name = AUTHENTICATION_OAUTH2_READ_TIMEOUT)
     int DEFAULT_AUTHENTICATION_OAUTH2_READ_TIMEOUT = 60000;
 
-    String AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS = "qpid.authentication.oauth2.enabledTlsProtocols";
-    @ManagedContextDefault(name = AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS)
-    String DEFAULT_ENABLED_TLS_PROTOCOLS = "[]";
-
-    String AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS = "qpid.authentication.oauth2.disabledTlsProtocols";
-    @ManagedContextDefault(name = AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS)
-    String DEFAULT_DISABLED_TLS_PROTOCOLS = "[]";
-
-    String AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES = "qpid.authentication.oauth2.enabledCipherSuites";
-    @ManagedContextDefault(name = AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES)
-    String DEFAULT_ENABLED_CIPHER_SUITES = "[]";
-
-    String AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES = "qpid.authentication.oauth2.disabledCipherSuites";
-    @ManagedContextDefault(name = AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES)
-    String DEFAULT_DISABLED_CIPHER_SUITES = "[]";
-
     @ManagedAttribute( description = "Redirect URI to obtain authorization code grant", mandatory = true, defaultValue = "${this:defaultAuthorizationEndpointURI}")
     URI getAuthorizationEndpointURI();
 

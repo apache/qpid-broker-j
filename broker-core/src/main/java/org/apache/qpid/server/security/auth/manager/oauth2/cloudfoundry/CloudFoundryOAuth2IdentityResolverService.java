@@ -20,6 +20,10 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry;
 
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
 import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
 
 import java.io.IOException;
@@ -42,6 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -51,7 +56,6 @@ import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2AuthenticationP
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2IdentityResolverService;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2Utils;
 import org.apache.qpid.server.util.ConnectionBuilder;
-import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 @PluggableService
@@ -85,14 +89,14 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
         String clientSecret = authenticationProvider.getClientSecret();
         int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
         int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
-        List<String> enabledTlsProtocols =
-                authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS);
-        List<String> disabledTlsProtocols =
-                authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS);
-        List<String> enabledCipherSuites =
-                authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES);
-        List<String> disabledCipherSuites =
-                authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES);
+        List<String> tlsProtocolWhiteList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
+                                                                                   QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        List<String> tlsProtocolBlackList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
+                                                                                   QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
+        List<String> tlsCipherSuiteWhiteList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
+                                                                                      QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
+        List<String> tlsCipherSuiteBlackList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
+                                                                                      QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
 
         ConnectionBuilder connectionBuilder = new ConnectionBuilder(checkTokenEndpoint);
         connectionBuilder.setConnectTimeout(connectTimeout).setReadTimeout(readTimeout);
@@ -107,10 +111,10 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
                 throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
             }
         }
-        connectionBuilder.setEnabledTlsProtocols(enabledTlsProtocols)
-                .setDisabledTlsProtocols(disabledTlsProtocols)
-                .setEnabledCipherSuites(enabledCipherSuites)
-                .setDisabledCipherSuites(disabledCipherSuites);
+        connectionBuilder.setTlsProtocolWhiteList(tlsProtocolWhiteList)
+                .setTlsProtocolBlackList(tlsProtocolBlackList)
+                .setTlsCipherSuiteWhiteList(tlsCipherSuiteWhiteList)
+                .setTlsCipherSuiteBlackList(tlsCipherSuiteBlackList);
 
         LOGGER.debug("About to call identity service '{}'", checkTokenEndpoint);
         HttpURLConnection connection = connectionBuilder.build();

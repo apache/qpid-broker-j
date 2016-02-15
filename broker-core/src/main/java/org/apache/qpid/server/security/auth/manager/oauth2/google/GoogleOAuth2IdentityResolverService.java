@@ -21,6 +21,10 @@
 
 package org.apache.qpid.server.security.auth.manager.oauth2.google;
 
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
 import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
 
 import java.io.IOException;
@@ -96,14 +100,14 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
         TrustStore trustStore = authenticationProvider.getTrustStore();
         int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
         int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
-        List<String> enabledTlsProtocols =
-                authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS);
-        List<String> disabledTlsProtocols =
-                authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS);
-        List<String> enabledCipherSuites =
-                authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES);
-        List<String> disabledCipherSuites =
-                authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES);
+        List<String> tlsProtocolWhiteList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
+                                                                                   QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        List<String> tlsProtocolBlackList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
+                                                                                   QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
+        List<String> tlsCipherSuiteWhiteList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
+                                                                                      QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
+        List<String> tlsCipherSuiteBlackList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
+                                                                                      QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
 
         ConnectionBuilder connectionBuilder = new ConnectionBuilder(userInfoEndpoint);
         connectionBuilder.setConnectTimeout(connectTimeout).setReadTimeout(readTimeout);
@@ -118,10 +122,10 @@ public class GoogleOAuth2IdentityResolverService implements OAuth2IdentityResolv
                 throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
             }
         }
-        connectionBuilder.setEnabledTlsProtocols(enabledTlsProtocols)
-                .setDisabledTlsProtocols(disabledTlsProtocols)
-                .setEnabledCipherSuites(enabledCipherSuites)
-                .setDisabledCipherSuites(disabledCipherSuites);
+        connectionBuilder.setTlsProtocolWhiteList(tlsProtocolWhiteList)
+                .setTlsProtocolBlackList(tlsProtocolBlackList)
+                .setTlsCipherSuiteWhiteList(tlsCipherSuiteWhiteList)
+                .setTlsCipherSuiteBlackList(tlsCipherSuiteBlackList);
 
         LOGGER.debug("About to call identity service '{}'", userInfoEndpoint);
         HttpURLConnection connection = connectionBuilder.build();

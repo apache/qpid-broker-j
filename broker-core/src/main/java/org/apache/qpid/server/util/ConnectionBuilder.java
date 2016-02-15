@@ -53,10 +53,10 @@ public class ConnectionBuilder
     private int _connectTimeout;
     private int _readTimeout;
     private TrustManager[] _trustMangers;
-    private List<String> _enabledTlsProtocols;
-    private List<String> _disabledTlsProtocols;
-    private List<String> _enabledCipherSuites;
-    private List<String> _disabledCipherSuites;
+    private List<String> _tlsProtocolWhiteList;
+    private List<String> _tlsProtocolBlackList;
+    private List<String> _tlsCipherSuiteWhiteList;
+    private List<String> _tlsCipherSuiteBlackList;
 
 
     public ConnectionBuilder(final URL url)
@@ -82,27 +82,27 @@ public class ConnectionBuilder
         return this;
     }
 
-    public ConnectionBuilder setEnabledTlsProtocols(final List<String> enabledTlsProtocols)
+    public ConnectionBuilder setTlsProtocolWhiteList(final List<String> tlsProtocolWhiteList)
     {
-        _enabledTlsProtocols = enabledTlsProtocols;
+        _tlsProtocolWhiteList = tlsProtocolWhiteList;
         return this;
     }
 
-    public ConnectionBuilder setDisabledTlsProtocols(final List<String> disabledTlsProtocols)
+    public ConnectionBuilder setTlsProtocolBlackList(final List<String> tlsProtocolBlackList)
     {
-        _disabledTlsProtocols = disabledTlsProtocols;
+        _tlsProtocolBlackList = tlsProtocolBlackList;
         return this;
     }
 
-    public ConnectionBuilder setEnabledCipherSuites(final List<String> enabledCipherSuites)
+    public ConnectionBuilder setTlsCipherSuiteWhiteList(final List<String> tlsCipherSuiteWhiteList)
     {
-        _enabledCipherSuites = enabledCipherSuites;
+        _tlsCipherSuiteWhiteList = tlsCipherSuiteWhiteList;
         return this;
     }
 
-    public ConnectionBuilder setDisabledCipherSuites(final List<String> disabledCipherSuites)
+    public ConnectionBuilder setTlsCipherSuiteBlackList(final List<String> tlsCipherSuiteBlackList)
     {
-        _disabledCipherSuites = disabledCipherSuites;
+        _tlsCipherSuiteBlackList = tlsCipherSuiteBlackList;
         return this;
     }
 
@@ -158,10 +158,10 @@ public class ConnectionBuilder
             });
         }
 
-        if ((_enabledTlsProtocols != null && !_enabledTlsProtocols.isEmpty()) ||
-            (_disabledTlsProtocols != null && !_disabledTlsProtocols.isEmpty()) ||
-            (_enabledCipherSuites != null && !_enabledCipherSuites.isEmpty()) ||
-            (_disabledCipherSuites != null && !_disabledCipherSuites.isEmpty()))
+        if ((_tlsProtocolWhiteList != null && !_tlsProtocolWhiteList.isEmpty()) ||
+            (_tlsProtocolBlackList != null && !_tlsProtocolBlackList.isEmpty()) ||
+            (_tlsCipherSuiteWhiteList != null && !_tlsCipherSuiteWhiteList.isEmpty()) ||
+            (_tlsCipherSuiteBlackList != null && !_tlsCipherSuiteBlackList.isEmpty()))
         {
             HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
             SSLSocketFactory originalSocketFactory = httpsConnection.getSSLSocketFactory();
@@ -182,17 +182,10 @@ public class ConnectionBuilder
         @Override
         public String[] getDefaultCipherSuites()
         {
-            final List<String> defaultCipherSuites = Arrays.asList(_wrappedSocketFactory.getDefaultCipherSuites());
-            if (_enabledCipherSuites != null && !_enabledCipherSuites.isEmpty())
-            {
-                defaultCipherSuites.retainAll(_enabledCipherSuites);
-            }
-
-            if (_disabledCipherSuites != null && !_disabledCipherSuites.isEmpty())
-            {
-                defaultCipherSuites.removeAll(_disabledCipherSuites);
-            }
-            return defaultCipherSuites.toArray(new String[defaultCipherSuites.size()]);
+            return SSLUtil.filterEnabledCipherSuites(_wrappedSocketFactory.getDefaultCipherSuites(),
+                                                     _wrappedSocketFactory.getSupportedCipherSuites(),
+                                                     _tlsCipherSuiteWhiteList,
+                                                     _tlsCipherSuiteBlackList);
         }
 
         @Override
@@ -212,8 +205,8 @@ public class ConnectionBuilder
         public Socket createSocket(final String host, final int port) throws IOException, UnknownHostException
         {
             final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port);
-            SSLUtil.updateEnabledCipherSuites(socket, _enabledCipherSuites, _disabledCipherSuites);
-            SSLUtil.updateEnabledTlsProtocols(socket, _enabledTlsProtocols, _disabledTlsProtocols);
+            SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
+            SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
             return socket;
         }
 
@@ -222,8 +215,8 @@ public class ConnectionBuilder
                 throws IOException, UnknownHostException
         {
             final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port, localhost, localPort);
-            SSLUtil.updateEnabledCipherSuites(socket, _enabledCipherSuites, _disabledCipherSuites);
-            SSLUtil.updateEnabledTlsProtocols(socket, _enabledTlsProtocols, _disabledTlsProtocols);
+            SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
+            SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
             return socket;
         }
 
@@ -231,8 +224,8 @@ public class ConnectionBuilder
         public Socket createSocket(final InetAddress host, final int port) throws IOException
         {
             final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port);
-            SSLUtil.updateEnabledCipherSuites(socket, _enabledCipherSuites, _disabledCipherSuites);
-            SSLUtil.updateEnabledTlsProtocols(socket, _enabledTlsProtocols, _disabledTlsProtocols);
+            SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
+            SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
             return socket;
         }
 
@@ -243,8 +236,8 @@ public class ConnectionBuilder
                                    final int localPort) throws IOException
         {
             final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(address, port, localAddress, localPort);
-            SSLUtil.updateEnabledCipherSuites(socket, _enabledCipherSuites, _disabledCipherSuites);
-            SSLUtil.updateEnabledTlsProtocols(socket, _enabledTlsProtocols, _disabledTlsProtocols);
+            SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
+            SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
             return socket;
         }
     }
