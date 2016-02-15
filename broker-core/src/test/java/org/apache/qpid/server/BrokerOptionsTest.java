@@ -88,6 +88,20 @@ public class BrokerOptionsTest extends QpidTestCase
         assertEquals(BrokerOptions.DEFAULT_INITIAL_CONFIG_LOCATION, _options.getInitialConfigurationLocation());
     }
 
+    public void testInitialConfigurationLocationOverrideWithJVMSystemPropertyToNonExistingResource()
+    {
+        setTestSystemProperty("qpid.initialConfigurationLocation", "non-existing");
+        try
+        {
+            _options.getInitialConfigurationLocation();
+            fail("IllegalArgumentException is expected");
+        }
+        catch(IllegalArgumentException e)
+        {
+            assertEquals("Initial configuration 'non-existing' is not found", e.getMessage());
+        }
+    }
+
     public void testOverriddenInitialConfigurationLocation()
     {
         final String testConfigFile = "etc/mytestconfig.json";
