@@ -116,9 +116,7 @@ public class SubjectCreator
         AuthenticationResult authenticationResult = _authenticationProvider.authenticate(server, response);
         if(server.isComplete())
         {
-            String username = server.getAuthorizationID();
-
-            return createResultWithGroups(username, authenticationResult);
+            return createResultWithGroups(authenticationResult);
         }
         else
         {
@@ -131,19 +129,20 @@ public class SubjectCreator
         if (_authenticationProvider instanceof UsernamePasswordAuthenticationProvider)
         {
             final AuthenticationResult authenticationResult = ((UsernamePasswordAuthenticationProvider)_authenticationProvider).authenticate(username, password);
-            return createResultWithGroups(username, authenticationResult);
+            return createResultWithGroups(authenticationResult);
         }
         return new SubjectAuthenticationResult(new AuthenticationResult(AuthenticationStatus.ERROR));
     }
 
-    public SubjectAuthenticationResult createResultWithGroups(String username, final AuthenticationResult authenticationResult)
+    public SubjectAuthenticationResult createResultWithGroups(final AuthenticationResult authenticationResult)
     {
         if(authenticationResult.getStatus() == AuthenticationStatus.SUCCESS)
         {
             final Subject authenticationSubject = new Subject();
 
             authenticationSubject.getPrincipals().addAll(authenticationResult.getPrincipals());
-            authenticationSubject.getPrincipals().addAll(getGroupPrincipals(username));
+            final Set<Principal> groupPrincipals = getGroupPrincipals(authenticationResult.getMainPrincipal());
+            authenticationSubject.getPrincipals().addAll(groupPrincipals);
 
             authenticationSubject.setReadOnly();
 
@@ -157,23 +156,23 @@ public class SubjectCreator
 
 
 
-    public Subject createSubjectWithGroups(Principal principal)
+    public Subject createSubjectWithGroups(Principal userPrincipal)
     {
         Subject authenticationSubject = new Subject();
 
-        authenticationSubject.getPrincipals().add(principal);
-        authenticationSubject.getPrincipals().addAll(getGroupPrincipals(principal.getName()));
+        authenticationSubject.getPrincipals().add(userPrincipal);
+        authenticationSubject.getPrincipals().addAll(getGroupPrincipals(userPrincipal));
         authenticationSubject.setReadOnly();
 
         return authenticationSubject;
     }
 
-    Set<Principal> getGroupPrincipals(String username)
+    Set<Principal> getGroupPrincipals(Principal userPrincipal)
     {
         Set<Principal> principals = new HashSet<Principal>();
         for (GroupProvider groupProvider : _groupProviders)
         {
-            Set<Principal> groups = groupProvider.getGroupPrincipalsForUser(username);
+            Set<Principal> groups = groupProvider.getGroupPrincipalsForUser(userPrincipal);
             if (groups != null)
             {
                 principals.addAll(groups);

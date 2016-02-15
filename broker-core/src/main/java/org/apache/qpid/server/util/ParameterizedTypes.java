@@ -15,15 +15,17 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
-package org.apache.qpid.server.model;
 
-import java.security.Principal;
-import java.util.Set;
+package org.apache.qpid.server.util;
 
-@ManagedObject
-public interface GroupProvider<X extends GroupProvider<X>> extends ConfiguredObject<X>
+import java.lang.reflect.ParameterizedType;
+import java.util.List;
+import java.util.Map;
+
+public final class ParameterizedTypes
 {
-    Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal);
+
+    public static final ParameterizedType MAP_OF_STRING_STRING = new ParameterizedTypeImpl(Map.class, String.class, String.class);
+    public static final ParameterizedType LIST_OF_STRINGS = new ParameterizedTypeImpl(List.class, String.class);
 }

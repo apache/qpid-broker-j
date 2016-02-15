@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,13 +18,25 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-import java.security.Principal;
-import java.util.Set;
-
-@ManagedObject
-public interface GroupProvider<X extends GroupProvider<X>> extends ConfiguredObject<X>
-{
-    Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal);
-}
+/**
+ * Identity resolver utilising GitHub's OAuth 2.0 user API
+ * <p>
+ * To use GitHub as an authentication provider, the OAuth2Authentication
+ * needs to be configured to co-operate with the identity resolver like so:
+ *
+ * <pre>
+ * "type" : "OAuth2",
+ * "authorizationEndpointURI" : "https://github.com/login/oauth/authorize",
+ * "tokenEndpointURI" : "https://github.com/login/oauth/access_token",
+ * "tokenEndpointNeedsAuth" : false,
+ * "identityResolverType" : "GitHubUser",
+ * "identityResolverEndpointURI" : "https://api.github.com/user",
+ * "clientId" : "......",
+ * "clientSecret" : "....",
+ * "scope" : "user"
+ * </pre>
+ *
+ * </p>
+ */
+package org.apache.qpid.server.security.auth.manager.oauth2.github;

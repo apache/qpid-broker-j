@@ -22,9 +22,11 @@ package org.apache.qpid.server.management.plugin.auth;
 
 import java.io.IOException;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -33,7 +35,11 @@ import org.apache.qpid.server.security.auth.manager.UsernamePasswordAuthenticati
 @PluggableService
 public class UsernamePasswordInteractiveLogin implements HttpRequestInteractiveAuthenticator
 {
-    private static String DEFAULT_LOGIN_URL = "login.html";
+    // TODO: When we refactor web management and adopt web fragments, move login.html (and logout.html)
+    // to WEB-INF/ and dispatch (forward) to them, rather than using a client side redirect.
+    // This would keep the login/logout pages private and inaccessible to the user when using auth providers
+    // such as Ouath2.
+    private static final String DEFAULT_LOGIN_URL = "/login.html";
 
     private static final AuthenticationHandler REDIRECT_HANDLER = new AuthenticationHandler()
     {
@@ -44,6 +50,15 @@ public class UsernamePasswordInteractiveLogin implements HttpRequestInteractiveA
         }
     };
 
+    private static  final LogoutHandler LOGOUT_HANDLER = new LogoutHandler()
+    {
+        @Override
+        public void handleLogout(final HttpServletResponse response) throws IOException
+        {
+            response.sendRedirect(HttpManagement.DEFAULT_LOGOUT_URL);
+        }
+    };
+
     @Override
     public AuthenticationHandler getAuthenticationHandler(final HttpServletRequest request,
                                                           final HttpManagementConfiguration configuration)
@@ -51,6 +66,20 @@ public class UsernamePasswordInteractiveLogin implements HttpRequestInteractiveA
         if(configuration.getAuthenticationProvider(request) instanceof UsernamePasswordAuthenticationProvider)
         {
             return REDIRECT_HANDLER;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    @Override
+    public LogoutHandler getLogoutHandler(final HttpServletRequest request,
+                                          final HttpManagementConfiguration configuration)
+    {
+        if(configuration.getAuthenticationProvider(request) instanceof UsernamePasswordAuthenticationProvider)
+        {
+            return LOGOUT_HANDLER;
         }
         else
         {

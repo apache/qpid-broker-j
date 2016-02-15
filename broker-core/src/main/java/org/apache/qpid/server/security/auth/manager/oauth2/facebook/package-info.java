@@ -1,4 +1,5 @@
 /*
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,13 +18,24 @@
  * under the License.
  *
  */
-package org.apache.qpid.server.model;
 
-import java.security.Principal;
-import java.util.Set;
-
-@ManagedObject
-public interface GroupProvider<X extends GroupProvider<X>> extends ConfiguredObject<X>
-{
-    Set<Principal> getGroupPrincipalsForUser(Principal userPrincipal);
-}
+/**
+ * Identity resolver utilising Facebook's OAuth 2.0  API
+ * <p>
+ * To use Facebook as an authentication provider, the OAuth2Authentication
+ * needs to be configured to co-operate with the identity resolver like so:
+ *
+ * <pre>
+ * "type" : "OAuth2",
+ * "authorizationEndpointURI" : "https://www.facebook.com/dialog/oauth",
+ * "tokenEndpointURI" : "https://graph.facebook.com/v2.5/oauth/access_token",
+ * "tokenEndpointNeedsAuth" : false,
+ * "identityResolverType" : "Facebook",
+ * "identityResolverEndpointURI" : "https://graph.facebook.com/v2.5/me",
+ * "clientId" : "......",
+ * "clientSecret" : "....",
+ * </pre>
+ *
+ * </p>
+ */
+package org.apache.qpid.server.security.auth.manager.oauth2.facebook;

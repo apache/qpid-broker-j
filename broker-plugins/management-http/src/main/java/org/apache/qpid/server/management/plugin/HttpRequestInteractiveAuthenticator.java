@@ -22,6 +22,7 @@ package org.apache.qpid.server.management.plugin;
 
 import java.io.IOException;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -31,10 +32,18 @@ public interface HttpRequestInteractiveAuthenticator extends Pluggable
 {
     interface AuthenticationHandler
     {
-        void handleAuthentication(HttpServletResponse response) throws IOException;
+        void handleAuthentication(HttpServletResponse response) throws IOException, ServletException;
+    }
+
+    interface LogoutHandler
+    {
+        void handleLogout(HttpServletResponse response) throws IOException, ServletException;
     }
 
     AuthenticationHandler getAuthenticationHandler(HttpServletRequest request,
                                                    HttpManagementConfiguration configuration);
+
+    LogoutHandler getLogoutHandler(HttpServletRequest request,
+                                   HttpManagementConfiguration configuration);
 
 }

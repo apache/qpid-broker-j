@@ -44,8 +44,7 @@ public class AnonymousPreemptiveAuthenticator implements HttpRequestPreemptiveAu
         SubjectCreator subjectCreator = authenticationProvider.getSubjectCreator(request.isSecure());
         if(authenticationProvider instanceof AnonymousAuthenticationManager)
         {
-            return subjectCreator.createResultWithGroups(AnonymousAuthenticationManager.ANONYMOUS_USERNAME,
-                                                         AnonymousAuthenticationManager.ANONYMOUS_AUTHENTICATION).getSubject();
+            return subjectCreator.createResultWithGroups(AnonymousAuthenticationManager.ANONYMOUS_AUTHENTICATION).getSubject();
         }
 
         return null;

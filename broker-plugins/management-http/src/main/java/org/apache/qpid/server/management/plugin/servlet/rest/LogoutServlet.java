@@ -21,6 +21,10 @@
 package org.apache.qpid.server.management.plugin.servlet.rest;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -29,37 +33,65 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.apache.qpid.server.management.plugin.HttpManagement;
+import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
 import org.apache.qpid.server.management.plugin.HttpManagementUtil;
+import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
+import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator.LogoutHandler;
+import org.apache.qpid.server.plugin.QpidServiceLoader;
 
 @SuppressWarnings("serial")
 public class LogoutServlet extends HttpServlet
 {
-    public static final String RETURN_URL_INIT_PARAM = "qpid.webui_logout_redirect";
-    private String _returnUrl = HttpManagementUtil.ENTRY_POINT_PATH;
+    private static final Collection<HttpRequestInteractiveAuthenticator> AUTHENTICATORS;
+    static
+    {
+        List<HttpRequestInteractiveAuthenticator> authenticators = new ArrayList<>();
+        for(HttpRequestInteractiveAuthenticator authenticator : (new QpidServiceLoader()).instancesOf(HttpRequestInteractiveAuthenticator.class))
+        {
+            authenticators.add(authenticator);
+        }
+        AUTHENTICATORS = Collections.unmodifiableList(authenticators);
+    }
+
+    private HttpManagementConfiguration _managementConfiguration;
 
     @Override
     public void init(ServletConfig config) throws ServletException
     {
         super.init(config);
-
-        String initValue = config.getServletContext().getInitParameter(RETURN_URL_INIT_PARAM);
-        if(initValue != null)
-        {
-            _returnUrl = initValue;
-        }
+        _managementConfiguration = HttpManagementUtil.getManagementConfiguration(config.getServletContext());
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException
     {
         HttpSession session = request.getSession(false);
-        if(session != null)
+        if (session != null)
         {
             // Invalidating the session will cause LoginLogoutReporter to log the user logoff.
             session.invalidate();
         }
 
-        resp.sendRedirect(_returnUrl);
+        LogoutHandler logoutHandler = null;
+        for (HttpRequestInteractiveAuthenticator authenticator : AUTHENTICATORS)
+        {
+            logoutHandler = authenticator.getLogoutHandler(request, _managementConfiguration);
+            if (logoutHandler != null)
+            {
+                break;
+            }
+        }
+
+        if (logoutHandler != null)
+        {
+            logoutHandler.handleLogout(resp);
+        }
+        else
+        {
+            resp.sendRedirect(HttpManagement.DEFAULT_LOGOUT_URL);
+        }
+
     }
 
 }

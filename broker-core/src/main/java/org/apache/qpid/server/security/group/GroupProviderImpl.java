@@ -56,7 +56,7 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
 
 
     @Override
-    public Set<Principal> getGroupPrincipalsForUser(final String username)
+    public Set<Principal> getGroupPrincipalsForUser(final Principal userPrincipal)
     {
         Set<Principal> principals = new HashSet<>();
 
@@ -65,7 +65,7 @@ public class GroupProviderImpl extends AbstractConfiguredObject<GroupProviderImp
         {
             for(GroupMember<?> member : group.getChildren(GroupMember.class))
             {
-                if(member.getPrincipal().getName().equals(username))
+                if(member.getPrincipal().getName().equals(userPrincipal.getName()))
                 {
                     principals.add(group.getGroupPrincipal());
                 }

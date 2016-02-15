@@ -562,25 +562,40 @@ public class SSLUtil
 
     // version overloaded on SSLSocket is needed for RMI
     public static void updateEnabledCipherSuites(final SSLSocket socket,
-                                                 final Collection<String> enabledCipherSuites,
-                                                 final Collection<String> disabledCipherSuites)
+                                                 final List<String> enabledCipherSuites,
+                                                 final List<String> disabledCipherSuites)
     {
-        if(enabledCipherSuites != null && !enabledCipherSuites.isEmpty())
+        if (enabledCipherSuites != null && !enabledCipherSuites.isEmpty())
         {
-            final Set<String> supportedSuites =
-                    new HashSet<>(Arrays.asList(socket.getSupportedCipherSuites()));
+            List<String> supportedSuites = Arrays.asList(socket.getSupportedCipherSuites());
             supportedSuites.retainAll(enabledCipherSuites);
             socket.setEnabledCipherSuites(supportedSuites.toArray(new String[supportedSuites.size()]));
         }
 
-        if(disabledCipherSuites != null && !disabledCipherSuites.isEmpty())
+        if (disabledCipherSuites != null && !disabledCipherSuites.isEmpty())
         {
-            final Set<String> enabledSuites = new HashSet<>(Arrays.asList(socket.getEnabledCipherSuites()));
+            List<String> enabledSuites = Arrays.asList(socket.getEnabledCipherSuites());
             enabledSuites.removeAll(disabledCipherSuites);
             socket.setEnabledCipherSuites(enabledSuites.toArray(new String[enabledSuites.size()]));
         }
-
     }
 
+    public static void updateEnabledTlsProtocols(final SSLSocket socket,
+                                                 final List<String> enabledTlsProtocols,
+                                                 final List<String> disabledTlsProtocols)
+    {
+        if (enabledTlsProtocols != null && !enabledTlsProtocols.isEmpty())
+        {
+            List<String> supportedProtocols = Arrays.asList(socket.getSupportedProtocols());
+            supportedProtocols.retainAll(enabledTlsProtocols);
+            socket.setEnabledProtocols(supportedProtocols.toArray(new String[supportedProtocols.size()]));
+        }
 
+        if (disabledTlsProtocols != null && !disabledTlsProtocols.isEmpty())
+        {
+            List<String> enabledProtocols = Arrays.asList(socket.getEnabledProtocols());
+            enabledProtocols.removeAll(disabledTlsProtocols);
+            socket.setEnabledProtocols(enabledProtocols.toArray(new String[enabledProtocols.size()]));
+        }
+    }
 }
