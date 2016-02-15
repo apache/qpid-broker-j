@@ -174,9 +174,7 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                                   + DatatypeConverter.printBase64Binary(storedKey) + ","
                                   + DatatypeConverter.printBase64Binary(serverKey) + ","
                                   + oldDefaultIterationCount;
-                _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = true;
-                user.setPassword(password);
-                _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = false;
+                upgradeUserPassword(user, password);
             }
             catch (NoSuchAlgorithmException e)
             {
@@ -190,13 +188,24 @@ public abstract class AbstractScramAuthenticationManager<X extends AbstractScram
                     + passwordFields[PasswordField.STORED_KEY.ordinal()] + ","
                     + passwordFields[PasswordField.SERVER_KEY.ordinal()] + ","
                     + oldDefaultIterationCount;
-            _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = true;
-            user.setPassword(password);
-            _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = false;
+            upgradeUserPassword(user, password);
         }
         else if (passwordFields.length != 5)
         {
             throw new IllegalConfigurationException("password field for user '" + user.getName() + "' has unrecognised format.");
+        }
+    }
+
+    private void upgradeUserPassword(final ManagedUser user, final String password)
+    {
+        try
+        {
+            _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = true;
+            user.setPassword(password);
+        }
+        finally
+        {
+            _doNotCreateStoredPasswordBecauseItIsBeingUpgraded = false;
         }
     }
 
