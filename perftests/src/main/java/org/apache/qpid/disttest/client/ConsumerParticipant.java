@@ -181,7 +181,6 @@ public class ConsumerParticipant implements Participant
     {
         if (!_collectingData.get() && _expectedNumberOfMessages == 0)
         {
-            // If we are performing a run with fixed number of messages we may receive a message before the startDataCollection command.
             _jmsDelegate.commitOrAcknowledgeMessageIfNecessary(_command.getSessionName(), message);
             return true;
         }
