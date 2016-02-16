@@ -123,11 +123,11 @@ public class OAuth2AuthenticationProviderImpl
     protected void validateChange(final ConfiguredObject<?> proxyForValidation, final Set<String> changedAttributes)
     {
         super.validateChange(proxyForValidation, changedAttributes);
-        validateResolver((OAuth2AuthenticationProvider<?>)proxyForValidation);
-        validateSecureEndpoints((OAuth2AuthenticationProvider<?>)proxyForValidation);
-        validatePostLogoutURI(this);
+        final OAuth2AuthenticationProvider<?> validationProxy = (OAuth2AuthenticationProvider<?>) proxyForValidation;
+        validateResolver(validationProxy);
+        validateSecureEndpoints(validationProxy);
+        validatePostLogoutURI(validationProxy);
     }
-
 
     @Override
     public void onValidate()
