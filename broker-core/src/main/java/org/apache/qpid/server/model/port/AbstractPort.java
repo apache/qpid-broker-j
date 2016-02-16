@@ -24,6 +24,7 @@ package org.apache.qpid.server.model.port;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -72,9 +73,9 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     private Set<Protocol> _protocols;
 
     @ManagedAttributeField
-    private Collection<String> _enabledCipherSuites;
+    private List<String> _cipherSuiteWhiteList;
     @ManagedAttributeField
-    private Collection<String> _disabledCipherSuites;
+    private List<String> _cipherSuiteBlackList;
 
     public AbstractPort(Map<String, Object> attributes,
                         Broker<?> broker)
@@ -275,15 +276,15 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     }
 
     @Override
-    public Collection<String> getEnabledCipherSuites()
+    public List<String> getCipherSuiteWhiteList()
     {
-        return _enabledCipherSuites;
+        return _cipherSuiteWhiteList;
     }
 
     @Override
-    public Collection<String> getDisabledCipherSuites()
+    public List<String> getCipherSuiteBlackList()
     {
-        return _disabledCipherSuites;
+        return _cipherSuiteBlackList;
     }
 
     @Override

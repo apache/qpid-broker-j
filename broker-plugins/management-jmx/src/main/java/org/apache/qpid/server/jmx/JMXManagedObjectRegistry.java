@@ -36,6 +36,7 @@ import java.rmi.server.RMIServerSocketFactory;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.GeneralSecurityException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 import javax.management.JMException;
@@ -52,6 +53,7 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ManagementConsoleMessages;
@@ -63,7 +65,9 @@ import org.apache.qpid.server.model.port.RmiPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.jmx.JMXPasswordAuthenticator;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 /**
  * This class starts up an MBeanserver. If out of the box agent has been enabled then there are no
@@ -164,8 +168,7 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
             SSLContext sslContext;
             try
             {
-
-                sslContext = SSLContext.getInstance("TLS");
+                sslContext = SSLUtil.tryGetSSLContext();
                 sslContext.init(keyStore.getKeyManagers(), null, null);
             }
             catch (GeneralSecurityException e)
@@ -175,9 +178,15 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
 
             //create the SSL RMI socket factories
             csf = new SslRMIClientSocketFactory();
+            final List<String> tlsProtocolWhiteList = (List<String>) _connectorPort.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS,
+                                                                                                    CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+            final List<String> tlsProtocolBlackList = (List<String>) _connectorPort.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS,
+                                                                                                    CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
             ssf = new QpidSslRMIServerSocketFactory(sslContext,
-                                                    _connectorPort.getEnabledCipherSuites(),
-                                                    _connectorPort.getDisabledCipherSuites(),
+                                                    tlsProtocolWhiteList,
+                                                    tlsProtocolBlackList,
+                                                    _connectorPort.getCipherSuiteWhiteList(),
+                                                    _connectorPort.getCipherSuiteBlackList(),
                                                     setAllocatedConnectorPort);
         }
         else

@@ -45,6 +45,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.management.plugin.filter.ExceptionHandlingFilter;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -88,6 +89,7 @@ import org.apache.qpid.server.model.*;
 import org.apache.qpid.server.model.adapter.AbstractPluginAdapter;
 import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.model.port.PortManager;
+import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
@@ -375,27 +377,24 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
         {
             throw new IllegalConfigurationException("Key store is not configured. Cannot start management on HTTPS port without keystore");
         }
+        final List<String> tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        final List<String> tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
         SslContextFactory factory = new SslContextFactory()
                                     {
+                                        @Override
                                         public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
                                         {
-                                            List<String> selectedProtocols = new ArrayList<>(Arrays.asList(enabledProtocols));
-                                            SSLUtil.updateEnabledProtocols(selectedProtocols, supportedProtocols);
-
-                                            return selectedProtocols.toArray(new String[selectedProtocols.size()]);
+                                            return SSLUtil.filterEnabledProtocols(enabledProtocols, supportedProtocols,
+                                                                                  tlsProtocolWhiteList, tlsProtocolBlackList);
                                         }
 
+                                        @Override
+                                        public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
+                                        {
+                                            return SSLUtil.filterEnabledCipherSuites(enabledCipherSuites, supportedCipherSuites,
+                                                                                     port.getCipherSuiteWhiteList(), port.getCipherSuiteBlackList());
+                                        }
                                     };
-
-        if(port.getDisabledCipherSuites() != null)
-        {
-            factory.addExcludeCipherSuites(port.getDisabledCipherSuites().toArray(new String[port.getDisabledCipherSuites().size()]));
-        }
-
-        if(port.getEnabledCipherSuites() != null && !port.getEnabledCipherSuites().isEmpty())
-        {
-            factory.setIncludeCipherSuites(port.getEnabledCipherSuites().toArray(new String[port.getEnabledCipherSuites().size()]));
-        }
 
         boolean needClientCert = port.getNeedClientAuth() || port.getWantClientAuth();
 
@@ -407,7 +406,7 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
 
         try
         {
-            SSLContext sslContext = SSLContext.getInstance("TLS");
+            SSLContext sslContext = SSLUtil.tryGetSSLContext();
             KeyManager[] keyManagers = keyStore.getKeyManagers();
 
             TrustManager[] trustManagers;

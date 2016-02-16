@@ -42,8 +42,6 @@ import java.security.NoSuchAlgorithmException;
  */
 public class SSLContextFactory
 {
-    public static final String TRANSPORT_LAYER_SECURITY_CODE = "TLS";
-
     private SSLContextFactory()
     {
         //no instances
@@ -53,8 +51,7 @@ public class SSLContextFactory
             throws NoSuchAlgorithmException, KeyManagementException
     {
         // Initialize the SSLContext to work with our key managers.
-        final SSLContext sslContext = SSLContext
-                .getInstance(TRANSPORT_LAYER_SECURITY_CODE);
+        final SSLContext sslContext = SSLUtil.tryGetSSLContext();
 
         sslContext.init(keyManagers, trustManagers, null);
 

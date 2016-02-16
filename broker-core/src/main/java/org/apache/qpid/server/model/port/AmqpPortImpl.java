@@ -74,6 +74,7 @@ import org.apache.qpid.server.util.PortUtil;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.network.security.ssl.QpidMultipleTrustManager;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<AmqpPortImpl> implements AmqpPort<AmqpPortImpl>
 {
@@ -384,7 +385,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
 
         try
         {
-            SSLContext sslContext = SSLContext.getInstance("TLS");
+            SSLContext sslContext = SSLUtil.tryGetSSLContext();
 
             KeyManager[] keyManagers = keyStore.getKeyManagers();
 

@@ -41,6 +41,7 @@ import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
@@ -66,7 +67,7 @@ import org.apache.qpid.server.security.auth.manager.ldap.LDAPSSLSocketFactoryGen
 import org.apache.qpid.server.security.auth.sasl.plain.PlainPasswordCallback;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
 import org.apache.qpid.server.util.StringUtil;
-import org.apache.qpid.ssl.SSLContextFactory;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>
         implements SimpleLDAPAuthenticationManager<SimpleLDAPAuthenticationManagerImpl>
@@ -352,7 +353,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     }
 
     /**
-     * If a trust store has been specified, create a {@link SSLContextFactory} class that is
+     * If a trust store has been specified, create a {@link SSLSocketFactory} class that is
      * associated with the {@link SSLContext} generated from that trust store.
      *
      * @return generated socket factory class
@@ -364,7 +365,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         SSLContext sslContext = null;
         try
         {
-            sslContext = SSLContext.getInstance("TLS");
+            sslContext = SSLUtil.tryGetSSLContext();
             sslContext.init(null, trustStore.getTrustManagers(), null);
         }
         catch (GeneralSecurityException e)

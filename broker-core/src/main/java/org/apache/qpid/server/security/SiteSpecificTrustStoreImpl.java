@@ -65,6 +65,7 @@ import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.security.auth.manager.SimpleLDAPAuthenticationManager;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.apache.qpid.transport.util.Functions;
 
 @ManagedObject( category = false )
@@ -218,7 +219,7 @@ public class SiteSpecificTrustStoreImpl
         {
 
             URL url = new URL(getSiteUrl());
-            SSLContext sslContext = SSLContext.getInstance("TLS");
+            SSLContext sslContext = SSLUtil.tryGetSSLContext();
             sslContext.init(new KeyManager[0], new TrustManager[] {new AlwaysTrustManager()}, null);
 
             try(SSLSocket socket = (SSLSocket) sslContext.getSocketFactory().createSocket(url.getHost(), url.getPort()))

@@ -27,9 +27,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.BufferUnderflowException;
@@ -51,26 +48,23 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLSocket;
 import javax.xml.bind.DatatypeConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.transport.TransportException;
 
 public class SSLUtil
@@ -78,6 +72,7 @@ public class SSLUtil
     private static final Logger LOGGER = LoggerFactory.getLogger(SSLUtil.class);
 
     private static final Integer DNS_NAME_TYPE = 2;
+    public static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
 
     private SSLUtil()
     {
@@ -478,124 +473,135 @@ public class SSLUtil
         return new BigInteger(num);
     }
 
-    public static String[] getExcludedSSlProtocols()
+    public static void updateEnabledTlsProtocols(final SSLEngine engine,
+                                                 final List<String> protocolWhiteList,
+                                                 final List<String> protocolBlackList)
     {
-        String property = System.getProperty(CommonProperties.DISABLED_SSL_PROTOCOLS,
-                                             CommonProperties.DISABLED_SSL_PROTOCOLS_DEFAULT);
-        return property.split("\\s*,\\s*");
+        String[] filteredProtocols = filterEnabledProtocols(engine.getEnabledProtocols(),
+                                                            engine.getSupportedProtocols(),
+                                                            protocolWhiteList,
+                                                            protocolBlackList);
+        engine.setEnabledProtocols(filteredProtocols);
     }
 
-
-    public static String[] getEnabledSSlProtocols()
+    public static void updateEnabledTlsProtocols(final SSLSocket socket,
+                                             final List<String> protocolWhiteList,
+                                             final List<String> protocolBlackList)
     {
-        String property = System.getProperty(CommonProperties.ENABLED_SSL_PROTOCOLS,
-                                             CommonProperties.ENABLED_SSL_PROTOCOLS_DEFAULT);
-        return property.split("\\s*,\\s*");
+        String[] filteredProtocols = filterEnabledProtocols(socket.getEnabledProtocols(),
+                                                            socket.getSupportedProtocols(),
+                                                            protocolWhiteList,
+                                                            protocolBlackList);
+        socket.setEnabledProtocols(filteredProtocols);
     }
 
-    public static void updateProtocolSupport(final SSLEngine engine)
+    public static String[] filterEnabledProtocols(final String[] enabledProtocols,
+                                                  final String[] supportedProtocols,
+                                                  final List<String> protocolWhiteList,
+                                                  final List<String> protocolBlackList)
     {
-        List<String> enabledProtocols = new ArrayList<>(Arrays.asList(engine.getEnabledProtocols()));
-        String[] supportedProtocols = engine.getSupportedProtocols();
-        boolean modified = updateEnabledProtocols(enabledProtocols, supportedProtocols);
-        if(modified)
-        {
-            engine.setEnabledProtocols(enabledProtocols.toArray(new String[enabledProtocols.size()]));
-        }
+        return filterEntries(enabledProtocols, supportedProtocols, protocolWhiteList, protocolBlackList);
     }
 
-    // version overloaded on SSLSocket is needed for RMI
-    public static void updateProtocolSupport(final SSLSocket serverSocket)
+    public static String[] filterEnabledCipherSuites(final String[] enabledCipherSuites,
+                                                     final String[] supportedCipherSuites,
+                                                     final List<String> cipherSuiteWhiteList,
+                                                     final List<String> cipherSuiteBlackList)
     {
-        List<String> enabledProtocols = new ArrayList<>(Arrays.asList(serverSocket.getEnabledProtocols()));
-        String[] supportedProtocols = serverSocket.getSupportedProtocols();
-        boolean modified = updateEnabledProtocols(enabledProtocols, supportedProtocols);
-        if(modified)
-        {
-            serverSocket.setEnabledProtocols(enabledProtocols.toArray(new String[enabledProtocols.size()]));
-        }
-    }
-
-    public static boolean updateEnabledProtocols(final List<String> enabledProtocols, final String[] supportedProtocols)
-    {
-        boolean modified = false;
-        for(String protocol : getExcludedSSlProtocols())
-        {
-            if (enabledProtocols.contains(protocol))
-            {
-                enabledProtocols.remove(protocol);
-                modified = true;
-            }
-        }
-        for(String protocol : getEnabledSSlProtocols())
-        {
-            if(!enabledProtocols.contains(protocol) && Arrays.asList(supportedProtocols).contains(protocol))
-            {
-                enabledProtocols.add(protocol);
-                modified = true;
-            }
-        }
-        return modified;
+        return filterEntries(enabledCipherSuites, supportedCipherSuites, cipherSuiteWhiteList, cipherSuiteBlackList);
     }
 
 
     public static void updateEnabledCipherSuites(final SSLEngine engine,
-                                                 final Collection<String> enabledCipherSuites,
-                                                 final Collection<String> disabledCipherSuites)
+                                                 final List<String> cipherSuitesWhiteList,
+                                                 final List<String> cipherSuitesBlackList)
     {
-        if(enabledCipherSuites != null && !enabledCipherSuites.isEmpty())
-        {
-            final Set<String> supportedSuites =
-                    new HashSet<>(Arrays.asList(engine.getSupportedCipherSuites()));
-            supportedSuites.retainAll(enabledCipherSuites);
-            engine.setEnabledCipherSuites(supportedSuites.toArray(new String[supportedSuites.size()]));
-        }
-
-        if(disabledCipherSuites != null && !disabledCipherSuites.isEmpty())
-        {
-            final Set<String> enabledSuites = new HashSet<>(Arrays.asList(engine.getEnabledCipherSuites()));
-            enabledSuites.removeAll(disabledCipherSuites);
-            engine.setEnabledCipherSuites(enabledSuites.toArray(new String[enabledSuites.size()]));
-        }
-
+        String[] filteredCipherSuites = filterEntries(engine.getEnabledCipherSuites(),
+                                                      engine.getSupportedCipherSuites(),
+                                                      cipherSuitesWhiteList,
+                                                      cipherSuitesBlackList);
+        engine.setEnabledCipherSuites(filteredCipherSuites);
     }
 
     // version overloaded on SSLSocket is needed for RMI
     public static void updateEnabledCipherSuites(final SSLSocket socket,
-                                                 final List<String> enabledCipherSuites,
-                                                 final List<String> disabledCipherSuites)
+                                                 final List<String> cipherSuitesWhiteList,
+                                                 final List<String> cipherSuitesBlackList)
     {
-        if (enabledCipherSuites != null && !enabledCipherSuites.isEmpty())
-        {
-            List<String> supportedSuites = Arrays.asList(socket.getSupportedCipherSuites());
-            supportedSuites.retainAll(enabledCipherSuites);
-            socket.setEnabledCipherSuites(supportedSuites.toArray(new String[supportedSuites.size()]));
-        }
-
-        if (disabledCipherSuites != null && !disabledCipherSuites.isEmpty())
-        {
-            List<String> enabledSuites = Arrays.asList(socket.getEnabledCipherSuites());
-            enabledSuites.removeAll(disabledCipherSuites);
-            socket.setEnabledCipherSuites(enabledSuites.toArray(new String[enabledSuites.size()]));
-        }
+        String[] filteredCipherSuites = filterEntries(socket.getEnabledCipherSuites(),
+                                                      socket.getSupportedCipherSuites(),
+                                                      cipherSuitesWhiteList,
+                                                      cipherSuitesBlackList);
+        socket.setEnabledCipherSuites(filteredCipherSuites);
     }
 
-    public static void updateEnabledTlsProtocols(final SSLSocket socket,
-                                                 final List<String> enabledTlsProtocols,
-                                                 final List<String> disabledTlsProtocols)
+    static String[] filterEntries(final String[] enabledEntries,
+                                  final String[] supportedEntries,
+                                  final List<String> whiteList,
+                                  final List<String> blackList)
     {
-        if (enabledTlsProtocols != null && !enabledTlsProtocols.isEmpty())
+        List<String> filteredList;
+        if (whiteList != null && !whiteList.isEmpty())
         {
-            List<String> supportedProtocols = Arrays.asList(socket.getSupportedProtocols());
-            supportedProtocols.retainAll(enabledTlsProtocols);
-            socket.setEnabledProtocols(supportedProtocols.toArray(new String[supportedProtocols.size()]));
+            filteredList = new ArrayList<>();
+            List<String> supportedList = new ArrayList<>(Arrays.asList(supportedEntries));
+            // the outer loop must be over the white list to preserve its order
+            for (String whiteListedRegEx : whiteList)
+            {
+                Iterator<String> supportedIter = supportedList.iterator();
+                while (supportedIter.hasNext())
+                {
+                    String supportedEntry = supportedIter.next();
+                    if (supportedEntry.matches(whiteListedRegEx))
+                    {
+                        filteredList.add(supportedEntry);
+                        supportedIter.remove();
+                    }
+                }
+            }
+        }
+        else
+        {
+            filteredList = new ArrayList<>(Arrays.asList(enabledEntries));
         }
 
-        if (disabledTlsProtocols != null && !disabledTlsProtocols.isEmpty())
+        if (blackList != null && !blackList.isEmpty())
         {
-            List<String> enabledProtocols = Arrays.asList(socket.getEnabledProtocols());
-            enabledProtocols.removeAll(disabledTlsProtocols);
-            socket.setEnabledProtocols(enabledProtocols.toArray(new String[enabledProtocols.size()]));
+            for (String blackListedRegEx : blackList)
+            {
+                Iterator<String> entriesIter = filteredList.iterator();
+                while (entriesIter.hasNext())
+                {
+                    if (entriesIter.next().matches(blackListedRegEx))
+                    {
+                        entriesIter.remove();
+                    }
+                }
+            }
         }
+
+        return filteredList.toArray(new String[filteredList.size()]);
+    }
+
+    public static SSLContext tryGetSSLContext() throws NoSuchAlgorithmException
+    {
+        return tryGetSSLContext(TLS_PROTOCOL_PREFERENCES);
+    }
+
+    public static SSLContext tryGetSSLContext(final String[] protocols) throws NoSuchAlgorithmException
+    {
+        for (String protocol : protocols)
+        {
+            try
+            {
+                return SSLContext.getInstance(protocol);
+            }
+            catch (NoSuchAlgorithmException e)
+            {
+                // pass and try the next protocol in the list
+            }
+        }
+        throw new NoSuchAlgorithmException(String.format("Could not create SSLContext with one of the requested protocols: %s",
+                                                         Arrays.toString(protocols)));
     }
 }

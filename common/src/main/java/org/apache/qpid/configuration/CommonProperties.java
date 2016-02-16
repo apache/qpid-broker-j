@@ -55,12 +55,15 @@ public class CommonProperties
     public static final String HANDSHAKE_TIMEOUT_PROP_NAME = "qpid.handshake_timeout";
     public static final int HANDSHAKE_TIMEOUT_DEFAULT = 2;
 
-    public static final String DISABLED_SSL_PROTOCOLS = "qpid.disabled_ssl_protocols";
-    public static final String DISABLED_SSL_PROTOCOLS_DEFAULT = "SSLv3";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST = "qpid.security.tls.protocolWhiteList";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT = "TLS.*";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST = "qpid.security.tls.protocolBlackList";
+    public static final String QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST_DEFAULT = "";
 
-    public static final String ENABLED_SSL_PROTOCOLS = "qpid.enabled_ssl_protocols";
-    public static final String ENABLED_SSL_PROTOCOLS_DEFAULT = "TLSv1.1,TLSv1.2";
-
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST = "qpid.security.tls.cipherSuiteWhiteList";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST_DEFAULT = "";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST = "qpid.security.tls.cipherSuiteBlackList";
+    public static final String QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT = "";
 
     /** The name of the version properties file to load from the class path. */
     public static final String VERSION_RESOURCE = "qpidversion.properties";
