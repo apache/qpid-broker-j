@@ -19,6 +19,10 @@
 
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
+import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
 import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
 
 import java.io.IOException;
@@ -251,10 +255,10 @@ public class OAuth2AuthenticationProviderImpl
                     throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
                 }
             }
-            connectionBuilder.setEnabledTlsProtocols(getContextValue(List.class, LIST_OF_STRINGS, AUTHENTICATION_OAUTH2_ENABLED_TLS_PROTOCOLS))
-                    .setDisabledTlsProtocols(getContextValue(List.class, LIST_OF_STRINGS, AUTHENTICATION_OAUTH2_DISABLED_TLS_PROTOCOLS))
-                    .setEnabledCipherSuites(getContextValue(List.class, LIST_OF_STRINGS, AUTHENTICATION_OAUTH2_ENABLED_CIPHER_SUITES))
-                    .setDisabledCipherSuites(getContextValue(List.class, LIST_OF_STRINGS, AUTHENTICATION_OAUTH2_DISABLED_CIPHER_SUITES));
+            connectionBuilder.setTlsProtocolWhiteList(getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST))
+                    .setTlsProtocolBlackList(getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST))
+                    .setTlsCipherSuiteWhiteList(getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST))
+                    .setTlsCipherSuiteBlackList(getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST));
             LOGGER.debug("About to call token endpoint '{}'", tokenEndpoint);
             connection = connectionBuilder.build();
 
