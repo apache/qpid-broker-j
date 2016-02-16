@@ -20,12 +20,6 @@
  */
 package org.apache.qpid.server.security.auth.manager.oauth2.cloudfoundry;
 
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
-import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -36,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import javax.xml.bind.DatatypeConverter;
@@ -46,7 +39,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.plugin.PluggableService;
@@ -87,19 +79,10 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
         TrustStore trustStore = authenticationProvider.getTrustStore();
         String clientId = authenticationProvider.getClientId();
         String clientSecret = authenticationProvider.getClientSecret();
-        int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
-        int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
-        List<String> tlsProtocolWhiteList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
-                                                                                   QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
-        List<String> tlsProtocolBlackList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
-                                                                                   QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
-        List<String> tlsCipherSuiteWhiteList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
-                                                                                      QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
-        List<String> tlsCipherSuiteBlackList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
-                                                                                      QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
 
         ConnectionBuilder connectionBuilder = new ConnectionBuilder(checkTokenEndpoint);
-        connectionBuilder.setConnectTimeout(connectTimeout).setReadTimeout(readTimeout);
+        connectionBuilder.setConnectTimeout(authenticationProvider.getConnectTimeout())
+                         .setReadTimeout(authenticationProvider.getReadTimeout());
         if (trustStore != null)
         {
             try
@@ -111,10 +94,10 @@ public class CloudFoundryOAuth2IdentityResolverService implements OAuth2Identity
                 throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
             }
         }
-        connectionBuilder.setTlsProtocolWhiteList(tlsProtocolWhiteList)
-                .setTlsProtocolBlackList(tlsProtocolBlackList)
-                .setTlsCipherSuiteWhiteList(tlsCipherSuiteWhiteList)
-                .setTlsCipherSuiteBlackList(tlsCipherSuiteBlackList);
+        connectionBuilder.setTlsProtocolWhiteList(authenticationProvider.getTlsProtocolWhiteList())
+                         .setTlsProtocolBlackList(authenticationProvider.getTlsProtocolBlackList())
+                         .setTlsCipherSuiteWhiteList(authenticationProvider.getTlsCipherSuiteWhiteList())
+                         .setTlsCipherSuiteBlackList(authenticationProvider.getTlsCipherSuiteBlackList());
 
         LOGGER.debug("About to call identity service '{}'", checkTokenEndpoint);
         HttpURLConnection connection = connectionBuilder.build();
