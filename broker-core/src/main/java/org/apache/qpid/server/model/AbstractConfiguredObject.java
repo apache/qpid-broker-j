@@ -2844,14 +2844,15 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         public Object invoke(final Object proxy, final Method method, final Object[] args) throws Throwable
         {
 
-            if(method.isAnnotationPresent(ManagedAttribute.class))
+            ConfiguredObjectAttribute attribute = getAttributeFromMethod(method);
+
+            if(attribute != null && attribute.isAutomated())
             {
-                ConfiguredObjectAttribute attribute = getAttributeFromMethod(method);
                 return getValue(attribute);
             }
             else if(method.getName().equals("getAttribute") && args != null && args.length == 1 && args[0] instanceof String)
             {
-                ConfiguredObjectAttribute attribute = _attributeTypes.get((String)args[0]);
+                attribute = _attributeTypes.get((String)args[0]);
                 if(attribute != null)
                 {
                     return getValue(attribute);
@@ -2864,6 +2865,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             else if(method.getName().equals("getActualAttributes") && (args == null || args.length == 0))
             {
                 return Collections.unmodifiableMap(_attributes);
+            }
+            else if(method.getName().equals("toString") && (args == null || args.length == 0))
+            {
+                return "ValidationProxy{" + getCategoryClass().getSimpleName() + "/" + getType() + "}";
             }
             else
             {
@@ -2898,15 +2903,27 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         private ConfiguredObjectAttribute getAttributeFromMethod(final Method method)
         {
-            for(ConfiguredObjectAttribute attribute : _attributeTypes.values())
+            if(!Modifier.isStatic(method.getModifiers()) && method.getParameterTypes().length==0)
             {
-                if((attribute instanceof ConfiguredObjectMethodAttribute) && ((ConfiguredObjectMethodAttribute)attribute).getGetter().getName().equals(method.getName())
-                   && !Modifier.isStatic(method.getModifiers()))
+                for(ConfiguredObjectAttribute attribute : _attributeTypes.values())
                 {
-                    return attribute;
+                    if((attribute instanceof ConfiguredObjectMethodAttribute) && ((ConfiguredObjectMethodAttribute)attribute).getGetter().getName().equals(method.getName()))
+                    {
+                        return attribute;
+                    }
                 }
             }
-            throw new ServerScopedRuntimeException("Unable to find attribute definition for method " + method.getName());
+            return null;
+        }
+
+        protected String getType()
+        {
+            return _configuredObject.getType();
+        }
+
+        protected Class<? extends ConfiguredObject> getCategoryClass()
+        {
+            return _configuredObject.getCategoryClass();
         }
     }
 
@@ -2915,6 +2932,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         private final Class<? extends ConfiguredObject> _category;
         private final Map<Class<? extends ConfiguredObject>, ConfiguredObject<?>> _parents;
         private final ConfiguredObject<?> _parent   ;
+        private Map<String, Object> _attributes;
 
         AuthorisationProxyInvocationHandler(Map<String, Object> attributes,
                                             Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes,
@@ -2926,6 +2944,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             _parent = parent;
             _category = categoryClass;
             _parents = new HashMap<>();
+            _attributes = attributes;
             if (parents != null)
             {
                 for (ConfiguredObject<?> parentObject : parents)
@@ -2955,6 +2974,18 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         protected Object convert(ConfiguredObjectAttribute attribute, Object value)
         {
             return attribute.convert(value, _parent);
+        }
+
+        @Override
+        protected Class<? extends ConfiguredObject> getCategoryClass()
+        {
+            return _category;
+        }
+
+        @Override
+        protected String getType()
+        {
+            return String.valueOf(_attributes.get(ConfiguredObject.TYPE));
         }
     }
 

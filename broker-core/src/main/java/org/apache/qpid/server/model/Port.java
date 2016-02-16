@@ -26,8 +26,6 @@ import java.util.Set;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import org.apache.qpid.configuration.CommonProperties;
-
 @ManagedObject( description = Port.CLASS_DESCRIPTION )
 public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 {
@@ -73,11 +71,17 @@ public interface Port<X extends Port<X>> extends ConfiguredObject<X>
     @ManagedAttribute
     Collection<TrustStore> getTrustStores();
 
-    @ManagedAttribute( defaultValue = "${" + CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST + "}")
-    List<String> getCipherSuiteWhiteList();
+    @DerivedAttribute
+    List<String> getTlsProtocolWhiteList();
 
-    @ManagedAttribute( defaultValue = "${" + CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST + "}")
-    List<String> getCipherSuiteBlackList();
+    @DerivedAttribute
+    List<String> getTlsProtocolBlackList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteWhiteList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteBlackList();
 
     Collection<Connection> getConnections();
 

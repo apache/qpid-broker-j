@@ -21,12 +21,6 @@
 
 package org.apache.qpid.server.security.auth.manager.oauth2.microsoftlive;
 
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
-import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -36,7 +30,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.Principal;
-import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -86,19 +79,10 @@ public class MicrosoftLiveOAuth2IdentityResolverService implements OAuth2Identit
     {
         URL userInfoEndpoint = authenticationProvider.getIdentityResolverEndpointURI().toURL();
         TrustStore trustStore = authenticationProvider.getTrustStore();
-        int connectTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
-        int readTimeout = authenticationProvider.getContextValue(Integer.class, OAuth2AuthenticationProvider.AUTHENTICATION_OAUTH2_READ_TIMEOUT);
-        List<String> tlsProtocolWhiteList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
-                                                                                   QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
-        List<String> tlsProtocolBlackList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
-                                                                                   QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
-        List<String> tlsCipherSuiteWhiteList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
-                                                                                      QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
-        List<String> tlsCipherSuiteBlackList = authenticationProvider.getContextValue(List.class, LIST_OF_STRINGS,
-                                                                                      QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
 
         ConnectionBuilder connectionBuilder = new ConnectionBuilder(userInfoEndpoint);
-        connectionBuilder.setConnectTimeout(connectTimeout).setReadTimeout(readTimeout);
+        connectionBuilder.setConnectTimeout(authenticationProvider.getConnectTimeout())
+                         .setReadTimeout(authenticationProvider.getReadTimeout());
         if (trustStore != null)
         {
             try
@@ -110,10 +94,10 @@ public class MicrosoftLiveOAuth2IdentityResolverService implements OAuth2Identit
                 throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
             }
         }
-        connectionBuilder.setTlsProtocolWhiteList(tlsProtocolWhiteList)
-                .setTlsProtocolBlackList(tlsProtocolBlackList)
-                .setTlsCipherSuiteWhiteList(tlsCipherSuiteWhiteList)
-                .setTlsCipherSuiteBlackList(tlsCipherSuiteBlackList);
+        connectionBuilder.setTlsProtocolWhiteList(authenticationProvider.getTlsProtocolWhiteList())
+                         .setTlsProtocolBlackList(authenticationProvider.getTlsProtocolBlackList())
+                         .setTlsCipherSuiteWhiteList(authenticationProvider.getTlsCipherSuiteWhiteList())
+                         .setTlsCipherSuiteBlackList(authenticationProvider.getTlsCipherSuiteBlackList());
 
         LOGGER.debug("About to call identity service '{}'", userInfoEndpoint);
         HttpURLConnection connection = connectionBuilder.build();

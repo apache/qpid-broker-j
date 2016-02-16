@@ -30,6 +30,8 @@ import java.util.Set;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.model.IntegrityViolationException;
@@ -49,6 +51,7 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
+import org.apache.qpid.server.util.ParameterizedTypes;
 
 abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractConfiguredObject<X> implements Port<X>
 {
@@ -72,10 +75,11 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     @ManagedAttributeField
     private Set<Protocol> _protocols;
 
-    @ManagedAttributeField
-    private List<String> _cipherSuiteWhiteList;
-    @ManagedAttributeField
-    private List<String> _cipherSuiteBlackList;
+    private List<String> _tlsProtocolBlackList;
+    private List<String> _tlsProtocolWhiteList;
+
+    private List<String> _tlsCipherSuiteWhiteList;
+    private List<String> _tlsCipherSuiteBlackList;
 
     public AbstractPort(Map<String, Object> attributes,
                         Broker<?> broker)
@@ -85,6 +89,16 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
         _broker = broker;
         _eventLogger = broker.getEventLogger();
         _eventLogger.message(PortMessages.CREATE(getName()));
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        _tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
+        _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
+        _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
     }
 
     @Override
@@ -276,15 +290,27 @@ abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractCo
     }
 
     @Override
-    public List<String> getCipherSuiteWhiteList()
+    public List<String> getTlsProtocolWhiteList()
     {
-        return _cipherSuiteWhiteList;
+        return _tlsProtocolWhiteList;
     }
 
     @Override
-    public List<String> getCipherSuiteBlackList()
+    public List<String> getTlsProtocolBlackList()
     {
-        return _cipherSuiteBlackList;
+        return _tlsProtocolBlackList;
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteWhiteList()
+    {
+        return _tlsCipherSuiteWhiteList;
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteBlackList()
+    {
+        return _tlsCipherSuiteBlackList;
     }
 
     @Override

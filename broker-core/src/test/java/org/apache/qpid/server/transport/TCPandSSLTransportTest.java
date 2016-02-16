@@ -44,12 +44,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class TCPandSSLTransportTest extends QpidTestCase
@@ -128,8 +126,8 @@ public class TCPandSSLTransportTest extends QpidTestCase
         JavaType type = mapper.getTypeFactory().constructCollectionType(List.class, String.class);
         List<String> whiteList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_WHITE_LIST, type);
         List<String> blackList = mapper.readValue(Broker.DEFAULT_SECURITY_TLS_PROTOCOL_BLACK_LIST, type);
-        when(port.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST)).thenReturn(blackList);
-        when(port.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST)).thenReturn(whiteList);
+        when(port.getTlsProtocolBlackList()).thenReturn(blackList);
+        when(port.getTlsProtocolWhiteList()).thenReturn(whiteList);
 
         TCPandSSLTransport transport = new TCPandSSLTransport(new HashSet<>(Arrays.asList(transports)),
                                                               port,

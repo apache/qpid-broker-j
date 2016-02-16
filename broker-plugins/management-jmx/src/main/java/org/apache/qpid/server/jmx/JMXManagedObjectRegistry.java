@@ -178,15 +178,11 @@ public class JMXManagedObjectRegistry implements ManagedObjectRegistry
 
             //create the SSL RMI socket factories
             csf = new SslRMIClientSocketFactory();
-            final List<String> tlsProtocolWhiteList = (List<String>) _connectorPort.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS,
-                                                                                                    CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
-            final List<String> tlsProtocolBlackList = (List<String>) _connectorPort.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS,
-                                                                                                    CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
             ssf = new QpidSslRMIServerSocketFactory(sslContext,
-                                                    tlsProtocolWhiteList,
-                                                    tlsProtocolBlackList,
-                                                    _connectorPort.getCipherSuiteWhiteList(),
-                                                    _connectorPort.getCipherSuiteBlackList(),
+                                                    _connectorPort.getTlsProtocolWhiteList(),
+                                                    _connectorPort.getTlsProtocolBlackList(),
+                                                    _connectorPort.getTlsCipherSuiteWhiteList(),
+                                                    _connectorPort.getTlsCipherSuiteBlackList(),
                                                     setAllocatedConnectorPort);
         }
         else

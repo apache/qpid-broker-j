@@ -19,12 +19,6 @@
 
 package org.apache.qpid.server.security.auth.manager.oauth2;
 
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST;
-import static org.apache.qpid.configuration.CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST;
-import static org.apache.qpid.server.util.ParameterizedTypes.LIST_OF_STRINGS;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -50,6 +44,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -60,6 +55,7 @@ import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.security.auth.AuthenticationResult;
 import org.apache.qpid.server.security.auth.manager.AbstractAuthenticationManager;
 import org.apache.qpid.server.util.ConnectionBuilder;
+import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 
 public class OAuth2AuthenticationProviderImpl
@@ -103,8 +99,16 @@ public class OAuth2AuthenticationProviderImpl
     private String _identityResolverType;
 
     private OAuth2IdentityResolverService _identityResolverService;
+
+    private List<String> _tlsProtocolWhiteList;
+    private List<String>  _tlsProtocolBlackList;
+
+    private List<String> _tlsCipherSuiteWhiteList;
+    private List<String> _tlsCipherSuiteBlackList;
+
     private int _connectTimeout;
     private int _readTimeout;
+
 
     @ManagedObjectFactoryConstructor
     protected OAuth2AuthenticationProviderImpl(final Map<String, Object> attributes,
@@ -119,6 +123,10 @@ public class OAuth2AuthenticationProviderImpl
         super.onOpen();
         String type = getIdentityResolverType();
         _identityResolverService = new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(type);
+        _tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
+        _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
+        _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
         _connectTimeout = getContextValue(Integer.class, AUTHENTICATION_OAUTH2_CONNECT_TIMEOUT);
         _readTimeout = getContextValue(Integer.class, AUTHENTICATION_OAUTH2_READ_TIMEOUT);
     }
@@ -255,10 +263,10 @@ public class OAuth2AuthenticationProviderImpl
                     throw new ServerScopedRuntimeException("Cannot initialise TLS", e);
                 }
             }
-            connectionBuilder.setTlsProtocolWhiteList(getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST))
-                    .setTlsProtocolBlackList(getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST))
-                    .setTlsCipherSuiteWhiteList(getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST))
-                    .setTlsCipherSuiteBlackList(getContextValue(List.class, LIST_OF_STRINGS, QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST));
+            connectionBuilder.setTlsProtocolWhiteList(getTlsProtocolWhiteList())
+                    .setTlsProtocolBlackList(getTlsProtocolBlackList())
+                    .setTlsCipherSuiteWhiteList(getTlsCipherSuiteWhiteList())
+                    .setTlsCipherSuiteBlackList(getTlsCipherSuiteBlackList());
             LOGGER.debug("About to call token endpoint '{}'", tokenEndpoint);
             connection = connectionBuilder.build();
 
@@ -436,6 +444,42 @@ public class OAuth2AuthenticationProviderImpl
         final OAuth2IdentityResolverService identityResolverService =
                 new QpidServiceLoader().getInstancesByType(OAuth2IdentityResolverService.class).get(getIdentityResolverType());
         return identityResolverService == null ? null : identityResolverService.getDefaultScope(this);    }
+
+    @Override
+    public List<String> getTlsProtocolWhiteList()
+    {
+        return _tlsProtocolWhiteList;
+    }
+
+    @Override
+    public List<String> getTlsProtocolBlackList()
+    {
+        return _tlsProtocolBlackList;
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteWhiteList()
+    {
+        return _tlsCipherSuiteWhiteList;
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteBlackList()
+    {
+        return _tlsCipherSuiteBlackList;
+    }
+
+    @Override
+    public int getConnectTimeout()
+    {
+        return _connectTimeout;
+    }
+
+    @Override
+    public int getReadTimeout()
+    {
+        return _readTimeout;
+    }
 
     @SuppressWarnings("unused")
     public static Collection<String> validIdentityResolvers()

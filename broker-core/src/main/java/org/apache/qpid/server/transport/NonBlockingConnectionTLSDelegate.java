@@ -20,9 +20,7 @@
 package org.apache.qpid.server.transport;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
-import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.model.port.AmqpPort;
-import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 import org.slf4j.Logger;
@@ -319,12 +317,8 @@ public class NonBlockingConnectionTLSDelegate implements NonBlockingConnectionDe
     {
         SSLEngine sslEngine = port.getSSLContext().createSSLEngine();
         sslEngine.setUseClientMode(false);
-        final List<String> tlsProtocolWhiteList = (List<String>) port.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS,
-                                                                                      CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
-        final List<String> tlsProtocolBlackList = (List<String>) port.getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS,
-                                                                                      CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
-        SSLUtil.updateEnabledTlsProtocols(sslEngine, tlsProtocolWhiteList, tlsProtocolBlackList);
-        SSLUtil.updateEnabledCipherSuites(sslEngine, port.getCipherSuiteWhiteList(), port.getCipherSuiteBlackList());
+        SSLUtil.updateEnabledTlsProtocols(sslEngine, port.getTlsProtocolWhiteList(), port.getTlsProtocolBlackList());
+        SSLUtil.updateEnabledCipherSuites(sslEngine, port.getTlsCipherSuiteWhiteList(), port.getTlsCipherSuiteBlackList());
 
         if(port.getNeedClientAuth())
         {
