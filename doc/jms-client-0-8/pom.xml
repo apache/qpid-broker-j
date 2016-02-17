@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.qpid</groupId>
         <artifactId>qpid-java-doc</artifactId>
-        <version>6.0.1-SNAPSHOT</version>
+        <version>6.0.1</version>
     </parent>
 
     <artifactId>qpid-java-doc-jms-client-0-8</artifactId>
@@ -54,7 +54,7 @@
                         <configuration>
                             <includes>JMS-Client-Book.xml</includes>
                             <postProcess>
-                                <copy file="${docbook.target}/JMS-Client-Book.html" tofile="${docbook.target}/index.html"/>
+                                <copy file="${docbook.target}/JMS-Client-Book.html" tofile="${docbook.target}/index.html" />
                             </postProcess>
                         </configuration>
                     </plugin>
