@@ -109,6 +109,9 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     /** Used to provide a condition to wait upon for operations that are required to wait for failover to complete. */
     private CountDownLatch _failoverLatch;
 
+    /** Object to lock on when changing the _failoverLatch  */
+    private final Object _failoverLatchChange = new Object();
+
     /** The last failover exception that occurred */
     private FailoverException _lastFailoverException;
 
@@ -116,9 +119,6 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     private final long DEFAULT_SYNC_TIMEOUT = Long.getLong(ClientProperties.QPID_SYNC_OP_TIMEOUT,
                                                            Long.getLong(AMQJ_DEFAULT_SYNCWRITE_TIMEOUT,
                                                                         ClientProperties.DEFAULT_SYNC_OPERATION_TIMEOUT));
-
-    /** Object to lock on when changing the latch */
-    private Object _failoverLatchChange = new Object();
     private ClientDecoder _decoder;
 
     private ProtocolVersion _suggestedProtocolVersion;
@@ -744,13 +744,18 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
 
     public CountDownLatch getFailoverLatch()
     {
-        return _failoverLatch;
+        synchronized (_failoverLatchChange)
+        {
+            _logger.debug("Failover latch retrieved : {}", _failoverLatch);
+            return _failoverLatch;
+        }
     }
 
     public void setFailoverLatch(CountDownLatch failoverLatch)
     {
         synchronized (_failoverLatchChange)
         {
+            _logger.debug("Failover latch set : {}", failoverLatch);
             _failoverLatch = failoverLatch;
         }
     }
