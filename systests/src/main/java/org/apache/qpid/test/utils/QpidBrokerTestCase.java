@@ -500,6 +500,10 @@ public class QpidBrokerTestCase extends QpidTestCase
         return null;
     }
 
+    /**
+     * Tests that a connection is functional by producing and consuming a single message.
+     * Will fail if failover interrupts either transaction.
+     */
     public void assertProducingConsuming(final Connection connection) throws Exception
     {
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);

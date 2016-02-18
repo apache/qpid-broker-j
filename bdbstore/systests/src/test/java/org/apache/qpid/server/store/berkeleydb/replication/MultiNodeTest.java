@@ -62,10 +62,6 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestUtils;
 import org.apache.qpid.util.FileUtils;
 
-/**
- * The HA black box tests test the BDB cluster as a opaque unit.  Client connects to
- * the cluster via a failover url
- */
 public class MultiNodeTest extends QpidBrokerTestCase
 {
     protected static final Logger LOGGER = LoggerFactory.getLogger(MultiNodeTest.class);
@@ -633,6 +629,10 @@ public class MultiNodeTest extends QpidBrokerTestCase
         }
     }
 
+    /**
+     * Tests aims to demonstrate that in a disaster situation (where all nodes except the master is lost), that operation
+     * can be continued from a single node using the QUORUM_OVERRIDE feature.
+     */
     public void testQuorumOverride() throws Exception
     {
         final Connection connection = getConnection(_positiveFailoverUrl);
@@ -648,12 +648,18 @@ public class MultiNodeTest extends QpidBrokerTestCase
             _groupCreator.stopNode(p);
         }
 
+        // Failover may or may not occur. It depends on the relative timing of the internal db-ping and the application of the
+        // QUORUM_OVERRIDE.
+
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort);
         assertEquals("Broker has unexpected quorum override", new Integer(0), attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
         _groupCreator.setNodeAttributes(activeBrokerPort, Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1));
 
         attributes = _groupCreator.getNodeAttributes(activeBrokerPort);
         assertEquals("Broker has unexpected quorum override", new Integer(1), attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
+
+        // Be certain the failover isn't going to occur, or has completed, by awaiting the transaction counter to rise
+        awaitNextTransaction(activeBrokerPort);
 
         assertProducingConsuming(connection);
     }
@@ -762,6 +768,28 @@ public class MultiNodeTest extends QpidBrokerTestCase
         {
             FileUtils.delete(environmentPathFile, true);
         }
+    }
+
+    private void awaitNextTransaction(final int brokerPort) throws Exception
+    {
+        Map<String, Object> attributes = _groupCreator.getNodeAttributes(brokerPort);
+        final int originalTransactionId = (int) attributes.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
+        int currentTransactionId = 0;
+        long timeout = System.currentTimeMillis() + 60000;
+        LOGGER.debug("Awaiting next transaction. Original transaction id {}", originalTransactionId);
+        do
+        {
+            Thread.sleep(250);
+            attributes = _groupCreator.getNodeAttributes(brokerPort);
+            currentTransactionId = (int) attributes.get(BDBHAVirtualHostNode.LAST_KNOWN_REPLICATION_TRANSACTION_ID);
+            LOGGER.debug("Current transaction id {}", currentTransactionId);
+        }
+        while (originalTransactionId >= currentTransactionId && timeout > System.currentTimeMillis());
+
+        assertTrue("Group transaction has not occurred within timeout."
+                   + "Current transaction id " + currentTransactionId
+                   + "Original transaction id " + originalTransactionId,
+                   currentTransactionId > originalTransactionId);
     }
 
     private final class FailoverAwaitingListener implements ConnectionListener
