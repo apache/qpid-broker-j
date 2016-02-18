@@ -369,7 +369,18 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         {
             try
             {
-                _socketChannel.close();
+                try
+                {
+                    NetworkConnectionScheduler scheduler = getScheduler();
+                    if (scheduler != null)
+                    {
+                        scheduler.removeConnection(this);
+                    }
+                }
+                finally
+                {
+                    _socketChannel.close();
+                }
             }
             catch (IOException e)
             {
