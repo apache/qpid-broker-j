@@ -20,6 +20,11 @@
 package org.apache.qpid.transport.network.security.ssl;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.net.ssl.SSLEngine;
@@ -43,13 +48,14 @@ public class SSLSender implements ByteBufferSender
     private final ByteBufferSender delegate;
     private final SSLEngine engine;
     private final int sslBufSize;
-    private final ByteBuffer netData;
+    private final QpidByteBuffer netData;
     private final long timeout;
     private final SSLStatus _sslStatus;
 
     private String _hostname;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final ConcurrentLinkedQueue<QpidByteBuffer> _pending = new ConcurrentLinkedQueue<>();
 
 
     public SSLSender(SSLEngine engine, ByteBufferSender delegate, SSLStatus sslStatus)
@@ -57,7 +63,7 @@ public class SSLSender implements ByteBufferSender
         this.engine = engine;
         this.delegate = delegate;
         sslBufSize = engine.getSession().getPacketBufferSize();
-        netData = ByteBuffer.allocate(sslBufSize);
+        netData = QpidByteBuffer.allocate(sslBufSize);
         timeout = Long.getLong("qpid.ssl_timeout", 60000);
         _sslStatus = sslStatus;
     }
@@ -109,7 +115,9 @@ public class SSLSender implements ByteBufferSender
 
     private void tearDownSSLConnection() throws Exception
     {
-        SSLEngineResult result = engine.wrap(ByteBuffer.allocate(0), netData);
+        SSLEngineResult result = QpidByteBuffer.encryptSSL(engine,
+                                                           Collections.singletonList(QpidByteBuffer.allocate(0)),
+                                                           netData);
         Status status = result.getStatus();
         int read   = result.bytesProduced();
         while (status != Status.CLOSED)
@@ -124,15 +132,17 @@ public class SSLSender implements ByteBufferSender
                 netData.limit(netData.position());
                 netData.position(netData.position() - read);
 
-                ByteBuffer data = netData.slice();
+                QpidByteBuffer data = netData.slice();
 
                 netData.limit(limit);
                 netData.position(netData.position() + read);
 
-                delegate.send(QpidByteBuffer.wrap(data));
+                delegate.send(data);
                 flush();
             }
-            result = engine.wrap(ByteBuffer.allocate(0), netData);
+            result = QpidByteBuffer.encryptSSL(engine,
+                                               Collections.singletonList(QpidByteBuffer.allocate(0)),
+                                               netData);
             status = result.getStatus();
             read   = result.bytesProduced();
         }
@@ -140,7 +150,9 @@ public class SSLSender implements ByteBufferSender
 
     public void flush()
     {
+        doSend();
         delegate.flush();
+
     }
 
     @Override
@@ -151,7 +163,12 @@ public class SSLSender implements ByteBufferSender
 
     public void send(QpidByteBuffer appData)
     {
-        appData = appData.duplicate();
+        _pending.add(appData.duplicate());
+
+    }
+
+    public void doSend()
+    {
         if (closed.get() && !_sslStatus.getSslErrorFlag())
         {
             throw new SenderException("SSL Sender is closed");
@@ -160,12 +177,24 @@ public class SSLSender implements ByteBufferSender
         HandshakeStatus handshakeStatus;
         Status status;
 
-        while(appData.hasRemaining() && !_sslStatus.getSslErrorFlag())
+        while(!_pending.isEmpty() && !_sslStatus.getSslErrorFlag())
         {
             int read = 0;
             try
             {
-                SSLEngineResult result = engine.wrap(appData.asByteBuffer(), netData);
+                SSLEngineResult result = QpidByteBuffer.encryptSSL(engine, _pending, netData);
+
+                while(!_pending.isEmpty())
+                {
+                    QpidByteBuffer buf = _pending.peek();
+                    if (buf.hasRemaining())
+                    {
+                        break;
+                    }
+                    buf.dispose();
+                    _pending.poll();
+                }
+
                 read   = result.bytesProduced();
                 status = result.getStatus();
                 handshakeStatus = result.getHandshakeStatus();
@@ -182,12 +211,12 @@ public class SSLSender implements ByteBufferSender
                 netData.limit(netData.position());
                 netData.position(netData.position() - read);
 
-                ByteBuffer data = netData.slice();
+                QpidByteBuffer data = netData.slice();
 
                 netData.limit(limit);
                 netData.position(netData.position() + read);
 
-                delegate.send(QpidByteBuffer.wrap(data));
+                delegate.send(data);
             }
 
             switch(status)
@@ -219,7 +248,7 @@ public class SSLSender implements ByteBufferSender
                     break;
 
                 case NEED_UNWRAP:
-                    flush();
+                    delegate.flush();
                     synchronized(_sslStatus.getSslLock())
                     {
                         if (_sslStatus.getSslErrorFlag())
@@ -265,9 +294,7 @@ public class SSLSender implements ByteBufferSender
             }
 
         }
-        appData.dispose();
     }
-
 
 
     private void doTasks()
