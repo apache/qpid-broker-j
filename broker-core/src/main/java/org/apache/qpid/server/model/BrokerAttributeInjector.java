@@ -56,6 +56,30 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                 }
             };
 
+    private final Class<?> _hotSpotDiagnosticMXBeanClass;
+    private final PlatformManagedObject _hotSpotDiagnosticMXBean;
+
+    public BrokerAttributeInjector()
+    {
+        Class<?> hotSpotDiagnosticMXBeanClass = null;
+        PlatformManagedObject hotSpotDiagnosticMXBean = null;
+        try
+        {
+            ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+            hotSpotDiagnosticMXBeanClass =
+                    Class.forName("com.sun.management.HotSpotDiagnosticMXBean", true, systemClassLoader);
+            hotSpotDiagnosticMXBean =
+                    ManagementFactory.getPlatformMXBean((Class<? extends PlatformManagedObject>) hotSpotDiagnosticMXBeanClass);
+
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOGGER.debug("Cannot find com.sun.management.HotSpotDiagnosticMXBean MXBean: " + e);
+        }
+
+        _hotSpotDiagnosticMXBeanClass = hotSpotDiagnosticMXBeanClass;
+        _hotSpotDiagnosticMXBean = hotSpotDiagnosticMXBean;
+    }
 
     @Override
     public Collection<ConfiguredObjectInjectedAttribute<?, ?>> getInjectedAttributes()
@@ -182,45 +206,34 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
     {
         List<ConfiguredObjectInjectedOperation<?>> operations = new ArrayList<>();
 
-        try
+        if (_hotSpotDiagnosticMXBean != null)
         {
-            ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
-            final Class<?> hotSpotDiagnosticMXBeanClass =
-                    Class.forName("com.sun.management.HotSpotDiagnosticMXBean", true, systemClassLoader);
-            final PlatformManagedObject hotSpotDiagnosticMXBean =
-                    ManagementFactory.getPlatformMXBean((Class<? extends PlatformManagedObject>) hotSpotDiagnosticMXBeanClass);
-
-            ConfiguredObjectInjectedOperation<?> setJVMOptions =
-                    injectSetJVMOptions(hotSpotDiagnosticMXBeanClass, hotSpotDiagnosticMXBean);
-            if (setJVMOptions != null)
+            try
             {
-                operations.add(setJVMOptions);
+                operations.add(injectSetJVMOptions());
+            }
+            catch (NoSuchMethodException e)
+            {
+                LOGGER.warn("Failed to inject operation setJVMOptions", e);
             }
 
-            ConfiguredObjectInjectedOperation<?> heapDump =
-                    injectDumpHeap(hotSpotDiagnosticMXBeanClass, hotSpotDiagnosticMXBean);
-            if (heapDump != null)
+            try
             {
-                operations.add(heapDump);
+                operations.add(injectDumpHeap());
+            }
+            catch (NoSuchMethodException e)
+            {
+                LOGGER.warn("Failed to inject operation dumpHeap", e);
             }
         }
-        catch (ClassNotFoundException e)
-        {
-            LOGGER.warn("Cannot find com.sun.management.HotSpotDiagnosticMXBean MXBean: " + e.getMessage());
-        }
-
 
         return operations;
     }
 
-    private ConfiguredObjectInjectedOperation<?> injectDumpHeap(
-            final Class<?> hotSpotDiagnosticMXBeanClass,
-            final PlatformManagedObject hotSpotDiagnosticMXBean)
+    private ConfiguredObjectInjectedOperation<?> injectDumpHeap() throws NoSuchMethodException
     {
-        try
-        {
             Method heapDumpMethod =
-                    hotSpotDiagnosticMXBeanClass.getDeclaredMethod("dumpHeap", String.class, boolean.class);
+                    _hotSpotDiagnosticMXBeanClass.getDeclaredMethod("dumpHeap", String.class, boolean.class);
 
             Method method = BrokerAttributeInjector.class.getDeclaredMethod("dumpHeap",
                                                                             Broker.class,
@@ -249,25 +262,16 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                     true,
                     params,
                     method,
-                    new Object[]{hotSpotDiagnosticMXBean, heapDumpMethod},
+                    new Object[]{_hotSpotDiagnosticMXBean, heapDumpMethod},
                     _typeValidator);
             return setVMOptionOperation;
-        }
-        catch (NoSuchMethodException e)
-        {
-            LOGGER.warn("Failed to inject operation dumpHeap", e);
-        }
-        return null;
     }
 
-    private ConfiguredObjectInjectedOperation<?> injectSetJVMOptions(
-            final Class<?> hotSpotDiagnosticMXBeanClass,
-            final PlatformManagedObject hotSpotDiagnosticMXBean)
+    private ConfiguredObjectInjectedOperation<?> injectSetJVMOptions() throws NoSuchMethodException
     {
-        try
-        {
+
             Method setVMOptionMethod =
-                    hotSpotDiagnosticMXBeanClass.getDeclaredMethod("setVMOption", String.class, String.class);
+                    _hotSpotDiagnosticMXBeanClass.getDeclaredMethod("setVMOption", String.class, String.class);
 
             Method method = BrokerAttributeInjector.class.getDeclaredMethod("setJVMOptions",
                                                                             Broker.class,
@@ -288,15 +292,9 @@ public class BrokerAttributeInjector implements ConfiguredObjectAttributeInjecto
                     true,
                     params,
                     method,
-                    new Object[]{hotSpotDiagnosticMXBean, setVMOptionMethod},
+                    new Object[]{_hotSpotDiagnosticMXBean, setVMOptionMethod},
                     _typeValidator);
             return setVMOptionOperation;
-        }
-        catch (NoSuchMethodException e)
-        {
-            LOGGER.warn("Failed to inject operation setJVMOptions", e);
-        }
-        return null;
     }
 
     @Override
