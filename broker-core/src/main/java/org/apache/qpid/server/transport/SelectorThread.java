@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -591,9 +592,14 @@ class SelectorThread extends Thread
         }
         catch (ClosedChannelException e)
         {
-            LOGGER.debug("Failed to unregister with selector for connection " + connection +
-                         ". Connection is probably being closed by peer.", e);
+            LOGGER.debug("Failed to unregister with selector for connection {}. " +
+                         "Connection is probably being closed by peer.", connection, e);
 
+        }
+        catch (ClosedSelectorException e)
+        {
+            LOGGER.debug("Failed to unregister with selector for connection {}. " +
+                         "Port has probably already been closed.", connection, e);
         }
     }
 
