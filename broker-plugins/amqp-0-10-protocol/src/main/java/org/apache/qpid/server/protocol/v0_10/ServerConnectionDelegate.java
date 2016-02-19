@@ -77,7 +77,7 @@ public class ServerConnectionDelegate extends ServerDelegate
         OPEN
     }
 
-    private ConnectionState _state = ConnectionState.INIT;
+    private volatile ConnectionState _state = ConnectionState.INIT;
 
 
     public ServerConnectionDelegate(Broker<?> broker, String localFQDN, SubjectCreator subjectCreator)
