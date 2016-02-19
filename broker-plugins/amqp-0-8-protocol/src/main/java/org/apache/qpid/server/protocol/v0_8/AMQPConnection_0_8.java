@@ -121,7 +121,7 @@ public class AMQPConnection_0_8
     private final Object _channelAddRemoveLock = new Object();
     private final Map<Integer, AMQChannel> _channelMap = new ConcurrentHashMap<>();
 
-    private ConnectionState _state = ConnectionState.INIT;
+    private volatile ConnectionState _state = ConnectionState.INIT;
 
     /**
      * The channels that the latest call to {@link ProtocolEngine#received(QpidByteBuffer)} applied to.

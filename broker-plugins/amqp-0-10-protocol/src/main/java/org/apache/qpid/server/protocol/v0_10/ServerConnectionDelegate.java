@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.properties.ConnectionStartProperties;
+import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
@@ -66,6 +67,19 @@ public class ServerConnectionDelegate extends ServerDelegate
 
     private boolean _compressionSupported;
 
+    enum ConnectionState
+    {
+        INIT,
+        AWAIT_START_OK,
+        AWAIT_SECURE_OK,
+        AWAIT_TUNE_OK,
+        AWAIT_OPEN,
+        OPEN
+    }
+
+    private volatile ConnectionState _state = ConnectionState.INIT;
+
+
     public ServerConnectionDelegate(Broker<?> broker, String localFQDN, SubjectCreator subjectCreator)
     {
         this(createConnectionProperties(broker), Collections.singletonList((Object)"en_US"), broker, localFQDN, subjectCreator);
@@ -84,6 +98,30 @@ public class ServerConnectionDelegate extends ServerDelegate
         _maxNoOfChannels = broker.getConnection_sessionCountLimit();
         _subjectCreator = subjectCreator;
         _maximumFrameSize = Math.min(0xffff, broker.getNetworkBufferSize());
+    }
+
+
+    public final ConnectionState getState()
+    {
+        return _state;
+    }
+
+
+    private void assertState(final ServerConnection conn, final ConnectionState requiredState)
+    {
+        if(_state != requiredState)
+        {
+            conn.sendConnectionClose(ConnectionCloseCode.FRAMING_ERROR, "Command Invalid expected "+requiredState+" but was "+_state);
+            conn.closeAndIgnoreFutureInput();
+        }
+    }
+
+    @Override
+    public void init(final Connection conn, final ProtocolHeader hdr)
+    {
+        assertState((ServerConnection)conn, ConnectionState.INIT);
+        super.init(conn, hdr);
+        _state = ConnectionState.AWAIT_START_OK;
     }
 
     private static List<String> getFeatures(Broker<?> broker)
@@ -134,6 +172,13 @@ public class ServerConnectionDelegate extends ServerDelegate
 
     }
 
+    @Override
+    public void connectionSecureOk(final Connection conn, final ConnectionSecureOk ok)
+    {
+        assertState((ServerConnection)conn, ConnectionState.AWAIT_SECURE_OK);
+        super.connectionSecureOk(conn, ok);
+    }
+
     protected void secure(final SaslServer ss, final Connection conn, final byte[] response)
     {
         final ServerConnection sconn = (ServerConnection) conn;
@@ -143,10 +188,12 @@ public class ServerConnectionDelegate extends ServerDelegate
         {
             tuneAuthorizedConnection(sconn);
             sconn.setAuthorizedSubject(authResult.getSubject());
+            _state = ConnectionState.AWAIT_TUNE_OK;
         }
         else if (AuthenticationStatus.CONTINUE.equals(authResult.getStatus()))
         {
             connectionAuthContinue(sconn, authResult.getChallenge());
+            _state = ConnectionState.AWAIT_SECURE_OK;
         }
         else
         {
@@ -166,7 +213,7 @@ public class ServerConnectionDelegate extends ServerDelegate
     public void connectionOpen(Connection conn, ConnectionOpen open)
     {
         final ServerConnection sconn = (ServerConnection) conn;
-
+        assertState(sconn, ConnectionState.AWAIT_OPEN);
         VirtualHostImpl vhost;
         String vhostName;
         if(open.hasVirtualHost())
@@ -219,6 +266,7 @@ public class ServerConnectionDelegate extends ServerDelegate
             }
 
             sconn.setState(Connection.State.OPEN);
+            _state = ConnectionState.OPEN;
             sconn.invoke(new ConnectionOpenOk(Collections.emptyList()));
         }
         else
@@ -234,6 +282,7 @@ public class ServerConnectionDelegate extends ServerDelegate
     public void connectionTuneOk(final Connection conn, final ConnectionTuneOk ok)
     {
         ServerConnection sconn = (ServerConnection) conn;
+        assertState(sconn, ConnectionState.AWAIT_TUNE_OK);
         int okChannelMax = ok.getChannelMax();
         int okMaxFrameSize = ok.getMaxFrameSize();
 
@@ -295,6 +344,7 @@ public class ServerConnectionDelegate extends ServerDelegate
 
         setConnectionTuneOkChannelMax(sconn, okChannelMax);
         conn.setMaxFrameSize(okMaxFrameSize);
+        _state = ConnectionState.AWAIT_OPEN;
     }
 
     @Override
@@ -339,6 +389,8 @@ public class ServerConnectionDelegate extends ServerDelegate
     @Override
     public void sessionAttach(final Connection conn, final SessionAttach atc)
     {
+        assertState((ServerConnection)conn, ConnectionState.OPEN);
+
         final Session ssn;
 
         if(isSessionNameUnique(atc.getName(), conn))
@@ -380,6 +432,7 @@ public class ServerConnectionDelegate extends ServerDelegate
     @Override
     public void connectionStartOk(Connection conn, ConnectionStartOk ok)
     {
+        assertState((ServerConnection)conn, ConnectionState.AWAIT_START_OK);
         _clientProperties = ok.getClientProperties();
         if(_clientProperties != null)
         {
