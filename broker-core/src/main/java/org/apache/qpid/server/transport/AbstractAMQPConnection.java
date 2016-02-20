@@ -105,7 +105,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private volatile AccessControlContext _accessControllerContext;
     private volatile Thread _ioThread;
 
-    private boolean _messageAuthorizationRequired;
+    private volatile boolean _messageAuthorizationRequired;
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,

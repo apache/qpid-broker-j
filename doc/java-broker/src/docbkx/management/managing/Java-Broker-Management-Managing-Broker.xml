@@ -73,8 +73,9 @@
             id of each received message matches the user id of the producing connection. If this
             check fails, the message is returned to the producer's connection with a 403 (Access
             Refused) error code.</para>
-          <para>This is check is currently not enforced when using AMQP 0-10 and 1-0
-            protocols.</para>
+          <para>This value can be overridden for each Virtual Host by setting the context value on the Virtual Host or
+            Virtual Host Node.
+          </para>
           <para>Defaults to false.</para>
         </listitem>
       </itemizedlist>
