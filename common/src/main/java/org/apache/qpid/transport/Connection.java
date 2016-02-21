@@ -81,6 +81,7 @@ public class Connection extends ConnectionInvoker
     private boolean _messageCompressionSupported;
     private final AtomicBoolean _redirecting = new AtomicBoolean();
     private boolean _virtualHostPropertiesSupported;
+    private boolean _queueLifetimePolicySupported;
 
     public enum State { NEW, CLOSED, OPENING, OPEN, CLOSING, CLOSE_RCVD, RESUMING }
 
@@ -686,6 +687,7 @@ public class Connection extends ConnectionInvoker
         _serverProperties = serverProperties == null ? Collections.<String, Object>emptyMap() : serverProperties;
         _messageCompressionSupported = Boolean.parseBoolean(String.valueOf(_serverProperties.get(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED)));
         _virtualHostPropertiesSupported = Boolean.parseBoolean(String.valueOf(_serverProperties.get(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED)));
+        _queueLifetimePolicySupported = Boolean.parseBoolean(String.valueOf(_serverProperties.get(ConnectionStartProperties.QPID_QUEUE_LIFETIME_SUPPORTED)));
 
     }
 
@@ -849,6 +851,11 @@ public class Connection extends ConnectionInvoker
     public boolean isVirtualHostPropertiesSupported()
     {
         return _virtualHostPropertiesSupported;
+    }
+
+    public boolean isQueueLifetimePolicySupported()
+    {
+        return _queueLifetimePolicySupported;
     }
 
     public boolean isRedirecting()

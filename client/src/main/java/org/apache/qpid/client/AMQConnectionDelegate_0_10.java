@@ -619,6 +619,12 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
     }
 
     @Override
+    public boolean isQueueLifetimePolicySupported()
+    {
+        return _qpidConnection.isQueueLifetimePolicySupported();
+    }
+
+    @Override
     public void setMaxFrameSize(final int frameSize)
     {
         _conn.setMaximumFrameSize(frameSize);

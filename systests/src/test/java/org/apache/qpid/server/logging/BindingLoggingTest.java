@@ -174,13 +174,9 @@ public class BindingLoggingTest extends AbstractTestLogging
     {
         //Closing a consumer on a temporary queue will cause it to autodelete
         // and so unbind.
-        _session.createConsumer(_session.createTemporaryQueue()).close();
+        _session.createConsumer(_session.createTemporaryQueue());
 
-        if(isBroker010())
-        {
-            //auto-delete is at session close for 0-10
-            _session.close();
-        }
+        _connection.close();
 
         //wait for the deletion messages to be logged
         waitForMessage("BND-1002");

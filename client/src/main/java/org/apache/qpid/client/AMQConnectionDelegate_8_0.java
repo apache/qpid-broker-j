@@ -79,6 +79,7 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
     private boolean _confirmedPublishSupported;
     private boolean _confirmedPublishNonTransactionalSupported;
     private boolean _virtualhostPropertiesSupported;
+    private boolean _queueLifetimeSupported;
 
     public void closeConnection(long timeout) throws JMSException, QpidException
     {
@@ -172,7 +173,8 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
 
                 _virtualhostPropertiesSupported =
                         checkBooleanConnectionStartProperty(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED);
-
+                _queueLifetimeSupported =
+                        checkBooleanConnectionStartProperty(ConnectionStartProperties.QPID_QUEUE_LIFETIME_SUPPORTED);
                 _confirmedPublishSupported =
                         checkBooleanConnectionStartProperty(ConnectionStartProperties.QPID_CONFIRMED_PUBLISH_SUPPORTED);
                 _confirmedPublishNonTransactionalSupported = checkConfirmedPublishNonTransactionalSupported();
@@ -515,6 +517,11 @@ public class AMQConnectionDelegate_8_0 implements AMQConnectionDelegate
         return _virtualhostPropertiesSupported;
     }
 
+    @Override
+    public boolean isQueueLifetimePolicySupported()
+    {
+        return _queueLifetimeSupported;
+    }
 
     public boolean isAddrSyntaxSupported()
     {

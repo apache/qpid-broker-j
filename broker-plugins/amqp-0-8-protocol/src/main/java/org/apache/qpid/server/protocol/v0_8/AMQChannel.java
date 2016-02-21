@@ -3306,9 +3306,14 @@ public class AMQChannel
                     exclusivityPolicy = ExclusivityPolicy.NONE;
                 }
 
-                attributes.put(Queue.EXCLUSIVE, exclusivityPolicy);
-                attributes.put(Queue.LIFETIME_POLICY, lifetimePolicy);
-
+                if(!attributes.containsKey(Queue.EXCLUSIVE))
+                {
+                    attributes.put(Queue.EXCLUSIVE, exclusivityPolicy);
+                }
+                if(!attributes.containsKey(Queue.LIFETIME_POLICY))
+                {
+                    attributes.put(Queue.LIFETIME_POLICY, lifetimePolicy);
+                }
 
                 queue = virtualHost.createChild(Queue.class, attributes);
 
@@ -3355,7 +3360,7 @@ public class AMQChannel
                                                          + ")");
                 }
                 else if ((autoDelete
-                          && queue.getLifetimePolicy() != LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS)
+                          && queue.getLifetimePolicy() == LifetimePolicy.PERMANENT)
                          || (!autoDelete && queue.getLifetimePolicy() != ((exclusive
                                                                            && !durable)
                         ? LifetimePolicy.DELETE_ON_CONNECTION_CLOSE

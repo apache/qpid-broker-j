@@ -57,14 +57,14 @@ public class QueueArgumentsConverter
 
     public static final String QPID_MESSAGE_DURABILITY = "qpid.message_durability";
 
-    public static final String QPID_TRACE_EXCLUDE = "qpid.trace.exclude";
-    public static final String QPID_TRACE_ID = "qpid.trace.id";
-
     public static final String QPID_LAST_VALUE_QUEUE = "qpid.last_value_queue";
 
     public static final String QPID_DEFAULT_FILTERS = "qpid.default_filters";
 
     public static final String QPID_ENSURE_NONDESTRUCTIVE_CONSUMERS = "qpid.ensure_nondestructive_consumers";
+
+    public static final String QPID_EXCLUSIVITY_POLICY = "qpid.exclusivity_policy";
+    public static final String QPID_LIFETIME_POLICY = "qpid.lifetime_policy";
     /**
      * No-local queue argument is used to support the no-local feature of Durable Subscribers.
      */
@@ -99,13 +99,15 @@ public class QueueArgumentsConverter
 
         ATTRIBUTE_MAPPINGS.put(X_QPID_DLQ_ENABLED, AbstractVirtualHost.CREATE_DLQ_ON_CREATION);
         ATTRIBUTE_MAPPINGS.put(QPID_GROUP_HEADER_KEY, Queue.MESSAGE_GROUP_KEY);
-        //ATTRIBUTE_MAPPINGS.put(QPID_SHARED_MSG_GROUP, Queue.MESSAGE_GROUP_SHARED_GROUPS);
         ATTRIBUTE_MAPPINGS.put(QPID_DEFAULT_MESSAGE_GROUP_ARG, Queue.MESSAGE_GROUP_DEFAULT_GROUP);
 
         ATTRIBUTE_MAPPINGS.put(QPID_NO_LOCAL, Queue.NO_LOCAL);
         ATTRIBUTE_MAPPINGS.put(QPID_MESSAGE_DURABILITY, Queue.MESSAGE_DURABILITY);
         ATTRIBUTE_MAPPINGS.put(QPID_DEFAULT_FILTERS, Queue.DEFAULT_FILTERS);
         ATTRIBUTE_MAPPINGS.put(QPID_ENSURE_NONDESTRUCTIVE_CONSUMERS, Queue.ENSURE_NONDESTRUCTIVE_CONSUMERS);
+
+        ATTRIBUTE_MAPPINGS.put(QPID_EXCLUSIVITY_POLICY, Queue.EXCLUSIVE);
+        ATTRIBUTE_MAPPINGS.put(QPID_LIFETIME_POLICY, Queue.LIFETIME_POLICY);
 
     }
 

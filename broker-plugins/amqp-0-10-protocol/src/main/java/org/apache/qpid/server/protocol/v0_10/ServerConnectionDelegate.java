@@ -153,6 +153,7 @@ public class ServerConnectionDelegate extends ServerDelegate
         map.put(ServerPropertyNames.QPID_INSTANCE_NAME, broker.getName());
         map.put(ConnectionStartProperties.QPID_MESSAGE_COMPRESSION_SUPPORTED, String.valueOf(broker.isMessageCompressionEnabled()));
         map.put(ConnectionStartProperties.QPID_VIRTUALHOST_PROPERTIES_SUPPORTED, String.valueOf(broker.isVirtualHostPropertiesNodeEnabled()));
+        map.put(ConnectionStartProperties.QPID_QUEUE_LIFETIME_SUPPORTED, Boolean.TRUE.toString());
 
         return map;
     }

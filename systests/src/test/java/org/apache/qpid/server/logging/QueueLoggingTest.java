@@ -146,13 +146,9 @@ public class QueueLoggingTest extends AbstractTestLogging
        {
            // Create a temporary queue so that when we consume from it and
            // then close the consumer it will be autoDeleted.
-           _session.createConsumer(_session.createTemporaryQueue()).close();
+           _session.createConsumer(_session.createTemporaryQueue());
 
-           if(isBroker010())
-           {
-               //auto-delete is at session close for 0-10
-               _session.close();
-           }
+           _connection.close();
            
            // Validation
            //Ensure that we wait for the QUE log message

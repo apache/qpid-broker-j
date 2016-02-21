@@ -1455,25 +1455,32 @@ public class ServerSessionDelegate extends SessionDelegate
                 arguments.put(Queue.ID, id);
                 arguments.put(Queue.NAME, queueName);
 
-                LifetimePolicy lifetime;
-                if(autoDelete)
+
+                if(!arguments.containsKey(Queue.LIFETIME_POLICY))
                 {
-                    lifetime = exclusive ? LifetimePolicy.DELETE_ON_SESSION_END
-                            : LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS;
+                    LifetimePolicy lifetime;
+                    if(autoDelete)
+                    {
+                        lifetime = exclusive ? LifetimePolicy.DELETE_ON_SESSION_END
+                                : LifetimePolicy.DELETE_ON_NO_OUTBOUND_LINKS;
+                    }
+                    else
+                    {
+                        lifetime = LifetimePolicy.PERMANENT;
+                    }
+                    arguments.put(Queue.LIFETIME_POLICY, lifetime);
                 }
-                else
+
+                if(!arguments.containsKey(Queue.EXCLUSIVE))
                 {
-                    lifetime = LifetimePolicy.PERMANENT;
+                    ExclusivityPolicy exclusivityPolicy =
+                            exclusive ? ExclusivityPolicy.SESSION : ExclusivityPolicy.NONE;
+
+                    arguments.put(Queue.EXCLUSIVE, exclusivityPolicy);
                 }
-
-                arguments.put(Queue.LIFETIME_POLICY, lifetime);
-
-                ExclusivityPolicy exclusivityPolicy = exclusive ? ExclusivityPolicy.SESSION : ExclusivityPolicy.NONE;
-
 
                 arguments.put(Queue.DURABLE, method.getDurable());
 
-                arguments.put(Queue.EXCLUSIVE, exclusivityPolicy);
 
                 queue = virtualHost.createChild(Queue.class, arguments);
 

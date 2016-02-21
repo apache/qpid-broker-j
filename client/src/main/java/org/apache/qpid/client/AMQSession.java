@@ -1493,8 +1493,18 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
 
             // this is done so that we can produce to a temporary queue before we create a consumer
             result.setQueueName(result.getRoutingKey());
+            Map<String, Object> args;
+            if(_connection.getDelegate().isQueueLifetimePolicySupported())
+            {
+                args = Collections.<String,Object>singletonMap("qpid.lifetime_policy", "DELETE_ON_CONNECTION_CLOSE");
+            }
+            else
+            {
+                args = null;
+            }
             createQueue(result.getAMQQueueName(), result.isAutoDelete(),
-                        result.isDurable(), result.isExclusive());
+                        result.isDurable(), result.isExclusive(),
+                        args);
             bindQueue(result.getAMQQueueName(), result.getRoutingKey(),
                     new HashMap<String, Object>(), result.getExchangeName(), result);
             return result;

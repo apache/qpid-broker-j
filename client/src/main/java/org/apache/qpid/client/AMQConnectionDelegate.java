@@ -85,5 +85,7 @@ public interface AMQConnectionDelegate
 
     boolean isVirtualHostPropertiesSupported();
 
+    boolean isQueueLifetimePolicySupported();
+
 
 }
