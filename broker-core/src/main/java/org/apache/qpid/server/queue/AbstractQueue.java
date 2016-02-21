@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -235,7 +236,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     private MessageGroupManager _messageGroupManager;
 
-    private QueueNotificationListener  _notificationListener;
+    private QueueNotificationListener  _notificationListener = NULL_NOTIFICATION_LISTENER;
     private final long[] _lastNotificationTimes = new long[NotificationCheck.values().length];
 
     @ManagedAttributeField
@@ -1165,7 +1166,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 deliverAsync();
             }
 
-            checkForNotification(entry.getMessage());
+            checkForNotificationOnNewMessage(entry.getMessage());
         }
         finally
         {
@@ -2460,6 +2461,24 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         final long estimatedQueueSize = _atomicQueueSize.get() + _atomicQueueCount.get() * _estimatedAverageMessageHeaderSize;
         _flowToDiskChecker.reportFlowToDiskStatusIfNecessary(estimatedQueueSize, _targetQueueSize.get());
 
+        final Set<NotificationCheck> perMessageChecks = new HashSet<>();
+        final Set<NotificationCheck> queueLevelChecks = new HashSet<>();
+
+        for(NotificationCheck check : getNotificationChecks())
+        {
+            if(check.isMessageSpecific())
+            {
+                perMessageChecks.add(check);
+            }
+            else
+            {
+                queueLevelChecks.add(check);
+            }
+        }
+        QueueNotificationListener listener = _notificationListener;
+        final long currentTime = System.currentTimeMillis();
+        final long thresholdTime = currentTime - getAlertRepeatGap();
+
         long cumulativeQueueSize = 0;
         while (queueListIterator.advance())
         {
@@ -2498,11 +2517,21 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                         cumulativeQueueSize += msg.getSize() + _estimatedAverageMessageHeaderSize;
                         _flowToDiskChecker.flowToDiskIfNecessary(msg.getStoredMessage(), cumulativeQueueSize,
                                                                  _targetQueueSize.get());
-                        checkForNotification(msg);
+
+                        for(NotificationCheck check : perMessageChecks)
+                        {
+                            performNotificationCheck(msg, listener, currentTime, thresholdTime, check);
+                        }
                     }
                 }
             }
         }
+
+        for(NotificationCheck check : queueLevelChecks)
+        {
+            performNotificationCheck(null, listener, currentTime, thresholdTime, check);
+        }
+
     }
 
     @Override
@@ -2753,22 +2782,50 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     /**
      * Checks if there is any notification to send to the listeners
      */
-    private void checkForNotification(ServerMessage<?> msg)
+    private void checkForNotification(ServerMessage<?> msg, final boolean arrivalCheck)
     {
         final Set<NotificationCheck> notificationChecks = getNotificationChecks();
         QueueNotificationListener  listener = _notificationListener;
-        if(listener == null)
-        {
-            listener = NULL_NOTIFICATION_LISTENER;
-        }
-        if(listener != null && !notificationChecks.isEmpty())
+        if(!notificationChecks.isEmpty())
         {
             final long currentTime = System.currentTimeMillis();
             final long thresholdTime = currentTime - getAlertRepeatGap();
 
             for (NotificationCheck check : notificationChecks)
             {
-                if (check.isMessageSpecific() || (_lastNotificationTimes[check.ordinal()] < thresholdTime))
+                performNotificationCheck(msg, listener, currentTime, thresholdTime, check);
+            }
+        }
+    }
+
+    private void performNotificationCheck(final ServerMessage<?> msg,
+                                          final QueueNotificationListener listener,
+                                          final long currentTime,
+                                          final long thresholdTime,
+                                          final NotificationCheck check)
+    {
+        if (check.isMessageSpecific() || (_lastNotificationTimes[check.ordinal()] < thresholdTime))
+        {
+            if (check.notifyIfNecessary(msg, this, listener))
+            {
+                _lastNotificationTimes[check.ordinal()] = currentTime;
+            }
+        }
+    }
+
+    private void checkForNotificationOnNewMessage(final ServerMessage<?> msg)
+    {
+        final Set<NotificationCheck> notificationChecks = getNotificationChecks();
+        QueueNotificationListener listener = _notificationListener;
+        if (!notificationChecks.isEmpty())
+        {
+            final long currentTime = System.currentTimeMillis();
+            final long thresholdTime = currentTime - getAlertRepeatGap();
+
+            for (NotificationCheck check : notificationChecks)
+            {
+                if (check.isCheckOnMessageArrival()
+                    && (check.isMessageSpecific() || (_lastNotificationTimes[check.ordinal()] < thresholdTime)))
                 {
                     if (check.notifyIfNecessary(msg, this, listener))
                     {
@@ -2781,7 +2838,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
     public void setNotificationListener(QueueNotificationListener  listener)
     {
-        _notificationListener = listener;
+        _notificationListener = listener == null ? NULL_NOTIFICATION_LISTENER : listener;
     }
 
     public final  <M extends ServerMessage<? extends StorableMessageMetaData>> int send(final M message,

@@ -48,7 +48,7 @@ public enum NotificationCheck
             return false;
         }
     },
-    MESSAGE_SIZE_ALERT(true)
+    MESSAGE_SIZE_ALERT(true, true)
     {
         public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
@@ -96,7 +96,7 @@ public enum NotificationCheck
         }
 
     },
-    MESSAGE_AGE_ALERT
+    MESSAGE_AGE_ALERT(false, true)
     {
         public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
@@ -129,20 +129,28 @@ public enum NotificationCheck
     private static final Logger LOGGER = LoggerFactory.getLogger(NotificationCheck.class);
 
     private final boolean _messageSpecific;
+    private final boolean _checkOnMessageArrival;
+
 
     NotificationCheck()
     {
-        this(false);
+        this(false, true);
     }
 
-    NotificationCheck(boolean messageSpecific)
+    NotificationCheck(boolean messageSpecific, final boolean checkOnMessageArrival)
     {
         _messageSpecific = messageSpecific;
+        _checkOnMessageArrival = checkOnMessageArrival;
     }
 
     public boolean isMessageSpecific()
     {
         return _messageSpecific;
+    }
+
+    public boolean isCheckOnMessageArrival()
+    {
+        return _checkOnMessageArrival;
     }
 
     public abstract boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener);
