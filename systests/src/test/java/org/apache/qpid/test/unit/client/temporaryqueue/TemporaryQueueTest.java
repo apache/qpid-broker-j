@@ -27,6 +27,7 @@ import org.apache.qpid.test.utils.QpidBrokerTestCase;
 
 import javax.jms.Connection;
 import javax.jms.JMSException;
+import javax.jms.Message;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
@@ -57,13 +58,14 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
     }
 
     /**
-     * Tests that a temporary queue cannot be used by another {@link Session}.
+     * Tests that a temporary queue cannot be used by another {@link Connection}.
      */
-    public void testUseFromAnotherSessionProhibited() throws Exception
+    public void testUseFromAnotherConnectionProhibited() throws Exception
     {
         final Connection conn = getConnection();
+        final Connection conn2 = getConnection();
         final Session session1 = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        final Session session2 = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session2 = conn2.createSession(false, Session.AUTO_ACKNOWLEDGE);
         final TemporaryQueue queue = session1.createTemporaryQueue();
         assertNotNull(queue);
 
@@ -75,9 +77,66 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
         catch (JMSException je)
         {
             //pass
-            assertEquals("Cannot consume from a temporary destination created on another session", je.getMessage());
+            assertEquals("Cannot consume from a temporary destination created on another connection", je.getMessage());
         }
     }
+
+
+    public void testClosingConsumerDoesNotDeleteQueue() throws Exception
+    {
+        final Connection conn = getConnection();
+        final Session session1 = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final TemporaryQueue queue = session1.createTemporaryQueue();
+        assertNotNull(queue);
+
+        MessageConsumer consumer1 = session1.createConsumer(queue);
+
+        MessageProducer producer = session1.createProducer(queue);
+
+        producer.send(session1.createTextMessage("Hello World!"));
+
+        consumer1.close();
+
+        conn.start();
+
+        MessageConsumer consumer2 = session1.createConsumer(queue);
+
+        Message message = consumer2.receive(1000l);
+
+        assertNotNull("Message should have been received", message);
+        assertTrue("Received message not a text message", message instanceof TextMessage);
+        assertEquals("Incorrect message text", "Hello World!",  ((TextMessage)message).getText());
+    }
+
+
+    public void testClosingSessionDoesNotDeleteQueue() throws Exception
+    {
+        final Connection conn = getConnection();
+        final Session session1 = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session2 = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+        final TemporaryQueue queue = session1.createTemporaryQueue();
+        assertNotNull(queue);
+
+        MessageConsumer consumer1 = session1.createConsumer(queue);
+
+        MessageProducer producer = session1.createProducer(queue);
+
+        producer.send(session1.createTextMessage("Hello World!"));
+
+        session1.close();
+
+        conn.start();
+
+        MessageConsumer consumer2 = session2.createConsumer(queue);
+
+        Message message = consumer2.receive(1000l);
+
+        assertNotNull("Message should have been received", message);
+        assertTrue("Received message not a text message", message instanceof TextMessage);
+        assertEquals("Incorrect message text", "Hello World!",  ((TextMessage)message).getText());
+    }
+
 
     /**
      * Tests that the client is able to explicitly delete a temporary queue using

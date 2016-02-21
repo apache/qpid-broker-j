@@ -107,24 +107,25 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
     }
 
     /**
-     * Tests that a temporary topic cannot be used by another {@link Session}.
+     * Tests that a temporary topic cannot be used by another {@link Connection}.
      */
     public void testUseFromAnotherSessionProhibited() throws Exception
     {
         final Connection conn = getConnection();
+        final Connection conn2 = getConnection();
         final Session session1 = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        final Session session2 = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session2 = conn2.createSession(false, Session.AUTO_ACKNOWLEDGE);
         final TemporaryTopic topic = session1.createTemporaryTopic();
 
         try
         {
             session2.createConsumer(topic);
-            fail("Expected a JMSException when subscribing to a temporary topic created on a different session");
+            fail("Expected a JMSException when subscribing to a temporary topic created on a different connection");
         }
         catch (JMSException je)
         {
             // pass
-            assertEquals("Cannot consume from a temporary destination created on another session", je.getMessage());
+            assertEquals("Cannot consume from a temporary destination created on another connection", je.getMessage());
         }
     }
 

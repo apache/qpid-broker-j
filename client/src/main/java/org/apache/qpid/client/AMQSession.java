@@ -1496,7 +1496,9 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
             Map<String, Object> args;
             if(_connection.getDelegate().isQueueLifetimePolicySupported())
             {
-                args = Collections.<String,Object>singletonMap("qpid.lifetime_policy", "DELETE_ON_CONNECTION_CLOSE");
+                args = new HashMap<>();
+                args.put("qpid.lifetime_policy", "DELETE_ON_CONNECTION_CLOSE");
+                args.put("qpid.exclusivity_policy", "CONNECTION");
             }
             else
             {
@@ -2482,10 +2484,10 @@ public abstract class AMQSession<C extends BasicMessageConsumer, P extends Basic
         {
             _logger.debug("destination is temporary");
             final TemporaryDestination tempDest = (TemporaryDestination) destination;
-            if (tempDest.getSession() != this)
+            if (tempDest.getSession().getAMQConnection() != this.getAMQConnection())
             {
-                _logger.debug("destination is on different session");
-                throw new JMSException("Cannot consume from a temporary destination created on another session");
+                _logger.debug("destination is on different conection");
+                throw new JMSException("Cannot consume from a temporary destination created on another connection");
             }
 
             if (tempDest.isDeleted())
