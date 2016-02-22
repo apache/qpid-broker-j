@@ -250,6 +250,11 @@ public abstract class AbstractConsumerTarget implements ConsumerTarget
             ConsumerMessageInstancePair instance;
             while((instance = _queue.poll()) != null)
             {
+                MessageInstance entry = instance.getEntry();
+                if(entry.isAcquiredBy(instance.getConsumer()))
+                {
+                    entry.release();
+                }
                 instance.release();
             }
             doCloseInternal();
