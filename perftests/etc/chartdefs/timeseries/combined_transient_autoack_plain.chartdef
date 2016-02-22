@@ -19,29 +19,22 @@
 
 chartType=TIMELINE
 chartTitle=Transient Auto-Ack AMQP ${qpid.charting.protocolVersion}
-chartDescription=10P 10C, transient, auto-ack, 1kB message, plain/SSL, ${qpid.charting.brokerVersionA} / ${qpid.charting.brokerVersionB}
+chartDescription=10P 10C, transient, auto-ack, 1kB message, plain, ${qpid.charting.brokerVersionA} / ${qpid.charting.brokerVersionB} / ${qpid.charting.brokerVersionC}
 
 xAxisTitle=Date
 yAxisTitle=Messages Per Second
 
 series.1.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_autoack_plain' AND providerVersion LIKE '%${qpid.charting.brokerVersionA}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
-series.1.colourName=red
+series.1.colourName=blue
 series.1.shape=cross
 series.1.legend=Plain; ${qpid.charting.brokerVersionA}
 
-series.2.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_autoack_ssl' AND providerVersion LIKE '%${qpid.charting.brokerVersionA}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
-series.2.colourName=blue
+series.2.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_autoack_plain' AND providerVersion LIKE '%${qpid.charting.brokerVersionB}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
+series.2.colourName=red
 series.2.shape=cross
-series.2.legend=SSL; ${qpid.charting.brokerVersionA}
+series.2.legend=Plain; ${qpid.charting.brokerVersionB}
 
-series.3.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_autoack_plain' AND providerVersion LIKE '%${qpid.charting.brokerVersionB}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
-series.3.colourName=red
-series.3.strokeWidth=-1
+series.3.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_autoack_plain' AND providerVersion LIKE '%${qpid.charting.brokerVersionC}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
+series.3.colourName=green
 series.3.shape=cross
-series.3.legend=Plain; ${qpid.charting.brokerVersionB}
-
-series.4.statement=SELECT insertedTimestamp, throughputMessagesPerS FROM RESULTS WHERE participantName = 'All' AND testName = 'transient_autoack_ssl' AND providerVersion LIKE '%${qpid.charting.brokerVersionB}%' AND protocolVersion = '${qpid.charting.protocolVersion}'
-series.4.colourName=blue
-series.4.strokeWidth=-1
-series.4.shape=cross
-series.4.legend=SSL; ${qpid.charting.brokerVersionB}
+series.3.legend=Plain; ${qpid.charting.brokerVersionC}
