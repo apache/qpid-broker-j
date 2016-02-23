@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.Subject;
@@ -106,6 +107,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private volatile Thread _ioThread;
 
     private volatile boolean _messageAuthorizationRequired;
+
+    private final AtomicLong _maxMessageSize = new AtomicLong(Long.MAX_VALUE);
+
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -299,6 +303,41 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _clientProduct;
     }
 
+    protected void updateMaxMessageSize()
+    {
+        long maxMessageSize;
+        try
+        {
+            maxMessageSize = getPort().getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
+        }
+        catch (NullPointerException | IllegalArgumentException e)
+        {
+            _logger.warn("Context variable {} has invalid value and cannot be used to restrict maximum message size",
+                         AmqpPort.PORT_MAX_MESSAGE_SIZE,
+                         e);
+            maxMessageSize = Long.MAX_VALUE;
+        }
+        try
+        {
+            maxMessageSize = Math.min(maxMessageSize,
+                                      (long) getVirtualHost().getContextValue(Integer.class, VirtualHost.MAX_MESSAGE_SIZE));
+        }
+        catch (NullPointerException | IllegalArgumentException e)
+        {
+
+            _logger.warn("Context variable {} has invalid value and cannot be used to restrict maximum message size",
+                         VirtualHost.MAX_MESSAGE_SIZE,
+                         e);
+        }
+
+        _maxMessageSize.set(maxMessageSize > 0 ? maxMessageSize : Long.MAX_VALUE);
+    }
+
+    public long getMaxMessageSize()
+    {
+        return _maxMessageSize.get();
+    }
+
     public void addDeleteTask(final Action<? super C> task)
     {
         _connectionCloseTaskList.add(task);
@@ -487,6 +526,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     final public void virtualHostAssociated()
     {
         getVirtualHost().registerConnection(this);
+        updateMaxMessageSize();
         _messageAuthorizationRequired = getVirtualHost().getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH);
     }
 

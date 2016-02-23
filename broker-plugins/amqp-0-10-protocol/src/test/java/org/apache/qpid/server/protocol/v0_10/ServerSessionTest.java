@@ -78,7 +78,7 @@ public class ServerSessionTest extends QpidTestCase
         final Broker<?> broker = mock(Broker.class);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
-        AmqpPort amqpPort = createMockPort(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
+        AmqpPort amqpPort = createMockPort();
 
         ServerConnection connection = new ServerConnection(1, broker, amqpPort, Transport.TCP);
         final AMQPConnection_0_10 protocolEngine = mock(AMQPConnection_0_10.class);
@@ -105,13 +105,13 @@ public class ServerSessionTest extends QpidTestCase
         final Broker<?> broker = mock(Broker.class);
         when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
 
-        AmqpPort port = createMockPort(1024);
+        AmqpPort port = createMockPort();
 
         ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP);
         final AMQPConnection_0_10 protocolEngine = mock(AMQPConnection_0_10.class);
         Subject subject = new Subject();
         when(protocolEngine.getSubject()).thenReturn(subject);
-
+        when(protocolEngine.getMaxMessageSize()).thenReturn(1024l);
         connection.setAmqpConnection(protocolEngine);
         connection.setVirtualHost(_virtualHost);
         final List<Method> invokedMethods = new ArrayList<>();
@@ -146,10 +146,9 @@ public class ServerSessionTest extends QpidTestCase
         assertTrue("Methods invoked when not expecting any", invokedMethods.isEmpty());
     }
 
-    public AmqpPort createMockPort(int maxMessageSize)
+    public AmqpPort createMockPort()
     {
         AmqpPort port = mock(AmqpPort.class);
-        when(port.getContextValue(eq(Integer.class), eq(AmqpPort.PORT_MAX_MESSAGE_SIZE))).thenReturn(maxMessageSize);
         TaskExecutor childExecutor = new TaskExecutorImpl();
         childExecutor.start();
         when(port.getChildExecutor()).thenReturn(childExecutor);

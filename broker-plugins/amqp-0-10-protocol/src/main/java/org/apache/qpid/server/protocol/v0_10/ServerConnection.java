@@ -82,7 +82,6 @@ public class ServerConnection extends Connection
             new ConcurrentLinkedQueue<>();
 
     private int _messageCompressionThreshold;
-    private final int _maxMessageSize;
 
     private AMQPConnection_0_10 _amqpConnection;
     private boolean _ignoreFutureInput;
@@ -99,8 +98,6 @@ public class ServerConnection extends Connection
         _port = port;
         _transport = transport;
 
-        int maxMessageSize = port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
-        _maxMessageSize = (maxMessageSize > 0) ? maxMessageSize : Integer.MAX_VALUE;
 
     }
 
@@ -520,7 +517,7 @@ public class ServerConnection extends Connection
 
     public int getMaxMessageSize()
     {
-        return _maxMessageSize;
+        return (int)Math.min(_amqpConnection.getMaxMessageSize(), (long)Integer.MAX_VALUE);
     }
 
     public void transportStateChanged()

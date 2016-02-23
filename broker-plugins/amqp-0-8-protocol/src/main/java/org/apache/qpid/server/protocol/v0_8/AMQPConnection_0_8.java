@@ -42,6 +42,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
@@ -170,7 +171,6 @@ public class AMQPConnection_0_8
     private volatile int _currentClassId;
     private volatile int _currentMethodId;
     private final int _binaryDataLimit;
-    private final long _maxMessageSize;
     private volatile boolean _transportBlockedForWriting;
 
     public AMQPConnection_0_8(Broker<?> broker,
@@ -192,9 +192,6 @@ public class AMQPConnection_0_8
         String sendQueueDeleteOkRegardlessRegexp = getBroker().getContextKeys(false).contains(Broker.SEND_QUEUE_DELETE_OK_REGARDLESS_CLIENT_VER_REGEXP)
                 ? getBroker().getContextValue(String.class, Broker.SEND_QUEUE_DELETE_OK_REGARDLESS_CLIENT_VER_REGEXP): "";
         _sendQueueDeleteOkRegardlessClientVerRegexp = Pattern.compile(sendQueueDeleteOkRegardlessRegexp);
-
-        int maxMessageSize = port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
-        _maxMessageSize = (maxMessageSize > 0) ? (long) maxMessageSize : Long.MAX_VALUE;
 
         _network = network;
         _sender = network.getSender();
@@ -729,6 +726,7 @@ public class AMQPConnection_0_8
         {
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
+
         getSubject().getPrincipals().add(virtualHost.getPrincipal());
 
         updateAccessControllerContext();
@@ -1343,11 +1341,6 @@ public class AMQPConnection_0_8
     public int getBinaryDataLimit()
     {
         return _binaryDataLimit;
-    }
-
-    public long getMaxMessageSize()
-    {
-        return _maxMessageSize;
     }
 
     public final class WriteDeliverMethod
