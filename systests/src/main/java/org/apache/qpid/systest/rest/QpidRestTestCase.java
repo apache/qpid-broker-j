@@ -92,7 +92,7 @@ public class QpidRestTestCase extends QpidBrokerTestCase
     public Map<String, Object> waitForAttributeChanged(String url, String attributeName, Object newValue) throws Exception
     {
         List<Map<String, Object>> nodeAttributes = getAttributesIgnoringNotFound(url);
-        int timeout = 5000;
+        int timeout = 30000;
         long limit = System.currentTimeMillis() + timeout;
         while(System.currentTimeMillis() < limit && (nodeAttributes.size() == 0 || !newValue.equals(nodeAttributes.get(0).get(attributeName))))
         {
