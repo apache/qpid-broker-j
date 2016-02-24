@@ -54,11 +54,11 @@ import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2Utils;
 public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAuthenticator
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(OAuth2InteractiveAuthenticator.class);
-    private static final int STATE_NONCE_BIT_SIZE = 256;
-    private static final String STATE_NAME = "stateNonce";
     private static final String TYPE = "OAuth2";
-    private static final String ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE = "originalRequestURI";
-    private static final String REDIRECT_URI_SESSION_ATTRIBUTE = "redirectURI";
+    private static final int STATE_NONCE_BIT_SIZE = 256;
+    static final String STATE_NAME = "stateNonce";
+    static final String REDIRECT_URI_SESSION_ATTRIBUTE = "redirectURI";
+    static final String ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE = "originalRequestURI";
 
     /** Authentication Endpoint error responses https://tools.ietf.org/html/rfc6749#section-4.2.2.1 */
     private static final Map<String, Integer> ERROR_RESPONSES;
