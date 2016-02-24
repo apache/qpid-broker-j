@@ -73,6 +73,48 @@ public class SSLUtilTest extends QpidTestCase
                 result), Arrays.equals(expected, result));
     }
 
+    public void testFilterEntries_respectOrder()
+    {
+        List<String> whiteList = Arrays.asList("b", "c", "a");
+        List<String> blackList = Collections.emptyList();
+        String[] enabled = {"x"};
+        String[] expected = {"b", "c", "a"};
+        String[] supported = {"x", "c", "a", "xx", "b", "xxx"};
+        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
+                result), Arrays.equals(expected, result));
+        // change order to make sure order was not correct by coincidence
+        whiteList = Arrays.asList("c", "b", "a");
+        expected = new String[]{"c", "b", "a"};
+        result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
+                result), Arrays.equals(expected, result));
+    }
+
+    public void testFilterEntries_blackListAppliesToWhiteList()
+    {
+        List<String> whiteList = Arrays.asList("a", "b");
+        List<String> blackList = Arrays.asList("a");
+        String[] enabled = {"a", "b", "c"};
+        String[] expected = {"b"};
+        String[] supported = {"a", "b", "c", "x"};
+        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
+                result), Arrays.equals(expected, result));
+    }
+
+    public void testFilterEntries_whiteListIgnoresEnabled()
+    {
+        List<String> whiteList = Arrays.asList("b");
+        List<String> blackList = Collections.emptyList();
+        String[] enabled = {"a"};
+        String[] expected = {"b"};
+        String[] supported = {"a", "b", "x"};
+        String[] result = SSLUtil.filterEntries(enabled, supported, whiteList, blackList);
+        assertTrue("unexpected filtered list: expected " + Arrays.toString(expected) + " actual " + Arrays.toString(
+                result), Arrays.equals(expected, result));
+    }
+
     public void testGetIdFromSubjectDN()
     {
         // "normal" dn
