@@ -596,8 +596,12 @@ class SelectorThread extends Thread
                          "Connection is probably being closed by peer.", connection, e);
 
         }
-        catch (ClosedSelectorException e)
+        catch (ClosedSelectorException | CancelledKeyException e)
         {
+            // TODO Port should really not proceed with closing the selector until all of the
+            // Connection objects are closed. Connection objects should not be closed until they
+            // have closed the underlying socket and removed themselves from the selector. Once
+            // this is done, this catch/swallow can be removed.
             LOGGER.debug("Failed to unregister with selector for connection {}. " +
                          "Port has probably already been closed.", connection, e);
         }
