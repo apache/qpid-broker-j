@@ -451,6 +451,12 @@ class WebSocketProvider implements AcceptingTransport
             return _connection.getProtocol();
         }
 
+        @Override
+        public long getScheduledTime()
+        {
+            return 0;
+        }
+
         void setPeerCertificate(final Certificate certificate)
         {
             _certificate = certificate;

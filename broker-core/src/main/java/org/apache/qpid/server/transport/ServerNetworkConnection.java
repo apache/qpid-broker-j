@@ -26,4 +26,6 @@ public interface ServerNetworkConnection extends NetworkConnection
     void reserveOutboundMessageSpace(long size);
 
     String getTransportInfo();
+
+    long getScheduledTime();
 }

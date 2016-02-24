@@ -529,6 +529,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     @Override
     protected void tearDown() throws java.lang.Exception
     {
+        _logger.debug("tearDown started");
         try
         {
             for (Connection c : _connections)

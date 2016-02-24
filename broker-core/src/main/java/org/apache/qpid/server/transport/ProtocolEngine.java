@@ -75,4 +75,6 @@ public interface ProtocolEngine extends TransportActivity
     void received(QpidByteBuffer msg);
 
     void setIOThread(Thread ioThread);
+
+    void processingStarted(long currentTime);
 }

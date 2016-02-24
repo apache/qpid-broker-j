@@ -148,6 +148,12 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         _delegate.setIOThread(ioThread);
     }
 
+    @Override
+    public void processingStarted(final long currentTime)
+    {
+        _delegate.processingStarted(currentTime);
+    }
+
     public long getConnectionId()
     {
         return _id;
@@ -289,6 +295,12 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
         @Override
         public void setIOThread(final Thread ioThread)
+        {
+
+        }
+
+        @Override
+        public void processingStarted(final long currentTime)
         {
 
         }
@@ -539,6 +551,11 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
 
         }
 
+        @Override
+        public void processingStarted(final long currentTime)
+        {
+
+        }
 
         @Override
         public Subject getSubject()

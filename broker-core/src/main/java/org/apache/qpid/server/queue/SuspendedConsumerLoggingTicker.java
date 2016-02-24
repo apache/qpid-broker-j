@@ -24,8 +24,8 @@ import org.apache.qpid.transport.network.Ticker;
 
 abstract public class SuspendedConsumerLoggingTicker implements Ticker
 {
-    private long _nextTick;
-    private long _startTime;
+    private volatile long _nextTick;
+    private volatile long _startTime;
     private final long _repeatPeriod;
 
     public SuspendedConsumerLoggingTicker(final long repeatPeriod)
