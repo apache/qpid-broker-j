@@ -144,6 +144,15 @@ public class ChartProductionTest extends QpidTestCase
         assertChartTitlesAndWriteToFile(builder);
     }
 
+    public void testXYLineChartWithYAxisBounds() throws Exception
+    {
+        when(_chartingDefinition.getYAxisLowerBound()).thenReturn(-10);
+        when(_chartingDefinition.getYAxisUpperBound()).thenReturn(20);
+
+        ChartBuilder builder = ChartBuilderFactory.createChartBuilder(ChartType.XYLINE, new SampleSeriesBuilder());
+        assertChartTitlesAndWriteToFile(builder);
+    }
+
     public void testTimeSeriesLineChart() throws Exception
     {
         when(_seriesDefinition.getShape()).thenReturn("cross");

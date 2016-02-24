@@ -43,6 +43,8 @@ public class ChartingDefinitionCreator
     public static final String CHART_DESCRIPTION_KEY = "chartDescription";
     public static final String XAXIS_TITLE_KEY = "xAxisTitle";
     public static final String YAXIS_TITLE_KEY = "yAxisTitle";
+    public static final String Y_AXIS_LOWER_BOUND_KEY = "yAxisLowerBound";
+    public static final String Y_AXIS_UPPER_BOUND_KEY = "yAxisUpperBound";
 
     private SeriesDefinitionCreator _seriesDefinitionCreator = new SeriesDefinitionCreator();
 
@@ -87,6 +89,10 @@ public class ChartingDefinitionCreator
             final String chartDescription = Strings.expand(props.getProperty(CHART_DESCRIPTION_KEY), false, Strings.SYSTEM_RESOLVER);
             final String xAxisTitle = Strings.expand(props.getProperty(XAXIS_TITLE_KEY), false, Strings.SYSTEM_RESOLVER);
             final String yAxisTitle = Strings.expand(props.getProperty(YAXIS_TITLE_KEY), false, Strings.SYSTEM_RESOLVER);
+            String yAxisLowerBoundStr = Strings.expand(props.getProperty(Y_AXIS_LOWER_BOUND_KEY), false, Strings.SYSTEM_RESOLVER);
+            String yAxisUpperBoundStr = Strings.expand(props.getProperty(Y_AXIS_UPPER_BOUND_KEY), false, Strings.SYSTEM_RESOLVER);
+            final Integer yAxisLowerBound =  yAxisLowerBoundStr == null ? null : Integer.valueOf(yAxisLowerBoundStr);
+            final Integer yAxisUpperBound = yAxisUpperBoundStr == null ? null : Integer.valueOf(yAxisUpperBoundStr);
 
             final List<SeriesDefinition> seriesDefinitions = createSeriesDefinitions(props);
 
@@ -95,7 +101,9 @@ public class ChartingDefinitionCreator
                                                                               chartTitle,
                                                                               chartSubtitle,
                                                                               chartDescription,
-                                                                              xAxisTitle, yAxisTitle, seriesDefinitions);
+                                                                              xAxisTitle, yAxisTitle,
+                                                                              yAxisLowerBound, yAxisUpperBound,
+                                                                              seriesDefinitions);
             return chartDefinition;
         }
         catch (IOException e)

@@ -33,15 +33,18 @@ public class ChartingDefinition
     private final String _chartDescription;
     private final String _xaxisTitle;
     private final String _yaxisTitle;
+    private final Integer _yAxisLowerBound;
+    private final Integer _yAxisUpperBound;
     private final List<SeriesDefinition> _seriesDefinitions;
-
 
     public ChartingDefinition(final String chartStemName,
                               final ChartType chartType,
                               final String chartTitle,
                               final String chartSubtitle,
                               final String chartDescription,
-                              final String xaxisTitle, final String yaxisTitle, List<SeriesDefinition> seriesDefinitions)
+                              final String xaxisTitle, final String yaxisTitle,
+                              Integer yAxisLowerBound, Integer yAxisUpperBound,
+                              List<SeriesDefinition> seriesDefinitions)
     {
         _chartStemName = chartStemName;
         _chartType = chartType;
@@ -50,6 +53,8 @@ public class ChartingDefinition
         _chartDescription = chartDescription;
         _xaxisTitle = xaxisTitle;
         _yaxisTitle = yaxisTitle;
+        _yAxisLowerBound = yAxisLowerBound;
+        _yAxisUpperBound = yAxisUpperBound;
         _seriesDefinitions = seriesDefinitions;
     }
 
@@ -87,6 +92,16 @@ public class ChartingDefinition
     public ChartType getChartType()
     {
         return _chartType;
+    }
+
+    public Integer getYAxisLowerBound()
+    {
+        return _yAxisLowerBound;
+    }
+
+    public Integer getYAxisUpperBound()
+    {
+        return _yAxisUpperBound;
     }
 
     public List<SeriesDefinition> getSeriesDefinitions()

@@ -27,7 +27,9 @@ import org.apache.qpid.disttest.charting.seriesbuilder.DatasetHolder;
 import org.apache.qpid.disttest.charting.seriesbuilder.SeriesBuilder;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.title.ShortTextTitle;
 import org.jfree.data.general.Dataset;
 
@@ -89,6 +91,7 @@ public abstract class BaseChartBuilder implements ChartBuilder
                 dataset,
                 PLOT_ORIENTATION, SHOW_LEGEND, SHOW_TOOL_TIPS, SHOW_URLS);
 
+        configureYAxisBounds(chartingDefinition, chart);
         addSubtitle(chart, chartingDefinition);
         chart.setBackgroundPaint(BLUE_GRADIENT);
         _seriesPainter.applySeriesAppearance(chart, chartingDefinition.getSeriesDefinitions(), newStrokeAndPaintApplier());
@@ -101,6 +104,22 @@ public abstract class BaseChartBuilder implements ChartBuilder
         if (chartingDefinition.getChartSubtitle() != null)
         {
             chart.addSubtitle(new ShortTextTitle(chartingDefinition.getChartSubtitle()));
+        }
+    }
+
+    private void configureYAxisBounds(final ChartingDefinition chartingDefinition, final JFreeChart chart)
+    {
+        if (chart.getPlot() != null && chart.getPlot() instanceof XYPlot)
+        {
+            ValueAxis rangeAxis = chart.getXYPlot().getRangeAxis();
+            if (chartingDefinition.getYAxisLowerBound() != null)
+            {
+                rangeAxis.setLowerBound(chartingDefinition.getYAxisLowerBound());
+            }
+            if (chartingDefinition.getYAxisUpperBound() != null)
+            {
+                rangeAxis.setUpperBound(chartingDefinition.getYAxisUpperBound());
+            }
         }
     }
 
