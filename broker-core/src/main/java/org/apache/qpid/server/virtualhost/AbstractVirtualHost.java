@@ -38,8 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -53,7 +51,6 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,6 +96,7 @@ import org.apache.qpid.server.txn.LocalTransaction;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.MapValueConverter;
 
 public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> extends AbstractConfiguredObject<X>
@@ -1838,58 +1836,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     private ListenableFuture<Void> onActivate()
     {
-        final SuppressingInheritedAccessControlContextThreadFactory housekeepingThreadFactory =
-                new SuppressingInheritedAccessControlContextThreadFactory("virtualhost-" + getName() + "-pool",
-                                                                          SecurityManager.getSystemTaskSubject("Housekeeping", getPrincipal()));
-        _houseKeepingTaskExecutor = new ScheduledThreadPoolExecutor(getHousekeepingThreadCount(), housekeepingThreadFactory){
-            @Override
-            protected void afterExecute(Runnable r, Throwable t)
-            {
-                super.afterExecute(r, t);
-                if (t == null && r instanceof Future<?>)
-                {
-                    Future future = (Future<?>) r;
-                    try
-                    {
-                        if (future.isDone())
-                        {
-                            Object result = future.get();
-                        }
-                    }
-                    catch (CancellationException ce)
-                    {
-                        _logger.debug("Housekeeping task got cancelled");
-                        // Ignore cancellation of task
-                    }
-                    catch (ExecutionException | UncheckedExecutionException ee)
-                    {
-                        t = ee.getCause();
-                    }
-                    catch (InterruptedException ie)
-                    {
-                        Thread.currentThread().interrupt(); // ignore/reset
-                    }
-                    catch (Throwable t1)
-                    {
-                        t = t1;
-                    }
-                }
-                if (t != null)
-                {
-                    _logger.error("Houskeeping task threw an exception:", t);
 
-                    final Thread.UncaughtExceptionHandler uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
-                    if (uncaughtExceptionHandler != null)
-                    {
-                        uncaughtExceptionHandler.uncaughtException(Thread.currentThread(), t);
-                    }
-                    else
-                    {
-                        Runtime.getRuntime().halt(1);
-                    }
-                }
-            }
-        };
+        _houseKeepingTaskExecutor = new HousekeepingExecutor("virtualhost-" + getName() + "-pool",
+                                                             getHousekeepingThreadCount(),
+                                                             getPrincipal());
 
         long threadPoolKeepAliveTimeout = getContextValue(Long.class, CONNECTION_THREAD_POOL_KEEP_ALIVE_TIMEOUT);
 

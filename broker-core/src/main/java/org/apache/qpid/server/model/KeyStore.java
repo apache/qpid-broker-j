@@ -26,5 +26,16 @@ import javax.net.ssl.KeyManager;
 @ManagedObject( defaultType = "FileKeyStore" )
 public interface KeyStore<X extends KeyStore<X>> extends ConfiguredObject<X>
 {
-    public KeyManager[] getKeyManagers() throws GeneralSecurityException;
+    String CERTIFICATE_EXPIRY_WARN_PERIOD = "qpid.keystore.certificateExpiryWarnPeriod";
+
+    @ManagedContextDefault(name = CERTIFICATE_EXPIRY_WARN_PERIOD)
+    int DEFAULT_CERTIFICATE_EXPIRY_WARN_PERIOD = 30;
+
+    String CERTIFICATE_EXPIRY_CHECK_FREQUENCY = "qpid.keystore.certificateExpiryCheckFrequency";
+
+    @ManagedContextDefault(name = CERTIFICATE_EXPIRY_CHECK_FREQUENCY)
+    int DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY = 1;
+
+
+    KeyManager[] getKeyManagers() throws GeneralSecurityException;
 }

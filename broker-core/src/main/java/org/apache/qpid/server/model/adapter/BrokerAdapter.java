@@ -44,6 +44,8 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,9 +54,11 @@ import javax.security.auth.Subject;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.server.BrokerPrincipal;
 import org.apache.qpid.server.logging.QpidLoggerTurboFilter;
 import org.apache.qpid.server.logging.StartupAppender;
 import org.apache.qpid.server.security.access.Operation;
+import org.apache.qpid.server.util.HousekeepingExecutor;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,8 +89,10 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
     private static final Pattern MODEL_VERSION_PATTERN = Pattern.compile("^\\d+\\.\\d+$");
 
+    private static final int HOUSEKEEPING_SHUTDOWN_TIMEOUT = 5;
 
     public static final String MANAGEMENT_MODE_AUTHENTICATION = "MANAGEMENT_MODE_AUTHENTICATION";
+    private final BrokerPrincipal _principal;
 
     private String[] POSITIVE_NUMERIC_ATTRIBUTES = { CONNECTION_SESSION_COUNT_LIMIT,
             CONNECTION_HEART_BEAT_DELAY, STATISTICS_REPORTING_PERIOD };
@@ -118,6 +124,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private boolean _statisticsReportingResetEnabled;
     @ManagedAttributeField
     private boolean _messageCompressionEnabled;
+    @ManagedAttributeField
+    private int _housekeepingThreadCount;
 
     @ManagedAttributeField(afterSet = "postEncrypterProviderSet")
     private String _confidentialConfigurationEncryptionProvider;
@@ -129,6 +137,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     private final long _maximumDirectMemorySize = getMaxDirectMemorySize();
     private final BufferPoolMXBean _bufferPoolMXBean;
     private final List<String> _jvmArguments;
+    private HousekeepingExecutor _houseKeepingTaskExecutor;
 
     @ManagedObjectFactoryConstructor
     public BrokerAdapter(Map<String, Object> attributes,
@@ -138,6 +147,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         _parent = parent;
         _eventLogger = parent.getEventLogger();
         _securityManager = new SecurityManager(this, parent.isManagementMode());
+        _principal = new BrokerPrincipal(this);
+
         if (parent.isManagementMode())
         {
             Map<String,Object> authManagerAttrs = new HashMap<String, Object>();
@@ -366,6 +377,11 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         initialiseStatisticsReporting();
 
+        _houseKeepingTaskExecutor = new HousekeepingExecutor("virtualhost-" + getName() + "-pool",
+                                                             getHousekeepingThreadCount(),
+                                                             _principal);
+
+
         if (isManagementMode())
         {
             _eventLogger.message(BrokerMessages.MANAGEMENT_MODE(BrokerOptions.MANAGEMENT_MODE_USER_NAME,
@@ -467,6 +483,12 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
     public String getConfidentialConfigurationEncryptionProvider()
     {
         return _confidentialConfigurationEncryptionProvider;
+    }
+
+    @Override
+    public int getHousekeepingThreadCount()
+    {
+        return _housekeepingThreadCount;
     }
 
     @Override
@@ -665,6 +687,8 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         {
             _reportingTimer.cancel();
         }
+
+        shutdownHouseKeeping();
 
         _eventLogger.message(BrokerMessages.STOPPED());
 
@@ -1194,6 +1218,39 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
         }
         dump.append(lineSeparator);
         return dump.toString();
+    }
+
+    protected void shutdownHouseKeeping()
+    {
+        if(_houseKeepingTaskExecutor != null)
+        {
+            _houseKeepingTaskExecutor.shutdown();
+
+            try
+            {
+                if (!_houseKeepingTaskExecutor.awaitTermination(HOUSEKEEPING_SHUTDOWN_TIMEOUT, TimeUnit.SECONDS))
+                {
+                    _houseKeepingTaskExecutor.shutdownNow();
+                }
+            }
+            catch (InterruptedException e)
+            {
+                LOGGER.warn("Interrupted during Housekeeping shutdown:", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleHouseKeepingTask(long period, final TimeUnit unit, Runnable task)
+    {
+        return _houseKeepingTaskExecutor.scheduleAtFixedRate(task, period / 2, period, unit);
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleTask(long delay, final TimeUnit unit, Runnable task)
+    {
+        return _houseKeepingTaskExecutor.schedule(task, delay, unit);
     }
 
     public static class ThreadStackContent implements Content, CustomRestHeaders

@@ -21,8 +21,16 @@ package org.apache.qpid.server.security;
 
 
 import static org.apache.qpid.test.utils.TestSSLConstants.KEYSTORE_PASSWORD;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import javax.net.ssl.KeyManager;
 import javax.xml.bind.DatatypeConverter;
@@ -32,16 +40,28 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.security.Key;
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
+import org.apache.qpid.server.logging.LogMessage;
+import org.apache.qpid.server.logging.MessageLogger;
+import org.apache.qpid.server.logging.messages.KeyStoreMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.ConfiguredObjectFactory;
@@ -58,17 +78,18 @@ public class NonJavaKeyStoreTest extends QpidTestCase
     private final Model _model = BrokerModel.getInstance();
     private final ConfiguredObjectFactory _factory = _model.getObjectFactory();
     private List<File> _testResources;
+    private MessageLogger _messageLogger;
 
     @Override
     public void setUp() throws Exception
     {
         super.setUp();
-
+        _messageLogger = mock(MessageLogger.class);
         when(_broker.getTaskExecutor()).thenReturn(_taskExecutor);
         when(_broker.getChildExecutor()).thenReturn(_taskExecutor);
         when(_broker.getModel()).thenReturn(_model);
         when(_broker.getSecurityManager()).thenReturn(_securityManager);
-        when(_broker.getEventLogger()).thenReturn(new EventLogger());
+        when(_broker.getEventLogger()).thenReturn(new EventLogger(_messageLogger));
         _testResources = new ArrayList<>();
     }
 
@@ -235,6 +256,57 @@ public class NonJavaKeyStoreTest extends QpidTestCase
         catch(IllegalConfigurationException e)
         {
             // pass
+        }
+    }
+
+    public void testExpiryCheckingFindsExpired() throws Exception
+    {
+        doCertExpiryChecking(1);
+
+        verify(_messageLogger, times(1)).message(argThat(new LogMessageArgumentMatcher()));
+
+    }
+
+    public void testExpiryCheckingIgnoresValid() throws Exception
+    {
+        doCertExpiryChecking(-1);
+
+        verify(_messageLogger, never()).message(argThat(new LogMessageArgumentMatcher()));
+
+    }
+
+    private void doCertExpiryChecking(final int expiryOffset) throws Exception
+    {
+        when(_broker.scheduleHouseKeepingTask(anyLong(), any(TimeUnit.class), any(Runnable.class))).thenReturn(mock(ScheduledFuture.class));
+
+        java.security.KeyStore ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
+        try(InputStream is = getClass().getResourceAsStream("/java_broker_keystore.jks"))
+        {
+            ks.load(is, KEYSTORE_PASSWORD.toCharArray() );
+        }
+        X509Certificate cert = (X509Certificate) ks.getCertificate("rootca");
+        int expiryDays = (int)((cert.getNotAfter().getTime() - System.currentTimeMillis()) / (24l * 60l * 60l * 1000l));
+
+        File[] resources = extractResourcesFromTestKeyStore(false);
+        _testResources.addAll(Arrays.asList(resources));
+
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(NonJavaKeyStore.NAME, "myTestTrustStore");
+        attributes.put("privateKeyUrl", resources[0].toURI().toURL().toExternalForm());
+        attributes.put("certificateUrl", resources[1].toURI().toURL().toExternalForm());
+        attributes.put("context", Collections.singletonMap(KeyStore.CERTIFICATE_EXPIRY_WARN_PERIOD, expiryDays + expiryOffset));
+        attributes.put(NonJavaKeyStore.TYPE, "NonJavaKeyStore");
+        _factory.create(KeyStore.class, attributes, _broker);
+    }
+
+
+    private static class LogMessageArgumentMatcher extends ArgumentMatcher<LogMessage>
+    {
+        @Override
+        public boolean matches(final Object argument)
+        {
+            LogMessage arg = (LogMessage)argument;
+            return arg.getLogHierarchy().equals(KeyStoreMessages.EXPIRING_LOG_HIERARCHY);
         }
     }
 }

@@ -46,6 +46,7 @@ public class KeyStoreMessages
 
     public static final String KEYSTORE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore";
     public static final String OPEN_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.open";
+    public static final String EXPIRING_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.expiring";
     public static final String CREATE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.create";
     public static final String DELETE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.delete";
     public static final String CLOSE_LOG_HIERARCHY = DEFAULT_LOG_HIERARCHY_PREFIX + "keystore.close";
@@ -54,6 +55,7 @@ public class KeyStoreMessages
     {
         LoggerFactory.getLogger(KEYSTORE_LOG_HIERARCHY);
         LoggerFactory.getLogger(OPEN_LOG_HIERARCHY);
+        LoggerFactory.getLogger(EXPIRING_LOG_HIERARCHY);
         LoggerFactory.getLogger(CREATE_LOG_HIERARCHY);
         LoggerFactory.getLogger(DELETE_LOG_HIERARCHY);
         LoggerFactory.getLogger(CLOSE_LOG_HIERARCHY);
@@ -84,6 +86,64 @@ public class KeyStoreMessages
             public String getLogHierarchy()
             {
                 return OPEN_LOG_HIERARCHY;
+            }
+
+            @Override
+            public boolean equals(final Object o)
+            {
+                if (this == o)
+                {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass())
+                {
+                    return false;
+                }
+
+                final LogMessage that = (LogMessage) o;
+
+                return getLogHierarchy().equals(that.getLogHierarchy()) && toString().equals(that.toString());
+
+            }
+
+            @Override
+            public int hashCode()
+            {
+                int result = toString().hashCode();
+                result = 31 * result + getLogHierarchy().hashCode();
+                return result;
+            }
+        };
+    }
+
+    /**
+     * Log a KeyStore message of the Format:
+     * <pre>KST-1005 : KeyStore {0} Certificate expires in {1} days : {2}</pre>
+     * Optional values are contained in [square brackets] and are numbered
+     * sequentially in the method call.
+     *
+     */
+    public static LogMessage EXPIRING(String param1, String param2, String param3)
+    {
+        String rawMessage = _messages.getString("EXPIRING");
+
+        final Object[] messageArguments = {param1, param2, param3};
+        // Create a new MessageFormat to ensure thread safety.
+        // Sharing a MessageFormat and using applyPattern is not thread safe
+        MessageFormat formatter = new MessageFormat(rawMessage, _currentLocale);
+
+        final String message = formatter.format(messageArguments);
+
+        return new LogMessage()
+        {
+            public String toString()
+            {
+                return message;
+            }
+
+            public String getLogHierarchy()
+            {
+                return EXPIRING_LOG_HIERARCHY;
             }
 
             @Override

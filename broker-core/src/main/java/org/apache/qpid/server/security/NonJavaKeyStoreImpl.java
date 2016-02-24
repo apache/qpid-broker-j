@@ -29,13 +29,18 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
@@ -68,6 +73,7 @@ import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStoreImpl> implements NonJavaKeyStore<NonJavaKeyStoreImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonJavaKeyStoreImpl.class);
+    private static final long ONE_DAY = 24l * 60l * 60l * 1000l;
 
     private final Broker<?> _broker;
     private final EventLogger _eventLogger;
@@ -90,6 +96,9 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
 
     private X509Certificate _certificate;
 
+    private ScheduledFuture<?> _checkExpiryTaskFuture;
+    private int _checkFrequency;
+
     @ManagedObjectFactoryConstructor
     public NonJavaKeyStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
@@ -97,6 +106,43 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         _broker = broker;
         _eventLogger = _broker.getEventLogger();
         _eventLogger.message(KeyStoreMessages.CREATE(getName()));
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        int checkFrequency;
+        try
+        {
+            checkFrequency = getContextValue(Integer.class, CERTIFICATE_EXPIRY_CHECK_FREQUENCY);
+        }
+        catch(IllegalArgumentException | NullPointerException e)
+        {
+            LOGGER.warn("Cannot parse the context variable {} ", CERTIFICATE_EXPIRY_CHECK_FREQUENCY, e);
+            checkFrequency = DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY;
+        }
+
+        _checkExpiryTaskFuture =
+                _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        checkCertificateExpiry();
+                    }
+                });
+    }
+
+    @Override
+    protected void onClose()
+    {
+        super.onClose();
+        if(_checkExpiryTaskFuture != null)
+        {
+            _checkExpiryTaskFuture.cancel(false);
+            _checkExpiryTaskFuture = null;
+        }
     }
 
     @Override
@@ -250,7 +296,7 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
                     allCerts.addAll(Arrays.asList(SSLUtil.readCertificates(getUrlFromString(_intermediateCertificateUrl))));
                     certs = allCerts.toArray(new X509Certificate[allCerts.size()]);
                 }
-
+                checkCertificateExpiry(certs);
                 java.security.KeyStore inMemoryKeyStore = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType());
 
                 byte[] bytes = new byte[64];
@@ -271,6 +317,63 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         catch (IOException | GeneralSecurityException e)
         {
             throw new IllegalConfigurationException("Cannot load private key or certificate(s): " + e, e);
+        }
+    }
+
+    private void checkCertificateExpiry()
+    {
+        try
+        {
+            if (_privateKeyUrl != null && _certificateUrl != null)
+            {
+                X509Certificate[] certs = SSLUtil.readCertificates(getUrlFromString(_certificateUrl));
+                if (_intermediateCertificateUrl != null)
+                {
+                    List<X509Certificate> allCerts = new ArrayList<>(Arrays.asList(certs));
+                    allCerts.addAll(Arrays.asList(SSLUtil.readCertificates(getUrlFromString(_intermediateCertificateUrl))));
+                    certs = allCerts.toArray(new X509Certificate[allCerts.size()]);
+                }
+                checkCertificateExpiry(certs);
+            }
+        }
+        catch (GeneralSecurityException | IOException e)
+        {
+            LOGGER.info("Unexpected exception while trying to check certificate validity", e);
+        }
+    }
+
+    private void checkCertificateExpiry(final X509Certificate... certificates)
+    {
+        int expiryWarning = getContextValue(Integer.class, CERTIFICATE_EXPIRY_WARN_PERIOD);
+        if(expiryWarning > 0)
+        {
+            long currentTime = System.currentTimeMillis();
+            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
+
+
+            if (certificates != null)
+            {
+                for (X509Certificate cert : certificates)
+                {
+                    try
+                    {
+                        cert.checkValidity(expiryTestDate);
+                    }
+                    catch (CertificateExpiredException e)
+                    {
+                        long timeToExpiry = cert.getNotAfter().getTime() - currentTime;
+                        int days = Math.max(0, (int) (timeToExpiry / (ONE_DAY)));
+
+                        _eventLogger.message(KeyStoreMessages.EXPIRING(getName(),
+                                                                       String.valueOf(days),
+                                                                       cert.getSubjectDN().toString()));
+                    }
+                    catch (CertificateNotYetValidException e)
+                    {
+                        // ignore
+                    }
+                }
+            }
         }
     }
 

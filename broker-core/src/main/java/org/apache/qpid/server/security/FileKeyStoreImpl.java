@@ -29,16 +29,26 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.X509KeyManager;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.logging.EventLogger;
@@ -62,6 +72,9 @@ import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 @ManagedObject( category = false )
 public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl> implements FileKeyStore<FileKeyStoreImpl>
 {
+    private static Logger LOGGER = LoggerFactory.getLogger(FileKeyStoreImpl.class);
+
+    private static final long ONE_DAY = 24l * 60l * 60l * 1000l;
     private final Broker<?> _broker;
     private final EventLogger _eventLogger;
 
@@ -85,6 +98,8 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
         Handler.register();
     }
 
+    private ScheduledFuture<?> _checkExpiryTaskFuture;
+
     @ManagedObjectFactoryConstructor
     public FileKeyStoreImpl(Map<String, Object> attributes, Broker<?> broker)
     {
@@ -93,6 +108,41 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
         _broker = broker;
         _eventLogger = _broker.getEventLogger();
         _eventLogger.message(KeyStoreMessages.CREATE(getName()));
+    }
+
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        int checkFrequency;
+        try
+        {
+            checkFrequency = getContextValue(Integer.class, CERTIFICATE_EXPIRY_CHECK_FREQUENCY);
+        }
+        catch(IllegalArgumentException | NullPointerException e)
+        {
+            LOGGER.warn("Cannot parse the context variable {} ", CERTIFICATE_EXPIRY_CHECK_FREQUENCY, e);
+            checkFrequency = DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY;
+        }
+        _checkExpiryTaskFuture = _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        checkCertificateExpiry();
+                                    }
+                                });
+    }
+
+    @Override
+    protected void onClose()
+    {
+        super.onClose();
+        if(_checkExpiryTaskFuture != null)
+        {
+            _checkExpiryTaskFuture.cancel(false);
+            _checkExpiryTaskFuture = null;
+        }
     }
 
     @Override
@@ -143,6 +193,7 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
             throw new IllegalConfigurationException("Changing the key store name is not allowed");
         }
         validateKeyStoreAttributes(changedStore);
+        checkCertificateExpiry();
     }
 
     private void validateKeyStoreAttributes(FileKeyStore<?> fileKeyStore)
@@ -155,7 +206,6 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
             String keyStoreType = fileKeyStore.getKeyStoreType();
             keyStore = SSLUtil.getInitializedKeyStore(url, password, keyStoreType);
         }
-
         catch (Exception e)
         {
             final String message;
@@ -306,6 +356,76 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
         else
         {
             _path = null;
+        }
+    }
+
+    private void checkCertificateExpiry()
+    {
+        try
+        {
+
+            int expiryWarning = getContextValue(Integer.class, CERTIFICATE_EXPIRY_WARN_PERIOD);
+            if(expiryWarning > 0)
+            {
+                long currentTime = System.currentTimeMillis();
+                Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long)expiryWarning));
+
+                try
+                {
+                    URL url = getUrlFromString(_storeUrl);
+                    final java.security.KeyStore ks = SSLUtil.getInitializedKeyStore(url, getPassword(), _keyStoreType);
+
+                    char[] keyStoreCharPassword = getPassword() == null ? null : getPassword().toCharArray();
+
+                    final KeyManagerFactory kmf = KeyManagerFactory.getInstance(_keyManagerFactoryAlgorithm);
+
+                    kmf.init(ks, keyStoreCharPassword);
+
+
+                    for (KeyManager km : kmf.getKeyManagers())
+                    {
+                        if (km instanceof X509KeyManager)
+                        {
+                            X509KeyManager x509KeyManager = (X509KeyManager) km;
+
+                            for(String alias : Collections.list(ks.aliases()))
+                            {
+                                final X509Certificate[] chain =
+                                        x509KeyManager.getCertificateChain(alias);
+                                if(chain != null)
+                                {
+                                    for(X509Certificate cert : chain)
+                                    {
+                                        try
+                                        {
+                                            cert.checkValidity(expiryTestDate);
+                                        }
+                                        catch(CertificateExpiredException e)
+                                        {
+                                            long timeToExpiry = cert.getNotAfter().getTime() - currentTime;
+                                            int days = Math.max(0,(int)(timeToExpiry / (ONE_DAY)));
+
+                                            _eventLogger.message(KeyStoreMessages.EXPIRING(getName(), String.valueOf(days), cert.getSubjectDN().toString()));
+                                        }
+                                        catch(CertificateNotYetValidException e)
+                                        {
+                                            // ignore
+                                        }
+                                    }
+                                }
+                            }
+
+                        }
+                    }
+                }
+                catch (GeneralSecurityException | IOException e)
+                {
+
+                }
+            }
+        }
+        catch(IllegalArgumentException | NullPointerException e)
+        {
         }
     }
 }

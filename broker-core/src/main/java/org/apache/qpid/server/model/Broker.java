@@ -22,6 +22,8 @@ package org.apache.qpid.server.model;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.logging.EventLogger;
@@ -133,6 +135,15 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
 
     @ManagedAttribute( defaultValue = "false")
     boolean getStatisticsReportingResetEnabled();
+
+
+    @ManagedContextDefault( name = "broker.housekeepingThreadCount")
+    public static final int DEFAULT_HOUSEKEEPING_THREAD_COUNT = 2;
+
+
+    @ManagedAttribute( defaultValue = "${broker.housekeepingThreadCount}")
+    int getHousekeepingThreadCount();
+
 
     String BROKER_MESSAGE_COMPRESSION_ENABLED = "broker.messageCompressionEnabled";
     @ManagedContextDefault(name = BROKER_MESSAGE_COMPRESSION_ENABLED)
@@ -267,4 +278,9 @@ public interface Broker<X extends Broker<X>> extends ConfiguredObject<X>, EventL
     void assignTargetSizes();
 
     int getNetworkBufferSize();
+
+    ScheduledFuture<?> scheduleHouseKeepingTask(long period, final TimeUnit unit, Runnable task);
+
+    ScheduledFuture<?> scheduleTask(long delay, final TimeUnit unit, Runnable task);
+
 }
