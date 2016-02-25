@@ -731,17 +731,9 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
     protected ListenableFuture<Void> closeVirtualHostIfExist()
     {
         final VirtualHost<?> virtualHost = getVirtualHost();
-        if (virtualHost!= null)
+        if (virtualHost != null)
         {
-            return doAfter(virtualHost.closeAsync(), new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                        childRemoved(virtualHost);
-
-                }
-            });
+            return virtualHost.closeAsync();
         }
         else
         {
