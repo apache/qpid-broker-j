@@ -108,31 +108,6 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         _eventLogger.message(KeyStoreMessages.CREATE(getName()));
     }
 
-
-    @StateTransition(currentState = { State.STOPPED, State.ERRORED, State.UNINITIALIZED }, desiredState = State.ACTIVE)
-    protected ListenableFuture<Void>  onActivate()
-    {
-        int checkFrequency;
-        try
-        {
-            checkFrequency = getContextValue(Integer.class, CERTIFICATE_EXPIRY_CHECK_FREQUENCY);
-        }
-        catch (IllegalArgumentException | NullPointerException e)
-        {
-            LOGGER.warn("Cannot parse the context variable {} ", CERTIFICATE_EXPIRY_CHECK_FREQUENCY, e);
-            checkFrequency = DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY;
-        }
-        _checkExpiryTaskFuture = _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                checkCertificateExpiry();
-            }
-        });
-        return Futures.immediateFuture(null);
-    }
-
     @Override
     protected void onClose()
     {
@@ -247,6 +222,25 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> doActivate()
     {
+        int checkFrequency;
+        try
+        {
+            checkFrequency = getContextValue(Integer.class, CERTIFICATE_EXPIRY_CHECK_FREQUENCY);
+        }
+        catch (IllegalArgumentException | NullPointerException e)
+        {
+            LOGGER.warn("Cannot parse the context variable {} ", CERTIFICATE_EXPIRY_CHECK_FREQUENCY, e);
+            checkFrequency = DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY;
+        }
+        _checkExpiryTaskFuture = _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                checkCertificateExpiry();
+            }
+        });
+
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
