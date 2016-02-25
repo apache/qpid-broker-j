@@ -110,28 +110,29 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
         _eventLogger.message(KeyStoreMessages.CREATE(getName()));
     }
 
-    @Override
-    protected void onOpen()
+
+    @StateTransition(currentState = { State.STOPPED, State.ERRORED, State.UNINITIALIZED }, desiredState = State.ACTIVE)
+    protected ListenableFuture<Void>  onActivate()
     {
-        super.onOpen();
         int checkFrequency;
         try
         {
             checkFrequency = getContextValue(Integer.class, CERTIFICATE_EXPIRY_CHECK_FREQUENCY);
         }
-        catch(IllegalArgumentException | NullPointerException e)
+        catch (IllegalArgumentException | NullPointerException e)
         {
             LOGGER.warn("Cannot parse the context variable {} ", CERTIFICATE_EXPIRY_CHECK_FREQUENCY, e);
             checkFrequency = DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY;
         }
         _checkExpiryTaskFuture = _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        checkCertificateExpiry();
-                                    }
-                                });
+        {
+            @Override
+            public void run()
+            {
+                checkCertificateExpiry();
+            }
+        });
+        return Futures.immediateFuture(null);
     }
 
     @Override
@@ -193,7 +194,6 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
             throw new IllegalConfigurationException("Changing the key store name is not allowed");
         }
         validateKeyStoreAttributes(changedStore);
-        checkCertificateExpiry();
     }
 
     private void validateKeyStoreAttributes(FileKeyStore<?> fileKeyStore)
@@ -254,6 +254,7 @@ public class FileKeyStoreImpl extends AbstractConfiguredObject<FileKeyStoreImpl>
         {
             throw new IllegalArgumentException(getClass().getSimpleName() + " must be durable");
         }
+        checkCertificateExpiry();
     }
 
     @Override

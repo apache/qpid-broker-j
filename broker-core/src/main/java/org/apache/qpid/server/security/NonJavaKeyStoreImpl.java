@@ -108,30 +108,29 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         _eventLogger.message(KeyStoreMessages.CREATE(getName()));
     }
 
-    @Override
-    protected void onOpen()
+
+    @StateTransition(currentState = { State.STOPPED, State.ERRORED, State.UNINITIALIZED }, desiredState = State.ACTIVE)
+    protected ListenableFuture<Void>  onActivate()
     {
-        super.onOpen();
         int checkFrequency;
         try
         {
             checkFrequency = getContextValue(Integer.class, CERTIFICATE_EXPIRY_CHECK_FREQUENCY);
         }
-        catch(IllegalArgumentException | NullPointerException e)
+        catch (IllegalArgumentException | NullPointerException e)
         {
             LOGGER.warn("Cannot parse the context variable {} ", CERTIFICATE_EXPIRY_CHECK_FREQUENCY, e);
             checkFrequency = DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY;
         }
-
-        _checkExpiryTaskFuture =
-                _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        checkCertificateExpiry();
-                    }
-                });
+        _checkExpiryTaskFuture = _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                checkCertificateExpiry();
+            }
+        });
+        return Futures.immediateFuture(null);
     }
 
     @Override
