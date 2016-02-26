@@ -67,4 +67,59 @@ public class HillClimberTest extends QpidTestCase
         assertEquals(-96 + 10, hillClimber.nextLower(), EPSILON);
         assertEquals(-104 + 10, hillClimber.nextLower(), EPSILON);
     }
+
+    public void testExhaustiveCoverage()
+    {
+        assertExhaustiveCoverageForBias(0.5);
+        assertExhaustiveCoverageForBias(0.25);
+        assertExhaustiveCoverageForBias(0.66);
+    }
+
+    private void assertExhaustiveCoverageForBias(final double bias)
+    {
+        int numberOfBits = 5;
+        int maxValue = 1<<numberOfBits;
+        boolean valuesSeen[] = new boolean[maxValue];
+        double maxBias = Math.max(bias, 1-bias);
+        int maxHillClimberSteps = (int) Math.floor(-numberOfBits / log(maxBias, 2));
+        for (int bitPattern = 0; bitPattern < 1<<maxHillClimberSteps; ++bitPattern)
+        {
+            HillClimber hillClimber = new HillClimber(0, maxValue, bias);
+            double finalValue = -1;
+            // step twice to avoid initial exponential phase and position ourselves in the middle of the range
+            hillClimber.nextHigher();
+            hillClimber.nextLower();
+            for (int step = 0; step < maxHillClimberSteps; ++step)
+            {
+                boolean stepUp = getBit(bitPattern, maxHillClimberSteps - step - 1);
+                if (stepUp)
+                {
+                    finalValue = hillClimber.nextHigher();
+                }
+                else
+                {
+                    finalValue = hillClimber.nextLower();
+                }
+                if (hillClimber.getCurrentDelta() < 1)
+                {
+                    break;
+                }
+            }
+            valuesSeen[(int)finalValue] = true;
+        }
+        for (int i = 0; i < maxValue; ++i)
+        {
+            assertTrue("HillClimber with bias=" + bias + " missed value " + i, valuesSeen[i]);
+        }
+    }
+
+    private static boolean getBit(long x, int bit)
+    {
+        return (x & (1<<bit)) != 0;
+    }
+
+    private static double log(double x, double base)
+    {
+        return Math.log(x) / Math.log(base);
+    }
 }

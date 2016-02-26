@@ -21,64 +21,174 @@ package org.apache.qpid.disttest.controller;
 
 public class HillClimber
 {
-    private double _value;
-    private double _delta;
-    private boolean _expSearch = true;
-    private int _direction = 0;
+    private final double _bias;
+    private StepPolicy _stepPolicy;
 
     public HillClimber(double initialValue, double initialDelta)
     {
-        _value = initialValue;
-        _delta = initialDelta / 2.0;
+        this(initialValue, initialDelta, 0.5);
+    }
+
+    public HillClimber(double initialValue, double initialDelta, double bias)
+    {
+        _stepPolicy = new UnknownDirectionStepPolicy(initialValue, initialDelta);
+        _bias = bias;
     }
 
     public double nextHigher()
     {
-        if (_direction == 0)
-        {
-            _direction = 1;
-        }
-        else if (_direction == -1)
-        {
-            _expSearch = false;
-            _direction = 1;
-        }
-
-        return step();
+        return _stepPolicy.nextHigher();
     }
 
     public double nextLower()
     {
-        if (_direction == 0)
-        {
-            _direction = -1;
-        }
-        else if (_direction == 1)
-        {
-            _expSearch = false;
-            _direction = -1;
-        }
-
-        return step();
-    }
-
-    private double step()
-    {
-        if (_expSearch)
-        {
-            _delta *= 2;
-            _value += _direction * _delta;
-        }
-        else
-        {
-            _delta /= 2.0;
-            _value += _direction * _delta;
-        }
-        return _value;
+        return _stepPolicy.nextLower();
     }
 
     public double getCurrentDelta()
     {
-        return _delta;
+        return _stepPolicy.getCurrentDelta();
+    }
+
+    public double getBias()
+    {
+        return _bias;
+    }
+
+    private interface StepPolicy
+    {
+        double getCurrentDelta();
+        double nextHigher();
+        double nextLower();
+    }
+
+    private abstract class AbstractStepPolicy implements StepPolicy
+    {
+        protected double _value;
+        protected double _stepSize;
+
+        @Override
+        public double getCurrentDelta()
+        {
+            return _stepSize;
+        }
+    }
+
+    private class UnknownDirectionStepPolicy extends AbstractStepPolicy
+    {
+        UnknownDirectionStepPolicy(final double initialValue, final double initialStepSize)
+        {
+            _value = initialValue;
+            _stepSize = initialStepSize;
+        }
+
+        @Override
+        public double nextHigher()
+        {
+            _stepPolicy = new ExponentialUpStepPolicy(_value, _stepSize);
+            return _stepPolicy.nextHigher();
+        }
+
+        @Override
+        public double nextLower()
+        {
+            _stepPolicy = new ExponentialDownStepPolicy(_value, _stepSize);
+            return _stepPolicy.nextLower();
+        }
+    }
+
+    private class ExponentialUpStepPolicy extends AbstractStepPolicy
+    {
+        private double _lastValue;
+
+        public ExponentialUpStepPolicy(final double initialValue, final double initialStepSize)
+        {
+            _value = _lastValue = initialValue;
+            _stepSize = initialStepSize;
+        }
+
+        @Override
+        public double nextHigher()
+        {
+            _lastValue = _value;
+            _value += _stepSize;
+            _stepSize *= 2;
+            return _value;
+        }
+
+        @Override
+        public double nextLower()
+        {
+            _stepPolicy = new BisectionStepPolicy(_lastValue, _value, _value);
+            return _stepPolicy.nextLower();
+        }
+    }
+
+    private class ExponentialDownStepPolicy extends AbstractStepPolicy
+    {
+        private double _lastValue;
+
+        public ExponentialDownStepPolicy(final double initialValue, final double initialStepSize)
+        {
+            this._value = _lastValue = initialValue;
+            this._stepSize = initialStepSize;
+        }
+
+        @Override
+        public double nextHigher()
+        {
+            _stepPolicy = new BisectionStepPolicy(_value, _lastValue, _value);
+            return _stepPolicy.nextHigher();
+        }
+
+        @Override
+        public double nextLower()
+        {
+            _lastValue = _value;
+            _value -= _stepSize;
+            _stepSize *= 2;
+            return _value;
+        }
+    }
+
+    private class BisectionStepPolicy extends AbstractStepPolicy
+    {
+        private double _lowerBound;
+        private double _upperBound;
+
+        public BisectionStepPolicy(double lowerBound, double upperBound, double currentValue)
+        {
+            _lowerBound = lowerBound;
+            _upperBound = upperBound;
+            _value = currentValue;
+        }
+
+        @Override
+        public double getCurrentDelta()
+        {
+            return _upperBound - _lowerBound;
+        }
+
+        @Override
+        public double nextHigher()
+        {
+            _lowerBound = _value;
+            return step();
+        }
+
+        @Override
+        public double nextLower()
+        {
+            _upperBound = _value;
+            return step();
+        }
+
+        private double step()
+        {
+            double delta = getCurrentDelta();
+            _value = _lowerBound + getBias() * delta;
+            return _value;
+        }
+
     }
 }
