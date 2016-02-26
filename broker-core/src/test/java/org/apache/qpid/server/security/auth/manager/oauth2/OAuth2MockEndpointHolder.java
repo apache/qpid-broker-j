@@ -22,6 +22,9 @@ package org.apache.qpid.server.security.auth.manager.oauth2;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
@@ -35,6 +38,11 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
+import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Port;
+import org.apache.qpid.transport.network.security.ssl.SSLUtil;
+
 class OAuth2MockEndpointHolder
 {
     private static final String KEYSTORE_PASSWORD = "password";
@@ -44,8 +52,36 @@ class OAuth2MockEndpointHolder
 
     OAuth2MockEndpointHolder(final Map<String, OAuth2MockEndpoint> endpoints)
     {
+        final List<String> protocolWhiteList =
+                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST,
+                                        CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST_DEFAULT);
+        final List<String> protocolBlackList =
+                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST,
+                                        CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST_DEFAULT);
+        final List<String> cipherSuiteWhiteList =
+                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST,
+                                        CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST_DEFAULT);
+        final List<String> cipherSuiteBlackList =
+                getSystemPropertyAsList(CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST,
+                                        CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST_DEFAULT);
+
         _server = new Server();
-        SslContextFactory sslContextFactory = new SslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory()
+                                              {
+                                                  @Override
+                                                  public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
+                                                  {
+                                                      return SSLUtil.filterEnabledProtocols(enabledProtocols, supportedProtocols,
+                                                                                            protocolWhiteList, protocolBlackList);
+                                                  }
+
+                                                  @Override
+                                                  public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
+                                                  {
+                                                      return SSLUtil.filterEnabledCipherSuites(enabledCipherSuites, supportedCipherSuites,
+                                                                                               cipherSuiteWhiteList, cipherSuiteBlackList);
+                                                  }
+                                              };
         sslContextFactory.setKeyStorePassword(KEYSTORE_PASSWORD);
         InputStream keyStoreInputStream = getClass().getClassLoader().getResourceAsStream(KEYSTORE_RESOURCE);
         sslContextFactory.setKeyStoreInputStream(keyStoreInputStream);
@@ -95,5 +131,16 @@ class OAuth2MockEndpointHolder
     public int getPort()
     {
         return _connector.getLocalPort();
+    }
+
+    private List<String> getSystemPropertyAsList(final String propertyName, final String defaultValue)
+    {
+        String listAsString = System.getProperty(propertyName, defaultValue);
+        List<String> listOfStrings = Collections.emptyList();
+        if(listAsString != null && !"".equals(listAsString))
+        {
+            listOfStrings = Arrays.asList(listAsString.split("\\s*,\\s*"));
+        }
+        return listOfStrings;
     }
 }
