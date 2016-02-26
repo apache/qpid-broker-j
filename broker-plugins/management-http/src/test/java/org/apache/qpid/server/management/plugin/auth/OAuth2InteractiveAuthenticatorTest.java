@@ -161,7 +161,6 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
     public void testNoStateOnSession() throws Exception
     {
         Map<String, Object> sessionAttributes = new HashMap<>();
-        //sessionAttributes.put(OAuth2InteractiveAuthenticator.STATE_NAME, TEST_STATE);
         sessionAttributes.put(OAuth2InteractiveAuthenticator.ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE, TEST_REQUEST);
         sessionAttributes.put(OAuth2InteractiveAuthenticator.REDIRECT_URI_SESSION_ATTRIBUTE, TEST_REQUEST_HOST);
         Map<String, String> requestParameters = new HashMap<>();
@@ -182,7 +181,6 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         sessionAttributes.put(OAuth2InteractiveAuthenticator.ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE, TEST_REQUEST);
         sessionAttributes.put(OAuth2InteractiveAuthenticator.REDIRECT_URI_SESSION_ATTRIBUTE, TEST_REQUEST_HOST);
         Map<String, String> requestParameters = new HashMap<>();
-        //requestParameters.put("state", TEST_STATE);
         requestParameters.put("code", TEST_VALID_AUTHORIZATION_CODE);
         HttpServletRequest mockRequest = createMockRequest(TEST_REQUEST_HOST, TEST_REQUEST_PATH, requestParameters, sessionAttributes);
 

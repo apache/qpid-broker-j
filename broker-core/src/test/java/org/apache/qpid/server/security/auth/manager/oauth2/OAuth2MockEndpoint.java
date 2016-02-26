@@ -59,13 +59,12 @@ class OAuth2MockEndpoint
             Map<String, String[]> parameters = request.getParameterMap();
             for (String expectedParameter : _expectedParameters.keySet())
             {
-                doAssertTrue                                          (String.format("Request is missing parameter '%s'", expectedParameter),
+                doAssertTrue(String.format("Request is missing parameter '%s'", expectedParameter),
                              parameters.containsKey(expectedParameter));
                 String[] parameterValues = parameters.get(expectedParameter);
-                doAssertEquals                          (String.format                  ("Request has parameter '%s' specified more than once",
-                                                                       expectedParameter),
+                doAssertEquals(String.format("Request has parameter '%s' specified more than once", expectedParameter),
                                1, parameterValues.length);
-                doAssertEquals                                                               (String.format("Request parameter '%s' has unexpected value", expectedParameter),
+                doAssertEquals(String.format("Request parameter '%s' has unexpected value", expectedParameter),
                                _expectedParameters.get(expectedParameter), parameterValues[0]);
             }
         }
