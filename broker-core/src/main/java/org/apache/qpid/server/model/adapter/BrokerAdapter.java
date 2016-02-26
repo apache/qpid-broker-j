@@ -377,7 +377,7 @@ public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> imple
 
         initialiseStatisticsReporting();
 
-        _houseKeepingTaskExecutor = new HousekeepingExecutor("virtualhost-" + getName() + "-pool",
+        _houseKeepingTaskExecutor = new HousekeepingExecutor("broker-" + getName() + "-pool",
                                                              getHousekeepingThreadCount(),
                                                              _principal);
 

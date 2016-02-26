@@ -58,6 +58,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.ManagedAttributeField;
@@ -232,14 +233,74 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
             LOGGER.warn("Cannot parse the context variable {} ", CERTIFICATE_EXPIRY_CHECK_FREQUENCY, e);
             checkFrequency = DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY;
         }
-        _checkExpiryTaskFuture = _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
+        if(_broker.getState() == State.ACTIVE)
         {
-            @Override
-            public void run()
+            _checkExpiryTaskFuture = _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
             {
-                checkCertificateExpiry();
-            }
-        });
+                @Override
+                public void run()
+                {
+                    checkCertificateExpiry();
+                }
+            });
+        }
+        else
+        {
+            final int frequency = checkFrequency;
+            _broker.addChangeListener(new ConfigurationChangeListener()
+            {
+                @Override
+                public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
+                {
+                    if (newState == State.ACTIVE)
+                    {
+                        _checkExpiryTaskFuture =
+                                _broker.scheduleHouseKeepingTask(frequency, TimeUnit.DAYS, new Runnable()
+                                {
+                                    @Override
+                                    public void run()
+                                    {
+                                        checkCertificateExpiry();
+                                    }
+                                });
+                        _broker.removeChangeListener(this);
+                    }
+                }
+
+                @Override
+                public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+                {
+
+                }
+
+                @Override
+                public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
+                {
+
+                }
+
+                @Override
+                public void attributeSet(final ConfiguredObject<?> object,
+                                         final String attributeName,
+                                         final Object oldAttributeValue,
+                                         final Object newAttributeValue)
+                {
+
+                }
+
+                @Override
+                public void bulkChangeStart(final ConfiguredObject<?> object)
+                {
+
+                }
+
+                @Override
+                public void bulkChangeEnd(final ConfiguredObject<?> object)
+                {
+
+                }
+            });
+        }
 
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
