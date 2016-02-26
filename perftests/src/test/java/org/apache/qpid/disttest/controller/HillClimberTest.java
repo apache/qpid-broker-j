@@ -75,6 +75,46 @@ public class HillClimberTest extends QpidTestCase
         assertExhaustiveCoverageForBias(0.66);
     }
 
+    public void testRejectInvalidBias()
+    {
+        try
+        {
+            new HillClimber(10, 16, -0.1);
+            fail("HillClimber bias should not accept negative values");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+        try
+        {
+            new HillClimber(10, 16, 0);
+            fail("HillClimber bias should not accept values smaller or equal to 0");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+        try
+        {
+            new HillClimber(10, 16, 1.1);
+            fail("HillClimber bias should not accept values larger or equal to 1");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+        try
+        {
+            new HillClimber(10, 16, 1);
+            fail("HillClimber bias should not accept values larger or equal to 1");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // pass
+        }
+    }
+
     private void assertExhaustiveCoverageForBias(final double bias)
     {
         int numberOfBits = 5;

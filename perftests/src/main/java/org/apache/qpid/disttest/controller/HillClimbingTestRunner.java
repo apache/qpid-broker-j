@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.disttest.controller;
 
+import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_BIAS;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_START_TARGET_RATE;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_MAX_NUMBER_OF_RUNS;
 import static org.apache.qpid.disttest.ControllerRunner.HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD;
@@ -59,8 +60,9 @@ public class HillClimbingTestRunner extends AbstractTestRunner
         final double hillClimberMinimumDelta = Double.valueOf(_options.get(HILL_CLIMBER_MINIMUM_DELTA));
         final int maxNumberOfRuns = Integer.valueOf(_options.get(HILL_CLIMBER_MAX_NUMBER_OF_RUNS));
         double rate = Double.valueOf(_options.get(HILL_CLIMBER_START_TARGET_RATE));
+        double bias = Double.valueOf(_options.get(HILL_CLIMBER_BIAS));
         double initialDelta = rate - 1;
-        HillClimber hillClimber = new HillClimber(rate, initialDelta);
+        HillClimber hillClimber = new HillClimber(rate, initialDelta, bias);
         TestResult bestSuccessfulTestResult = null;
         int iteration = 1;
         do

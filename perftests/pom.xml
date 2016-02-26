@@ -49,6 +49,7 @@
     <qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>0.95</qpid.disttest.hillclimb.production_to_target_ratio_success_threshold>
     <qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>0.95</qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold>
     <qpid.disttest.hillclimb.minimum_delta>1.0</qpid.disttest.hillclimb.minimum_delta>
+    <qpid.disttest.hillclimb.bias>0.25</qpid.disttest.hillclimb.bias>
   </properties>
 
   <dependencies>
@@ -191,6 +192,7 @@
             <argument>hill-climber.production-to-target-ratio-success-threshold=${qpid.disttest.hillclimb.production_to_target_ratio_success_threshold}</argument>
             <argument>hill-climber.consumption-to-production-ratio-success-threshold=${qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold}</argument>
             <argument>hill-climber.minimum-delta=${qpid.disttest.hillclimb.minimum_delta}</argument>
+            <argument>hill-climber.bias=${qpid.disttest.hillclimb.bias}</argument>
           </arguments>
           <classpathScope>compile</classpathScope>
           <systemProperties>
@@ -270,6 +272,7 @@
                 <argument>hill-climber.production-to-target-ratio-success-threshold=${qpid.disttest.hillclimb.production_to_target_ratio_success_threshold}</argument>
                 <argument>hill-climber.consumption-to-production-ratio-success-threshold=${qpid.disttest.hillclimb.consumption_to_production_ratio_success_threshold}</argument>
                 <argument>hill-climber.minimum-delta=${qpid.disttest.hillclimb.minimum_delta}</argument>
+                <argument>hill-climber.bias=${qpid.disttest.hillclimb.bias}</argument>
               </arguments>
               <classpathScope>compile</classpathScope>
               <systemProperties>

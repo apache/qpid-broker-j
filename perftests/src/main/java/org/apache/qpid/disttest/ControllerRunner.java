@@ -56,6 +56,7 @@ public class ControllerRunner extends AbstractRunner
     public static final String HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD = "hill-climber.production-to-target-ratio-success-threshold";
     public static final String HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD = "hill-climber.consumption-to-production-ratio-success-threshold";
     public static final String HILL_CLIMBER_MINIMUM_DELTA = "hill-climber.minimum-delta";
+    public static final String HILL_CLIMBER_BIAS = "hill-climber.bias";
 
     private static final String TEST_CONFIG_DEFAULT = "perftests-config.json";
     private static final String DISTRIBUTED_DEFAULT = "false";
@@ -67,6 +68,7 @@ public class ControllerRunner extends AbstractRunner
     private static final String HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD_DEFAULT = "0.95";
     private static final String HILL_CLIMBER_PRODUCTION_TO_TARGET_RATIO_SUCCESS_THRESHOLD_DEFAULT = "0.95";
     private static final String HILL_CLIMBER_MINIMUM_DELTA_DEFAULT = "1";
+    private static final String HILL_CLIMBER_BIAS_DEFAULT = "0.25";
 
     private final Aggregator _aggregator = new Aggregator();
 
@@ -93,6 +95,8 @@ public class ControllerRunner extends AbstractRunner
                             HILL_CLIMBER_CONSUMPTION_TO_PRODUCTION_RATIO_SUCCESS_THRESHOLD_DEFAULT);
         getCliOptions().put(HILL_CLIMBER_MINIMUM_DELTA,
                             HILL_CLIMBER_MINIMUM_DELTA_DEFAULT);
+        getCliOptions().put(HILL_CLIMBER_BIAS,
+                            HILL_CLIMBER_BIAS_DEFAULT);
     }
 
     public static void main(String[] args) throws Exception

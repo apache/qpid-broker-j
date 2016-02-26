@@ -31,8 +31,12 @@ public class HillClimber
 
     public HillClimber(double initialValue, double initialDelta, double bias)
     {
-        _stepPolicy = new UnknownDirectionStepPolicy(initialValue, initialDelta);
+        if (bias <= 0 || 1 <= bias)
+        {
+            throw new IllegalArgumentException("HillClimber bias must be in the open interval (0, 1) got: " + bias);
+        }
         _bias = bias;
+        _stepPolicy = new UnknownDirectionStepPolicy(initialValue, initialDelta);
     }
 
     public double nextHigher()
