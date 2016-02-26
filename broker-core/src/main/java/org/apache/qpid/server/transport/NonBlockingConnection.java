@@ -27,8 +27,10 @@ import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -73,6 +75,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private Iterator<Runnable> _pendingIterator;
     private final AtomicLong _maxWriteIdleMillis = new AtomicLong();
     private final AtomicLong _maxReadIdleMillis = new AtomicLong();
+    private final List<SchedulingDelayNotificationListener> _schedulingDelayNotificationListeners = new CopyOnWriteArrayList<>();
 
     public NonBlockingConnection(SocketChannel socketChannel,
                                  ProtocolEngine protocolEngine,
@@ -234,6 +237,22 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
         return _protocolEngine.hasWork();
     }
 
+    public void doPreWork()
+    {
+        if (!_closed.get())
+        {
+            long currentTime = System.currentTimeMillis();
+            long schedulingDelay = currentTime - getScheduledTime();
+            if (!_schedulingDelayNotificationListeners.isEmpty())
+            {
+                for (SchedulingDelayNotificationListener listener : _schedulingDelayNotificationListeners)
+                {
+                    listener.notifySchedulingDelay(schedulingDelay);
+                }
+            }
+        }
+    }
+
     public boolean doWork()
     {
         _protocolEngine.clearWork();
@@ -242,13 +261,11 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             try
             {
                 long currentTime = System.currentTimeMillis();
-                _protocolEngine.processingStarted(currentTime);
                 int tick = getTicker().getTimeToNextTick(currentTime);
                 if (tick <= 0)
                 {
                     getTicker().tick(currentTime);
                 }
-                _scheduledTime = 0;
 
                 _protocolEngine.setIOThread(Thread.currentThread());
                 _protocolEngine.setMessageAssignmentSuspended(true, true);
@@ -310,6 +327,18 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
         return closed;
 
+    }
+
+    @Override
+    public void addSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
+    {
+        _schedulingDelayNotificationListeners.add(listener);
+    }
+
+    @Override
+    public void removeSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
+    {
+        _schedulingDelayNotificationListeners.remove(listener);
     }
 
     private boolean processPending() throws IOException
@@ -611,6 +640,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     public void clearScheduled()
     {
         _scheduled.set(false);
+        _scheduledTime = 0;
     }
 
     @Override
