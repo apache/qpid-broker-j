@@ -18,7 +18,7 @@
 #
 
 chartType=TIMELINE
-chartTitle=Transient Auto-Ack AMQP ${qpid.charting.protocolVersion}
+chartTitle=Transient Auto-Ack AMQP ${qpid.charting.protocolVersion} plain
 chartDescription=10P 10C, transient, auto-ack, 1kB message, plain, ${qpid.charting.brokerVersionA} / ${qpid.charting.brokerVersionB} / ${qpid.charting.brokerVersionC}
 
 yAxisLowerBound=0
