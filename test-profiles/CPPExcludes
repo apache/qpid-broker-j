@@ -222,6 +222,9 @@ org.apache.qpid.server.protocol.v0_8.*
 org.apache.qpid.server.store.berkeleydb.*
 org.apache.qpid.server.store.berkeleydb.replication.*
 
+// Java Broker Derby Tests
+org.apache.qpid.server.store.derby.*
+
 // These tests are 0-8..0-91 specific
 org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_08091_HeadersFillContentHeaderFrame
 org.apache.qpid.test.unit.basic.PropertyValueTest#testOverlyLargeHeaderRejected_08091
