@@ -201,6 +201,7 @@ org.apache.qpid.transport.MaxFrameSizeTest#*
 
 // CPP Broker does not timeout connections with no activity like the Java Broker
 org.apache.qpid.transport.ProtocolNegotiationTest#testNoProtocolHeaderSent_BrokerClosesConnection
+org.apache.qpid.transport.ProtocolNegotiationTest#testNoConnectionOpenSent_BrokerClosesConnection
 
 // QPID-6000 : Tests Java specific message compression functionality, and uses the REST API to test it
 org.apache.qpid.systest.MessageCompressionTest#*
