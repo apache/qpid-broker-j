@@ -533,7 +533,7 @@ public class VirtualHostMessageStoreTest extends QpidTestCase
     private void setQueueExclusivity(boolean exclusive) throws MessageSource.ExistingConsumerPreventsExclusive
     {
         Queue<?> queue = (Queue<?>) _virtualHost.getChildByName(Queue.class, durableExclusiveQueueName);
-        queue.setAttribute(Queue.EXCLUSIVE, queue.getExclusive(), exclusive ? ExclusivityPolicy.CONTAINER : ExclusivityPolicy.NONE);
+        queue.setAttributes(Collections.<String, Object>singletonMap(Queue.EXCLUSIVE, exclusive ? ExclusivityPolicy.CONTAINER : ExclusivityPolicy.NONE));
     }
 
     private void validateQueueExclusivityProperty(boolean expected)

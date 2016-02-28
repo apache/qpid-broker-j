@@ -37,9 +37,8 @@ import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.LifetimePolicy;
 import org.apache.qpid.server.model.Queue;
 import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.server.store.MessageDurability;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
-
-import static org.mockito.Mockito.mock;
 
 public class StandardQueueTest extends AbstractQueueTestBase
 {
@@ -240,6 +239,22 @@ public class StandardQueueTest extends AbstractQueueTestBase
         verifyReceivedMessages(expected, consumer.getMessages());
     }
 
+    public void testNonDurableImpliesMessageDurabilityNever() throws Exception
+    {
+        getQueue().close();
+        getQueue().delete();
+
+        Map<String,Object> attributes = new HashMap<>();
+        attributes.put(Queue.NAME, getQname());
+        attributes.put(Queue.DURABLE, Boolean.FALSE);
+        attributes.put(Queue.MESSAGE_DURABILITY, MessageDurability.ALWAYS);
+
+        Queue queue =  getVirtualHost().createChild(Queue.class, attributes);
+        assertNotNull("Queue was not created", queue);
+        setQueue(queue);
+
+        assertEquals(MessageDurability.NEVER, queue.getMessageDurability());
+    }
 
     private static class DequeuedQueue extends AbstractQueue
     {

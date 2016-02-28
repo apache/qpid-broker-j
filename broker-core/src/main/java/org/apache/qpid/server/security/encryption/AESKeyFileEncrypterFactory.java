@@ -124,7 +124,7 @@ public class AESKeyFileEncrypterFactory implements ConfigurationSecretEncrypterF
             Map<String, String> modifiedContext = new LinkedHashMap<>(context);
             modifiedContext.put(ENCRYPTER_KEY_FILE, fileLocation);
 
-            object.setAttribute(ConfiguredObject.CONTEXT, context, modifiedContext);
+            object.setAttributes(Collections.<String, Object>singletonMap(ConfiguredObject.CONTEXT, modifiedContext));
         }
         File file = new File(fileLocation);
         if(!file.exists())

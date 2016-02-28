@@ -465,7 +465,7 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
 
         // Check that update is ignored
-        object.setAttribute(TestSingleton.DERIVED_VALUE, object.getDerivedValue(), System.currentTimeMillis());
+        object.setAttributes(Collections.singletonMap(TestSingleton.DERIVED_VALUE, System.currentTimeMillis()));
 
         assertEquals(TestSingletonImpl.DERIVED_VALUE, object.getDerivedValue());
     }
@@ -692,9 +692,6 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
 
         // Update the actual value ${foo2} => ${foo3} (which doesn't have a value)
         object.setAttributes(Collections.singletonMap(TestSingleton.STRING_VALUE, "${foo3}"));
-        // TODO KW - I would expect this to be equivilent to the above, but it is not because setAttribute wants the
-        // effective value as the expected.
-        //object.setAttribute(TestSingleton.STRING_VALUE, "${foo2}", "${foo3}");
         assertEquals(2, listenerCount.get());
         assertEquals("${foo3}", object.getStringValue());
         assertEquals("${foo3}", object.getActualAttributes().get(TestSingleton.STRING_VALUE));

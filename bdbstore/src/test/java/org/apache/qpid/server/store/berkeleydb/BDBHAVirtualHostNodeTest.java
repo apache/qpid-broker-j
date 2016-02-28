@@ -171,9 +171,11 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
         assertFalse("Unexpected designated primary value before mutation", node.isDesignatedPrimary());
         assertEquals("Unexpected electable group override value before mutation", 0, node.getQuorumOverride());
 
-        node.setAttribute(BDBHAVirtualHostNode.PRIORITY, 1, 2);
-        node.setAttribute(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, false, true);
-        node.setAttribute(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 0, 1);
+        Map<String, Object> update = new HashMap<>();
+        update.put(BDBHAVirtualHostNode.PRIORITY,  2);
+        update.put(BDBHAVirtualHostNode.DESIGNATED_PRIMARY, true);
+        update.put(BDBHAVirtualHostNode.QUORUM_OVERRIDE, 1);
+        node.setAttributes(update);
 
         assertEquals("Unexpected node priority value after mutation", 2, node.getPriority());
         assertTrue("Unexpected designated primary value after mutation", node.isDesignatedPrimary());
@@ -246,7 +248,7 @@ public class BDBHAVirtualHostNodeTest extends QpidTestCase
 
         BDBHAVirtualHostNode<?> replica = _helper.awaitAndFindNodeInRole(NodeRole.REPLICA);
 
-        replica.setAttribute(BDBHAVirtualHostNode.ROLE, replica.getRole(), NodeRole.MASTER);
+        replica.setAttributes(Collections.<String, Object>singletonMap(BDBHAVirtualHostNode.ROLE,  NodeRole.MASTER));
 
         _helper.assertNodeRole(replica, NodeRole.MASTER);
     }

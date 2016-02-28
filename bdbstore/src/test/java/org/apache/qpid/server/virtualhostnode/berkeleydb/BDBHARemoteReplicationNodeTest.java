@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.security.AccessControlException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -90,18 +91,23 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
     {
         String remoteReplicationName = getName();
         BDBHARemoteReplicationNode remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
+        // Simulate an election that put the node in REPLICA state
+        ((BDBHARemoteReplicationNodeImpl)remoteReplicationNode).setRole(NodeRole.REPLICA);
 
         Future<Void> future = mock(Future.class);
         when(_facade.transferMasterAsynchronously(remoteReplicationName)).thenReturn(future);
-        remoteReplicationNode.setAttribute(BDBHARemoteReplicationNode.ROLE, remoteReplicationNode.getRole(), NodeRole.MASTER);
+        remoteReplicationNode.setAttributes(Collections.singletonMap(BDBHARemoteReplicationNode.ROLE, NodeRole.MASTER));
 
         verify(_facade).transferMasterAsynchronously(remoteReplicationName);
 
         remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
+        ((BDBHARemoteReplicationNodeImpl)remoteReplicationNode).setRole(NodeRole.REPLICA);
+
         doThrow(new ExecutionException(new RuntimeException("Test"))).when(future).get(anyLong(), any(TimeUnit.class));
         try
         {
-            remoteReplicationNode.setAttribute(BDBHARemoteReplicationNode.ROLE, remoteReplicationNode.getRole(), NodeRole.MASTER);
+            remoteReplicationNode.setAttributes(Collections.singletonMap(BDBHARemoteReplicationNode.ROLE,
+                                                                         NodeRole.MASTER));
             fail("ConnectionScopedRuntimeException is expected");
         }
         catch(ConnectionScopedRuntimeException e)
@@ -110,10 +116,13 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
         }
 
         remoteReplicationNode = createRemoteReplicationNode(remoteReplicationName);
+        ((BDBHARemoteReplicationNodeImpl)remoteReplicationNode).setRole(NodeRole.REPLICA);
+
         doThrow(new ExecutionException(new ServerScopedRuntimeException("Test"))).when(future).get(anyLong(), any(TimeUnit.class));
         try
         {
-            remoteReplicationNode.setAttribute(BDBHARemoteReplicationNode.ROLE, remoteReplicationNode.getRole(), NodeRole.MASTER);
+            remoteReplicationNode.setAttributes(Collections.singletonMap(BDBHARemoteReplicationNode.ROLE,
+                                                                         NodeRole.MASTER));
             fail("ServerScopedRuntimeException is expected");
         }
         catch(ServerScopedRuntimeException e)
@@ -148,7 +157,7 @@ public class BDBHARemoteReplicationNodeTest extends QpidTestCase
 
         try
         {
-            remoteReplicationNode.setAttribute(VirtualHost.DESCRIPTION, null, "My description");
+            remoteReplicationNode.setAttributes(Collections.singletonMap(VirtualHost.DESCRIPTION, "My description"));
             fail("Exception not thrown");
         }
         catch (AccessControlException ace)

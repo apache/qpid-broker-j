@@ -478,7 +478,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
         }
 
         @Override
-        public boolean changeAttribute(String name, Object expected, Object desired)
+        public boolean changeAttribute(String name, Object desired)
                 throws IllegalStateException, AccessControlException, IllegalArgumentException
         {
             if(name.equals(PASSWORD))
@@ -489,7 +489,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
                     boolean changed = getPrincipalDatabase().updatePassword(_user, desiredPassword.toCharArray());
                     if (changed)
                     {
-                        return super.changeAttribute(name, expected, desired);
+                        return super.changeAttribute(name, desired);
                     }
                     return false;
                 }
@@ -498,7 +498,7 @@ public abstract class PrincipalDatabaseAuthenticationManager<T extends Principal
                     throw new IllegalStateException(e);
                 }
             }
-            return super.changeAttribute(name, expected, desired);
+            return super.changeAttribute(name, desired);
         }
 
         @StateTransition(currentState = {State.UNINITIALIZED,State.ERRORED}, desiredState = State.ACTIVE)

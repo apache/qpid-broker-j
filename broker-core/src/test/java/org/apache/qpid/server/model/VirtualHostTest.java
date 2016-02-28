@@ -334,7 +334,7 @@ public class VirtualHostTest extends QpidTestCase
 
         try
         {
-            virtualHost.setAttribute(VirtualHost.DESCRIPTION, null, "My description");
+            virtualHost.setAttributes(Collections.<String, Object>singletonMap(VirtualHost.DESCRIPTION, "My description"));
             fail("Exception not thrown");
         }
         catch (AccessControlException ace)

@@ -23,7 +23,6 @@ package org.apache.qpid.server.security.auth.manager;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -83,7 +82,7 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
     }
 
     @Override
-    protected boolean changeAttribute(String name, Object expected, Object desired)
+    protected boolean changeAttribute(String name, Object desired)
     {
         if (User.PASSWORD.equals(name))
         {
@@ -93,7 +92,7 @@ class ManagedUser extends AbstractConfiguredObject<ManagedUser> implements User<
                 desired = storedPassword;
             }
         }
-        return super.changeAttribute(name, expected, desired);
+        return super.changeAttribute(name, desired);
     }
 
     @Override

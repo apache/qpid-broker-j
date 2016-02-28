@@ -20,8 +20,8 @@
  */
 package org.apache.qpid.server.security.encryption;
 
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -70,18 +70,22 @@ public class AESKeyFileEncrypterFactoryTest extends QpidTestCase
         when(_broker.getContextValue(eq(String.class), eq(BrokerOptions.QPID_WORK_DIR))).thenReturn(_tmpDir.toString());
         when(_broker.getCategoryClass()).thenReturn(Broker.class);
         when(_broker.getName()).thenReturn(getName());
-        final ArgumentCaptor<Map> contextCaptor = ArgumentCaptor.forClass(Map.class);
+        final ArgumentCaptor<Map> attributesCaptor = ArgumentCaptor.forClass(Map.class);
 
-        when(_broker.setAttribute(eq("context"), anyMap(), contextCaptor.capture() )).thenAnswer(new Answer<Void>() {
+        doAnswer(new Answer<Void>()
+        {
 
             @Override
             public Void answer(final InvocationOnMock invocationOnMock) throws Throwable
             {
-                Map replacementContext = contextCaptor.getValue();
-                when(_broker.getContext()).thenReturn(replacementContext);
+                if (attributesCaptor.getValue().containsKey("context"))
+                {
+                    Map replacementContext = (Map) attributesCaptor.getValue().get("context");
+                    when(_broker.getContext()).thenReturn(replacementContext);
+                }
                 return null;
             }
-        });
+        }).when(_broker).setAttributes(attributesCaptor.capture());
 
         _factory = new AESKeyFileEncrypterFactory();
     }

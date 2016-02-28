@@ -291,7 +291,7 @@ public class AbstractStandardVirtualHostNodeTest extends QpidTestCase
         assertNull(node.getDescription());
         try
         {
-            node.setAttribute(VirtualHostNode.DESCRIPTION, null, "My virtualhost node");
+            node.setAttributes(Collections.<String, Object>singletonMap(VirtualHostNode.DESCRIPTION, "My virtualhost node"));
             fail("Exception not throws");
         }
         catch (AccessControlException ace)

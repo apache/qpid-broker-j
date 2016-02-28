@@ -293,7 +293,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                              @Override
                              public Object run()
                              {
-                                 setAttribute(AbstractConfiguredObject.DURABLE, true, false);
+                                 setAttributes(Collections.<String, Object>singletonMap(AbstractConfiguredObject.DURABLE,
+                                                                                        false));
                                  return null;
                              }
                          });
@@ -307,7 +308,8 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                              @Override
                              public Object run()
                              {
-                                 setAttribute(Queue.MESSAGE_DURABILITY, getMessageDurability(), MessageDurability.NEVER);
+                                 setAttributes(Collections.<String, Object>singletonMap(Queue.MESSAGE_DURABILITY,
+                                                                                        MessageDurability.NEVER));
                                  return null;
                              }
                          });
@@ -3225,12 +3227,12 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
     }
 
     @Override
-    public boolean changeAttribute(String name, Object expected, Object desired) throws IllegalStateException, AccessControlException, IllegalArgumentException
+    public boolean changeAttribute(String name, Object desired) throws IllegalStateException, AccessControlException, IllegalArgumentException
     {
         if(EXCLUSIVE.equals(name))
         {
             ExclusivityPolicy existingPolicy = getExclusive();
-            if(super.changeAttribute(name, expected, desired))
+            if(super.changeAttribute(name, desired))
             {
                 try
                 {
@@ -3250,7 +3252,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
             return false;
         }
 
-        return super.changeAttribute(name, expected, desired);
+        return super.changeAttribute(name, desired);
 
     }
 

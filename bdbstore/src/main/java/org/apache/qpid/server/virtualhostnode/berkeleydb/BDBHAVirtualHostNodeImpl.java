@@ -308,7 +308,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         if (!isFirstNodeInAGroup())
         {
             List<String> permittedNodes = new ArrayList<>(getPermittedNodesFromHelper());
-            setAttribute(PERMITTED_NODES, null, permittedNodes);
+            setAttributes(Collections.<String, Object>singletonMap(PERMITTED_NODES, permittedNodes));
         }
         getEventLogger().message(getVirtualHostNodeLogSubject(), HighAvailabilityMessages.CREATED());
     }
@@ -634,7 +634,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                     upgraderAndRecoverer = new VirtualHostStoreUpgraderAndRecoverer(this);
                     upgraderAndRecoverer.perform(getConfigurationStore());
                     getEventLogger().message(getConfigurationStoreLogSubject(), ConfigStoreMessages.RECOVERY_COMPLETE());
-                    setAttribute(VIRTUALHOST_INITIAL_CONFIGURATION, getVirtualHostInitialConfiguration(), "{}" );
+                    setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
                     host = getVirtualHost();
                     if(host != null)
                     {
@@ -1156,7 +1156,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                             {
                                 if (_permittedNodes.contains(remoteNode.getAddress()))
                                 {
-                                    setAttribute(PERMITTED_NODES, _permittedNodes, new ArrayList<String>(permittedNodes));
+                                    setAttributes(Collections.<String, Object>singletonMap(PERMITTED_NODES, new ArrayList<>(permittedNodes)));
                                 } else
                                 {
                                     LOGGER.warn("Cannot accept the new permitted node list from the master as the master '" + remoteNode.getName()

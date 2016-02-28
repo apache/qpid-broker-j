@@ -223,7 +223,7 @@ public class BindingImpl
                     public Void execute()
                     {
                         _arguments = arguments;
-                        BindingImpl.super.setAttribute(ARGUMENTS, getActualAttributes().get(ARGUMENTS), arguments);
+                        BindingImpl.super.setAttributes(Collections.<String, Object>singletonMap(ARGUMENTS, arguments));
                         return null;
                     }
 

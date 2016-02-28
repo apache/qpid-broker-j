@@ -1447,7 +1447,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                     // state transition notification should be already issued.
                                     // changing attribute value and notifying listeners about attribute change
                                     // in case when any listener relies on attribute change rather then on state change
-                                    changeAttribute(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState);
+                                    changeAttribute(ConfiguredObject.DESIRED_STATE, desiredState);
                                     attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState);
                                 }
                             });
@@ -1459,7 +1459,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                     }
                     else
                     {
-                        if (changeAttribute(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState))
+                        if (changeAttribute(ConfiguredObject.DESIRED_STATE, desiredState))
                         {
                             attributeSet(ConfiguredObject.DESIRED_STATE, currentDesiredState, desiredState);
                             return attainStateIfOpenedOrReopenFailed();
@@ -1642,70 +1642,16 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
         }
     }
 
-    // TODO setAttribute does not validate. Do we need this method?
-    public Object setAttribute(final String name, final Object expected, final Object desired)
-            throws IllegalStateException, AccessControlException, IllegalArgumentException
-    {
-        return _taskExecutor.run(new Task<Object, RuntimeException>()
-        {
-            @Override
-            public Object execute()
-            {
-                authoriseSetAttributes(createProxyForValidation(Collections.singletonMap(name, desired)),
-                                       Collections.singleton(name));
-
-                if (changeAttribute(name, expected, desired))
-                {
-                    attributeSet(name, expected, desired);
-                    return desired;
-                }
-                else
-                {
-                    return getAttribute(name);
-                }
-            }
-
-            @Override
-            public String getObject()
-            {
-                return AbstractConfiguredObject.this.toString();
-            }
-
-            @Override
-            public String getAction()
-            {
-                return "set attribute";
-            }
-
-            @Override
-            public String getArguments()
-            {
-                ConfiguredObjectAttribute<?,?> attr = _attributeTypes.get(name);
-                if(attr != null )
-                {
-                    if (!attr.isSecure())
-                    {
-                        return name + "=" + desired;
-                    }
-                    return name + "=" + SECURED_STRING_VALUE;
-                }
-                return name;
-            }
-        });
-    }
-
-    protected boolean changeAttribute(final String name, final Object expected, final Object desired)
+    protected boolean changeAttribute(final String name, final Object desired)
     {
         synchronized (_attributes)
         {
-            Object currentValue = getAttribute(name);
             Object actualValue = _attributes.get(name);
 
             ConfiguredObjectAttribute<?,?> attr = _attributeTypes.get(name);
 
             if(attr.updateAttributeDespiteUnchangedValue() ||
-               (((currentValue == null && expected == null) || (currentValue != null && currentValue.equals(expected))) &&
-                ((actualValue != null && !actualValue.equals(desired)) || (actualValue == null && desired != null))))
+               ((actualValue != null && !actualValue.equals(desired)) || (actualValue == null && desired != null)))
             {
                 //TODO: don't put nulls
                 _attributes.put(name, desired);
@@ -2379,7 +2325,10 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             public Void execute()
             {
                 authoriseSetAttributes(createProxyForValidation(attributes), attributes.keySet());
-                validateChange(createProxyForValidation(attributes), attributes.keySet());
+                if (!SecurityManager.isSystemProcess())
+                {
+                    validateChange(createProxyForValidation(attributes), attributes.keySet());
+                }
 
                 changeAttributes(updateAttributes);
                 return null;
@@ -2516,7 +2465,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                 {
                     Object desired = entry.getValue();
                     Object expected = getAttribute(attributeName);
-                    if (changeAttribute(attributeName, expected, desired))
+                    if (changeAttribute(attributeName, desired))
                     {
                         attributeSet(attributeName, expected, desired);
                     }

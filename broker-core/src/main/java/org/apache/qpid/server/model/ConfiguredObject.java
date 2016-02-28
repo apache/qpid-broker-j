@@ -199,21 +199,6 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
      */
     Map<String, Object> getActualAttributes();
 
-    /**
-     * Set the value of an attribute
-     *
-     * @param name the name of the attribute to be set
-     * @param expected the value the caller believes the attribute currently has (or null if it is expected to be unset)
-     * @param desired the desired value for the attribute (or null to unset the attribute)
-     * @return the new value for the given attribute
-     * @throws IllegalStateException if the attribute cannot be set while the object is in its current state
-     * @throws AccessControlException if the caller does not have permission to alter the value of the attribute
-     * @throws IllegalArgumentException if the provided value is not valid for the given argument
-     */
-    Object setAttribute(String name, Object expected, Object desired) throws IllegalStateException,
-                                                                             AccessControlException,
-                                                                             IllegalArgumentException;
-
 
     /**
      * Return the statistics for the ConfiguredObject

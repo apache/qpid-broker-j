@@ -84,7 +84,7 @@ public abstract class AbstractStandardVirtualHostNode<X extends AbstractStandard
             getConfigurationStore().openConfigurationStore(this, false, initialRecords);
             if(initialRecords != null && initialRecords.length > 0)
             {
-                setAttribute(VIRTUALHOST_INITIAL_CONFIGURATION, getVirtualHostInitialConfiguration(), "{}");
+                setAttributes(Collections.<String, Object>singletonMap(VIRTUALHOST_INITIAL_CONFIGURATION, "{}"));
             }
         }
         catch (IOException e)
