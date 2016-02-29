@@ -434,6 +434,12 @@ public class ProducerFlowControlTest extends AbstractTestLogging
             try
             {
                 ((AMQSession<?,?>)producerSession).sync();
+                // TODO: sync a second time in order to ensure that the client has received the flow command
+                // before continuing with the next message.  This is required because the Broker may legally
+                // send the flow command after the sync response. By sync'ing a second time we ensure that
+                // the client will has seen/acted on the flow command.  The test really ought not have this
+                // level of information.
+                ((AMQSession<?,?>)producerSession).sync();
             }
             catch (QpidException e)
             {
