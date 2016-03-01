@@ -198,7 +198,10 @@ public class ConnectionBuilder
         public Socket createSocket(final Socket socket, final String host, final int port, final boolean autoClose)
                 throws IOException
         {
-            return _wrappedSocketFactory.createSocket(socket, host, port, autoClose);
+            final SSLSocket newSocket = (SSLSocket) _wrappedSocketFactory.createSocket(socket, host, port, autoClose);
+            SSLUtil.updateEnabledCipherSuites(newSocket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
+            SSLUtil.updateEnabledTlsProtocols(newSocket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
+            return newSocket;
         }
 
         @Override
