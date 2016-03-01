@@ -109,7 +109,7 @@ public class TemporaryTopicTest extends QpidBrokerTestCase
     /**
      * Tests that a temporary topic cannot be used by another {@link Connection}.
      */
-    public void testUseFromAnotherSessionProhibited() throws Exception
+    public void testUseFromAnotherConnectionProhibited() throws Exception
     {
         final Connection conn = getConnection();
         final Connection conn2 = getConnection();

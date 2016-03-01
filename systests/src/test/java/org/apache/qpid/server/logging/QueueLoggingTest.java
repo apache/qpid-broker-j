@@ -122,61 +122,57 @@ public class QueueLoggingTest extends AbstractTestLogging
 
 
     /**
-        *  Description:
-        *  An explict QueueDelete request must result in a QUE-1002 Deleted message
-        *  being logged. This can be done via an explict AMQP QueueDelete method.
-        * Input:
-        *
-        *  1. Running Broker
-        *  2. Queue created on the broker with no subscribers
-        *  3. Client creates a temporary queue then disconnects
-        *  Output:
-        *
-        *  <date> QUE-1002 : Deleted
-        *
-        *  Validation Steps:
-        *
-        *  4. The QUE ID is correct
-        *
-        * @throws java.io.IOException
-        * @throws javax.jms.JMSException
-        * @throws javax.naming.NamingException
-        */
-       public void testQueueAutoDelete() throws NamingException, JMSException, IOException
-       {
-           // Create a temporary queue so that when we consume from it and
-           // then close the consumer it will be autoDeleted.
-           _session.createConsumer(_session.createTemporaryQueue());
+     * Description:
+     *  Closing a JMS connection should delete a temporary queue that it created
+     * Input:
+     *
+     *  1. Running Broker
+     *  2. Client creates a temporary queue then disconnects
+     *  Output:
+     *
+     *  <date> QUE-1002 : Deleted
+     *
+     *  Validation Steps:
+     *
+     *  3. The QUE ID is correct
+     *
+     * @throws java.io.IOException
+     * @throws javax.jms.JMSException
+     * @throws javax.naming.NamingException
+     */
+    public void testQueueAutoDelete() throws NamingException, JMSException, IOException
+    {
+        _session.createTemporaryQueue();
 
-           _connection.close();
-           
-           // Validation
-           //Ensure that we wait for the QUE log message
-           waitAndFindMatches("QUE-1002");
+        _connection.close();
 
-           List<String> results = findMatches(QUEUE_PREFIX);
+        // Validation
+        //Ensure that we wait for the QUE log message
+        waitAndFindMatches("QUE-1002");
 
-           // Only 1 Queue message should hav been logged
-           assertEquals("Result set size not as expected", 2, results.size());
+        List<String> results = findMatches(QUEUE_PREFIX);
 
-           String log = getLogMessage(results, 0);
+        // Only 1 Queue message should hav been logged
+        assertEquals("Result set size not as expected", 2, results.size());
 
-           // Message Should be a QUE-1001
-           validateMessageID("QUE-1001", log);
+        String log = getLogMessage(results, 0);
 
-           String createdQueueName = AbstractTestLogSubject.getSlice("qu",  fromSubject(log));
+        // Message Should be a QUE-1001
+        validateMessageID("QUE-1001", log);
 
-           log = getLogMessage(results, 1);
-           // Message Should be a QUE-1002
-           validateMessageID("QUE-1002", log);
+        String createdQueueName = AbstractTestLogSubject.getSlice("qu", fromSubject(log));
 
-           final String actual = getMessageString(fromMessage(log));
-           assertTrue("Log message does not contain expected message. actual : " + actual,
-                        actual.contains("Deleted"));
+        log = getLogMessage(results, 1);
+        // Message Should be a QUE-1002
+        validateMessageID("QUE-1002", log);
 
-           assertEquals("Queue Delete not for created queue:", createdQueueName,
-                        AbstractTestLogSubject.getSlice("qu", fromSubject(log)));
+        final String actual = getMessageString(fromMessage(log));
+        assertTrue("Log message does not contain expected message. actual : " + actual,
+                   actual.contains("Deleted"));
 
-       }
+        assertEquals("Queue Delete not for created queue:", createdQueueName,
+                     AbstractTestLogSubject.getSlice("qu", fromSubject(log)));
+
+    }
 
 }

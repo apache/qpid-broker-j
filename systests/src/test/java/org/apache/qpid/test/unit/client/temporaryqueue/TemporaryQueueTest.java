@@ -52,15 +52,15 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
         final MessageConsumer consumer = session.createConsumer(queue);
         conn.start();
         producer.send(session.createTextMessage("hello"));
-        TextMessage tm = (TextMessage) consumer.receive(2000);
+        TextMessage tm = (TextMessage) consumer.receive(RECEIVE_TIMEOUT);
         assertNotNull("Message not received", tm);
         assertEquals("hello", tm.getText());
     }
 
     /**
-     * Tests that a temporary queue cannot be used by another {@link Connection}.
+     * Tests that a temporary queue cannot be used by a MessageConsumer on another Connection.
      */
-    public void testUseFromAnotherConnectionProhibited() throws Exception
+    public void testConsumeFromAnotherConnectionProhibited() throws Exception
     {
         final Connection conn = getConnection();
         final Connection conn2 = getConnection();
@@ -79,6 +79,27 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
             //pass
             assertEquals("Cannot consume from a temporary destination created on another connection", je.getMessage());
         }
+    }
+
+    /**
+     * Tests that a temporary queue can be used by a MessageProducer on another Connection.
+     */
+    public void testPublishFromAnotherConnectionAllowed() throws Exception
+    {
+        final Connection conn = getConnection();
+        final Connection conn2 = getConnection();
+        final Session session1 = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final Session session2 = conn2.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        final TemporaryQueue queue = session1.createTemporaryQueue();
+        assertNotNull(queue);
+
+        MessageProducer producer = session2.createProducer(queue);
+        producer.send(session2.createMessage());
+
+        conn.start();
+        MessageConsumer consumer = session1.createConsumer(queue);
+        Message message = consumer.receive(RECEIVE_TIMEOUT);
+        assertNotNull("Message not received", message);
     }
 
 
@@ -101,7 +122,7 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
 
         MessageConsumer consumer2 = session1.createConsumer(queue);
 
-        Message message = consumer2.receive(1000l);
+        Message message = consumer2.receive(RECEIVE_TIMEOUT);
 
         assertNotNull("Message should have been received", message);
         assertTrue("Received message not a text message", message instanceof TextMessage);
@@ -130,7 +151,7 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
 
         MessageConsumer consumer2 = session2.createConsumer(queue);
 
-        Message message = consumer2.receive(1000l);
+        Message message = consumer2.receive(RECEIVE_TIMEOUT);
 
         assertNotNull("Message should have been received", message);
         assertTrue("Received message not a text message", message instanceof TextMessage);
@@ -188,38 +209,5 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
         {
             assertFalse("Queue should no longer be bound", amqSession.isQueueBound((AMQDestination)queue));
         }
-    }
-
-    /**
-     * Tests that a temporary queue remains available for reuse even after its initial
-     * consumer has disconnected.
-     *
-     *  This test would fail under < 0-10 as their temporary queues are deleted automatically
-     *  (broker side) after the last consumer disconnects (so message2 would be lost). For this
-     *  reason this test is excluded from those profiles.
-     */
-    public void testTemporaryQueueReused() throws Exception
-    {
-        final Connection conn = getConnection();
-        final Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        final TemporaryQueue queue = session.createTemporaryQueue();
-        assertNotNull(queue);
-
-        final MessageProducer producer1 = session.createProducer(queue);
-        final MessageConsumer consumer1 = session.createConsumer(queue);
-        conn.start();
-        producer1.send(session.createTextMessage("message1"));
-        producer1.send(session.createTextMessage("message2"));
-        TextMessage tm = (TextMessage) consumer1.receive(2000);
-        assertNotNull("Message not received by first consumer", tm);
-        assertEquals("message1", tm.getText());
-        consumer1.close();
-
-        final MessageConsumer consumer2 = session.createConsumer(queue);
-        conn.start();
-        tm = (TextMessage) consumer2.receive(2000);
-        assertNotNull("Message not received by second consumer", tm);
-        assertEquals("message2", tm.getText());
-        consumer2.close();
     }
 }
