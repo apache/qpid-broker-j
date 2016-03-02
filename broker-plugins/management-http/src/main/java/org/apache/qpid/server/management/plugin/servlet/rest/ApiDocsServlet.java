@@ -394,20 +394,33 @@ public class ApiDocsServlet extends AbstractServlet
     private String renderType(final ConfiguredObjectAttribute attribute)
     {
         final Class type = attribute.getType();
-        return renderType(type,
-                attribute instanceof ConfiguredSettableAttribute && ((ConfiguredSettableAttribute)attribute).hasValidValues()
-                        ?  ((ConfiguredSettableAttribute)attribute).validValues() : null);
 
+        Collection<String> validValues;
+        String validValuePattern;
+
+        if(attribute instanceof ConfiguredSettableAttribute)
+        {
+            ConfiguredSettableAttribute<?,?> settableAttribute = (ConfiguredSettableAttribute<?,?>) attribute;
+            validValues = settableAttribute.hasValidValues() ? settableAttribute.validValues() : null;
+            validValuePattern = settableAttribute.vaidValuePattern();
+        }
+        else
+        {
+            validValues = null;
+            validValuePattern = "";
+        }
+
+        return renderType(type, validValues, validValuePattern);
     }
 
     private String renderType(final OperationParameter parameter)
     {
         final Class type = parameter.getType();
         List<String> validValues = parameter.getValidValues();
-        return renderType(type, validValues);
+        return renderType(type, validValues, "");
     }
 
-    private String renderType(Class type, Collection<String> validValues) {
+    private String renderType(Class type, Collection<String> validValues, final String validValuePattern) {
         if(Enum.class.isAssignableFrom(type))
         {
             return "<div class=\"restriction\" title=\"enum: " + EnumSet.allOf(type) + "\">string</div>";
@@ -424,9 +437,15 @@ public class ApiDocsServlet extends AbstractServlet
         {
             StringBuilder returnVal = new StringBuilder();
             final boolean hasValuesRestriction = validValues != null && !validValues.isEmpty();
+
+            // TODO - valid values and patterns might contain characters which should be escaped
             if(hasValuesRestriction)
             {
                 returnVal.append("<div class=\"restricted\" title=\"Valid values: " + validValues + "\">");
+            }
+            else if(validValuePattern != null && !"".equals(validValuePattern))
+            {
+                returnVal.append("<div class=\"restricted\" title=\"Valid value pattern: " + validValuePattern+ "\">");
             }
 
             if(Number.class.isAssignableFrom(type))

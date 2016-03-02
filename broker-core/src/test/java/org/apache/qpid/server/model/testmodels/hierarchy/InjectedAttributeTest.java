@@ -124,7 +124,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                              "",
                                                                              "",
                                                                              null,
-                                                                             validator);
+                                                                             "", validator);
 
         TestModel model = new TestModel(null, new TestInjector(attrInjector));
 
@@ -172,7 +172,7 @@ public class InjectedAttributeTest extends QpidTestCase
                                                                              "",
                                                                              "",
                                                                              new String[] { "42", "49" },
-                                                                             validator);
+                                                                             "", validator);
 
         TestModel model = new TestModel(null, new TestInjector(attrInjector));
 

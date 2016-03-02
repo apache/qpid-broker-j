@@ -200,4 +200,10 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
     {
         return validValues() != null && validValues().size() > 0;
     }
+
+    @Override
+    public String vaidValuePattern()
+    {
+        return _annotation.validValuePattern();
+    }
 }

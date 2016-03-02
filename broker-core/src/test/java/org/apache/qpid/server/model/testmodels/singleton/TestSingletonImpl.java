@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -71,6 +72,12 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
 
     @ManagedAttributeField
     private String _immutableValue;
+
+    @ManagedAttributeField
+    private String _valueWithPattern;
+
+    @ManagedAttributeField
+    private List<String> _listValueWithPattern;
 
     @ManagedObjectFactoryConstructor
     public TestSingletonImpl(final Map<String, Object> attributes)
@@ -170,5 +177,17 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     protected SecurityManager getSecurityManager()
     {
         return _securityManager;
+    }
+
+    @Override
+    public String getValueWithPattern()
+    {
+        return _valueWithPattern;
+    }
+
+    @Override
+    public List<String> getListValueWithPattern()
+    {
+        return _listValueWithPattern;
     }
 }

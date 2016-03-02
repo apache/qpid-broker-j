@@ -347,6 +347,48 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(TestSingleton.VALID_VALUE1, object.getValidValue());
     }
 
+    public void testCreateEnforcesAttributeValidValuePattern() throws Exception
+    {
+        final String objectName = getName();
+        Map<String, Object> illegalCreateAttributes = new HashMap<>();
+        illegalCreateAttributes.put(ConfiguredObject.NAME, objectName);
+        illegalCreateAttributes.put(TestSingleton.VALUE_WITH_PATTERN, "illegal");
+
+        try
+        {
+            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
+            // PASS
+        }
+
+        illegalCreateAttributes = new HashMap<>();
+        illegalCreateAttributes.put(ConfiguredObject.NAME, objectName);
+        illegalCreateAttributes.put(TestSingleton.LIST_VALUE_WITH_PATTERN, Arrays.asList("1.1.1.1", "1"));
+
+        try
+        {
+            _model.getObjectFactory().create(TestSingleton.class, illegalCreateAttributes);
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException ice)
+        {
+            // PASS
+        }
+
+
+        Map<String, Object> legalCreateAttributes = new HashMap<>();
+        legalCreateAttributes.put(ConfiguredObject.NAME, objectName);
+        legalCreateAttributes.put(TestSingleton.VALUE_WITH_PATTERN, "foozzzzzbar");
+        legalCreateAttributes.put(TestSingleton.LIST_VALUE_WITH_PATTERN, Arrays.asList("1.1.1.1", "255.255.255.255"));
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes);
+        assertEquals("foozzzzzbar", object.getValueWithPattern());
+    }
+
+
     public void testChangeEnforcesAttributeValidValues() throws Exception
     {
         final String objectName = getName();
@@ -413,6 +455,62 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
                     obj = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributesStrings);
             assertTrue(obj.getEnumSetValues().containsAll(Arrays.asList(TestEnum.TEST_ENUM2, TestEnum.TEST_ENUM3)));
         }
+    }
+
+
+    public void testChangeEnforcesAttributeValidValuePatterns() throws Exception
+    {
+        final String objectName = getName();
+        Map<String, Object> legalCreateAttributes = new HashMap<>();
+        legalCreateAttributes.put(ConfiguredObject.NAME, objectName);
+        legalCreateAttributes.put(TestSingleton.VALUE_WITH_PATTERN, "foozzzzzbar");
+        legalCreateAttributes.put(TestSingleton.LIST_VALUE_WITH_PATTERN, Arrays.asList("1.1.1.1", "255.255.255.255"));
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, legalCreateAttributes);
+        assertEquals("foozzzzzbar", object.getValueWithPattern());
+        assertEquals(Arrays.asList("1.1.1.1", "255.255.255.255"), object.getListValueWithPattern());
+
+        object.setAttributes(Collections.singletonMap(TestSingleton.VALUE_WITH_PATTERN, "foobar"));
+        assertEquals("foobar", object.getValueWithPattern());
+
+        object.setAttributes(Collections.singletonMap(TestSingleton.LIST_VALUE_WITH_PATTERN, Collections.singletonList("1.2.3.4")));
+        assertEquals(Collections.singletonList("1.2.3.4"), object.getListValueWithPattern());
+
+
+        try
+        {
+            object.setAttributes(Collections.singletonMap(TestSingleton.VALUE_WITH_PATTERN, "foobaz"));
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException iae)
+        {
+            // PASS
+        }
+
+
+        try
+        {
+            object.setAttributes(Collections.singletonMap(TestSingleton.LIST_VALUE_WITH_PATTERN, Arrays.asList("1.1.1.1", "1")));
+            fail("Exception not thrown");
+        }
+        catch (IllegalConfigurationException iae)
+        {
+            // PASS
+        }
+
+        assertEquals("foobar", object.getValueWithPattern());
+        assertEquals(Collections.singletonList("1.2.3.4"), object.getListValueWithPattern());
+
+
+        object.setAttributes(Collections.singletonMap(TestSingleton.VALUE_WITH_PATTERN, null));
+        assertNull(object.getValueWithPattern());
+
+        object.setAttributes(Collections.singletonMap(TestSingleton.LIST_VALUE_WITH_PATTERN, Collections.emptyList()));
+        assertEquals(Collections.emptyList(), object.getListValueWithPattern());
+
+        object.setAttributes(Collections.singletonMap(TestSingleton.LIST_VALUE_WITH_PATTERN, null));
+        assertNull(object.getListValueWithPattern());
+
     }
 
     public void testDefaultContextIsInContextKeys()

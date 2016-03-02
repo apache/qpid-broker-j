@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +40,8 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
     String ENUM_VALUE = "enumValue";
     String INT_VALUE = "intValue";
     String VALID_VALUE = "validValue";
+    String VALUE_WITH_PATTERN = "valueWithPattern";
+    String LIST_VALUE_WITH_PATTERN = "listValueWithPattern";
     String SECURE_VALUE = "secureValue";
     String ENUMSET_VALUES = "enumSetValues";
     String IMMUTABLE_VALUE = "immutableValue";
@@ -81,6 +84,12 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
 
     @ManagedAttribute( validValues = {"[\"TEST_ENUM1\"]", "[\"TEST_ENUM2\", \"TEST_ENUM3\"]"})
     Set<TestEnum> getEnumSetValues();
+
+    @ManagedAttribute(validValuePattern = "foo.*bar" )
+    String getValueWithPattern();
+
+    @ManagedAttribute(validValuePattern = "[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" )
+    List<String> getListValueWithPattern();
 
     @DerivedAttribute
     long getDerivedValue();

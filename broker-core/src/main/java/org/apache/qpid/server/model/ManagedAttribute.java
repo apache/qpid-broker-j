@@ -35,6 +35,7 @@ public @interface ManagedAttribute
     String defaultValue() default "";
     String description() default "";
     String[] validValues() default {};
+    String validValuePattern() default "";
     boolean oversize() default false;
     String oversizedAltText() default "";
     String secureValueFilter() default "";

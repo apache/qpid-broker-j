@@ -26,6 +26,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.security.AccessControlException;
@@ -52,6 +53,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import javax.security.auth.Subject;
 
@@ -446,6 +448,44 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
         return false;
     }
+
+    private boolean checkValidValuePattern(final ConfiguredSettableAttribute attribute, final Object desiredValue)
+    {
+        Collection<String> valuesToCheck;
+
+        if(attribute.getType().equals(String.class))
+        {
+            valuesToCheck = Collections.singleton(desiredValue.toString());
+        }
+        else if(Collection.class.isAssignableFrom(attribute.getType()) && attribute.getGenericType() instanceof ParameterizedType)
+        {
+            ParameterizedType paramType = (ParameterizedType)attribute.getGenericType();
+            if(paramType.getActualTypeArguments().length == 1 && paramType.getActualTypeArguments()[0] == String.class)
+            {
+                valuesToCheck = (Collection<String>)desiredValue;
+            }
+            else
+            {
+                valuesToCheck = Collections.emptySet();
+            }
+        }
+        else
+        {
+            valuesToCheck = Collections.emptySet();
+        }
+
+        Pattern pattern = Pattern.compile(attribute.vaidValuePattern());
+        for (String value : valuesToCheck)
+        {
+            if(!pattern.matcher(value).matches())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 
     @Override
     public final void open()
@@ -1082,6 +1122,20 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                 + " cannot have value '" + desiredValueOrDefault + "'"
                                                                 + ". Valid values are: "
                                                                 + autoAttr.validValues());
+                    }
+                }
+                else if(!"".equals(autoAttr.vaidValuePattern()))
+                {
+                    Object desiredValueOrDefault = autoAttr.getValue(this);
+
+                    if (desiredValueOrDefault != null && !checkValidValuePattern(autoAttr, desiredValueOrDefault))
+                    {
+                        throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
+                                                                + "' instance of "+ getClass().getName()
+                                                                + " named '" + getName() + "'"
+                                                                + " cannot have value '" + desiredValueOrDefault + "'"
+                                                                + ". Valid values pattern is: "
+                                                                + autoAttr.vaidValuePattern());
                     }
                 }
                 if(autoAttr.isMandatory() && autoAttr.getValue(this) == null)
@@ -2505,6 +2559,21 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                 + autoAttr.validValues());
                     }
                 }
+                else if(!"".equals(autoAttr.vaidValuePattern()))
+                {
+                    Object desiredValueOrDefault = autoAttr.getValue(proxyForValidation);
+
+                    if (desiredValueOrDefault != null && !checkValidValuePattern(autoAttr, desiredValueOrDefault))
+                    {
+                        throw new IllegalConfigurationException("Attribute '" + autoAttr.getName()
+                                                                + "' instance of "+ getClass().getName()
+                                                                + " named '" + getName() + "'"
+                                                                + " cannot have value '" + desiredValueOrDefault + "'"
+                                                                + ". Valid values pattern is: "
+                                                                + autoAttr.vaidValuePattern());
+                    }
+                }
+
 
                 if(autoAttr.isMandatory() && autoAttr.getValue(proxyForValidation) == null)
                 {

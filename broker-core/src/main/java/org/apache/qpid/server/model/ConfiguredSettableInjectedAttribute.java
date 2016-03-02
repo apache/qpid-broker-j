@@ -49,20 +49,21 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
     private final String _oversizedAltText;
     private final String _description;
     private final String[] _validValues;
+    private final String _validValuePattern;
 
     public ConfiguredSettableInjectedAttribute(final String name,
-                                        final Class<T> type,
-                                        final Type genericType,
-                                        final String defaultValue,
-                                        final boolean secure,
-                                        final boolean persisted,
-                                        final boolean immutable,
-                                        final String secureValueFilter,
-                                        final boolean oversized,
-                                        final String oversizedAltText,
-                                        final String description,
-                                        final String[] validValues,
-                                        final TypeValidator typeValidator)
+                                               final Class<T> type,
+                                               final Type genericType,
+                                               final String defaultValue,
+                                               final boolean secure,
+                                               final boolean persisted,
+                                               final boolean immutable,
+                                               final String secureValueFilter,
+                                               final boolean oversized,
+                                               final String oversizedAltText,
+                                               final String description,
+                                               final String[] validValues,
+                                               final String validValuePattern, final TypeValidator typeValidator)
     {
         super(name, type, genericType, typeValidator);
 
@@ -74,6 +75,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         _oversizedAltText = oversizedAltText;
         _description = description;
         _validValues = validValues;
+        _validValuePattern = validValuePattern;
 
         Method validValuesMethod = null;
 
@@ -240,4 +242,9 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
         return convert(value, configuredObject);
     }
 
+    @Override
+    public String vaidValuePattern()
+    {
+        return _validValuePattern;
+    }
 }

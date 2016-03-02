@@ -32,5 +32,7 @@ public interface ConfiguredSettableAttribute<C extends ConfiguredObject, T> exte
 
     Collection<String> validValues();
 
+    String vaidValuePattern();
+
     boolean hasValidValues();
 }

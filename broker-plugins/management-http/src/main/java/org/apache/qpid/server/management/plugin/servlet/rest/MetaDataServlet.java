@@ -193,6 +193,10 @@ public class MetaDataServlet extends AbstractServlet
                     }
                     attrDetails.put("validValues", convertedValues);
                 }
+                else if(!"".equals(automatedAttribute.vaidValuePattern()))
+                {
+                    attrDetails.put("validValuesPattern", automatedAttribute.vaidValuePattern());
+                }
 
             }
             if (attribute.isSecure())
