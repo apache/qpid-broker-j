@@ -71,13 +71,10 @@ import org.apache.qpid.server.util.urlstreamhandler.data.Handler;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
 @ManagedObject( category = false )
-public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStoreImpl> implements NonJavaKeyStore<NonJavaKeyStoreImpl>
+public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> implements NonJavaKeyStore<NonJavaKeyStoreImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonJavaKeyStoreImpl.class);
     private static final long ONE_DAY = 24l * 60l * 60l * 1000l;
-
-    private final Broker<?> _broker;
-    private final EventLogger _eventLogger;
 
     @ManagedAttributeField( afterSet = "updateKeyManagers" )
     private String _privateKeyUrl;
@@ -97,27 +94,10 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
 
     private X509Certificate _certificate;
 
-    private ScheduledFuture<?> _checkExpiryTaskFuture;
-    private int _checkFrequency;
-
     @ManagedObjectFactoryConstructor
     public NonJavaKeyStoreImpl(final Map<String, Object> attributes, Broker<?> broker)
     {
-        super(parentsMap(broker), attributes);
-        _broker = broker;
-        _eventLogger = _broker.getEventLogger();
-        _eventLogger.message(KeyStoreMessages.CREATE(getName()));
-    }
-
-    @Override
-    protected void onClose()
-    {
-        super.onClose();
-        if(_checkExpiryTaskFuture != null)
-        {
-            _checkExpiryTaskFuture.cancel(false);
-            _checkExpiryTaskFuture = null;
-        }
+        super(attributes, broker);
     }
 
     @Override
@@ -203,7 +183,7 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         // verify that it is not in use
         String storeName = getName();
 
-        Collection<Port> ports = new ArrayList<Port>(_broker.getPorts());
+        Collection<Port> ports = new ArrayList<Port>(getBroker().getPorts());
         for (Port port : ports)
         {
             if (port.getKeyStore() == this)
@@ -216,92 +196,14 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         }
         deleted();
         setState(State.DELETED);
-        _eventLogger.message(KeyStoreMessages.DELETE(getName()));
+        getEventLogger().message(KeyStoreMessages.DELETE(getName()));
         return Futures.immediateFuture(null);
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
     protected ListenableFuture<Void> doActivate()
     {
-        int checkFrequency;
-        try
-        {
-            checkFrequency = getContextValue(Integer.class, CERTIFICATE_EXPIRY_CHECK_FREQUENCY);
-        }
-        catch (IllegalArgumentException | NullPointerException e)
-        {
-            LOGGER.warn("Cannot parse the context variable {} ", CERTIFICATE_EXPIRY_CHECK_FREQUENCY, e);
-            checkFrequency = DEFAULT_CERTIFICATE_EXPIRY_CHECK_FREQUENCY;
-        }
-        if(_broker.getState() == State.ACTIVE)
-        {
-            _checkExpiryTaskFuture = _broker.scheduleHouseKeepingTask(checkFrequency, TimeUnit.DAYS, new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    checkCertificateExpiry();
-                }
-            });
-        }
-        else
-        {
-            final int frequency = checkFrequency;
-            _broker.addChangeListener(new ConfigurationChangeListener()
-            {
-                @Override
-                public void stateChanged(final ConfiguredObject<?> object, final State oldState, final State newState)
-                {
-                    if (newState == State.ACTIVE)
-                    {
-                        _checkExpiryTaskFuture =
-                                _broker.scheduleHouseKeepingTask(frequency, TimeUnit.DAYS, new Runnable()
-                                {
-                                    @Override
-                                    public void run()
-                                    {
-                                        checkCertificateExpiry();
-                                    }
-                                });
-                        _broker.removeChangeListener(this);
-                    }
-                }
-
-                @Override
-                public void childAdded(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-                {
-
-                }
-
-                @Override
-                public void childRemoved(final ConfiguredObject<?> object, final ConfiguredObject<?> child)
-                {
-
-                }
-
-                @Override
-                public void attributeSet(final ConfiguredObject<?> object,
-                                         final String attributeName,
-                                         final Object oldAttributeValue,
-                                         final Object newAttributeValue)
-                {
-
-                }
-
-                @Override
-                public void bulkChangeStart(final ConfiguredObject<?> object)
-                {
-
-                }
-
-                @Override
-                public void bulkChangeEnd(final ConfiguredObject<?> object)
-                {
-
-                }
-            });
-        }
-
+        initializeExpiryChecking();
         setState(State.ACTIVE);
         return Futures.immediateFuture(null);
     }
@@ -374,7 +276,7 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         }
     }
 
-    private void checkCertificateExpiry()
+    protected void checkCertificateExpiry()
     {
         try
         {
@@ -418,9 +320,9 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
                         long timeToExpiry = cert.getNotAfter().getTime() - currentTime;
                         int days = Math.max(0, (int) (timeToExpiry / (ONE_DAY)));
 
-                        _eventLogger.message(KeyStoreMessages.EXPIRING(getName(),
-                                                                       String.valueOf(days),
-                                                                       cert.getSubjectDN().toString()));
+                        getEventLogger().message(KeyStoreMessages.EXPIRING(getName(),
+                                                                           String.valueOf(days),
+                                                                           cert.getSubjectDN().toString()));
                     }
                     catch (CertificateNotYetValidException e)
                     {
@@ -447,6 +349,5 @@ public class NonJavaKeyStoreImpl extends AbstractConfiguredObject<NonJavaKeyStor
         }
         return url;
     }
-
 
 }
