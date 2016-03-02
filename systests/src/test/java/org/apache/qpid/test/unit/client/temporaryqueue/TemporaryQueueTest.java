@@ -164,8 +164,6 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
      * {@link TemporaryQueue#delete()} and is prevented from deleting one that
      * still has consumers.
      *
-     * Note: Under < 0-10 {@link TemporaryQueue#delete()} only marks the queue as deleted
-     * on the client. 0-10 causes the queue to be deleted from the Broker.
      */
     public void testExplictTemporaryQueueDeletion() throws Exception
     {
@@ -205,9 +203,7 @@ public class TemporaryQueueTest extends QpidBrokerTestCase
             assertEquals("Cannot consume from a deleted destination", je.getMessage());
         }
 
-        if (isBroker010())
-        {
-            assertFalse("Queue should no longer be bound", amqSession.isQueueBound((AMQDestination)queue));
-        }
+        assertFalse("Queue should no longer be bound", amqSession.isQueueBound((AMQDestination)queue));
+
     }
 }

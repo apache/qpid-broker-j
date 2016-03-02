@@ -1379,12 +1379,19 @@ public class AMQSession_0_8 extends AMQSession<BasicMessageConsumer_0_8, BasicMe
     protected void deleteTemporaryDestination(final TemporaryDestination amqQueue)
             throws JMSException
     {
-        // Currently TemporaryDestination is set to be auto-delete which, for 0-8..0-9-1, means that the queue will be deleted
-        // by the server when there are no more subscriptions to that queue/topic (rather than when the client disconnects).
-        // This is not quite right for JMSCompliance as the queue/topic should remain until the connection closes, or the
-        // client explicitly deletes it.
+        if(getAMQConnection().getDelegate().isQueueLifetimePolicySupported() && amqQueue instanceof AMQTemporaryQueue)
+        {
+            super.deleteTemporaryDestination(amqQueue);
+        }
+        else
+        {
+            // TemporaryDestination is set to be auto-delete is a topic or queuelifetime policy is not supported.
+            // For 0-8..0-9-1, means that the queue will be deleted by the server when there are no more subscriptions to
+            // that queue/topic (rather than when the client disconnects).  As such the underlying queue may no longer exist
+            // and deleting may throw an error.
 
-        /* intentional no-op */
+            _logger.debug("Delete request for temporary destination {} not implemented"  + amqQueue.getAMQQueueName());
+        }
     }
 
     public boolean isQueueBound(String exchangeName, String queueName,

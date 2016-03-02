@@ -312,20 +312,9 @@ amqp://guest:guest@clientid/?brokerlist='localhost:5671?client_cert_path='/path/
     </section>
     <section xml:id="JMS-Client-0-8-Client-Understanding-Session-TemporaryQueues">
       <title>TemporaryQueues</title>
-      <para>Qpid implements JMS temporary queues as AMQP auto-delete queues. The life cycle of these
-        queues deviates from the JMS specification.</para>
-      <para>AMQP auto-delete queues are deleted either when the <emphasis>last</emphasis> Consumer
-        closes, or the Connection is closed. If no Consumer is ever attached to the queue, the queue
-        will remain until the Connection is closed.</para>
-      <para>This deviation has no practical impact on the implementation of the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="http://www.eaipatterns.com/RequestReply.html">request/reply messaging pattern</link>
-        utilising a per-request temporary reply queue. The reply to queue is deleted as the
-        application closes the Consumer awaiting the response. </para>
       <para>Temporary queues are exposed to Management in the same way as normal queues. Temporary
         queue names take the form string <literal>TempQueue</literal> followed by a random
         UUID.</para>
-      <para>Note that <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="${oracleJeeDocUrl}javax/jms/TemporaryQueue.html#delete()">TemporaryQueue#delete()</link> merely marks the queue as deleted on within the JMS
-        client (and prevents further use of the queue from the application), however, the Queue will
-        remain on the Broker until the Consumer (or Connection) is closed.</para>
     </section>
     <section xml:id="JMS-Client-0-8-Client-Understanding-Session-CreateQueue">
       <title>CreateQueue</title>
