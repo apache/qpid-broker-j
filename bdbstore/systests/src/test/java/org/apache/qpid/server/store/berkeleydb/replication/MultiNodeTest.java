@@ -636,6 +636,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
     public void testQuorumOverride() throws Exception
     {
         final Connection connection = getConnection(_positiveFailoverUrl);
+        ((AMQConnection)connection).setConnectionListener(_failoverListener);
 
         Set<Integer> ports = _groupCreator.getBrokerPortNumbersForNodes();
 
@@ -648,8 +649,9 @@ public class MultiNodeTest extends QpidBrokerTestCase
             _groupCreator.stopNode(p);
         }
 
-        // Failover may or may not occur. It depends on the relative timing of the internal db-ping and the application of the
-        // QUORUM_OVERRIDE.
+        LOGGER.info("Awaiting failover to start");
+        _failoverListener.awaitPreFailover(20000);
+        LOGGER.info("Failover has begun");
 
         Map<String, Object> attributes = _groupCreator.getNodeAttributes(activeBrokerPort);
         assertEquals("Broker has unexpected quorum override", new Integer(0), attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
@@ -658,8 +660,8 @@ public class MultiNodeTest extends QpidBrokerTestCase
         attributes = _groupCreator.getNodeAttributes(activeBrokerPort);
         assertEquals("Broker has unexpected quorum override", new Integer(1), attributes.get(BDBHAVirtualHostNode.QUORUM_OVERRIDE));
 
-        // Be certain the failover isn't going to occur, or has completed, by awaiting the transaction counter to rise
-        awaitNextTransaction(activeBrokerPort);
+        _failoverListener.awaitFailoverCompletion(20000);
+        LOGGER.info("Failover has finished");
 
         assertProducingConsuming(connection);
     }
@@ -795,6 +797,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
     private final class FailoverAwaitingListener implements ConnectionListener
     {
         private final CountDownLatch _failoverCompletionLatch;
+        private final CountDownLatch _preFailoverLatch;
         private volatile boolean _failoverStarted;
 
         private FailoverAwaitingListener()
@@ -805,6 +808,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         private FailoverAwaitingListener(int connectionNumber)
         {
             _failoverCompletionLatch = new CountDownLatch(connectionNumber);
+            _preFailoverLatch = new CountDownLatch(1);
         }
 
         @Override
@@ -817,6 +821,7 @@ public class MultiNodeTest extends QpidBrokerTestCase
         public synchronized boolean preFailover(boolean redirect)
         {
             _failoverStarted = true;
+            _preFailoverLatch.countDown();
             return true;
         }
 
@@ -838,6 +843,12 @@ public class MultiNodeTest extends QpidBrokerTestCase
         {
             _failoverCompletionLatch.await(delay, TimeUnit.MILLISECONDS);
             assertEquals("Failover occurred unexpectedly", 1L, _failoverCompletionLatch.getCount());
+        }
+
+        public void awaitPreFailover(long delay) throws InterruptedException
+        {
+            boolean complete = _preFailoverLatch.await(delay, TimeUnit.MILLISECONDS);
+            assertTrue("Failover was expected to begin within " + delay + " ms.", complete);
         }
 
         @Override
