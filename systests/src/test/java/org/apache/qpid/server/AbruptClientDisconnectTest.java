@@ -167,8 +167,14 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
                                              @Override
                                              public void run()
                                              {
-                                                 producer.stop();
-                                                 _tcpTunneler.disconnect(clientMonitor.getClientAddress());
+                                                 try
+                                                 {
+                                                     _tcpTunneler.disconnect(clientMonitor.getClientAddress());
+                                                 }
+                                                 finally
+                                                 {
+                                                     producer.stop();
+                                                 }
                                              }
                                          }
         );
@@ -183,6 +189,8 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         _executorService.submit(consumer);
 
         boolean disconnectOccurred = clientMonitor.awaitDisconnect(10, TimeUnit.SECONDS);
+
+        LOGGER.debug("Stopping consumer and producer");
         consumer.stop();
         producer.stop();
 
@@ -239,19 +247,32 @@ public class AbruptClientDisconnectTest extends QpidBrokerTestCase
         while (expectedIndex < toIndex)
         {
             Message message = consumer.receive(RECEIVE_TIMEOUT);
-            assertNotNull("Expected message with index " + expectedIndex + " but got null", message);
-            int messageIndex = message.getIntProperty(INDEX);
-            LOGGER.debug("Received message with index {}, expected index is {}", messageIndex, expectedIndex);
-            if (messageIndex != expectedIndex
-                && expectedIndex == fromIndex
-                && messageIndex == consumerLastSeenMessageIndex + 1)
+            if (message == null && consumerLastSeenMessageIndex + 1 == toIndex)
             {
+                // this is a corner case when one remaining message is expected
+                // but it was already received previously, Commit was sent
+                // and broker successfully committed and sent back CommitOk
+                // but CommitOk did not reach client due to abrupt disconnect
                 LOGGER.debug( "Broker transaction was completed for message {}"
-                              + " but there was no network to notify client about its completion.",
+                                + " but there was no network to notify client about its completion.",
                         consumerLastSeenMessageIndex);
-                expectedIndex = messageIndex;
             }
-            assertEquals("Unexpected message index", expectedIndex, messageIndex);
+            else
+            {
+                assertNotNull("Expected message with index " + expectedIndex + " but got null", message);
+                int messageIndex = message.getIntProperty(INDEX);
+                LOGGER.debug("Received message with index {}, expected index is {}", messageIndex, expectedIndex);
+                if (messageIndex != expectedIndex
+                        && expectedIndex == fromIndex
+                        && messageIndex == consumerLastSeenMessageIndex + 1)
+                {
+                    LOGGER.debug("Broker transaction was completed for message {}"
+                                    + " but there was no network to notify client about its completion.",
+                            consumerLastSeenMessageIndex);
+                    expectedIndex = messageIndex;
+                }
+                assertEquals("Unexpected message index", expectedIndex, messageIndex);
+            }
             expectedIndex++;
         }
         session.close();
