@@ -746,7 +746,6 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     {
         synchronized (_failoverLatchChange)
         {
-            _logger.debug("Failover latch retrieved : {}", _failoverLatch);
             return _failoverLatch;
         }
     }
@@ -755,7 +754,6 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
     {
         synchronized (_failoverLatchChange)
         {
-            _logger.debug("Failover latch set : {}", failoverLatch);
             _failoverLatch = failoverLatch;
         }
     }
