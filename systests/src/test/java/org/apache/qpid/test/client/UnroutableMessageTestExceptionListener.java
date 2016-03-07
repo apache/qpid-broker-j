@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.AMQException;
 import org.apache.qpid.client.AMQNoConsumersException;
 import org.apache.qpid.client.AMQNoRouteException;
-import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.protocol.AMQConstant;
 
 /**
@@ -71,19 +70,19 @@ public class UnroutableMessageTestExceptionListener implements ExceptionListener
         _exceptions.add(e);
     }
 
-    public void assertReceivedNoRouteWithReturnedMessage(Message message, String intendedQueueName)
+    public void assertReceivedNoRouteWithReturnedMessage(Message message, String intendedQueueName) throws Exception
     {
         JMSException exception = getReceivedException();
         assertNoRouteExceptionWithReturnedMessage(exception, message, intendedQueueName);
     }
 
-    public void assertReceivedNoRoute(String intendedQueueName)
+    public void assertReceivedNoRoute(String intendedQueueName) throws Exception
     {
         JMSException exception = getReceivedException();
         assertNoRoute(exception, intendedQueueName);
     }
 
-    public void assertReceivedNoConsumersWithReturnedMessage(Message message)
+    public void assertReceivedNoConsumersWithReturnedMessage(Message message) throws Exception
     {
         JMSException exception = getReceivedException();
         AMQNoConsumersException noConsumersException = (AMQNoConsumersException) exception.getLinkedException();
@@ -91,48 +90,25 @@ public class UnroutableMessageTestExceptionListener implements ExceptionListener
         Message bounceMessage = (Message) noConsumersException.getUndeliveredMessage();
         assertNotNull("Bounced Message is expected", bounceMessage);
 
-        try
-        {
-            assertEquals("Unexpected message is bounced", message.getJMSMessageID(), bounceMessage.getJMSMessageID());
-        }
-        catch (JMSException e)
-        {
-            throw new RuntimeException("Couldn't check exception", e);
-        }
-    }
-
-    public void assertReceivedReturnedMessageWithLongExceptionMessage(Message message, AMQQueue queue)
-    {
-        JMSException exception = getReceivedException();
-        assertNoRouteException(exception, message);
-        String exchangeName = queue.getExchangeName();
-        String expectedMessage = "Error: No Route for message [Exchange: " + exchangeName.substring(0, 220) + "...";
-        assertTrue("Unexpected exception message: " + exception.getMessage(), exception.getMessage().contains(expectedMessage));
+        assertEquals("Unexpected message is bounced", message.getJMSMessageID(), bounceMessage.getJMSMessageID());
     }
 
     public void assertNoRouteExceptionWithReturnedMessage(
-            JMSException exception, Message message, String intendedQueueName)
+            JMSException exception, Message message, String intendedQueueName) throws Exception
     {
         assertNoRoute(exception, intendedQueueName);
 
         assertNoRouteException(exception, message);
     }
 
-    private void assertNoRouteException(JMSException exception, Message message)
+    private void assertNoRouteException(JMSException exception, Message message) throws Exception
     {
         AMQNoRouteException noRouteException = (AMQNoRouteException) exception.getLinkedException();
         assertNotNull("AMQNoRouteException should be linked to JMSException", noRouteException);
         Message bounceMessage = (Message) noRouteException.getUndeliveredMessage();
         assertNotNull("Bounced Message is expected", bounceMessage);
 
-        try
-        {
-            assertEquals("Unexpected message is bounced", message.getJMSMessageID(), bounceMessage.getJMSMessageID());
-        }
-        catch (JMSException e)
-        {
-            throw new RuntimeException("Couldn't check exception", e);
-        }
+        assertEquals("Unexpected message is bounced", message.getJMSMessageID(), bounceMessage.getJMSMessageID());
     }
 
     public void assertNoRoute(JMSException exception, String intendedQueueName)
@@ -151,29 +127,15 @@ public class UnroutableMessageTestExceptionListener implements ExceptionListener
     }
 
 
-    public void assertNoException()
+    public void assertNoException() throws Exception
     {
-        try
-        {
-            assertNull("Unexpected JMSException", _exceptions.poll(NEGATIVE_TIMEOUT, TimeUnit.SECONDS));
-        }
-        catch (InterruptedException e)
-        {
-            throw new RuntimeException("Couldn't check exception", e);
-        }
+        assertNull("Unexpected JMSException", _exceptions.poll(NEGATIVE_TIMEOUT, TimeUnit.SECONDS));
     }
 
-    private JMSException getReceivedException()
+    private JMSException getReceivedException() throws Exception
     {
-        try
-        {
-            JMSException exception = _exceptions.poll(POSITIVE_TIMEOUT, TimeUnit.SECONDS);
-            assertNotNull("JMSException is expected", exception);
-            return exception;
-        }
-        catch(InterruptedException e)
-        {
-            throw new RuntimeException("Couldn't check exception", e);
-        }
+        JMSException exception = _exceptions.poll(POSITIVE_TIMEOUT, TimeUnit.SECONDS);
+        assertNotNull("JMSException is expected", exception);
+        return exception;
     }
 }

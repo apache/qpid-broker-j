@@ -107,7 +107,7 @@ public class ImmediateAndMandatoryPublishingTest extends QpidBrokerTestCase
     }
 
     private void publishIntoExistingDestinationWithNoConsumerAndImmediateOn(int acknowledgeMode, boolean pubSub)
-            throws JMSException, InterruptedException
+            throws Exception
     {
         consumerCreateAndClose(pubSub, true);
 
@@ -116,15 +116,13 @@ public class ImmediateAndMandatoryPublishingTest extends QpidBrokerTestCase
         _testExceptionListener.assertReceivedNoConsumersWithReturnedMessage(message);
     }
 
-    private void publishWithMandatoryOnImmediateOff(int acknowledgeMode, boolean pubSub) throws JMSException,
-            InterruptedException
+    private void publishWithMandatoryOnImmediateOff(int acknowledgeMode, boolean pubSub) throws Exception
     {
         Message message = produceMessage(acknowledgeMode, pubSub, true, false);
         _testExceptionListener.assertReceivedNoRouteWithReturnedMessage(message, getTestQueueName());
     }
 
-    private void publishWithMandatoryOffImmediateOff(int acknowledgeMode, boolean pubSub) throws JMSException,
-            InterruptedException
+    private void publishWithMandatoryOffImmediateOff(int acknowledgeMode, boolean pubSub) throws Exception
     {
         produceMessage(acknowledgeMode, pubSub, false, false);
 
@@ -180,7 +178,7 @@ public class ImmediateAndMandatoryPublishingTest extends QpidBrokerTestCase
         return message;
     }
 
-    public void testMandatoryAndImmediateDefaults() throws JMSException, InterruptedException
+    public void testMandatoryAndImmediateDefaults() throws Exception
     {
         Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
@@ -213,7 +211,7 @@ public class ImmediateAndMandatoryPublishingTest extends QpidBrokerTestCase
         session.close();
     }
 
-    public void testMandatoryAndImmediateSystemProperties() throws JMSException, InterruptedException
+    public void testMandatoryAndImmediateSystemProperties() throws Exception
     {
         setTestClientSystemProperty("qpid.default_mandatory","true");
         Session session = _connection.createSession(false, Session.AUTO_ACKNOWLEDGE);

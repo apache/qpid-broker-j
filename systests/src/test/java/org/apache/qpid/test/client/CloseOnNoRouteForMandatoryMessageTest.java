@@ -22,24 +22,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.jms.Connection;
-import javax.jms.Destination;
 import javax.jms.IllegalStateException;
-import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
-import javax.naming.NamingException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.AMQException;
-import org.apache.qpid.client.AMQQueue;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.jms.ConnectionURL;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
-import org.apache.qpid.url.URLSyntaxException;
 
 /**
  * Tests the broker's connection-closing behaviour when it receives an unroutable message
@@ -53,12 +46,6 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
 
     private Connection _connection;
     private UnroutableMessageTestExceptionListener _testExceptionListener = new UnroutableMessageTestExceptionListener();
-
-    @Override
-    public void setUp() throws Exception
-    {
-        super.setUp();
-    }
 
     public void testNoRoute_brokerClosesConnection() throws Exception
     {
@@ -87,88 +74,6 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
             //The session was marked closed even before we had a chance to call commit on it
             assertTrue("ISE did not indicate closure", ise.getMessage().contains("closed"));
         }
-
-        forgetConnection(_connection);
-    }
-
-    public void testCloseOnNoRouteWhenExceptionMessageLengthIsGreater255() throws Exception
-    {
-        createConnectionWithCloseWhenNoRoute(true);
-
-        AMQSession<?, ?> transactedSession = (AMQSession<?, ?>) _connection.createSession(true, Session.SESSION_TRANSACTED);
-
-        StringBuilder longExchangeName = getLongExchangeName();
-
-        String exchangeName = longExchangeName.toString();
-        transactedSession.declareExchange(exchangeName, "direct", false);
-
-        Destination testQueue = new AMQQueue(exchangeName, getTestQueueName());
-        MessageProducer mandatoryProducer = transactedSession.createProducer(
-                testQueue,
-                true, // mandatory
-                false); // immediate
-
-        Message message = transactedSession.createMessage();
-        mandatoryProducer.send(message);
-        try
-        {
-            transactedSession.commit();
-            fail("Expected exception not thrown");
-        }
-        catch (IllegalStateException ise)
-        {
-            _logger.debug("Caught exception", ise);
-            //The session was marked closed even before we had a chance to call commit on it
-            assertTrue("ISE did not indicate closure", ise.getMessage().contains("closed"));
-        }
-        catch (JMSException e)
-        {
-            _logger.debug("Caught exception", e);
-            AMQException noRouteException = (AMQException) e.getLinkedException();
-            assertNotNull("AMQException should be linked to JMSException", noRouteException);
-
-            assertEquals(AMQConstant.NO_ROUTE, noRouteException.getErrorCode());
-            String expectedMessage = "Error: No route for message [Exchange: " + longExchangeName.substring(0, 220) + "...";
-            assertEquals("Unexpected exception message: " + noRouteException.getMessage(), expectedMessage,
-                    noRouteException.getMessage());
-        }
-        finally
-        {
-            forgetConnection(_connection);
-        }
-    }
-
-    public void testNoRouteMessageReurnedWhenExceptionMessageLengthIsGreater255() throws Exception
-    {
-        createConnectionWithCloseWhenNoRoute(false);
-
-        AMQSession<?, ?> transactedSession = (AMQSession<?, ?>) _connection.createSession(true, Session.SESSION_TRANSACTED);
-
-        StringBuilder longExchangeName = getLongExchangeName();
-
-        String exchangeName = longExchangeName.toString();
-        transactedSession.declareExchange(exchangeName, "direct", false);
-
-        AMQQueue testQueue = new AMQQueue(exchangeName, getTestQueueName());
-        MessageProducer mandatoryProducer = transactedSession.createProducer(
-                testQueue,
-                true, // mandatory
-                false); // immediate
-
-        Message message = transactedSession.createMessage();
-        mandatoryProducer.send(message);
-        transactedSession.commit();
-        _testExceptionListener.assertReceivedReturnedMessageWithLongExceptionMessage(message, testQueue);
-    }
-
-    private StringBuilder getLongExchangeName()
-    {
-        StringBuilder longExchangeName = new StringBuilder();
-        for (int i = 0; i < 50; i++)
-        {
-            longExchangeName.append("abcde");
-        }
-        return longExchangeName;
     }
 
     public void testNoRouteForNonMandatoryMessage_brokerKeepsConnectionOpenAndCallsExceptionListener() throws Exception
@@ -206,9 +111,6 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
         Message message = nonTransactedSession.createMessage();
         mandatoryProducer.send(message);
 
-        // should succeed - the message is asynchronously bounced back to the exception listener
-        message.acknowledge();
-
         _testExceptionListener.assertReceivedNoRouteWithReturnedMessage(message, getTestQueueName());
     }
 
@@ -229,9 +131,9 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
         _testExceptionListener.assertReceivedNoRouteWithReturnedMessage(message, getTestQueueName());
     }
 
-    private void createConnectionWithCloseWhenNoRoute(boolean closeWhenNoRoute) throws URLSyntaxException, NamingException, JMSException
+    private void createConnectionWithCloseWhenNoRoute(boolean closeWhenNoRoute) throws Exception
     {
-        Map<String, String> options = new HashMap<String, String>();
+        Map<String, String> options = new HashMap<>();
         options.put(ConnectionURL.OPTIONS_CLOSE_WHEN_NO_ROUTE, Boolean.toString(closeWhenNoRoute));
         _connection = getConnectionWithOptions(options);
         _connection.setExceptionListener(_testExceptionListener);

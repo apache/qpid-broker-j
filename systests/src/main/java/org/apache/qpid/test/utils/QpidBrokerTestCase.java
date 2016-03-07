@@ -721,19 +721,6 @@ public class QpidBrokerTestCase extends QpidTestCase
     }
 
     /**
-     * Useful, for example, to avoid the connection being automatically closed in {@link #tearDown()}
-     * if it has deliberately been put into an error state already.
-     */
-    protected void forgetConnection(Connection connection)
-    {
-        _logger.debug("Forgetting about connection " + connection);
-        boolean removed = _connections.remove(connection);
-        assertTrue(
-                "The supplied connection " + connection + " should have been one that I already know about",
-                removed);
-    }
-
-    /**
      * Return a uniqueName for this test.
      * In this case it returns a queue Named by the TestCase and TestName
      *
