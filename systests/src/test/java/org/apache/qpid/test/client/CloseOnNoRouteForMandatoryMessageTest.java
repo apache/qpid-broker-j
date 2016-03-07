@@ -73,6 +73,9 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
 
         Message message = transactedSession.createMessage();
         mandatoryProducer.send(message);
+
+        _testExceptionListener.assertReceivedNoRoute(testQueueName);
+
         try
         {
             transactedSession.commit();
@@ -84,12 +87,6 @@ public class CloseOnNoRouteForMandatoryMessageTest extends QpidBrokerTestCase
             //The session was marked closed even before we had a chance to call commit on it
             assertTrue("ISE did not indicate closure", ise.getMessage().contains("closed"));
         }
-        catch(JMSException e)
-        {
-            _logger.debug("Caught exception", e);
-            _testExceptionListener.assertNoRoute(e, testQueueName);
-        }
-        _testExceptionListener.assertReceivedNoRoute(testQueueName);
 
         forgetConnection(_connection);
     }
