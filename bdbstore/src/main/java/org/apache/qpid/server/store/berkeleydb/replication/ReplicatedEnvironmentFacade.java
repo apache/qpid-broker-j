@@ -240,6 +240,12 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
                                                    + "Ensure the path is correct and that the permissions are correct.");
             }
         }
+        else if(_environmentDirectory.isFile())
+        {
+            throw new IllegalArgumentException("Environment path " + _environmentDirectory + " exists as a file - not a directory. "
+                                               + "Ensure the path is correct.");
+
+        }
         else
         {
             LOGGER.debug("Environment at path " + _environmentDirectory + " already exists.");
@@ -1572,6 +1578,15 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
             }
             envConfig.setConfigParam(configItem.getKey(), configItem.getValue());
         }
+
+        DbInternal.setLoadPropertyFile(envConfig, false);
+
+        File propsFile = new File(_environmentDirectory, "je.properties");
+        if(propsFile.exists())
+        {
+            LOGGER.warn("The BDB configuration file at '" + _environmentDirectory + File.separator +  "je.properties' will NOT be loaded.  Configure BDB using Qpid context variables instead.");
+        }
+
 
         if (createEnvironmentInSeparateThread)
         {

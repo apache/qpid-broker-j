@@ -38,6 +38,7 @@ import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.DbInternal;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.EnvironmentMutableConfig;
@@ -96,6 +97,12 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
                                                    + "Ensure the path is correct and that the permissions are correct.");
             }
         }
+        else if(_environmentPath.isFile())
+        {
+            throw new IllegalArgumentException("Environment path " + _environmentPath + " exists as a file - not a directory. "
+                                               + "Ensure the path is correct.");
+
+        }
 
         String name = configuration.getName();
         EnvironmentConfig envConfig = new EnvironmentConfig();
@@ -123,6 +130,14 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         }
 
         envConfig.setExceptionListener(new LoggingAsyncExceptionListener());
+
+        DbInternal.setLoadPropertyFile(envConfig, false);
+
+        File propsFile = new File(_environmentPath, "je.properties");
+        if(propsFile.exists())
+        {
+            LOGGER.warn("The BDB configuration file at '" + _environmentPath + File.separator +  "je.properties' will NOT be loaded.  Configure BDB using Qpid context variables instead.");
+        }
 
         EnvHomeRegistry.getInstance().registerHome(_environmentPath);
 
