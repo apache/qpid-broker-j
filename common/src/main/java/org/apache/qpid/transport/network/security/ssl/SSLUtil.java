@@ -27,6 +27,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.URL;
 import java.nio.BufferUnderflowException;
@@ -58,6 +60,7 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSocket;
 import javax.xml.bind.DatatypeConverter;
@@ -73,6 +76,24 @@ public class SSLUtil
 
     private static final Integer DNS_NAME_TYPE = 2;
     public static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
+
+    private static final Method SSL_PARAMATERS_SET_USER_CIPHER_SUITES_ORDER;
+
+    static
+    {
+        Method method;
+        try
+        {
+            method = SSLParameters.class.getMethod("setUseCipherSuitesOrder", Boolean.TYPE);
+        }
+        catch (NoSuchMethodException e)
+        {
+            method = null;
+        }
+
+        SSL_PARAMATERS_SET_USER_CIPHER_SUITES_ORDER = method;
+    }
+
 
     private SSLUtil()
     {
@@ -602,5 +623,20 @@ public class SSLUtil
         }
         throw new NoSuchAlgorithmException(String.format("Could not create SSLContext with one of the requested protocols: %s",
                                                          Arrays.toString(protocols)));
+    }
+
+    public static void useCipherOrderIfPossible(final SSLParameters sslParameters)
+    {
+        if(SSL_PARAMATERS_SET_USER_CIPHER_SUITES_ORDER != null)
+        {
+            try
+            {
+                SSL_PARAMATERS_SET_USER_CIPHER_SUITES_ORDER.invoke(sslParameters, Boolean.TRUE);
+            }
+            catch (IllegalAccessException | InvocationTargetException e)
+            {
+                LOGGER.debug("Unable to invoke SSLParameters.setCipherSuiteOrder", e);
+            }
+        }
     }
 }

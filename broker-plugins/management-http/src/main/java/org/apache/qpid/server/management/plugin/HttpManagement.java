@@ -36,6 +36,9 @@ import java.util.Set;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.servlet.DispatcherType;
@@ -401,6 +404,22 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
                                             return SSLUtil.filterEnabledCipherSuites(enabledCipherSuites, supportedCipherSuites,
                                                                                      port.getTlsCipherSuiteWhiteList(),
                                                                                      port.getTlsCipherSuiteBlackList());
+                                        }
+
+                                        @Override
+                                        public void customize(final SSLEngine sslEngine)
+                                        {
+                                            super.customize(sslEngine);
+                                            useCipherOrderIfPossible(sslEngine.getSSLParameters());
+                                        }
+
+                                        private void useCipherOrderIfPossible(final SSLParameters sslParameters)
+                                        {
+                                            if(port.getTlsCipherSuiteWhiteList() != null
+                                               && !port.getTlsCipherSuiteWhiteList().isEmpty())
+                                            {
+                                                SSLUtil.useCipherOrderIfPossible(sslParameters);
+                                            }
                                         }
                                     };
 
