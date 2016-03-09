@@ -167,7 +167,10 @@ public class ConfiguredObjectFactoryImpl implements ConfiguredObjectFactory
         ConfiguredObjectTypeFactory factory = categoryFactories.get(type);
         if(factory == null)
         {
-            factory = categoryFactories.get(_defaultTypes.get(category));
+            if(type == null || "".equals(type.trim()))
+            {
+                factory = categoryFactories.get(_defaultTypes.get(category));
+            }
             if(factory == null)
             {
                 throw new NoFactoryForTypeException(category, type);

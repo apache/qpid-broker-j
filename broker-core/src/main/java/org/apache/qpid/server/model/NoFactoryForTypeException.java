@@ -20,7 +20,9 @@
  */
 package org.apache.qpid.server.model;
 
-public class NoFactoryForTypeException extends RuntimeException
+import org.apache.qpid.server.configuration.IllegalConfigurationException;
+
+public class NoFactoryForTypeException extends IllegalConfigurationException
 {
     private final String _category;
     private final String _type;
