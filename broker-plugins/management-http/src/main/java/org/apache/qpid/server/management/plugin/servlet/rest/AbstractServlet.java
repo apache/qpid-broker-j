@@ -243,7 +243,7 @@ public abstract class AbstractServlet extends HttpServlet
 
     protected Subject getAuthorisedSubject(HttpServletRequest request)
     {
-        Subject subject = HttpManagementUtil.getAuthorisedSubject(request.getSession());
+        Subject subject = HttpManagementUtil.getAuthorisedSubject(request);
         if (subject == null)
         {
             throw new SecurityException("Access to management rest interfaces is denied for un-authorised user");

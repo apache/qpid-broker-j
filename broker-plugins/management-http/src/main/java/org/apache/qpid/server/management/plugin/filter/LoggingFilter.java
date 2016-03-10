@@ -109,7 +109,7 @@ public class LoggingFilter implements Filter
         HttpSession session = httpRequest.getSession(false);
         if (session != null)
         {
-            Subject subject = HttpManagementUtil.getAuthorisedSubject(session);
+            Subject subject = HttpManagementUtil.getAuthorisedSubject(httpRequest);
             if (subject != null)
             {
 

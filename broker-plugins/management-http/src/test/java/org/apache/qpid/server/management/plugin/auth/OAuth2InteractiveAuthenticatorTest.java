@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.security.auth.Subject;
 import javax.servlet.ServletContext;
@@ -54,9 +55,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.apache.qpid.server.management.plugin.HttpManagement;
 import org.apache.qpid.server.management.plugin.HttpManagementConfiguration;
+import org.apache.qpid.server.management.plugin.HttpManagementUtil;
 import org.apache.qpid.server.management.plugin.HttpRequestInteractiveAuthenticator;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.port.HttpPort;
 import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
@@ -122,10 +126,11 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         assertEquals("Wrong client_id", TEST_CLIENT_ID, params.get("client_id"));
         assertEquals("Wrong redirect_uri", TEST_REQUEST_HOST, params.get("redirect_uri"));
         assertEquals("Wrong scope", TEST_OAUTH2_SCOPE, params.get("scope"));
+        String stateAttrName = HttpManagementUtil.getRequestSpecificAttributeName(OAuth2InteractiveAuthenticator.STATE_NAME, mockRequest);
         assertNotNull("State was not set on the session",
-                      sessionAttributes.get(OAuth2InteractiveAuthenticator.STATE_NAME));
+                      sessionAttributes.get(stateAttrName));
         assertEquals("Wrong state",
-                     (String) sessionAttributes.get(OAuth2InteractiveAuthenticator.STATE_NAME),
+                     (String) sessionAttributes.get(stateAttrName),
                      params.get("state"));
     }
 
@@ -152,9 +157,10 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         verify(mockResponse).sendRedirect(argument.capture());
 
         assertEquals("Wrong redirect", TEST_REQUEST, argument.getValue());
-        assertNotNull("No subject on session", sessionAttributes.get(ATTR_SUBJECT));
-        assertTrue("Subject on session is no a Subject", sessionAttributes.get(ATTR_SUBJECT) instanceof Subject);
-        final Set<Principal> principals = ((Subject) sessionAttributes.get(ATTR_SUBJECT)).getPrincipals();
+        String attrSubject = HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SUBJECT, mockRequest);
+        assertNotNull("No subject on session", sessionAttributes.get(attrSubject));
+        assertTrue("Subject on session is no a Subject", sessionAttributes.get(attrSubject) instanceof Subject);
+        final Set<Principal> principals = ((Subject) sessionAttributes.get(attrSubject)).getPrincipals();
         assertEquals("Subject created with unexpected principal", TEST_AUTHORIZED_USER, principals.iterator().next().getName());
     }
 
@@ -332,6 +338,10 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
                                                  Map<String, Object> sessionAttributes) throws IOException
     {
         final HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        UUID portId = UUID.randomUUID();
+        HttpPort port = mock(HttpPort.class);
+        when(mockRequest.getAttribute(eq("org.apache.qpid.server.model.Port"))).thenReturn(port);
+        when(port.getId()).thenReturn(portId);
         when(mockRequest.getParameterNames()).thenReturn(Collections.enumeration(query.keySet()));
         doAnswer(new Answer()
         {
@@ -345,6 +355,12 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
             }
         }).when(mockRequest).getParameterValues(any(String.class));
         when(mockRequest.isSecure()).thenReturn(false);
+        Map<String,Object> originalAttrs = new HashMap<>(sessionAttributes);
+        sessionAttributes.clear();
+        for(Map.Entry<String,Object> entry : originalAttrs.entrySet())
+        {
+            sessionAttributes.put(HttpManagementUtil.getRequestSpecificAttributeName(entry.getKey(), mockRequest), entry.getValue());
+        }
         final HttpSession mockHttpSession = createMockHttpSession(sessionAttributes);
         when(mockRequest.getSession()).thenReturn(mockHttpSession);
         when(mockRequest.getServletPath()).thenReturn("");
@@ -353,6 +369,8 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         when(mockRequest.getRequestURL()).thenReturn(url);
         when(mockRequest.getRemoteHost()).thenReturn(TEST_REMOTE_HOST);
         when(mockRequest.getRemotePort()).thenReturn(TEST_REMOTE_PORT);
+
+
         return mockRequest;
     }
 

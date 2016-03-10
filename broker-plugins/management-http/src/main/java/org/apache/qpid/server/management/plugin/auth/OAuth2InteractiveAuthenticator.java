@@ -147,13 +147,17 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                     return new FailedAuthenticationHandler(400, "No state set on request with authorization code grant: "
                                                            + request);
                 }
-                if (!checkState(httpSession, state))
+                if (!checkState(request, state))
                 {
                     LOGGER.warn("Deny login attempt with wrong state: {}", state);
                     return new FailedAuthenticationHandler(401, "Received request with wrong state: " + state);
                 }
-                final String redirectUri = (String) httpSession.getAttribute(REDIRECT_URI_SESSION_ATTRIBUTE);
-                final String originalRequestUri = (String) httpSession.getAttribute(ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE);
+                final String redirectUri = (String) httpSession.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(
+                        REDIRECT_URI_SESSION_ATTRIBUTE,
+                        request));
+                final String originalRequestUri = (String) httpSession.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(
+                        ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE,
+                        request));
                 return new AuthenticationHandler()
                 {
                     @Override
@@ -164,7 +168,7 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                         {
                             Subject subject = createSubject(authenticationResult);
                             authoriseManagement(subject);
-                            HttpManagementUtil.saveAuthorisedSubject(httpSession, subject);
+                            HttpManagementUtil.saveAuthorisedSubject(request, subject);
 
                             LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
                             response.sendRedirect(originalRequestUri);
@@ -244,14 +248,17 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
         final String originalRequestUri = getOriginalRequestUri(request);
         final String authorizationEndpoint = oauth2Provider.getAuthorizationEndpointURI().toString();
         final HttpSession httpSession = request.getSession();
-        httpSession.setAttribute(REDIRECT_URI_SESSION_ATTRIBUTE, redirectUri);
-        httpSession.setAttribute(ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE, originalRequestUri);
+        httpSession.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(REDIRECT_URI_SESSION_ATTRIBUTE,
+                                                                                    request), redirectUri);
+        httpSession.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(
+                ORIGINAL_REQUEST_URI_SESSION_ATTRIBUTE,
+                request), originalRequestUri);
 
         Map<String, String> queryArgs = new HashMap<>();
         queryArgs.put("client_id", oauth2Provider.getClientId());
         queryArgs.put("redirect_uri", redirectUri);
         queryArgs.put("response_type", "code");
-        queryArgs.put("state", createState(httpSession));
+        queryArgs.put("state", createState(request));
         if (oauth2Provider.getScope() != null)
         {
             queryArgs.put("scope", oauth2Provider.getScope());
@@ -330,20 +337,22 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
         }
     }
 
-    private String createState(HttpSession session)
+    private String createState(HttpServletRequest request)
     {
         byte[] nonceBytes = new byte[STATE_NONCE_BIT_SIZE / 8];
         _random.nextBytes(nonceBytes);
 
         String nonce = DatatypeConverter.printBase64Binary(nonceBytes);
-        session.setAttribute(STATE_NAME, nonce);
+        request.getSession().setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(STATE_NAME, request), nonce);
         return nonce;
     }
 
-    private boolean checkState(HttpSession session, String state)
+    private boolean checkState(HttpServletRequest request, String state)
     {
-        String nonce = (String) session.getAttribute(STATE_NAME);
-        session.removeAttribute(STATE_NAME);
+        HttpSession session = request.getSession();
+        String nonce = (String) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(STATE_NAME,
+                                                                                                        request));
+        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(STATE_NAME, request));
         return state != null && state.equals(nonce);
     }
 

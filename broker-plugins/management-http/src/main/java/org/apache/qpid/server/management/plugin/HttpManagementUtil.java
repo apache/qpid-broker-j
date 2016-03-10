@@ -89,6 +89,11 @@ public class HttpManagementUtil
         AUTHENTICATORS = Collections.unmodifiableList(authenticators);
     }
 
+    public static String getRequestSpecificAttributeName(String name, HttpServletRequest request)
+    {
+        return name + "." + HttpManagement.getPort(request).getId();
+    }
+
     public static Broker<?> getBroker(ServletContext servletContext)
     {
         return (Broker<?>) servletContext.getAttribute(ATTR_BROKER);
@@ -99,16 +104,17 @@ public class HttpManagementUtil
         return (HttpManagementConfiguration) servletContext.getAttribute(ATTR_MANAGEMENT_CONFIGURATION);
     }
 
-    public static Subject getAuthorisedSubject(HttpSession session)
+    public static Subject getAuthorisedSubject(HttpServletRequest request)
     {
-        return (Subject) session.getAttribute(ATTR_SUBJECT);
+        HttpSession session = request.getSession();
+        return (Subject) session.getAttribute(getRequestSpecificAttributeName(ATTR_SUBJECT,request));
     }
 
     public static void checkRequestAuthenticatedAndAccessAuthorized(HttpServletRequest request, Broker broker,
             HttpManagementConfiguration managementConfig)
     {
         HttpSession session = request.getSession();
-        Subject subject = getAuthorisedSubject(session);
+        Subject subject = getAuthorisedSubject(request);
         if (subject == null)
         {
             subject = tryToAuthenticate(request, managementConfig);
@@ -127,7 +133,7 @@ public class HttpManagementUtil
 
             assertManagementAccess(broker.getSecurityManager(), subject);
 
-            saveAuthorisedSubject(session, subject);
+            saveAuthorisedSubject(request, subject);
 
 
         }
@@ -146,12 +152,13 @@ public class HttpManagementUtil
         });
     }
 
-    public static void saveAuthorisedSubject(HttpSession session, Subject subject)
+    public static void saveAuthorisedSubject(HttpServletRequest request, Subject subject)
     {
-        session.setAttribute(ATTR_SUBJECT, subject);
+        HttpSession session = request.getSession();
+        session.setAttribute(getRequestSpecificAttributeName(ATTR_SUBJECT, request), subject);
 
         // Cause the user logon to be logged.
-        session.setAttribute(ATTR_LOGIN_LOGOUT_REPORTER,
+        session.setAttribute(getRequestSpecificAttributeName(ATTR_LOGIN_LOGOUT_REPORTER, request),
                              new LoginLogoutReporter(subject, getBroker(session.getServletContext())));
     }
 

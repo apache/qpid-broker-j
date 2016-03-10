@@ -665,8 +665,13 @@ public class HttpManagement extends AbstractPluginAdapter<HttpManagement> implem
     @Override
     public AuthenticationProvider getAuthenticationProvider(HttpServletRequest request)
     {
-        HttpPort<?> port = (HttpPort<?>)request.getAttribute(PORT_SERVLET_ATTRIBUTE);
+        HttpPort<?> port = getPort(request);
         return port == null ? null : port.getAuthenticationProvider();
+    }
+
+    public static HttpPort<?> getPort(final HttpServletRequest request)
+    {
+        return (HttpPort<?>)request.getAttribute(PORT_SERVLET_ATTRIBUTE);
     }
 
     @Override

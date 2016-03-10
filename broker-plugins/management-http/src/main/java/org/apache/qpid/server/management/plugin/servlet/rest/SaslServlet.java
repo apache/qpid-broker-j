@@ -69,8 +69,7 @@ public class SaslServlet extends AbstractServlet
                                                                                    ServletException,
                                                                                    IOException
     {
-        HttpSession session = request.getSession();
-        getRandom(session);
+        getRandom(request);
 
         SubjectCreator subjectCreator = getSubjectCreator(request);
         List<String> mechanismsList = subjectCreator.getMechanisms();
@@ -94,16 +93,18 @@ public class SaslServlet extends AbstractServlet
 
     }
 
-    private Random getRandom(final HttpSession session)
+    private Random getRandom(final HttpServletRequest request)
     {
-        Random rand = (Random) session.getAttribute(ATTR_RANDOM);
+        HttpSession session = request.getSession();
+        Random rand = (Random) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_RANDOM,
+                                                                                                       request));
         if(rand == null)
         {
             synchronized (SECURE_RANDOM)
             {
                 rand = new Random(SECURE_RANDOM.nextLong());
             }
-            session.setAttribute(ATTR_RANDOM, rand);
+            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_RANDOM, request), rand);
         }
         return rand;
     }
@@ -136,34 +137,42 @@ public class SaslServlet extends AbstractServlet
                 else
                 {
                     response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
-                    session.removeAttribute(ATTR_ID);
-                    session.removeAttribute(ATTR_SASL_SERVER);
-                    session.removeAttribute(ATTR_EXPIRY);
+                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
+                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER,
+                                                                                               request));
+                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
                 }
             }
             else
             {
                 if(id != null)
                 {
-                    if(id.equals(session.getAttribute(ATTR_ID)) && System.currentTimeMillis() < (Long) session.getAttribute(ATTR_EXPIRY))
+                    if(id.equals(session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID,
+                                                                                                         request))) && System.currentTimeMillis() < (Long) session.getAttribute(
+                            HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request)))
                     {
-                        SaslServer saslServer = (SaslServer) session.getAttribute(ATTR_SASL_SERVER);
+                        SaslServer saslServer = (SaslServer) session.getAttribute(HttpManagementUtil.getRequestSpecificAttributeName(
+                                ATTR_SASL_SERVER,
+                                request));
                         evaluateSaslResponse(request, response, session, saslResponse, saslServer, subjectCreator);
                     }
                     else
                     {
                         response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
-                        session.removeAttribute(ATTR_ID);
-                        session.removeAttribute(ATTR_SASL_SERVER);
-                        session.removeAttribute(ATTR_EXPIRY);
+                        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
+                        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER,
+                                                                                                   request));
+                        session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY,
+                                                                                                   request));
                     }
                 }
                 else
                 {
                     response.setStatus(HttpServletResponse.SC_EXPECTATION_FAILED);
-                    session.removeAttribute(ATTR_ID);
-                    session.removeAttribute(ATTR_SASL_SERVER);
-                    session.removeAttribute(ATTR_EXPIRY);
+                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
+                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER,
+                                                                                               request));
+                    session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
                 }
             }
         }
@@ -211,9 +220,9 @@ public class SaslServlet extends AbstractServlet
         }
         catch(SaslException e)
         {
-            session.removeAttribute(ATTR_ID);
-            session.removeAttribute(ATTR_SASL_SERVER);
-            session.removeAttribute(ATTR_EXPIRY);
+            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
+            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER, request));
+            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
             return;
@@ -240,10 +249,10 @@ public class SaslServlet extends AbstractServlet
                 return;
             }
 
-            HttpManagementUtil.saveAuthorisedSubject(request.getSession(), subject);
-            session.removeAttribute(ATTR_ID);
-            session.removeAttribute(ATTR_SASL_SERVER);
-            session.removeAttribute(ATTR_EXPIRY);
+            HttpManagementUtil.saveAuthorisedSubject(request, subject);
+            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request));
+            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER, request));
+            session.removeAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request));
             if(challenge != null && challenge.length != 0)
             {
                 Map<String, Object> outputObject = new LinkedHashMap<String, Object>();
@@ -256,11 +265,11 @@ public class SaslServlet extends AbstractServlet
         }
         else
         {
-            Random rand = getRandom(session);
+            Random rand = getRandom(request);
             id = String.valueOf(rand.nextLong());
-            session.setAttribute(ATTR_ID, id);
-            session.setAttribute(ATTR_SASL_SERVER, saslServer);
-            session.setAttribute(ATTR_EXPIRY, System.currentTimeMillis() + SASL_EXCHANGE_EXPIRY);
+            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_ID, request), id);
+            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_SASL_SERVER, request), saslServer);
+            session.setAttribute(HttpManagementUtil.getRequestSpecificAttributeName(ATTR_EXPIRY, request), System.currentTimeMillis() + SASL_EXCHANGE_EXPIRY);
 
             response.setStatus(HttpServletResponse.SC_OK);
 
@@ -281,7 +290,7 @@ public class SaslServlet extends AbstractServlet
     @Override
     protected Subject getAuthorisedSubject(HttpServletRequest request)
     {
-        Subject subject = HttpManagementUtil.getAuthorisedSubject(request.getSession());
+        Subject subject = HttpManagementUtil.getAuthorisedSubject(request);
         if(subject == null)
         {
             subject = HttpManagementUtil.tryToAuthenticate(request, HttpManagementUtil.getManagementConfiguration(getServletContext()));
