@@ -54,6 +54,7 @@ import org.apache.qpid.amqp_1_0.type.transport.End;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.LogSubject;
+import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
@@ -164,8 +165,8 @@ public class Connection_1_0 implements ConnectionEventListener
         {
             _amqpConnection.getNetwork().setMaxWriteIdleMillis(idleTimeout / 2L);
 
-            _vhost = ((AmqpPort) _port).getVirtualHost(host);
-            if (_vhost == null)
+            final VirtualHost vhost = ((AmqpPort) _port).getVirtualHost(host);
+            if (vhost == null)
             {
                 final Error err = new Error();
                 err.setCondition(AmqpError.NOT_FOUND);
@@ -177,15 +178,16 @@ public class Connection_1_0 implements ConnectionEventListener
             }
             else
             {
-                if (_vhost.getState() != State.ACTIVE)
+                if (vhost.getState() != State.ACTIVE)
                 {
                     final Error err = new Error();
                     err.setCondition(AmqpError.NOT_FOUND);
                     _connectionEndpoint.close(err);
+
                     _amqpConnection.close();
 
                     _closedOnOpen = true;
-                    final String redirectHost = _vhost.getRedirectHost(((AmqpPort) _port));
+                    final String redirectHost = vhost.getRedirectHost(((AmqpPort) _port));
                     if(redirectHost == null)
                     {
                         err.setDescription("Virtual host '" + host + "' is not active");
@@ -236,7 +238,6 @@ public class Connection_1_0 implements ConnectionEventListener
                         }
                         err.setInfo(infoMap);
                     }
-
                     _connectionEndpoint.close(err);
                     _amqpConnection.close();
 
@@ -250,10 +251,9 @@ public class Connection_1_0 implements ConnectionEventListener
                     {
                         setUserPrincipal(user);
                     }
-                    _amqpConnection.getSubject().getPrincipals().add(_vhost.getPrincipal());
+                    _amqpConnection.getSubject().getPrincipals().add(vhost.getPrincipal());
                     _amqpConnection.updateAccessControllerContext();
-                    if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_amqpConnection.getSubject())
-                        == null)
+                    if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_amqpConnection.getSubject()) == null)
                     {
                         final Error err = new Error();
                         err.setCondition(AmqpError.NOT_ALLOWED);
@@ -264,6 +264,7 @@ public class Connection_1_0 implements ConnectionEventListener
                     }
                     else
                     {
+                        _vhost = vhost;
                         _amqpConnection.virtualHostAssociated();
                     }
                 }
@@ -353,12 +354,19 @@ public class Connection_1_0 implements ConnectionEventListener
 
     public void closed()
     {
-        performCloseTasks();
-        if (_vhost != null)
+        try
         {
-            _vhost.deregisterConnection(_amqpConnection);
+            performCloseTasks();
+            closeReceived();
         }
-        closeReceived();
+        finally
+        {
+            if (_vhost != null)
+            {
+                _vhost.deregisterConnection(_amqpConnection);
+            }
+            getAmqpConnection().getEventLogger().message(ConnectionMessages.CLOSE());
+        }
     }
 
 
