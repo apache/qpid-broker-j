@@ -106,6 +106,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _virtualHost = mock(VirtualHostImpl.class);
         when(_virtualHost.getChildExecutor()).thenReturn(taskExecutor);
         when(_virtualHost.getModel()).thenReturn(BrokerModel.getInstance());
+        when(_virtualHost.getState()).thenReturn(State.ACTIVE);
         final ArgumentCaptor<AMQPConnection> connectionCaptor = ArgumentCaptor.forClass(AMQPConnection.class);
         doAnswer(new Answer()
         {
