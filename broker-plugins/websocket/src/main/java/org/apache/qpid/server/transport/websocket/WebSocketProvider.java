@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -135,6 +137,22 @@ class WebSocketProvider implements AcceptingTransport
                                                 return SSLUtil.filterEnabledCipherSuites(enabledCipherSuites, supportedCipherSuites,
                                                                                          _port.getTlsCipherSuiteWhiteList(),
                                                                                          _port.getTlsCipherSuiteBlackList());
+                                            }
+
+                                            @Override
+                                            public void customize(final SSLEngine sslEngine)
+                                            {
+                                                super.customize(sslEngine);
+                                                useCipherOrderIfPossible(sslEngine.getSSLParameters());
+                                            }
+
+                                            private void useCipherOrderIfPossible(final SSLParameters sslParameters)
+                                            {
+                                                if(_port.getTlsCipherSuiteWhiteList() != null
+                                                   && !_port.getTlsCipherSuiteWhiteList().isEmpty())
+                                                {
+                                                    SSLUtil.useCipherOrderIfPossible(sslParameters);
+                                                }
                                             }
                                         };
             factory.setSslContext(_sslContext);
