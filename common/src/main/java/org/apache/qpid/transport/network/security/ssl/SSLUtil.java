@@ -77,7 +77,7 @@ public class SSLUtil
     private static final Integer DNS_NAME_TYPE = 2;
     public static final String[] TLS_PROTOCOL_PREFERENCES = new String[]{"TLSv1.2", "TLSv1.1", "TLS", "TLSv1"};
 
-    private static final Method SSL_PARAMATERS_SET_USER_CIPHER_SUITES_ORDER;
+    private static final Method SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER;
 
     static
     {
@@ -91,7 +91,7 @@ public class SSLUtil
             method = null;
         }
 
-        SSL_PARAMATERS_SET_USER_CIPHER_SUITES_ORDER = method;
+        SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER = method;
     }
 
 
@@ -627,11 +627,11 @@ public class SSLUtil
 
     public static void useCipherOrderIfPossible(final SSLParameters sslParameters)
     {
-        if(SSL_PARAMATERS_SET_USER_CIPHER_SUITES_ORDER != null)
+        if(SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER != null)
         {
             try
             {
-                SSL_PARAMATERS_SET_USER_CIPHER_SUITES_ORDER.invoke(sslParameters, Boolean.TRUE);
+                SSL_PARAMETERS_SET_USE_CIPHER_SUITES_ORDER.invoke(sslParameters, Boolean.TRUE);
             }
             catch (IllegalAccessException | InvocationTargetException e)
             {
