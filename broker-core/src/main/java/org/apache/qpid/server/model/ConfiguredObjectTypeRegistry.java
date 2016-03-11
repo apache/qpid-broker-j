@@ -325,10 +325,17 @@ public class ConfiguredObjectTypeRegistry
 
     private boolean factoryExists(final Class<? extends ConfiguredObject> categoryClass, final String type)
     {
-        final ConfiguredObjectTypeFactory factory =
-                _objectFactory.getConfiguredObjectTypeFactory(categoryClass.getSimpleName(), type);
+        try
+        {
+            final ConfiguredObjectTypeFactory factory =
+                    _objectFactory.getConfiguredObjectTypeFactory(categoryClass.getSimpleName(), type);
 
-        return factory != null && factory.getType().equals(type);
+            return factory != null && factory.getType().equals(type);
+        }
+        catch (NoFactoryForTypeException e)
+        {
+            return false;
+        }
     }
 
     private static Method getValidChildTypesFunction(final String validValue, final Class<? extends ConfiguredObject> clazz)
