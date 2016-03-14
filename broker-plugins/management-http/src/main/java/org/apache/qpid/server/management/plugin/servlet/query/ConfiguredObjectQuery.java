@@ -53,7 +53,7 @@ public final class ConfiguredObjectQuery
 
         HeadersAndValueExpressions headersAndValueExpressions = parseSelectClause(selectClause);
 
-        List<ConfiguredObject<?>> filteredObjects = filterObjects(objects, whereClause);
+        List<ConfiguredObject<?>> filteredObjects = whereClause == null ? objects : filterObjects(objects, whereClause);
 
         _headers = headersAndValueExpressions.getHeaders();
         _results = evaluateResults(filteredObjects, headersAndValueExpressions.getValueExpressions());
