@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.filter.BooleanExpression;
 import org.apache.qpid.filter.Expression;
+import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.server.model.ConfiguredObject;
 
 public final class ConfiguredObjectQuery
@@ -92,7 +93,7 @@ public final class ConfiguredObjectQuery
             }
             catch (ParseException | TokenMgrError e)
             {
-                throw new QueryException("Unable to parse select clause");
+                throw new SelectorParsingException("Unable to parse select clause");
             }
         }
         else
@@ -148,7 +149,7 @@ public final class ConfiguredObjectQuery
         }
         catch (ParseException | TokenMgrError e)
         {
-            throw new QueryException("Unable to parse where clause");
+            throw new SelectorParsingException("Unable to parse where clause");
         }
         return filteredObjects;
     }

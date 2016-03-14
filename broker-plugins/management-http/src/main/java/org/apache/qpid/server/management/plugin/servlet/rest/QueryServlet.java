@@ -32,8 +32,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.server.management.plugin.servlet.query.ConfiguredObjectQuery;
-import org.apache.qpid.server.management.plugin.servlet.query.QueryException;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.Model;
 
@@ -62,7 +62,7 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
     {
         String categoryName;
         X parent = getParent(request);
-        if( parent != null && ((categoryName = getRequestedCategory(request)) != null))
+        if (parent != null && ((categoryName = getRequestedCategory(request)) != null))
         {
             Model model = parent.getModel();
 
@@ -83,7 +83,7 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
                     resultsObject.put("results", query.getResults());
                     sendJsonResponse(resultsObject, request, response);
                 }
-                catch(QueryException e)
+                catch (SelectorParsingException e)
                 {
                     sendJsonErrorResponse(request,
                                           response,
@@ -104,6 +104,7 @@ public abstract class QueryServlet<X extends ConfiguredObject<?>> extends Abstra
         {
             sendJsonErrorResponse(request, response, HttpServletResponse.SC_NOT_FOUND, "Invalid path");
         }
+
     }
 
     abstract protected X getParent(final HttpServletRequest request);
