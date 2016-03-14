@@ -202,7 +202,7 @@ public class ConfiguredAutomatedAttribute<C extends ConfiguredObject, T>  extend
     }
 
     @Override
-    public String vaidValuePattern()
+    public String validValuePattern()
     {
         return _annotation.validValuePattern();
     }

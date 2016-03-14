@@ -243,7 +243,7 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
     }
 
     @Override
-    public String vaidValuePattern()
+    public String validValuePattern()
     {
         return _validValuePattern;
     }

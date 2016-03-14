@@ -402,7 +402,7 @@ public class ApiDocsServlet extends AbstractServlet
         {
             ConfiguredSettableAttribute<?,?> settableAttribute = (ConfiguredSettableAttribute<?,?>) attribute;
             validValues = settableAttribute.hasValidValues() ? settableAttribute.validValues() : null;
-            validValuePattern = settableAttribute.vaidValuePattern();
+            validValuePattern = settableAttribute.validValuePattern();
         }
         else
         {

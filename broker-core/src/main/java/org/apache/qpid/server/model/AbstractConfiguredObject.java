@@ -474,7 +474,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             valuesToCheck = Collections.emptySet();
         }
 
-        Pattern pattern = Pattern.compile(attribute.vaidValuePattern());
+        Pattern pattern = Pattern.compile(attribute.validValuePattern());
         for (String value : valuesToCheck)
         {
             if(!pattern.matcher(value).matches())
@@ -1124,7 +1124,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                 + autoAttr.validValues());
                     }
                 }
-                else if(!"".equals(autoAttr.vaidValuePattern()))
+                else if(!"".equals(autoAttr.validValuePattern()))
                 {
                     Object desiredValueOrDefault = autoAttr.getValue(this);
 
@@ -1135,7 +1135,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                 + " named '" + getName() + "'"
                                                                 + " cannot have value '" + desiredValueOrDefault + "'"
                                                                 + ". Valid values pattern is: "
-                                                                + autoAttr.vaidValuePattern());
+                                                                + autoAttr.validValuePattern());
                     }
                 }
                 if(autoAttr.isMandatory() && autoAttr.getValue(this) == null)
@@ -2559,7 +2559,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                 + autoAttr.validValues());
                     }
                 }
-                else if(!"".equals(autoAttr.vaidValuePattern()))
+                else if(!"".equals(autoAttr.validValuePattern()))
                 {
                     Object desiredValueOrDefault = autoAttr.getValue(proxyForValidation);
 
@@ -2570,7 +2570,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                                                                 + " named '" + getName() + "'"
                                                                 + " cannot have value '" + desiredValueOrDefault + "'"
                                                                 + ". Valid values pattern is: "
-                                                                + autoAttr.vaidValuePattern());
+                                                                + autoAttr.validValuePattern());
                     }
                 }
 
