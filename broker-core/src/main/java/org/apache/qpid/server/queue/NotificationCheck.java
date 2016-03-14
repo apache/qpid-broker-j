@@ -96,7 +96,7 @@ public enum NotificationCheck
         }
 
     },
-    MESSAGE_AGE_ALERT(true, false)
+    MESSAGE_AGE_ALERT(false, false)
     {
         public boolean notifyIfNecessary(ServerMessage<?> msg, Queue<?> queue, QueueNotificationListener  listener)
         {
