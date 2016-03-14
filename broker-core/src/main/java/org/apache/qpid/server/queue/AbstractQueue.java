@@ -2522,7 +2522,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
                         for(NotificationCheck check : perMessageChecks)
                         {
-                            performNotificationCheck(msg, listener, currentTime, thresholdTime, check);
+                            checkForNotification(msg, listener, currentTime, thresholdTime, check);
                         }
                     }
                 }
@@ -2531,7 +2531,7 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
         for(NotificationCheck check : queueLevelChecks)
         {
-            performNotificationCheck(null, listener, currentTime, thresholdTime, check);
+            checkForNotification(null, listener, currentTime, thresholdTime, check);
         }
 
     }
@@ -2781,30 +2781,11 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
         return _maximumDeliveryAttempts;
     }
 
-    /**
-     * Checks if there is any notification to send to the listeners
-     */
-    private void checkForNotification(ServerMessage<?> msg, final boolean arrivalCheck)
-    {
-        final Set<NotificationCheck> notificationChecks = getNotificationChecks();
-        QueueNotificationListener  listener = _notificationListener;
-        if(!notificationChecks.isEmpty())
-        {
-            final long currentTime = System.currentTimeMillis();
-            final long thresholdTime = currentTime - getAlertRepeatGap();
-
-            for (NotificationCheck check : notificationChecks)
-            {
-                performNotificationCheck(msg, listener, currentTime, thresholdTime, check);
-            }
-        }
-    }
-
-    private void performNotificationCheck(final ServerMessage<?> msg,
-                                          final QueueNotificationListener listener,
-                                          final long currentTime,
-                                          final long thresholdTime,
-                                          final NotificationCheck check)
+    private void checkForNotification(final ServerMessage<?> msg,
+                                      final QueueNotificationListener listener,
+                                      final long currentTime,
+                                      final long thresholdTime,
+                                      final NotificationCheck check)
     {
         if (check.isMessageSpecific() || (_lastNotificationTimes[check.ordinal()] < thresholdTime))
         {
@@ -2826,13 +2807,9 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
 
             for (NotificationCheck check : notificationChecks)
             {
-                if (check.isCheckOnMessageArrival()
-                    && (check.isMessageSpecific() || (_lastNotificationTimes[check.ordinal()] < thresholdTime)))
+                if (check.isCheckOnMessageArrival())
                 {
-                    if (check.notifyIfNecessary(msg, this, listener))
-                    {
-                        _lastNotificationTimes[check.ordinal()] = currentTime;
-                    }
+                    checkForNotification(msg, listener, currentTime, thresholdTime, check);
                 }
             }
         }
