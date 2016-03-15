@@ -1135,6 +1135,12 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
                 }
                 else
                 {
+                    LOGGER.debug("Node {} processing state update. Node state {} joinTime {} currentTxnEndVLSN {}",
+                                 remoteNode.getName(),
+                                 nodeState.getNodeState(),
+                                 nodeState.getJoinTime(),
+                                 nodeState.getCurrentTxnEndVLSN());
+
                     remoteNode.setJoinTime(nodeState.getJoinTime());
                     remoteNode.setLastTransactionId(nodeState.getCurrentTxnEndVLSN());
                     ReplicatedEnvironment.State state = nodeState.getNodeState();
