@@ -23,6 +23,7 @@ package org.apache.qpid.server.model.validation;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -31,6 +32,7 @@ import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationMirror;
+import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
@@ -104,7 +106,68 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             checkMethodReturnType(annotationElement, methodElement);
 
             checkTypeAgreesWithName(annotationElement, methodElement);
+
+            checkValidValuesPatternOnAppropriateTypes(elementName, methodElement);
         }
+    }
+
+    void checkValidValuesPatternOnAppropriateTypes(final String elementName, final ExecutableElement methodElement)
+    {
+        Types typeUtils = processingEnv.getTypeUtils();
+        Elements elementUtils = processingEnv.getElementUtils();
+        if(MANAGED_ATTRIBUTE_CLASS_NAME.equals(elementName))
+        {
+
+            for(AnnotationMirror annotationMirror : methodElement.getAnnotationMirrors())
+            {
+                Element annotationAsElement = annotationMirror.getAnnotationType().asElement();
+                Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues =
+                        annotationMirror.getElementValues();
+                if(MANAGED_ATTRIBUTE_CLASS_NAME.equals(processingEnv.getElementUtils().getPackageOf(annotationAsElement).getQualifiedName().toString() + "." + annotationAsElement.getSimpleName().toString()))
+                {
+                    for(Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet())
+                    {
+                        final TypeMirror returnType = methodElement.getReturnType();
+                        if("validValuePattern".equals(entry.getKey().getSimpleName().toString()))
+                        {
+                            TypeMirror stringType = elementUtils.getTypeElement("java.lang.String").asType();
+                            TypeMirror collectionType = elementUtils.getTypeElement("java.util.Collection").asType();
+
+                            if (!typeUtils.isAssignable(returnType, stringType))
+                            {
+                                TypeElement returnTypeElement = (TypeElement) typeUtils.asElement(returnType);
+                                if (!(returnTypeElement != null
+                                      && returnTypeElement.getTypeParameters().size() == 1
+                                      && equalsType(typeUtils.asElement(typeUtils.erasure(((DeclaredType) returnType)
+                                                                                                  .getTypeArguments()
+                                                                                                  .get(0))),
+                                                    "java.lang.String")
+                                      && typeUtils.isAssignable(typeUtils.erasure(returnTypeElement.asType()),
+                                                                collectionType)))
+                                {
+                                    processingEnv.getMessager()
+                                            .printMessage(Diagnostic.Kind.ERROR,
+                                                          "@"
+                                                          + annotationAsElement.getSimpleName()
+                                                          + " return type does not not support validValuePattern: "
+                                                          + methodElement.getReturnType().toString(),
+                                                          methodElement
+                                                         );
+                                }
+
+
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean equalsType(Element element, String typeName)
+    {
+        return typeName.equals(processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString() + "." + element.getSimpleName().toString());
     }
 
     public void processStatistics(final RoundEnvironment roundEnv,
