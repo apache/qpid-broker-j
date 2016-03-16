@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -68,6 +69,9 @@ public class AttributeAnnotationValidator extends AbstractProcessor
                                                                                            TypeKind.INT,
                                                                                            TypeKind.LONG,
                                                                                            TypeKind.SHORT));
+    private Elements elementUtils;
+    private Types typeUtils;
+    private Messager messager;
 
     @Override
     public SourceVersion getSupportedSourceVersion()
@@ -78,6 +82,9 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     @Override
     public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
     {
+        elementUtils = processingEnv.getElementUtils();
+        typeUtils = processingEnv.getTypeUtils();
+        messager = processingEnv.getMessager();
 
         processAttributes(roundEnv, MANAGED_ATTRIBUTE_CLASS_NAME);
         processAttributes(roundEnv, DERIVED_ATTRIBUTE_CLASS_NAME);
@@ -91,7 +98,6 @@ public class AttributeAnnotationValidator extends AbstractProcessor
                                   String elementName)
     {
 
-        Elements elementUtils = processingEnv.getElementUtils();
         TypeElement annotationElement = elementUtils.getTypeElement(elementName);
 
         for (Element e : roundEnv.getElementsAnnotatedWith(annotationElement))
@@ -107,74 +113,82 @@ public class AttributeAnnotationValidator extends AbstractProcessor
 
             checkTypeAgreesWithName(annotationElement, methodElement);
 
-            checkValidValuesPatternOnAppropriateTypes(elementName, methodElement);
-        }
-    }
-
-    void checkValidValuesPatternOnAppropriateTypes(final String elementName, final ExecutableElement methodElement)
-    {
-        Types typeUtils = processingEnv.getTypeUtils();
-        Elements elementUtils = processingEnv.getElementUtils();
-        if(MANAGED_ATTRIBUTE_CLASS_NAME.equals(elementName))
-        {
-
-            for(AnnotationMirror annotationMirror : methodElement.getAnnotationMirrors())
+            if(MANAGED_ATTRIBUTE_CLASS_NAME.equals(elementName))
             {
-                Element annotationAsElement = annotationMirror.getAnnotationType().asElement();
-                Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues =
-                        annotationMirror.getElementValues();
-                if(MANAGED_ATTRIBUTE_CLASS_NAME.equals(processingEnv.getElementUtils().getPackageOf(annotationAsElement).getQualifiedName().toString() + "." + annotationAsElement.getSimpleName().toString()))
-                {
-                    for(Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet())
-                    {
-                        final TypeMirror returnType = methodElement.getReturnType();
-                        if("validValuePattern".equals(entry.getKey().getSimpleName().toString()))
-                        {
-                            TypeMirror stringType = elementUtils.getTypeElement("java.lang.String").asType();
-                            TypeMirror collectionType = elementUtils.getTypeElement("java.util.Collection").asType();
-
-                            if (!typeUtils.isAssignable(returnType, stringType))
-                            {
-                                TypeElement returnTypeElement = (TypeElement) typeUtils.asElement(returnType);
-                                if (!(returnTypeElement != null
-                                      && returnTypeElement.getTypeParameters().size() == 1
-                                      && equalsType(typeUtils.asElement(typeUtils.erasure(((DeclaredType) returnType)
-                                                                                                  .getTypeArguments()
-                                                                                                  .get(0))),
-                                                    "java.lang.String")
-                                      && typeUtils.isAssignable(typeUtils.erasure(returnTypeElement.asType()),
-                                                                collectionType)))
-                                {
-                                    processingEnv.getMessager()
-                                            .printMessage(Diagnostic.Kind.ERROR,
-                                                          "@"
-                                                          + annotationAsElement.getSimpleName()
-                                                          + " return type does not not support validValuePattern: "
-                                                          + methodElement.getReturnType().toString(),
-                                                          methodElement
-                                                         );
-                                }
-
-
-                            }
-
-                        }
-                    }
-                }
+                checkValidValuesPatternOnAppropriateTypes(methodElement);
             }
         }
     }
 
-    private boolean equalsType(Element element, String typeName)
+    void checkValidValuesPatternOnAppropriateTypes(final ExecutableElement methodElement)
     {
-        return typeName.equals(processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString() + "." + element.getSimpleName().toString());
+        AnnotationMirror annotationMirror = getAnnotationMirror(methodElement, MANAGED_ATTRIBUTE_CLASS_NAME);
+
+        if (hasValidValuePattern(annotationMirror)
+            && !isStringOrCollectionOfStrings(methodElement.getReturnType()))
+        {
+            messager.printMessage(Diagnostic.Kind.ERROR,
+                                  "@ManagedAttribute return type does not not support validValuePattern: "
+                                    + methodElement.getReturnType().toString(),
+                                  methodElement);
+        }
+    }
+
+    private AnnotationMirror getAnnotationMirror(final ExecutableElement methodElement, final String annotationClassName)
+    {
+        for (AnnotationMirror annotationMirror : methodElement.getAnnotationMirrors())
+        {
+            Element annotationAsElement = annotationMirror.getAnnotationType().asElement();
+            if (annotationClassName.equals(getFullyQualifiedName(annotationAsElement)))
+            {
+                return annotationMirror;
+            }
+        }
+        return null;
+    }
+
+
+    private boolean hasValidValuePattern(final AnnotationMirror annotationMirror)
+    {
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : annotationMirror.getElementValues()
+                .entrySet())
+        {
+            if ("validValuePattern".equals(entry.getKey().getSimpleName().toString()))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String getFullyQualifiedName(final Element element)
+    {
+        return elementUtils.getPackageOf(element).getQualifiedName().toString() + "." + element.getSimpleName().toString();
+    }
+
+    private boolean isStringOrCollectionOfStrings(TypeMirror type)
+    {
+
+        TypeMirror stringType = elementUtils.getTypeElement("java.lang.String").asType();
+        TypeMirror collectionType = elementUtils.getTypeElement("java.util.Collection").asType();
+
+        TypeElement typeAsElement = (TypeElement) typeUtils.asElement(type);
+
+        return typeUtils.isAssignable(type, stringType)
+                || (typeAsElement != null
+                    && typeAsElement.getTypeParameters().size() == 1
+                    && "java.lang.String".equals(getFullyQualifiedName(getErasedParameterType((DeclaredType) type, 0)))
+                    && typeUtils.isAssignable(typeUtils.erasure(typeAsElement.asType()), collectionType));
+    }
+
+    private Element getErasedParameterType(final DeclaredType returnType, final int parameterIndex)
+    {
+        return typeUtils.asElement(typeUtils.erasure(returnType.getTypeArguments().get(parameterIndex)));
     }
 
     public void processStatistics(final RoundEnvironment roundEnv,
                                   String elementName)
     {
-
-        Elements elementUtils = processingEnv.getElementUtils();
         TypeElement annotationElement = elementUtils.getTypeElement(elementName);
 
         for (Element e : roundEnv.getElementsAnnotatedWith(annotationElement))
@@ -195,14 +209,10 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     private void checkMethodReturnTypeIsNumber(final TypeElement annotationElement,
                                                final ExecutableElement methodElement)
     {
-        Types typeUtils = processingEnv.getTypeUtils();
-        Elements elementUtils = processingEnv.getElementUtils();
-
         TypeMirror numberType = elementUtils.getTypeElement("java.lang.Number").asType();
         if(!typeUtils.isAssignable(methodElement.getReturnType(),numberType))
         {
-            processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
+            messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
                                   + annotationElement.getSimpleName()
                                   + " return type does not extend Number: "
@@ -214,16 +224,13 @@ public class AttributeAnnotationValidator extends AbstractProcessor
 
     public void checkTypeAgreesWithName(final TypeElement annotationElement, final ExecutableElement methodElement)
     {
-        Types typeUtils = processingEnv.getTypeUtils();
-
         String methodName = methodElement.getSimpleName().toString();
 
         if((methodName.startsWith("is") || methodName.startsWith("has"))
             && !(methodElement.getReturnType().getKind() == TypeKind.BOOLEAN
                  || typeUtils.isSameType(typeUtils.boxedClass(typeUtils.getPrimitiveType(TypeKind.BOOLEAN)).asType(), methodElement.getReturnType())))
         {
-            processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
+            messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
                                   + annotationElement.getSimpleName()
                                   + " return type is not boolean or Boolean: "
@@ -237,8 +244,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     {
         if (!isValidType(methodElement.getReturnType()))
         {
-            processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
+            messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
                                   + annotationElement.getSimpleName()
                                   + " cannot be applied to methods with return type "
@@ -256,8 +262,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             || (methodName.length() < 4 && !methodName.startsWith("is"))
             || !(methodName.startsWith("is") || methodName.startsWith("get") || methodName.startsWith("has")))
         {
-            processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
+            messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
                                   + annotationElement.getSimpleName()
                                   + " can only be applied to methods which of the form getXXX(), isXXX() or hasXXX()",
@@ -270,8 +275,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     {
         if (!methodElement.getParameters().isEmpty())
         {
-            processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
+            messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
                                   + annotationElement.getSimpleName()
                                   + " can only be applied to methods which take no parameters",
@@ -282,15 +286,13 @@ public class AttributeAnnotationValidator extends AbstractProcessor
 
     public void checkInterfaceExtendsConfiguredObject(final TypeElement annotationElement, final Element e)
     {
-        Types typeUtils = processingEnv.getTypeUtils();
         TypeMirror configuredObjectType = getErasure("org.apache.qpid.server.model.ConfiguredObject");
         TypeElement parent = (TypeElement) e.getEnclosingElement();
 
 
         if (!typeUtils.isAssignable(typeUtils.erasure(parent.asType()), configuredObjectType))
         {
-            processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
+            messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
                                   + annotationElement.getSimpleName()
                                   + " can only be applied to methods within an interface which extends "
@@ -305,8 +307,7 @@ public class AttributeAnnotationValidator extends AbstractProcessor
     {
         if (e.getKind() != ElementKind.METHOD || e.getEnclosingElement().getKind() != ElementKind.INTERFACE)
         {
-            processingEnv.getMessager()
-                    .printMessage(Diagnostic.Kind.ERROR,
+            messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
                                   + annotationElement.getSimpleName()
                                   + " can only be applied to methods within an interface",
@@ -395,11 +396,8 @@ public class AttributeAnnotationValidator extends AbstractProcessor
                 || typeUtils.isSameType(erasedType, getErasure(processingEnv, "java.util.Set"))
                 || typeUtils.isSameType(erasedType, getErasure(processingEnv, "java.util.Collection")))
         {
-
-
             for(TypeMirror paramType : ((DeclaredType)type).getTypeArguments())
             {
-
                 if(!isValidType(processingEnv, paramType))
                 {
                     return false;
@@ -419,7 +417,6 @@ public class AttributeAnnotationValidator extends AbstractProcessor
                    && (isValidType(processingEnv, args.get(1))
                        || typeUtils.isSameType(args.get(1), getErasure(processingEnv, "java.lang.Object")));
         }
-
 
         return false;
     }
