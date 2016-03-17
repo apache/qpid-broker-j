@@ -137,7 +137,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(VirtualHostAlias.TYPE, PatternMatchingAlias.TYPE_NAME);
         attributes.put(PatternMatchingAlias.PATTERN, "orange|pink.*");
         attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent(VirtualHostNode.class));
-        _port.createVirtualHostAlias(attributes);
+        _port.createChild(VirtualHostAlias.class, attributes);
 
         VirtualHost<?> vhost = _port.getVirtualHost("orange");
 
@@ -184,7 +184,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(VirtualHostAlias.PRIORITY, 10);
         attributes.put(PatternMatchingAlias.PATTERN, "bl.*");
         attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("purple").getParent(VirtualHostNode.class));
-        _port.createVirtualHostAlias(attributes);
+        _port.createChild(VirtualHostAlias.class, attributes);
 
         vhost = _port.getVirtualHost("blue");
 
@@ -203,7 +203,7 @@ public class VirtualHostAliasTest extends QpidTestCase
         attributes.put(VirtualHostAlias.PRIORITY, 5);
         attributes.put(PatternMatchingAlias.PATTERN, ".*u.*");
         attributes.put(PatternMatchingAlias.VIRTUAL_HOST_NODE, _vhosts.get("red").getParent(VirtualHostNode.class));
-        _port.createVirtualHostAlias(attributes);
+        _port.createChild(VirtualHostAlias.class, attributes);
 
 
 

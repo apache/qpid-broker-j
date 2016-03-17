@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.net.SocketAddress;
 import java.security.GeneralSecurityException;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +40,7 @@ import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.security.auth.Subject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -69,6 +71,7 @@ import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
 import org.apache.qpid.server.plugin.TransportProviderFactory;
+import org.apache.qpid.server.security.SecurityManager;
 import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.TransportProvider;
 import org.apache.qpid.server.util.PortUtil;
@@ -180,25 +183,45 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     {
         super.onCreate();
 
-        Map<String, Object> attributes = new HashMap<>();
-        attributes.put(VirtualHostAlias.NAME, "nameAlias");
-        attributes.put(VirtualHostAlias.TYPE, VirtualHostNameAlias.TYPE_NAME);
-        attributes.put(VirtualHostAlias.DURABLE, true);
-        createVirtualHostAlias(attributes);
+        final Map<String, Object> nameAliasAttributes = new HashMap<>();
+        nameAliasAttributes.put(VirtualHostAlias.NAME, "nameAlias");
+        nameAliasAttributes.put(VirtualHostAlias.TYPE, VirtualHostNameAlias.TYPE_NAME);
+        nameAliasAttributes.put(VirtualHostAlias.DURABLE, true);
 
-        attributes = new HashMap<>();
-        attributes.put(VirtualHostAlias.NAME, "defaultAlias");
-        attributes.put(VirtualHostAlias.TYPE, DefaultVirtualHostAlias.TYPE_NAME);
-        attributes.put(VirtualHostAlias.DURABLE, true);
-        createVirtualHostAlias(attributes);
+        final Map<String, Object> defaultAliasAttributes = new HashMap<>();
+        defaultAliasAttributes.put(VirtualHostAlias.NAME, "defaultAlias");
+        defaultAliasAttributes.put(VirtualHostAlias.TYPE, DefaultVirtualHostAlias.TYPE_NAME);
+        defaultAliasAttributes.put(VirtualHostAlias.DURABLE, true);
 
+        final Map<String, Object> hostnameAliasAttributes = new HashMap<>();
+        hostnameAliasAttributes.put(VirtualHostAlias.NAME, "hostnameAlias");
+        hostnameAliasAttributes.put(VirtualHostAlias.TYPE, HostNameAlias.TYPE_NAME);
+        hostnameAliasAttributes.put(VirtualHostAlias.DURABLE, true);
 
-        attributes = new HashMap<>();
-        attributes.put(VirtualHostAlias.NAME, "hostnameAlias");
-        attributes.put(VirtualHostAlias.TYPE, HostNameAlias.TYPE_NAME);
-        attributes.put(VirtualHostAlias.DURABLE, true);
-        createVirtualHostAlias(attributes);
+        Subject.doAs(SecurityManager.getSubjectWithAddedSystemRights(),
+                     new PrivilegedAction<Object>()
+                     {
+                         @Override
+                         public Object run()
+                         {
+                             createChild(VirtualHostAlias.class, nameAliasAttributes);
+                             createChild(VirtualHostAlias.class, defaultAliasAttributes);
+                             createChild(VirtualHostAlias.class, hostnameAliasAttributes);
+                             return null;
+                         }
+                     });
+    }
 
+    @Override
+    public <C extends ConfiguredObject> ListenableFuture<C> addChildAsync(final Class<C> childClass,
+                                                                          final Map<String, Object> attributes,
+                                                                          final ConfiguredObject... otherParents)
+    {
+        if (VirtualHostAlias.class.isAssignableFrom(childClass))
+        {
+            return getObjectFactory().createAsync(childClass, attributes, this);
+        }
+        return super.addChildAsync(childClass, attributes, otherParents);
     }
 
     @Override
@@ -299,24 +322,10 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     }
 
     @Override
-    public VirtualHostAlias createVirtualHostAlias(Map<String, Object> attributes)
-    {
-        VirtualHostAlias child = addVirtualHostAlias(attributes);
-        childAdded(child);
-        return child;
-    }
-
-    @Override
     public int getNetworkBufferSize()
     {
         return _broker.getNetworkBufferSize();
     }
-
-    private VirtualHostAlias addVirtualHostAlias(Map<String,Object> attributes)
-    {
-        return getObjectFactory().create(VirtualHostAlias.class, attributes, this);
-    }
-
 
     @Override
     public void validateOnCreate()

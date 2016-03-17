@@ -53,7 +53,7 @@ import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.util.ParameterizedTypes;
 
-abstract public class AbstractPort<X extends AbstractPort<X>> extends AbstractConfiguredObject<X> implements Port<X>
+public abstract class AbstractPort<X extends AbstractPort<X>> extends AbstractConfiguredObject<X> implements Port<X>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPort.class);
 

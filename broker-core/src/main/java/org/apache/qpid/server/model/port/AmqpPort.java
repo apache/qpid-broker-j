@@ -21,7 +21,6 @@
 package org.apache.qpid.server.model.port;
 
 import java.net.SocketAddress;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
@@ -35,7 +34,6 @@ import org.apache.qpid.server.model.StatisticUnit;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.model.VirtualHostAlias;
 
 import javax.net.ssl.SSLContext;
 
@@ -145,8 +143,6 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     int incrementConnectionCount();
 
     int decrementConnectionCount();
-
-    VirtualHostAlias createVirtualHostAlias(Map<String, Object> attributes);
 
     int getNetworkBufferSize();
 }

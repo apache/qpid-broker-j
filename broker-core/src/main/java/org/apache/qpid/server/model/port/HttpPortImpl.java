@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.model.port;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +31,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.VirtualHostAlias;
 import org.apache.qpid.server.util.PortUtil;
 
 public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<HttpPortImpl> implements HttpPort<HttpPortImpl>
@@ -144,5 +147,10 @@ public class HttpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         {
             throw new IllegalConfigurationException(String.format("Thread pool minimum %d cannot be greater than thread pool maximum %d.", httpPort.getThreadPoolMinimum() , httpPort.getThreadPoolMaximum()));
         }
+    }
+
+    public static Map<String, Collection<String>> getSupportedChildTypes()
+    {
+        return Collections.singletonMap(VirtualHostAlias.class.getSimpleName(), (Collection<String>) Collections.<String>emptyList());
     }
 }
