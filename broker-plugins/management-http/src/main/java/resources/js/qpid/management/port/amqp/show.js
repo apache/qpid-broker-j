@@ -42,7 +42,9 @@ define(["dojo/query",
             var gridProperties = {
                 height: 400,
                 sortInfo: 2,
+/*
                 canSort: function(column) { return false; },
+*/
                 plugins: {
                     indirectSelection: true,  // KW TODO checkme
                     pagination: {
@@ -94,8 +96,10 @@ define(["dojo/query",
         AmqpPort.prototype.update = function (restData) {
             if (this.virtualHostAliasesGrid) {
                 if (this.virtualHostAliasesGrid.update(restData.virtualhostaliases)) {
+/*
                     this.virtualHostAliasesGrid.grid.sort();
                     this.virtualHostAliasesGrid.grid.update();
+*/
                 }
             }
         }
