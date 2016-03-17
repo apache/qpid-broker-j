@@ -1,0 +1,141 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Authorization Endpoint*:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addAuthenticationProvider.authorizationEndpointURI"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'authorizationEndpointURI',
+                              placeHolder: 'authorization endpoint URL',
+                              promptMessage: 'Enter URL of the OAuth2 authorization endpoint.',
+                              title: 'Enter URL of the OAuth2 authorization endpoint'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Token Endpoint*:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addAuthenticationProvider.tokenEndpointURI"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'tokenEndpointURI',
+                              placeHolder: 'token endpoint URL',
+                              promptMessage: 'Enter URL of the OAuth2 token endpoint.',
+                              title: 'Enter URL of the OAuth2 token endpoint'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Token Endpoint needs auth?</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="checkbox" id="addAuthenticationProvider.tokenEndpointNeedsAuth"
+                   dojoType="dijit.form.CheckBox"
+                   data-dojo-props="
+                              name: 'tokenEndpointNeedsAuth',
+                              value: 'tokenEndpointNeedsAuth',
+                              checked: false"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Identity Resolver Endpoint*:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addAuthenticationProvider.identityResolverEndpointURI"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'identityResolverEndpointURI',
+                              placeHolder: 'identity resolver endpoint URL',
+                              promptMessage: 'Enter URL of the identity resolver endpoint.',
+                              title: 'Enter URL of the identity resolver endpoint'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Identity Resolver Type*:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addAuthenticationProvider.identityResolverType"
+                   data-dojo-type="dijit/form/FilteringSelect"
+                   data-dojo-props="
+                              name: 'identityResolverType',
+                              required: true,
+                              placeHolder: 'identity resolver type',
+                              promptMessage: 'Enter the type of the identity resolver',
+                              title: 'Enter the type of the identity resolver'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Client Id*:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addAuthenticationProvider.clientId"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'clientId',
+                              placeHolder: 'clientId',
+                              promptMessage: 'Enter the client Id for this application.',
+                              title: 'Enter the client Id for this application'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Client Secret*:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="password" id="addAuthenticationProvider.clientSecret"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'clientSecret',
+                              placeHolder: 'identity resolver type',
+                              promptMessage: 'Enter the client secret for this application.',
+                              title: 'Enter the client secret for this application'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Scope:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addAuthenticationProvider.scope"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'scope',
+                              placeHolder: 'scope',
+                              promptMessage: 'Enter the scope for this application.',
+                              title: 'Enter the scope for this application'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Trust Store:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addAuthenticationProvider.trustStore"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'trustStore',
+                              placeHolder: 'trust store',
+                              promptMessage: 'Enter the name of the trust store to use for the above endpoints.',
+                              title: 'Enter the name of the trust store to use for the above endpoints'"/>
+        </div>
+    </div>
+    <div class="clear">
+        <div class="formLabel-labelCell tableContainer-labelCell">Post Logout URL:</div>
+        <div class="formLabel-controlCell tableContainer-valueCell">
+            <input type="text" id="addAuthenticationProvider.postLogoutURI"
+                   data-dojo-type="dijit/form/ValidationTextBox"
+                   data-dojo-props="
+                              name: 'postLogoutURI',
+                              placeHolder: 'post logout URL',
+                              promptMessage: 'Enter the URL a user will be redirected to after logging out of the broker.',
+                              title: 'Enter the URL a user will be redirected to after logging out of the broker'"/>
+        </div>
+    </div>
+</div>

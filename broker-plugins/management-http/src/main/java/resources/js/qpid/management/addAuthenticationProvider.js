@@ -224,7 +224,7 @@ define(["dojo/dom",
                     {
                         try
                         {
-                            typeUI.show({containerNode:typeFieldsContainer, parent: that, data: that.initialData, effectiveData: that.effectiveData});
+                            typeUI.show({containerNode:typeFieldsContainer, parent: that, category: category, type: type, data: that.initialData, effectiveData: that.effectiveData, metadata: that.management.metadata});
                             util.applyMetadataToWidgets(typeFieldsContainer, category, type, that.management.metadata);
                         }
                         catch(e)
