@@ -302,13 +302,13 @@ public class OAuth2AuthenticationProviderImpl
                 LOGGER.debug("Call to token endpoint '{}' complete, response code : {}", tokenEndpoint, responseCode);
 
                 Map<String, Object> responseMap = _objectMapper.readValue(input, Map.class);
-                if (responseCode != 200)
+                if (responseCode != 200 || responseMap.containsKey("error"))
                 {
                     IllegalStateException e = new IllegalStateException(String.format("Token endpoint failed, response code %d, error '%s', description '%s'",
                                                                                       responseCode,
                                                                                       responseMap.get("error"),
                                                                                       responseMap.get("error_description")));
-                    LOGGER.error("Call to token endpoint failed", e);
+                    LOGGER.error(e.getMessage());
                     return new AuthenticationResult(AuthenticationResult.AuthenticationStatus.ERROR, e);
                 }
 

@@ -173,10 +173,18 @@ public class OAuth2InteractiveAuthenticator implements HttpRequestInteractiveAut
                             LOGGER.debug("Successful login. Redirect to original resource {}", originalRequestUri);
                             response.sendRedirect(originalRequestUri);
                         }
-                        catch (AccessControlException e)
+                        catch (SecurityException e)
                         {
-                            LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
-                            response.sendError(403, "User is not authorised for management");
+                            if (e instanceof AccessControlException)
+                            {
+                                LOGGER.info("User '{}' is not authorised for management", authenticationResult.getMainPrincipal());
+                                response.sendError(403, "User is not authorised for management");
+                            }
+                            else
+                            {
+                                LOGGER.info("Authentication failed", authenticationResult.getCause());
+                                response.sendError(401);
+                            }
                         }
                     }
 
