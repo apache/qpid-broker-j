@@ -147,7 +147,9 @@ define(["dojo/dom",
                            "threadPoolSize",
                            "threadPoolMinimumValue",
                            "threadPoolMaximumValue",
-                           "threadPoolSizeValue"
+                           "threadPoolSizeValue",
+                           "portTypeSpecificDetails",
+                           "portAttributes"
                            ]);
            }
 
@@ -211,7 +213,8 @@ define(["dojo/dom",
 
               this.management.load(this.modelObj).then(function(data)
                    {
-                      thisObj.portData = data[0];
+                      thisObj.portData = data[0] || {};
+                      thisObj.updateUI(thisObj.portData);
                       util.flattenStatistics( thisObj.portData );
                       if (callback)
                       {
@@ -228,6 +231,33 @@ define(["dojo/dom",
                                                    category: "Port"});
                    });
            };
+
+           PortUpdater.prototype.updateUI = function(data)
+           {
+               if (!this.details)
+               {
+                   var that = this;
+                   require(["qpid/management/port/" + data.type.toLowerCase() + "/show"],
+                       function (Details)
+                       {
+                           that.details = new Details({
+                               containerNode: that.portAttributes,
+                               typeSpecificDetailsNode: that.portTypeSpecificDetails,
+                               metadata: that.tabObject.management.metadata,
+                               data: data,
+                               management: that.tabObject.management,
+                               modelObj: that.tabObject.modelObj,
+                               portUpdater: that.portUpdater
+                           });
+                       }
+                   );
+               }
+               else
+               {
+                   this.details.update(data);
+               }
+           }
+
 
            return Port;
        });
