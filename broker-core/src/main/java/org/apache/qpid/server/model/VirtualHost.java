@@ -77,11 +77,6 @@ public interface VirtualHost<X extends VirtualHost<X>> extends ConfiguredObject<
     @ManagedContextDefault( name = VIRTUALHOST_WORK_DIR_VAR)
     public static final String VIRTUALHOST_WORK_DIR = VIRTUALHOST_WORK_DIR_VAR_EXPRESSION;
 
-    String MAX_MESSAGE_SIZE = "qpid.max_message_size";
-
-    @ManagedContextDefault(name = MAX_MESSAGE_SIZE)
-    int DEFAULT_MAX_MESSAGE_SIZE = 0x1f40000; // 500Mb
-
     @ManagedContextDefault( name = "queue.deadLetterQueueEnabled")
     public static final boolean DEFAULT_DEAD_LETTER_QUEUE_ENABLED = false;
     String DEFAULT_DLE_NAME_SUFFIX = "_DLE";

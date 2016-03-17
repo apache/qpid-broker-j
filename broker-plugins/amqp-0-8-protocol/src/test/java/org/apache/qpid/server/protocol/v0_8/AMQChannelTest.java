@@ -100,7 +100,7 @@ public class AMQChannelTest extends QpidTestCase
         _port = mock(AmqpPort.class);
         when(_port.getChildExecutor()).thenReturn(taskExecutor);
         when(_port.getModel()).thenReturn(BrokerModel.getInstance());
-        when(_port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE)).thenReturn(1);
+        when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(1);
 
         AuthenticatedPrincipal authenticatedPrincipal = new AuthenticatedPrincipal("user");
         Set<Principal> authenticatedUser = Collections.<Principal>singleton(authenticatedPrincipal);

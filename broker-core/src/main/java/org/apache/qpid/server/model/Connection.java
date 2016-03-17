@@ -51,11 +51,18 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     @ManagedContextDefault(name = MAX_UNCOMMITTED_IN_MEMORY_SIZE)
     long DEFAULT_MAX_UNCOMMITTED_IN_MEMORY_SIZE = 10l * 1024l * 1024l;
 
+    String MAX_MESSAGE_SIZE = "qpid.max_message_size";
+    @ManagedContextDefault(name = MAX_MESSAGE_SIZE)
+    int DEFAULT_MAX_MESSAGE_SIZE = 0x1f40000; // 500Mb
+
     @DerivedAttribute
     String getClientId();
 
     @DerivedAttribute
     String getClientVersion();
+
+    @DerivedAttribute
+    String getClientProduct();
 
     @DerivedAttribute
     boolean isIncoming();

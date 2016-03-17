@@ -53,6 +53,7 @@ import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Session;
@@ -218,6 +219,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _aggregateTicker;
     }
 
+    @Override
     public final long getLastIoTime()
     {
         return Math.max(getLastReadTime(), getLastWriteTime());
@@ -245,16 +247,18 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _lastWriteTime = System.currentTimeMillis();
     }
 
+    @Override
     public final long getConnectionId()
     {
         return _connectionId;
     }
 
-    public final StatisticsCounter getMessageDeliveryStatistics()
+    private StatisticsCounter getMessageDeliveryStatistics()
     {
         return _messagesDelivered;
     }
 
+    @Override
     public String getRemoteAddressString()
     {
         return String.valueOf(_network.getRemoteAddress());
@@ -270,26 +274,31 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return this;
     }
 
+    @Override
     public boolean isConnectionStopped()
     {
         return _stopped;
     }
 
+    @Override
     public final String getVirtualHostName()
     {
         return getVirtualHost() == null ? null : getVirtualHost().getName();
     }
 
+    @Override
     public String getClientVersion()
     {
         return _clientVersion;
     }
 
+    @Override
     public String getRemoteProcessPid()
     {
         return _remoteProcessPid;
     }
 
+    @Override
     public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
         if(_network instanceof NonBlockingConnection)
@@ -298,6 +307,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         }
     }
 
+    @Override
     public String getClientProduct()
     {
         return _clientProduct;
@@ -305,32 +315,24 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     protected void updateMaxMessageSize()
     {
+        _maxMessageSize.set(Math.min(getMaxMessageSize(getPort()), getMaxMessageSize(getVirtualHost())));
+    }
+
+    private long getMaxMessageSize(final ConfiguredObject<?> object)
+    {
         long maxMessageSize;
         try
         {
-            maxMessageSize = getPort().getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE);
+            maxMessageSize = object.getContextValue(Integer.class, MAX_MESSAGE_SIZE);
         }
         catch (NullPointerException | IllegalArgumentException e)
         {
             _logger.warn("Context variable {} has invalid value and cannot be used to restrict maximum message size",
-                         AmqpPort.PORT_MAX_MESSAGE_SIZE,
+                         MAX_MESSAGE_SIZE,
                          e);
             maxMessageSize = Long.MAX_VALUE;
         }
-        try
-        {
-            maxMessageSize = Math.min(maxMessageSize,
-                                      (long) getVirtualHost().getContextValue(Integer.class, VirtualHost.MAX_MESSAGE_SIZE));
-        }
-        catch (NullPointerException | IllegalArgumentException e)
-        {
-
-            _logger.warn("Context variable {} has invalid value and cannot be used to restrict maximum message size",
-                         VirtualHost.MAX_MESSAGE_SIZE,
-                         e);
-        }
-
-        _maxMessageSize.set(maxMessageSize > 0 ? maxMessageSize : Long.MAX_VALUE);
+        return maxMessageSize > 0 ? maxMessageSize : Long.MAX_VALUE;
     }
 
     public long getMaxMessageSize()
@@ -338,11 +340,13 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _maxMessageSize.get();
     }
 
+    @Override
     public void addDeleteTask(final Action<? super C> task)
     {
         _connectionCloseTaskList.add(task);
     }
 
+    @Override
     public void removeDeleteTask(final Action<? super C> task)
     {
         _connectionCloseTaskList.remove(task);
@@ -372,38 +376,42 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         }
     }
 
+    @Override
     public String getClientId()
     {
         return _clientId;
     }
 
-    public final StatisticsCounter getDataReceiptStatistics()
+    private StatisticsCounter getDataReceiptStatistics()
     {
         return _dataReceived;
     }
 
-    public final StatisticsCounter getDataDeliveryStatistics()
+    private StatisticsCounter getDataDeliveryStatistics()
     {
         return _dataDelivered;
     }
 
+    @Override
     public final SocketAddress getRemoteSocketAddress()
     {
         return _network.getRemoteAddress();
     }
 
+    @Override
     public void registerMessageDelivered(long messageSize)
     {
         _messagesDelivered.registerEvent(1L);
         _dataDelivered.registerEvent(messageSize);
-        ((VirtualHost<?>)getVirtualHost()).registerMessageDelivered(messageSize);
+        getVirtualHost().registerMessageDelivered(messageSize);
     }
 
+    @Override
     public void registerMessageReceived(long messageSize, long timestamp)
     {
         _messagesReceived.registerEvent(1L, timestamp);
         _dataReceived.registerEvent(messageSize, timestamp);
-        ((VirtualHost<?>)getVirtualHost()).registerMessageReceived(messageSize, timestamp);
+        getVirtualHost().registerMessageReceived(messageSize, timestamp);
     }
 
     public final void resetStatistics()
@@ -414,7 +422,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _dataReceived.reset();
     }
 
-    public final StatisticsCounter getMessageReceiptStatistics()
+    private StatisticsCounter getMessageReceiptStatistics()
     {
         return _messagesReceived;
     }
@@ -717,6 +725,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     protected abstract EventLogger getEventLogger();
 
+    @Override
     public final boolean isAuthorizedMessagePrincipal(final String userId)
     {
         return !_messageAuthorizationRequired || getAuthorizedPrincipal().getName().equals(userId == null? "" : userId);
@@ -727,7 +736,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         private final long _allowedTime;
         private volatile long _accumulatedSchedulingDelay;
 
-        public SlowConnectionOpenTicker(long timeoutTime)
+        SlowConnectionOpenTicker(long timeoutTime)
         {
             _allowedTime = timeoutTime;
         }
@@ -735,9 +744,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         @Override
         public int getTimeToNextTick(final long currentTime)
         {
-            final int timeToNextTick = (int) (getCreatedTime() + _allowedTime + _accumulatedSchedulingDelay
-                                              - currentTime);
-            return timeToNextTick;
+            return (int) (getCreatedTime() + _allowedTime + _accumulatedSchedulingDelay - currentTime);
         }
 
         @Override

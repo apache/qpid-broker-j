@@ -146,7 +146,7 @@ public class AMQPConnection_0_8Test extends QpidTestCase
         when(_port.getAuthenticationProvider()).thenReturn(authenticationProvider);
         when(_port.getVirtualHost(VIRTUAL_HOST_NAME)).thenReturn(_virtualHost);
         when(_port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY)).thenReturn(2500l);
-        when(_port.getContextValue(Integer.class, AmqpPort.PORT_MAX_MESSAGE_SIZE)).thenReturn(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
+        when(_port.getContextValue(Integer.class, Connection.MAX_MESSAGE_SIZE)).thenReturn(Connection.DEFAULT_MAX_MESSAGE_SIZE);
 
         _sender = mock(ByteBufferSender.class);
 
