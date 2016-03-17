@@ -21,6 +21,8 @@
 package org.apache.qpid.server.management.plugin.auth;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -230,15 +232,9 @@ public class OAuth2InteractiveAuthenticatorTest extends QpidTestCase
         assertTrue("Authenticator has failed unexpectedly", !(authenticationHandler instanceof OAuth2InteractiveAuthenticator.FailedAuthenticationHandler));
 
         HttpServletResponse mockResponse = mock(HttpServletResponse.class);
-        try
-        {
-            authenticationHandler.handleAuthentication(mockResponse);
-            fail("Authentication with invalid authorization code should not succeed");
-        }
-        catch (SecurityException e)
-        {
-            // pass
-        }
+        authenticationHandler.handleAuthentication(mockResponse);
+        verify(mockResponse).sendError(eq(401));
+
     }
 
     public void testUnauthorizedAuthorizationCode() throws Exception
