@@ -153,6 +153,7 @@ public class ApiDocsServlet extends AbstractServlet
     private void writeHead(final PrintWriter writer)
     {
         writer.println("<head>");
+        writer.println("<link rel=\"icon\" type=\"image/png\" href=\"/images/qpid-favicon.png\">");
         writer.println("<link rel=\"stylesheet\" type=\"text/css\" href=\"/css/apidocs.css\">");
         writeTitle(writer);
 
