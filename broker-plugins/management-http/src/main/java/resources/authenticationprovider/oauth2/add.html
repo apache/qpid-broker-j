@@ -19,7 +19,7 @@
 
 <div>
     <div class="clear">
-        <div class="formLabel-labelCell tableContainer-labelCell">Authorization Endpoint*:</div>
+        <div class="formLabel-labelCell tableContainer-labelCell">Authorization Endpoint:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
             <input type="text" id="addAuthenticationProvider.authorizationEndpointURI"
                    data-dojo-type="dijit/form/ValidationTextBox"
@@ -31,7 +31,7 @@
         </div>
     </div>
     <div class="clear">
-        <div class="formLabel-labelCell tableContainer-labelCell">Token Endpoint*:</div>
+        <div class="formLabel-labelCell tableContainer-labelCell">Token Endpoint:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
             <input type="text" id="addAuthenticationProvider.tokenEndpointURI"
                    data-dojo-type="dijit/form/ValidationTextBox"
@@ -54,7 +54,7 @@
         </div>
     </div>
     <div class="clear">
-        <div class="formLabel-labelCell tableContainer-labelCell">Identity Resolver Endpoint*:</div>
+        <div class="formLabel-labelCell tableContainer-labelCell">Identity Resolver Endpoint:</div>
         <div class="formLabel-controlCell tableContainer-valueCell">
             <input type="text" id="addAuthenticationProvider.identityResolverEndpointURI"
                    data-dojo-type="dijit/form/ValidationTextBox"
@@ -85,7 +85,8 @@
                    data-dojo-type="dijit/form/ValidationTextBox"
                    data-dojo-props="
                               name: 'clientId',
-                              placeHolder: 'clientId',
+                              required: true,
+                              placeHolder: 'client Id',
                               promptMessage: 'Enter the client Id for this application.',
                               title: 'Enter the client Id for this application'"/>
         </div>
@@ -97,7 +98,8 @@
                    data-dojo-type="dijit/form/ValidationTextBox"
                    data-dojo-props="
                               name: 'clientSecret',
-                              placeHolder: 'identity resolver type',
+                              required: true,
+                              placeHolder: 'client secret',
                               promptMessage: 'Enter the client secret for this application.',
                               title: 'Enter the client secret for this application'"/>
         </div>
