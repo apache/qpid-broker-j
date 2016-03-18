@@ -66,4 +66,21 @@
             In future version of Brokers GroupFile Provider will be replaced by this one.
         </para>
     </section>
+
+    <section role="h3" xml:id="Java-Broker-Security-Group-Providers-CloudFoundry">
+        <title>CloudFoundryDashboardManagementGroupProvider</title>
+        <para>
+            The <emphasis>CloudFoundryDashboardManagementGroupProvider</emphasis>
+            allows mapping of service instance ids to qpid management groups.
+        </para>
+        <para>
+            One use case is restricting management capabilities of a OAuth2 authenticated user to certain virtual
+            hosts. For this, one would associate a cloudfoundry service id with each virtual host and have an ACL with a
+            separate management group for each virtual host. Given the correct service instance id to
+            management group mapping the GroupProvider will then associate the user with each management group the user
+            is provisioned to manage the associated service instance in the <link
+                xmlns:xlink="http://www.w3.org/1999/xlink"
+                xlink:href="http://docs.cloudfoundry.org/services/dashboard-sso.html#checking-user-permissions">CloudFoundry dashboard</link>.
+        </para>
+    </section>
 </section>

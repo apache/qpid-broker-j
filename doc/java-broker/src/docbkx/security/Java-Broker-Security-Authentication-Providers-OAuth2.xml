@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!--
+
+ Licensed to the Apache Software Foundation (ASF) under one
+ or more contributor license agreements.  See the NOTICE file
+ distributed with this work for additional information
+ regarding copyright ownership.  The ASF licenses this file
+ to you under the Apache License, Version 2.0 (the
+ "License"); you may not use this file except in compliance
+ with the License.  You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing,
+ software distributed under the License is distributed on an
+ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ KIND, either express or implied.  See the License for the
+ specific language governing permissions and limitations
+ under the License.
+
+-->
+
+<section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-OAuth2-Provider">
+    <title>OAuth2</title>
+
+    <para> This authentication provider allows users to login to the broker using credential from a different service supporting OAuth2.
+        Unfortunately, the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.rfc-editor.org/rfc/rfc6749.txt">OAuth2 specification</link> does not define a standard why to get the identity of a subject from an access token.
+        However, most OAuth2 implementations provide such functionality, although in different ways. Qpid handles this by providing so called IdentityResolvers.
+        Currently the following services are supported:
+        <itemizedlist>
+            <listitem><para>CloudFoundry</para></listitem>
+            <listitem><para>Facebook</para></listitem>
+            <listitem><para>GitHub</para></listitem>
+            <listitem><para>Google</para></listitem>
+            <listitem><para>Microsoft Live</para></listitem>
+        </itemizedlist>
+        Since all of these, with the exception of CloudFoundry, are tied to a specific service they come with defaults for the Scope, Authorization-, Token-, and IdentityResolverEndpoint.
+    </para>
+</section>

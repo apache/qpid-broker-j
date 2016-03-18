@@ -30,7 +30,8 @@
 
     <section xml:id="Java-Broker-Management-Managing-Authentication-Providers-Types">
         <title>Types</title>
-        <para> The following authentication providers are supported: <itemizedlist>
+        <para> The following authentication providers are supported:
+            <itemizedlist>
                 <listitem><para><link linkend="Java-Broker-Security-Anonymous-Provider">Anonymous</link>: allows anonymous connections to the
                     Broker</para></listitem>
                 <listitem><para><link linkend="Java-Broker-Security-External-Provider">External</link>: delegates to external mechanisms such as SSL Client
@@ -39,6 +40,8 @@
                         GSS-API.</para></listitem>
                 <listitem><para><link linkend="Java-Broker-Security-LDAP-Provider">SimpleLDAP</link>: authenticate users against an LDAP
                     server.</para></listitem>
+                <listitem><para><link linkend="Java-Broker-Security-OAuth2-Provider">OAuth2</link>: authenticate users against a OAuth2 Authorization
+                    Server.</para></listitem>
                 <listitem><para><link linkend="Java-Broker-Security-ScramSha-Providers">ScramSha</link>: authenticate users against credentials stored in a
                         local database</para></listitem>
                 <listitem><para><link linkend="Java-Broker-Security-Plain-Provider">Plain</link>: authenticate users against credentials stored in a local
