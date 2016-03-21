@@ -59,7 +59,7 @@
     </listitem>
     <listitem>
       <para>Pluggable authentication architecture with out-of-the-box support for Kerberos, LDAP,
-        External, and file-based authentication mechanisms.</para>
+        External, OAuth2, and file-based authentication mechanisms.</para>
     </listitem>
     <listitem>
       <para>Support for message compression</para>

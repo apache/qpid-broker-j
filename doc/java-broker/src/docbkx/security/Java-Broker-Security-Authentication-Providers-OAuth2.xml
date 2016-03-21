@@ -23,7 +23,7 @@
 <section xmlns="http://docbook.org/ns/docbook" version="5.0" xml:id="Java-Broker-Security-OAuth2-Provider">
     <title>OAuth2</title>
 
-    <para> This authentication provider allows users to login to the broker using credential from a different service supporting OAuth2.
+    <para> This authentication provider allows users to login to the broker using credentials from a different service supporting OAuth2.
         Unfortunately, the <link xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="https://www.rfc-editor.org/rfc/rfc6749.txt">OAuth2 specification</link> does not define a standard why to get the identity of a subject from an access token.
         However, most OAuth2 implementations provide such functionality, although in different ways. Qpid handles this by providing so called IdentityResolvers.
         Currently the following services are supported:
