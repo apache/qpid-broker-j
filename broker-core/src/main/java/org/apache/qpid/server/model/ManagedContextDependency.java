@@ -25,9 +25,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface ManagedContextDefault
+@Target({ElementType.TYPE})
+public @interface ManagedContextDependency
 {
-    String name();
-    String description() default "";
+    String[] value();
 }

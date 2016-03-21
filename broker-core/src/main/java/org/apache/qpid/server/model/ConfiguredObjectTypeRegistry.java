@@ -27,6 +27,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.AbstractCollection;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,6 +35,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -59,36 +61,38 @@ public class ConfiguredObjectTypeRegistry
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfiguredObjectTypeRegistry.class);
 
-    private static Map<String,Integer> STANDARD_FIRST_FIELDS_ORDER = new HashMap<>();
+    private static Map<String, Integer> STANDARD_FIRST_FIELDS_ORDER = new HashMap<>();
 
-    private static final ConcurrentMap<Class<?>, Class<? extends ConfiguredObject>> CATEGORY_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Class<?>, Class<? extends ConfiguredObject>> CATEGORY_CACHE =
+            new ConcurrentHashMap<>();
 
     static
     {
         int i = 0;
-        for(String name : Arrays.asList(ConfiguredObject.ID,
-                                        ConfiguredObject.NAME,
-                                        ConfiguredObject.DESCRIPTION,
-                                        ConfiguredObject.TYPE,
-                                        ConfiguredObject.DESIRED_STATE,
-                                        ConfiguredObject.STATE,
-                                        ConfiguredObject.DURABLE,
-                                        ConfiguredObject.LIFETIME_POLICY,
-                                        ConfiguredObject.CONTEXT))
+        for (String name : Arrays.asList(ConfiguredObject.ID,
+                                         ConfiguredObject.NAME,
+                                         ConfiguredObject.DESCRIPTION,
+                                         ConfiguredObject.TYPE,
+                                         ConfiguredObject.DESIRED_STATE,
+                                         ConfiguredObject.STATE,
+                                         ConfiguredObject.DURABLE,
+                                         ConfiguredObject.LIFETIME_POLICY,
+                                         ConfiguredObject.CONTEXT))
         {
             STANDARD_FIRST_FIELDS_ORDER.put(name, i++);
         }
 
     }
 
-    private static Map<String,Integer> STANDARD_LAST_FIELDS_ORDER = new HashMap<>();
+    private static Map<String, Integer> STANDARD_LAST_FIELDS_ORDER = new HashMap<>();
+
     static
     {
         int i = 0;
-        for(String name : Arrays.asList(ConfiguredObject.LAST_UPDATED_BY,
-                                        ConfiguredObject.LAST_UPDATED_TIME,
-                                        ConfiguredObject.CREATED_BY,
-                                        ConfiguredObject.CREATED_TIME))
+        for (String name : Arrays.asList(ConfiguredObject.LAST_UPDATED_BY,
+                                         ConfiguredObject.LAST_UPDATED_TIME,
+                                         ConfiguredObject.CREATED_BY,
+                                         ConfiguredObject.CREATED_TIME))
         {
             STANDARD_LAST_FIELDS_ORDER.put(name, i++);
         }
@@ -96,17 +100,18 @@ public class ConfiguredObjectTypeRegistry
     }
 
 
-    private static final Comparator<ConfiguredObjectAttributeOrStatistic<?,?>> OBJECT_NAME_COMPARATOR = new Comparator<ConfiguredObjectAttributeOrStatistic<?, ?>>()
-    {
-        @Override
-        public int compare(final ConfiguredObjectAttributeOrStatistic<?, ?> left,
-                           final ConfiguredObjectAttributeOrStatistic<?, ?> right)
-        {
-            String leftName = left.getName();
-            String rightName = right.getName();
-            return compareAttributeNames(leftName, rightName);
-        }
-    };
+    private static final Comparator<ConfiguredObjectAttributeOrStatistic<?, ?>> OBJECT_NAME_COMPARATOR =
+            new Comparator<ConfiguredObjectAttributeOrStatistic<?, ?>>()
+            {
+                @Override
+                public int compare(final ConfiguredObjectAttributeOrStatistic<?, ?> left,
+                                   final ConfiguredObjectAttributeOrStatistic<?, ?> right)
+                {
+                    String leftName = left.getName();
+                    String rightName = right.getName();
+                    return compareAttributeNames(leftName, rightName);
+                }
+            };
 
     private static final Comparator<String> NAME_COMPARATOR = new Comparator<String>()
     {
@@ -120,13 +125,13 @@ public class ConfiguredObjectTypeRegistry
     private static int compareAttributeNames(final String leftName, final String rightName)
     {
         int result;
-        if(leftName.equals(rightName))
+        if (leftName.equals(rightName))
         {
             result = 0;
         }
-        else if(STANDARD_FIRST_FIELDS_ORDER.containsKey(leftName))
+        else if (STANDARD_FIRST_FIELDS_ORDER.containsKey(leftName))
         {
-            if(STANDARD_FIRST_FIELDS_ORDER.containsKey(rightName))
+            if (STANDARD_FIRST_FIELDS_ORDER.containsKey(rightName))
             {
                 result = STANDARD_FIRST_FIELDS_ORDER.get(leftName) - STANDARD_FIRST_FIELDS_ORDER.get(rightName);
             }
@@ -135,13 +140,13 @@ public class ConfiguredObjectTypeRegistry
                 result = -1;
             }
         }
-        else if(STANDARD_FIRST_FIELDS_ORDER.containsKey(rightName))
+        else if (STANDARD_FIRST_FIELDS_ORDER.containsKey(rightName))
         {
             result = 1;
         }
-        else if(STANDARD_LAST_FIELDS_ORDER.containsKey(rightName))
+        else if (STANDARD_LAST_FIELDS_ORDER.containsKey(rightName))
         {
-            if(STANDARD_LAST_FIELDS_ORDER.containsKey(leftName))
+            if (STANDARD_LAST_FIELDS_ORDER.containsKey(leftName))
             {
                 result = STANDARD_LAST_FIELDS_ORDER.get(leftName) - STANDARD_LAST_FIELDS_ORDER.get(rightName);
             }
@@ -150,7 +155,7 @@ public class ConfiguredObjectTypeRegistry
                 result = -1;
             }
         }
-        else if(STANDARD_LAST_FIELDS_ORDER.containsKey(leftName))
+        else if (STANDARD_LAST_FIELDS_ORDER.containsKey(leftName))
         {
             result = 1;
         }
@@ -163,13 +168,14 @@ public class ConfiguredObjectTypeRegistry
     }
 
 
-    private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?,?>>> _allAttributes =
+    private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>> _allAttributes =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>>());
 
-    private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?,?>>> _allStatistics =
+    private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?, ?>>> _allStatistics =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectStatistic<?, ?>>>());
 
-    private final Map<Class<? extends ConfiguredObject>, Map<String, ConfiguredObjectAttribute<?,?>>> _allAttributeTypes =
+    private final Map<Class<? extends ConfiguredObject>, Map<String, ConfiguredObjectAttribute<?, ?>>>
+            _allAttributeTypes =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<String, ConfiguredObjectAttribute<?, ?>>>());
 
     private final Map<Class<? extends ConfiguredObject>, Map<String, AutomatedField>> _allAutomatedFields =
@@ -178,19 +184,25 @@ public class ConfiguredObjectTypeRegistry
     private final Map<String, String> _defaultContext =
             Collections.synchronizedMap(new HashMap<String, String>());
 
-    private final Map<Class<? extends ConfiguredObject>,Set<Class<? extends ConfiguredObject>>> _knownTypes =
+    private final Map<String, ManagedContextDefault> _contextDefinitions =
+            Collections.synchronizedMap(new HashMap<String, ManagedContextDefault>());
+    private final Map<Class<? extends ConfiguredObject>, Set<String>> _contextUses =
+            Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<String>>());
+
+    private final Map<Class<? extends ConfiguredObject>, Set<Class<? extends ConfiguredObject>>> _knownTypes =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<Class<? extends ConfiguredObject>>>());
 
-    private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?,?>>> _typeSpecificAttributes =
+    private final Map<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>>
+            _typeSpecificAttributes =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Collection<ConfiguredObjectAttribute<?, ?>>>());
 
     private final Map<Class<? extends ConfiguredObject>, Map<State, Map<State, Method>>> _stateChangeMethods =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Map<State, Map<State, Method>>>());
 
-    private final Map<Class<? extends ConfiguredObject>,Set<Class<? extends ManagedInterface>>> _allManagedInterfaces =
+    private final Map<Class<? extends ConfiguredObject>, Set<Class<? extends ManagedInterface>>> _allManagedInterfaces =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<Class<? extends ManagedInterface>>>());
 
-    private final Map<Class<? extends ConfiguredObject>,Set<ConfiguredObjectOperation<?>>> _allOperations =
+    private final Map<Class<? extends ConfiguredObject>, Set<ConfiguredObjectOperation<?>>> _allOperations =
             Collections.synchronizedMap(new HashMap<Class<? extends ConfiguredObject>, Set<ConfiguredObjectOperation<?>>>());
 
 
@@ -215,7 +227,8 @@ public class ConfiguredObjectTypeRegistry
         {
             for (Class<? extends ConfiguredObject> configuredObjectClass : registration.getConfiguredObjectClasses())
             {
-                if(categoriesRestriction.isEmpty() || categoriesRestriction.contains(getCategory(configuredObjectClass)))
+                if (categoriesRestriction.isEmpty()
+                    || categoriesRestriction.contains(getCategory(configuredObjectClass)))
                 {
                     try
                     {
@@ -261,7 +274,7 @@ public class ConfiguredObjectTypeRegistry
                 {
                     ManagedObject annotation = typeClass.getAnnotation(ManagedObject.class);
                     String annotationType = annotation.type();
-                    if(ModelRoot.class.isAssignableFrom(categoryClass) || factoryExists(categoryClass, annotationType))
+                    if (ModelRoot.class.isAssignableFrom(categoryClass) || factoryExists(categoryClass, annotationType))
                     {
                         _knownTypes.get(categoryClass).add(typeClass);
                     }
@@ -280,16 +293,16 @@ public class ConfiguredObjectTypeRegistry
             else
             {
                 Set<String> commonAttributes = new HashSet<>();
-                for(ConfiguredObjectAttribute<?,?> attribute : _allAttributes.get(categoryClass))
+                for (ConfiguredObjectAttribute<?, ?> attribute : _allAttributes.get(categoryClass))
                 {
                     commonAttributes.add(attribute.getName());
                 }
-                for(Class<? extends ConfiguredObject> typeClass : typesForCategory)
+                for (Class<? extends ConfiguredObject> typeClass : typesForCategory)
                 {
-                    Set<ConfiguredObjectAttribute<?,?>> attributes = new HashSet<>();
-                    for(ConfiguredObjectAttribute<?,?> attr : _allAttributes.get(typeClass))
+                    Set<ConfiguredObjectAttribute<?, ?>> attributes = new HashSet<>();
+                    for (ConfiguredObjectAttribute<?, ?> attr : _allAttributes.get(typeClass))
                     {
-                        if(!commonAttributes.contains(attr.getName()))
+                        if (!commonAttributes.contains(attr.getName()))
                         {
                             attributes.add(attr);
                         }
@@ -300,22 +313,24 @@ public class ConfiguredObjectTypeRegistry
 
         }
 
-        for(Class<? extends ConfiguredObject> type : types)
+        for (Class<? extends ConfiguredObject> type : types)
         {
             final ManagedObject annotation = type.getAnnotation(ManagedObject.class);
             String validChildren = annotation.validChildTypes();
-            if(!"".equals(validChildren))
+            if (!"".equals(validChildren))
             {
                 Method validChildTypesMethod = getValidChildTypesFunction(validChildren, type);
-                if(validChildTypesMethod != null)
+                if (validChildTypesMethod != null)
                 {
                     try
                     {
-                        _validChildTypes.put(type, (Map<String, Collection<String>>) validChildTypesMethod.invoke(null));
+                        _validChildTypes.put(type,
+                                             (Map<String, Collection<String>>) validChildTypesMethod.invoke(null));
                     }
                     catch (IllegalAccessException | InvocationTargetException e)
                     {
-                        throw new IllegalArgumentException("Exception while evaluating valid child types for " + type.getName(), e);
+                        throw new IllegalArgumentException("Exception while evaluating valid child types for "
+                                                           + type.getName(), e);
                     }
                 }
 
@@ -338,7 +353,8 @@ public class ConfiguredObjectTypeRegistry
         }
     }
 
-    private static Method getValidChildTypesFunction(final String validValue, final Class<? extends ConfiguredObject> clazz)
+    private static Method getValidChildTypesFunction(final String validValue,
+                                                     final Class<? extends ConfiguredObject> clazz)
     {
         if (validValue.matches("([\\w][\\w\\d_]+\\.)+[\\w][\\w\\d_\\$]*#[\\w\\d_]+\\s*\\(\\s*\\)"))
         {
@@ -409,10 +425,10 @@ public class ConfiguredObjectTypeRegistry
     public static Class<? extends ConfiguredObject> getCategory(final Class<?> clazz)
     {
         Class<? extends ConfiguredObject> category = CATEGORY_CACHE.get(clazz);
-        if(category == null)
+        if (category == null)
         {
             category = calculateCategory(clazz);
-            if(category != null)
+            if (category != null)
             {
                 CATEGORY_CACHE.putIfAbsent(clazz, category);
             }
@@ -423,19 +439,19 @@ public class ConfiguredObjectTypeRegistry
     private static Class<? extends ConfiguredObject> calculateCategory(final Class<?> clazz)
     {
         ManagedObject annotation = clazz.getAnnotation(ManagedObject.class);
-        if(annotation != null && annotation.category())
+        if (annotation != null && annotation.category())
         {
             return (Class<? extends ConfiguredObject>) clazz;
         }
-        for(Class<?> iface : clazz.getInterfaces() )
+        for (Class<?> iface : clazz.getInterfaces())
         {
             Class<? extends ConfiguredObject> cat = getCategory(iface);
-            if(cat != null)
+            if (cat != null)
             {
                 return cat;
             }
         }
-        if(clazz.getSuperclass() != null)
+        if (clazz.getSuperclass() != null)
         {
             return getCategory(clazz.getSuperclass());
         }
@@ -446,11 +462,11 @@ public class ConfiguredObjectTypeRegistry
     {
         String typeName = getType(clazz);
         Class<? extends ConfiguredObject> typeClass = null;
-        if(typeName != null)
+        if (typeName != null)
         {
             Class<? extends ConfiguredObject> category = getCategory(clazz);
             Set<Class<? extends ConfiguredObject>> types = _knownTypes.get(category);
-            if(types != null)
+            if (types != null)
             {
                 for (Class<? extends ConfiguredObject> type : types)
                 {
@@ -462,9 +478,9 @@ public class ConfiguredObjectTypeRegistry
                     }
                 }
             }
-            if(typeClass == null)
+            if (typeClass == null)
             {
-                if(typeName.equals(category.getSimpleName()))
+                if (typeName.equals(category.getSimpleName()))
                 {
                     typeClass = category;
                 }
@@ -478,35 +494,37 @@ public class ConfiguredObjectTypeRegistry
     public Collection<Class<? extends ConfiguredObject>> getTypeSpecialisations(Class<? extends ConfiguredObject> clazz)
     {
         Class<? extends ConfiguredObject> categoryClass = getCategory(clazz);
-        if(categoryClass == null)
+        if (categoryClass == null)
         {
             throw new IllegalArgumentException("Cannot locate ManagedObject information for " + clazz.getName());
         }
         Set<Class<? extends ConfiguredObject>> classes = _knownTypes.get(categoryClass);
-        if(classes == null)
+        if (classes == null)
         {
-            classes = (Set<Class<? extends ConfiguredObject>>) ((Set)Collections.singleton(clazz));
+            classes = (Set<Class<? extends ConfiguredObject>>) ((Set) Collections.singleton(clazz));
         }
         return Collections.unmodifiableCollection(classes);
 
     }
 
-    public Collection<ConfiguredObjectAttribute<?,?>> getTypeSpecificAttributes(Class<? extends ConfiguredObject> clazz)
+    public Collection<ConfiguredObjectAttribute<?, ?>> getTypeSpecificAttributes(Class<? extends ConfiguredObject> clazz)
     {
         Class<? extends ConfiguredObject> typeClass = getTypeClass(clazz);
-        if(typeClass == null)
+        if (typeClass == null)
         {
             throw new IllegalArgumentException("Cannot locate ManagedObject information for " + clazz.getName());
         }
         Collection<ConfiguredObjectAttribute<?, ?>> typeAttrs = _typeSpecificAttributes.get(typeClass);
-        return Collections.unmodifiableCollection(typeAttrs == null ? Collections.<ConfiguredObjectAttribute<?, ?>>emptySet() : typeAttrs);
+        return Collections.unmodifiableCollection(typeAttrs == null
+                                                          ? Collections.<ConfiguredObjectAttribute<?, ?>>emptySet()
+                                                          : typeAttrs);
     }
 
     public static String getType(final Class<? extends ConfiguredObject> clazz)
     {
         String type = getActualType(clazz);
 
-        if("".equals(type))
+        if ("".equals(type))
         {
             Class<? extends ConfiguredObject> category = getCategory(clazz);
             if (category == null)
@@ -533,31 +551,31 @@ public class ConfiguredObjectTypeRegistry
     private static String getActualType(final Class<? extends ConfiguredObject> clazz)
     {
         ManagedObject annotation = clazz.getAnnotation(ManagedObject.class);
-        if(annotation != null)
+        if (annotation != null)
         {
-            if(!"".equals(annotation.type()))
+            if (!"".equals(annotation.type()))
             {
                 return annotation.type();
             }
         }
 
 
-        for(Class<?> iface : clazz.getInterfaces() )
+        for (Class<?> iface : clazz.getInterfaces())
         {
-            if(ConfiguredObject.class.isAssignableFrom(iface))
+            if (ConfiguredObject.class.isAssignableFrom(iface))
             {
                 String type = getActualType((Class<? extends ConfiguredObject>) iface);
-                if(!"".equals(type))
+                if (!"".equals(type))
                 {
                     return type;
                 }
             }
         }
 
-        if(clazz.getSuperclass() != null && ConfiguredObject.class.isAssignableFrom(clazz.getSuperclass()))
+        if (clazz.getSuperclass() != null && ConfiguredObject.class.isAssignableFrom(clazz.getSuperclass()))
         {
             String type = getActualType((Class<? extends ConfiguredObject>) clazz.getSuperclass());
-            if(!"".equals(type))
+            if (!"".equals(type))
             {
                 return type;
             }
@@ -601,13 +619,11 @@ public class ConfiguredObjectTypeRegistry
     }
 
 
-
-
     private <X extends ConfiguredObject> void process(final Class<X> clazz)
     {
         synchronized (_allAttributes)
         {
-            if(_allAttributes.containsKey(clazz))
+            if (_allAttributes.containsKey(clazz))
             {
                 return;
             }
@@ -625,11 +641,13 @@ public class ConfiguredObjectTypeRegistry
             final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet = new TreeSet<>(OBJECT_NAME_COMPARATOR);
             final Set<Class<? extends ManagedInterface>> managedInterfaces = new HashSet<>();
             final Set<ConfiguredObjectOperation<?>> operationsSet = new HashSet<>();
+            final Set<String> contextSet = new HashSet<>();
 
             _allAttributes.put(clazz, attributeSet);
             _allStatistics.put(clazz, statisticSet);
             _allManagedInterfaces.put(clazz, managedInterfaces);
             _allOperations.put(clazz, operationsSet);
+            _contextUses.put(clazz, contextSet);
 
             doWithAllParents(clazz, new Action<Class<? extends ConfiguredObject>>()
             {
@@ -640,6 +658,7 @@ public class ConfiguredObjectTypeRegistry
                                                    statisticSet,
                                                    managedInterfaces,
                                                    operationsSet,
+                                                   contextSet,
                                                    parent);
 
                 }
@@ -649,25 +668,51 @@ public class ConfiguredObjectTypeRegistry
 
             processAttributesTypesAndFields(clazz);
 
-            processDefaultContext(clazz);
+            processDefaultContext(clazz, contextSet);
 
             processStateChangeMethods(clazz);
 
             processManagedInterfaces(clazz);
+
+            processContextUages(clazz, contextSet);
+        }
+    }
+
+    private <X extends ConfiguredObject> void processContextUages(final Class<X> clazz, final Set<String> contextSet)
+    {
+        if (clazz.isAnnotationPresent(ManagedContextDependency.class))
+        {
+            ManagedContextDependency dependencies = clazz.getAnnotation(ManagedContextDependency.class);
+            for (String dependency : dependencies.value())
+            {
+                if (_contextDefinitions.containsKey(dependency))
+                {
+                    contextSet.add(dependency);
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Class "
+                                                       + clazz.getSimpleName()
+                                                       + " defines a context dependency on a context variable '"
+                                                       + dependency
+                                                       + "' which is never defined");
+                }
+
+            }
         }
     }
 
     private static void doWithAllParents(Class<?> clazz, Action<Class<? extends ConfiguredObject>> action)
     {
-        for(Class<?> parent : clazz.getInterfaces())
+        for (Class<?> parent : clazz.getInterfaces())
         {
-            if(ConfiguredObject.class.isAssignableFrom(parent))
+            if (ConfiguredObject.class.isAssignableFrom(parent))
             {
                 action.performAction((Class<? extends ConfiguredObject>) parent);
             }
         }
         final Class<?> superclass = clazz.getSuperclass();
-        if(superclass != null && ConfiguredObject.class.isAssignableFrom(superclass))
+        if (superclass != null && ConfiguredObject.class.isAssignableFrom(superclass))
         {
             action.performAction((Class<? extends ConfiguredObject>) superclass);
         }
@@ -678,32 +723,32 @@ public class ConfiguredObjectTypeRegistry
                                                              final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet,
                                                              final Set<ConfiguredObjectOperation<?>> operationsSet)
     {
-        for(Method method : clazz.getDeclaredMethods())
+        for (Method method : clazz.getDeclaredMethods())
         {
             processMethod(clazz, attributeSet, statisticSet, operationsSet, method);
         }
 
-        for(ConfiguredObjectAttributeInjector injector : _attributeInjectors)
+        for (ConfiguredObjectAttributeInjector injector : _attributeInjectors)
         {
-            for(ConfiguredObjectInjectedAttribute<?,?> attr : injector.getInjectedAttributes())
+            for (ConfiguredObjectInjectedAttribute<?, ?> attr : injector.getInjectedAttributes())
             {
-                if(attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                if (attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
                 {
                     attributeSet.add(attr);
                 }
             }
 
-            for(ConfiguredObjectInjectedStatistic<?,?> attr : injector.getInjectedStatistics())
+            for (ConfiguredObjectInjectedStatistic<?, ?> attr : injector.getInjectedStatistics())
             {
-                if(attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                if (attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
                 {
                     statisticSet.add(attr);
                 }
             }
 
-            for(ConfiguredObjectInjectedOperation<?> operation : injector.getInjectedOperations())
+            for (ConfiguredObjectInjectedOperation<?> operation : injector.getInjectedOperations())
             {
-                if(operation.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                if (operation.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
                 {
                     operationsSet.add(operation);
                 }
@@ -717,20 +762,20 @@ public class ConfiguredObjectTypeRegistry
                                                             final Set<ConfiguredObjectOperation<?>> operationsSet,
                                                             final Method m)
     {
-        if(m.isAnnotationPresent(ManagedAttribute.class))
+        if (m.isAnnotationPresent(ManagedAttribute.class))
         {
             processManagedAttribute(clazz, attributeSet, m);
         }
-        else if(m.isAnnotationPresent(DerivedAttribute.class))
+        else if (m.isAnnotationPresent(DerivedAttribute.class))
         {
             processDerivedAttribute(clazz, attributeSet, m);
 
         }
-        else if(m.isAnnotationPresent(ManagedStatistic.class))
+        else if (m.isAnnotationPresent(ManagedStatistic.class))
         {
             processManagedStatistic(clazz, statisticSet, m);
         }
-        else if(m.isAnnotationPresent(ManagedOperation.class))
+        else if (m.isAnnotationPresent(ManagedOperation.class))
         {
             processManagedOperation(clazz, operationsSet, m);
         }
@@ -741,12 +786,16 @@ public class ConfiguredObjectTypeRegistry
                                                                       final Method m)
     {
         ManagedStatistic statAnnotation = m.getAnnotation(ManagedStatistic.class);
-        if(!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
+        if (!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
         {
-            throw new ServerScopedRuntimeException("Can only define ManagedStatistics on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
+            throw new ServerScopedRuntimeException("Can only define ManagedStatistics on interfaces which extend "
+                                                   + ConfiguredObject.class.getSimpleName()
+                                                   + ". "
+                                                   + clazz.getSimpleName()
+                                                   + " does not meet these criteria.");
         }
         ConfiguredObjectStatistic statistic = new ConfiguredObjectMethodStatistic(clazz, m, statAnnotation);
-        if(statisticSet.contains(statistic))
+        if (statisticSet.contains(statistic))
         {
             statisticSet.remove(statistic);
         }
@@ -759,13 +808,17 @@ public class ConfiguredObjectTypeRegistry
     {
         DerivedAttribute annotation = m.getAnnotation(DerivedAttribute.class);
 
-        if(!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
+        if (!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
         {
-            throw new ServerScopedRuntimeException("Can only define DerivedAttributes on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
+            throw new ServerScopedRuntimeException("Can only define DerivedAttributes on interfaces which extend "
+                                                   + ConfiguredObject.class.getSimpleName()
+                                                   + ". "
+                                                   + clazz.getSimpleName()
+                                                   + " does not meet these criteria.");
         }
 
-        ConfiguredObjectAttribute<?,?> attribute = new ConfiguredDerivedMethodAttribute<>(clazz, m, annotation);
-        if(attributeSet.contains(attribute))
+        ConfiguredObjectAttribute<?, ?> attribute = new ConfiguredDerivedMethodAttribute<>(clazz, m, annotation);
+        if (attributeSet.contains(attribute))
         {
             attributeSet.remove(attribute);
         }
@@ -778,13 +831,17 @@ public class ConfiguredObjectTypeRegistry
     {
         ManagedAttribute annotation = m.getAnnotation(ManagedAttribute.class);
 
-        if(!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
+        if (!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
         {
-            throw new ServerScopedRuntimeException("Can only define ManagedAttributes on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
+            throw new ServerScopedRuntimeException("Can only define ManagedAttributes on interfaces which extend "
+                                                   + ConfiguredObject.class.getSimpleName()
+                                                   + ". "
+                                                   + clazz.getSimpleName()
+                                                   + " does not meet these criteria.");
         }
 
-        ConfiguredObjectAttribute<?,?> attribute = new ConfiguredAutomatedAttribute<>(clazz, m, annotation);
-        if(attributeSet.contains(attribute))
+        ConfiguredObjectAttribute<?, ?> attribute = new ConfiguredAutomatedAttribute<>(clazz, m, annotation);
+        if (attributeSet.contains(attribute))
         {
             attributeSet.remove(attribute);
         }
@@ -797,21 +854,28 @@ public class ConfiguredObjectTypeRegistry
     {
         ManagedOperation annotation = m.getAnnotation(ManagedOperation.class);
 
-        if(!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
+        if (!clazz.isInterface() || !ConfiguredObject.class.isAssignableFrom(clazz))
         {
-            throw new ServerScopedRuntimeException("Can only define ManagedOperations on interfaces which extend " + ConfiguredObject.class.getSimpleName() + ". " + clazz.getSimpleName() + " does not meet these criteria.");
+            throw new ServerScopedRuntimeException("Can only define ManagedOperations on interfaces which extend "
+                                                   + ConfiguredObject.class.getSimpleName()
+                                                   + ". "
+                                                   + clazz.getSimpleName()
+                                                   + " does not meet these criteria.");
         }
 
         ConfiguredObjectOperation<?> operation = new ConfiguredObjectMethodOperation<>(clazz, m, this);
         Iterator<ConfiguredObjectOperation<?>> iter = operationSet.iterator();
-        while(iter.hasNext())
+        while (iter.hasNext())
         {
             final ConfiguredObjectOperation<?> existingOperation = iter.next();
-            if(operation.getName().equals(existingOperation.getName()))
+            if (operation.getName().equals(existingOperation.getName()))
             {
-                if(!operation.hasSameParameters(existingOperation))
+                if (!operation.hasSameParameters(existingOperation))
                 {
-                    throw new IllegalArgumentException("Cannot redefine the operation " + operation.getName() + " with different parameters in " + clazz.getSimpleName());
+                    throw new IllegalArgumentException("Cannot redefine the operation "
+                                                       + operation.getName()
+                                                       + " with different parameters in "
+                                                       + clazz.getSimpleName());
                 }
                 iter.remove();
                 break;
@@ -821,40 +885,42 @@ public class ConfiguredObjectTypeRegistry
     }
 
 
-
     private void initialiseWithParentAttributes(final SortedSet<ConfiguredObjectAttribute<?, ?>> attributeSet,
                                                 final SortedSet<ConfiguredObjectStatistic<?, ?>> statisticSet,
                                                 final Set<Class<? extends ManagedInterface>> managedInterfaces,
                                                 final Set<ConfiguredObjectOperation<?>> operationsSet,
+                                                final Set<String> contextSet,
                                                 final Class<? extends ConfiguredObject> parent)
     {
         attributeSet.addAll(_allAttributes.get(parent));
         statisticSet.addAll(_allStatistics.get(parent));
         managedInterfaces.addAll(_allManagedInterfaces.get(parent));
         operationsSet.addAll(_allOperations.get(parent));
+        contextSet.addAll(_contextUses.get(parent));
     }
 
     private <X extends ConfiguredObject> void processAttributesTypesAndFields(final Class<X> clazz)
     {
-        Map<String,ConfiguredObjectAttribute<?,?>> attrMap = new TreeMap<>(NAME_COMPARATOR);
-        Map<String,AutomatedField> fieldMap = new HashMap<String, AutomatedField>();
+        Map<String, ConfiguredObjectAttribute<?, ?>> attrMap = new TreeMap<>(NAME_COMPARATOR);
+        Map<String, AutomatedField> fieldMap = new HashMap<String, AutomatedField>();
 
 
         Collection<ConfiguredObjectAttribute<?, ?>> attrCol = _allAttributes.get(clazz);
-        for(ConfiguredObjectAttribute<?,?> attr : attrCol)
+        for (ConfiguredObjectAttribute<?, ?> attr : attrCol)
         {
             attrMap.put(attr.getName(), attr);
-            if(attr.isAutomated())
+            if (attr.isAutomated())
             {
                 fieldMap.put(attr.getName(), findField(attr, clazz));
             }
 
         }
-        for(ConfiguredObjectAttributeInjector injector : _attributeInjectors)
+        for (ConfiguredObjectAttributeInjector injector : _attributeInjectors)
         {
-            for(ConfiguredObjectInjectedAttribute<?,?> attr : injector.getInjectedAttributes())
+            for (ConfiguredObjectInjectedAttribute<?, ?> attr : injector.getInjectedAttributes())
             {
-                if(!attrMap.containsKey(attr.getName()) && attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
+                if (!attrMap.containsKey(attr.getName())
+                    && attr.appliesToConfiguredObjectType((Class<? extends ConfiguredObject<?>>) clazz))
                 {
                     attrMap.put(attr.getName(), attr);
                 }
@@ -864,17 +930,20 @@ public class ConfiguredObjectTypeRegistry
         _allAutomatedFields.put(clazz, fieldMap);
     }
 
-    private <X extends ConfiguredObject> void processDefaultContext(final Class<X> clazz)
+    private <X extends ConfiguredObject> void processDefaultContext(final Class<X> clazz, final Set<String> contextSet)
     {
-        for(Field field : clazz.getDeclaredFields())
+        for (Field field : clazz.getDeclaredFields())
         {
-            if(Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers()) && field.isAnnotationPresent(ManagedContextDefault.class))
+            if (Modifier.isStatic(field.getModifiers())
+                && Modifier.isFinal(field.getModifiers())
+                && field.isAnnotationPresent(ManagedContextDefault.class))
             {
                 try
                 {
-                    String name = field.getAnnotation(ManagedContextDefault.class).name();
+                    ManagedContextDefault annotation = field.getAnnotation(ManagedContextDefault.class);
+                    String name = annotation.name();
                     Object value = field.get(null);
-                    if(!_defaultContext.containsKey(name))
+                    if (!_defaultContext.containsKey(name))
                     {
                         final String stringValue;
                         if (value instanceof Collection || value instanceof Map)
@@ -885,8 +954,11 @@ public class ConfiguredObjectTypeRegistry
                             }
                             catch (JsonProcessingException e)
                             {
-                                throw new ServerScopedRuntimeException("Unable to convert value of type '" + value.getClass()
-                                                                       + "' to a JSON string for conext variable ${"+name+"}");
+                                throw new ServerScopedRuntimeException("Unable to convert value of type '"
+                                                                       + value.getClass()
+                                                                       + "' to a JSON string for conext variable ${"
+                                                                       + name
+                                                                       + "}");
                             }
                         }
                         else
@@ -894,15 +966,21 @@ public class ConfiguredObjectTypeRegistry
                             stringValue = String.valueOf(value);
                         }
                         _defaultContext.put(name, stringValue);
+                        _contextDefinitions.put(name, annotation);
+                        contextSet.add(name);
                     }
                     else
                     {
-                        throw new IllegalArgumentException("Multiple definitions of the default context variable ${"+name+"}");
+                        throw new IllegalArgumentException("Multiple definitions of the default context variable ${"
+                                                           + name
+                                                           + "}");
                     }
                 }
                 catch (IllegalAccessException e)
                 {
-                    throw new ServerScopedRuntimeException("Unexpected illegal access exception (only inspecting public static fields)", e);
+                    throw new ServerScopedRuntimeException(
+                            "Unexpected illegal access exception (only inspecting public static fields)",
+                            e);
                 }
             }
         }
@@ -927,17 +1005,17 @@ public class ConfiguredObjectTypeRegistry
     }
 
     private void inheritTransitions(final Class<? extends ConfiguredObject> parent,
-                                           final Map<State, Map<State, Method>> map)
+                                    final Map<State, Map<State, Method>> map)
     {
         Map<State, Map<State, Method>> parentMap = _stateChangeMethods.get(parent);
-        for(Map.Entry<State, Map<State,Method>> parentEntry : parentMap.entrySet())
+        for (Map.Entry<State, Map<State, Method>> parentEntry : parentMap.entrySet())
         {
-            if(map.containsKey(parentEntry.getKey()))
+            if (map.containsKey(parentEntry.getKey()))
             {
                 Map<State, Method> methodMap = map.get(parentEntry.getKey());
-                for(Map.Entry<State,Method> methodEntry : parentEntry.getValue().entrySet())
+                for (Map.Entry<State, Method> methodEntry : parentEntry.getValue().entrySet())
                 {
-                    if(!methodMap.containsKey(methodEntry.getKey()))
+                    if (!methodMap.containsKey(methodEntry.getKey()))
                     {
                         methodMap.put(methodEntry.getKey(), methodEntry.getValue());
                     }
@@ -951,13 +1029,13 @@ public class ConfiguredObjectTypeRegistry
     }
 
     private void addStateTransitions(final Class<? extends ConfiguredObject> clazz,
-                                            final Map<State, Map<State, Method>> map)
+                                     final Map<State, Map<State, Method>> map)
     {
-        for(Method m : clazz.getDeclaredMethods())
+        for (Method m : clazz.getDeclaredMethods())
         {
-            if(m.isAnnotationPresent(StateTransition.class))
+            if (m.isAnnotationPresent(StateTransition.class))
             {
-                if(ListenableFuture.class.isAssignableFrom(m.getReturnType()))
+                if (ListenableFuture.class.isAssignableFrom(m.getReturnType()))
                 {
                     if (m.getParameterTypes().length == 0)
                     {
@@ -994,22 +1072,22 @@ public class ConfiguredObjectTypeRegistry
     }
 
     private void addStateTransition(final State fromState,
-                                           final State toState,
-                                           final Method method,
-                                           final Map<State, Map<State, Method>> map)
+                                    final State toState,
+                                    final Method method,
+                                    final Map<State, Map<State, Method>> map)
     {
-        if(map.containsKey(fromState))
+        if (map.containsKey(fromState))
         {
-            Map<State,Method> toMap = map.get(fromState);
-            if(!toMap.containsKey(toState))
+            Map<State, Method> toMap = map.get(fromState);
+            if (!toMap.containsKey(toState))
             {
-                toMap.put(toState,method);
+                toMap.put(toState, method);
             }
         }
         else
         {
-            HashMap<State,Method> toMap = new HashMap<>();
-            toMap.put(toState,method);
+            HashMap<State, Method> toMap = new HashMap<>();
+            toMap.put(toState, method);
             map.put(fromState, toMap);
         }
     }
@@ -1017,11 +1095,12 @@ public class ConfiguredObjectTypeRegistry
     private AutomatedField findField(final ConfiguredObjectAttribute<?, ?> attr, Class<?> objClass)
     {
         Class<?> clazz = objClass;
-        while(clazz != null)
+        while (clazz != null)
         {
-            for(Field field : clazz.getDeclaredFields())
+            for (Field field : clazz.getDeclaredFields())
             {
-                if(field.isAnnotationPresent(ManagedAttributeField.class) && field.getName().equals("_" + attr.getName().replace('.','_')))
+                if (field.isAnnotationPresent(ManagedAttributeField.class) && field.getName()
+                        .equals("_" + attr.getName().replace('.', '_')))
                 {
                     try
                     {
@@ -1051,18 +1130,23 @@ public class ConfiguredObjectTypeRegistry
                     }
                     catch (NoSuchMethodException e)
                     {
-                        throw new ServerScopedRuntimeException("Cannot find method referenced by annotation for pre/post setting action", e);
+                        throw new ServerScopedRuntimeException(
+                                "Cannot find method referenced by annotation for pre/post setting action",
+                                e);
                     }
 
                 }
             }
             clazz = clazz.getSuperclass();
         }
-        if(objClass.isInterface() || Modifier.isAbstract(objClass.getModifiers()))
+        if (objClass.isInterface() || Modifier.isAbstract(objClass.getModifiers()))
         {
             return null;
         }
-        throw new ServerScopedRuntimeException("Unable to find field definition for automated field " + attr.getName() + " in class " + objClass.getName());
+        throw new ServerScopedRuntimeException("Unable to find field definition for automated field "
+                                               + attr.getName()
+                                               + " in class "
+                                               + objClass.getName());
     }
 
     public <X extends ConfiguredObject> Collection<String> getAttributeNames(Class<X> clazz)
@@ -1115,7 +1199,7 @@ public class ConfiguredObjectTypeRegistry
 
     private <X extends ConfiguredObject> void processClassIfNecessary(final Class<X> clazz)
     {
-        if(!_allAttributes.containsKey(clazz))
+        if (!_allAttributes.containsKey(clazz))
         {
             process(clazz);
         }
@@ -1133,14 +1217,14 @@ public class ConfiguredObjectTypeRegistry
     {
         processClassIfNecessary(clazz);
         final Set<ConfiguredObjectOperation<?>> operations = _allOperations.get(clazz);
-        if(operations == null)
+        if (operations == null)
         {
             return Collections.emptyMap();
         }
         else
         {
             Map<String, ConfiguredObjectOperation<?>> returnVal = new HashMap<>();
-            for(ConfiguredObjectOperation<?> operation : operations)
+            for (ConfiguredObjectOperation<?> operation : operations)
             {
                 returnVal.put(operation.getName(), operation);
             }
@@ -1168,7 +1252,7 @@ public class ConfiguredObjectTypeRegistry
         return map != null ? Collections.unmodifiableMap(map) : Collections.<State, Map<State, Method>>emptyMap();
     }
 
-    public Map<String,String> getDefaultContext()
+    public Map<String, String> getDefaultContext()
     {
         return Collections.unmodifiableMap(_defaultContext);
     }
@@ -1185,7 +1269,7 @@ public class ConfiguredObjectTypeRegistry
     private <X extends ConfiguredObject> void processManagedInterfaces(Class<X> clazz)
     {
         final Set<Class<? extends ManagedInterface>> managedInterfaces = _allManagedInterfaces.get(clazz);
-        for(Class<?> iface : clazz.getInterfaces())
+        for (Class<?> iface : clazz.getInterfaces())
         {
             if (iface.isAnnotationPresent(ManagedAnnotation.class) && ManagedInterface.class.isAssignableFrom(iface))
             {
@@ -1194,13 +1278,17 @@ public class ConfiguredObjectTypeRegistry
         }
     }
 
-    public Collection<String> getValidChildTypes(Class<? extends ConfiguredObject> type, Class<? extends ConfiguredObject> childType)
+    public Collection<String> getValidChildTypes(Class<? extends ConfiguredObject> type,
+                                                 Class<? extends ConfiguredObject> childType)
     {
         final Map<String, Collection<String>> allValidChildTypes = _validChildTypes.get(getTypeClass(type));
-        if(allValidChildTypes != null)
+        if (allValidChildTypes != null)
         {
-            final Collection<String> validTypesForSpecificChild = allValidChildTypes.get(getCategory(childType).getSimpleName());
-            return validTypesForSpecificChild == null ? null : Collections.unmodifiableCollection(validTypesForSpecificChild);
+            final Collection<String> validTypesForSpecificChild =
+                    allValidChildTypes.get(getCategory(childType).getSimpleName());
+            return validTypesForSpecificChild == null
+                    ? null
+                    : Collections.unmodifiableCollection(validTypesForSpecificChild);
         }
         else
         {
@@ -1208,4 +1296,29 @@ public class ConfiguredObjectTypeRegistry
         }
     }
 
+    public Collection<ManagedContextDefault> getContextDependencies(Class<? extends ConfiguredObject> type)
+    {
+        Collection<String> dependencyNames = _contextUses.get(type);
+        if (dependencyNames != null)
+        {
+            List<ManagedContextDefault> dependencies = new ArrayList<>(dependencyNames.size());
+            for (String dependencyName : dependencyNames)
+            {
+                dependencies.add(_contextDefinitions.get(dependencyName));
+            }
+            return dependencies;
+        }
+        else
+        {
+            return Collections.emptySet();
+        }
+    }
+
+    public Collection<ManagedContextDefault> getTypeSpecificContextDependencies(Class<? extends ConfiguredObject> type)
+    {
+        final Collection<ManagedContextDefault> contextDependencies = getContextDependencies(type);
+        contextDependencies.removeAll(getContextDependencies(getCategory(type)));
+
+        return contextDependencies;
+    }
 }

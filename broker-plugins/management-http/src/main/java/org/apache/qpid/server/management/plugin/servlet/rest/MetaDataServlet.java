@@ -45,6 +45,7 @@ import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectStatistic;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
 import org.apache.qpid.server.model.ConfiguredSettableAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OperationParameter;
@@ -109,6 +110,7 @@ public class MetaDataServlet extends AbstractServlet
         typeDetails.put("operations", processOperations(type));
         typeDetails.put("managedInterfaces", getManagedInterfaces(type));
         typeDetails.put("validChildTypes", getValidChildTypes(type));
+        typeDetails.put("contextDependencies", getContextDependencies(type));
         ManagedObject annotation = type.getAnnotation(ManagedObject.class);
         if (annotation != null)
         {
@@ -122,6 +124,22 @@ public class MetaDataServlet extends AbstractServlet
             }
         }
         return typeDetails;
+    }
+
+    private Map<String, String> getContextDependencies(final Class<? extends ConfiguredObject> type)
+    {
+        final Collection<ManagedContextDefault> contextDependencies =
+                _instance.getTypeRegistry().getContextDependencies(type);
+        Map<String,String> result = new TreeMap<>();
+
+        if(contextDependencies != null)
+        {
+            for(ManagedContextDefault contextDefault : contextDependencies)
+            {
+                result.put(contextDefault.name(), contextDefault.description());
+            }
+        }
+        return result;
     }
 
     private Map<String, Collection<String>> getValidChildTypes(final Class<? extends ConfiguredObject> type)

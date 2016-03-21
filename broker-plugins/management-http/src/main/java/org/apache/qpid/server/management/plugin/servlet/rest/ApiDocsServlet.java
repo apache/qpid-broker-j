@@ -32,6 +32,7 @@ import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredSettableAttribute;
+import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.Model;
 import org.apache.qpid.server.model.OperationParameter;
@@ -136,6 +137,7 @@ public class ApiDocsServlet extends AbstractServlet
             writeTypes(writer);
             writeAttributes(writer);
             writeOperations(writer);
+            writeContext(writer);
         }
 
         writeFoot(writer);
@@ -489,6 +491,52 @@ public class ApiDocsServlet extends AbstractServlet
                 ((Class) operation.getGenericReturnType()).getName() :
                 operation.getGenericReturnType().toString();
     }
+
+    private void writeContext(final PrintWriter writer)
+    {
+        writer.println("<a name=\"types\"><h2>Context Variables</h2></a>");
+        writer.println("<h2>Common Context Variables</h2>");
+
+        Collection<ManagedContextDefault> defaultContexts =
+                _model.getTypeRegistry().getContextDependencies(getConfiguredClass());
+        writeContextDefaults(writer, defaultContexts);
+        for(Class<? extends ConfiguredObject> type : _types)
+        {
+            String typeName = getTypeName(type);
+            Collection<ManagedContextDefault> typeSpecificDefaults = _model.getTypeRegistry().getTypeSpecificContextDependencies(type);
+
+            if(!typeSpecificDefaults.isEmpty() && type != getConfiguredClass())
+            {
+                writer.println("<h2><span class=\"type\">"+typeName+"</span> Specific Context Variables</h2>");
+                writeContextDefaults(writer, typeSpecificDefaults);
+            }
+        }
+
+    }
+
+    private void writeContextDefaults(PrintWriter writer,
+                                       Collection<ManagedContextDefault> contextDefaults)
+    {
+        writer.println("<table class=\"contextDefault\">");
+        writer.println("<thead>");
+        writer.println("<tr><th class=\"name\">Name</th><th class=\"description\">Description</th></tr>");
+        writer.println("</thead>");
+        writer.println("<tbody>");
+
+        for(ManagedContextDefault contextDefault : contextDefaults)
+        {
+
+            writer.println("<tr><td class=\"name\">"
+                           + contextDefault.name()
+                           + "</td><td class=\"description\">"
+                           + contextDefault.description()
+                           + "</td></tr>");
+        }
+        writer.println("</tbody>");
+        writer.println("</table>");
+
+    }
+
 
     private void writeFoot(final PrintWriter writer)
     {
