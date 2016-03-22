@@ -25,7 +25,8 @@ define([
         "dojo/parser",
         "dojo/_base/array",
         "dojo/_base/event",
-        'dojo/json',
+        "dojo/_base/lang",
+        "dojo/json",
         "qpid/common/util",
         "dojo/text!addGroupProvider.html",
         "dojo/store/Memory",
@@ -42,7 +43,7 @@ define([
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (dom, construct, registry, parser, array, event, json, util, template)
+    function (dom, construct, registry, parser, array, event, lang, json, util, template)
     {
 
         var addGroupProvider =
@@ -75,8 +76,13 @@ define([
             {
                 this.management = management;
                 this.modelObj = modelObj;
-                this.initialData = actualData;
+                this.initialData = lang.clone(actualData);
                 this.groupProviderForm.reset();
+
+                var supportedTypes = management.metadata.getTypesForCategory("GroupProvider");
+                supportedTypes.sort();
+                var supportedTypesStore = util.makeTypeStore(supportedTypes);
+                this.groupProviderType.set("store", supportedTypesStore);
 
                 if (actualData)
                 {
@@ -86,10 +92,6 @@ define([
                 this.groupProviderName.set("disabled", actualData == null ? false : true);
                 this.groupProviderType.set("disabled", actualData == null ? false : true);
                 this.dialog.set("title", actualData == null ? "Add Group Provider" : "Edit Group Provider - " + actualData.name);
-                var supportedTypes = management.metadata.getTypesForCategory("GroupProvider");
-                supportedTypes.sort();
-                var supportedTypesStore = util.makeTypeStore(supportedTypes);
-                this.groupProviderType.set("store", supportedTypesStore);
                 this.dialog.show();
             },
             _initFields:function(data)

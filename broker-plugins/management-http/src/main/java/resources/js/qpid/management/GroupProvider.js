@@ -134,6 +134,7 @@ define(["dojo/parser",
            GroupProvider.prototype.editGroupProvider = function()
            {
                 var management = this.controller.management;
+                var that = this;
                 management.load(this.modelObj,{ actuals: true }).then(
                           function(actualData)
                           {

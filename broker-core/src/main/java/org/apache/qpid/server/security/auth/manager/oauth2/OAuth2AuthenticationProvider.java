@@ -44,13 +44,13 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     @ManagedAttribute( description = "Redirect URI to obtain authorization code grant", mandatory = true, defaultValue = "${this:defaultAuthorizationEndpointURI}")
     URI getAuthorizationEndpointURI();
 
-    @ManagedAttribute( description = "Token endpoint URI", mandatory = true, defaultValue = "${this:defaultTokenEndpointURI}" )
+    @ManagedAttribute( description = "Token endpoint URI to exchange an authorization code grant for an access token", mandatory = true, defaultValue = "${this:defaultTokenEndpointURI}" )
     URI getTokenEndpointURI();
 
     @ManagedAttribute( description = "Whether to use basic authentication when accessing the token endpoint", defaultValue = "false" )
     boolean getTokenEndpointNeedsAuth();
 
-    @ManagedAttribute( description = "Identity resolver endpoint URI", mandatory = true, defaultValue = "${this:defaultIdentityResolverEndpointURI}"  )
+    @ManagedAttribute( description = "Identity resolver endpoint URI to get user information associated with a given access token", mandatory = true, defaultValue = "${this:defaultIdentityResolverEndpointURI}"  )
     URI getIdentityResolverEndpointURI();
 
     @ManagedAttribute( description = "The type of the IdentityResolver", mandatory = true,
@@ -66,10 +66,10 @@ public interface OAuth2AuthenticationProvider<T extends OAuth2AuthenticationProv
     @ManagedAttribute( description = "Client secret to identify qpid to the OAuth endpoints", mandatory = true, secure = true )
     String getClientSecret();
 
-    @ManagedAttribute( description = "The OAuth access token scope passed to the authorization endpoint", defaultValue = "${this:defaultScope}")
+    @ManagedAttribute( description = "The OAuth2 access token scope passed to the authorization endpoint", defaultValue = "${this:defaultScope}")
     String getScope();
 
-    @ManagedAttribute( description = "TrustStore to use when contacting OAuth endpoints" )
+    @ManagedAttribute( description = "TrustStore to use when contacting OAuth2 endpoints" )
     TrustStore getTrustStore();
 
     @ManagedAttribute( defaultValue = "[ \"XOAUTH2\" ]")

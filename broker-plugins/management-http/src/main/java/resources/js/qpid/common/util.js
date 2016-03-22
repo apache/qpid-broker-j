@@ -547,17 +547,17 @@ define(["dojo/_base/xhr",
                for(var i in formWidgets)
                {
                    var widget = formWidgets[i];
-                   var value = widget.value;
-                   var propName = widget.name;
-                   if (propName && (widget.required || value ))
+                   var value = widget.get("value");
+                   var propName = widget.get("name");
+                   if (propName && (widget.get("required") || value ))
                    {
-                       if (widget.excluded)
+                       if (widget.get("excluded"))
                        {
                           continue;
                        }
                        if (widget instanceof dijit.form.RadioButton)
                        {
-                           if (widget.checked)
+                           if (widget.get("checked"))
                            {
                                var currentValue = values[propName];
                                if (currentValue)
@@ -579,7 +579,7 @@ define(["dojo/_base/xhr",
                        }
                        else if (widget instanceof dijit.form.CheckBox)
                        {
-                           values[ propName ] = widget.checked;
+                           values[ propName ] = widget.get("checked");
                        }
                        else
                        {
@@ -635,6 +635,21 @@ define(["dojo/_base/xhr",
                }
                return new Memory({ data: typeData });
            }
+
+           util.makeInstanceStore = function(management, parentCategory, category, callback)
+           {
+               var obj = {type:category.toLowerCase(), parent: {type: parentCategory.toLowerCase()}};
+               management.load(obj).then(function(data)
+               {
+                   var items = [];
+                   for (var i=0; i< data.length; i++)
+                   {
+                       items.push( {id: data[i].name, name: data[i].name} );
+                   }
+                   var store = new Memory({ data: items });
+                   callback(store);
+               });
+           };
 
            util.setMultiSelectOptions = function(multiSelectWidget, options)
            {
@@ -738,6 +753,39 @@ define(["dojo/_base/xhr",
                                         }
                                      },
                                      util.xhrErrorHandler);
+           }
+
+           util.initialiseFields = function(data, containerNode, metadata, category, type) {
+               var attributes = metadata.getMetaData(category, type).attributes;
+
+               var widgets = registry.findWidgets(containerNode);
+               array.forEach(widgets, function(item) {
+                   var widgetName = item.name;
+                   if (widgetName in attributes)
+                   {
+                       var attribute = attributes[widgetName];
+                       var value = data[widgetName];
+                       if (value)
+                       {
+                           if (item instanceof dijit.form.CheckBox) {
+                               item.set("checked", value);
+                           }
+                           else
+                           {
+                               var copy = lang.clone(value);
+                               if (attribute.secure && /^\*+/.test(value))
+                               {
+                                   item.set("required", false);
+                                   item.set("placeHolder", copy);
+                               }
+                               else
+                               {
+                                   item.set("value", copy);
+                               }
+                           }
+                       }
+                   }
+               });
            }
 
            util.abortReaderSafely = function(reader)

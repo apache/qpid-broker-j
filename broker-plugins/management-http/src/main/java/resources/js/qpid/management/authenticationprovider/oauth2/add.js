@@ -30,39 +30,24 @@ define(["dojo/dom",
     {
         var addAuthenticationProvier =
         {
-            show: function(data)
-            {
+            show: function (data) {
                 var that = this;
-                this.metadata = data.metadata;
-                this.containerNode = data.containerNode;
-                data.containerNode.innerHTML = template;
-                return parser.parse(this.containerNode).then(function(instances)
-                {
-                    var identityResolverType = registry.byId("addAuthenticationProvider.identityResolverType");
-                    var validValues = that.metadata.getMetaData(data.category, data.type).attributes.identityResolverType.validValues;
-                    var validValueStore = util.makeTypeStore(validValues);
-                    identityResolverType.set("store", validValueStore);
+                util.parse(data.containerNode, template, function(){that._postParse(data);});
+            },
+            _postParse: function(data)
+            {
+                var identityResolverType = registry.byId("addAuthenticationProvider.identityResolverType");
+                var validValues = data.metadata.getMetaData(data.category, data.type).attributes.identityResolverType.validValues;
+                var validValueStore = util.makeTypeStore(validValues);
+                identityResolverType.set("store", validValueStore);
 
+                util.makeInstanceStore(data.parent.management, "Broker", "TrustStore", function(trustStoresStore)
+                {
+                    var trustStore = registry.byNode(query(".trustStore", data.containerNode)[0]);
+                    trustStore.set("store", trustStoresStore);
                     if (data.data)
                     {
-                        var authorizationEndpointURI = registry.byId("addAuthenticationProvider.authorizationEndpointURI");
-                        authorizationEndpointURI.set("value", data.data.authorizationEndpointURI);
-                        var tokenEndpointURI = registry.byId("addAuthenticationProvider.tokenEndpointURI");
-                        tokenEndpointURI.set("value", data.data.tokenEndpointURI);
-                        var tokenEndpointNeedsAuth = registry.byId("addAuthenticationProvider.tokenEndpointNeedsAuth");
-                        tokenEndpointNeedsAuth.set("value", data.data.tokenEndpointNeedsAuth);
-                        var identityResolverEndpointURI = registry.byId("addAuthenticationProvider.identityResolverEndpointURI");
-                        identityResolverEndpointURI.set("value", data.data.identityResolverEndpointURI);
-                        identityResolverType.set("value", data.data.identityResolverType);
-                        var clientId = registry.byId("addAuthenticationProvider.clientId");
-                        clientId.set("value", data.data.clientId);
-                        var clientSecret = registry.byId("addAuthenticationProvider.clientSecret");
-                        clientSecret.set("value", data.data.clientSecret);
-                        var scope = registry.byId("addAuthenticationProvider.scope");
-                        scope.set("value", data.data.scope);
-                        var postLogoutURI = registry.byId("addAuthenticationProvider.postLogoutURI");
-                        postLogoutURI.set("value", data.data.postLogoutURI);
-
+                        util.initialiseFields(data.data, data.containerNode, data.metadata, "AuthenticationProvider", "OAuth2");
                     }
                 });
             }

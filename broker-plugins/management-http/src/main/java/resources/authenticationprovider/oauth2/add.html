@@ -118,14 +118,16 @@
     </div>
     <div class="clear">
         <div class="formLabel-labelCell tableContainer-labelCell">Trust Store:</div>
-        <div class="formLabel-controlCell tableContainer-valueCell">
-            <input type="text" id="addAuthenticationProvider.trustStore"
-                   data-dojo-type="dijit/form/ValidationTextBox"
-                   data-dojo-props="
-                              name: 'trustStore',
-                              placeHolder: 'trust store',
-                              promptMessage: 'Enter the name of the trust store to use for the above endpoints.',
-                              title: 'Enter the name of the trust store to use for the above endpoints'"/>
+        <div class="tableContainer-valueCell formLabel-controlCell">
+            <select class="trustStore" data-dojo-type="dijit/form/FilteringSelect"
+                    data-dojo-props="
+                                    required: false,
+                                    name: 'trustStore',
+                                    placeHolder: 'Select trust store',
+                                    promptMessage: 'Select the trust store containing the certificate of the CA that signed the endpoints\' certificates',
+                                    title: 'Select trust store for secure connection',
+                                    searchAttr: 'name'">
+            </select>
         </div>
     </div>
     <div class="clear">

@@ -42,6 +42,8 @@ import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +53,8 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
+import org.apache.qpid.server.model.State;
+import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.model.TrustStore;
 import org.apache.qpid.server.security.auth.manager.oauth2.OAuth2UserPrincipal;
 import org.apache.qpid.server.security.group.GroupPrincipal;
@@ -112,6 +116,7 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
         super.validateChange(proxyForValidation, changedAttributes);
         final CloudFoundryDashboardManagementGroupProvider<?> validationProxy = (CloudFoundryDashboardManagementGroupProvider<?>) proxyForValidation;
         validateSecureEndpoint(validationProxy);
+        validateMapping(validationProxy);
     }
 
     @Override
@@ -119,6 +124,7 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
     {
         super.onValidate();
         validateSecureEndpoint(this);
+        validateMapping(this);
     }
 
     private void validateSecureEndpoint(final CloudFoundryDashboardManagementGroupProvider<?> provider)
@@ -127,6 +133,22 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
         {
             throw new IllegalConfigurationException(String.format("CloudFoundryDashboardManagementEndpoint is not secure: '%s'",
                                                                   provider.getCloudFoundryEndpointURI()));
+        }
+    }
+
+    private void validateMapping(final CloudFoundryDashboardManagementGroupProvider<?> provider)
+    {
+        for(Map.Entry<String, String> entry : provider.getServiceToManagementGroupMapping().entrySet())
+        {
+            if ("".equals(entry.getKey()))
+            {
+                throw new IllegalConfigurationException("Service instance id may not be empty");
+            }
+            if ("".equals(entry.getValue()))
+            {
+                throw new IllegalConfigurationException("Group name for service id '"
+                                                        + entry.getKey() + "' may not be empty");
+            }
         }
     }
 
@@ -226,6 +248,20 @@ public class CloudFoundryDashboardManagementGroupProviderImpl extends AbstractCo
             throw new ConnectionScopedRuntimeException(String.format("Connection to CloudFoundryDashboardManagementEndpoint '%s' failed",
                                                                      cloudFoundryEndpoint), e);
         }
+    }
+
+    @StateTransition( currentState = { State.UNINITIALIZED, State.QUIESCED, State.ERRORED }, desiredState = State.ACTIVE )
+    private ListenableFuture<Void> activate()
+    {
+        setState(State.ACTIVE);
+        return Futures.immediateFuture(null);
+    }
+
+    @StateTransition(currentState = {State.ACTIVE}, desiredState = State.DELETED)
+    private ListenableFuture<Void> doDelete()
+    {
+        deleted();
+        return Futures.immediateFuture(null);
     }
 
     @Override

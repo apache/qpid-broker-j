@@ -16,20 +16,18 @@
   ~ specific language governing permissions and limitations
   ~ under the License.
   -->
-<div class="contextEditor">
-    <div class="dialogGrid">
-        <div class="grid"></div>
+<div>
+    <div class="clear">
+        <div class="formLabel-labelCell">CloudFoundry endpoint URL:</div>
+        <div class="cloudFoundryEndpointURI formValue-valueCell"></div>
     </div>
-    <div>
-        <button data-dojo-type="dijit/form/Button" class="addButton" type="button" data-dojo-props="title:'Add new entry'">+</button>
-        <button data-dojo-type="dijit/form/Button" class="deleteButton" type="button" data-dojo-props="title:'Remove selected entry'">-</button>
-        <span class="dijit dijitReset dijitInline">
-            <label>Show</label>
-            <select class="filter" name="filter" data-dojo-type="dijit/form/Select">
-                <option value="*" selected="selected">All</option>
-                <option value="false">Local</option>
-                <option value="true" >Inherited</option>
-            </select>
-        </span>
+    <div class="clear">
+        <div class="formLabel-labelCell">Trust Store:</div>
+        <div class="trustStore formValue-valueCell"></div>
     </div>
+    <div class="clear">
+        <div class="formLabel-labelCell">Service to Management Group Mapping:</div>
+        <div class="formValue-valueCell"><table class="serviceToManagementGroupMappingTable"></table></div>
+    </div>
+    <div class="clear"></div>
 </div>

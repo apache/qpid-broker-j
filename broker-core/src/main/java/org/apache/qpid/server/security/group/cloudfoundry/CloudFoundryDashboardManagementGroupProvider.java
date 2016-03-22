@@ -42,13 +42,13 @@ public interface CloudFoundryDashboardManagementGroupProvider<X extends CloudFou
     @ManagedContextDefault(name = QPID_GROUPPROVIDER_CLOUDFOUNDRY_READ_TIMEOUT)
     int DEFAULT_QPID_GROUPPROVIDER_CLOUDFOUNDRY_READ_TIMEOUT = 60000;
 
-    @ManagedAttribute( mandatory = true )
+    @ManagedAttribute( description = "The CloudFoundry dashboard SSO base URI. The API version and service instance information will be appended by this GroupProvider.", mandatory = true )
     URI getCloudFoundryEndpointURI();
 
-    @ManagedAttribute()
+    @ManagedAttribute( description = "The TrustStore that contains the CA certificate that signed the CloudFoundry endpoint." )
     TrustStore getTrustStore();
 
-    @ManagedAttribute( mandatory = true )
+    @ManagedAttribute( description = "A service instance id to qpid management group mapping. If the CloudFoundry endpoint grants a user permission to manage a service instance the user will be associated with the corresponding management group.", mandatory = true )
     Map<String, String> getServiceToManagementGroupMapping();
 
     @DerivedAttribute
