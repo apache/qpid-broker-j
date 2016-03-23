@@ -21,14 +21,10 @@ package org.apache.qpid.server.util;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.Socket;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.net.ssl.HostnameVerifier;
@@ -36,7 +32,6 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
@@ -165,83 +160,13 @@ public class ConnectionBuilder
         {
             HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
             SSLSocketFactory originalSocketFactory = httpsConnection.getSSLSocketFactory();
-            httpsConnection.setSSLSocketFactory(new CustomisedSSLSocketFactory(originalSocketFactory));
+            httpsConnection.setSSLSocketFactory(new CipherSuiteAndProtocolRestrictingSSLSocketFactory(originalSocketFactory,
+                                                                                                      _tlsCipherSuiteWhiteList,
+                                                                                                      _tlsCipherSuiteBlackList,
+                                                                                                      _tlsProtocolWhiteList,
+                                                                                                      _tlsProtocolBlackList));
         }
         return connection;
     }
 
-    private class CustomisedSSLSocketFactory extends SSLSocketFactory
-    {
-        private final SSLSocketFactory _wrappedSocketFactory;
-
-        public CustomisedSSLSocketFactory(final SSLSocketFactory wrappedSocketFactory)
-        {
-            _wrappedSocketFactory = wrappedSocketFactory;
-        }
-
-        @Override
-        public String[] getDefaultCipherSuites()
-        {
-            return SSLUtil.filterEnabledCipherSuites(_wrappedSocketFactory.getDefaultCipherSuites(),
-                                                     _wrappedSocketFactory.getSupportedCipherSuites(),
-                                                     _tlsCipherSuiteWhiteList,
-                                                     _tlsCipherSuiteBlackList);
-        }
-
-        @Override
-        public String[] getSupportedCipherSuites()
-        {
-            return _wrappedSocketFactory.getSupportedCipherSuites();
-        }
-
-        @Override
-        public Socket createSocket(final Socket socket, final String host, final int port, final boolean autoClose)
-                throws IOException
-        {
-            final SSLSocket newSocket = (SSLSocket) _wrappedSocketFactory.createSocket(socket, host, port, autoClose);
-            SSLUtil.updateEnabledCipherSuites(newSocket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-            SSLUtil.updateEnabledTlsProtocols(newSocket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
-            return newSocket;
-        }
-
-        @Override
-        public Socket createSocket(final String host, final int port) throws IOException, UnknownHostException
-        {
-            final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port);
-            SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-            SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
-            return socket;
-        }
-
-        @Override
-        public Socket createSocket(final String host, final int port, final InetAddress localhost, final int localPort)
-                throws IOException, UnknownHostException
-        {
-            final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port, localhost, localPort);
-            SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-            SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
-            return socket;
-        }
-
-        @Override
-        public Socket createSocket(final InetAddress host, final int port) throws IOException
-        {
-            final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(host, port);
-            SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-            SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
-            return socket;
-        }
-
-        @Override
-        public Socket createSocket(final InetAddress address,
-                                   final int port,
-                                   final InetAddress localAddress,
-                                   final int localPort) throws IOException
-        {
-            final SSLSocket socket = (SSLSocket) _wrappedSocketFactory.createSocket(address, port, localAddress, localPort);
-            SSLUtil.updateEnabledCipherSuites(socket, _tlsCipherSuiteWhiteList, _tlsCipherSuiteBlackList);
-            SSLUtil.updateEnabledTlsProtocols(socket, _tlsProtocolWhiteList, _tlsProtocolBlackList);
-            return socket;
-        }
-    }
 }

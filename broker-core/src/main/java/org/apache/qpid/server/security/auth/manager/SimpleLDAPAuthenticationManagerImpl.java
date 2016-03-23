@@ -53,6 +53,7 @@ import javax.security.sasl.SaslServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -66,6 +67,8 @@ import org.apache.qpid.server.security.auth.manager.ldap.AbstractLDAPSSLSocketFa
 import org.apache.qpid.server.security.auth.manager.ldap.LDAPSSLSocketFactoryGenerator;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainPasswordCallback;
 import org.apache.qpid.server.security.auth.sasl.plain.PlainSaslServer;
+import org.apache.qpid.server.util.CipherSuiteAndProtocolRestrictingSSLSocketFactory;
+import org.apache.qpid.server.util.ParameterizedTypes;
 import org.apache.qpid.server.util.StringUtil;
 import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 
@@ -114,8 +117,14 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     @ManagedAttributeField
     private String _searchPassword;
 
+    private List<String> _tlsProtocolWhiteList;
+    private List<String>  _tlsProtocolBlackList;
+
+    private List<String> _tlsCipherSuiteWhiteList;
+    private List<String> _tlsCipherSuiteBlackList;
+
     /**
-     * Dynamically created SSL Socket Factory implementation used in the case where user has specified a trust store.
+     * Dynamically created SSL Socket Factory implementation.
      */
     private Class<? extends SocketFactory> _sslSocketFactoryOverrideClass;
 
@@ -130,7 +139,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     {
         super.validateOnCreate();
 
-        Class<? extends SocketFactory> sslSocketFactoryOverrideClass = _trustStore == null ? null : createSslSocketFactoryOverrideClass(_trustStore);
+        Class<? extends SocketFactory> sslSocketFactoryOverrideClass = createSslSocketFactoryOverrideClass(_trustStore);
         validateInitialDirContext(sslSocketFactoryOverrideClass, _providerUrl, _searchUsername, _searchPassword);
     }
 
@@ -143,8 +152,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         {
             SimpleLDAPAuthenticationManager changed = (SimpleLDAPAuthenticationManager)proxyForValidation;
             TrustStore changedTruststore = changed.getTrustStore();
-            Class<? extends SocketFactory> sslSocketFactoryOverrideClass = changedTruststore == null ? null : createSslSocketFactoryOverrideClass(
-                    changedTruststore);
+            Class<? extends SocketFactory> sslSocketFactoryOverrideClass = createSslSocketFactoryOverrideClass(changedTruststore);
             validateInitialDirContext(sslSocketFactoryOverrideClass, changed.getProviderUrl(), changed.getSearchUsername(),
                                       changed.getSearchPassword());
         }
@@ -155,7 +163,11 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     {
         super.onOpen();
 
-        _sslSocketFactoryOverrideClass = _trustStore == null ? null : createSslSocketFactoryOverrideClass(_trustStore);
+        _tlsProtocolWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST);
+        _tlsProtocolBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_PROTOCOL_BLACK_LIST);
+        _tlsCipherSuiteWhiteList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_WHITE_LIST);
+        _tlsCipherSuiteBlackList = getContextValue(List.class, ParameterizedTypes.LIST_OF_STRINGS, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST);
+        _sslSocketFactoryOverrideClass = createSslSocketFactoryOverrideClass(_trustStore);
     }
 
     @Override
@@ -318,7 +330,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
 
     private Hashtable<String, Object> createInitialDirContextEnvironment(String providerUrl)
     {
-        Hashtable<String,Object> env = new Hashtable<String,Object>();
+        Hashtable<String,Object> env = new Hashtable<>();
         env.put(Context.INITIAL_CONTEXT_FACTORY, _ldapContextFactory);
         env.put(Context.PROVIDER_URL, providerUrl);
         return env;
@@ -334,7 +346,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         boolean revertContentClassLoader = false;
         try
         {
-            if (isLdaps && sslSocketFactoryOverrideClass != null)
+            if (isLdaps)
             {
                 existingContextClassLoader = Thread.currentThread().getContextClassLoader();
                 env.put(JAVA_NAMING_LDAP_FACTORY_SOCKET, sslSocketFactoryOverrideClass.getName());
@@ -352,32 +364,43 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
     }
 
-    /**
-     * If a trust store has been specified, create a {@link SSLSocketFactory} class that is
-     * associated with the {@link SSLContext} generated from that trust store.
-     *
-     * @return generated socket factory class
-     * @param trustStore
-     */
     private Class<? extends SocketFactory> createSslSocketFactoryOverrideClass(final TrustStore trustStore)
     {
-        String clazzName = new StringUtil().createUniqueJavaName(getName() + "_" + trustStore.getName());
+        String managerName = String.format("%s_%s_%s", getName(), getId(), trustStore == null ? "none" : trustStore.getName());
+        String clazzName = new StringUtil().createUniqueJavaName(managerName);
         SSLContext sslContext = null;
         try
         {
             sslContext = SSLUtil.tryGetSSLContext();
-            sslContext.init(null, trustStore.getTrustManagers(), null);
+            sslContext.init(null,
+                            trustStore == null ? null : trustStore.getTrustManagers(),
+                            null);
         }
         catch (GeneralSecurityException e)
         {
             _logger.error("Exception creating SSLContext", e);
-            throw new IllegalConfigurationException("Error creating SSLContext with trust store : " + trustStore.getName() , e);
+            if (trustStore == null)
+            {
+                throw new IllegalConfigurationException("Error creating SSLContext with trust store : " +
+                                                        trustStore.getName() , e);
+            }
+            else
+            {
+                throw new IllegalConfigurationException("Error creating SSLContext (no trust store)", e);
+            }
         }
 
-        Class<? extends AbstractLDAPSSLSocketFactory> clazz = LDAPSSLSocketFactoryGenerator.createSubClass(clazzName, sslContext.getSocketFactory());
+        SSLSocketFactory sslSocketFactory = new CipherSuiteAndProtocolRestrictingSSLSocketFactory(sslContext.getSocketFactory(),
+                                                                                                 _tlsCipherSuiteWhiteList,
+                                                                                                 _tlsCipherSuiteBlackList,
+                                                                                                 _tlsProtocolWhiteList,
+                                                                                                 _tlsProtocolBlackList);
+        Class<? extends AbstractLDAPSSLSocketFactory> clazz = LDAPSSLSocketFactoryGenerator.createSubClass(clazzName,
+                                                                                                           sslSocketFactory);
         _logger.debug("Connection to Directory will use custom SSL socket factory : {}",  clazz);
         return clazz;
     }
+
 
     @Override
     public String toString()
@@ -405,7 +428,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         }
         catch (NamingException e)
         {
-            _logger.error("Failed to establish connectivity to the ldap server for " + providerUrl, e);
+            _logger.error("Failed to establish connectivity to the ldap server for '{}'", providerUrl, e);
             throw new IllegalConfigurationException("Failed to establish connectivity to the ldap server." , e);
         }
         finally
@@ -497,15 +520,21 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
                 searchControls.setCountLimit(1l);
                 searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
                 NamingEnumeration<?> namingEnum = null;
-                String name = null;
 
+                _logger.debug("Searching for '{}'", id);
                 namingEnum = ctx.search(_searchContext, _searchFilter, new String[]{id}, searchControls);
                 if (namingEnum.hasMore())
                 {
                     SearchResult result = (SearchResult) namingEnum.next();
-                    name = result.getNameInNamespace();
+                    String name = result.getNameInNamespace();
+                    _logger.debug("Found '{}' DN '{}'", id, name);
+                    return name;
                 }
-                return name;
+                else
+                {
+                    _logger.debug("Not found '{}'", id);
+                    return null;
+                }
             }
             finally
             {
@@ -523,6 +552,30 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
     public boolean isBindWithoutSearch()
     {
         return _bindWithoutSearch;
+    }
+
+    @Override
+    public List<String> getTlsProtocolWhiteList()
+    {
+        return _tlsProtocolWhiteList;
+    }
+
+    @Override
+    public List<String> getTlsProtocolBlackList()
+    {
+        return _tlsProtocolBlackList;
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteWhiteList()
+    {
+        return _tlsCipherSuiteWhiteList;
+    }
+
+    @Override
+    public List<String> getTlsCipherSuiteBlackList()
+    {
+        return _tlsCipherSuiteBlackList;
     }
 
     private void closeSafely(InitialDirContext ctx)

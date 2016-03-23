@@ -20,19 +20,27 @@
  */
 package org.apache.qpid.server.security.auth.manager;
 
+import java.util.List;
+
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.PreferencesSupportingAuthenticationProvider;
 import org.apache.qpid.server.model.TrustStore;
 
-@ManagedObject( category = false, type = "SimpleLDAP" )
+@ManagedObject( category = false,
+                type = "SimpleLDAP",
+                description = SimpleLDAPAuthenticationManager.CLASS_DESCRIPTION )
 public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticationManager<X>>
         extends AuthenticationProvider<X>,
                 UsernamePasswordAuthenticationProvider<X>,
                 PreferencesSupportingAuthenticationProvider
 {
+    String CLASS_DESCRIPTION = "Authentication provider that delegates authentication decisions to a Directory"
+                               + " supporting the LDAP protocol.";
+
     String PROVIDER_TYPE = "SimpleLDAP";
     String PROVIDER_URL = "providerUrl";
     String PROVIDER_AUTH_URL = "providerAuthUrl";
@@ -72,4 +80,17 @@ public interface SimpleLDAPAuthenticationManager<X extends SimpleLDAPAuthenticat
 
     @ManagedAttribute( description = "(Optional) password for authenticated search", secure = true)
     String getSearchPassword();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolWhiteList();
+
+    @DerivedAttribute
+    List<String> getTlsProtocolBlackList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteWhiteList();
+
+    @DerivedAttribute
+    List<String> getTlsCipherSuiteBlackList();
+
 }
