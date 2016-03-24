@@ -20,12 +20,6 @@
  */
 package org.apache.qpid.systest.rest;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.qpid.server.model.VirtualHostNode;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -87,34 +81,5 @@ public class QpidRestTestCase extends QpidBrokerTestCase
     public RestTestHelper getRestTestHelper()
     {
         return _restTestHelper;
-    }
-
-    public Map<String, Object> waitForAttributeChanged(String url, String attributeName, Object newValue) throws Exception
-    {
-        List<Map<String, Object>> nodeAttributes = getAttributesIgnoringNotFound(url);
-        int timeout = 30000;
-        long limit = System.currentTimeMillis() + timeout;
-        while(System.currentTimeMillis() < limit && (nodeAttributes.size() == 0 || !newValue.equals(nodeAttributes.get(0).get(attributeName))))
-        {
-            Thread.sleep(100l);
-            nodeAttributes = getAttributesIgnoringNotFound(url);
-        }
-        Map<String, Object> nodeData = nodeAttributes.get(0);
-        assertEquals("Attribute " + attributeName + " did not reach expected value within permitted timeout "  + timeout + "ms.", newValue, nodeData.get(attributeName));
-        return nodeData;
-    }
-
-    private List<Map<String, Object>> getAttributesIgnoringNotFound(String url) throws IOException
-    {
-        List<Map<String, Object>> nodeAttributes;
-        try
-        {
-            nodeAttributes = getRestTestHelper().getJsonAsList(url);
-        }
-        catch(FileNotFoundException e)
-        {
-            nodeAttributes = Collections.emptyList();
-        }
-        return nodeAttributes;
     }
 }

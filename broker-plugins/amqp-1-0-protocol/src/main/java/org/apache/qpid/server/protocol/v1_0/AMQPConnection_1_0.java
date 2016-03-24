@@ -59,22 +59,22 @@ import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
-import org.apache.qpid.server.model.Protocol;
-import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.server.protocol.ConnectionClosingTicker;
-import org.apache.qpid.server.transport.AbstractAMQPConnection;
-import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.model.Broker;
+import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
+import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.NetworkConnectionScheduler;
 import org.apache.qpid.server.transport.NonBlockingConnection;
+import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
@@ -154,8 +154,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         super(broker, network, port, transport, Protocol.AMQP_1_0, id, aggregateTicker);
         _broker = broker;
         _connection = createConnection(broker, network, port, transport, id, useSASL);
-
-        _connection.setAmqpConnection(this);
         _endpoint = _connection.getConnectionEndpoint();
         _endpoint.setConnectionEventListener(_connection);
         _endpoint.setDesiredIdleTimeout(1000L * broker.getConnection_heartBeatDelay());
@@ -176,12 +174,12 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     }
 
-    public static Connection_1_0 createConnection(final Broker<?> broker,
-                                                  final ServerNetworkConnection network,
-                                                  final AmqpPort<?> port,
-                                                  final Transport transport,
-                                                  final long id,
-                                                  final boolean useSASL)
+    private Connection_1_0 createConnection(final Broker<?> broker,
+                                            final ServerNetworkConnection network,
+                                            final AmqpPort<?> port,
+                                            final Transport transport,
+                                            final long id,
+                                            final boolean useSASL)
     {
         Container container = new Container(broker.getId().toString());
 
@@ -211,7 +209,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         endpoint.setProperties(serverProperties);
 
         endpoint.setRemoteAddress(network.getRemoteAddress());
-        return new Connection_1_0(endpoint, id, port, transport, subjectCreator);
+        return new Connection_1_0(endpoint, id, port, transport, subjectCreator, this);
     }
 
 
@@ -485,7 +483,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     void changeScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
-        ((NonBlockingConnection) getNetwork()).changeScheduler(networkConnectionScheduler);
+        ((NonBlockingConnection) getNetwork()).pushScheduler(networkConnectionScheduler);
     }
 
 
@@ -660,11 +658,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     public String getRemoteContainerName()
     {
         return _connection.getRemoteContainerName();
-    }
-
-    public VirtualHost<?> getVirtualHost()
-    {
-        return _connection.getVirtualHost();
     }
 
     public List<Session_1_0> getSessionModels()

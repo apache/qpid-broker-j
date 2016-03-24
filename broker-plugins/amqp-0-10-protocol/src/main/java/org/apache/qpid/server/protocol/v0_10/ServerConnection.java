@@ -73,7 +73,6 @@ public class ServerConnection extends Connection
     private Principal _authorizedPrincipal = null;
     private final long _connectionId;
     private final Object _reference = new Object();
-    private volatile VirtualHost<?> _virtualHost;
     private final AmqpPort<?> _port;
     private final AtomicLong _lastIoTime = new AtomicLong();
     private boolean _blocking;
@@ -84,22 +83,22 @@ public class ServerConnection extends Connection
 
     private int _messageCompressionThreshold;
 
-    private AMQPConnection_0_10 _amqpConnection;
+    private final AMQPConnection_0_10 _amqpConnection;
     private boolean _ignoreFutureInput;
     private boolean _ignoreAllButConnectionCloseOk;
 
     public ServerConnection(final long connectionId,
                             Broker<?> broker,
                             final AmqpPort<?> port,
-                            final Transport transport)
+                            final Transport transport,
+                            final AMQPConnection_0_10 serverProtocolEngine)
     {
         _connectionId = connectionId;
         _broker = broker;
 
         _port = port;
         _transport = transport;
-
-
+        _amqpConnection = serverProtocolEngine;
     }
 
     public Object getReference()
@@ -124,7 +123,8 @@ public class ServerConnection extends Connection
 
     EventLogger getEventLogger()
     {
-        return _virtualHost == null ? _broker.getEventLogger() : _virtualHost.getEventLogger();
+        VirtualHost<?> virtualHost = getVirtualHost();
+        return virtualHost == null ? _broker.getEventLogger() : virtualHost.getEventLogger();
     }
 
     @Override
@@ -135,7 +135,6 @@ public class ServerConnection extends Connection
         if (state == State.OPEN)
         {
             _amqpConnection.logConnectionOpen();
-            _amqpConnection.virtualHostAssociated();
         }
 
         if(state == State.CLOSING)
@@ -155,19 +154,14 @@ public class ServerConnection extends Connection
         return _amqpConnection;
     }
 
-    public void setAmqpConnection(final AMQPConnection_0_10 serverProtocolEngine)
-    {
-        _amqpConnection = serverProtocolEngine;
-    }
-
     public VirtualHost<?> getVirtualHost()
     {
-        return _virtualHost;
+        return _amqpConnection.getVirtualHost();
     }
 
     public void setVirtualHost(VirtualHost<?> virtualHost)
     {
-        _virtualHost = virtualHost;
+        _amqpConnection.associateVirtualHost(virtualHost);
         _messageCompressionThreshold =
                 virtualHost.getContextValue(Integer.class,
                                             Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
@@ -176,7 +170,7 @@ public class ServerConnection extends Connection
         {
             _messageCompressionThreshold = Integer.MAX_VALUE;
         }
-        _amqpConnection.getSubject().getPrincipals().add(_virtualHost.getPrincipal());
+        _amqpConnection.getSubject().getPrincipals().add(virtualHost.getPrincipal());
         _amqpConnection.updateAccessControllerContext();
     }
 
@@ -423,9 +417,10 @@ public class ServerConnection extends Connection
         }
         finally
         {
-            if(_virtualHost != null)
+            VirtualHost<?> virtualHost = getVirtualHost();
+            if(virtualHost != null)
             {
-                _virtualHost.deregisterConnection(_amqpConnection);
+                virtualHost.deregisterConnection(_amqpConnection);
             }
             getEventLogger().message(isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
         }

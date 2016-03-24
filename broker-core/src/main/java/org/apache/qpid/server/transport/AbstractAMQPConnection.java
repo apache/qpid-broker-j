@@ -53,7 +53,6 @@ import org.apache.qpid.server.logging.subjects.ConnectionLogSubject;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Session;
@@ -101,6 +100,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
     private final SettableFuture<Void> _modelClosedFuture = SettableFuture.create();
     private final AtomicBoolean _modelClosing = new AtomicBoolean();
+    private volatile VirtualHost<?> _virtualHost;
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
     private volatile AccessControlContext _accessControllerContext;
@@ -264,6 +264,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return String.valueOf(_network.getRemoteAddress());
     }
 
+    @Override
     public final void stopConnection()
     {
         _stopped = true;
@@ -299,12 +300,22 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
+    public void pushScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
         if(_network instanceof NonBlockingConnection)
         {
-            ((NonBlockingConnection) _network).changeScheduler(networkConnectionScheduler);
+            ((NonBlockingConnection) _network).pushScheduler(networkConnectionScheduler);
         }
+    }
+
+    @Override
+    public NetworkConnectionScheduler popScheduler()
+    {
+        if(_network instanceof NonBlockingConnection)
+        {
+            return ((NonBlockingConnection) _network).popScheduler();
+        }
+        return null;
     }
 
     @Override
@@ -414,6 +425,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         getVirtualHost().registerMessageReceived(messageSize, timestamp);
     }
 
+    @Override
     public final void resetStatistics()
     {
         _messagesDelivered.reset();
@@ -531,9 +543,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
     }
 
-    final public void virtualHostAssociated()
+    public final void associateVirtualHost(final VirtualHost<?> virtualHost)
     {
-        getVirtualHost().registerConnection(this);
+        virtualHost.registerConnection(this);
+        _virtualHost = virtualHost;
         updateMaxMessageSize();
         _messageAuthorizationRequired = getVirtualHost().getContextValue(Boolean.class, Broker.BROKER_MSG_AUTH);
     }
@@ -693,8 +706,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         });
     }
 
-    public abstract List<? extends AMQSessionModel<?>> getSessionModels();
-
     @Override
     public int getSessionCount()
     {
@@ -702,7 +713,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public AbstractAMQPConnection<?> getUnderlyingConnection()
+    public AMQPConnection<?> getUnderlyingConnection()
     {
         return this;
     }
@@ -729,6 +740,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     public final boolean isAuthorizedMessagePrincipal(final String userId)
     {
         return !_messageAuthorizationRequired || getAuthorizedPrincipal().getName().equals(userId == null? "" : userId);
+    }
+
+    @Override
+    public VirtualHost<?> getVirtualHost()
+    {
+        return _virtualHost;
     }
 
     private class SlowConnectionOpenTicker implements Ticker, SchedulingDelayNotificationListener

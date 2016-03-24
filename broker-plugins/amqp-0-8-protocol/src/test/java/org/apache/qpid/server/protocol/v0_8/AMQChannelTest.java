@@ -37,15 +37,12 @@ import javax.security.auth.Subject;
 
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.BasicContentHeaderProperties;
-import org.apache.qpid.framing.ContentHeaderBody;
-import org.apache.qpid.framing.MessagePublishInfo;
 import org.apache.qpid.framing.MethodRegistry;
 import org.apache.qpid.framing.ProtocolVersion;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.updater.TaskExecutor;
 import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.message.InstanceProperties;
-import org.apache.qpid.server.message.MessageContentSource;
 import org.apache.qpid.server.message.MessageDestination;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.Broker;
@@ -184,7 +181,7 @@ public class AMQChannelTest extends QpidTestCase
                                                         authenticatedUser,
                                                         Collections.<Principal>emptySet(),
                                                         Collections.<Principal>emptySet()));
-        _amqConnection.virtualHostAssociated();
+        _amqConnection.associateVirtualHost(_virtualHost);
 
         int channelId = 1;
         AMQChannel channel = new AMQChannel(_amqConnection, channelId, _virtualHost.getMessageStore());
@@ -214,7 +211,7 @@ public class AMQChannelTest extends QpidTestCase
 
         Set<Principal> authenticatedUser = Collections.<Principal>singleton(new AuthenticatedPrincipal("user"));
         _amqConnection.setAuthorizedSubject(new Subject(true, authenticatedUser, Collections.<Principal>emptySet(),  Collections.<Principal>emptySet()));
-        _amqConnection.virtualHostAssociated();
+        _amqConnection.associateVirtualHost(_virtualHost);
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 

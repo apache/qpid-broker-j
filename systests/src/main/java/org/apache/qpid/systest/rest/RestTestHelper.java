@@ -20,6 +20,7 @@ package org.apache.qpid.systest.rest;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -621,5 +622,36 @@ public class RestTestHelper
         {
             throw new RuntimeException("Unsupported encoding UTF8", e);
         }
+    }
+
+    public Map<String, Object> waitForAttributeChanged(String url,
+                                                       String attributeName,
+                                                       Object newValue) throws Exception
+    {
+        List<Map<String, Object>> nodeAttributes = getAttributesIgnoringNotFound(url);
+        int timeout = 30000;
+        long limit = System.currentTimeMillis() + timeout;
+        while(System.currentTimeMillis() < limit && (nodeAttributes.size() == 0 || !newValue.equals(nodeAttributes.get(0).get(attributeName))))
+        {
+            Thread.sleep(100l);
+            nodeAttributes = getAttributesIgnoringNotFound(url);
+        }
+        Map<String, Object> nodeData = nodeAttributes.get(0);
+        Assert.assertEquals("Attribute " + attributeName + " did not reach expected value within permitted timeout " + timeout + "ms.", newValue, nodeData.get(attributeName));
+        return nodeData;
+    }
+
+    private List<Map<String, Object>> getAttributesIgnoringNotFound(String url) throws IOException
+    {
+        List<Map<String, Object>> nodeAttributes;
+        try
+        {
+            nodeAttributes = getJsonAsList(url);
+        }
+        catch(FileNotFoundException e)
+        {
+            nodeAttributes = Collections.emptyList();
+        }
+        return nodeAttributes;
     }
 }

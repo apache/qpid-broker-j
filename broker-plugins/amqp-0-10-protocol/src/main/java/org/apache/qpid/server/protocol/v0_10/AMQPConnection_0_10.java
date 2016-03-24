@@ -41,7 +41,6 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.security.SubjectCreator;
 import org.apache.qpid.server.store.StoreException;
@@ -84,8 +83,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     {
         super(broker, network, port, transport, Protocol.AMQP_0_10, id, aggregateTicker);
 
-        _connection = new ServerConnection(id, broker, port, transport);
-        _connection.setAmqpConnection(this);
+        _connection = new ServerConnection(id, broker, port, transport, this);
         SocketAddress address = network.getLocalAddress();
         String fqdn = null;
 
@@ -331,11 +329,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     public String getRemoteContainerName()
     {
         return _connection.getRemoteContainerName();
-    }
-
-    public VirtualHost<?> getVirtualHost()
-    {
-        return _connection.getVirtualHost();
     }
 
     public List<ServerSession> getSessionModels()

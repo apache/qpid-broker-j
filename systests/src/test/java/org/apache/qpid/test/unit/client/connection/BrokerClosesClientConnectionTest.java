@@ -20,8 +20,12 @@
  */
 package org.apache.qpid.test.unit.client.connection;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Connection;
 import javax.jms.ExceptionListener;
@@ -32,14 +36,20 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
+import javax.naming.NamingException;
 
 import org.apache.qpid.AMQConnectionClosedException;
+import org.apache.qpid.AMQConnectionFailureException;
 import org.apache.qpid.AMQDisconnectedException;
 import org.apache.qpid.client.AMQConnection;
 import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.BasicMessageConsumer;
 import org.apache.qpid.client.BasicMessageProducer;
+import org.apache.qpid.server.model.VirtualHost;
+import org.apache.qpid.systest.rest.Asserts;
+import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.transport.ConnectionException;
 
 /**
@@ -58,6 +68,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
     @Override
     protected void setUp() throws Exception
     {
+        getDefaultBrokerConfiguration().addHttpManagementConfiguration();
         super.setUp();
 
         _connection = getConnection();
@@ -84,6 +95,67 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
         assertJmsObjectsClosed();
 
         ensureCanCloseWithoutException();
+    }
+
+    public void testClientCloseOnVirtualHostStop() throws Exception
+    {
+        final String virtualHostName = TestBrokerConfiguration.ENTRY_NAME_VIRTUAL_HOST;
+        RestTestHelper restTestHelper = new RestTestHelper(getDefaultBroker().getHttpPort());
+
+        final CountDownLatch connectionCreatorStarted = new CountDownLatch(1);
+        final AtomicBoolean shutdown = new AtomicBoolean(false);
+        final AtomicReference<Exception> clientException = new AtomicReference<>();
+        Thread connectionCreator = new Thread(new Runnable(){
+
+            @Override
+            public void run()
+            {
+                while (!shutdown.get())
+                {
+                    try
+                    {
+                        getConnection();
+                    }
+                    catch (Exception e)
+                    {
+                        clientException.set(e);
+                        shutdown.set(true);
+                    }
+                    connectionCreatorStarted.countDown();
+                }
+            }
+        });
+
+        try
+        {
+            connectionCreator.start();
+            assertTrue("connection creation thread did not start in time", connectionCreatorStarted.await(20, TimeUnit.SECONDS));
+
+            String restHostUrl = "virtualhost/" + virtualHostName + "/" + virtualHostName;
+            restTestHelper.submitRequest(restHostUrl, "PUT", Collections.singletonMap("desiredState", (Object) "STOPPED"), 200);
+            restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "STOPPED");
+
+            int connectionCount = 0;
+            for (int i = 0; i < 20; ++i)
+            {
+                Map<String, Object> portObject = restTestHelper.getJsonAsSingletonList("port/" + TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT);
+                Map<String, Object> portStatistics = (Map<String, Object>) portObject.get("statistics");
+                connectionCount = (int) portStatistics.get("connectionCount");
+                if (connectionCount == 0)
+                {
+                    break;
+                }
+                Thread.sleep(250);
+            }
+            assertEquals("unexpected number of connections after virtual host stopped", 0, connectionCount);
+
+            assertConnectionCloseWasReported(clientException.get(), AMQConnectionFailureException.class);
+        }
+        finally
+        {
+            shutdown.set(true);
+            connectionCreator.join(10000);
+        }
     }
 
     public void testClientCloseOnBrokerKill() throws Exception
@@ -118,12 +190,11 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
         }
     }
 
-    private void assertConnectionCloseWasReported(JMSException exception, Class<? extends Exception> linkedExceptionClass)
+    private void assertConnectionCloseWasReported(Exception exception, Class<? extends Exception> linkedExceptionClass)
     {
-        assertNotNull("Broker shutdown should be reported to the client via the ExceptionListener", exception);
-        assertNotNull("JMSXException should have linked exception", exception.getLinkedException());
-
-        assertEquals("Unexpected linked exception", linkedExceptionClass, exception.getLinkedException().getClass());
+        assertNotNull("Did not receive exception", exception);
+        assertNotNull("Exception should have a cause", exception.getCause());
+        assertEquals("Unexpected exception cause", linkedExceptionClass, exception.getCause().getClass());
     }
 
     private void assertJmsObjectsClosed()

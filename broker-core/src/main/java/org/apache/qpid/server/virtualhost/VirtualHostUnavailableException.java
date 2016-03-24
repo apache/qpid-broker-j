@@ -25,10 +25,15 @@ import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 
 public class VirtualHostUnavailableException extends ConnectionScopedRuntimeException
 {
+    public VirtualHostUnavailableException(String message)
+    {
+        super(message);
+    }
+
     public VirtualHostUnavailableException(VirtualHost<?> host)
     {
-        super("Virtualhost state "
-              + host.getState()
-              + " prevents the message from being sent");
+        this("Virtualhost state "
+             + host.getState()
+             + " prevents the message from being sent");
     }
 }

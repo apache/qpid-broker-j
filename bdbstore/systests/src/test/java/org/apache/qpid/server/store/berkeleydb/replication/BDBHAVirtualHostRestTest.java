@@ -117,7 +117,7 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
 
     public void testSetLocalTransactionSynchronizationPolicy() throws Exception
     {
-        Map<String, Object> hostAttributes = waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, State.ACTIVE.name());
+        Map<String, Object> hostAttributes = _restTestHelper.waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, State.ACTIVE.name());
         assertEquals("Unexpected synchronization policy before change", "SYNC", hostAttributes.get(LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY));
 
         Map<String, Object> newPolicy = Collections.<String, Object>singletonMap(LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY, "NO_SYNC");
@@ -129,7 +129,7 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
 
     public void testSetRemoteTransactionSynchronizationPolicy() throws Exception
     {
-        Map<String, Object> hostAttributes = waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, State.ACTIVE.name());
+        Map<String, Object> hostAttributes = _restTestHelper.waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, State.ACTIVE.name());
         assertEquals("Unexpected synchronization policy before change", "NO_SYNC", hostAttributes.get(REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY));
 
         Map<String, Object> newPolicy = Collections.<String, Object>singletonMap(REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY, "SYNC");
@@ -141,19 +141,19 @@ public class BDBHAVirtualHostRestTest extends QpidRestTestCase
 
     public void testMutateState() throws Exception
     {
-        waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, "ACTIVE");
+        _restTestHelper.waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, "ACTIVE");
         assertActualAndDesireStates(_virtualhostUrl, "ACTIVE", "ACTIVE");
 
         Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "STOPPED");
         getRestTestHelper().submitRequest(_virtualhostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
 
-        waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, "STOPPED");
+        _restTestHelper.waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, "STOPPED");
         assertActualAndDesireStates(_virtualhostUrl, "STOPPED", "STOPPED");
 
         newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "ACTIVE");
         getRestTestHelper().submitRequest(_virtualhostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
 
-        waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, "ACTIVE");
+        _restTestHelper.waitForAttributeChanged(_virtualhostUrl, VirtualHost.STATE, "ACTIVE");
         assertActualAndDesireStates(_virtualhostUrl, "ACTIVE", "ACTIVE");
     }
 

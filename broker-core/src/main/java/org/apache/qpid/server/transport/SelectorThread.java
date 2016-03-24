@@ -634,6 +634,10 @@ class SelectorThread extends Thread
 
      public void addToWork(final NonBlockingConnection connection)
      {
+         if (_closed.get())
+         {
+             throw new IllegalStateException("Adding connection work " + connection + " to closed selector thread " + _scheduler);
+         }
          if(connection.setScheduled())
          {
              _workQueue.add(new ConnectionProcessor(_scheduler, connection));

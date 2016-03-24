@@ -31,10 +31,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.security.AccessControlException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -43,6 +45,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 import org.mockito.invocation.InvocationOnMock;
@@ -65,6 +68,7 @@ import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.TestMemoryVirtualHost;
+import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class VirtualHostTest extends QpidTestCase
@@ -463,6 +467,60 @@ public class VirtualHostTest extends QpidTestCase
         {
             // pass
         }
+    }
+
+    public void testRegisterConnection() throws Exception
+    {
+        VirtualHost<?> vhost = createVirtualHost("sdf");
+        AMQPConnection<?> connection = getMockConnection();
+
+        assertEquals("unexpected number of connections before test", 0, vhost.getConnectionCount());
+        vhost.registerConnection(connection);
+        assertEquals("unexpected number of connections after registerConnection", 1, vhost.getConnectionCount());
+        assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
+    }
+
+    public void testStopVirtualhostClosesConnections() throws Exception
+    {
+        VirtualHost<?> vhost = createVirtualHost("sdf");
+        AMQPConnection<?> connection = getMockConnection();
+
+        vhost.registerConnection(connection);
+        assertEquals("unexpected number of connections after registerConnection", 1, vhost.getConnectionCount());
+        assertEquals("unexpected connection object", Collections.singleton(connection), vhost.getConnections());
+        vhost.stop();
+        verify(connection).stopConnection();
+        verify(connection).closeAsync();
+    }
+
+    public void testRegisterConnectionOnStoppedVirtualhost() throws Exception
+    {
+        VirtualHost<?> vhost = createVirtualHost("sdf");
+        AMQPConnection<?> connection = getMockConnection();
+
+        vhost.stop();
+        try
+        {
+            vhost.registerConnection(connection);
+            fail("exception not thrown");
+        }
+        catch (VirtualHostUnavailableException e)
+        {
+            // pass
+        }
+        assertEquals("unexpected number of connections", 0, vhost.getConnectionCount());
+        vhost.start();
+        vhost.registerConnection(connection);
+        assertEquals("unexpected number of connections", 1, vhost.getConnectionCount());
+    }
+
+    private AMQPConnection<?> getMockConnection()
+    {
+        AMQPConnection<?> connection = mock(AMQPConnection.class);
+        final ListenableFuture<Void> listenableFuture = Futures.immediateFuture(null);
+        when(connection.closeAsync()).thenReturn(listenableFuture);
+        when(connection.getUnderlyingConnection()).thenReturn((AMQPConnection) connection);
+        return connection;
     }
 
     private VirtualHost<?> createVirtualHost(final String virtualHostName)
