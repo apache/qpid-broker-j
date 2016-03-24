@@ -121,20 +121,27 @@ public abstract class AbstractSystemConfig<X extends SystemConfig<X>>
     }
 
     @Override
+    protected ListenableFuture<Void> beforeClose()
+    {
+        try
+        {
+            boolean removed = Runtime.getRuntime().removeShutdownHook(_shutdownHook);
+            LOGGER.debug("Removed shutdown hook : {}", removed);
+        }
+        catch(IllegalStateException ise)
+        {
+            //ignore, means the JVM is already shutting down
+        }
+
+        return super.beforeClose();
+    }
+
+    @Override
     protected void onClose()
     {
         final TaskExecutor taskExecutor = getTaskExecutor();
         try
         {
-            try
-            {
-                boolean removed = Runtime.getRuntime().removeShutdownHook(_shutdownHook);
-                LOGGER.debug("Removed shutdown hook : {}", removed);
-            }
-            catch(IllegalStateException ise)
-            {
-                //ignore, means the JVM is already shutting down
-            }
 
             if (taskExecutor != null)
             {
