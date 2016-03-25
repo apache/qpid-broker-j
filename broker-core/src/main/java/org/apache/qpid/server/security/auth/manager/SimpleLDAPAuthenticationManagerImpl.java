@@ -379,7 +379,7 @@ public class SimpleLDAPAuthenticationManagerImpl extends AbstractAuthenticationM
         catch (GeneralSecurityException e)
         {
             _logger.error("Exception creating SSLContext", e);
-            if (trustStore == null)
+            if (trustStore != null)
             {
                 throw new IllegalConfigurationException("Error creating SSLContext with trust store : " +
                                                         trustStore.getName() , e);
