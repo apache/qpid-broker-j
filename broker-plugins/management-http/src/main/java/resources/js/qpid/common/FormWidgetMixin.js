@@ -97,7 +97,6 @@ define(["dojo/_base/declare"], function(declare)
         {
             this._hasBeenBlurred = false;
             this._setValueAttr(this._resetValue, true);
-        },
-        focus: function() {}
+        }
     });
 });

@@ -37,14 +37,11 @@ public class DojoHelper
     public static final String DOJO_PATH_PROPERTY = "dojo-path";
     public static final String DIJIT_PATH_PROPERTY = "dijit-path";
     public static final String DOJOX_PATH_PROPERTY = "dojox-path";
-    public static final String DGRID_PATH_PROPERTY = "dgrid-path";
-    public static final String DSTORE_PATH_PROPERTY = "dstore-path";
+
     private static String _version = "undefined";
     private static String _dojoPath = "/dojo-undefined/dojo";
     private static String _dijitPath = "/dojo-undefined/dijit";
     private static String _dojoxPath = "/dojo-undefined/dojox";
-    private static String _dgridPath = "/META-INF/resources/webjars/dgrid/dgrid-undefined";
-    private static String _dstorePath = "/META-INF/resources/webjars/dstore/dstore-undefined";
 
     // Loads the value from the properties file.
     static
@@ -91,8 +88,6 @@ public class DojoHelper
                 _dojoPath = props.getProperty(DOJO_PATH_PROPERTY, _dojoPath);
                 _dijitPath = props.getProperty(DIJIT_PATH_PROPERTY, _dijitPath);
                 _dojoxPath = props.getProperty(DOJOX_PATH_PROPERTY, _dojoxPath);
-                _dgridPath = props.getProperty(DGRID_PATH_PROPERTY, _dgridPath);
-                _dstorePath = props.getProperty(DSTORE_PATH_PROPERTY, _dstorePath);
             }
         }
         catch (IOException e)
@@ -121,15 +116,4 @@ public class DojoHelper
     {
         return _dojoxPath;
     }
-
-    public static String getDstorePath()
-    {
-        return _dstorePath;
-    }
-
-    public static String getDgridPath()
-    {
-        return _dgridPath;
-    }
-
 }

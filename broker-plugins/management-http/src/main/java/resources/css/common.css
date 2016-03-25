@@ -18,6 +18,9 @@
  * under the License.
  *
  */
+* {
+    outline: none !important;
+}
 
 html, body {
     height: 100%;
@@ -243,12 +246,12 @@ div .messages {
 }
 
 .alignLeft {
-    float: left !important;
+    float: left;
     display: inline-block;
 }
 
 .alignRight {
-    float: right !important;
+    float: right;
     display: inline-block;
 }
 
@@ -356,59 +359,4 @@ div .messages {
     background-size: 1em;
     width:100%;
     height:100%;
-}
-
-.queryDefaultField
-{
-    width: 7em;
-}
-
-.querySearchField
-{
-    width: 20%;
-}
-
-.dgrid-column-selected
-{
-    width: 2em;
-}
-
-.dgrid-column-attributeName
-{
-   width: auto;
-}
-
-.compactGrid
-{
-    height:20em;
-}
-.criteriaPanelTitle
-{
-    padding:0px !important;
-}
-
-.criteriaPanelTitleText
-{
-    vertical-align: middle !important;
-}
-.criteriaPanelTitleButton
-{
-  margin: 0px !important;
-}
-.criteriaControl
-{
-    margin-bottom: 5px !important;
-}
-
-.criteriaControl.dijitTextBoxReadOnly
-{
-  width:100%;
-}
-
-.criteriaControl.dijitTextBoxReadOnly,
-.claro .criteriaControl.dijitTextBoxReadOnly,
-.claro .criteriaControl.dijitTextBoxReadOnlyFocused .dijitInputContainer
-{
-  background-color: #efefef !important;
-  background-image: none !important;
 }
