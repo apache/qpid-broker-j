@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.properties.ConnectionStartProperties;
-import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.State;
@@ -51,6 +50,7 @@ import org.apache.qpid.server.security.auth.AuthenticationResult.AuthenticationS
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.*;
 import org.apache.qpid.transport.network.NetworkConnection;
 
@@ -248,9 +248,9 @@ public class ServerConnectionDelegate extends ServerDelegate
                 return;
             }
 
-            sconn.setVirtualHost(vhost);
             try
             {
+                sconn.setVirtualHost(vhost);
                 if(!vhost.authoriseCreateConnection(sconn.getAmqpConnection()))
                 {
                     sconn.setState(Connection.State.CLOSING);
@@ -258,7 +258,7 @@ public class ServerConnectionDelegate extends ServerDelegate
                     return;
                 }
             }
-            catch (AccessControlException e)
+            catch (AccessControlException | VirtualHostUnavailableException e)
             {
                 sconn.setState(Connection.State.CLOSING);
                 sconn.sendConnectionClose(ConnectionCloseCode.CONNECTION_FORCED, e.getMessage());

@@ -34,6 +34,7 @@ import org.apache.qpid.server.model.BrokerModel;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
+import org.apache.qpid.server.transport.AMQPConnection;
 import org.apache.qpid.server.util.BrokerTestHelper;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.test.utils.QpidTestCase;
@@ -73,33 +74,6 @@ public class ServerSessionTest extends QpidTestCase
         }
     }
 
-    public void testCompareTo() throws Exception
-    {
-        final Broker<?> broker = mock(Broker.class);
-        when(broker.getContextValue(eq(Long.class), eq(Broker.CHANNEL_FLOW_CONTROL_ENFORCEMENT_TIMEOUT))).thenReturn(0l);
-
-        AmqpPort amqpPort = createMockPort(AmqpPort.DEFAULT_MAX_MESSAGE_SIZE);
-
-        ServerConnection connection = new ServerConnection(1, broker, amqpPort, Transport.TCP);
-        final AMQPConnection_0_10 protocolEngine = mock(AMQPConnection_0_10.class);
-        Subject subject = new Subject();
-        when(protocolEngine.getSubject()).thenReturn(subject);
-        connection.setAmqpConnection(protocolEngine);
-        connection.setVirtualHost(_virtualHost);
-        ServerSession session1 = new ServerSession(connection, new ServerSessionDelegate(),
-                new Binary(getName().getBytes()), 0);
-
-        // create a session with the same name but on a different connection
-        ServerConnection connection2 = new ServerConnection(2, broker, amqpPort, Transport.TCP);
-        connection2.setAmqpConnection(protocolEngine);
-        connection2.setVirtualHost(_virtualHost);
-        ServerSession session2 = new ServerSession(connection2, new ServerSessionDelegate(),
-                new Binary(getName().getBytes()), 0);
-
-        assertFalse("Unexpected compare result", session1.compareTo(session2) == 0);
-        assertEquals("Unexpected compare result", 0, session1.compareTo(session1));
-    }
-
     public void testOverlargeMessageTest() throws Exception
     {
         final Broker<?> broker = mock(Broker.class);
@@ -107,12 +81,13 @@ public class ServerSessionTest extends QpidTestCase
 
         AmqpPort port = createMockPort(1024);
 
-        ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP);
         final AMQPConnection_0_10 protocolEngine = mock(AMQPConnection_0_10.class);
+        when(protocolEngine.getVirtualHost()).thenReturn(_virtualHost);
+        when(protocolEngine.getUnderlyingConnection()).thenReturn((AMQPConnection) protocolEngine);
         Subject subject = new Subject();
         when(protocolEngine.getSubject()).thenReturn(subject);
 
-        connection.setAmqpConnection(protocolEngine);
+        ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, protocolEngine);
         connection.setVirtualHost(_virtualHost);
         final List<Method> invokedMethods = new ArrayList<>();
         ServerSession session = new ServerSession(connection, new ServerSessionDelegate(),

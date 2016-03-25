@@ -71,6 +71,7 @@ import org.apache.qpid.server.message.MessageNode;
 import org.apache.qpid.server.message.MessageSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.Connection;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ConnectionValidator;
 import org.apache.qpid.server.plugin.QpidServiceLoader;
@@ -111,6 +112,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
     private final Set<VirtualHostConnectionListener> _connectionAssociationListeners = new CopyOnWriteArraySet<>();
     private final AccessControlContext _housekeepingJobContext;
     private final AccessControlContext _fileSystemSpaceCheckerJobContext;
+    private final AtomicBoolean _acceptsConnections = new AtomicBoolean(false);
 
     private static enum BlockingType { STORE, FILESYSTEM };
 
@@ -941,6 +943,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             _logger.debug("Closing connection registry :" + _connections.size() + " connections.");
         }
+        _acceptsConnections.set(false);
         for(Connection conn : _connections)
         {
             conn.getUnderlyingConnection().stopConnection();
@@ -1751,20 +1754,30 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             @Override
             public ListenableFuture<Void> execute()
             {
-                _connections.add(connection);
-
-                if(_blocked.get())
+                if (_acceptsConnections.get())
                 {
-                    connection.block();
+                    _connections.add(connection);
+
+                    if (_blocked.get())
+                    {
+                        connection.block();
+                    }
+
+                    connection.pushScheduler(_networkConnectionScheduler);
+                    for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
+                    {
+                        listener.connectionAssociated(connection);
+                    }
+                    return Futures.immediateFuture(null);
                 }
-
-                connection.setScheduler(_networkConnectionScheduler);
-
-                for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
+                else
                 {
-                    listener.connectionAssociated(connection);
+                    final VirtualHostUnavailableException exception =
+                            new VirtualHostUnavailableException(String.format(
+                                    "VirtualHost '%s' not accepting connections",
+                                    getName()));
+                    return Futures.immediateFailedFuture(exception);
                 }
-                return Futures.immediateFuture(null);
             }
 
             @Override
@@ -1801,6 +1814,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             @Override
             public ListenableFuture<Void> execute()
             {
+                connection.popScheduler();
                 if (_connections.remove(connection))
                 {
                     for (VirtualHostConnectionListener listener : _connectionAssociationListeners)
@@ -1942,7 +1956,6 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             postCreateDefaultExchangeTasks();
             return Futures.immediateFuture(null);
         }
-
     }
 
     private void postCreateDefaultExchangeTasks()
@@ -1972,6 +1985,7 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         {
             initialiseHouseKeeping(getHousekeepingCheckPeriod());
             finalState = State.ACTIVE;
+            _acceptsConnections.set(true);
         }
         finally
         {

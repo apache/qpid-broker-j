@@ -186,6 +186,7 @@ public class AMQChannelTest extends QpidTestCase
                                                         authenticatedUser,
                                                         Collections.<Principal>emptySet(),
                                                         Collections.<Principal>emptySet()));
+        _amqConnection.associateVirtualHost(_virtualHost);
 
         int channelId = 1;
         AMQChannel channel = new AMQChannel(_amqConnection, channelId, _virtualHost.getMessageStore());
@@ -220,6 +221,7 @@ public class AMQChannelTest extends QpidTestCase
 
         Set<Principal> authenticatedUser = Collections.<Principal>singleton(new AuthenticatedPrincipal("user"));
         _amqConnection.setAuthorizedSubject(new Subject(true, authenticatedUser, Collections.<Principal>emptySet(),  Collections.<Principal>emptySet()));
+        _amqConnection.associateVirtualHost(_virtualHost);
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());
 

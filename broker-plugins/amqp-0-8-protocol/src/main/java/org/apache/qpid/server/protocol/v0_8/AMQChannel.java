@@ -1760,7 +1760,7 @@ public class AMQChannel
 
     public VirtualHostImpl getVirtualHost()
     {
-        return getConnection().getVirtualHost();
+        return (VirtualHostImpl) getConnection().getVirtualHost();
     }
 
     public void checkTransactionStatus(long openWarn, long openClose, long idleWarn, long idleClose)
@@ -2119,7 +2119,7 @@ public class AMQChannel
         }
 
         AMQShortString consumerTag1 = consumerTag;
-        VirtualHostImpl<?, ?, ?> vHost = _connection.getVirtualHost();
+        VirtualHostImpl<?, ?, ?> vHost = getVirtualHost();
         sync();
         String queueName = AMQShortString.toString(queue);
 
@@ -2244,7 +2244,7 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] BasicGet[" +" queue: " + queueName + " noAck: " + noAck + " ]");
         }
 
-        VirtualHostImpl vHost = _connection.getVirtualHost();
+        VirtualHostImpl vHost = getVirtualHost();
         sync();
         MessageSource queue = queueName == null ? getDefaultQueue() : vHost.getAttainedMessageSource(queueName.toString());
         if (queue == null)
@@ -2317,8 +2317,7 @@ public class AMQChannel
 
 
 
-        VirtualHostImpl vHost = _connection.getVirtualHost();
-
+        VirtualHostImpl vHost = getVirtualHost();
         if(blockingTimeoutExceeded())
         {
             getVirtualHost().getEventLogger().message(ChannelMessages.FLOW_CONTROL_IGNORED());
@@ -2699,7 +2698,7 @@ public class AMQChannel
                           routingKey + " queue: " + queueName + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHostImpl virtualHost = getVirtualHost();
         MethodRegistry methodRegistry = _connection.getMethodRegistry();
 
         sync();
@@ -2888,7 +2887,7 @@ public class AMQChannel
         final AMQMethodBody declareOkBody = methodRegistry.createExchangeDeclareOkBody();
 
         ExchangeImpl exchange;
-        VirtualHostImpl<?, ?, ?> virtualHost = _connection.getVirtualHost();
+        VirtualHostImpl<?, ?, ?> virtualHost = getVirtualHost();
 
         if (isDefaultExchange(exchangeName))
         {
@@ -3043,7 +3042,7 @@ public class AMQChannel
         }
 
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHostImpl virtualHost = getVirtualHost();
         sync();
 
         if (isDefaultExchange(exchangeStr))
@@ -3113,7 +3112,7 @@ public class AMQChannel
                           " nowait: " + nowait + " arguments: " + argumentsTable + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHostImpl virtualHost = getVirtualHost();
         AMQQueue<?> queue;
         if (queueName == null)
         {
@@ -3222,7 +3221,7 @@ public class AMQChannel
                           " autoDelete: " + autoDelete + " nowait: " + nowait + " arguments: " + arguments + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHostImpl virtualHost = getVirtualHost();
 
         final AMQShortString queueName;
 
@@ -3413,7 +3412,7 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] QueueDelete[" +" queue: " + queueName + " ifUnused: " + ifUnused + " ifEmpty: " + ifEmpty + " nowait: " + nowait + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHostImpl virtualHost = getVirtualHost();
         sync();
         AMQQueue queue;
         if (queueName == null)
@@ -3483,7 +3482,7 @@ public class AMQChannel
             _logger.debug("RECV[" + _channelId + "] QueuePurge[" +" queue: " + queueName + " nowait: " + nowait + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHostImpl virtualHost = getVirtualHost();
         AMQQueue queue = null;
         if (queueName == null && (queue = getDefaultQueue()) == null)
         {
@@ -3536,7 +3535,7 @@ public class AMQChannel
                           " arguments: " + arguments + " ]");
         }
 
-        VirtualHostImpl virtualHost = _connection.getVirtualHost();
+        VirtualHostImpl virtualHost = getVirtualHost();
 
 
         final boolean useDefaultQueue = queueName == null;

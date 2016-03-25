@@ -209,19 +209,19 @@ public class VirtualHostRestTest extends QpidRestTestCase
     {
         String restHostUrl = "virtualhost/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST;
 
-        waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
+        _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
         assertActualAndDesireStates(restHostUrl, "ACTIVE", "ACTIVE");
 
         Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "STOPPED");
         getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
 
-        waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "STOPPED");
+        _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "STOPPED");
         assertActualAndDesireStates(restHostUrl, "STOPPED", "STOPPED");
 
         newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "ACTIVE");
         getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
 
-        waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
+        _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
 
         assertActualAndDesireStates(restHostUrl, "ACTIVE", "ACTIVE");
     }
@@ -232,7 +232,7 @@ public class VirtualHostRestTest extends QpidRestTestCase
         String restHostUrl = "virtualhost/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST;
         String restQueueUrl = "queue/" + TEST1_VIRTUALHOST + "/" + TEST1_VIRTUALHOST + "/" + testQueueName;
 
-        waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
+        _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
         assertActualAndDesireStates(restHostUrl, "ACTIVE", "ACTIVE");
 
         Connection connection = getConnection();
@@ -248,13 +248,13 @@ public class VirtualHostRestTest extends QpidRestTestCase
         Map<String, Object> newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "STOPPED");
         getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
 
-        waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "STOPPED");
+        _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "STOPPED");
         assertActualAndDesireStates(restHostUrl, "STOPPED", "STOPPED");
 
         newAttributes = Collections.<String, Object>singletonMap(VirtualHost.DESIRED_STATE, "ACTIVE");
         getRestTestHelper().submitRequest(restHostUrl, "PUT", newAttributes, HttpServletResponse.SC_OK);
 
-        waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
+        _restTestHelper.waitForAttributeChanged(restHostUrl, VirtualHost.STATE, "ACTIVE");
 
         assertActualAndDesireStates(restHostUrl, "ACTIVE", "ACTIVE");
 

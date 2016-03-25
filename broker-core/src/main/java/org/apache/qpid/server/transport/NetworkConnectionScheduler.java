@@ -64,6 +64,21 @@ public class NetworkConnectionScheduler
                                     });
     }
 
+    @Override
+    public String toString()
+    {
+        return "NetworkConnectionScheduler{" +
+               "_factory=" + _factory +
+               ", _executor=" + _executor +
+               ", _running=" + _running +
+               ", _poolSize=" + _poolSize +
+               ", _threadKeepAliveTimeout=" + _threadKeepAliveTimeout +
+               ", _name='" + _name + '\'' +
+               ", _numberOfSelectors=" + _numberOfSelectors +
+               ", _selectorThread=" + _selectorThread +
+               '}';
+    }
+
     public NetworkConnectionScheduler(String name,
                                       final int numberOfSelectors, int threadPoolSize,
                                       long threadKeepAliveTimeout,

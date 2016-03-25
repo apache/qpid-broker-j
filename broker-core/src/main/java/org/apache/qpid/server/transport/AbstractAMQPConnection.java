@@ -100,6 +100,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private final SettableFuture<Void> _transportClosedFuture = SettableFuture.create();
     private final SettableFuture<Void> _modelClosedFuture = SettableFuture.create();
     private final AtomicBoolean _modelClosing = new AtomicBoolean();
+    private volatile VirtualHost<?,?,?> _virtualHost;
     private volatile long _lastReadTime;
     private volatile long _lastWriteTime;
     private volatile AccessControlContext _accessControllerContext;
@@ -255,6 +256,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return String.valueOf(_network.getRemoteAddress());
     }
 
+    @Override
     public final void stopConnection()
     {
         _stopped = true;
@@ -285,12 +287,21 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _remoteProcessPid;
     }
 
-    public void setScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
+    public void pushScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
     {
         if(_network instanceof NonBlockingConnection)
         {
-            ((NonBlockingConnection) _network).changeScheduler(networkConnectionScheduler);
+            ((NonBlockingConnection) _network).pushScheduler(networkConnectionScheduler);
         }
+    }
+
+    public NetworkConnectionScheduler popScheduler()
+    {
+        if(_network instanceof NonBlockingConnection)
+        {
+            return ((NonBlockingConnection) _network).popScheduler();
+        }
+        return null;
     }
 
     public String getClientProduct()
@@ -366,6 +377,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         ((VirtualHostImpl<?,?,?>)getVirtualHost()).registerMessageReceived(messageSize, timestamp);
     }
 
+    @Override
     public final void resetStatistics()
     {
         _messagesDelivered.reset();
@@ -483,9 +495,10 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
     }
 
-    public void virtualHostAssociated()
+    public final void associateVirtualHost(final VirtualHost<?,?,?> virtualHost)
     {
-        getVirtualHost().registerConnection(this);
+        virtualHost.registerConnection(this);
+        _virtualHost = virtualHost;
     }
 
     @Override
@@ -643,8 +656,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         });
     }
 
-    public abstract List<? extends AMQSessionModel<?>> getSessionModels();
-
     @Override
     public int getSessionCount()
     {
@@ -652,7 +663,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public AbstractAMQPConnection<?> getUnderlyingConnection()
+    public AMQPConnection<?> getUnderlyingConnection()
     {
         return this;
     }
@@ -674,6 +685,12 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     protected abstract EventLogger getEventLogger();
+
+    @Override
+    public VirtualHost<?,?,?> getVirtualHost()
+    {
+        return _virtualHost;
+    }
 
     private class SlowConnectionOpenTicker implements Ticker, SchedulingDelayNotificationListener
     {

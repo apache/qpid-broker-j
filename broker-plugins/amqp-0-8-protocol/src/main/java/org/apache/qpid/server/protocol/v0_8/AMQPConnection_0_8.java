@@ -63,6 +63,7 @@ import org.apache.qpid.framing.*;
 import org.apache.qpid.properties.ConnectionStartProperties;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
@@ -87,6 +88,7 @@ import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostImpl;
+import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -115,8 +117,6 @@ public class AMQPConnection_0_8
 
     private final AtomicBoolean _stateChanged = new AtomicBoolean();
     private final AtomicReference<Action<ProtocolEngine>> _workListener = new AtomicReference<>();
-
-    private volatile VirtualHostImpl<?,?,?> _virtualHost;
 
     private final Object _channelAddRemoveLock = new Object();
     private final Map<Integer, AMQChannel> _channelMap = new ConcurrentHashMap<>();
@@ -275,7 +275,7 @@ public class AMQPConnection_0_8
                 }
                 catch (StoreException e)
                 {
-                    if (_virtualHost.getState() == State.ACTIVE)
+                    if (getVirtualHost().getState() == State.ACTIVE)
                     {
                         throw new ServerScopedRuntimeException(e);
                     }
@@ -722,15 +722,9 @@ public class AMQPConnection_0_8
         return getMethodRegistry();
     }
 
-    public VirtualHostImpl<?,?,?> getVirtualHost()
-    {
-        return _virtualHost;
-    }
-
     public void setVirtualHost(VirtualHostImpl<?,?,?> virtualHost)
     {
-        _virtualHost = virtualHost;
-        virtualHostAssociated();
+        associateVirtualHost(virtualHost);
 
         _messageCompressionThreshold = virtualHost.getContextValue(Integer.class,
                                                                    Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
@@ -800,9 +794,10 @@ public class AMQPConnection_0_8
             {
                 performDeleteTasks();
 
-                if (_virtualHost != null)
+                final VirtualHost<?,?,?> virtualHost = getVirtualHost();
+                if (virtualHost != null)
                 {
-                    _virtualHost.deregisterConnection(this);
+                    virtualHost.deregisterConnection(this);
                 }
 
             }
@@ -975,7 +970,8 @@ public class AMQPConnection_0_8
         assertState(ConnectionState.OPEN);
 
         // Protect the broker against out of order frame request.
-        if (_virtualHost == null)
+        final VirtualHost<?,?,?> virtualHost = getVirtualHost();
+        if (virtualHost == null)
         {
             sendConnectionClose(AMQConstant.COMMAND_INVALID,
                     "Virtualhost has not yet been set. ConnectionOpen has not been called.", channelId);
@@ -993,9 +989,9 @@ public class AMQPConnection_0_8
         }
         else
         {
-            _logger.debug("Connecting to: {}", _virtualHost.getName());
+            _logger.debug("Connecting to: {}", virtualHost.getName());
 
-            final AMQChannel channel = new AMQChannel(this, channelId, _virtualHost.getMessageStore());
+            final AMQChannel channel = new AMQChannel(this, channelId, virtualHost.getMessageStore());
 
             addChannel(channel);
 
@@ -1061,9 +1057,9 @@ public class AMQPConnection_0_8
             }
             else
             {
-                setVirtualHost(virtualHost);
                 try
                 {
+                    setVirtualHost(virtualHost);
 
                     if(virtualHost.authoriseCreateConnection(this))
                     {
@@ -1078,7 +1074,7 @@ public class AMQPConnection_0_8
                         sendConnectionClose(AMQConstant.ACCESS_REFUSED, "Connection refused", 0);
                     }
                 }
-                catch (AccessControlException e)
+                catch (AccessControlException | VirtualHostUnavailableException e)
                 {
                     sendConnectionClose(AMQConstant.ACCESS_REFUSED, e.getMessage(), 0);
                 }
@@ -1412,9 +1408,10 @@ public class AMQPConnection_0_8
     @Override
     public EventLogger getEventLogger()
     {
-        if(_virtualHost != null)
+        final VirtualHostImpl<?,?,?> virtualHost = (VirtualHostImpl<?, ?, ?>) getVirtualHost();
+        if (virtualHost != null)
         {
-            return _virtualHost.getEventLogger();
+            return virtualHost.getEventLogger();
         }
         else
         {

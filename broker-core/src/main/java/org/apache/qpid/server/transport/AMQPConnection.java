@@ -22,6 +22,7 @@ package org.apache.qpid.server.transport;
 
 import java.net.SocketAddress;
 import java.security.Principal;
+import java.util.List;
 
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.model.Connection;
@@ -60,7 +61,9 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
 
     void unblock();
 
-    void setScheduler(NetworkConnectionScheduler networkConnectionScheduler);
+    void pushScheduler(NetworkConnectionScheduler networkConnectionScheduler);
+
+    NetworkConnectionScheduler popScheduler();
 
     boolean hasSessionWithName(byte[] name);
 
@@ -69,4 +72,10 @@ public interface AMQPConnection<C extends AMQPConnection<C>> extends Connection<
     void reserveOutboundMessageSpace(long size);
 
     boolean isIOThread();
+
+    void stopConnection();
+
+    List<? extends AMQSessionModel<?>> getSessionModels();
+
+    void resetStatistics();
 }

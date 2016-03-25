@@ -22,7 +22,6 @@ package org.apache.qpid.server.protocol.v1_0;
 
 import static org.apache.qpid.server.logging.subjects.LogSubjectFormat.CONNECTION_FORMAT;
 
-import java.net.InetAddress;
 import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -67,6 +66,7 @@ import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.Connection;
 import org.apache.qpid.transport.ConnectionCloseCode;
 import org.apache.qpid.transport.ConnectionRedirect;
+import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 
 public class Connection_1_0 implements ConnectionEventListener
 {
@@ -74,8 +74,7 @@ public class Connection_1_0 implements ConnectionEventListener
     private static final long MINIMUM_SUPPORTED_IDLE_TIMEOUT = 1000L;
     private final AmqpPort<?> _port;
     private final SubjectCreator _subjectCreator;
-    private AMQPConnection_1_0 _amqpConnection;
-    private VirtualHostImpl<?,?,?> _vhost;
+    private final AMQPConnection_1_0 _amqpConnection;
     private final Transport _transport;
     private final ConnectionEndpoint _connectionEndpoint;
     private final long _connectionId;
@@ -92,7 +91,7 @@ public class Connection_1_0 implements ConnectionEventListener
                                         getConnectionId(),
                                         getClientId(),
                                         getRemoteAddressString(),
-                                        _vhost.getName())
+                                        getVirtualHost().getName())
                    + "] ";
 
         }
@@ -109,17 +108,14 @@ public class Connection_1_0 implements ConnectionEventListener
                           long connectionId,
                           AmqpPort<?> port,
                           Transport transport,
-                          final SubjectCreator subjectCreator)
+                          final SubjectCreator subjectCreator,
+                          final AMQPConnection_1_0 amqpConnection)
     {
         _port = port;
         _transport = transport;
         _connectionEndpoint = connectionEndpoint;
         _connectionId = connectionId;
         _subjectCreator = subjectCreator;
-    }
-
-    void setAmqpConnection(final AMQPConnection_1_0 amqpConnection)
-    {
         _amqpConnection = amqpConnection;
     }
 
@@ -169,13 +165,7 @@ public class Connection_1_0 implements ConnectionEventListener
             final VirtualHostImpl<?,?,?> vhost = ((AmqpPort) _port).getVirtualHost(host);
             if (vhost == null)
             {
-                final Error err = new Error();
-                err.setCondition(AmqpError.NOT_FOUND);
-                err.setDescription("Unknown hostname in connection open: '" + host + "'");
-                _connectionEndpoint.close(err);
-                _amqpConnection.close();
-
-                _closedOnOpen = true;
+                closeWithError(AmqpError.NOT_FOUND, "Unknown hostname in connection open: '" + host + "'");
             }
             else
             {
@@ -256,21 +246,32 @@ public class Connection_1_0 implements ConnectionEventListener
                     _amqpConnection.updateAccessControllerContext();
                     if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_amqpConnection.getSubject()) == null)
                     {
-                        final Error err = new Error();
-                        err.setCondition(AmqpError.NOT_ALLOWED);
-                        err.setDescription("Connection has not been authenticated");
-                        _connectionEndpoint.close(err);
-                        _amqpConnection.close();
-                        _closedOnOpen = true;
+                        closeWithError(AmqpError.NOT_ALLOWED, "Connection has not been authenticated");
                     }
                     else
                     {
-                        _vhost = vhost;
-                        _amqpConnection.virtualHostAssociated();
+                        try
+                        {
+                            _amqpConnection.associateVirtualHost(vhost);
+                        }
+                        catch (VirtualHostUnavailableException e)
+                        {
+                            closeWithError(AmqpError.NOT_ALLOWED, e.getMessage());
+                        }
                     }
                 }
             }
         }
+    }
+
+    private void closeWithError(final AmqpError amqpError, final String errorDescription)
+    {
+        final Error err = new Error();
+        err.setCondition(amqpError);
+        err.setDescription(errorDescription);
+        _connectionEndpoint.close(err);
+        _amqpConnection.close();
+        _closedOnOpen = true;
     }
 
     void setUserPrincipal(final Principal user)
@@ -362,9 +363,10 @@ public class Connection_1_0 implements ConnectionEventListener
         }
         finally
         {
-            if (_vhost != null)
+            VirtualHost<?,?,?> virtualHost = getVirtualHost();
+            if (virtualHost != null)
             {
-                _vhost.deregisterConnection(_amqpConnection);
+                virtualHost.deregisterConnection(_amqpConnection);
             }
             getAmqpConnection().getEventLogger().message(ConnectionMessages.CLOSE());
         }
@@ -470,9 +472,8 @@ public class Connection_1_0 implements ConnectionEventListener
 
     public VirtualHostImpl getVirtualHost()
     {
-        return _vhost;
+        return (VirtualHostImpl) _amqpConnection.getVirtualHost();
     }
-
 
     public void transportStateChanged()
     {
@@ -558,11 +559,12 @@ public class Connection_1_0 implements ConnectionEventListener
     @Override
     public String toString()
     {
+        VirtualHost<?,?,?> virtualHost = getVirtualHost();
         return "Connection_1_0["
                +  _connectionId
                + " "
                + _amqpConnection.getAddress()
-               + (_vhost == null ? "" : (" vh : " + _vhost.getName()))
+               + (virtualHost == null ? "" : (" vh : " + virtualHost.getName()))
                + ']';
     }
 }

@@ -26,9 +26,11 @@ import java.nio.channels.SocketChannel;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,7 +54,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private final SocketChannel _socketChannel;
     private NonBlockingConnectionDelegate _delegate;
-    private NetworkConnectionScheduler _scheduler;
+    private final Deque<NetworkConnectionScheduler> _schedulerDeque = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedQueue<QpidByteBuffer> _buffers = new ConcurrentLinkedQueue<>();
 
     private final String _remoteSocketAddress;
@@ -75,6 +77,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     private Iterator<Runnable> _pendingIterator;
     private final AtomicLong _maxWriteIdleMillis = new AtomicLong();
     private final AtomicLong _maxReadIdleMillis = new AtomicLong();
+    private final AtomicBoolean _hasShutdown = new AtomicBoolean();
     private final List<SchedulingDelayNotificationListener> _schedulingDelayNotificationListeners = new CopyOnWriteArrayList<>();
 
     public NonBlockingConnection(SocketChannel socketChannel,
@@ -85,7 +88,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
                                  final AmqpPort port)
     {
         _socketChannel = socketChannel;
-        _scheduler = scheduler;
+        pushScheduler(scheduler);
 
         _protocolEngine = protocolEngine;
         _onTransportEncryptionAction = onTransportEncryptionAction;
@@ -102,7 +105,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             @Override
             public void performAction(final ProtocolEngine object)
             {
-                _scheduler.schedule(NonBlockingConnection.this);
+                getScheduler().schedule(NonBlockingConnection.this);
             }
         });
 
@@ -390,6 +393,11 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private void shutdown()
     {
+        if (_hasShutdown.getAndSet(true))
+        {
+            return;
+        }
+
         try
         {
             shutdownInput();
@@ -575,20 +583,25 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
     {
     }
 
-    public void changeScheduler(NetworkConnectionScheduler scheduler)
+    public final void pushScheduler(NetworkConnectionScheduler scheduler)
     {
-        _scheduler = scheduler;
+        _schedulerDeque.addFirst(scheduler);
+    }
+
+    public final NetworkConnectionScheduler popScheduler()
+    {
+        return _schedulerDeque.removeFirst();
+    }
+
+    public final NetworkConnectionScheduler getScheduler()
+    {
+        return _schedulerDeque.peekFirst();
     }
 
     @Override
     public String toString()
     {
         return "[NonBlockingConnection " + _remoteSocketAddress + "]";
-    }
-
-    public NetworkConnectionScheduler getScheduler()
-    {
-        return _scheduler;
     }
 
     public void processAmqpData(QpidByteBuffer applicationData)

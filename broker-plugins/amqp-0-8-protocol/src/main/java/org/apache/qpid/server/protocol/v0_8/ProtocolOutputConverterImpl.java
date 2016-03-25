@@ -48,6 +48,7 @@ import org.apache.qpid.server.message.MessageContentSource;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.plugin.MessageConverter;
 import org.apache.qpid.server.protocol.MessageConverterRegistry;
+import org.apache.qpid.server.virtualhost.VirtualHostImpl;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.util.ByteBufferUtils;
 import org.apache.qpid.util.GZIPUtils;
@@ -85,7 +86,8 @@ public class ProtocolOutputConverterImpl implements ProtocolOutputConverter
         }
         else
         {
-            return getMessageConverter(serverMessage).convert(serverMessage, _connection.getVirtualHost());
+            return getMessageConverter(serverMessage).convert(serverMessage,
+                                                              (VirtualHostImpl) _connection.getVirtualHost());
         }
     }
 
