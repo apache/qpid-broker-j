@@ -61,6 +61,7 @@ import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.transport.MultiVersionProtocolEngineFactory;
 import org.apache.qpid.server.transport.AcceptingTransport;
 import org.apache.qpid.server.transport.ProtocolEngine;
+import org.apache.qpid.server.transport.SchedulingDelayNotificationListener;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -428,6 +429,16 @@ class WebSocketProvider implements AcceptingTransport
         public long getMaxWriteIdleMillis()
         {
             return _maxWriteIdleMillis;
+        }
+
+        @Override
+        public void addSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
+        {
+        }
+
+        @Override
+        public void removeSchedulingDelayNotificationListeners(final SchedulingDelayNotificationListener listener)
+        {
         }
 
         @Override

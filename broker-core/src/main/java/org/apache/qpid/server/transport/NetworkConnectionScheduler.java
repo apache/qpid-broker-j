@@ -101,6 +101,7 @@ public class NetworkConnectionScheduler
     void processConnection(final NonBlockingConnection connection)
     {
         Thread.currentThread().setName(connection.getThreadName());
+        connection.doPreWork();
         boolean rerun;
         do
         {

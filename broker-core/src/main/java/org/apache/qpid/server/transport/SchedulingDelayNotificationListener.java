@@ -15,21 +15,12 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
+ *
  */
 
 package org.apache.qpid.server.transport;
 
-import org.apache.qpid.transport.network.NetworkConnection;
-
-public interface ServerNetworkConnection extends NetworkConnection
+public interface SchedulingDelayNotificationListener
 {
-    void reserveOutboundMessageSpace(long size);
-
-    String getTransportInfo();
-
-    long getScheduledTime();
-
-    void addSchedulingDelayNotificationListeners(SchedulingDelayNotificationListener listener);
-
-    void removeSchedulingDelayNotificationListeners(SchedulingDelayNotificationListener listener);
+    void notifySchedulingDelay(final long schedulingDelay);
 }
