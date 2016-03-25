@@ -20,11 +20,15 @@ package org.apache.qpid.client;
 
 import static org.apache.qpid.configuration.ClientProperties.QPID_HEARTBEAT_INTERVAL;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Destination;
+import javax.jms.ExceptionListener;
+import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
@@ -34,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TCPTunneler;
 
 public class HeartbeatTest extends QpidBrokerTestCase
 {
@@ -190,6 +195,56 @@ public class HeartbeatTest extends QpidBrokerTestCase
         assertTrue("Too few heartbeats sent "+_listener.getHeartbeatsSent() +" (expected at least 2)", _listener.getHeartbeatsSent()>=2);
 
         conn.close();
+    }
+
+    public void testClientStopsSendingHeartbeats_BrokerClosesConnection() throws Exception
+    {
+        try(TCPTunneler tcpTunneler = new TCPTunneler(getFailingPort(), "localhost", getPort(), 1))
+        {
+            tcpTunneler.start();
+
+            final AtomicReference<InetSocketAddress> clientAddressRef = new AtomicReference<>();
+            tcpTunneler.addClientListener(new TCPTunneler.TunnelListener()
+            {
+                @Override
+                public void clientConnected(final InetSocketAddress clientAddress)
+                {
+                    clientAddressRef.set(clientAddress);
+                }
+
+                @Override
+                public void clientDisconnected(final InetSocketAddress clientAddress)
+                {
+                }
+            });
+
+            final CountDownLatch exceptionLatch = new CountDownLatch(1);
+            final String url = String.format(CONNECTION_URL_WITH_HEARTBEAT,  getFailingPort(), 1);
+            AMQConnection conn = (AMQConnection) getConnection(new AMQConnectionURL(url));
+            conn.setHeartbeatListener(_listener);
+            conn.setExceptionListener(new ExceptionListener()
+            {
+                @Override
+                public void onException(final JMSException exception)
+                {
+                    LOGGER.debug("Exception listener got exception", exception);
+                    exceptionLatch.countDown();
+                }
+            });
+            conn.start();
+
+            assertNotNull(clientAddressRef.get());
+
+            _listener.awaitExpectedHeartbeats(MAXIMUM_WAIT_TIME);
+
+            assertTrue("Too few heartbeats received: "+_listener.getHeartbeatsReceived() +" (expected at least 2)", _listener.getHeartbeatsReceived() >=2);
+            assertTrue("Too few heartbeats sent "+_listener.getHeartbeatsSent() +" (expected at least 2)", _listener.getHeartbeatsSent() >=2);
+
+            tcpTunneler.stopClientToServerForwarding(clientAddressRef.get());
+
+            exceptionLatch.await(5, TimeUnit.SECONDS);
+            assertTrue("Connection should be disconnected within timeout", conn.isConnected());
+        }
     }
 
     private class TestListener implements HeartbeatListener

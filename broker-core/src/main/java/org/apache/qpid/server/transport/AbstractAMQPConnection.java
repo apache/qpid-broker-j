@@ -105,6 +105,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private volatile AccessControlContext _accessControllerContext;
     private volatile Thread _ioThread;
 
+    private volatile SlowConnectionOpenTicker _slowConnectionOpenTicker;
+
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,
                                   AmqpPort<?> port,
@@ -166,7 +168,8 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         super.onOpen();
         long maxAuthDelay = _port.getContextValue(Long.class, Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY);
-        _aggregateTicker.addTicker(new SlowConnectionOpenTicker(maxAuthDelay));
+        _slowConnectionOpenTicker = new SlowConnectionOpenTicker(maxAuthDelay);
+        _aggregateTicker.addTicker(_slowConnectionOpenTicker);
         _lastReadTime = _lastWriteTime = getCreatedTime();
 
     }
@@ -176,7 +179,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _broker;
     }
 
-    public final NetworkConnection getNetwork()
+    public final ServerNetworkConnection getNetwork()
     {
         return _network;
     }
@@ -673,9 +676,21 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
 
     protected abstract EventLogger getEventLogger();
 
+    @Override
+    public void processingStarted(final long currentTime)
+    {
+        SlowConnectionOpenTicker ticker = _slowConnectionOpenTicker;
+        long scheduledTime = _network.getScheduledTime();
+        if (ticker != null && scheduledTime > 0)
+        {
+            ticker.addSchedulingDelay(currentTime - scheduledTime);
+        }
+    }
+
     private class SlowConnectionOpenTicker implements Ticker
     {
         private final long _allowedTime;
+        private volatile long _accumulatedDelay;
 
         public SlowConnectionOpenTicker(long timeoutTime)
         {
@@ -685,7 +700,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         @Override
         public int getTimeToNextTick(final long currentTime)
         {
-            final int timeToNextTick = (int) (getCreatedTime() + _allowedTime - currentTime);
+            final int timeToNextTick = (int) (getCreatedTime() + _allowedTime + _accumulatedDelay - currentTime);
             return timeToNextTick;
         }
 
@@ -705,10 +720,15 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
                 else
                 {
                     _aggregateTicker.removeTicker(this);
+                    _slowConnectionOpenTicker = null;
                 }
             }
             return nextTick;
         }
-    }
 
+        public void addSchedulingDelay(final long delay)
+        {
+            _accumulatedDelay += delay;
+        }
+    }
 }

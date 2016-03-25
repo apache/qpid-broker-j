@@ -145,11 +145,12 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
             boolean brokenPipe = false;
             while(timeout > System.currentTimeMillis())
             {
-                if (!writeHeartbeat(dataOutputStream));
+                if (!writeHeartbeat(dataOutputStream))
                 {
                     brokenPipe = true;
                     break;
                 }
+                Thread.sleep(100);
             }
             assertTrue("Expected pipe to become broken within "
                        + Port.CONNECTION_MAXIMUM_AUTHENTICATION_DELAY + " timeout", brokenPipe);

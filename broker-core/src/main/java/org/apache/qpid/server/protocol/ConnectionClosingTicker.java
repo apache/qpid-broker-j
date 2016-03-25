@@ -20,15 +20,15 @@
  */
 package org.apache.qpid.server.protocol;
 
-import org.apache.qpid.transport.network.NetworkConnection;
+import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.transport.network.Ticker;
 
 public class ConnectionClosingTicker implements Ticker
 {
     private final long _timeoutTime;
-    private final NetworkConnection _network;
+    private final ServerNetworkConnection _network;
 
-    public ConnectionClosingTicker(final long timeoutTime, final NetworkConnection network)
+    public ConnectionClosingTicker(final long timeoutTime, final ServerNetworkConnection network)
     {
         _timeoutTime = timeoutTime;
         _network = network;
@@ -37,6 +37,11 @@ public class ConnectionClosingTicker implements Ticker
     @Override
     public int getTimeToNextTick(final long currentTime)
     {
+        if (_network.getScheduledTime() > 0)
+        {
+            return (int) (_timeoutTime - _network.getScheduledTime());
+        }
+
         return (int) (_timeoutTime - currentTime);
     }
 

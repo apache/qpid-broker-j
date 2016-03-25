@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.transport.TransportException;
 import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.transport.network.Ticker;
 import org.apache.qpid.transport.network.TransportEncryption;
-import org.apache.qpid.transport.network.io.IdleTimeoutTicker;
 
 import static org.apache.qpid.transport.ConnectionSettings.WILDCARD_ADDRESS;
 
@@ -149,10 +149,7 @@ public class NonBlockingNetworkTransport
 
                     socketChannel.configureBlocking(false);
 
-                    AggregateTicker aggregateTicker = engine.getAggregateTicker();
 
-                    final IdleTimeoutTicker idleTimeoutTicker = new IdleTimeoutTicker(engine, _timeout);
-                    aggregateTicker.addTicker(idleTimeoutTicker);
 
                     NonBlockingConnection connection =
                             new NonBlockingConnection(socketChannel,
@@ -170,10 +167,15 @@ public class NonBlockingNetworkTransport
                                                       _scheduler,
                                                       _port);
 
+                    AggregateTicker aggregateTicker = engine.getAggregateTicker();
+
+                    Ticker writeIdleTimeoutTicker = new ServerIdleWriteTimeoutTicker(connection, engine, _timeout);
+                    Ticker readIdleTimeoutTicker = new ServerIdleReadTimeoutTicker(connection, engine, _timeout);
+                    aggregateTicker.addTicker(writeIdleTimeoutTicker);
+                    aggregateTicker.addTicker(readIdleTimeoutTicker);
+
                     engine.setNetworkConnection(connection);
                     connection.setMaxReadIdleMillis(1000L * HANDSHAKE_TIMEOUT);
-
-                    idleTimeoutTicker.setConnection(connection);
 
                     connection.start();
 

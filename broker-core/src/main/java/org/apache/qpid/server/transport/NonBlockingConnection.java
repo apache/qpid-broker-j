@@ -66,6 +66,7 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     private final AmqpPort _port;
     private final AtomicBoolean _scheduled = new AtomicBoolean();
+    private volatile long _scheduledTime;
     private volatile boolean _unexpectedByteBufferSizeReported;
     private final String _threadName;
     private volatile SelectorThread.SelectionTask _selectionTask;
@@ -241,11 +242,13 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
             try
             {
                 long currentTime = System.currentTimeMillis();
+                _protocolEngine.processingStarted(currentTime);
                 int tick = getTicker().getTimeToNextTick(currentTime);
                 if (tick <= 0)
                 {
                     getTicker().tick(currentTime);
                 }
+                _scheduledTime = 0;
 
                 _protocolEngine.setIOThread(Thread.currentThread());
                 _protocolEngine.setMessageAssignmentSuspended(true, true);
@@ -591,12 +594,23 @@ public class NonBlockingConnection implements ServerNetworkConnection, ByteBuffe
 
     public boolean setScheduled()
     {
-        return _scheduled.compareAndSet(false,true);
+        final boolean scheduled = _scheduled.compareAndSet(false, true);
+        if (scheduled)
+        {
+            _scheduledTime = System.currentTimeMillis();
+        }
+        return scheduled;
     }
 
     public void clearScheduled()
     {
         _scheduled.set(false);
+    }
+
+    @Override
+    public long getScheduledTime()
+    {
+        return _scheduledTime;
     }
 
     void reportUnexpectedByteBufferSizeUsage()

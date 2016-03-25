@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * A basic implementation of TCP traffic forwarder between ports.
  * It is intended to use in tests.
  */
-public class TCPTunneler
+public class TCPTunneler implements AutoCloseable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(TCPTunneler.class);
 
@@ -59,6 +59,11 @@ public class TCPTunneler
     public void start() throws IOException
     {
         _tcpWorker.start();
+    }
+
+    public void stopClientToServerForwarding(final InetSocketAddress clientAddress)
+    {
+        _tcpWorker.stopClientToServerForwarding(clientAddress);
     }
 
     public void stop()
@@ -92,6 +97,12 @@ public class TCPTunneler
         }
     }
 
+    @Override
+    public void close() throws Exception
+    {
+        stop();
+    }
+
     public interface TunnelListener
     {
         void clientConnected(InetSocketAddress clientAddress);
@@ -111,6 +122,7 @@ public class TCPTunneler
         private final TunnelListener _notifyingListener;
         private volatile ServerSocket _serverSocket;
         private volatile ExecutorService _executor;
+        private int _actualLocalPort;
 
         public TCPWorker(final int localPort,
                          final String remoteHost,
@@ -180,20 +192,22 @@ public class TCPTunneler
 
         public void start()
         {
-            LOGGER.info("Starting TCPTunneler forwarding from port {} to {}", _localPort, _remoteHostPort);
+            _actualLocalPort = _localPort;
             try
             {
                 _serverSocket = new ServerSocket(_localPort);
+                _actualLocalPort = _serverSocket.getLocalPort();
+                LOGGER.info                                  ("Starting TCPTunneler forwarding from port {} to {}",
+                            _actualLocalPort, _remoteHostPort);
                 _serverSocket.setReuseAddress(true);
             }
             catch (IOException e)
             {
-                throw new RuntimeException("Cannot start TCPTunneler on port " + _localPort, e);
+                throw new RuntimeException("Cannot start TCPTunneler on port " + _actualLocalPort, e);
             }
 
             if (_serverSocket != null)
             {
-                LOGGER.info("Listening on port {}", _localPort);
                 try
                 {
                     _executor.execute(this);
@@ -206,7 +220,7 @@ public class TCPTunneler
                     }
                     finally
                     {
-                        throw new RuntimeException("Cannot start acceptor thread for TCPTunneler on port " + _localPort,
+                        throw new RuntimeException("Cannot start acceptor thread for TCPTunneler on port " + _actualLocalPort,
                                                    e);
                     }
                 }
@@ -218,7 +232,7 @@ public class TCPTunneler
             if (_closed.compareAndSet(false, true))
             {
                 LOGGER.info("Stopping TCPTunneler forwarding from port {} to {}",
-                            _localPort,
+                            _actualLocalPort,
                             _remoteHostPort);
                 try
                 {
@@ -233,7 +247,7 @@ public class TCPTunneler
                 }
 
                 LOGGER.info("TCPTunneler forwarding from port {} to {} is stopped",
-                            _localPort,
+                            _actualLocalPort,
                             _remoteHostPort);
             }
         }
@@ -326,6 +340,28 @@ public class TCPTunneler
             }
         }
 
+        public void stopClientToServerForwarding(final InetSocketAddress clientAddress)
+        {
+            SocketTunnel target = null;
+            for (SocketTunnel tunnel : _tunnels)
+            {
+                if (tunnel.getClientAddress().equals(clientAddress))
+                {
+                    target = tunnel;
+                    break;
+                }
+            }
+            if (target != null)
+            {
+                LOGGER.debug("Stopping forwarding from client {} to server", clientAddress);
+                target.stopClientToServerForwarding();
+            }
+            else
+            {
+                throw new IllegalArgumentException("Could not find tunnel for address " + clientAddress);
+            }
+        }
+
         private void closeServerSocket()
         {
             if (_serverSocket != null)
@@ -344,7 +380,6 @@ public class TCPTunneler
                 }
             }
         }
-
 
         private SocketTunnel removeTunnel(final InetSocketAddress clientAddress)
         {
@@ -372,8 +407,8 @@ public class TCPTunneler
         private final Socket _serverSocket;
         private final TunnelListener _tunnelListener;
         private final AtomicBoolean _closed;
-        private final AutoClosingStreamForwarder _upStreamForwarder;
-        private final AutoClosingStreamForwarder _downStreamForwarder;
+        private final AutoClosingStreamForwarder _clientToServer;
+        private final AutoClosingStreamForwarder _serverToClient;
         private final InetSocketAddress _clientSocketAddress;
 
         public SocketTunnel(final Socket clientSocket,
@@ -388,8 +423,8 @@ public class TCPTunneler
             _tunnelListener = tunnelListener;
             _clientSocket.setKeepAlive(true);
             _serverSocket.setKeepAlive(true);
-            _upStreamForwarder = new AutoClosingStreamForwarder(new StreamForwarder(_clientSocket, _serverSocket));
-            _downStreamForwarder = new AutoClosingStreamForwarder(new StreamForwarder(_serverSocket, _clientSocket));
+            _clientToServer = new AutoClosingStreamForwarder(new StreamForwarder(_clientSocket, _serverSocket));
+            _serverToClient = new AutoClosingStreamForwarder(new StreamForwarder(_serverSocket, _clientSocket));
         }
 
         public void close()
@@ -410,9 +445,14 @@ public class TCPTunneler
 
         public void start(Executor executor) throws IOException
         {
-            executor.execute(_upStreamForwarder);
-            executor.execute(_downStreamForwarder);
+            executor.execute(_clientToServer);
+            executor.execute(_serverToClient);
             _tunnelListener.clientConnected(getClientAddress());
+        }
+
+        public void stopClientToServerForwarding()
+        {
+            _clientToServer.stopForwarding();
         }
 
         public boolean isClosed()
@@ -429,7 +469,6 @@ public class TCPTunneler
         {
             return _clientSocketAddress;
         }
-
 
         private static void closeSocket(Socket socket)
         {
@@ -472,6 +511,11 @@ public class TCPTunneler
                     currentThread.setName(originalThreadName);
                 }
             }
+
+            public void stopForwarding()
+            {
+                _streamForwarder.stopForwarding();
+            }
         }
     }
 
@@ -482,13 +526,13 @@ public class TCPTunneler
         private final InputStream _inputStream;
         private final OutputStream _outputStream;
         private final String _name;
+        private AtomicBoolean _stopForwarding = new AtomicBoolean();
 
         public StreamForwarder(Socket input, Socket output) throws IOException
         {
             _inputStream = input.getInputStream();
             _outputStream = output.getOutputStream();
-            _name = "Forwarder-" + input.getInetAddress().getHostName() + ":" + input.getPort() + "->"
-                    + output.getInetAddress().getHostName() + ":" + output.getPort();
+            _name = "Forwarder-" + input.getLocalSocketAddress() + "->" + output.getRemoteSocketAddress();
         }
 
         @Override
@@ -500,8 +544,16 @@ public class TCPTunneler
             {
                 while ((bytesRead = _inputStream.read(buffer)) != -1)
                 {
-                    _outputStream.write(buffer, 0, bytesRead);
-                    _outputStream.flush();
+                    if (!_stopForwarding.get())
+                    {
+                        _outputStream.write(buffer, 0, bytesRead);
+                        _outputStream.flush();
+                        LOGGER.debug("Forwarded {} byte(s)", bytesRead);
+                    }
+                    else
+                    {
+                        LOGGER.debug("Discarded {} byte(s)", bytesRead);
+                    }
                 }
             }
             catch (IOException e)
@@ -535,5 +587,11 @@ public class TCPTunneler
         {
             return _name;
         }
+
+        public void stopForwarding()
+        {
+            _stopForwarding.set(true);
+        }
+
     }
 }
