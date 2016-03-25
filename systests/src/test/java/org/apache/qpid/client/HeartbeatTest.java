@@ -20,6 +20,8 @@ package org.apache.qpid.client;
 
 import static org.apache.qpid.configuration.ClientProperties.QPID_HEARTBEAT_INTERVAL;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.Destination;
@@ -38,7 +40,8 @@ public class HeartbeatTest extends QpidBrokerTestCase
     private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatTest.class);
 
     private static final String CONNECTION_URL_WITH_HEARTBEAT = "amqp://guest:guest@clientid/?brokerlist='localhost:%d?heartbeat='%d''";
-    private TestListener _listener = new TestListener("listener");
+    private static final int MAXIMUM_WAIT_TIME = 2900;
+    private TestListener _listener = new TestListener("listener", 2, 2);
 
     @Override
     public void setUp() throws Exception
@@ -57,7 +60,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
         conn.setHeartbeatListener(_listener);
         conn.start();
 
-        Thread.sleep(2500);
+        _listener.awaitExpectedHeartbeats(MAXIMUM_WAIT_TIME);
 
         assertTrue("Too few heartbeats received: "+_listener.getHeartbeatsReceived() +" (expected at least 2)", _listener.getHeartbeatsReceived() >=2);
         assertTrue("Too few heartbeats sent "+_listener.getHeartbeatsSent() +" (expected at least 2)", _listener.getHeartbeatsSent() >=2);
@@ -72,7 +75,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
         conn.setHeartbeatListener(_listener);
         conn.start();
 
-        Thread.sleep(2500);
+        _listener.awaitExpectedHeartbeats(MAXIMUM_WAIT_TIME);
 
         assertTrue("Too few heartbeats received: "+_listener.getHeartbeatsReceived() +" (expected at least 2)", _listener.getHeartbeatsReceived() >=2);
         assertTrue("Too few heartbeats sent "+_listener.getHeartbeatsSent() +" (expected at least 2)", _listener.getHeartbeatsSent() >=2);
@@ -87,7 +90,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
          conn.setHeartbeatListener(_listener);
          conn.start();
 
-         Thread.sleep(2500);
+        _listener.awaitExpectedHeartbeats(2000);
 
          assertEquals("Heartbeats unexpectedly received", 0, _listener.getHeartbeatsReceived());
          assertEquals("Heartbeats unexpectedly sent ", 0, _listener.getHeartbeatsSent());
@@ -106,8 +109,8 @@ public class HeartbeatTest extends QpidBrokerTestCase
         AMQConnection receiveConn = (AMQConnection) getConnection();
         AMQConnection sendConn = (AMQConnection) getConnection();
         Destination destination = getTestQueue();
-        TestListener receiveListener = new TestListener("receiverListener");
-        TestListener sendListener = new TestListener("senderListener");
+        TestListener receiveListener = new TestListener("receiverListener", 2, 0);
+        TestListener sendListener = new TestListener("senderListener", 0, 2);
 
 
         Session receiveSession = receiveConn.createSession(false, Session.CLIENT_ACKNOWLEDGE);
@@ -148,7 +151,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
         conn.setHeartbeatListener(_listener);
         conn.start();
 
-        Thread.sleep(2500);
+        _listener.awaitExpectedHeartbeats(MAXIMUM_WAIT_TIME);
 
         assertTrue("Too few heartbeats received: "+_listener.getHeartbeatsReceived() +" (expected at least 2)", _listener.getHeartbeatsReceived()>=2);
         assertTrue("Too few heartbeats sent "+ _listener.getHeartbeatsSent() +" (expected at least 2)", _listener.getHeartbeatsSent() >=2);
@@ -165,7 +168,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
         conn.setHeartbeatListener(_listener);
         conn.start();
 
-        Thread.sleep(2500);
+        _listener.awaitExpectedHeartbeats(MAXIMUM_WAIT_TIME);
 
         assertTrue("Too few heartbeats received: "+_listener.getHeartbeatsReceived()+" (expected at least 2)", _listener.getHeartbeatsReceived()>=2);
         assertTrue("Too few heartbeats sent "+_listener.getHeartbeatsSent() +" (expected at least 2)", _listener.getHeartbeatsSent()>=2);
@@ -181,7 +184,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
         conn.setHeartbeatListener(_listener);
         conn.start();
 
-        Thread.sleep(2500);
+        _listener.awaitExpectedHeartbeats(MAXIMUM_WAIT_TIME);
 
         assertTrue("Too few heartbeats received: "+_listener.getHeartbeatsReceived() +" (expected at least 2)", _listener.getHeartbeatsReceived()>=2);
         assertTrue("Too few heartbeats sent "+_listener.getHeartbeatsSent() +" (expected at least 2)", _listener.getHeartbeatsSent()>=2);
@@ -194,10 +197,14 @@ public class HeartbeatTest extends QpidBrokerTestCase
         private final String _name;
         private final AtomicInteger _heartbeatsReceived = new AtomicInteger(0);
         private final AtomicInteger _heartbeatsSent = new AtomicInteger(0);
+        private final CountDownLatch _expectedReceivedHeartbeats;
+        private final CountDownLatch _expectedSentHeartbeats;
 
-        public TestListener(String name)
+        public TestListener(String name, int expectedSentHeartbeats, int expectedReceivedHeartbeats)
         {
             _name = name;
+            _expectedReceivedHeartbeats = new CountDownLatch(expectedReceivedHeartbeats);
+            _expectedSentHeartbeats = new CountDownLatch(expectedSentHeartbeats);
         }
 
         @Override
@@ -205,6 +212,7 @@ public class HeartbeatTest extends QpidBrokerTestCase
         {
             LOGGER.debug(_name + " heartbeat received");
             _heartbeatsReceived.incrementAndGet();
+            _expectedReceivedHeartbeats.countDown();
         }
 
         public int getHeartbeatsReceived()
@@ -217,11 +225,24 @@ public class HeartbeatTest extends QpidBrokerTestCase
         {
             LOGGER.debug(_name + " heartbeat sent");
             _heartbeatsSent.incrementAndGet();
+            _expectedSentHeartbeats.countDown();
         }
 
         public int getHeartbeatsSent()
         {
             return _heartbeatsSent.get();
+        }
+
+        public void awaitExpectedHeartbeats(final long maximumWaitTime) throws InterruptedException
+        {
+            long startTime = System.currentTimeMillis();
+            _expectedSentHeartbeats.await(maximumWaitTime, TimeUnit.MILLISECONDS);
+
+            long remainingTime = maximumWaitTime - (System.currentTimeMillis() - startTime);
+            if (remainingTime > 0)
+            {
+                _expectedReceivedHeartbeats.await(remainingTime, TimeUnit.MILLISECONDS);
+            }
         }
     }
 }
