@@ -101,3 +101,6 @@ qpid.tests.messaging.message.MessageEchoTests.testContentTypeUnknown
 qpid.tests.messaging.message.MessageEchoTests.testProperties
 qpid.tests.messaging.message.MessageEchoTests.testTextPlainEmpty
 
+# QPID-7164
+qpid_tests.broker_0_10.new_api.GeneralTests.test_qpid_3481_acquired_to_alt_exchange
+qpid_tests.broker_0_10.new_api.GeneralTests.test_qpid_3481_acquired_to_alt_exchange_2_consumers
