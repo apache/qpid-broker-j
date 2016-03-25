@@ -106,7 +106,7 @@ public class AMQChannelTest extends QpidTestCase
         _protocolOutputConverter = mock(ProtocolOutputConverter.class);
 
         _amqConnection = mock(AMQPConnection_0_8.class);
-        when(_amqConnection.getAuthorizedSubject()).thenReturn(authenticatedSubject);
+        when(_amqConnection.getSubject()).thenReturn(authenticatedSubject);
         when(_amqConnection.getAuthorizedPrincipal()).thenReturn(authenticatedPrincipal);
         when(_amqConnection.getVirtualHost()).thenReturn((VirtualHost)_virtualHost);
         when(_amqConnection.getProtocolOutputConverter()).thenReturn(_protocolOutputConverter);
@@ -177,10 +177,10 @@ public class AMQChannelTest extends QpidTestCase
         });
 
         Set<Principal> authenticatedUser = Collections.<Principal>singleton(new AuthenticatedPrincipal("user"));
-        _amqConnection.setAuthorizedSubject(new Subject(true,
-                                                        authenticatedUser,
-                                                        Collections.<Principal>emptySet(),
-                                                        Collections.<Principal>emptySet()));
+        _amqConnection.setSubject(new Subject(true,
+                                              authenticatedUser,
+                                              Collections.<Principal>emptySet(),
+                                              Collections.<Principal>emptySet()));
         _amqConnection.associateVirtualHost(_virtualHost);
 
         int channelId = 1;
@@ -210,7 +210,7 @@ public class AMQChannelTest extends QpidTestCase
         });
 
         Set<Principal> authenticatedUser = Collections.<Principal>singleton(new AuthenticatedPrincipal("user"));
-        _amqConnection.setAuthorizedSubject(new Subject(true, authenticatedUser, Collections.<Principal>emptySet(),  Collections.<Principal>emptySet()));
+        _amqConnection.setSubject(new Subject(true, authenticatedUser, Collections.<Principal>emptySet(), Collections.<Principal>emptySet()));
         _amqConnection.associateVirtualHost(_virtualHost);
 
         AMQChannel channel = new AMQChannel(_amqConnection, 1, _virtualHost.getMessageStore());

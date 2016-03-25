@@ -57,12 +57,10 @@ import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.common.ServerPropertyNames;
 import org.apache.qpid.configuration.CommonProperties;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.Transport;
-import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
@@ -557,12 +555,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     }
 
-    @Override
-    protected void performDeleteTasks()
-    {
-        super.performDeleteTasks();
-    }
-
     public void close()
     {
         getAggregateTicker().addTicker(new ConnectionClosingTicker(System.currentTimeMillis() + CLOSE_RESPONSE_TIMEOUT,
@@ -639,11 +631,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         _connection.sendConnectionCloseAsync(cause, message);
     }
 
-    public Principal getAuthorizedPrincipal()
-    {
-        return _connection.getAuthorizedPrincipal();
-    }
-
     public void closeSessionAsync(final AMQSessionModel<?> session,
                                   final AMQConstant cause, final String message)
     {
@@ -673,19 +660,5 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     public long getSessionCountLimit()
     {
         return _connection.getSessionCountLimit();
-    }
-
-    @Override
-    protected EventLogger getEventLogger()
-    {
-        final VirtualHost<?> virtualHost = _connection.getVirtualHost();
-        if (virtualHost !=  null)
-        {
-            return virtualHost.getEventLogger();
-        }
-        else
-        {
-            return _broker.getEventLogger();
-        }
     }
 }

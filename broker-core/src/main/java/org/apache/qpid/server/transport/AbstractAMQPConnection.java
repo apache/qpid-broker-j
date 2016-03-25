@@ -63,6 +63,7 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.model.adapter.SessionAdapter;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
+import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.stats.StatisticsCounter;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -109,6 +110,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private volatile boolean _messageAuthorizationRequired;
 
     private final AtomicLong _maxMessageSize = new AtomicLong(Long.MAX_VALUE);
+    private volatile int _messageCompressionThreshold;
 
     public AbstractAMQPConnection(Broker<?> broker,
                                   ServerNetworkConnection network,
@@ -177,6 +179,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _aggregateTicker.addTicker(slowConnectionOpenTicker);
         _lastReadTime = _lastWriteTime = getCreatedTime();
 
+        logConnectionOpen();
     }
 
     public Broker<?> getBroker()
@@ -364,7 +367,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
 
-    protected void performDeleteTasks()
+    public void performDeleteTasks()
     {
         if(runningAsSubject())
         {
@@ -673,7 +676,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
                 getSubject());
     }
 
-    protected void logConnectionOpen()
+    private void logConnectionOpen()
     {
         runAsSubject(new PrivilegedAction<Object>()
         {
@@ -734,7 +737,18 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return _logSubject;
     }
 
-    protected abstract EventLogger getEventLogger();
+    public EventLogger getEventLogger()
+    {
+        final VirtualHost<?> virtualHost = getVirtualHost();
+        if (virtualHost != null)
+        {
+            return virtualHost.getEventLogger();
+        }
+        else
+        {
+            return getBroker().getEventLogger();
+        }
+    }
 
     @Override
     public final boolean isAuthorizedMessagePrincipal(final String userId)
@@ -747,6 +761,55 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     {
         return _virtualHost;
     }
+
+    public void setVirtualHost(VirtualHost<?> virtualHost)
+    {
+        associateVirtualHost(virtualHost);
+
+        _messageCompressionThreshold = virtualHost.getContextValue(Integer.class,
+                                                                   Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
+        if(_messageCompressionThreshold <= 0)
+        {
+            _messageCompressionThreshold = Integer.MAX_VALUE;
+        }
+
+        getSubject().getPrincipals().add(virtualHost.getPrincipal());
+
+        updateAccessControllerContext();
+        logConnectionOpen();
+    }
+
+    public int getMessageCompressionThreshold()
+    {
+        return _messageCompressionThreshold;
+    }
+
+    @Override
+    public String toString()
+    {
+        return getNetwork().getRemoteAddress() + "(" + ((getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName()) + ")");
+    }
+
+    public Principal getAuthorizedPrincipal()
+    {
+        return AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(getSubject());
+    }
+
+    public void setSubject(final Subject subject)
+    {
+        if (subject == null)
+        {
+            throw new IllegalArgumentException("subject cannot be null");
+        }
+
+        getSubject().getPrincipals().addAll(subject.getPrincipals());
+        getSubject().getPrivateCredentials().addAll(subject.getPrivateCredentials());
+        getSubject().getPublicCredentials().addAll(subject.getPublicCredentials());
+
+        updateAccessControllerContext();
+
+    }
+
 
     private class SlowConnectionOpenTicker implements Ticker, SchedulingDelayNotificationListener
     {

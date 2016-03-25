@@ -49,7 +49,6 @@ import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -70,7 +69,6 @@ public class ServerConnection extends Connection
     public static final long CLOSE_OK_TIMEOUT = 10000l;
     private final Broker<?> _broker;
 
-    private Principal _authorizedPrincipal = null;
     private final long _connectionId;
     private final Object _reference = new Object();
     private final AmqpPort<?> _port;
@@ -80,8 +78,6 @@ public class ServerConnection extends Connection
 
     private final Queue<Action<? super ServerConnection>> _asyncTaskList =
             new ConcurrentLinkedQueue<>();
-
-    private int _messageCompressionThreshold;
 
     private final AMQPConnection_0_10 _amqpConnection;
     private boolean _ignoreFutureInput;
@@ -123,19 +119,13 @@ public class ServerConnection extends Connection
 
     EventLogger getEventLogger()
     {
-        VirtualHost<?> virtualHost = getVirtualHost();
-        return virtualHost == null ? _broker.getEventLogger() : virtualHost.getEventLogger();
+        return _amqpConnection.getEventLogger();
     }
 
     @Override
     protected void setState(State state)
     {
         super.setState(state);
-
-        if (state == State.OPEN)
-        {
-            _amqpConnection.logConnectionOpen();
-        }
 
         if(state == State.CLOSING)
         {
@@ -161,17 +151,7 @@ public class ServerConnection extends Connection
 
     public void setVirtualHost(VirtualHost<?> virtualHost)
     {
-        _amqpConnection.associateVirtualHost(virtualHost);
-        _messageCompressionThreshold =
-                virtualHost.getContextValue(Integer.class,
-                                            Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
-
-        if(_messageCompressionThreshold <= 0)
-        {
-            _messageCompressionThreshold = Integer.MAX_VALUE;
-        }
-        _amqpConnection.getSubject().getPrincipals().add(virtualHost.getPrincipal());
-        _amqpConnection.updateAccessControllerContext();
+        _amqpConnection.setVirtualHost(virtualHost);
     }
 
     public AmqpPort<?> getPort()
@@ -372,29 +352,14 @@ public class ServerConnection extends Connection
         return _amqpConnection.getSubject();
     }
 
-    /**
-     * Sets the authorized subject.  It also extracts the UsernamePrincipal from the subject
-     * and caches it for optimisation purposes.
-     *
-     * @param authorizedSubject
-     */
     public void setAuthorizedSubject(final Subject authorizedSubject)
     {
-        if (authorizedSubject == null)
-        {
-            _authorizedPrincipal = null;
-        }
-        else
-        {
-            getAuthorizedSubject().getPrincipals().addAll(authorizedSubject.getPrincipals());
-            _amqpConnection.updateAccessControllerContext();
-            _authorizedPrincipal = AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(authorizedSubject);
-        }
+        _amqpConnection.setSubject(authorizedSubject);
     }
 
     public Principal getAuthorizedPrincipal()
     {
-        return _authorizedPrincipal;
+        return _amqpConnection.getAuthorizedPrincipal();
     }
 
     public long getConnectionId()
@@ -508,7 +473,7 @@ public class ServerConnection extends Connection
 
     public int getMessageCompressionThreshold()
     {
-        return _messageCompressionThreshold;
+        return _amqpConnection.getMessageCompressionThreshold();
     }
 
     public int getMaxMessageSize()

@@ -232,9 +232,9 @@ public class AMQChannel
         _connection = connection;
         _channelId = channelId;
 
-        _subject = new Subject(false, connection.getAuthorizedSubject().getPrincipals(),
-                               connection.getAuthorizedSubject().getPublicCredentials(),
-                               connection.getAuthorizedSubject().getPrivateCredentials());
+        _subject = new Subject(false, connection.getSubject().getPrincipals(),
+                               connection.getSubject().getPublicCredentials(),
+                               connection.getSubject().getPrivateCredentials());
         _subject.getPrincipals().add(new SessionPrincipal(this));
 
         _accessControllerContext = org.apache.qpid.server.security.SecurityManager.getAccessControlContextFromSubject(_subject);

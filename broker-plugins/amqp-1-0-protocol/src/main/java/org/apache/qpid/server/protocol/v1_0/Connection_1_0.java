@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.security.auth.Subject;
@@ -238,8 +237,6 @@ public class Connection_1_0 implements ConnectionEventListener
                     {
                         setUserPrincipal(user);
                     }
-                    _amqpConnection.getSubject().getPrincipals().add(vhost.getPrincipal());
-                    _amqpConnection.updateAccessControllerContext();
                     if (AuthenticatedPrincipal.getOptionalAuthenticatedPrincipalFromSubject(_amqpConnection.getSubject()) == null)
                     {
                         closeWithError(AmqpError.NOT_ALLOWED, "Connection has not been authenticated");
@@ -248,7 +245,7 @@ public class Connection_1_0 implements ConnectionEventListener
                     {
                         try
                         {
-                            _amqpConnection.associateVirtualHost(vhost);
+                            _amqpConnection.setVirtualHost(vhost);
                         }
                         catch (VirtualHostUnavailableException e)
                         {
@@ -272,11 +269,7 @@ public class Connection_1_0 implements ConnectionEventListener
 
     void setUserPrincipal(final Principal user)
     {
-        Subject authSubject = _subjectCreator.createSubjectWithGroups(user);
-        _amqpConnection.getSubject().getPrincipals().addAll(authSubject.getPrincipals());
-        _amqpConnection.getSubject().getPublicCredentials().addAll(authSubject.getPublicCredentials());
-        _amqpConnection.getSubject().getPrivateCredentials().addAll(authSubject.getPrivateCredentials());
-        _amqpConnection.updateAccessControllerContext();
+        _amqpConnection.setSubject(_subjectCreator.createSubjectWithGroups(user));
     }
 
     public void remoteSessionCreation(SessionEndpoint endpoint)
@@ -433,12 +426,6 @@ public class Connection_1_0 implements ConnectionEventListener
     public String getRemoteContainerName()
     {
         return _connectionEndpoint.getRemoteContainerId();
-    }
-
-    public Principal getAuthorizedPrincipal()
-    {
-        Set<AuthenticatedPrincipal> authPrincipals = _amqpConnection.getSubject().getPrincipals(AuthenticatedPrincipal.class);
-        return authPrincipals.isEmpty() ? null : authPrincipals.iterator().next();
     }
 
     public long getSessionCountLimit()

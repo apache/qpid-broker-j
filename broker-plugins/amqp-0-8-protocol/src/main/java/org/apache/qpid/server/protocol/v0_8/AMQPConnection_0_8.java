@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
-import javax.security.auth.Subject;
 import javax.security.sasl.SaslException;
 import javax.security.sasl.SaslServer;
 
@@ -69,7 +68,6 @@ import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.consumer.ConsumerImpl;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.message.InstanceProperties;
 import org.apache.qpid.server.message.ServerMessage;
@@ -78,7 +76,6 @@ import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.AMQSessionModel;
-import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.SubjectAuthenticationResult;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
@@ -147,7 +144,6 @@ public class AMQPConnection_0_8
     private volatile int _maxFrameSize;
     private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
-    private final ServerNetworkConnection _network;
     private final ByteBufferSender _sender;
 
     private volatile boolean _deferFlush;
@@ -156,7 +152,6 @@ public class AMQPConnection_0_8
 
     private volatile boolean _closeWhenNoRoute;
     private volatile boolean _compressionSupported;
-    private volatile int _messageCompressionThreshold;
 
     /**
      * QPID-6744 - Older queue clients (<=0.32) set the nowait flag false on the queue.delete method and then
@@ -191,11 +186,8 @@ public class AMQPConnection_0_8
                 ? getBroker().getContextValue(String.class, Broker.SEND_QUEUE_DELETE_OK_REGARDLESS_CLIENT_VER_REGEXP): "";
         _sendQueueDeleteOkRegardlessClientVerRegexp = Pattern.compile(sendQueueDeleteOkRegardlessRegexp);
 
-        _network = network;
         _sender = network.getSender();
         _closeWhenNoRoute = getBroker().getConnection_closeWhenNoRoute();
-
-        logConnectionOpen();
     }
 
     @Override
@@ -505,15 +497,16 @@ public class AMQPConnection_0_8
 
     private void initHeartbeats(int delay)
     {
+        ServerNetworkConnection network = getNetwork();
         if (delay > 0)
         {
-            _network.setMaxWriteIdleMillis(1000L * delay);
-            _network.setMaxReadIdleMillis(1000L * BrokerProperties.HEARTBEAT_TIMEOUT_FACTOR * delay);
+            network.setMaxWriteIdleMillis(1000L * delay);
+            network.setMaxReadIdleMillis(1000L * BrokerProperties.HEARTBEAT_TIMEOUT_FACTOR * delay);
         }
         else
         {
-            _network.setMaxWriteIdleMillis(0);
-            _network.setMaxReadIdleMillis(0);
+            network.setMaxWriteIdleMillis(0);
+            network.setMaxReadIdleMillis(0);
         }
     }
 
@@ -588,7 +581,7 @@ public class AMQPConnection_0_8
                 finally
                 {
                     final long timeoutTime = System.currentTimeMillis() + CLOSE_OK_TIMEOUT;
-                    getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, _network));
+                    getAggregateTicker().addTicker(new ConnectionClosingTicker(timeoutTime, getNetwork()));
                 }
             }
         }
@@ -596,18 +589,12 @@ public class AMQPConnection_0_8
 
     public void closeNetworkConnection()
     {
-        _network.close();
-    }
-
-    @Override
-    public String toString()
-    {
-        return _network.getRemoteAddress() + "(" + ((getAuthorizedPrincipal() == null ? "?" : getAuthorizedPrincipal().getName()) + ")");
+        getNetwork().close();
     }
 
     private String getLocalFQDN()
     {
-        SocketAddress address = _network.getLocalAddress();
+        SocketAddress address = getNetwork().getLocalAddress();
         if (address instanceof InetSocketAddress)
         {
             return ((InetSocketAddress) address).getHostName();
@@ -708,57 +695,14 @@ public class AMQPConnection_0_8
         return getMethodRegistry();
     }
 
-    public void setVirtualHost(VirtualHost<?> virtualHost)
-    {
-        associateVirtualHost(virtualHost);
-
-        _messageCompressionThreshold = virtualHost.getContextValue(Integer.class,
-                                                                   Broker.MESSAGE_COMPRESSION_THRESHOLD_SIZE);
-        if(_messageCompressionThreshold <= 0)
-        {
-            _messageCompressionThreshold = Integer.MAX_VALUE;
-        }
-
-        getSubject().getPrincipals().add(virtualHost.getPrincipal());
-
-        updateAccessControllerContext();
-        logConnectionOpen();
-    }
-
     public ProtocolOutputConverter getProtocolOutputConverter()
     {
         return _protocolOutputConverter;
     }
 
-    public void setAuthorizedSubject(final Subject authorizedSubject)
-    {
-        if (authorizedSubject == null)
-        {
-            throw new IllegalArgumentException("authorizedSubject cannot be null");
-        }
-
-        getSubject().getPrincipals().addAll(authorizedSubject.getPrincipals());
-        getSubject().getPrivateCredentials().addAll(authorizedSubject.getPrivateCredentials());
-        getSubject().getPublicCredentials().addAll(authorizedSubject.getPublicCredentials());
-
-        updateAccessControllerContext();
-
-    }
-
-    public Subject getAuthorizedSubject()
-    {
-        return getSubject();
-    }
-
-    public Principal getAuthorizedPrincipal()
-    {
-
-        return getSubject().getPrincipals(AuthenticatedPrincipal.class).size() == 0 ? null : AuthenticatedPrincipal.getAuthenticatedPrincipalFromSubject(getSubject());
-    }
-
     public Principal getPeerPrincipal()
     {
-        return _network.getPeerPrincipal();
+        return getNetwork().getPeerPrincipal();
     }
 
     public MethodRegistry getMethodRegistry()
@@ -825,7 +769,7 @@ public class AMQPConnection_0_8
             public Object run()
             {
                 getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _state, true));
-                _network.close();
+                getNetwork().close();
                 return null;
             }
         }, getAccessControllerContext());
@@ -843,7 +787,7 @@ public class AMQPConnection_0_8
 
     public String getAddress()
     {
-        return String.valueOf(_network.getRemoteAddress());
+        return String.valueOf(getNetwork().getRemoteAddress());
     }
 
     public void closeSessionAsync(final AMQSessionModel<?> session, final AMQConstant cause, final String message)
@@ -1160,7 +1104,7 @@ public class AMQPConnection_0_8
                                                                 broker.getConnection_heartBeatDelay());
                 writeFrame(tuneBody.generateFrame(0));
                 _state = ConnectionState.AWAIT_TUNE_OK;
-                setAuthorizedSubject(authResult.getSubject());
+                setSubject(authResult.getSubject());
                 disposeSaslServer();
                 break;
             case CONTINUE:
@@ -1252,7 +1196,7 @@ public class AMQPConnection_0_8
 
                     case SUCCESS:
                         _logger.debug("Connected as: {}", authResult.getSubject());
-                        setAuthorizedSubject(authResult.getSubject());
+                        setSubject(authResult.getSubject());
 
                         int frameMax = getDefaultMaxFrameSize();
 
@@ -1377,28 +1321,9 @@ public class AMQPConnection_0_8
         return _compressionSupported && getBroker().isMessageCompressionEnabled();
     }
 
-    public int getMessageCompressionThreshold()
-    {
-        return _messageCompressionThreshold;
-    }
-
     private SubjectCreator getSubjectCreator()
     {
         return getPort().getAuthenticationProvider().getSubjectCreator(getTransport().isSecure());
-    }
-
-    @Override
-    public EventLogger getEventLogger()
-    {
-        final VirtualHost<?> virtualHost = getVirtualHost();
-        if (virtualHost != null)
-        {
-            return virtualHost.getEventLogger();
-        }
-        else
-        {
-            return getBroker().getEventLogger();
-        }
     }
 
     @Override

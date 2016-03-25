@@ -23,7 +23,6 @@ package org.apache.qpid.server.protocol.v0_10;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.AccessController;
-import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.Iterator;
@@ -36,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.protocol.AMQConstant;
-import org.apache.qpid.server.logging.EventLogger;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.model.State;
@@ -63,8 +61,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     private static final Logger _logger = LoggerFactory.getLogger(AMQPConnection_0_10.class);
     private final ServerInputHandler _inputHandler;
 
-
-    private final ServerNetworkConnection _network;
     private final ServerConnection _connection;
 
     private volatile boolean _transportBlockedForWriting;
@@ -100,21 +96,19 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
         _inputHandler = new ServerInputHandler(new ServerAssembler(_connection));
         _connection.addFrameSizeObserver(_inputHandler);
-        _network = network;
 
         AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
             @Override
             public Object run()
             {
-                _connection.setNetworkConnection(_network);
-                _disassembler = new ServerDisassembler(wrapSender(_network.getSender()), Constant.MIN_MAX_FRAME_SIZE);
+                _connection.setNetworkConnection(getNetwork());
+                _disassembler = new ServerDisassembler(wrapSender(getNetwork().getSender()), Constant.MIN_MAX_FRAME_SIZE);
                 _connection.setSender(_disassembler);
                 _connection.addFrameSizeObserver(_disassembler);
                 return null;
             }
         }, getAccessControllerContext());
-        logConnectionOpen();
     }
 
     private ByteBufferSender wrapSender(final ByteBufferSender sender)
@@ -200,7 +194,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
             public Object run()
             {
                 _connection.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Current connection state: " + _connection.getConnectionDelegate().getState(), true));
-                _network.close();
+                getNetwork().close();
                 return null;
             }
         }, getAccessControllerContext());
@@ -209,7 +203,7 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
 
     public String getAddress()
     {
-        return _network.getRemoteAddress().toString();
+        return getNetwork().getRemoteAddress().toString();
     }
 
     @Override
@@ -235,12 +229,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         {
             markTransportClosed();
         }
-    }
-
-    @Override
-    protected void performDeleteTasks()
-    {
-        super.performDeleteTasks();
     }
 
     @Override
@@ -310,11 +298,6 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
         _connection.sendConnectionCloseAsync(cause, message);
     }
 
-    public Principal getAuthorizedPrincipal()
-    {
-        return _connection.getAuthorizedPrincipal();
-    }
-
     public void closeSessionAsync(final AMQSessionModel<?> session,
                                   final AMQConstant cause, final String message)
     {
@@ -344,17 +327,5 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     public long getSessionCountLimit()
     {
         return _connection.getSessionCountLimit();
-    }
-
-    @Override
-    protected EventLogger getEventLogger()
-    {
-        return _connection.getEventLogger();
-    }
-
-    @Override
-    public void logConnectionOpen()
-    {
-        super.logConnectionOpen();
     }
 }
