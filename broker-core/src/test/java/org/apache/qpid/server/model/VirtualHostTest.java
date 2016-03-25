@@ -31,12 +31,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import java.security.AccessControlException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -241,7 +239,6 @@ public class VirtualHostTest extends QpidTestCase
         assertEquals("Unexpected number of connections before connection registered", 0, virtualHost.getConnectionCount());
 
         AMQPConnection modelConnection = mock(AMQPConnection.class);
-        when(modelConnection.getUnderlyingConnection()).thenReturn(connection);
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         virtualHost.registerConnection(modelConnection);
 
@@ -270,7 +267,6 @@ public class VirtualHostTest extends QpidTestCase
                      virtualHost.getConnectionCount());
 
         AMQPConnection modelConnection = mock(AMQPConnection.class);
-        when(modelConnection.getUnderlyingConnection()).thenReturn(connection);
         when(modelConnection.closeAsync()).thenReturn(Futures.immediateFuture(null));
         virtualHost.registerConnection(modelConnection);
 
@@ -399,7 +395,6 @@ public class VirtualHostTest extends QpidTestCase
     {
         VirtualHost<?> host = createVirtualHost(getTestName());
         AbstractAMQPConnection connection = mock(AbstractAMQPConnection.class);
-        when(connection.getUnderlyingConnection()).thenReturn(connection);
         host.registerConnection(connection);
         ((EventListener)host).event(Event.PERSISTENT_MESSAGE_SIZE_OVERFULL);
         verify(connection).block();
@@ -519,7 +514,6 @@ public class VirtualHostTest extends QpidTestCase
         AMQPConnection<?> connection = mock(AMQPConnection.class);
         final ListenableFuture<Void> listenableFuture = Futures.immediateFuture(null);
         when(connection.closeAsync()).thenReturn(listenableFuture);
-        when(connection.getUnderlyingConnection()).thenReturn((AMQPConnection) connection);
         return connection;
     }
 

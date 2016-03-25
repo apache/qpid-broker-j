@@ -958,9 +958,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             _logger.debug("Closing connection registry :" + _connections.size() + " connections.");
         }
         _acceptsConnections.set(false);
-        for(Connection conn : _connections)
+        for(AMQPConnection<?> conn : _connections)
         {
-            conn.getUnderlyingConnection().stopConnection();
+            conn.stopConnection();
         }
 
         List<ListenableFuture<Void>> connectionCloseFutures = new ArrayList<>();
@@ -1062,9 +1062,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
         _messagesReceived.reset();
         _dataReceived.reset();
 
-        for (Connection<?> connection : _connections)
+        for (AMQPConnection<?> connection : _connections)
         {
-            connection.getUnderlyingConnection().resetStatistics();
+            connection.resetStatistics();
         }
     }
 
@@ -1091,9 +1091,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             _blockingReasons.add(blockingType);
             if(_blocked.compareAndSet(false,true))
             {
-                for(Connection<?> conn : _connections)
+                for(AMQPConnection<?> conn : _connections)
                 {
-                    conn.getUnderlyingConnection().block();
+                    conn.block();
                 }
             }
         }
@@ -1108,9 +1108,9 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
             _blockingReasons.remove(blockingType);
             if(_blockingReasons.isEmpty() && _blocked.compareAndSet(true,false))
             {
-                for(Connection<?> conn : _connections)
+                for(AMQPConnection<?> conn : _connections)
                 {
-                    conn.getUnderlyingConnection().unblock();
+                    conn.unblock();
                 }
             }
         }
@@ -1242,10 +1242,10 @@ public abstract class AbstractVirtualHost<X extends AbstractVirtualHost<X>> exte
                     q.checkMessageStatus();
                 }
             }
-            for (Connection<?> connection : _connections)
+            for (AMQPConnection<?> connection : _connections)
             {
                 _logger.debug("Checking for long running open transactions on connection {}", connection);
-                for (AMQSessionModel<?> session : connection.getUnderlyingConnection().getSessionModels())
+                for (AMQSessionModel<?> session : connection.getSessionModels())
                 {
                     _logger.debug("Checking for long running open transactions on session {}", session);
                     session.checkTransactionStatus(getStoreTransactionOpenTimeoutWarn(),

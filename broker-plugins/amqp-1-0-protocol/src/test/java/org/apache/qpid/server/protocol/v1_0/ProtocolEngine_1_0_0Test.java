@@ -174,7 +174,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _protocolEngine_1_0_0.received(buf);
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
-        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
+        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
     }
@@ -227,7 +227,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _protocolEngine_1_0_0.received(buf);
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
-        AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
+        AuthenticatedPrincipal authPrincipal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(authPrincipal);
         assertEquals(authPrincipal, new AuthenticatedPrincipal(principal));
     }
@@ -271,7 +271,7 @@ public class ProtocolEngine_1_0_0Test extends QpidTestCase
         _protocolEngine_1_0_0.received(buf);
 
         verify(_virtualHost).registerConnection(any(AMQPConnection.class));
-        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getUnderlyingConnection().getAuthorizedPrincipal();
+        AuthenticatedPrincipal principal = (AuthenticatedPrincipal) _connection.getAuthorizedPrincipal();
         assertNotNull(principal);
         assertEquals(principal, new AuthenticatedPrincipal(AnonymousAuthenticationManager.ANONYMOUS_PRINCIPAL));
     }

@@ -417,8 +417,7 @@ public class ServerConnectionDelegate extends ServerDelegate
                         ((ServerConnection)conn).getVirtualHost().getConnections().iterator();
         while(connections.hasNext())
         {
-            final org.apache.qpid.server.model.Connection<?> modelConnnection = connections.next();
-            final AMQPConnection<?> amqConnectionModel = modelConnnection.getUnderlyingConnection();
+            final AMQPConnection<?> amqConnectionModel = (AMQPConnection<?>) connections.next();
 
             final String userName = amqConnectionModel.getAuthorizedPrincipal() == null
                     ? ""

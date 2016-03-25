@@ -121,6 +121,4 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     //children
     Collection<Session> getSessions();
 
-
-    AMQPConnection<?> getUnderlyingConnection();
 }

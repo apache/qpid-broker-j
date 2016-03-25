@@ -81,13 +81,12 @@ public class ServerSessionTest extends QpidTestCase
 
         AmqpPort port = createMockPort();
 
-        final AMQPConnection_0_10 protocolEngine = mock(AMQPConnection_0_10.class);
-        when(protocolEngine.getVirtualHost()).thenReturn((VirtualHost) _virtualHost);
-        when(protocolEngine.getUnderlyingConnection()).thenReturn((AMQPConnection) protocolEngine);
+        final AMQPConnection_0_10 modelConnection = mock(AMQPConnection_0_10.class);
+        when(modelConnection.getVirtualHost()).thenReturn((VirtualHost) _virtualHost);
         Subject subject = new Subject();
-        when(protocolEngine.getSubject()).thenReturn(subject);
-        when(protocolEngine.getMaxMessageSize()).thenReturn(1024l);
-        ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, protocolEngine);
+        when(modelConnection.getSubject()).thenReturn(subject);
+        when(modelConnection.getMaxMessageSize()).thenReturn(1024l);
+        ServerConnection connection = new ServerConnection(1, broker, port, Transport.TCP, modelConnection);
         connection.setVirtualHost(_virtualHost);
         final List<Method> invokedMethods = new ArrayList<>();
         ServerSession session = new ServerSession(connection, new ServerSessionDelegate(),

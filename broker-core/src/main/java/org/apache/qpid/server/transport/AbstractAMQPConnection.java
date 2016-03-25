@@ -273,11 +273,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         _stopped = true;
     }
 
-    public final ProtocolEngine getProtocolEngine()
-    {
-        return this;
-    }
-
     @Override
     public boolean isConnectionStopped()
     {
@@ -713,12 +708,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     public int getSessionCount()
     {
         return getSessionModels().size();
-    }
-
-    @Override
-    public AMQPConnection<?> getUnderlyingConnection()
-    {
-        return this;
     }
 
     @Override
