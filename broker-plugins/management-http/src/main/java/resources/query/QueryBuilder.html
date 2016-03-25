@@ -1,0 +1,72 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<div>
+    <div class="dijit dijitToolbar">
+        <label>Scope : <span data-dojo-attach-point="scope"></span></label>
+        <label>Category : <span data-dojo-attach-point="categoryName"></span></label>
+        <span data-dojo-attach-point="advancedSearch"  style="display:none;">
+            <label>Select : <input data-dojo-attach-point="selectCriteria" type="text"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="name: 'select',
+                                    intermediateChanges: true,
+                                    placeHolder: 'comma separated attribute names',
+                                    title: 'Enter comma separated list of attributes to select',
+                                    promptMessage: 'Comma separated list of attributes to select, for example: name,type,description',
+                                    class: 'querySearchField'" /></label>
+            <label>Where : <input data-dojo-attach-point="whereCriteria" type="text"
+                                   data-dojo-type="dijit/form/ValidationTextBox"
+                                   data-dojo-props="name: 'where',
+                                    intermediateChanges: true,
+                                    placeHolder: 'where expression',
+                                    title: 'Enter sql like where conditions',
+                                    promptMessage: 'Use JMS filter syntax to specify where conditions',
+                                    class: 'querySearchField'" /></label>
+        </span>
+        <span data-dojo-attach-point="standardSearchTools">
+            <div data-dojo-type="dijit/form/DropDownButton" data-dojo-attach-point="columnsButton"
+                 data-dojo-props="title: 'Select fields to display'">
+                <span>Fields</span>
+                <div data-dojo-type="dijit/TooltipDialog" data-dojo-attach-point="columnsDialog">
+                </div>
+            </div>
+            <div data-dojo-type="dijit/form/DropDownButton" data-dojo-attach-point="conditionsButton"
+                 data-dojo-props="title: 'Specify Filtering Conditions'">
+                <span>Conditions</span>
+                <div data-dojo-type="dijit/TooltipDialog" data-dojo-attach-point="conditionsDialog">
+                </div>
+            </div>
+        </span>
+        <div data-dojo-type="dijit/form/Button" data-dojo-attach-point="searchButton"
+             data-dojo-props="title: 'Search'">Search</div>
+        <div data-dojo-type="dijit/form/Button" data-dojo-attach-point="modeButton"
+             data-dojo-props="title:'Switch to \'Advanced\' search using SQL-like expressions'">Advanced</div>
+
+        <div data-dojo-attach-point="standardModeConditionsToolbar" data-dojo-type="dijit/layout/ContentPane"></div>
+    </div>
+
+    <div data-dojo-attach-point="queryResultGrid"  jsid='grid'></div>
+
+    <div data-dojo-attach-point="testGrid"  jsid='grid'></div>
+    <div class="dijitHidden">
+        <div data-dojo-attach-point="selectPanel"></div>
+        <div data-dojo-attach-point="wherePanel"></div>
+        <div data-dojo-attach-point="whereCriteria"></div>
+    </div>
+</div>

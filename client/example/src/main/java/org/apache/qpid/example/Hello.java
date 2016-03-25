@@ -23,6 +23,7 @@ package org.apache.qpid.example;
 
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.Random;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -34,6 +35,9 @@ import javax.jms.TextMessage;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
+import org.apache.qpid.client.AMQDestination;
+import org.apache.qpid.configuration.ClientProperties;
+
 
 public class Hello 
 {
@@ -44,16 +48,24 @@ public class Hello
 
     public static void main(String[] args)
     {
+        System.setProperty(ClientProperties.DEST_SYNTAX, AMQDestination.DestSyntax.BURL.name());
+        System.setProperty(ClientProperties.AMQP_VERSION, "0-9");
         Hello hello = new Hello();
-        hello.runTest();
+        for(int i =0; i<100;i++)
+        {
+
+            hello.runTest("test-" + i);
+        }
     }
 
-    private void runTest() 
+    private void runTest(String queueName)
     {
         try (InputStream resourceAsStream = this.getClass().getResourceAsStream("hello.properties"))
         {
             Properties properties = new Properties();
-            properties.load(resourceAsStream);
+            //properties.load(resourceAsStream);
+            properties.put("java.naming.factory.initial", "org.apache.qpid.jndi.PropertiesFileInitialContextFactory");
+            properties.put("connectionfactory.qpidConnectionfactory", "amqp://guest:guest@clientid/?brokerlist='tcp://localhost:5672'");
             Context context = new InitialContext(properties);
 
             ConnectionFactory connectionFactory = (ConnectionFactory) context.lookup("qpidConnectionfactory");
@@ -61,16 +73,20 @@ public class Hello
             connection.start();
 
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Destination destination = (Destination) context.lookup("topicExchange");
+            Destination destination = session.createQueue(queueName);
 
             MessageProducer messageProducer = session.createProducer(destination);
             MessageConsumer messageConsumer = session.createConsumer(destination);
 
-            TextMessage message = session.createTextMessage("Hello world!");
-            messageProducer.send(message);
+            Random rn = new Random();
+            for (int i=0;i< rn.nextInt(10);i++)
+            {
+                TextMessage message = session.createTextMessage("Hello world! from " + queueName);
+                messageProducer.send(message);
+            }
 
-            message = (TextMessage)messageConsumer.receive();
-            System.out.println(message.getText());
+            //message = (TextMessage)messageConsumer.receive();
+           // System.out.println(message.getText());
 
             connection.close();
             context.close();

@@ -173,6 +173,11 @@
       <optional>true</optional>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.geronimo.specs</groupId>
+      <artifactId>geronimo-servlet_3.0_spec</artifactId>
+      <version>${geronimo-servlet-version}</version>
+    </dependency>
   </dependencies>
 
   <build>
