@@ -38,3 +38,6 @@ qpid_tests.broker_0_8.exchange.DefaultExchangeRuleTests.testDefaultExchangeExpli
 
 #QPID-5551 : We now throw a connection exception rather than a channel exception
 qpid_tests.broker_0_8.basic.BasicTests.test_consume_exclusive
+
+#QPID-7163 : Python client does not support for basic_return
+qpid_tests.broker_0_8.broker.BrokerTests.test_basic_delivery_immediate
