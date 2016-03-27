@@ -234,3 +234,6 @@ org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_010_HeadersFil
 
 // QPID-6703 Use of Java Broker specific queue creation arguments to properly fulfill JMS TemporaryQueue contract
 org.apache.qpid.test.unit.client.temporaryqueue.TemporaryQueueTest#testClosingSessionDoesNotDeleteQueue
+
+# QPID-7156: Test requires a Broker with a virtualhost
+org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest.testClientCloseOnVirtualHostStop
