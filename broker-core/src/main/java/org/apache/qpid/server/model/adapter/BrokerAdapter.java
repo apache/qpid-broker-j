@@ -83,6 +83,7 @@ import org.apache.qpid.server.store.FileBasedSettings;
 import org.apache.qpid.server.virtualhost.VirtualHostPropertiesNodeCreator;
 import org.apache.qpid.util.SystemUtils;
 
+@ManagedObject( category = false, type = "Broker" )
 public class BrokerAdapter extends AbstractConfiguredObject<BrokerAdapter> implements Broker<BrokerAdapter>, StatisticsGatherer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(BrokerAdapter.class);

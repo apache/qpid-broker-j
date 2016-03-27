@@ -26,6 +26,9 @@ import java.util.Set;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.apache.qpid.configuration.CommonProperties;
+
+@ManagedContextDependency({CommonProperties.QPID_SECURITY_TLS_PROTOCOL_WHITE_LIST, CommonProperties.QPID_SECURITY_TLS_CIPHER_SUITE_BLACK_LIST})
 @ManagedObject( description = Port.CLASS_DESCRIPTION )
 public interface Port<X extends Port<X>> extends ConfiguredObject<X>
 {

@@ -336,7 +336,30 @@ public class ConfiguredObjectTypeRegistry
 
             }
         }
+
+        validateContextDependencies();
+
     }
+
+    private void validateContextDependencies()
+    {
+        for(Map.Entry<Class<? extends ConfiguredObject>, Set<String>> entry : _contextUses.entrySet())
+        {
+            for (String dependency : entry.getValue())
+            {
+                if(!_contextDefinitions.containsKey(dependency))
+                {
+                    throw new IllegalArgumentException("Class "
+                                                       + entry.getKey().getSimpleName()
+                                                       + " defines a context dependency on a context variable '"
+                                                       + dependency
+                                                       + "' which is never defined");
+                }
+            }
+        }
+    }
+
+
 
     private boolean factoryExists(final Class<? extends ConfiguredObject> categoryClass, final String type)
     {
@@ -627,7 +650,6 @@ public class ConfiguredObjectTypeRegistry
             {
                 return;
             }
-
             doWithAllParents(clazz, new Action<Class<? extends ConfiguredObject>>()
             {
                 @Override
@@ -685,19 +707,7 @@ public class ConfiguredObjectTypeRegistry
             ManagedContextDependency dependencies = clazz.getAnnotation(ManagedContextDependency.class);
             for (String dependency : dependencies.value())
             {
-                if (_contextDefinitions.containsKey(dependency))
-                {
-                    contextSet.add(dependency);
-                }
-                else
-                {
-                    throw new IllegalArgumentException("Class "
-                                                       + clazz.getSimpleName()
-                                                       + " defines a context dependency on a context variable '"
-                                                       + dependency
-                                                       + "' which is never defined");
-                }
-
+                contextSet.add(dependency);
             }
         }
     }
