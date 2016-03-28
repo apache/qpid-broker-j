@@ -27,9 +27,6 @@
     <link rel="stylesheet" href="dojo/dojox/grid/enhanced/resources/EnhancedGrid_rtl.css">
     <link rel="stylesheet" href="dojo/dojox/form/resources/CheckedMultiSelect.css">
     <link rel="stylesheet" href="dojo/dojox/form/resources/FileInput.css" />
-    <link rel="stylesheet" href="dojo/dijit/themes/claro/document.css">
-    <link rel="stylesheet" href="dojo/dgrid/css/dgrid.css">
-    <link rel="stylesheet" href="dojo/dgrid/css/skins/claro.css">
     <link rel="stylesheet" href="css/common.css" media="screen">
     <script>
         function getContextPath()
@@ -53,9 +50,7 @@
                 { name:"dojo", location:"dojo/dojo" },
                 { name:"dijit", location:"dojo/dijit" },
                 { name:"dojox", location:"dojo/dojox" },
-                { name:"qpid", location:"js/qpid" },
-                { name:"dgrid", location:"dojo/dgrid" },
-                { name:"dstore", location:"dojo/dstore" }
+                { name:"qpid", location:"js/qpid" }
             ]
         };
 
@@ -88,7 +83,6 @@
                     ], function(parser, query, ConsoleHelper, Management, util, treeView, controller, updater, entities, registry, dom){
                         parser.parse();
                         qpidManagementHelper = ConsoleHelper;
-                        qpidManagementHelper.controller = controller;
                         management = new Management("",util.xhrErrorHandler);
                         management.authenticate().then(function(data)
                         {
@@ -136,8 +130,6 @@
                 <div data-dojo-type="dijit.MenuItem" data-dojo-props="onClick: function(){qpidManagementHelper.showAPI();}">REST API</div>
                 <div data-dojo-type="dijit.MenuItem"
                      data-dojo-props="iconClass: 'helpIcon', onClick: function(){qpidManagementHelper.showHelp();}">Help</div>
-                <div data-dojo-type="dijit.MenuItem"
-                     data-dojo-props="iconClass: 'dijitIconApplication', onClick: function(){qpidManagementHelper.controller.show('queryTab');}">Query</div>
             </div>
           </div>
         </div>

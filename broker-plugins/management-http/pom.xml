@@ -31,8 +31,6 @@
 
   <properties>
     <dojo-version>1.10.3</dojo-version>
-    <dstore-version>1.1.1</dstore-version>
-    <dgrid-version>1.0.0</dgrid-version>
   </properties>
 
   <dependencies>
@@ -94,30 +92,6 @@
       <type>zip</type>
     </dependency>
 
-    <dependency>
-      <groupId>org.webjars.bower</groupId>
-      <artifactId>dstore</artifactId>
-      <version>${dstore-version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>dojo</artifactId>
-          <groupId>org.webjars.bower</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.webjars.bower</groupId>
-      <artifactId>dgrid</artifactId>
-      <version>${dgrid-version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>dojo</artifactId>
-          <groupId>org.webjars.bower</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
     <!-- test dependencies -->
     <dependency>
       <groupId>org.apache.qpid</groupId>
@@ -125,7 +99,6 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <build>
