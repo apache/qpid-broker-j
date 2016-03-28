@@ -236,4 +236,4 @@ org.apache.qpid.test.unit.basic.PropertyValueTest#testLargeHeader_010_HeadersFil
 org.apache.qpid.test.unit.client.temporaryqueue.TemporaryQueueTest#testClosingSessionDoesNotDeleteQueue
 
 # QPID-7156: Test requires a Broker with a virtualhost
-org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest.testClientCloseOnVirtualHostStop
+org.apache.qpid.test.unit.client.connection.BrokerClosesClientConnectionTest#testClientCloseOnVirtualHostStop
