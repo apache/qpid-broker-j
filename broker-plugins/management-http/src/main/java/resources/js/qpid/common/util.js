@@ -547,17 +547,17 @@ define(["dojo/_base/xhr",
                for(var i in formWidgets)
                {
                    var widget = formWidgets[i];
-                   var value = widget.get("value");
-                   var propName = widget.get("name");
-                   if (propName && (widget.get("required") || value ))
+                   var value = widget.get("value") != "undefined" ? widget.get("value") : "";
+                   var propName = widget.get("name") != "undefined" ? widget.get("name") : "";
+                   var required = widget.get("required") != "undefined" ? widget.get("required") : "";
+                   var excluded = widget.get("excluded") != "undefined" ? widget.get("excluded") : "";
+                   var checked = widget.get("checked") != "undefined" ? widget.get("checked") : "";
+                   var type = widget.get("type") != "undefined" ? widget.get("type") : "";
+                   if (!excluded && propName && (value || required))
                    {
-                       if (widget.get("excluded"))
-                       {
-                          continue;
-                       }
                        if (widget instanceof dijit.form.RadioButton)
                        {
-                           if (widget.get("checked"))
+                           if (checked)
                            {
                                var currentValue = values[propName];
                                if (currentValue)
@@ -579,11 +579,11 @@ define(["dojo/_base/xhr",
                        }
                        else if (widget instanceof dijit.form.CheckBox)
                        {
-                           values[ propName ] = widget.get("checked");
+                           values[ propName ] = checked;
                        }
                        else
                        {
-                           if (widget.get("type") == "password")
+                           if (type == "password")
                            {
                                 if (value)
                                 {
