@@ -39,10 +39,12 @@ define(["dojo/dom",
         "qpid/management/PreferencesProvider",
         "qpid/management/VirtualHostNode",
         "qpid/management/Logger",
+        "qpid/management/QueryTab",
         "dojo/ready",
+        "dojox/uuid/generateRandomUuid",
         "dojo/domReady!"],
        function (dom, registry, ContentPane, CheckBox, entities, Broker, VirtualHost, Exchange, Queue, Connection, AuthProvider,
-                 GroupProvider, Group, KeyStore, TrustStore, AccessControlProvider, Port, Plugin, PreferencesProvider, VirtualHostNode, Logger, ready) {
+                 GroupProvider, Group, KeyStore, TrustStore, AccessControlProvider, Port, Plugin, PreferencesProvider, VirtualHostNode, Logger, QueryTab, ready) {
            var controller = {};
 
            var constructors = { broker: Broker, virtualhost: VirtualHost, exchange: Exchange,
@@ -51,7 +53,8 @@ define(["dojo/dom",
                                 group: Group, keystore: KeyStore, truststore: TrustStore,
                                 accesscontrolprovider: AccessControlProvider, port: Port,
                                 plugin: Plugin, preferencesprovider: PreferencesProvider,
-                                virtualhostnode: VirtualHostNode, brokerlogger: Logger, virtualhostlogger: Logger};
+                                virtualhostnode: VirtualHostNode, brokerlogger: Logger, virtualhostlogger: Logger,
+                                queryTab: QueryTab};
 
            var tabDiv = dom.byId("managedViews");
 
@@ -78,7 +81,7 @@ define(["dojo/dom",
                }
 
                var that = this;
-               var objId = (parent ? generateName(parent) + "/" : "") + objType + ":" + name;
+               var objId = (parent ? generateName(parent) + "/" : "") + objType + ":" + (name ? name : "-" + dojox.uuid.generateRandomUuid());
 
                var obj = this.viewedObjects[ objId ];
                if(obj) {
@@ -104,7 +107,7 @@ define(["dojo/dom",
                        });
                        this.tabContainer.addChild( contentPane );
                        var userPreferences = this.management.userPreferences;
-                       if (objType != "broker")
+                       if (objType != "broker" && name)
                        {
                          var preferencesCheckBox = new dijit.form.CheckBox({
                            checked: userPreferences.isTabStored(obj.tabData),

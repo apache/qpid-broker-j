@@ -1,0 +1,74 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<div class="dijit dijitReset dijitInline dijitButtonNode">
+    <div id="${id}_whereCriteria_editCriteria"
+         data-dojo-attach-point="criteria"
+         data-dojo-type="dijit/form/DropDownButton"
+         data-dojo-props="showLabel:true, title: 'Set where criteria'">
+        <span>Edit</span>
+        <div data-dojo-type="dijit/TooltipDialog" data-dojo-attach-point="editDialog">
+            <div data-dojo-attach-point="conditionDialogContent"
+                 data-dojo-type="dijit/form/Form">
+                <script type="dojo/method" data-dojo-event="onSubmit">
+                return false;
+                </script>
+
+                <input class="criteriaControl"
+                          data-dojo-type="dijit/form/TextBox"
+                          data-dojo-attach-point="newColumnCondition"
+                          data-dojo-props="readOnly:true, title: 'Current where expression'"/>
+                <div class="criteriaControl">Match: <select data-dojo-attach-point="expressionMatchCondition"
+                                  data-dojo-type="dijit/form/Select"
+                                  data-dojo-props="value: 'and',
+                                       required: true, title:'Select how to group multiple conditions'">
+                                <option value="and">All</option>
+                                <option value="or">Any</option>
+                            </select>
+                </div>
+
+                <div data-dojo-attach-point="criteriaContainer"
+                     data-dojo-type="dijit/layout/ContentPane" class="criteriaPanelTitle"></div>
+                <div class="dijitDialogPaneActionBar">
+                    <div id="${id}_whereCriteria_addButton"
+                         data-dojo-type="dijit/form/Button"
+                         data-dojo-attach-point="addButton"
+                         type="button"  label="Add" class="alignLeft"></div>
+                    <div class="alignRight">
+                        <div id="${id}_whereCriteria_cancelButton"
+                             data-dojo-type="dijit/form/Button"
+                             data-dojo-attach-point="cancelButton"
+                             type="button"  label="Cancel"></div>
+
+                        <div id="${id}_whereCriteria_doneButton"
+                             data-dojo-type="dijit/form/Button"
+                             data-dojo-attach-point="doneButton"
+                             type="submit"  label="Done"></div>
+                    </div>
+                    <div class="clear"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div data-dojo-attach-point="removeCriteria"
+          data-dojo-type="dijit/form/Button"
+          data-dojo-props="iconClass:'dijitIconDelete',
+                           showLabel:false,
+                           title: 'Remove'">Remove</div>
+</div>
