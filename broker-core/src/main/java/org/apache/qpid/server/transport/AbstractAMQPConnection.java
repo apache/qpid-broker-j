@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -148,6 +147,7 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
                         {
                             deleted();
                             setState(State.DELETED);
+                            logConnectionClose();
                         }
                         finally
                         {
@@ -163,7 +163,6 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     private static Map<String, Object> createAttributes(long connectionId, NetworkConnection network)
     {
         Map<String,Object> attributes = new HashMap<>();
-        attributes.put(ID, UUID.randomUUID());
         attributes.put(NAME, "[" + connectionId + "] " + String.valueOf(network.getRemoteAddress()).replaceAll("/", ""));
         attributes.put(DURABLE, false);
         return attributes;
@@ -703,6 +702,23 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
             }
         });
     }
+
+    private void logConnectionClose()
+    {
+        runAsSubject(new PrivilegedAction<Void>()
+        {
+            @Override
+            public Void run()
+            {
+                getEventLogger().message(isOrderlyClose()
+                                                 ? ConnectionMessages.CLOSE()
+                                                 : ConnectionMessages.DROPPED_CONNECTION());
+                return null;
+            }
+        });
+    }
+
+    protected abstract boolean isOrderlyClose();
 
     @Override
     public int getSessionCount()

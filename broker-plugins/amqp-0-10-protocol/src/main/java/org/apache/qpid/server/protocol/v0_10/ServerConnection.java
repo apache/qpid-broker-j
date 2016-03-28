@@ -44,7 +44,6 @@ import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.ConnectionClosingTicker;
 import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
@@ -387,7 +386,6 @@ public class ServerConnection extends Connection
             {
                 virtualHost.deregisterConnection(_amqpConnection);
             }
-            getEventLogger().message(isConnectionLost() ? ConnectionMessages.DROPPED_CONNECTION() : ConnectionMessages.CLOSE());
         }
 
     }
@@ -571,5 +569,11 @@ public class ServerConnection extends Connection
     public boolean isIgnoreFutureInput()
     {
         return _ignoreFutureInput;
+    }
+
+    @Override
+    public boolean isConnectionLost()
+    {
+        return super.isConnectionLost();
     }
 }

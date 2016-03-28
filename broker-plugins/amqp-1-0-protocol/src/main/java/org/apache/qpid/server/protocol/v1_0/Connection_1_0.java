@@ -52,7 +52,6 @@ import org.apache.qpid.amqp_1_0.type.transport.End;
 import org.apache.qpid.amqp_1_0.type.transport.Error;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.logging.LogSubject;
-import org.apache.qpid.server.logging.messages.ConnectionMessages;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.VirtualHost;
@@ -357,7 +356,6 @@ public class Connection_1_0 implements ConnectionEventListener
             {
                 virtualHost.deregisterConnection(_amqpConnection);
             }
-            getAmqpConnection().getEventLogger().message(ConnectionMessages.CLOSE());
         }
     }
 

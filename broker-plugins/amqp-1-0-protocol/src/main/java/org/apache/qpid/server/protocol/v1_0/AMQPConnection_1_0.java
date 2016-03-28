@@ -70,8 +70,6 @@ import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
-import org.apache.qpid.server.transport.NetworkConnectionScheduler;
-import org.apache.qpid.server.transport.NonBlockingConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
@@ -479,12 +477,6 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         }
     }
 
-    void changeScheduler(final NetworkConnectionScheduler networkConnectionScheduler)
-    {
-        ((NonBlockingConnection) getNetwork()).pushScheduler(networkConnectionScheduler);
-    }
-
-
     public boolean canSend()
     {
         return true;
@@ -660,5 +652,11 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     public long getSessionCountLimit()
     {
         return _connection.getSessionCountLimit();
+    }
+
+    @Override
+    protected boolean isOrderlyClose()
+    {
+        return _connection.getConnectionEndpoint().isOrderlyClose();
     }
 }

@@ -740,21 +740,14 @@ public class AMQPConnection_0_8
         finally
         {
             markTransportClosed();
-
-            runAsSubject(new PrivilegedAction<Void>()
-            {
-                @Override
-                public Void run()
-                {
-                    getEventLogger().message(_orderlyClose.get()
-                                                     ? ConnectionMessages.CLOSE()
-                                                     : ConnectionMessages.DROPPED_CONNECTION());
-                    return null;
-                }
-            });
         }
     }
 
+    @Override
+    protected boolean isOrderlyClose()
+    {
+        return _orderlyClose.get();
+    }
 
     @Override
     public void encryptedTransport()

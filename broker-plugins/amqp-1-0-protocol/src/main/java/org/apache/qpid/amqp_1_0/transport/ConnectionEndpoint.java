@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -153,6 +154,8 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
     private List<Runnable> _postLockActions = new ArrayList<>();
     private Map _remoteProperties;
     private long _desiredIdleTimeout;
+
+    private final AtomicBoolean _orderlyClose = new AtomicBoolean(false);
 
     public ConnectionEndpoint(Container container, SaslServerProvider cbs)
     {
@@ -401,9 +404,11 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
                 _state = ConnectionState.CLOSE_RECEIVED;
                 sendClose(new Close());
                 _state = ConnectionState.CLOSED;
+                _orderlyClose.set(true);
                 break;
             case CLOSE_SENT:
                 _state = ConnectionState.CLOSED;
+                _orderlyClose.set(true);
 
             default:
         }
@@ -765,6 +770,11 @@ public class ConnectionEndpoint implements DescribedTypeConstructorRegistry.Sour
     public long getDesiredIdleTimeout()
     {
         return _desiredIdleTimeout;
+    }
+
+    public boolean isOrderlyClose()
+    {
+        return _orderlyClose.get();
     }
 
     public static interface FrameReceiptLogger

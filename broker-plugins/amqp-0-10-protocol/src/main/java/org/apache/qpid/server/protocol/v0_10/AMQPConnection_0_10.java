@@ -328,4 +328,10 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     {
         return _connection.getSessionCountLimit();
     }
+
+    @Override
+    protected boolean isOrderlyClose()
+    {
+        return !_connection.isConnectionLost();
+    }
 }
