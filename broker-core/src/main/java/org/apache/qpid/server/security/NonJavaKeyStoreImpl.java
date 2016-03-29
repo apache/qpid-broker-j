@@ -74,7 +74,6 @@ import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> implements NonJavaKeyStore<NonJavaKeyStoreImpl>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NonJavaKeyStoreImpl.class);
-    private static final long ONE_DAY = 24l * 60l * 60l * 1000l;
 
     @ManagedAttributeField( afterSet = "updateKeyManagers" )
     private String _privateKeyUrl;
@@ -180,24 +179,7 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
     @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
     protected ListenableFuture<Void> doDelete()
     {
-        // verify that it is not in use
-        String storeName = getName();
-
-        Collection<Port> ports = new ArrayList<Port>(getBroker().getPorts());
-        for (Port port : ports)
-        {
-            if (port.getKeyStore() == this)
-            {
-                throw new IntegrityViolationException("Key store '"
-                        + storeName
-                        + "' can't be deleted as it is in use by a port:"
-                        + port.getName());
-            }
-        }
-        deleted();
-        setState(State.DELETED);
-        getEventLogger().message(KeyStoreMessages.DELETE(getName()));
-        return Futures.immediateFuture(null);
+        return deleteIfNotInUse();
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
@@ -300,36 +282,13 @@ public class NonJavaKeyStoreImpl extends AbstractKeyStore<NonJavaKeyStoreImpl> i
 
     private void checkCertificateExpiry(final X509Certificate... certificates)
     {
-        int expiryWarning = getContextValue(Integer.class, CERTIFICATE_EXPIRY_WARN_PERIOD);
+        int expiryWarning = getCertificateExpiryWarnPeriod();
         if(expiryWarning > 0)
         {
             long currentTime = System.currentTimeMillis();
             Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long) expiryWarning));
 
-
-            if (certificates != null)
-            {
-                for (X509Certificate cert : certificates)
-                {
-                    try
-                    {
-                        cert.checkValidity(expiryTestDate);
-                    }
-                    catch (CertificateExpiredException e)
-                    {
-                        long timeToExpiry = cert.getNotAfter().getTime() - currentTime;
-                        int days = Math.max(0, (int) (timeToExpiry / (ONE_DAY)));
-
-                        getEventLogger().message(KeyStoreMessages.EXPIRING(getName(),
-                                                                           String.valueOf(days),
-                                                                           cert.getSubjectDN().toString()));
-                    }
-                    catch (CertificateNotYetValidException e)
-                    {
-                        // ignore
-                    }
-                }
-            }
+            checkCertificatesExpiry(currentTime, expiryTestDate, certificates);
         }
     }
 

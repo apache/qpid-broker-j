@@ -29,17 +29,11 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -47,21 +41,14 @@ import javax.net.ssl.X509KeyManager;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
-import org.apache.qpid.server.logging.EventLogger;
-import org.apache.qpid.server.logging.messages.KeyStoreMessages;
 import org.apache.qpid.server.model.Broker;
-import org.apache.qpid.server.model.ConfigurationChangeListener;
 import org.apache.qpid.server.model.ConfiguredObject;
-import org.apache.qpid.server.model.IntegrityViolationException;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
-import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.StateTransition;
 import org.apache.qpid.server.util.ServerScopedRuntimeException;
@@ -72,7 +59,6 @@ import org.apache.qpid.transport.network.security.ssl.SSLUtil;
 @ManagedObject( category = false )
 public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> implements FileKeyStore<FileKeyStoreImpl>
 {
-    private static final long ONE_DAY = 24l * 60l * 60l * 1000l;
 
     @ManagedAttributeField
     private String _type;
@@ -111,21 +97,7 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
     @StateTransition(currentState = {State.ACTIVE, State.ERRORED}, desiredState = State.DELETED)
     protected ListenableFuture<Void> doDelete()
     {
-        // verify that it is not in use
-        String storeName = getName();
-
-        Collection<Port> ports = new ArrayList<Port>(getBroker().getPorts());
-        for (Port port : ports)
-        {
-            if (port.getKeyStore() == this)
-            {
-                throw new IntegrityViolationException("Key store '" + storeName + "' can't be deleted as it is in use by a port:" + port.getName());
-            }
-        }
-        deleted();
-        setState(State.DELETED);
-        getEventLogger().message(KeyStoreMessages.DELETE(getName()));
-        return Futures.immediateFuture(null);
+        return deleteIfNotInUse();
     }
 
     @StateTransition(currentState = {State.UNINITIALIZED, State.ERRORED}, desiredState = State.ACTIVE)
@@ -318,72 +290,45 @@ public class FileKeyStoreImpl extends AbstractKeyStore<FileKeyStoreImpl> impleme
 
     protected void checkCertificateExpiry()
     {
-        try
+        int expiryWarning = getCertificateExpiryWarnPeriod();
+        if(expiryWarning > 0)
         {
+            long currentTime = System.currentTimeMillis();
+            Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long)expiryWarning));
 
-            int expiryWarning = getContextValue(Integer.class, CERTIFICATE_EXPIRY_WARN_PERIOD);
-            if(expiryWarning > 0)
+            try
             {
-                long currentTime = System.currentTimeMillis();
-                Date expiryTestDate = new Date(currentTime + (ONE_DAY * (long)expiryWarning));
+                URL url = getUrlFromString(_storeUrl);
+                final java.security.KeyStore ks = SSLUtil.getInitializedKeyStore(url, getPassword(), _keyStoreType);
 
-                try
+                char[] keyStoreCharPassword = getPassword() == null ? null : getPassword().toCharArray();
+
+                final KeyManagerFactory kmf = KeyManagerFactory.getInstance(_keyManagerFactoryAlgorithm);
+
+                kmf.init(ks, keyStoreCharPassword);
+
+
+                for (KeyManager km : kmf.getKeyManagers())
                 {
-                    URL url = getUrlFromString(_storeUrl);
-                    final java.security.KeyStore ks = SSLUtil.getInitializedKeyStore(url, getPassword(), _keyStoreType);
-
-                    char[] keyStoreCharPassword = getPassword() == null ? null : getPassword().toCharArray();
-
-                    final KeyManagerFactory kmf = KeyManagerFactory.getInstance(_keyManagerFactoryAlgorithm);
-
-                    kmf.init(ks, keyStoreCharPassword);
-
-
-                    for (KeyManager km : kmf.getKeyManagers())
+                    if (km instanceof X509KeyManager)
                     {
-                        if (km instanceof X509KeyManager)
+                        X509KeyManager x509KeyManager = (X509KeyManager) km;
+
+                        for(String alias : Collections.list(ks.aliases()))
                         {
-                            X509KeyManager x509KeyManager = (X509KeyManager) km;
-
-                            for(String alias : Collections.list(ks.aliases()))
-                            {
-                                final X509Certificate[] chain =
-                                        x509KeyManager.getCertificateChain(alias);
-                                if(chain != null)
-                                {
-                                    for(X509Certificate cert : chain)
-                                    {
-                                        try
-                                        {
-                                            cert.checkValidity(expiryTestDate);
-                                        }
-                                        catch(CertificateExpiredException e)
-                                        {
-                                            long timeToExpiry = cert.getNotAfter().getTime() - currentTime;
-                                            int days = Math.max(0,(int)(timeToExpiry / (ONE_DAY)));
-
-                                            getEventLogger().message(KeyStoreMessages.EXPIRING(getName(), String.valueOf(days), cert.getSubjectDN().toString()));
-                                        }
-                                        catch(CertificateNotYetValidException e)
-                                        {
-                                            // ignore
-                                        }
-                                    }
-                                }
-                            }
-
+                            checkCertificatesExpiry(currentTime, expiryTestDate,
+                                                    x509KeyManager.getCertificateChain(alias));
                         }
+
                     }
                 }
-                catch (GeneralSecurityException | IOException e)
-                {
+            }
+            catch (GeneralSecurityException | IOException e)
+            {
 
-                }
             }
         }
-        catch(IllegalArgumentException | NullPointerException e)
-        {
-        }
+
     }
 
 }
