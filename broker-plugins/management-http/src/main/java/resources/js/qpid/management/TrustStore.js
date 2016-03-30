@@ -29,7 +29,7 @@ define(["dojo/dom",
         "qpid/common/util",
         "qpid/common/formatter",
         "qpid/management/addStore",
-        "dojo/text!showStore.html",
+        "dojo/text!showTrustStore.html",
         "dojo/domReady!"],
        function (dom, parser, query, connect, registry, entities, properties, updater, util, formatter, addStore, template) {
 
@@ -102,7 +102,8 @@ define(["dojo/dom",
 
                storeNodes(["name",
                            "type",
-                           "state"
+                           "state",
+                           "exposedAsMessageSource"
                            ]);
 
            }
@@ -112,6 +113,7 @@ define(["dojo/dom",
               this.name.innerHTML = entities.encode(String(this.trustStoreData[ "name" ]));
               this.type.innerHTML = entities.encode(String(this.trustStoreData[ "type" ]));
               this.state.innerHTML = entities.encode(String(this.trustStoreData[ "state" ]));
+              this.exposedAsMessageSource.innerHTML = entities.encode(String(this.trustStoreData[ "exposedAsMessageSource" ]));
            };
 
            KeyStoreUpdater.prototype.update = function(callback)

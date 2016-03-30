@@ -29,6 +29,7 @@ define(["dojo/_base/lang",
         'dojo/json',
         "qpid/common/util",
         "dojo/text!addStore.html",
+        "dojo/_base/xhr",
         "dojo/store/Memory",
         "dojox/validate/us",
         "dojox/validate/web",
@@ -43,10 +44,11 @@ define(["dojo/_base/lang",
         "dijit/layout/ContentPane",
         "dojox/layout/TableContainer",
         "dojo/domReady!"],
-    function (lang, dom, construct, registry, parser, memory, array, event, json, util, template)
+    function (lang, dom, construct, registry, parser, memory, array, event, json, util, template, xhr)
     {
         var addStore =
         {
+            categoryTemplates: {},
             init: function()
             {
                 var that=this;
@@ -66,6 +68,7 @@ define(["dojo/_base/lang",
                 this.addButton.on("click", function(e){that._add(e);});
 
                 this.storeTypeFieldsContainer = dom.byId("addStore.typeFields");
+                this.storeCategoryFieldsContainer = dom.byId("addStore.categoryFields");
                 this.storeForm = registry.byId("addStore.form");
 
                 this.storeType = registry.byId("addStore.type");
@@ -85,7 +88,9 @@ define(["dojo/_base/lang",
             show: function(effectiveData)
             {
                 this.effectiveData = effectiveData;
-                this._destroyTypeFields(this.containerNode);
+                this._destroyTypeFields(this.storeTypeFieldsContainer);
+                this._destroyTypeFields(this.storeCategoryFieldsContainer);
+                this._loadCategoryUI = true;
                 this.storeForm.reset();
 
                 if (effectiveData)
@@ -122,6 +127,7 @@ define(["dojo/_base/lang",
             {
                 event.stop(e);
                 this._destroyTypeFields(this.storeTypeFieldsContainer);
+                this._destroyTypeFields(this.storeCategoryFieldsContainer);
                 this.dialog.hide();
             },
             _add: function(e)
@@ -172,9 +178,9 @@ define(["dojo/_base/lang",
             _typeChanged: function(type, typeFieldsContainer, baseUrl, category )
             {
                  this._destroyTypeFields(typeFieldsContainer);
-
                  if (type)
                  {
+                     this._addCategoryMarkupIfRequired(category, type, this.effectiveData);
                      var that = this;
                      require([ baseUrl + type.toLowerCase() + "/add"], function(typeUI)
                      {
@@ -190,6 +196,44 @@ define(["dojo/_base/lang",
                          }
                      });
                  }
+            },
+            _addCategoryMarkupIfRequired: function(category, type, data)
+            {
+                if (this._loadCategoryUI)
+                {
+                    this._loadCategoryUI = false;
+                    var containerNode = this.storeCategoryFieldsContainer;
+                    var metadata = this.management.metadata;
+                    this._destroyTypeFields(this.storeCategoryFieldsContainer);
+
+                    var templateHandler = function(template)
+                                          {
+                                            containerNode.innerHTML = template;
+                                            parser.parse(containerNode).then(function(instances)
+                                            {
+                                              if (type)
+                                              {
+                                                util.applyToWidgets(containerNode, category, type, data, metadata);
+                                              }
+                                            });
+                                          };
+
+                    if (this.categoryTemplates[category])
+                    {
+                        templateHandler(new String(this.categoryTemplates[category]));
+                    }
+                    else
+                    {
+                        var that = this;
+                        xhr.get({url: "store/" + category.toLowerCase() + ".html",
+                                 load: function(template)
+                                       {
+                                         that.categoryTemplates[category]= template;
+                                         templateHandler(new String(template));
+                                       }
+                                });
+                    }
+                }
             }
         };
 

@@ -547,13 +547,13 @@ define(["dojo/_base/xhr",
                for(var i in formWidgets)
                {
                    var widget = formWidgets[i];
-                   var value = widget.get("value") != "undefined" ? widget.get("value") : "";
-                   var propName = widget.get("name") != "undefined" ? widget.get("name") : "";
-                   var required = widget.get("required") != "undefined" ? widget.get("required") : "";
-                   var excluded = widget.get("excluded") != "undefined" ? widget.get("excluded") : "";
-                   var checked = widget.get("checked") != "undefined" ? widget.get("checked") : "";
-                   var type = widget.get("type") != "undefined" ? widget.get("type") : "";
-                   if (!excluded && propName && (value || required))
+                   var value = widget.get("value") != "undefined" ? widget.get("value") : undefined;
+                   var propName = widget.get("name") != "undefined" ? widget.get("name") : undefined;
+                   var required = widget.get("required") != "undefined" ? widget.get("required") : undefined;
+                   var excluded = widget.get("excluded") != "undefined" ? widget.get("excluded") : undefined;
+                   var checked = widget.get("checked") != "undefined" ? widget.get("checked") : undefined;
+                   var type = widget.get("type") != "undefined" ? widget.get("type") : undefined;
+                   if (!excluded && propName && (value !== undefined || required))
                    {
                        if (widget instanceof dijit.form.RadioButton)
                        {
