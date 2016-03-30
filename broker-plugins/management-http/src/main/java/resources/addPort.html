@@ -272,6 +272,27 @@
                     </div>
                 </div>
 
+                <div id="formAddPort:fieldsManagedCertificateStores">
+                    <div class="clear">
+                        <div class="formLabel-labelCell">
+                            <label for="formAddPort.keyStore">Client Certificate Recorder:</label>
+                        </div>
+                        <div class="formLabel-controlCell">
+                            <select id="formAddPort.managedCertificateStores"
+                                    data-dojo-type="dijit.form.FilteringSelect"
+                                    data-dojo-props="name: 'clientCertRecorder',
+                                             label: 'Client Certificate Recorder:',
+                                             searchAttr: 'name',
+                                             placeHolder: 'managed certificate store',
+                                             required: false,
+                                             value: undefined,
+                                             promptMessage: 'Trust store that records certificates',
+                                             title: 'Select the trust store that will be used to record client certificates'">
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="clear">
                     <div class="formLabel-labelCell">
                         Trust Stores:

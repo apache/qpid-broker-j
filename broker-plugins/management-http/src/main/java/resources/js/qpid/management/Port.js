@@ -140,6 +140,7 @@ define(["dojo/dom",
                            "keyStore",
                            "needClientAuth",
                            "wantClientAuth",
+                           "clientCertRecorderValue",
                            "trustStores",
                            "maxOpenConnections",
                            "threadPoolMinimum",
@@ -185,6 +186,7 @@ define(["dojo/dom",
               this.needClientAuthValue.innerHTML = "<input type='checkbox' disabled='disabled' "+(this.portData[ "needClientAuth" ] ? "checked='checked'": "")+" />" ;
               this.wantClientAuthValue.innerHTML = "<input type='checkbox' disabled='disabled' "+(this.portData[ "wantClientAuth" ] ? "checked='checked'": "")+" />" ;
               this.trustStoresValue.innerHTML = printArray( "trustStores", this.portData);
+              this.clientCertRecorderValue.innerHTML = this.portData[ "clientCertRecorder"]? entities.encode(String(this.portData[ "clientCertRecorder"])):"";
 
               var typeMetaData = this.management.metadata.getMetaData("Port", this.portData["type"]);
 

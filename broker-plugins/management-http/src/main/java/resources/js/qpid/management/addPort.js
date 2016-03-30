@@ -207,12 +207,16 @@ define(["dojo/dom",
                       {
                         newPort.trustStores = null;
                       }
+
+                      var clientCertRecorder = registry.byId("formAddPort.managedCertificateStores")
+                      newPort.clientCertRecorder = clientCertRecorder.value ? clientCertRecorder.value : null;
                     }
                     else if (initialTransport && currentTransport != initialTransport)
                     {
                       newPort.needClientAuth = false;
                       newPort.wantClientAuth = false;
                       newPort.trustStores = null;
+                      newPort.clientCertRecorder = null;
                     }
                 }
 
@@ -223,7 +227,8 @@ define(["dojo/dom",
             {
                 var clientAuthPanel = dojo.byId("formAddPort:fieldsClientAuth");
                 var transportSSLPanelNode = dom.byId("formAddPort:fieldsTransportSSL");
-
+                var managedCertificateStoresNode = dom.byId("formAddPort:fieldsManagedCertificateStores");
+                var managedCertificateStoreWidget = registry.byId("formAddPort.managedCertificateStores");
                 if (addPort._isSecure(transportType))
                 {
                     var metadata =  addPort.management.metadata;
@@ -236,6 +241,8 @@ define(["dojo/dom",
                         registry.byId("formAddPort.wantClientAuth").set("disabled", !("wantClientAuth" in typeMetaData.attributes));
                         registry.byId("formAddPort.trustStores").resize();
                     }
+                    managedCertificateStoresNode.style.display =  "block";
+                    managedCertificateStoreWidget.set("disabled", false);
 
                     transportSSLPanelNode.style.display = "block";
                     registry.byId("formAddPort.keyStore").set("disabled", false);
@@ -248,6 +255,8 @@ define(["dojo/dom",
 
                     transportSSLPanelNode.style.display = "none";
                     registry.byId("formAddPort.keyStore").set("disabled", true);
+                    managedCertificateStoresNode.style.display =  "none";
+                    managedCertificateStoreWidget.set("disabled", true);
                 }
 
             };
@@ -348,6 +357,9 @@ define(["dojo/dom",
                 keystoreWidget.set("store", keystoresStore);
                 keystoreWidget.startup();
             }
+
+            var managedCertificateStoreWidget = registry.byId("formAddPort.managedCertificateStores");
+            this._initClientCertRecorders(truststores);
 
             var truststoreWidget = registry.byId("formAddPort.trustStores");
             if (truststores)
@@ -477,6 +489,9 @@ define(["dojo/dom",
                        providerWidget.initialValue = providerWidget.value;
                        maxOpenConnectionsWidget.initialValue = maxOpenConnectionsWidget.value;
 
+                       managedCertificateStoreWidget.set("value", port.clientCertRecorder);
+                       managedCertificateStoreWidget.initialValue = port.clientCertRecorder;
+
                        util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", portType, management.metadata);
 
                        addPort._initContextEditorAndShowDialog(port);
@@ -501,6 +516,9 @@ define(["dojo/dom",
 
                 editWarning.style.display = "none";
                 util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", portType, management.metadata);
+
+                managedCertificateStoreWidget.set("value", undefined);
+                managedCertificateStoreWidget.initialValue = undefined;
 
                 this._initContextEditorAndShowDialog();
             }
@@ -547,6 +565,36 @@ define(["dojo/dom",
         {
             var dialog = registry.byId("addPort");
             dialog.show();
+        };
+
+        addPort._getManagedPeerCertificateTrustStore = function(truststores)
+        {
+            var managedPeerCertificateTrustStore = [];
+            if (truststores)
+            {
+                for(var i=0;i<truststores.length;i++)
+                {
+                    if (truststores[i].type == "ManagedCertificateStore")
+                    {
+                        managedPeerCertificateTrustStore.push(truststores[i]);
+                    }
+                }
+            }
+            return managedPeerCertificateTrustStore;
+        };
+
+        addPort._initClientCertRecorders = function(truststores)
+        {
+            var managedPeerCertificateTrustStores =  this._getManagedPeerCertificateTrustStore(truststores);
+            var data = [{id:undefined, name: "None"}];
+            for(var i=0;i<managedPeerCertificateTrustStores.length;i++)
+            {
+                data.push({id:managedPeerCertificateTrustStores[i].name, name: managedPeerCertificateTrustStores[i].name});
+            }
+            var store = new Memory({ data: data, idProperty: "id"});
+            var managedCertificateStoresWidget = registry.byId("formAddPort.managedCertificateStores");
+            managedCertificateStoresWidget.set("store", store);
+            managedCertificateStoresWidget.startup();
         };
 
         return addPort;
