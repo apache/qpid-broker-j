@@ -53,6 +53,7 @@ define(["dojo/dom",
         /* basic dojox classes */
         "dojox/grid/EnhancedGrid",
         "dojox/grid/enhanced/plugins/IndirectSelection",
+        "qpid/common/ContextVariablesEditor",
         "dojo/domReady!"],
     function (dom, construct, win, registry, array, event, json, Memory, ObjectStore, FilteringSelect, domStyle, lang, util, template) {
 
@@ -161,6 +162,14 @@ define(["dojo/dom",
                             }
                             newPort[ propName ] = val;
                         }
+                        else if (propName === "context")
+                        {
+                            var context = this.context.get("value");
+                            if (context && (!this.initialData || !util.equals(context, this.initialData.context)))
+                            {
+                              newPort["context"] = context;
+                            }
+                        }
                         else if(formValues[ propName ] !== "")
                         {
                             newPort[ propName ] = formValues[propName];
@@ -245,6 +254,8 @@ define(["dojo/dom",
 
         addPort._prepareForm = function(metadata)
         {
+          this.context = dijit.byId("formAddPort.context");
+
           //add the port types to formAddPort.type
           var portTypeSelect = registry.byId("formAddPort.type");
           var supportedPortTypes = metadata.getTypesForCategory("Port");
@@ -466,8 +477,10 @@ define(["dojo/dom",
                        providerWidget.initialValue = providerWidget.value;
                        maxOpenConnectionsWidget.initialValue = maxOpenConnectionsWidget.value;
 
-                       registry.byId("addPort").show();
                        util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", portType, management.metadata);
+
+                       addPort._initContextEditorAndShowDialog(port);
+
                    }, util.xhrErrorHandler);
             }
             else
@@ -487,11 +500,53 @@ define(["dojo/dom",
                 maxOpenConnectionsWidget.set("regExpGen", util.signedOrContextVarRegexp);
 
                 editWarning.style.display = "none";
-                registry.byId("addPort").show();
-
                 util.applyMetadataToWidgets(registry.byId("addPort").domNode, "Port", portType, management.metadata);
-            }
 
+                this._initContextEditorAndShowDialog();
+            }
+        };
+
+        addPort._initContextEditorAndShowDialog = function(actualData)
+        {
+           this.initialData = actualData;
+           if (actualData)
+           {
+               var modelObj = this.modelObj;
+               this.management.load(modelObj ).then( function(effectiveData)
+                                                                     {
+                                                                       util.setContextData(addPort.context,
+                                                                                           addPort.management,
+                                                                                           modelObj,
+                                                                                           actualData,
+                                                                                           effectiveData[0],
+                                                                                           addPort._showDialog);
+                                                                     });
+           }
+           else
+           {
+               var modelObj = {type: "broker"};
+               this.management.load(modelObj).then( function(effectiveData)
+                                                    {
+                                                      util.setContextData( addPort.context,
+                                                                           addPort.management,
+                                                                           modelObj,
+                                                                           {},
+                                                                           effectiveData[0],
+                                                                           function()
+                                                                           {
+                                                                              addPort.context.setData({},
+                                                                                                      addPort.context.effectiveValues,
+                                                                                                      addPort.context.inheritedActualValues);
+                                                                              addPort._showDialog();
+                                                                           });
+                                                    });
+           }
+        };
+
+        addPort._showDialog = function()
+        {
+            var dialog = registry.byId("addPort");
+            dialog.show();
         };
 
         return addPort;

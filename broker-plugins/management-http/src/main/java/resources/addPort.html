@@ -278,14 +278,13 @@
                     </div>
                 </div>
 
-                <div class="clear">
-                    <div class="formLabel-controlCell">
+                <div class="clear editorPanel">
                         <table id="formAddPort.trustStores"
                                data-dojo-type="dojox.grid.EnhancedGrid"
                                data-dojo-props="
                                 plugins: {indirectSelection: true},
                                 rowSelector:'0px'"
-                               style="height: 100px; width:400px"> <!--todo remove -->
+                               style="height: 100px;">  <!--todo remove -->
                             <thead>
                                 <tr>
                                     <th field="name">Name</th>
@@ -294,7 +293,13 @@
                             </thead>
                         </table>
                     </div>
-                </div>
+            </div>
+            <div class="editorPanel clear"
+                 data-dojo-type="dijit/TitlePane"
+                 data-dojo-props="title: 'Context variables',  open: false">
+                <div id="formAddPort.context"
+                     data-dojo-type="qpid.common.ContextVariablesEditor"
+                     data-dojo-props="name: 'context', title: 'Context variables'"></div>
             </div>
 
             <input type="hidden" id="formAddPort.id" name="id"/>

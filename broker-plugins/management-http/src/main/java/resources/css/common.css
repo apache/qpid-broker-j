@@ -323,6 +323,11 @@ div .messages {
     margin-right:5px;
 }
 
+.editorPanel
+{
+    margin:5px;
+}
+
 .dialogGrid
 {
     width:100%;
