@@ -755,6 +755,27 @@ define(["dojo/_base/xhr",
                                      util.xhrErrorHandler);
            }
 
+           util.setToBrokerEffectiveContext = function(contextUI, management, callback )
+           {
+               var brokerModelObj = {type: "broker"};
+               management.load(brokerModelObj,
+                               {depth: 0}).then(function(effectiveData)
+                                                {
+                                                  util.setContextData(contextUI,
+                                                                      management,
+                                                                      brokerModelObj,
+                                                                      {},
+                                                                      effectiveData[0],
+                                                                      function()
+                                                                      {
+                                                                         if (callback)
+                                                                         {
+                                                                             callback();
+                                                                         }
+                                                                      });
+                                                });
+           }
+
            util.initialiseFields = function(data, containerNode, metadata, category, type) {
                var attributes = metadata.getMetaData(category, type).attributes;
 

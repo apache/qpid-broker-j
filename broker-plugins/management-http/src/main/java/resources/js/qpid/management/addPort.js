@@ -542,22 +542,7 @@ define(["dojo/dom",
            }
            else
            {
-               var modelObj = {type: "broker"};
-               this.management.load(modelObj).then( function(effectiveData)
-                                                    {
-                                                      util.setContextData( addPort.context,
-                                                                           addPort.management,
-                                                                           modelObj,
-                                                                           {},
-                                                                           effectiveData[0],
-                                                                           function()
-                                                                           {
-                                                                              addPort.context.setData({},
-                                                                                                      addPort.context.effectiveValues,
-                                                                                                      addPort.context.inheritedActualValues);
-                                                                              addPort._showDialog();
-                                                                           });
-                                                    });
+               util.setToBrokerEffectiveContext(addPort.context, addPort.management, addPort._showDialog);
            }
         };
 

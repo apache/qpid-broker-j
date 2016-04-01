@@ -50,6 +50,13 @@
                         </div>
                         <div class="clear"></div>
                         <div id="addAuthenticationProvider.typeFields"></div>
+                        <div class="editorPanel clear"
+                             data-dojo-type="dijit/TitlePane"
+                             data-dojo-props="title: 'Context variables',  open: false">
+                            <div id="addAuthenticationProvider.context"
+                                 data-dojo-type="qpid.common.ContextVariablesEditor"
+                                 data-dojo-props="name: 'context', title: 'Context variables'"></div>
+                        </div>
                     </fieldset>
                 </div>
             </form>

@@ -25,7 +25,6 @@ define(["qpid/common/util", "dojo/domReady!"],
     function Base64MD5PasswordFile(data)
     {
         util.buildUI(data.containerNode, data.parent, "authenticationprovider/filebased/show.html", ["path"], this);
-        data.parent.editButton.set("disabled", false);
     }
 
     Base64MD5PasswordFile.prototype.update = function(data)

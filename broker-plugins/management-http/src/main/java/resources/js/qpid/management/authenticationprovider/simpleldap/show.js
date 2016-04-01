@@ -30,7 +30,6 @@ define(["qpid/common/util", "dojo/domReady!"],
             this.fields.push(name);
         }
         util.buildUI(data.containerNode, data.parent, "authenticationprovider/simpleldap/show.html", this.fields, this);
-        data.parent.editButton.set("disabled", false);
     }
 
     SimpleLdapAuthenticationProvider.prototype.update = function(data)

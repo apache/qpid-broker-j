@@ -25,7 +25,6 @@ define(["qpid/common/util", "dojo/domReady!"],
     function External(data)
     {
         util.buildUI(data.containerNode, data.parent, "authenticationprovider/external/show.html", ["useFullDN"], this);
-        data.parent.editButton.set("disabled", false);
     }
 
     External.prototype.update = function(data)

@@ -35,6 +35,7 @@ define([
         "dijit/form/Button",
         "dojox/grid/EnhancedGrid",
         "dojox/grid/enhanced/_Plugin",
+        "dojox/grid/enhanced/plugins/IndirectSelection",
         "dijit/form/Select",
         "dojox/validate/us",
         "dojox/validate/web",

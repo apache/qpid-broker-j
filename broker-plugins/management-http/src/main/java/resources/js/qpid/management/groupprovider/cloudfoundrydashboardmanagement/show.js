@@ -31,7 +31,6 @@ define(["qpid/common/util",
         {
             this.containerNode = params.containerNode;
             util.buildUI(params.containerNode, params.parent, "groupprovider/cloudfoundrydashboardmanagement/show.html", fieldNames, this);
-            params.parent.editButton.set("disabled", false);
         }
 
         GroupProvider.prototype.update = function(restData)

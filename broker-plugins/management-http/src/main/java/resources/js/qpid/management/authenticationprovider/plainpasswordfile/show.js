@@ -25,7 +25,6 @@ define(["qpid/common/util", "dojo/domReady!"],
     function PlainPasswordFile(data)
     {
         util.buildUI(data.containerNode, data.parent, "authenticationprovider/filebased/show.html", ["path"], this);
-        data.parent.editButton.set("disabled", false);
     }
 
     PlainPasswordFile.prototype.update = function(data)

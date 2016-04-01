@@ -30,7 +30,6 @@ define(["qpid/common/util",
         function AuthenticationProvider(params)
         {
             util.buildUI(params.containerNode, params.parent, "authenticationprovider/oauth2/show.html", fieldNames, this);
-            params.parent.editButton.set("disabled", false);
         }
 
         AuthenticationProvider.prototype.update = function(restData)

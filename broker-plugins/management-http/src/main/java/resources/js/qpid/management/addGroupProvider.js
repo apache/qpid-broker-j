@@ -71,12 +71,12 @@ define([
 
                 this.groupProviderType = registry.byId("addGroupProvider.type");
                 this.groupProviderType.on("change", function(type){that._groupProviderTypeChanged(type);});
+                this.context = registry.byId("addGroupProvider.context");
             },
-            show: function(management, modelObj, actualData)
+            show: function(management, modelObj, effectiveData)
             {
                 this.management = management;
                 this.modelObj = modelObj;
-                this.initialData = lang.clone(actualData);
                 this.groupProviderForm.reset();
 
                 var supportedTypes = management.metadata.getTypesForCategory("GroupProvider");
@@ -84,15 +84,40 @@ define([
                 var supportedTypesStore = util.makeTypeStore(supportedTypes);
                 this.groupProviderType.set("store", supportedTypesStore);
 
-                if (actualData)
+                if (effectiveData)
                 {
                     this._destroyTypeFields(this.containerNode);
-                    this._initFields(actualData);
+                    var that = this;
+                    management.load(modelObj,
+                                    {actuals: true, depth:0}).then(function(data)
+                                                                   {
+                                                                     var actualData = data[0];
+                                                                     that.initialData = lang.clone(actualData);
+                                                                     that._initFields(actualData);
+
+                                                                     that.groupProviderName.set("disabled", true);
+                                                                     that.groupProviderType.set("disabled", true);
+                                                                     that.dialog.set("title", "Edit Group Provider - " + effectiveData.name);
+
+                                                                     util.setContextData(that.context,
+                                                                                         management,
+                                                                                         modelObj,
+                                                                                         actualData,
+                                                                                         effectiveData,
+                                                                                         function(){that.dialog.show();});
+                                                                   });
                 }
-                this.groupProviderName.set("disabled", actualData == null ? false : true);
-                this.groupProviderType.set("disabled", actualData == null ? false : true);
-                this.dialog.set("title", actualData == null ? "Add Group Provider" : "Edit Group Provider - " + actualData.name);
-                this.dialog.show();
+                else
+                {
+                    this.initialData = null;
+                    this.groupProviderName.set("disabled", false );
+                    this.groupProviderType.set("disabled", false );
+                    this.dialog.set("title", "Add Group Provider" );
+                    util.setToBrokerEffectiveContext(this.context,
+                                                     management,
+                                                     lang.hitch(this.dialog, this.dialog.show));
+                }
+
             },
             _initFields:function(data)
             {
@@ -122,7 +147,11 @@ define([
                 if (this.groupProviderForm.validate())
                 {
                     var groupProviderData = util.getFormWidgetValues(this.groupProviderForm, this.initialData);
-
+                    var context = this.context.get("value");
+                    if (context && (!this.initialData || !util.equals(context, this.initialData.context)))
+                    {
+                      groupProviderData["context"] = context;
+                    }
                     var that = this;
 
                     if (this.initialData)
@@ -132,7 +161,7 @@ define([
                     }
                     else
                     {
-                        this.management.create("groupprovider", this.modelObj,groupProviderData).then( function(x){that.dialog.hide();});
+                        this.management.create("groupprovider", this.modelObj, groupProviderData).then( function(x){that.dialog.hide();});
                     }
                 }
                 else

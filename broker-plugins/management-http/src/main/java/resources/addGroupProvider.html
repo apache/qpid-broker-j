@@ -52,6 +52,13 @@
                     <div class="clear">
                         <div id="addGroupProvider.typeFields"></div>
                     </div>
+                    <div class="editorPanel clear"
+                         data-dojo-type="dijit/TitlePane"
+                         data-dojo-props="title: 'Context variables',  open: false">
+                        <div id="addGroupProvider.context"
+                             data-dojo-type="qpid.common.ContextVariablesEditor"
+                             data-dojo-props="name: 'context', title: 'Context variables'"></div>
+                    </div>
                 </div>
             </form>
             <div class="clear">

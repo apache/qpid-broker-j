@@ -45,6 +45,7 @@ define(["dojo/dom",
         /* basic dojox classes */
         "dojox/form/BusyButton", "dojox/form/CheckedMultiSelect",
         "dojox/layout/TableContainer",
+        "qpid/common/ContextVariablesEditor",
         "dojo/domReady!"],
     function (dom, construct, win, registry, parser, array, event, json, Memory, FilteringSelect, connect, domStyle, util, template)
     {
@@ -78,6 +79,7 @@ define(["dojo/dom",
 
                 this.preferencesProviderForm = new qpid.preferencesprovider.PreferencesProviderForm({disabled: true});
                 this.preferencesProviderForm.placeAt(dom.byId("addPreferencesProvider.form"));
+                this.context = registry.byId("addAuthenticationProvider.context");
             },
             show:function(management, modelObj, effectiveData)
             {
@@ -91,10 +93,10 @@ define(["dojo/dom",
                 var authenticationProviderTypeStore = util.makeTypeStore(this.supportedAuthenticationProviderTypes);
                 this.authenticationProviderType.set("store", authenticationProviderTypeStore);
 
+                var that = this;
                 if (effectiveData)
                 {
                     // editing
-                    var that = this;
                     management.load(modelObj, { actuals: true }).then(
                                   function(data)
                                   {
@@ -115,7 +117,12 @@ define(["dojo/dom",
                                         that.preferencesProviderForm.setPreferencesProviderName(actualData.name);
                                     }
                                     that.authenticationProviderName.set("value", actualData.name);
-                                    that._show();
+                                    util.setContextData(that.context,
+                                                           management,
+                                                           modelObj,
+                                                           actualData,
+                                                           effectiveData,
+                                                           function(){that._show();});
                                   });
                 }
                 else
@@ -125,7 +132,7 @@ define(["dojo/dom",
                     this.authenticationProviderName.set("disabled", false);
                     this.initialData = {};
                     this.effectiveData = {};
-                    this._show();
+                    util.setToBrokerEffectiveContext(this.context, management, function(){that._show();});
                 }
             },
             _show: function()
@@ -152,7 +159,11 @@ define(["dojo/dom",
                 if(this.authenticationProviderForm.validate() && this.preferencesProviderForm.validate())
                 {
                     var authenticationProviderData = util.getFormWidgetValues(this.authenticationProviderForm, this.initialData);
-
+                    var context = this.context.get("value");
+                    if (context && (!this.initialData || !util.equals(context, this.initialData.context)))
+                    {
+                      authenticationProviderData["context"] = context;
+                    }
                     var that = this;
 
                     var hideDialog = function(x)
