@@ -792,7 +792,6 @@ public class Connection extends ConnectionInvoker
         public void writerIdle()
         {
             getConnectionDelegate().writerIdle(Connection.this);
-            connectionHeartbeat();
         }
 
         @Override
