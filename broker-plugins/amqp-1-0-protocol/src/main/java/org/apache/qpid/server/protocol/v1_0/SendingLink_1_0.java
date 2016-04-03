@@ -63,6 +63,7 @@ import org.apache.qpid.amqp_1_0.type.transport.Transfer;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
+import org.apache.qpid.filter.selector.TokenMgrError;
 import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.filter.FilterManager;
 import org.apache.qpid.server.filter.JMSSelectorFilter;
@@ -155,7 +156,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
                             actualFilters.put(entry.getKey(), entry.getValue());
                         }
-                        catch (ParseException | SelectorParsingException e)
+                        catch (ParseException | SelectorParsingException | TokenMgrError e)
                         {
                             Error error = new Error();
                             error.setCondition(AmqpError.INVALID_FIELD);
@@ -285,7 +286,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
 
                                 actualFilters.put(entry.getKey(), entry.getValue());
                             }
-                            catch (ParseException | SelectorParsingException e)
+                            catch (ParseException | SelectorParsingException | TokenMgrError e)
                             {
                                 Error error = new Error();
                                 error.setCondition(AmqpError.INVALID_FIELD);
