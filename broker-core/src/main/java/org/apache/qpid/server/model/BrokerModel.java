@@ -78,12 +78,12 @@ public final class BrokerModel extends Model
 
         addRelationship(Broker.class, BrokerLogger.class);
         addRelationship(Broker.class, VirtualHostNode.class);
+        addRelationship(Broker.class, TrustStore.class);
+        addRelationship(Broker.class, KeyStore.class);
         addRelationship(Broker.class, Port.class);
         addRelationship(Broker.class, AccessControlProvider.class);
         addRelationship(Broker.class, AuthenticationProvider.class);
         addRelationship(Broker.class, GroupProvider.class);
-        addRelationship(Broker.class, TrustStore.class);
-        addRelationship(Broker.class, KeyStore.class);
         addRelationship(Broker.class, Plugin.class);
 
         addRelationship(BrokerLogger.class, BrokerLogInclusionRule.class);

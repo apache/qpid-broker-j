@@ -105,6 +105,10 @@ public class ManagedPeerCertificateTrustStoreImpl
     @Override
     public TrustManager[] getTrustManagers()
     {
+        if (_trustManagers == null || _trustManagers.length == 0)
+        {
+            throw new IllegalStateException("Truststore " + this + " defines no trust mangers");
+        }
         return _trustManagers;
     }
 

@@ -170,7 +170,10 @@ public class NonJavaTrustStoreImpl
     @Override
     public TrustManager[] getTrustManagers() throws GeneralSecurityException
     {
-
+        if (_trustManagers == null || _trustManagers.length == 0)
+        {
+            throw new IllegalStateException("Truststore " + this + " defines no trust mangers");
+        }
         return _trustManagers;
     }
 
