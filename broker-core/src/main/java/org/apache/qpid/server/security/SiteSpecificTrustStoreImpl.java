@@ -138,7 +138,7 @@ public class SiteSpecificTrustStoreImpl
     {
         if (_trustManagers == null || _trustManagers.length == 0)
         {
-            throw new IllegalStateException("Truststore " + this + " defines no trust mangers");
+            throw new IllegalStateException("Truststore " + this + " defines no trust managers");
         }
         return _trustManagers;
     }

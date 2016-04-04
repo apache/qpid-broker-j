@@ -300,7 +300,7 @@ public class FileTrustStoreImpl extends AbstractConfiguredObject<FileTrustStoreI
 
             if (trustManagersCol.isEmpty())
             {
-                throw new IllegalStateException("Truststore " + this + " defines no trust mangers");
+                throw new IllegalStateException("Truststore " + this + " defines no trust managers");
             }
             else
             {
