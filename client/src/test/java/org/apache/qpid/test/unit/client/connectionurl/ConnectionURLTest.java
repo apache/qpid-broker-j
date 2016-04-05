@@ -648,5 +648,12 @@ public class ConnectionURLTest extends QpidTestCase
         assertEquals(connectionurl.hashCode(), deserialisedConnectionUrl.hashCode());
 
     }
+
+    public void testPopulateJMSXUserID() throws URLSyntaxException
+    {
+        String url = "amqp://test:test@/test?brokerlist='tcp://localhost:5672'&populateJMSXUserID='false'";
+        ConnectionURL connectionurl = new AMQConnectionURL(url);
+        assertEquals("false", connectionurl.getOption(ConnectionURL.OPTIONS_POPULATE_USER_ID));
+    }
 }
 
