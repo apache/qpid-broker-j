@@ -361,6 +361,8 @@ public class ReplicatedEnvironmentFacadeTest extends QpidTestCase
 
         TestStateChangeListener stateChangeListener = new TestStateChangeListener(State.MASTER);
         ReplicatedEnvironmentFacade replicatedEnvironmentFacade = addNode(stateChangeListener, listener);
+        // Set the node to be primary so that the node will remain master even when the 2nd node is shutdown
+        replicatedEnvironmentFacade.setDesignatedPrimary(true);
         assertTrue("Master was not started", stateChangeListener.awaitForStateChange(LISTENER_TIMEOUT, TimeUnit.SECONDS));
 
         String node2Name = TEST_NODE_NAME + "_2";
