@@ -733,7 +733,7 @@ public class BDBHAVirtualHostNodeImpl extends AbstractVirtualHostNode<BDBHAVirtu
         final VirtualHost<?,?,?> virtualHost = getVirtualHost();
         if (virtualHost!= null)
         {
-            return doAfter(virtualHost.closeAsync(), new Runnable()
+            return doAfter(getChildExecutor(), virtualHost.closeAsync(), new Runnable()
             {
                 @Override
                 public void run()
