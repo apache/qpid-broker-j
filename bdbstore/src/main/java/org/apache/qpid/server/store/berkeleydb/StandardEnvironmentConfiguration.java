@@ -29,4 +29,6 @@ public interface StandardEnvironmentConfiguration
     String getStorePath();
     CacheMode getCacheMode();
     Map<String, String> getParameters();
+
+    int getFacadeParameter(String parameterName, int defaultValue);
 }

@@ -114,14 +114,7 @@ public class ReplicatedEnvironmentFacadeFactory implements EnvironmentFacadeFact
             @Override
             public int getFacadeParameter(final String parameterName, final int defaultValue)
             {
-                if (parent.getContextKeys(false).contains(parameterName))
-                {
-                    return parent.getContextValue(Integer.class, parameterName);
-                }
-                else
-                {
-                    return defaultValue;
-                }
+                return BDBUtils.getContextValue(parent, Integer.class, parameterName, defaultValue);
             }
 
         };

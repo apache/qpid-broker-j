@@ -130,6 +130,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
      */
     private final int _executorShutdownTimeout;
 
+    private final int _logHandlerCleanerProtectedFilesLimit;
+
     static final SyncPolicy LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY = SyncPolicy.SYNC;
     static final SyncPolicy REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY = SyncPolicy.NO_SYNC;
     public static final ReplicaAckPolicy REPLICA_REPLICA_ACKNOWLEDGMENT_POLICY = ReplicaAckPolicy.SIMPLE_MAJORITY;
@@ -259,6 +261,8 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         _remoteNodeMonitorTimeout = configuration.getFacadeParameter(REMOTE_NODE_MONITOR_TIMEOUT_PROPERTY_NAME, DEFAULT_REMOTE_NODE_MONITOR_TIMEOUT);
         _environmentRestartRetryLimit = configuration.getFacadeParameter(ENVIRONMENT_RESTART_RETRY_LIMIT_PROPERTY_NAME, DEFAULT_ENVIRONMENT_RESTART_RETRY_LIMIT);
         _executorShutdownTimeout = configuration.getFacadeParameter(EXECUTOR_SHUTDOWN_TIMEOUT_PROPERTY_NAME, DEFAULT_EXECUTOR_SHUTDOWN_TIMEOUT);
+        _logHandlerCleanerProtectedFilesLimit = _configuration.getFacadeParameter(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME,
+                                                                                  DEFAULT_LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT);
 
         _defaultDurability = new Durability(LOCAL_TRANSACTION_SYNCHRONIZATION_POLICY, REMOTE_TRANSACTION_SYNCHRONIZATION_POLICY, REPLICA_REPLICA_ACKNOWLEDGMENT_POLICY);
         _prettyGroupNodeName = _configuration.getGroupName() + ":" + _configuration.getName();
@@ -1566,7 +1570,9 @@ public class ReplicatedEnvironmentFacade implements EnvironmentFacade, StateChan
         envConfig.setExceptionListener(new ExceptionListener());
         envConfig.setDurability(_defaultDurability);
         envConfig.setCacheMode(_configuration.getCacheMode());
-        envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + _configuration.getName() + "]"));
+
+
+        envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + _configuration.getName() + "]", _logHandlerCleanerProtectedFilesLimit));
 
         LOGGER.info("Cache mode {}", envConfig.getCacheMode());
 

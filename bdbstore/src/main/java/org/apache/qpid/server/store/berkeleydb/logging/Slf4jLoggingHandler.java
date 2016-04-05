@@ -30,6 +30,8 @@ import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.sleepycat.je.cleaner.Cleaner;
 import org.slf4j.Logger;
@@ -38,9 +40,12 @@ import org.slf4j.LoggerFactory;
 
 public class Slf4jLoggingHandler extends Handler
 {
-    private final ConcurrentMap<String,Logger> _loggers = new ConcurrentHashMap<>();
+    private static Pattern NOT_DELETED_DUE_TO_PROTECTION = Pattern.compile("Cleaner has ([0-9]+) files not deleted because they are protected.*");
 
-    public Slf4jLoggingHandler(final String prefix)
+    private final ConcurrentMap<String,Logger> _loggers = new ConcurrentHashMap<>();
+    private final int _logHandlerCleanerProtectedFilesLimit;
+
+    public Slf4jLoggingHandler(final String prefix, final int logHandlerCleanerProtectedFilesLimit)
     {
         setFormatter(new Formatter()
         {
@@ -50,6 +55,7 @@ public class Slf4jLoggingHandler extends Handler
                 return prefix + " " + formatMessage(record);
             }
         });
+        _logHandlerCleanerProtectedFilesLimit = logHandlerCleanerProtectedFilesLimit;
     }
 
     private interface MappedLevel
@@ -193,12 +199,28 @@ public class Slf4jLoggingHandler extends Handler
 
     private MappedLevel convertLevel(LogRecord record)
     {
-        if (record.getLevel() == Level.SEVERE && record.getLoggerName().equals(Cleaner.class.getName()) && record.getMessage().startsWith("Average cleaner backlog has grown from"))
+        if (record.getLevel() == Level.SEVERE && isJECleaner(record)
+            && record.getMessage().startsWith("Average cleaner backlog has grown from"))
         {
             // this is not a real ERROR condition; reducing level to INFO
             return INFO;
         }
+
+        if (record.getLevel() == Level.WARNING && isJECleaner(record))
+        {
+            Matcher matcher = NOT_DELETED_DUE_TO_PROTECTION.matcher(record.getMessage());
+            if (matcher.matches() && matcher.groupCount() > 0 && Integer.parseInt(matcher.group(1)) < _logHandlerCleanerProtectedFilesLimit)
+            {
+                return DEBUG;
+            }
+        }
+
         return convertLevel(record.getLevel());
+    }
+
+    private boolean isJECleaner(final LogRecord record)
+    {
+        return Cleaner.class.getName().equals(record.getLoggerName());
     }
 
     @Override

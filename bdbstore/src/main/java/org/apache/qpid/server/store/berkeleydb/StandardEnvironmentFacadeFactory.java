@@ -71,6 +71,12 @@ public class StandardEnvironmentFacadeFactory implements EnvironmentFacadeFactor
             {
                 return BDBUtils.getEnvironmentConfigurationParameters(parent);
             }
+
+            @Override
+            public int getFacadeParameter(final String parameterName, final int defaultValue)
+            {
+                return BDBUtils.getContextValue(parent, Integer.class, parameterName, defaultValue);
+            }
         };
 
         return new StandardEnvironmentFacade(sec);
