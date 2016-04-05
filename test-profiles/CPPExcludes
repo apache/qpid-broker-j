@@ -105,6 +105,7 @@ org.apache.qpid.server.logging.actors.*
 
 // REST management is used in this test for validation
 org.apache.qpid.server.queue.ModelTest#*
+org.apache.qpid.server.queue.LiveQueueOperationsTest#*
 
 // 0-10 is not supported by the MethodRegistry
 org.apache.qpid.test.unit.close.JavaServerCloseRaceConditionTest#*

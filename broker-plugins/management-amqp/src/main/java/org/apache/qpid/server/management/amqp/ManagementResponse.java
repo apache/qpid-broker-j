@@ -213,6 +213,12 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
+    public void release(final ConsumerImpl release)
+    {
+        release();
+    }
+
+    @Override
     public boolean resend()
     {
         return false;

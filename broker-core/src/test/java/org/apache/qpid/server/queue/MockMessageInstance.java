@@ -158,6 +158,11 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
+    public void release(final ConsumerImpl release)
+    {
+    }
+
+    @Override
     public boolean resend()
     {
         return false;

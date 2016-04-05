@@ -58,10 +58,7 @@ public class MessageAcceptCompletionListener implements Method.CompletionListene
         {
             _sub.getCreditManager().restoreCredit(1l, _messageSize);
         }
-        if(_entry.isAcquiredBy(_consumer) && _entry.lockAcquisition())
-        {
-            _session.acknowledge(_sub, _entry);
-        }
+        _session.acknowledge(_consumer, _sub, _entry);
 
         _session.removeDispositionListener(method);
     }

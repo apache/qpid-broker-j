@@ -209,7 +209,6 @@ public abstract class QueueEntryImpl implements QueueEntry
     {
         return acquire(NON_CONSUMER_ACQUIRED_STATE);
     }
-
     private class DelayedAcquisitionStateListener implements StateChangeListener<MessageInstance, State>
     {
         private final Runnable _task;
@@ -376,35 +375,48 @@ public abstract class QueueEntryImpl implements QueueEntry
         }
     }
 
+    @Override
     public void release()
     {
         EntryState state = _state;
 
         if((state.getState() == State.ACQUIRED) &&_stateUpdater.compareAndSet(this, state, AVAILABLE_STATE))
         {
-
-            if(state instanceof ConsumerAcquiredState || state instanceof LockedAcquiredState)
-            {
-                getQueue().decrementUnackedMsgCount(this);
-            }
-
-            if(!getQueue().isDeleted())
-            {
-                getQueue().requeue(this);
-                if(_stateChangeListeners != null)
-                {
-                    notifyStateChange(QueueEntry.State.ACQUIRED, QueueEntry.State.AVAILABLE);
-                }
-
-            }
-            else if(acquire())
-            {
-                routeToAlternate(null, null);
-            }
+            postRelease(state);
         }
-
     }
 
+    @Override
+    public void release(ConsumerImpl consumer)
+    {
+        EntryState state = _state;
+        if(isAcquiredBy(consumer) && _stateUpdater.compareAndSet(this, state, AVAILABLE_STATE))
+        {
+            postRelease(state);
+        }
+    }
+
+    private void postRelease(final EntryState previousState)
+    {
+        if(previousState instanceof ConsumerAcquiredState || previousState instanceof LockedAcquiredState)
+        {
+            getQueue().decrementUnackedMsgCount(this);
+        }
+
+        if(!getQueue().isDeleted())
+        {
+            getQueue().requeue(this);
+            if(_stateChangeListeners != null)
+            {
+                notifyStateChange(State.ACQUIRED, State.AVAILABLE);
+            }
+
+        }
+        else if(acquire())
+        {
+            routeToAlternate(null, null);
+        }
+    }
 
     @Override
     public QueueConsumer getDeliveredConsumer()
@@ -528,6 +540,11 @@ public abstract class QueueEntryImpl implements QueueEntry
 
     public int routeToAlternate(final Action<? super MessageInstance> action, ServerTransaction txn)
     {
+        if (!isAcquired())
+        {
+            throw new IllegalStateException("Illegal queue entry state. " + this + " is not acquired.");
+        }
+
         final Queue<?> currentQueue = getQueue();
         Exchange<?> alternateExchange = currentQueue.getAlternateExchange();
         boolean autocommit =  txn == null;

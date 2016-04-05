@@ -622,7 +622,7 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
             if(initialUnsettledMap == null || !initialUnsettledMap.containsKey(deliveryTag))
             {
                 queueEntry.setRedelivered();
-                queueEntry.release();
+                queueEntry.release(_consumer);
                 _unsettledMap.remove(deliveryTag);
             }
             else if(initialUnsettledMap.get(deliveryTag) instanceof Outcome)
@@ -661,12 +661,11 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                                 {
                                     public void postCommit()
                                     {
-                                        queueEntry.release();
+                                        queueEntry.release(_consumer);
                                     }
 
                                     public void onRollback()
                                     {
-                                        //To change body of implemented methods use File | Settings | File Templates.
                                     }
                                 });
                     }

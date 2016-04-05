@@ -240,13 +240,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
                                 public void onRollback()
                                 {
-                                    if(entry.isAcquiredBy(getConsumer()))
-                                    {
-                                        entry.release();
-                                        _link.getEndpoint().updateDisposition(tag, (DeliveryState)null, true);
-
-
-                                    }
+                                    entry.release(getConsumer());
+                                    _link.getEndpoint().updateDisposition(tag, (DeliveryState)null, true);
                                 }
                             });
                         }
@@ -257,7 +252,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 }
                 else
                 {
-                    entry.release();
+                    entry.release(getConsumer());
                 }
             }
         }
@@ -429,7 +424,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                                 _link.getEndpoint().updateDisposition(_deliveryTag, modified, true);
                                 _link.getEndpoint().sendFlowConditional();
                                 _queueEntry.incrementDeliveryCount();
-                                _queueEntry.release();
+                                _queueEntry.release(getConsumer());
                             }
                         }
                     });
@@ -441,7 +436,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                     public void postCommit()
                     {
 
-                        _queueEntry.release();
+                        _queueEntry.release(getConsumer());
                         _link.getEndpoint().settle(_deliveryTag);
                     }
 
@@ -459,7 +454,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                     public void postCommit()
                     {
 
-                        _queueEntry.release();
+                        _queueEntry.release(getConsumer());
                         if(Boolean.TRUE.equals(((Modified)outcome).getDeliveryFailed()))
                         {
                             _queueEntry.incrementDeliveryCount();

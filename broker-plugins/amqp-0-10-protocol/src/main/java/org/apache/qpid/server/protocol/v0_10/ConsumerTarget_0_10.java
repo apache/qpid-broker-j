@@ -405,10 +405,9 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     void reject(final MessageInstance entry)
     {
         entry.setRedelivered();
-        entry.routeToAlternate(null, null);
-        if(isAcquiredByConsumer(entry))
+        if (entry.lockAcquisition())
         {
-            entry.delete();
+            entry.routeToAlternate(null, null);
         }
     }
 
@@ -441,7 +440,7 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         }
         else
         {
-            entry.release();
+            entry.release(entry.getAcquiringConsumer());
         }
     }
 
@@ -449,17 +448,20 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     {
         final ServerMessage msg = entry.getMessage();
 
-        int requeues = entry.routeToAlternate(new Action<MessageInstance>()
-                    {
-                        @Override
-                        public void performAction(final MessageInstance requeueEntry)
-                        {
-                            getEventLogger().message(ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(),
-                                                                                   requeueEntry.getOwningResource()
-                                                                                           .getName()));
-                        }
-                    }, null);
-
+        int requeues = 0;
+        if (entry.lockAcquisition())
+        {
+            requeues = entry.routeToAlternate(new Action<MessageInstance>()
+            {
+                @Override
+                public void performAction(final MessageInstance requeueEntry)
+                {
+                    getEventLogger().message(ChannelMessages.DEADLETTERMSG(msg.getMessageNumber(),
+                                                                           requeueEntry.getOwningResource()
+                                                                                   .getName()));
+                }
+            }, null);
+        }
         if (requeues == 0)
         {
             TransactionLogResource owningResource = entry.getOwningResource();
@@ -584,20 +586,6 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
     public boolean isStopped()
     {
         return _stopped.get();
-    }
-
-    public boolean deleteAcquired(MessageInstance entry)
-    {
-        if(isAcquiredByConsumer(entry))
-        {
-            acquisitionRemoved(entry);
-            entry.delete();
-            return true;
-        }
-        else
-        {
-            return false;
-        }
     }
 
     @Override

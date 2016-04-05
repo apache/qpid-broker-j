@@ -1174,6 +1174,12 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
+        public void release(final ConsumerImpl release)
+        {
+
+        }
+
+        @Override
         public boolean resend()
         {
             return false;

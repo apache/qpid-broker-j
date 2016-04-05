@@ -250,6 +250,8 @@ public interface MessageInstance
 
     void release();
 
+    void release(ConsumerImpl release);
+
     boolean resend();
 
     void delete();

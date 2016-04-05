@@ -76,7 +76,6 @@ import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.AMQSessionModel;
 import org.apache.qpid.server.protocol.CapacityChecker;
 import org.apache.qpid.server.protocol.ConsumerListener;
-import org.apache.qpid.server.security.*;
 import org.apache.qpid.server.store.MessageStore;
 import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AMQPConnection;
@@ -524,25 +523,31 @@ public class ServerSession extends Session
         // Broker shouldn't block awaiting close - thus do override this method to do nothing
     }
 
-    public void acknowledge(final ConsumerTarget_0_10 sub, final MessageInstance entry)
+    public void acknowledge(final ConsumerImpl consumer,
+                            final ConsumerTarget_0_10 target,
+                            final MessageInstance entry)
     {
-        _transaction.dequeue(entry.getEnqueueRecord(),
-                             new ServerTransaction.Action()
-                             {
-
-                                 public void postCommit()
+        if (entry.lockAcquisition())
+        {
+            _transaction.dequeue(entry.getEnqueueRecord(),
+                                 new ServerTransaction.Action()
                                  {
-                                     sub.deleteAcquired(entry);
-                                 }
 
-                                 public void onRollback()
-                                 {
-                                     // The client has acknowledge the message and therefore have seen it.
-                                     // In the event of rollback, the message must be marked as redelivered.
-                                     entry.setRedelivered();
-                                     entry.release();
-                                 }
-                             });
+                                     public void postCommit()
+                                     {
+                                         target.acquisitionRemoved(entry);
+                                         entry.delete();
+                                     }
+
+                                     public void onRollback()
+                                     {
+                                         // The client has acknowledge the message and therefore have seen it.
+                                         // In the event of rollback, the message must be marked as redelivered.
+                                         entry.setRedelivered();
+                                         entry.release(consumer);
+                                     }
+                                 });
+        }
     }
 
     Collection<ConsumerTarget_0_10> getSubscriptions()

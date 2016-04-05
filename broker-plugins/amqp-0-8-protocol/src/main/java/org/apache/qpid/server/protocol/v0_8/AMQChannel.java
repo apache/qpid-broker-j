@@ -951,7 +951,7 @@ public class AMQChannel
      * this same channel or to other subscribers.
      *
      */
-    public void requeue()
+    private void requeue()
     {
         // we must create a new map since all the messages will get a new delivery tag when they are redelivered
         Collection<MessageInstance> messagesToBeDelivered = _unacknowledgedMessageMap.cancelAllMessages();
@@ -971,7 +971,7 @@ public class AMQChannel
             unacked.setRedelivered();
 
             // Ensure message is released for redelivery
-            unacked.release();
+            unacked.release(unacked.getAcquiringConsumer());
         }
 
     }
@@ -992,8 +992,7 @@ public class AMQChannel
             unacked.setRedelivered();
 
             // Ensure message is released for redelivery
-            unacked.release();
-
+            unacked.release(unacked.getAcquiringConsumer());
         }
         else
         {
@@ -1033,7 +1032,7 @@ public class AMQChannel
      * Called to resend all outstanding unacknowledged messages to this same channel.
      *
      */
-    public void resend()
+    private void resend()
     {
 
 
@@ -1106,7 +1105,7 @@ public class AMQChannel
             _unacknowledgedMessageMap.remove(deliveryTag);
 
             message.setRedelivered();
-            message.release();
+            message.release(message.getAcquiringConsumer());
 
         }
     }
@@ -1120,7 +1119,7 @@ public class AMQChannel
      *                    acknowledges the single message specified by the delivery tag
      *
      */
-    public void acknowledgeMessage(long deliveryTag, boolean multiple)
+    private void acknowledgeMessage(long deliveryTag, boolean multiple)
     {
         Collection<MessageInstance> ackedMessages = getAckedMessages(deliveryTag, multiple);
         _transaction.dequeue(ackedMessages, new MessageAcknowledgeAction(ackedMessages));
@@ -1253,7 +1252,7 @@ public class AMQChannel
         _uncommittedMessages.clear();
     }
 
-    public void rollback(Runnable postRollbackTask)
+    private void rollback(Runnable postRollbackTask)
     {
 
         // stop all subscriptions
@@ -1282,10 +1281,10 @@ public class AMQChannel
 
         for(MessageInstance entry : _resendList)
         {
-            ConsumerImpl sub = entry.getDeliveredConsumer();
-            if(sub == null || sub.isClosed())
+            ConsumerImpl sub = entry.getAcquiringConsumer();
+            if (sub == null || sub.isClosed())
             {
-                entry.release();
+                entry.release(sub);
             }
             else
             {
@@ -1623,7 +1622,7 @@ public class AMQChannel
                 {
                     for(MessageInstance entry : _ackedMessages)
                     {
-                        entry.release();
+                        entry.release(entry.getAcquiringConsumer());
                     }
                 }
                 finally
@@ -1764,7 +1763,7 @@ public class AMQChannel
         _transactionTimeoutHelper.checkIdleOrOpenTimes(_transaction, openWarn, openClose, idleWarn, idleClose);
     }
 
-    public void deadLetter(long deliveryTag)
+    private void deadLetter(long deliveryTag)
     {
         final UnacknowledgedMessageMap unackedMap = getUnacknowledgedMessageMap();
         final MessageInstance rejectedQueueEntry = unackedMap.remove(deliveryTag);
@@ -1776,9 +1775,10 @@ public class AMQChannel
         else
         {
             final ServerMessage msg = rejectedQueueEntry.getMessage();
-
-
-            int requeues = rejectedQueueEntry.routeToAlternate(new Action<MessageInstance>()
+            int requeues = 0;
+            if (rejectedQueueEntry.lockAcquisition())
+            {
+                requeues = rejectedQueueEntry.routeToAlternate(new Action<MessageInstance>()
                 {
                     @Override
                     public void performAction(final MessageInstance requeueEntry)
@@ -1789,6 +1789,7 @@ public class AMQChannel
                                                                                                         .getName()));
                     }
                 }, null);
+            }
 
             if(requeues == 0)
             {

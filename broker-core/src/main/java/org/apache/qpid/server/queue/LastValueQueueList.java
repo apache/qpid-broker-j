@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.ServerMessage;
 import org.apache.qpid.server.store.MessageEnqueueRecord;
 import org.apache.qpid.server.txn.AutoCommitTransaction;
@@ -214,6 +215,14 @@ public class LastValueQueueList extends OrderedQueueEntryList
         public void release()
         {
             super.release();
+
+            discardIfReleasedEntryIsNoLongerLatest();
+        }
+
+        @Override
+        public void release(ConsumerImpl consumer)
+        {
+            super.release(consumer);
 
             discardIfReleasedEntryIsNoLongerLatest();
         }

@@ -504,6 +504,12 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
+        public void release(ConsumerImpl consumer)
+        {
+            release();
+        }
+
+        @Override
         public boolean resend()
         {
             return false;
