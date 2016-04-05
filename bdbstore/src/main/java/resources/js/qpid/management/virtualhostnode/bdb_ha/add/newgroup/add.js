@@ -32,6 +32,7 @@ define(["dojo/_base/xhr",
   function (xhr, win, parser, dom, domConstruct, json, registry, template, util)
   {
     return {
+        permittedNodesArray: [],
         show: function(data)
         {
           var that=this;
@@ -79,6 +80,11 @@ define(["dojo/_base/xhr",
           registry.byId("addVirtualHostNode.groupName").set("regExpGen", util.nameOrContextVarRegexp);
 
           dom.byId("addVirtualHostNode.uploadFields").style.display = "block";
+
+          this.addVirtualHostNodePermittedNodes._getValueAttr = function()
+                                                                {
+                                                                    return that.permittedNodesArray;
+                                                                };
         },
         _updatePermittedNodesJson: function ()
         {
@@ -98,8 +104,7 @@ define(["dojo/_base/xhr",
               permittedNodes.push(child.value);
             }
           }
-
-          this.addVirtualHostNodePermittedNodes.set("value", permittedNodes);
+          this.permittedNodesArray = permittedNodes;
         },
         _changePermittedNodeList: function(value)
         {

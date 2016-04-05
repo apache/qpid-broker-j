@@ -19,14 +19,16 @@
  *
  */
 define(["qpid/common/util",
+        "dojo/_base/lang",
         "dijit/registry",
         "dojo/store/Memory",
         "dojo/data/ObjectStore",
          "dojo/_base/window",
         "dojo/domReady!"],
-   function (util, registry, Memory, ObjectStore, win)
+   function (util, lang, registry, Memory, ObjectStore, win)
    {
        return {
+           permittedNodesArray: [],
            show: function(data)
            {
               var that = this;
@@ -67,6 +69,11 @@ define(["qpid/common/util",
 
               var that = this;
               this.permittedNodes = registry.byId("editVirtualHostNode.permittedNodes");
+              this.permittedNodesArray = lang.clone(data.permittedNodes);
+              this.permittedNodes._getValueAttr = function()
+                                                  {
+                                                    return that.permittedNodesArray;
+                                                  };
               this.permittedNodesList = registry.byId("editVirtualHostNode.permittedNodesList");
               this.permittedNodesList.on("change", function(value){that._changePermittedNodeList(value);});
 
@@ -177,7 +184,7 @@ define(["qpid/common/util",
                  var child = children.item(i);
                  values.push(children.item(i).value);
               }
-              this.permittedNodes.set("value", values);
+              this.permittedNodesArray = values;
            }
        };
    }
