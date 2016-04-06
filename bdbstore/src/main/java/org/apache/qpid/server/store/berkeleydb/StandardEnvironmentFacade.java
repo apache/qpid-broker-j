@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -102,7 +101,10 @@ public class StandardEnvironmentFacade implements EnvironmentFacade
         envConfig.setAllowCreate(true);
         envConfig.setTransactional(true);
         envConfig.setCacheMode(configuration.getCacheMode());
-        envConfig.setLoggingHandler(new Slf4jLoggingHandler("["+configuration.getName()+"]"));
+        int logHandlerCleanerProtectedFilesLimit = configuration.getFacadeParameter(LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT_PROPERTY_NAME,
+                                                                                    DEFAULT_LOG_HANDLER_CLEANER_PROTECTED_FILES_LIMIT);
+        envConfig.setLoggingHandler(new Slf4jLoggingHandler("[" + configuration.getName() + "]",
+                                                            logHandlerCleanerProtectedFilesLimit));
 
         LOGGER.debug("Cache mode {}", envConfig.getCacheMode());
 

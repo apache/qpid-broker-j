@@ -174,4 +174,19 @@ public class BDBUtils
         }
         return EnvironmentFacade.CACHE_MODE_DEFAULT;
     }
+
+    public static <T> T getContextValue(final ConfiguredObject<?> parent,
+                                        Class<T> paremeterClass,
+                                        final String parameterName,
+                                        final T defaultValue)
+    {
+        if (parent.getContextKeys(false).contains(parameterName))
+        {
+            return parent.getContextValue(paremeterClass, parameterName);
+        }
+        else
+        {
+            return defaultValue;
+        }
+    }
 }
