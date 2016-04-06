@@ -527,7 +527,7 @@ public class ServerSession extends Session
                             final ConsumerTarget_0_10 target,
                             final MessageInstance entry)
     {
-        if (entry.lockAcquisition())
+        if (entry.lockAcquisition(consumer))
         {
             _transaction.dequeue(entry.getEnqueueRecord(),
                                  new ServerTransaction.Action()

@@ -402,10 +402,10 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
                            });
    }
 
-    void reject(final MessageInstance entry)
+    void reject(final ConsumerImpl consumer, final MessageInstance entry)
     {
         entry.setRedelivered();
-        if (entry.lockAcquisition())
+        if (entry.lockAcquisition(consumer))
         {
             entry.routeToAlternate(null, null);
         }
@@ -422,7 +422,9 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
         return false;
     }
 
-    void release(final MessageInstance entry, final boolean setRedelivered)
+    void release(final ConsumerImpl consumer,
+                 final MessageInstance entry,
+                 final boolean setRedelivered)
     {
         if (setRedelivered)
         {
@@ -436,20 +438,20 @@ public class ConsumerTarget_0_10 extends AbstractConsumerTarget implements FlowC
 
         if (isMaxDeliveryLimitReached(entry))
         {
-            sendToDLQOrDiscard(entry);
+            sendToDLQOrDiscard(consumer, entry);
         }
         else
         {
-            entry.release(entry.getAcquiringConsumer());
+            entry.release(consumer);
         }
     }
 
-    protected void sendToDLQOrDiscard(MessageInstance entry)
+    protected void sendToDLQOrDiscard(final ConsumerImpl consumer, MessageInstance entry)
     {
         final ServerMessage msg = entry.getMessage();
 
         int requeues = 0;
-        if (entry.lockAcquisition())
+        if (entry.lockAcquisition(consumer))
         {
             requeues = entry.routeToAlternate(new Action<MessageInstance>()
             {

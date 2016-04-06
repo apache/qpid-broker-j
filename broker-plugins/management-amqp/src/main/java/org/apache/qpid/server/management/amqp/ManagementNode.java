@@ -1118,7 +1118,7 @@ class ManagementNode implements MessageSource, MessageDestination
         }
 
         @Override
-        public boolean lockAcquisition()
+        public boolean lockAcquisition(final ConsumerImpl consumer)
         {
             return false;
         }

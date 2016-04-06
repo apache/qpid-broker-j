@@ -1776,7 +1776,7 @@ public class AMQChannel
         {
             final ServerMessage msg = rejectedQueueEntry.getMessage();
             int requeues = 0;
-            if (rejectedQueueEntry.lockAcquisition())
+            if (rejectedQueueEntry.lockAcquisition(rejectedQueueEntry.getAcquiringConsumer()))
             {
                 requeues = rejectedQueueEntry.routeToAlternate(new Action<MessageInstance>()
                 {

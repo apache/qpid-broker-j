@@ -51,13 +51,13 @@ class ImplicitAcceptDispositionChangeListener implements ServerSession.MessageDi
 
     public void onRelease(boolean setRedelivered)
     {
-        _target.release(_entry, setRedelivered);
+        _target.release(_consumer, _entry, setRedelivered);
 
     }
 
     public void onReject()
     {
-        _target.reject(_entry);
+        _target.reject(_consumer, _entry);
     }
 
     public boolean acquire()

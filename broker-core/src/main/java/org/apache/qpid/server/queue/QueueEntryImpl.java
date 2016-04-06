@@ -291,10 +291,10 @@ public abstract class QueueEntryImpl implements QueueEntry
     }
 
     @Override
-    public boolean lockAcquisition()
+    public boolean lockAcquisition(final ConsumerImpl consumer)
     {
         EntryState state = _state;
-        if(state instanceof ConsumerAcquiredState)
+        if(state instanceof ConsumerAcquiredState && ((ConsumerAcquiredState) state).getConsumer() == consumer)
         {
             LockedAcquiredState lockedState = ((ConsumerAcquiredState) state).getLockedState();
             boolean updated = _stateUpdater.compareAndSet(this, state, lockedState);
@@ -304,7 +304,7 @@ public abstract class QueueEntryImpl implements QueueEntry
             }
             return updated;
         }
-        return state instanceof LockedAcquiredState;
+        return state instanceof LockedAcquiredState && ((LockedAcquiredState) state).getConsumer() == consumer;
     }
 
     @Override

@@ -70,7 +70,7 @@ public interface MessageInstance
 
     boolean acquire(ConsumerImpl sub);
 
-    boolean lockAcquisition();
+    boolean lockAcquisition(final ConsumerImpl consumer);
 
     boolean unlockAcquisition();
 

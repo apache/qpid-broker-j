@@ -157,7 +157,7 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public boolean lockAcquisition()
+    public boolean lockAcquisition(final ConsumerImpl consumer)
     {
         return false;
     }
