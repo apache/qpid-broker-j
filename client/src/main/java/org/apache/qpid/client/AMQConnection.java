@@ -57,6 +57,7 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 
+import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.jndi.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -626,8 +627,15 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             Class partypes[] = new Class[1];
             partypes[0] = AMQConnection.class;
             _delegate = (AMQConnectionDelegate) c.getConstructor(partypes).newInstance(this);
-            //Update our session to use this new protocol version
-            _protocolHandler.getProtocolSession().setProtocolVersion(_delegate.getProtocolVersion());
+
+            if (!ProtocolVersion.v0_10.equals(_delegate.getProtocolVersion()))
+            {
+                _protocolHandler.getProtocolSession().setProtocolVersion(_delegate.getProtocolVersion());
+            }
+
+            // reset state waiter state
+           _protocolHandler.getStateManager().clearLastException();
+            _protocolHandler.getStateManager().changeState(AMQState.CONNECTION_NOT_STARTED);
 
         }
         catch (ClassNotFoundException e)

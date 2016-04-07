@@ -479,8 +479,13 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
                     // suggesting an alternate ProtocolVersion; the server will then close the
                     // connection.
                     ProtocolInitiation protocolInit = (ProtocolInitiation) message;
-                    _suggestedProtocolVersion = protocolInit.checkVersion();
-                    _logger.info("Broker suggested using protocol version: {} ", _suggestedProtocolVersion);
+                    ProtocolVersion checkedVersion = protocolInit.checkVersion();
+                    _logger.info("Broker suggested using protocol version: {} ", checkedVersion);
+
+                    // Create protocol version from reported major and minor versions
+                    // in order to use them on delegate instantiation.
+                    // Currently delegate classes are named based on reported major and minor versions.
+                    _suggestedProtocolVersion = ProtocolVersion.get(protocolInit.getProtocolMajor(), protocolInit.getProtocolMinor());
 
                     // get round a bug in old versions of qpid whereby the connection is not closed
                     _stateManager.changeState(AMQState.CONNECTION_CLOSED);

@@ -25,25 +25,53 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
+import org.apache.qpid.client.AMQConnection;
+import org.apache.qpid.configuration.ClientProperties;
 import org.apache.qpid.framing.HeartbeatBody;
 import org.apache.qpid.framing.ProtocolInitiation;
 import org.apache.qpid.framing.ProtocolVersion;
+import org.apache.qpid.server.configuration.BrokerProperties;
+import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
 import org.apache.qpid.server.protocol.v0_10.ServerDisassembler;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
+import org.apache.qpid.test.utils.TestBrokerConfiguration;
 import org.apache.qpid.transport.network.Frame;
 
 public class ProtocolNegotiationTest extends QpidBrokerTestCase
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolNegotiationTest.class);
     private static final int SO_TIMEOUT = 5000;
     public static final int AMQP_HEADER_LEN = 8;
     private ProtocolVersion _expectedProtocolInit;
 
     public void setUp() throws Exception
     {
+        // restrict broker to support only single protocol
+        TestBrokerConfiguration config = getDefaultBrokerConfiguration();
+        config.setObjectAttribute(Port.class,
+                                  TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT,
+                                  Port.PROTOCOLS,
+                                  Arrays.asList(getBrokerProtocol()));
+        config.setObjectAttribute(Port.class,
+                                  TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT,
+                                  Port.CONTEXT,
+                                  Collections.singletonMap(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null));
+        config.setBrokerAttribute(Broker.CONTEXT,
+                                  Collections.singletonMap(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null));
+
         super.setUp();
         _expectedProtocolInit = convertProtocolToProtocolVersion(getBrokerProtocol());
     }
@@ -185,6 +213,33 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
 
             sender.send(QpidByteBuffer.wrap("NOTANAMPQFRAME".getBytes()));
 
+        }
+    }
+
+    public void testProtocolNegotiationFromUnsupportedVersion() throws Exception
+    {
+        Protocol testProtocol = getBrokerProtocol();
+        String testSupportedProtocols = System.getProperty("test.amqp_port_protocols");
+        if (testSupportedProtocols!= null)
+        {
+            Set<Protocol> availableProtocols = new HashSet<>();
+            List<Object> protocols = new ObjectMapper().readValue(testSupportedProtocols, List.class);
+            for (Object protocol : protocols)
+            {
+                availableProtocols.add(Protocol.valueOf(String.valueOf(protocol)));
+            }
+            availableProtocols.remove(testProtocol);
+
+            for (Protocol protocol: availableProtocols)
+            {
+                String version = protocol.name().substring(5).replace('_', '-');
+                LOGGER.debug("Negotiation version {} represented as {}", protocol.name(), version);
+                setTestSystemProperty(ClientProperties.AMQP_VERSION, version);
+                AMQConnection connection = (AMQConnection)getConnection();
+                LOGGER.debug("Negotiated version {}", connection.getProtocolVersion());
+                assertEquals("Unexpected version negotiated: " + connection.getProtocolVersion(), _expectedProtocolInit, connection.getProtocolVersion());
+                connection.close();
+            }
         }
     }
 
