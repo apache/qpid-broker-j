@@ -312,7 +312,9 @@ public class SynchronousMessageStoreRecovererTest extends QpidTestCase
         Transaction.DequeueRecord dequeueRecord = createMockDequeueRecord(queueId, messageId);
 
         QueueEntry queueEntry = mock(QueueEntry.class);
+        when(queueEntry.acquire()).thenReturn(true);
         when(queue.getMessageOnTheQueue(messageId)).thenReturn(queueEntry);
+
 
         final long format = 1;
         final byte[] globalId = new byte[] {0};

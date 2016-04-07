@@ -388,24 +388,26 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
             if(outcome instanceof Accepted)
             {
-                _queueEntry.lockAcquisition(getConsumer());
-                txn.dequeue(_queueEntry.getEnqueueRecord(),
-                        new ServerTransaction.Action()
-                        {
-
-                            public void postCommit()
-                            {
-                                if(_queueEntry.isAcquiredBy(getConsumer()))
+                if (_queueEntry.lockAcquisition(getConsumer()))
+                {
+                    txn.dequeue(_queueEntry.getEnqueueRecord(),
+                                new ServerTransaction.Action()
                                 {
-                                    _queueEntry.delete();
-                                }
-                            }
 
-                            public void onRollback()
-                            {
+                                    public void postCommit()
+                                    {
+                                        if (_queueEntry.isAcquiredBy(getConsumer()))
+                                        {
+                                            _queueEntry.delete();
+                                        }
+                                    }
 
-                            }
-                        });
+                                    public void onRollback()
+                                    {
+
+                                    }
+                                });
+                }
                 txn.addPostTransactionAction(new ServerTransaction.Action()
                     {
                         public void postCommit()
