@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Connection;
 import javax.jms.ExceptionListener;
@@ -36,7 +35,8 @@ import javax.jms.MessageListener;
 import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
-import javax.naming.NamingException;
+
+import com.google.common.util.concurrent.SettableFuture;
 
 import org.apache.qpid.AMQConnectionClosedException;
 import org.apache.qpid.AMQConnectionFailureException;
@@ -46,7 +46,6 @@ import org.apache.qpid.client.AMQSession;
 import org.apache.qpid.client.BasicMessageConsumer;
 import org.apache.qpid.client.BasicMessageProducer;
 import org.apache.qpid.server.model.VirtualHost;
-import org.apache.qpid.systest.rest.Asserts;
 import org.apache.qpid.systest.rest.RestTestHelper;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -104,7 +103,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
 
         final CountDownLatch connectionCreatorStarted = new CountDownLatch(1);
         final AtomicBoolean shutdown = new AtomicBoolean(false);
-        final AtomicReference<Exception> clientException = new AtomicReference<>();
+        final SettableFuture<Exception> clientException = SettableFuture.create();
         Thread connectionCreator = new Thread(new Runnable(){
 
             @Override
@@ -124,7 +123,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
                     connectionCreatorStarted.countDown();
                 }
             }
-        });
+        }, getTestName() + "_ConnectionCreatingThread");
 
         try
         {
@@ -149,7 +148,7 @@ public class BrokerClosesClientConnectionTest extends QpidBrokerTestCase
             }
             assertEquals("unexpected number of connections after virtual host stopped", 0, connectionCount);
 
-            assertConnectionCloseWasReported(clientException.get(), AMQConnectionFailureException.class);
+            assertConnectionCloseWasReported(clientException.get(20, TimeUnit.SECONDS), AMQConnectionFailureException.class);
         }
         finally
         {
