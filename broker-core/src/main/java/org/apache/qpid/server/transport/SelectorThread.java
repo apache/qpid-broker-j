@@ -302,7 +302,6 @@ class SelectorThread extends Thread
                                 {
                                     _inSelect.set(false);
                                 }
-                                runTasks();
                                 for (NonBlockingConnection connection : processSelectionKeys())
                                 {
                                     if (connection.setScheduled())
@@ -324,7 +323,7 @@ class SelectorThread extends Thread
                                         connections.add(new ConnectionProcessor(_scheduler, connection));
                                     }
                                 }
-
+                                runTasks();
                             }
                         }
                         finally
