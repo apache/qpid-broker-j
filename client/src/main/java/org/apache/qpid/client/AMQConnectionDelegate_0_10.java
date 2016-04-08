@@ -235,7 +235,16 @@ public class AMQConnectionDelegate_0_10 implements AMQConnectionDelegate, Connec
         }
         catch (ProtocolVersionException pe)
         {
-            return ProtocolVersion.get(pe.getMajor(), pe.getMinor());
+            if (pe.getMajor() == 9 && pe.getMinor() == 1)
+            {
+                // 0-10 misinterprets 0-91's header (major/minor/revision) by treating minor as the major, and
+                // revision as the minor. Correct this so that we find the correct delegate.
+                return ProtocolVersion.v0_91;
+            }
+            else
+            {
+                return ProtocolVersion.get(pe.getMajor(), pe.getMinor());
+            }
         }
         catch (ConnectionException ce)
         {

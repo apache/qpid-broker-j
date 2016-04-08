@@ -434,7 +434,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         }
         else if ("0-91".equals(amqpVersion) || "0-9-1".equals(amqpVersion))
         {
-            _delegate = new AMQConnectionDelegate_9_1(this);
+            _delegate = new AMQConnectionDelegate_0_91(this);
         }
         else
         {
@@ -634,15 +634,14 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             }
 
             // reset state waiter state
-           _protocolHandler.getStateManager().clearLastException();
+            _protocolHandler.getStateManager().clearLastException();
             _protocolHandler.getStateManager().changeState(AMQState.CONNECTION_NOT_STARTED);
-
         }
         catch (ClassNotFoundException e)
         {
             throw new AMQProtocolException
                 (AMQConstant.UNSUPPORTED_CLIENT_PROTOCOL_ERROR,
-                 String.format("Protocol: %s.%s is rquired by the broker but is not " +
+                 String.format("Protocol: %s.%s is required by the broker but is not " +
                                "currently supported by this client library implementation",
                                pe.getMajorVersion(), pe.getMinorVersion()),
                  e);

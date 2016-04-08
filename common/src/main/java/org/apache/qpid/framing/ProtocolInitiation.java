@@ -204,8 +204,9 @@ public class ProtocolInitiation extends AMQDataBlock implements EncodableAMQData
         if (!pv.isSupported())
         {
             // TODO: add list of available versions in list to msg...
-            throw new AMQProtocolVersionException("Protocol version " +
-                                                  _protocolMajor + "." + _protocolMinor + " not suppoerted by this version of the Qpid broker.", null);
+            throw new AMQProtocolVersionException("Protocol version " + _protocolMajor + "."
+                                                  + _protocolMinor
+                                                  + " not supported.", null);
         }
         return pv;
     }

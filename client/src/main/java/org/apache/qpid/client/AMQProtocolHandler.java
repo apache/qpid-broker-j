@@ -52,6 +52,7 @@ import org.apache.qpid.framing.AMQBody;
 import org.apache.qpid.framing.AMQDataBlock;
 import org.apache.qpid.framing.AMQFrame;
 import org.apache.qpid.framing.AMQMethodBody;
+import org.apache.qpid.framing.AMQProtocolHeaderException;
 import org.apache.qpid.framing.AMQShortString;
 import org.apache.qpid.framing.ConnectionCloseBody;
 import org.apache.qpid.framing.ConnectionCloseOkBody;
@@ -478,17 +479,21 @@ public class AMQProtocolHandler implements ExceptionHandlingByteBufferReceiver, 
                     // We get here if the server sends a response to our initial protocol header
                     // suggesting an alternate ProtocolVersion; the server will then close the
                     // connection.
-                    ProtocolInitiation protocolInit = (ProtocolInitiation) message;
-                    ProtocolVersion checkedVersion = protocolInit.checkVersion();
-                    _logger.info("Broker suggested using protocol version: {} ", checkedVersion);
+                    try
+                    {
+                        ProtocolInitiation protocolInit = (ProtocolInitiation) message;
+                        _suggestedProtocolVersion = protocolInit.checkVersion();
+                        _logger.debug("Broker suggested using protocol version: {} ", _suggestedProtocolVersion);
 
-                    // Create protocol version from reported major and minor versions
-                    // in order to use them on delegate instantiation.
-                    // Currently delegate classes are named based on reported major and minor versions.
-                    _suggestedProtocolVersion = ProtocolVersion.get(protocolInit.getProtocolMajor(), protocolInit.getProtocolMinor());
+                        // get round a bug in old versions of qpid whereby the connection is not closed
+                        _stateManager.changeState(AMQState.CONNECTION_CLOSED);
 
-                    // get round a bug in old versions of qpid whereby the connection is not closed
-                    _stateManager.changeState(AMQState.CONNECTION_CLOSED);
+                    }
+                    catch (AMQProtocolHeaderException e)
+                    {
+                        _stateManager.error(e);
+                        throw e;
+                    }
                 }
             }
         }
