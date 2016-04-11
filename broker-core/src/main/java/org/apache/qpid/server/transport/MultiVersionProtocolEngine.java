@@ -41,6 +41,7 @@ import org.apache.qpid.server.logging.messages.PortMessages;
 import org.apache.qpid.server.logging.subjects.PortLogSubject;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.SystemConfig;
 import org.apache.qpid.server.model.Transport;
 import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.plugin.ProtocolEngineCreator;
@@ -48,6 +49,7 @@ import org.apache.qpid.server.security.ManagedPeerCertificateTrustStore;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
+import org.apache.qpid.transport.network.Ticker;
 
 public class MultiVersionProtocolEngine implements ProtocolEngine
 {
@@ -184,6 +186,11 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
             throw new IllegalArgumentException("Unsupported socket address class: " + address);
         }
         _sender = network.getSender();
+
+        SlowProtocolHeaderTicker ticker = new SlowProtocolHeaderTicker(_port.getProtocolHandshakeTimeout(),
+                                                                       System.currentTimeMillis());
+        _aggregateTicker.addTicker(ticker);
+        _network.addSchedulingDelayNotificationListeners(ticker);
     }
 
     @Override
@@ -591,8 +598,6 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         @Override
         public void readerIdle()
         {
-            _broker.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Protocol header not sent within timeout period", true));
-            _network.close();
         }
 
         @Override
@@ -615,6 +620,60 @@ public class MultiVersionProtocolEngine implements ProtocolEngine
         {
             return 0;
         }
+    }
+
+    class SlowProtocolHeaderTicker implements Ticker, SchedulingDelayNotificationListener
+    {
+        private final long _allowedTime;
+        private final long _createdTime;
+        private volatile long _accumulatedSchedulingDelay;
+
+        public SlowProtocolHeaderTicker(long allowedTime, long createdTime)
+        {
+            _allowedTime = allowedTime;
+            _createdTime = createdTime;
+        }
+
+        @Override
+        public int getTimeToNextTick(final long currentTime)
+        {
+            return (int) (_createdTime + _allowedTime + _accumulatedSchedulingDelay - currentTime);        }
+
+        @Override
+        public int tick(final long currentTime)
+        {
+            int nextTick = getTimeToNextTick(currentTime);
+            if(nextTick <= 0)
+            {
+                if (isProtocolEstablished())
+                {
+                    _aggregateTicker.removeTicker(this);
+                    _network.removeSchedulingDelayNotificationListeners(this);
+                }
+                else
+                {
+                    _logger.warn("Connection has taken more than {} ms to send complete protocol header.  Closing as possible DoS.",
+                                 _allowedTime);
+                    _broker.getEventLogger().message(ConnectionMessages.IDLE_CLOSE("Protocol header not received within timeout period", true));
+                    _network.close();
+                }
+            }
+            return nextTick;
+        }
+
+        @Override
+        public void notifySchedulingDelay(final long schedulingDelay)
+        {
+            if (schedulingDelay > 0)
+            {
+                _accumulatedSchedulingDelay += schedulingDelay;
+            }
+        }
+    }
+
+    public boolean isProtocolEstablished()
+    {
+        return _delegate instanceof AbstractAMQPConnection;
     }
 
 

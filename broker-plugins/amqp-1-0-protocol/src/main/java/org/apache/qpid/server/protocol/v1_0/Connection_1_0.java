@@ -140,7 +140,6 @@ public class Connection_1_0 implements ConnectionEventListener
             }
             _amqpConnection.setClientId(_connectionEndpoint.getRemoteContainerId());
         }
-        _amqpConnection.getNetwork().setMaxReadIdleMillis(_connectionEndpoint.getDesiredIdleTimeout());
         long idleTimeout = _connectionEndpoint.getIdleTimeout();
         if(idleTimeout != 0L && idleTimeout < MINIMUM_SUPPORTED_IDLE_TIMEOUT)
         {
@@ -154,7 +153,8 @@ public class Connection_1_0 implements ConnectionEventListener
         }
         else
         {
-            _amqpConnection.getNetwork().setMaxWriteIdleMillis(idleTimeout / 2L);
+            long desiredIdleTimeout = _connectionEndpoint.getDesiredIdleTimeout();
+            _amqpConnection.initialiseHeartbeating(idleTimeout / 2L, desiredIdleTimeout);
 
             final VirtualHost vhost = ((AmqpPort) _port).getVirtualHost(host);
             if (vhost == null)

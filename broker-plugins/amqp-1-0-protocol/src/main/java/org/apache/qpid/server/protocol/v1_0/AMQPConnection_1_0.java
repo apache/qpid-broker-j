@@ -659,4 +659,10 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     {
         return _connection.getConnectionEndpoint().isOrderlyClose();
     }
+
+    @Override
+    public void initialiseHeartbeating(final long writerDelay, final long readerDelay)
+    {
+        super.initialiseHeartbeating(writerDelay, readerDelay);
+    }
 }
