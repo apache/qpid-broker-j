@@ -170,11 +170,31 @@ public abstract class QueueEntryImplTestBase extends QpidTestCase
 
         assertFalse("Acquisition should initially be locked",_queueEntry.removeAcquisitionFromConsumer(consumer));
         assertTrue("Should be able to unlock locked queue entry",_queueEntry.unlockAcquisition());
-        assertTrue("Should be able to unlock locked queue entry",_queueEntry.lockAcquisition());
+        assertTrue("Should be able to lock queue entry",_queueEntry.lockAcquisition(consumer));
         assertFalse("Acquisition should not be able to be hijacked when locked",_queueEntry.removeAcquisitionFromConsumer(consumer));
 
         _queueEntry.delete();
         assertTrue("Locked queue entry should be able to be deleted", _queueEntry.isDeleted());
+    }
+
+    public void testLockAcquisitionOwnership()
+    {
+        QueueConsumer consumer1 = newConsumer();
+        QueueConsumer consumer2 = newConsumer();
+
+        _queueEntry.acquire(consumer1);
+        assertTrue("Queue entry should be acquired by consumer1", _queueEntry.acquiredByConsumer());
+
+        assertTrue("Consumer1 relocking should be allowed", _queueEntry.lockAcquisition(consumer1));
+        assertFalse("Consumer2 should not be allowed", _queueEntry.lockAcquisition(consumer2));
+
+        _queueEntry.unlockAcquisition();
+
+        assertTrue("Queue entry should still be acquired by consumer1", _queueEntry.acquiredByConsumer());
+
+        _queueEntry.release(consumer1);
+
+        assertFalse("Queue entry should no longer be acquired by consumer1", _queueEntry.acquiredByConsumer());
     }
 
     /**

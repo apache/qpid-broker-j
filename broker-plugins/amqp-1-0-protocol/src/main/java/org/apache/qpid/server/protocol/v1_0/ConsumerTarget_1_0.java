@@ -240,13 +240,8 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
                                 public void onRollback()
                                 {
-                                    if(entry.isAcquiredBy(getConsumer()))
-                                    {
-                                        entry.release();
-                                        _link.getEndpoint().updateDisposition(tag, (DeliveryState)null, true);
-
-
-                                    }
+                                    entry.release(getConsumer());
+                                    _link.getEndpoint().updateDisposition(tag, (DeliveryState)null, true);
                                 }
                             });
                         }
@@ -257,7 +252,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 }
                 else
                 {
-                    entry.release();
+                    entry.release(getConsumer());
                 }
             }
         }
@@ -393,24 +388,26 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
             if(outcome instanceof Accepted)
             {
-                _queueEntry.lockAcquisition();
-                txn.dequeue(_queueEntry.getEnqueueRecord(),
-                        new ServerTransaction.Action()
-                        {
-
-                            public void postCommit()
-                            {
-                                if(_queueEntry.isAcquiredBy(getConsumer()))
+                if (_queueEntry.lockAcquisition(getConsumer()))
+                {
+                    txn.dequeue(_queueEntry.getEnqueueRecord(),
+                                new ServerTransaction.Action()
                                 {
-                                    _queueEntry.delete();
-                                }
-                            }
 
-                            public void onRollback()
-                            {
+                                    public void postCommit()
+                                    {
+                                        if (_queueEntry.isAcquiredBy(getConsumer()))
+                                        {
+                                            _queueEntry.delete();
+                                        }
+                                    }
 
-                            }
-                        });
+                                    public void onRollback()
+                                    {
+
+                                    }
+                                });
+                }
                 txn.addPostTransactionAction(new ServerTransaction.Action()
                     {
                         public void postCommit()
@@ -429,7 +426,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                                 _link.getEndpoint().updateDisposition(_deliveryTag, modified, true);
                                 _link.getEndpoint().sendFlowConditional();
                                 _queueEntry.incrementDeliveryCount();
-                                _queueEntry.release();
+                                _queueEntry.release(getConsumer());
                             }
                         }
                     });
@@ -441,7 +438,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                     public void postCommit()
                     {
 
-                        _queueEntry.release();
+                        _queueEntry.release(getConsumer());
                         _link.getEndpoint().settle(_deliveryTag);
                     }
 
@@ -459,7 +456,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                     public void postCommit()
                     {
 
-                        _queueEntry.release();
+                        _queueEntry.release(getConsumer());
                         if(Boolean.TRUE.equals(((Modified)outcome).getDeliveryFailed()))
                         {
                             _queueEntry.incrementDeliveryCount();

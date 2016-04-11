@@ -448,7 +448,7 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         }
 
         @Override
-        public boolean lockAcquisition()
+        public boolean lockAcquisition(final ConsumerImpl consumer)
         {
             return false;
         }
@@ -501,6 +501,12 @@ public abstract class AbstractSystemMessageSource implements MessageSource
         public void release()
         {
             delete();
+        }
+
+        @Override
+        public void release(ConsumerImpl consumer)
+        {
+            release();
         }
 
         @Override

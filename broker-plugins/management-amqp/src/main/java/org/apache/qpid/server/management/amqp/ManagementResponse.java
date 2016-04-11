@@ -157,7 +157,7 @@ class ManagementResponse implements MessageInstance
     }
 
     @Override
-    public boolean lockAcquisition()
+    public boolean lockAcquisition(final ConsumerImpl consumer)
     {
         return false;
     }
@@ -210,6 +210,12 @@ class ManagementResponse implements MessageInstance
     public void release()
     {
         delete();
+    }
+
+    @Override
+    public void release(final ConsumerImpl release)
+    {
+        release();
     }
 
     @Override

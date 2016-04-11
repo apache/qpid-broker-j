@@ -62,10 +62,6 @@ public class ExtractResendAndRequeue implements UnacknowledgedMessageMap.Visitor
                 _msgToRequeue.put(deliveryTag, message);
             }
         }
-        else
-        {
-            _log.info("No DeadLetter Queue and requeue not requested so dropping message:" + message);
-        }
 
         // false means continue processing
         return false;

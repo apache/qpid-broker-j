@@ -341,7 +341,7 @@ public class StandardQueueTest extends AbstractQueueTestBase
         }
 
         @Override
-        public boolean lockAcquisition()
+        public boolean lockAcquisition(final ConsumerImpl consumer)
         {
             return true;
         }

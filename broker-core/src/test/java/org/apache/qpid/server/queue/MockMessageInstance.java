@@ -101,7 +101,7 @@ public class MockMessageInstance implements MessageInstance
     }
 
     @Override
-    public boolean lockAcquisition()
+    public boolean lockAcquisition(final ConsumerImpl consumer)
     {
         return false;
     }
@@ -154,6 +154,11 @@ public class MockMessageInstance implements MessageInstance
 
 
     public void release()
+    {
+    }
+
+    @Override
+    public void release(final ConsumerImpl release)
     {
     }
 

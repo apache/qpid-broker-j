@@ -58,6 +58,7 @@ import org.apache.qpid.server.txn.DtxBranch;
 import org.apache.qpid.server.txn.DtxRegistry;
 import org.apache.qpid.server.txn.ServerTransaction;
 import org.apache.qpid.server.util.Action;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.transport.Xid;
 import org.apache.qpid.transport.util.Functions;
 
@@ -356,23 +357,33 @@ public class AsynchronousMessageStoreRecoverer implements MessageStoreRecoverer
                         {
                             final QueueEntry entry = queue.getMessageOnTheQueue(messageId);
 
-                            entry.acquire();
-
-                            branch.dequeue(entry.getEnqueueRecord());
-
-                            branch.addPostTransactionAction(new ServerTransaction.Action()
+                            if (entry.acquire())
                             {
+                                branch.dequeue(entry.getEnqueueRecord());
 
-                                public void postCommit()
+                                branch.addPostTransactionAction(new ServerTransaction.Action()
                                 {
-                                    entry.delete();
-                                }
 
-                                public void onRollback()
-                                {
-                                    entry.release();
-                                }
-                            });
+                                    public void postCommit()
+                                    {
+                                        entry.delete();
+                                    }
+
+                                    public void onRollback()
+                                    {
+                                        entry.release();
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                // Should never happen - dtx recovery is always synchronous and occurs before
+                                // any other message actors are allowed to act on the virtualhost.
+                                throw new ServerScopedRuntimeException(
+                                        "Distributed transaction dequeue handler failed to acquire " + entry +
+                                        " during recovery of queue " + queue);
+
+                            }
                         }
                         else
                         {

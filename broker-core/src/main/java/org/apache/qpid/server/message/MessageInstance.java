@@ -70,7 +70,7 @@ public interface MessageInstance
 
     boolean acquire(ConsumerImpl sub);
 
-    boolean lockAcquisition();
+    boolean lockAcquisition(final ConsumerImpl consumer);
 
     boolean unlockAcquisition();
 
@@ -249,6 +249,8 @@ public interface MessageInstance
     boolean isAcquired();
 
     void release();
+
+    void release(ConsumerImpl release);
 
     boolean resend();
 

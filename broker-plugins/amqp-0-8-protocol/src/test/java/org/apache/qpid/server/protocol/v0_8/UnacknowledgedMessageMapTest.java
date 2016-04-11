@@ -25,11 +25,14 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 
+import org.apache.qpid.server.consumer.ConsumerImpl;
 import org.apache.qpid.server.message.MessageInstance;
 import org.apache.qpid.test.utils.QpidTestCase;
 
 public class UnacknowledgedMessageMapTest extends QpidTestCase
 {
+    private final ConsumerImpl _consumer = mock(ConsumerImpl.class);
+
     public void testDeletedMessagesCantBeAcknowledged()
     {
         UnacknowledgedMessageMap map = new UnacknowledgedMessageMapImpl(100);
@@ -47,8 +50,8 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
         map = new UnacknowledgedMessageMapImpl(100);
         msgs = populateMap(map,expectedSize);
         // simulate some messages being ttl expired
-        when(msgs[2].lockAcquisition()).thenReturn(Boolean.FALSE);
-        when(msgs[4].lockAcquisition()).thenReturn(Boolean.FALSE);
+        when(msgs[2].lockAcquisition(_consumer)).thenReturn(Boolean.FALSE);
+        when(msgs[4].lockAcquisition(_consumer)).thenReturn(Boolean.FALSE);
 
         assertEquals(expectedSize,map.size());
 
@@ -77,7 +80,8 @@ public class UnacknowledgedMessageMapTest extends QpidTestCase
     private MessageInstance createMessageInstance(final int id)
     {
         MessageInstance instance = mock(MessageInstance.class);
-        when(instance.lockAcquisition()).thenReturn(Boolean.TRUE);
+        when(instance.lockAcquisition(_consumer)).thenReturn(Boolean.TRUE);
+        when(instance.getAcquiringConsumer()).thenReturn(_consumer);
         return instance;
     }
 }

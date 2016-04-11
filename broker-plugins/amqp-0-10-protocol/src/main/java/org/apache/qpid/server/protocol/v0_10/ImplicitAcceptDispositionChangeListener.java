@@ -51,27 +51,13 @@ class ImplicitAcceptDispositionChangeListener implements ServerSession.MessageDi
 
     public void onRelease(boolean setRedelivered)
     {
-        if(_entry.isAcquiredBy(_consumer))
-        {
-            _target.release(_entry, setRedelivered);
-        }
-        else
-        {
-            _logger.warn("MessageRelease received for message which has not been acquired (likely client error)");
-        }
+        _target.release(_consumer, _entry, setRedelivered);
+
     }
 
     public void onReject()
     {
-        if(_entry.isAcquiredBy(_consumer))
-        {
-            _target.reject(_entry);
-        }
-        else
-        {
-            _logger.warn("MessageReject received for message which has not been acquired (likely client error)");
-        }
-
+        _target.reject(_consumer, _entry);
     }
 
     public boolean acquire()

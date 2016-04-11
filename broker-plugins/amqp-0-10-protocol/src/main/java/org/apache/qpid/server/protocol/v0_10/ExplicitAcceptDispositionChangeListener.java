@@ -47,40 +47,17 @@ class ExplicitAcceptDispositionChangeListener implements ServerSession.MessageDi
 
     public void onAccept()
     {
-        if(_target != null && _entry.isAcquiredBy(_consumer) && _entry.lockAcquisition())
-        {
-            _target.getSessionModel().acknowledge(_target, _entry);
-        }
-        else
-        {
-            _logger.debug("MessageAccept received for message which is not been acquired - message may have expired or been removed");
-        }
-
+        _target.getSessionModel().acknowledge(_consumer, _target, _entry);
     }
 
     public void onRelease(boolean setRedelivered)
     {
-        if(_target != null && _entry.isAcquiredBy(_consumer))
-        {
-            _target.release(_entry, setRedelivered);
-        }
-        else
-        {
-            _logger.debug("MessageRelease received for message which has not been acquired - message may have expired or been removed");
-        }
+        _target.release(_consumer, _entry, setRedelivered);
     }
 
     public void onReject()
     {
-        if(_target != null && _entry.isAcquiredBy(_consumer))
-        {
-            _target.reject(_entry);
-        }
-        else
-        {
-            _logger.debug("MessageReject received for message which has not been acquired - message may have expired or been removed");
-        }
-
+        _target.reject(_consumer, _entry);
     }
 
     public boolean acquire()
