@@ -121,7 +121,10 @@ public class BasicMessageProducer_0_10 extends BasicMessageProducer
         MessageProperties messageProps = delegate.getMessageProperties();
 
         // On the receiving side, this will be read in to the JMSXUserID as well.
-        messageProps.setUserId(userIDBytes);
+        if (getConnection().isPopulateUserId())
+        {
+            messageProps.setUserId(userIDBytes);
+        }
                 
         if (messageId != null)
         {

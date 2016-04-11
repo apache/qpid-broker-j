@@ -149,6 +149,12 @@
 					<entry>Integer</entry>
 					<entry><para>The payload size beyond which the client will start to compress message payloads.</para></entry>
 				</row>
+				<row xml:id="JMS-Client-0-8-Connection-URL-ConnectionOptions-populateJMSXUserID">
+					<entry>populateJMSXUserID</entry>
+					<entry>boolean</entry>
+					<entry><para>Controls whether a MessageProducer will populate the JMSXUserID value for each sent message using the authenticated username from the connection.
+						It is set to true by default.</para></entry>
+				</row>
 			</tbody>
 		</tgroup>
 	</table>

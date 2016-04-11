@@ -82,6 +82,11 @@ public interface ConnectionURL
     String OPTIONS_TEMPORARY_QUEUE_EXCHANGE = "temporaryQueueExchange";
     String OPTIONS_VERIFY_QUEUE_ON_SEND = "verifyQueueOnSend";
 
+    /**
+     * This option specifies whether User-ID should be attached to each message sent over the connection
+     */
+    String OPTIONS_POPULATE_USER_ID = "populateJMSXUserID";
+
     byte  URL_0_8 = 1;
     byte  URL_0_10 = 2;
 

@@ -149,7 +149,7 @@ public abstract class BasicMessageProducer extends Closeable implements org.apac
                                             : _defaultMandatoryValue
                 : mandatory;
 
-        _userID = connection.getUsername();
+        _userID = connection.isPopulateUserId() ? connection.getUsername() : null;
         setPublishMode();
     }
 

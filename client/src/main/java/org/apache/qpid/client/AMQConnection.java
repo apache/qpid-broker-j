@@ -207,6 +207,10 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
     //By default it's async publish
     private String _syncPublish = "";
 
+    //Indicates whether user-id should be attached to every sent message
+    //By default the user ID is attached
+    private boolean _populateUserId = true;
+
     // Indicates whether to use the old map message format or the
     // new amqp-0-10 encoded format.
     private boolean _useLegacyMapMessageFormat;
@@ -345,6 +349,11 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         {
             // use the default value set for all connections
             _syncPublish = System.getProperty((ClientProperties.SYNC_PUBLISH_PROP_NAME),_syncPublish);
+        }
+
+        if (connectionURL.getOption(ConnectionURL.OPTIONS_POPULATE_USER_ID) != null)
+        {
+            _populateUserId = Boolean.parseBoolean(connectionURL.getOption(ConnectionURL.OPTIONS_POPULATE_USER_ID));
         }
 
         if (connectionURL.getOption(ConnectionURL.OPTIONS_USE_LEGACY_MAP_MESSAGE_FORMAT) != null)
@@ -1748,6 +1757,11 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
     public String getSyncPublish()
     {
         return _syncPublish;
+    }
+
+    public boolean isPopulateUserId()
+    {
+        return _populateUserId;
     }
 
     public boolean isMessageCompressionDesired()
