@@ -54,7 +54,7 @@ public class JMSXUserIDTest extends QpidBrokerTestCase
     {
 
         String url = String.format("amqp://guest:guest@test/?brokerlist='tcp://localhost:%s'&populateJMSXUserID='false'",
-                                   getDefaultBroker().getAmqpPort());
+                                   getPort());
         Connection connection = getConnection(new AMQConnectionURL(url));
         Destination destination = getTestQueue();
         Session session = connection.createSession(true, Session.SESSION_TRANSACTED);
