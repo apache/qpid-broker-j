@@ -30,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.configuration.CommonProperties;
-import org.apache.qpid.framing.FieldTable;
 import org.apache.qpid.transport.ConnectionSettings;
 import org.apache.qpid.transport.ExceptionHandlingByteBufferReceiver;
 import org.apache.qpid.transport.TransportException;
@@ -63,42 +62,11 @@ public class IoNetworkTransport
                                      ExceptionHandlingByteBufferReceiver delegate,
                                      TransportActivity transportActivity)
     {
-        int sendBufferSize = settings.getWriteBufferSize();
-        int receiveBufferSize = settings.getReadBufferSize();
 
         final Socket socket;
         if("tcp".equalsIgnoreCase(settings.getProtocol()))
         {
-            try
-            {
-                socket = new Socket();
-                socket.setReuseAddress(true);
-                socket.setTcpNoDelay(settings.isTcpNodelay());
-                socket.setSendBufferSize(sendBufferSize);
-                socket.setReceiveBufferSize(receiveBufferSize);
-
-                if (LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Socket options SO_RCVBUF : {}, SO_SNDBUF : {}, TCP_NODELAY : {}",
-                                 socket.getReceiveBufferSize(),
-                                 socket.getSendBufferSize(),
-                                 socket.getTcpNoDelay());
-                }
-
-                InetAddress address = InetAddress.getByName(settings.getHost());
-
-                InetSocketAddress socketAddress = new InetSocketAddress(address, settings.getPort());
-                socket.connect(socketAddress, settings.getConnectTimeout());
-
-                LOGGER.debug("Socket connection from {} to {} established",
-                             socket.getLocalSocketAddress(),
-                             socket.getRemoteSocketAddress());
-
-            }
-            catch (IOException e)
-            {
-                throw new TransportException("Error connecting to broker", e);
-            }
+            socket = connectTcp(settings);
         }
         else if("socket".equalsIgnoreCase(settings.getProtocol()))
         {
@@ -113,6 +81,8 @@ public class IoNetworkTransport
             throw new TransportException("Unknown transport '"+settings.getProtocol()+"'");
         }
 
+        int sendBufferSize = settings.getWriteBufferSize();
+        int receiveBufferSize = settings.getReadBufferSize();
         try
         {
             IdleTimeoutTicker ticker = new IdleTimeoutTicker(transportActivity, TIMEOUT);
@@ -135,6 +105,49 @@ public class IoNetworkTransport
         }
 
         return _connection;
+    }
+
+    private Socket connectTcp(final ConnectionSettings settings)
+    {
+        final Socket socket = new Socket();
+        try
+        {
+            socket.setReuseAddress(true);
+            socket.setTcpNoDelay(settings.isTcpNodelay());
+            socket.setSendBufferSize(socket.getSendBufferSize());
+            socket.setReceiveBufferSize(socket.getReceiveBufferSize());
+
+            if (LOGGER.isDebugEnabled())
+            {
+                LOGGER.debug("Socket options SO_RCVBUF : {}, SO_SNDBUF : {}, TCP_NODELAY : {}",
+                             socket.getReceiveBufferSize(),
+                             socket.getSendBufferSize(),
+                             socket.getTcpNoDelay());
+            }
+
+            InetAddress address = InetAddress.getByName(settings.getHost());
+
+            InetSocketAddress socketAddress = new InetSocketAddress(address, settings.getPort());
+            socket.connect(socketAddress, settings.getConnectTimeout());
+
+            LOGGER.debug("Socket connection from {} to {} established",
+                         socket.getLocalSocketAddress(),
+                         socket.getRemoteSocketAddress());
+
+        }
+        catch (IOException e)
+        {
+            try
+            {
+                socket.close();
+            }
+            catch (IOException ignore)
+            {
+            }
+
+            throw new TransportException("Error connecting to broker", e);
+        }
+        return socket;
     }
 
     public void close()
