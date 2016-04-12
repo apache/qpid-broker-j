@@ -23,10 +23,10 @@ package org.apache.qpid.client;
 import org.apache.qpid.framing.ProtocolVersion;
 
 
-public class AMQConnectionDelegate_9_1 extends AMQConnectionDelegate_8_0
+public class AMQConnectionDelegate_0_91 extends AMQConnectionDelegate_8_0
 {
 
-    public AMQConnectionDelegate_9_1(AMQConnection conn)
+    public AMQConnectionDelegate_0_91(AMQConnection conn)
     {
         super(conn);
     }

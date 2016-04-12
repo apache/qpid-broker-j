@@ -57,6 +57,7 @@ import javax.naming.Reference;
 import javax.naming.Referenceable;
 import javax.naming.StringRefAddr;
 
+import org.apache.qpid.client.state.AMQState;
 import org.apache.qpid.jndi.ObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -433,7 +434,7 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
         }
         else if ("0-91".equals(amqpVersion) || "0-9-1".equals(amqpVersion))
         {
-            _delegate = new AMQConnectionDelegate_9_1(this);
+            _delegate = new AMQConnectionDelegate_0_91(this);
         }
         else
         {
@@ -626,15 +627,21 @@ public class AMQConnection extends Closeable implements CommonConnection, Refere
             Class partypes[] = new Class[1];
             partypes[0] = AMQConnection.class;
             _delegate = (AMQConnectionDelegate) c.getConstructor(partypes).newInstance(this);
-            //Update our session to use this new protocol version
-            _protocolHandler.getProtocolSession().setProtocolVersion(_delegate.getProtocolVersion());
 
+            if (!ProtocolVersion.v0_10.equals(_delegate.getProtocolVersion()))
+            {
+                _protocolHandler.getProtocolSession().setProtocolVersion(_delegate.getProtocolVersion());
+            }
+
+            // reset state waiter state
+            _protocolHandler.getStateManager().clearLastException();
+            _protocolHandler.getStateManager().changeState(AMQState.CONNECTION_NOT_STARTED);
         }
         catch (ClassNotFoundException e)
         {
             throw new AMQProtocolException
                 (AMQConstant.UNSUPPORTED_CLIENT_PROTOCOL_ERROR,
-                 String.format("Protocol: %s.%s is rquired by the broker but is not " +
+                 String.format("Protocol: %s.%s is required by the broker but is not " +
                                "currently supported by this client library implementation",
                                pe.getMajorVersion(), pe.getMinorVersion()),
                  e);
