@@ -22,7 +22,6 @@ package org.apache.qpid.server.model;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -30,7 +29,6 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -206,7 +204,8 @@ abstract class AttributeValueConverter<T>
             else if(value instanceof String)
             {
                 String strValue = AbstractConfiguredObject.interpolate(object, (String) value);
-                return convert(strValue.getBytes(StandardCharsets.UTF_8), object);
+                byte[] certificateBytes = BINARY_CONVERTER.convert(strValue, object);
+                return convert(certificateBytes, object);
             }
             else if(value == null)
             {
