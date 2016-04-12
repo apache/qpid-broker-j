@@ -129,6 +129,7 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     private final SettableFuture _noConnectionsRemain = SettableFuture.create();
     private AcceptingTransport _transport;
     private SSLContext _sslContext;
+    private volatile long _protocolHandshakeTimeout;
 
     @ManagedObjectFactoryConstructor
     public AmqpPortImpl(Map<String, Object> attributes, Broker<?> broker)
@@ -198,7 +199,13 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
         attributes.put(VirtualHostAlias.TYPE, HostNameAlias.TYPE_NAME);
         attributes.put(VirtualHostAlias.DURABLE, true);
         createVirtualHostAlias(attributes);
+    }
 
+    @Override
+    protected void onOpen()
+    {
+        super.onOpen();
+        _protocolHandshakeTimeout = getContextValue(Long.class, AmqpPort.PROTOCOL_HANDSHAKE_TIMEOUT);
     }
 
     @Override
@@ -636,5 +643,11 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
     public int getConnectionCount()
     {
         return _connectionCount.get();
+    }
+
+    @Override
+    public long getProtocolHandshakeTimeout()
+    {
+        return _protocolHandshakeTimeout;
     }
 }

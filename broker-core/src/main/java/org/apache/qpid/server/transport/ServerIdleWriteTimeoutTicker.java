@@ -26,35 +26,31 @@ import org.apache.qpid.transport.network.TransportActivity;
 public class ServerIdleWriteTimeoutTicker implements Ticker
 {
     private final TransportActivity _transport;
-    private final int _defaultTimeout;
-    private final ServerNetworkConnection _connection;
+    private final int _writeDelay;
 
-    public ServerIdleWriteTimeoutTicker(ServerNetworkConnection connection, TransportActivity transport,
-                                        int defaultTimeout)
+    public ServerIdleWriteTimeoutTicker(TransportActivity transport, int writeDelay)
     {
-        _connection = connection;
+        if (writeDelay <= 0)
+        {
+            throw new IllegalArgumentException("Write delay should be positive");
+        }
+
         _transport = transport;
-        _defaultTimeout = defaultTimeout;
+        _writeDelay = writeDelay;
     }
 
     @Override
     public int getTimeToNextTick(long currentTime)
     {
-        long maxWriteIdle = _connection.getMaxWriteIdleMillis();
-        if (maxWriteIdle > 0)
-        {
-            long writeTime = _transport.getLastWriteTime() + maxWriteIdle;
-            return (int) (writeTime - currentTime);
-        }
-
-        return _defaultTimeout;
+        long writeTime = _transport.getLastWriteTime() + _writeDelay;
+        return (int) (writeTime - currentTime);
     }
 
     @Override
     public int tick(long currentTime)
     {
         int timeToNextTick = getTimeToNextTick(currentTime);
-        if (_connection.getMaxWriteIdleMillis() > 0 && timeToNextTick <= 0)
+        if (timeToNextTick <= 0)
         {
             _transport.writerIdle();
         }

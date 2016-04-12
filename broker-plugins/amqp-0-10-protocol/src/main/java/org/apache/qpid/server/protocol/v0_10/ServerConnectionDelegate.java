@@ -323,23 +323,12 @@ public class ServerConnectionDelegate extends ServerDelegate
             okMaxFrameSize = getFrameMax();
         }
 
-        final NetworkConnection networkConnection = sconn.getNetworkConnection();
-        if(ok.hasHeartbeat())
+        if(ok.hasHeartbeat() && ok.getHeartbeat() > 0)
         {
             int heartbeat = ok.getHeartbeat();
-            if(heartbeat < 0)
-            {
-                heartbeat = 0;
-            }
-
-            networkConnection.setMaxReadIdleMillis(2000L * heartbeat);
-            networkConnection.setMaxWriteIdleMillis(1000L * heartbeat);
-
-        }
-        else
-        {
-            networkConnection.setMaxReadIdleMillis(0);
-            networkConnection.setMaxWriteIdleMillis(0);
+            long readerIdle = 2000L * heartbeat;
+            long writerIdle = 1000L * heartbeat;
+            sconn.getAmqpConnection().initialiseHeartbeating(writerIdle, readerIdle);
         }
 
         setConnectionTuneOkChannelMax(sconn, okChannelMax);

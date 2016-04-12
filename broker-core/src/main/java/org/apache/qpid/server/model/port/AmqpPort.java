@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
@@ -98,6 +99,13 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
     @ManagedContextDefault(name = PORT_AMQP_OUTBOUND_MESSAGE_BUFFER_SIZE)
     long DEFAULT_PORT_AMQP_OUTBOUND_MESSAGE_BUFFER_SIZE = 1024 * 1024;
 
+
+    String PROTOCOL_HANDSHAKE_TIMEOUT = "qpid.port.protocol_handshake_timeout";
+
+    @SuppressWarnings("unused")
+    @ManagedContextDefault(name = PROTOCOL_HANDSHAKE_TIMEOUT)
+    long DEFAULT_PROTOCOL_HANDSHAKE_TIMEOUT = 2000;
+
     SSLContext getSSLContext();
 
     @ManagedAttribute(defaultValue = "*")
@@ -137,6 +145,11 @@ public interface AmqpPort<X extends AmqpPort<X>> extends ClientAuthCapablePort<X
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Connections")
     int getConnectionCount();
+
+    @DerivedAttribute(description = "Maximum time allowed for a new connection to send a protocol header."
+                                    + " If the connection does not send a protocol header within this time,"
+                                    + " the connection will be aborted.")
+    long getProtocolHandshakeTimeout();
 
     VirtualHostImpl getVirtualHost(String name);
 

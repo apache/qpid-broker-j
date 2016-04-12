@@ -688,4 +688,10 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
             return _broker.getEventLogger();
         }
     }
+
+    @Override
+    public void initialiseHeartbeating(final long writerDelay, final long readerDelay)
+    {
+        super.initialiseHeartbeating(writerDelay, readerDelay);
+    }
 }

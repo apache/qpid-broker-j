@@ -662,6 +662,21 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
         return getSessionModels().size();
     }
 
+    protected void initialiseHeartbeating(final long writerDelay, final long readerDelay)
+    {
+        if (writerDelay > 0)
+        {
+            _aggregateTicker.addTicker(new ServerIdleWriteTimeoutTicker(this, (int) writerDelay));
+            _network.setMaxWriteIdleMillis(writerDelay);
+        }
+
+        if (readerDelay > 0)
+        {
+            _aggregateTicker.addTicker(new ServerIdleReadTimeoutTicker(_network, this, (int) readerDelay));
+            _network.setMaxReadIdleMillis(readerDelay);
+        }
+    }
+
     @Override
     public AMQPConnection<?> getUnderlyingConnection()
     {

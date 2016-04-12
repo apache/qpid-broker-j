@@ -351,4 +351,11 @@ public class AMQPConnection_0_10 extends AbstractAMQPConnection<AMQPConnection_0
     {
         super.logConnectionOpen();
     }
+
+    @Override
+    public void initialiseHeartbeating(final long writerDelay, final long readerDelay)
+    {
+        super.initialiseHeartbeating(writerDelay, readerDelay);
+    }
+
 }

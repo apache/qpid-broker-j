@@ -26,35 +26,33 @@ import org.apache.qpid.transport.network.TransportActivity;
 public class ServerIdleReadTimeoutTicker implements Ticker
 {
     private final TransportActivity _transport;
-    private final int _defaultTimeout;
+    private final int _readDelay;
     private final ServerNetworkConnection _connection;
 
-    public ServerIdleReadTimeoutTicker(ServerNetworkConnection connection, TransportActivity transport,
-                                       int defaultTimeout)
+    public ServerIdleReadTimeoutTicker(ServerNetworkConnection connection, TransportActivity transport, int readDelay)
     {
+        if (readDelay <= 0)
+        {
+            throw new IllegalArgumentException("Read delay should be positive");
+        }
+
         _connection = connection;
         _transport = transport;
-        _defaultTimeout = defaultTimeout;
+        _readDelay = readDelay;
     }
 
     @Override
     public int getTimeToNextTick(long currentTime)
     {
-        final long maxReadIdle = _connection.getMaxReadIdleMillis();
-        if (maxReadIdle > 0)
-        {
-            long nextTime = _transport.getLastReadTime() + maxReadIdle;
-            return (int) (nextTime - (_connection.getScheduledTime() > 0 ?  _connection.getScheduledTime() : currentTime) );
-        }
-
-        return _defaultTimeout;
+        long nextTime = _transport.getLastReadTime() + (long) _readDelay;
+        return (int) (nextTime - (_connection.getScheduledTime() > 0 ?  _connection.getScheduledTime() : currentTime) );
     }
 
     @Override
     public int tick(long currentTime)
     {
         int timeToNextTick = getTimeToNextTick(currentTime);;
-        if (_connection.getMaxReadIdleMillis() > 0 && timeToNextTick <= 0)
+        if (timeToNextTick <= 0)
         {
             _transport.readerIdle();
         }

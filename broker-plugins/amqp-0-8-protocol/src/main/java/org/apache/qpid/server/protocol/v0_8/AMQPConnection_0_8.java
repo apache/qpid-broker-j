@@ -517,20 +517,6 @@ public class AMQPConnection_0_8
         _closingChannelsList.put(channelId, System.currentTimeMillis());
     }
 
-    private void initHeartbeats(int delay)
-    {
-        if (delay > 0)
-        {
-            _network.setMaxWriteIdleMillis(1000L * delay);
-            _network.setMaxReadIdleMillis(1000L * BrokerProperties.HEARTBEAT_TIMEOUT_FACTOR * delay);
-        }
-        else
-        {
-            _network.setMaxWriteIdleMillis(0);
-            _network.setMaxReadIdleMillis(0);
-        }
-    }
-
     private void closeAllChannels()
     {
         try
@@ -1308,7 +1294,12 @@ public class AMQPConnection_0_8
 
         assertState(ConnectionState.AWAIT_TUNE_OK);
 
-        initHeartbeats(heartbeat);
+        if (heartbeat > 0)
+        {
+            long writerDelay = 1000L * heartbeat;
+            long readerDelay = 1000L * BrokerProperties.HEARTBEAT_TIMEOUT_FACTOR * heartbeat;
+            initialiseHeartbeating(writerDelay, readerDelay);
+        }
 
         int brokerFrameMax = getDefaultMaxFrameSize();
         if (brokerFrameMax <= 0)

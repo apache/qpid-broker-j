@@ -47,8 +47,6 @@ public class NonBlockingNetworkTransport
     private static final Logger LOGGER = LoggerFactory.getLogger(NonBlockingNetworkTransport.class);
     private static final int TIMEOUT = Integer.getInteger(CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_PROP_NAME,
                                                           CommonProperties.IO_NETWORK_TRANSPORT_TIMEOUT_DEFAULT);
-    private static final int HANDSHAKE_TIMEOUT = Integer.getInteger(CommonProperties.HANDSHAKE_TIMEOUT_PROP_NAME ,
-                                                                    CommonProperties.HANDSHAKE_TIMEOUT_DEFAULT);
     private final Set<TransportEncryption> _encryptionSet;
     private final MultiVersionProtocolEngineFactory _factory;
     private final ServerSocketChannel _serverSocket;
@@ -167,15 +165,7 @@ public class NonBlockingNetworkTransport
                                                       _scheduler,
                                                       _port);
 
-                    AggregateTicker aggregateTicker = engine.getAggregateTicker();
-
-                    Ticker writeIdleTimeoutTicker = new ServerIdleWriteTimeoutTicker(connection, engine, _timeout);
-                    Ticker readIdleTimeoutTicker = new ServerIdleReadTimeoutTicker(connection, engine, _timeout);
-                    aggregateTicker.addTicker(writeIdleTimeoutTicker);
-                    aggregateTicker.addTicker(readIdleTimeoutTicker);
-
                     engine.setNetworkConnection(connection);
-                    connection.setMaxReadIdleMillis(1000L * HANDSHAKE_TIMEOUT);
 
                     connection.start();
 
