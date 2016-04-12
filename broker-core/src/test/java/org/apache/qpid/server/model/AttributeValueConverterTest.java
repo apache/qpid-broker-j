@@ -28,6 +28,9 @@ import static java.util.Collections.unmodifiableList;
 
 import static org.apache.qpid.server.model.AttributeValueConverter.getConverter;
 
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.text.ParseException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -192,4 +195,32 @@ public class AttributeValueConverterTest extends QpidTestCase
         }
     }
 
+    private static String BASE_64_ENCODED_CERTIFICATE = "MIIC4TCCAkqgAwIBAgIFAKI1xCswDQYJKoZIhvcNAQEFBQAwQTELMAkGA1UE"
+                                                        + "BhMCQ0ExEDAOBgNVBAgTB09udGFyaW8xDTALBgNVBAoTBEFDTUUxETAPBg"
+                                                        + "NVBAMTCE15Um9vdENBMB4XDTE1MDMyMDAxMjEwNVoXDTIwMDMyMDAxMjEw"
+                                                        + "NVowYTELMAkGA1UEBhMCQ0ExCzAJBgNVBAgTAk9OMRAwDgYDVQQHEwdUb3"
+                                                        + "JvbnRvMQ0wCwYDVQQKEwRhY21lMQwwCgYDVQQLEwNhcnQxFjAUBgNVBAMM"
+                                                        + "DWFwcDJAYWNtZS5vcmcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAo"
+                                                        + "IBAQCviLTH6Vl6gP3M6gmmm0sVlCcBFfo2czDTsr93D1cIQpnyY1r3znBd"
+                                                        + "FT3cbXE2LtHeLpnlXc+dTo9/aoUuBCzRIpi4CeaGgD3ggIl9Ws5hUgfxJC"
+                                                        + "WBg7nhzMUlBC2C+VgIUHWHqGPuaQ7VzXOEC7xF0mihMZ4bwvU6wxGK2uUo"
+                                                        + "ruXE/iti/+jtzxjq0PO7ZgJ7GUI2ZDqGMad5OnLur8jz+yKsVdetXlXsOy"
+                                                        + "HmHi/47pRuA115pYiIaZKu1+vs6IBl4HnEUgw5JwIww6oyTDVvXc1kCw0Q"
+                                                        + "CtUZMcNSH2XGhh/zGM/M2Bt2lgEEW0xWTwQcT1J7wnngfbIYbzoupEkRAg"
+                                                        + "MBAAGjQTA/MB0GA1UdDgQWBBRI+VUMRkfNYp/xngM9y720hvxmXTAJBgNV"
+                                                        + "HRMEAjAAMBMGA1UdJQQMMAoGCCsGAQUFBwMCMA0GCSqGSIb3DQEBBQUAA4"
+                                                        + "GBAJnedohhbqoY7O6oAm+hPScBCng/fl0erVjexL9W8l8g5NvIGgioUfjU"
+                                                        + "DvGOnwB5LOoTnZUCRaLFhQFcGFMIjdHpg0qt/QkEFX/0m+849RK6muHT1C"
+                                                        + "NlcXtCFXwPTJ+9h+1auTP+Yp/6ii9SU3W1dzYawy2p9IhkMZEpJaHCLnaC";
+
+    public void testBase64EncodedCertificateConverter() throws ParseException
+    {
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+        AttributeValueConverter<Certificate> certificateConverter = getConverter(Certificate.class, Certificate.class);
+        Certificate certificate = certificateConverter.convert(BASE_64_ENCODED_CERTIFICATE, object);
+        assertTrue("Unexpected certificate", certificate instanceof X509Certificate);
+        X509Certificate x509Certificate = (X509Certificate)certificate;
+        assertEquals("CN=app2@acme.org,OU=art,O=acme,L=Toronto,ST=ON,C=CA", x509Certificate.getSubjectX500Principal().getName());
+        assertEquals("CN=MyRootCA,O=ACME,ST=Ontario,C=CA", x509Certificate.getIssuerX500Principal().getName());
+    }
 }
