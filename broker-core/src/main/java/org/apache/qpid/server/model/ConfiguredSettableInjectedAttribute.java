@@ -25,9 +25,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -218,6 +220,16 @@ public class ConfiguredSettableInjectedAttribute<C extends ConfiguredObject, T>
                 LOGGER.warn("Could not execute the validValues generation method " + _validValuesMethod.getName(), e);
                 return Collections.emptySet();
             }
+        }
+        else if ((_validValues == null || _validValues.length == 0) && getType().isEnum())
+        {
+            final Enum<?>[] constants = (Enum<?>[]) getType().getEnumConstants();
+            List<String> validValues = new ArrayList<>(constants.length);
+            for (Enum<?> constant : constants)
+            {
+                validValues.add(constant.name());
+            }
+            return validValues;
         }
         else
         {

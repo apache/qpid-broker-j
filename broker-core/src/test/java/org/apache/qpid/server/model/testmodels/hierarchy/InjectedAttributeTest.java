@@ -29,8 +29,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
+
 import org.apache.qpid.server.configuration.IllegalConfigurationException;
 import org.apache.qpid.server.model.*;
+import org.apache.qpid.server.model.testmodels.hierarchy.TestCar.Colour;
 import org.apache.qpid.server.plugin.ConfiguredObjectAttributeInjector;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -194,8 +197,52 @@ public class InjectedAttributeTest extends QpidTestCase
         {
             // pass
         }
+    }
 
+    public void testInjectedSettableAttributeEnumValidValues_Unrestricted()
+    {
+        final ConfiguredSettableInjectedAttribute<?, ?> attribute =
+                new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>("trimColour",
+                                                                             Colour.class,
+                                                                             Colour.class,
+                                                                             Colour.BLACK.name(),
+                                                                             false,
+                                                                             true,
+                                                                             false,
+                                                                             "",
+                                                                             false,
+                                                                             "",
+                                                                             "",
+                                                                             null,
+                                                                             "",
+                                                                             null);
 
+        assertEquals("The attribute's valid values should match the set of the enum",
+                     Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"),
+                     attribute.validValues());
+    }
+
+    public void testInjectedSettableAttributeEnumValidValues_RestrictedSet()
+    {
+        final ConfiguredSettableInjectedAttribute<?, ?> attribute =
+                new ConfiguredSettableInjectedAttribute<TestCar<?>, Colour>("trimColour",
+                                                                            Colour.class,
+                                                                            Colour.class,
+                                                                            Colour.BLACK.name(),
+                                                                            false,
+                                                                            true,
+                                                                            false,
+                                                                            "",
+                                                                            false,
+                                                                            "",
+                                                                            "",
+                                                                            new String[] {Colour.GREY.name(), Colour.BLACK.name()},
+                                                                            "",
+                                                                            null);
+
+        assertEquals("The attribute's valid values should match the restricted set defined on the attribute itself",
+                     Lists.newArrayList("GREY", "BLACK"),
+                     attribute.validValues());
     }
 
     public void testInjectedDerivedAttribute() throws Exception

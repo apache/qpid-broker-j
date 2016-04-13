@@ -40,6 +40,12 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     private final SecurityManager _securityManager;
 
     @ManagedAttributeField
+    private Colour _bodyColour;
+
+    @ManagedAttributeField
+    private Colour _interiorColour;
+
+    @ManagedAttributeField
     private Map<String,Object> _parameters;
 
     @ManagedAttributeField
@@ -90,4 +96,17 @@ public class TestKitCarImpl extends AbstractConfiguredObject<TestKitCarImpl>
     {
         return _alternateEngine;
     }
+
+    @Override
+    public Colour getBodyColour()
+    {
+        return _bodyColour;
+    }
+
+    @Override
+    public Colour getInteriorColour()
+    {
+        return _interiorColour;
+    }
+
 }

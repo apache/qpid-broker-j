@@ -30,6 +30,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.apache.qpid.server.configuration.updater.CurrentThreadTaskExecutor;
 import org.apache.qpid.server.model.AbstractConfiguredObject;
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ManagedAttributeField;
 import org.apache.qpid.server.model.ManagedObject;
 import org.apache.qpid.server.model.ManagedObjectFactoryConstructor;
 import org.apache.qpid.server.model.testmodels.TestSecurityManager;
@@ -43,6 +44,12 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
 {
     public static final String TEST_STANDARD_CAR_TYPE = "testpertrolcar";
     private final SecurityManager _securityManager;
+
+    @ManagedAttributeField
+    private Colour _bodyColour;
+
+    @ManagedAttributeField
+    private Colour _interiorColour;
 
     @ManagedObjectFactoryConstructor
     public TestStandardCarImpl(final Map<String, Object> attributes)
@@ -90,5 +97,17 @@ public class TestStandardCarImpl extends AbstractConfiguredObject<TestStandardCa
     public Door openDoor(final Door door)
     {
         return door;
+    }
+
+    @Override
+    public Colour getBodyColour()
+    {
+        return _bodyColour;
+    }
+
+    @Override
+    public Colour getInteriorColour()
+    {
+        return _interiorColour;
     }
 }

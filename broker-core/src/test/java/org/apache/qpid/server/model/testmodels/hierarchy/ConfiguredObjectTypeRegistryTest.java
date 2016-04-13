@@ -30,9 +30,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
+
 import org.apache.qpid.server.model.ConfiguredObject;
+import org.apache.qpid.server.model.ConfiguredObjectAttribute;
 import org.apache.qpid.server.model.ConfiguredObjectOperation;
 import org.apache.qpid.server.model.ConfiguredObjectTypeRegistry;
+import org.apache.qpid.server.model.ConfiguredSettableAttribute;
 import org.apache.qpid.server.model.ManagedInterface;
 import org.apache.qpid.test.utils.QpidTestCase;
 
@@ -120,5 +124,25 @@ public class ConfiguredObjectTypeRegistryTest extends QpidTestCase
         {
             // pass
         }
+    }
+
+    public void testEnumValidValues_UnrestrictedSet() throws Exception
+    {
+        Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes = _typeRegistry.getAttributeTypes(TestCar.class);
+        ConfiguredSettableAttribute<?, ?> attribute = (ConfiguredSettableAttribute<?, ?>) attributeTypes.get("bodyColour");
+
+        assertEquals("The attribute's valid values should match the set of the enum",
+                     Lists.newArrayList("BLACK", "RED", "BLUE", "GREY"),
+                     attribute.validValues());
+    }
+
+    public void testEnumValidValues_RestrictedSet() throws Exception
+    {
+        Map<String, ConfiguredObjectAttribute<?, ?>> attributeTypes = _typeRegistry.getAttributeTypes(TestCar.class);
+        ConfiguredSettableAttribute<?, ?> attribute = (ConfiguredSettableAttribute<?, ?>) attributeTypes.get("interiorColour");
+
+        assertEquals("The attribute's valid values should match the restricted set defined on the attribute itself",
+                   Lists.newArrayList("GREY", "BLACK"),
+                   attribute.validValues());
     }
 }
