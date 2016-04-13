@@ -440,8 +440,7 @@ define(["dojo/_base/declare",
                                                                                                             placeHolder: "Select search scope",
                                                                                                             store: scopeStore,
                                                                                                             value: defaultValue,
-                                                                                                            required: false,
-                                                                                                            "class": "queryDefaultField"
+                                                                                                            required: false
                                                                                                           },
                                                                                                           this.scope);
                                                this._searchScopeSelector.startup();
@@ -455,8 +454,7 @@ define(["dojo/_base/declare",
                                                                                           store: categoryStore,
                                                                                           value: this._category || "queue",
                                                                                           required: true,
-                                                                                          invalidMessage: "Invalid category specified",
-                                                                                          "class": "queryDefaultField"
+                                                                                          invalidMessage: "Invalid category specified"
                                                                                          },
                                                                                          this.categoryName);
                                               categoryList.startup();

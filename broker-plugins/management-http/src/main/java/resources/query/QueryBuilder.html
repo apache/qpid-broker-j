@@ -21,26 +21,6 @@
     <div class="dijit dijitToolbar">
         <label>Scope : <span data-dojo-attach-point="scope"></span></label>
         <label>Category : <span data-dojo-attach-point="categoryName"></span></label>
-        <span data-dojo-attach-point="advancedSearch"  style="display:none;">
-            <label>Select : <textarea  data-dojo-attach-point="selectExpression" type="text"
-                                   data-dojo-type="dijit/form/SimpleTextarea"
-                                   data-dojo-props="name: 'select',
-                                     rows: 1,
-                                     intermediateChanges: true,
-                                     placeHolder: 'comma separated attribute names',
-                                     title: 'Enter comma separated list of attributes to select',
-                                     promptMessage: 'Comma separated list of attributes to select, for example: name,type,description',
-                                     class: 'querySearchField'" rows="1"></textarea></label>
-            <label>Where : <textarea  data-dojo-attach-point="whereExpression" type="text"
-                                  data-dojo-type="dijit/form/SimpleTextarea"
-                                  data-dojo-props="name: 'where',
-                                    rows: 1,
-                                    intermediateChanges: true,
-                                    placeHolder: 'where expression',
-                                    title: 'Enter sql like where conditions',
-                                    promptMessage: 'Use JMS filter syntax to specify where conditions',
-                                    class: 'querySearchField'" rows="1"></textarea></label>
-        </span>
         <span data-dojo-attach-point="standardSearch">
             <span data-dojo-type="qpid/management/query/DropDownSelect"
                  data-dojo-attach-point="selectColumnsButton"
@@ -61,6 +41,34 @@
 
         <div data-dojo-attach-point="whereExpressionBuilder"
              data-dojo-type="qpid/management/query/WhereExpression"></div>
+        <div data-dojo-attach-point="advancedSearch"  style="display:none;">
+            <div class="advancedSearchItem">
+                <div class="advancedSearchLabel">Select :</div>
+                <div class="advancedSearchField">
+                    <textarea data-dojo-attach-point="selectExpression" type="text"
+                               data-dojo-type="dijit/form/SimpleTextarea"
+                               data-dojo-props=" name: 'select',
+                                                 rows: 1,
+                                                 intermediateChanges: true,
+                                                 placeHolder: 'comma separated attribute names',
+                                                 title: 'Enter comma separated list of attributes to select',
+                                                 promptMessage: 'Comma separated list of attributes to select, for example: name,type,description'" rows="1"> </textarea>
+                </div>
+            </div>
+            <div class="advancedSearchItem">
+                <div class="advancedSearchLabel">Where : </div>
+                <div class="advancedSearchField" >
+                    <textarea data-dojo-attach-point="whereExpression" type="text"
+                              data-dojo-type="dijit/form/SimpleTextarea"
+                              data-dojo-props=" name: 'where',
+                                                rows: 1,
+                                                intermediateChanges: true,
+                                                placeHolder: 'where expression',
+                                                title: 'Enter sql like where conditions',
+                                                promptMessage: 'Use JMS filter syntax to specify where conditions'" rows="1"></textarea>
+                </div>
+            </div>
+        </div>
     </div>
     <div data-dojo-attach-point="queryResultGrid"  jsid='grid'></div>
 </div>

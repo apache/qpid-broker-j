@@ -363,16 +363,6 @@ div .messages {
     height:100%;
 }
 
-.queryDefaultField
-{
-    width: 7em;
-}
-
-.querySearchField
-{
-    width: 20%;
-}
-
 .dgrid-column-selected
 {
     width: 2em;
@@ -382,7 +372,6 @@ div .messages {
 {
    width: auto;
 }
-
 
 .selectGrid
 {
@@ -422,8 +411,23 @@ div .messages {
   background-image: none !important;
 }
 
-textarea.querySearchField
+.advancedSearchItem
+{
+   width:100%;
+   margin-left:0px;
+   margin-right:0px;
+   padding: 2px;
+}
+.advancedSearchLabel
+{
+   float: left;
+   padding: 0px 4px 0px 4px;
+}
+.advancedSearchField
+{
+    overflow: hidden;
+}
+.advancedSearchField textarea
 {
   height: 1.2em;
-  margin-bottom: 2px;
 }
