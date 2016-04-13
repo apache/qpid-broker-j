@@ -84,7 +84,7 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                        this.inherited(arguments);
                                        this._postCreate();
                                      },
-                        _getDeletedAttr()
+                        _getDeletedAttr: function()
                                      {
                                        return this._deleted;
                                      },
