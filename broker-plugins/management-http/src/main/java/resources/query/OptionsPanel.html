@@ -1,0 +1,51 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<div id="${id}_contentPanel"
+     data-dojo-type="dijit/layout/ContentPane">
+    <div class="dijitDialogPaneContentArea">
+        <input id="${id}_search"
+               data-dojo-attach-point="search"
+               data-dojo-type="dijit/form/ValidationTextBox"
+               data-dojo-props="name: 'column',
+                                intermediateChanges: true,
+                                placeHolder: 'field name',
+                                title: 'Start typing field name'"  type="text"/></label>
+        <div id="${id}_clearButton"
+             data-dojo-type="dijit/form/Button"
+             data-dojo-attach-point="clearButton"
+             data-dojo-props="iconClass:'dijitIconDelete',
+                              showLabel:false,
+                              title: 'Clear Search'">Clear</div>
+        <div data-dojo-attach-point="optionsGrid" class="selectGrid">
+        </div>
+    </div>
+    <div class="dijitDialogPaneActionBar qpidDialogPaneActionBar">
+        <input id="${id}_cancelButton"
+               data-dojo-attach-point="cancelButton"
+               data-dojo-type="dijit/form/Button"
+               type="button"
+               label="Cancel"/>
+        <input id="${id}_doneButton"
+               data-dojo-attach-point="doneButton"
+               data-dojo-type="dijit/form/Button"
+               type="button" label="Done"/>
+    </div>
+</div>
+
+

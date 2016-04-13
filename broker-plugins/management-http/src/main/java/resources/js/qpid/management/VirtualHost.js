@@ -163,6 +163,15 @@ define(["dojo/parser",
                                     editVirtualHost.show(that.management, that.modelObj);
                                 });
 
+                            that.addQueryButton = registry.byNode(query(".addQuery", containerNode)[0]);
+                            that.addQueryButton.on("click",
+                                 function(e)
+                                 {
+                                   that.controller.show('queryTab', '', that.modelObj);
+                                 }
+                            );
+
+
                             that.vhostUpdater.update(function(){updater.add( that.vhostUpdater );});
                     });
            };

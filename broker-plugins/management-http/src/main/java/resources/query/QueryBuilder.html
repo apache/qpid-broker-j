@@ -1,0 +1,66 @@
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<div>
+    <div class="dijit dijitToolbar">
+        <label>Scope : <span data-dojo-attach-point="scope"></span></label>
+        <label>Category : <span data-dojo-attach-point="categoryName"></span></label>
+        <span data-dojo-attach-point="advancedSearch"  style="display:none;">
+            <label>Select : <textarea  data-dojo-attach-point="selectExpression" type="text"
+                                   data-dojo-type="dijit/form/SimpleTextarea"
+                                   data-dojo-props="name: 'select',
+                                     rows: 1,
+                                     intermediateChanges: true,
+                                     placeHolder: 'comma separated attribute names',
+                                     title: 'Enter comma separated list of attributes to select',
+                                     promptMessage: 'Comma separated list of attributes to select, for example: name,type,description',
+                                     class: 'querySearchField'" rows="1"></textarea></label>
+            <label>Where : <textarea  data-dojo-attach-point="whereExpression" type="text"
+                                  data-dojo-type="dijit/form/SimpleTextarea"
+                                  data-dojo-props="name: 'where',
+                                    rows: 1,
+                                    intermediateChanges: true,
+                                    placeHolder: 'where expression',
+                                    title: 'Enter sql like where conditions',
+                                    promptMessage: 'Use JMS filter syntax to specify where conditions',
+                                    class: 'querySearchField'" rows="1"></textarea></label>
+        </span>
+        <span data-dojo-attach-point="standardSearch">
+            <span data-dojo-type="qpid/management/query/DropDownSelect"
+                 data-dojo-attach-point="selectColumnsButton"
+                 data-dojo-props="title: 'Select fields to display',label:'Columns'">
+            </span>
+
+            <span data-dojo-type="qpid/management/query/DropDownSelect"
+                  data-dojo-attach-point="selectWhereButton"
+                  data-dojo-props="title: 'Specify Filtering Conditions',label:'Conditions'">
+            </span>
+        </span>
+        <div data-dojo-type="dijit/form/Button"
+             data-dojo-attach-point="searchButton"
+             data-dojo-props="title: 'Search'">Search</div>
+        <div data-dojo-type="dijit/form/Button"
+             data-dojo-attach-point="modeButton"
+             data-dojo-props="title:'Switch to \'Advanced\' search using SQL-like expressions'">Advanced</div>
+
+        <div data-dojo-attach-point="whereExpressionBuilder"
+             data-dojo-type="qpid/management/query/WhereExpression"></div>
+    </div>
+    <div data-dojo-attach-point="queryResultGrid"  jsid='grid'></div>
+</div>

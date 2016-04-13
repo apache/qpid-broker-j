@@ -541,5 +541,101 @@ define(["dojo/_base/lang",
         return deferred.promise;
     };
 
+    // summary:
+    //   Sends query request
+    //   query: query Object?
+    //             is a JSON object specifying the hierarchy
+    //             It can have the following fields:
+    //               where: String?
+    //                     sql like expression containing 'where' conditions
+    //               select: String?
+    //                     coma separated list of fields to select
+    //               category: String?
+    //                     category of the object
+    //               virtualhost: String?
+    //                     virtualhost name
+    //
+    //   requestOptions: Object?
+    //               is optional request settings
+    //
+    // returns: promise of type dojo.promise.Promise
+    //      Promise returned by dojo.request.xhr with modified then method allowing to use default error handler if none is specified.
+    Management.prototype.query = function(query, requestOptions)
+    {
+        var url = "api/latest/"  + (query.parent &&  query.parent.type === "virtualhost" ?
+                                    "queryvhost/" +  this.objectToPath({parent: query.parent}) :
+                                    "querybroker") +  (query.category ? "/" + query.category  : "");
+        url =  this.getFullUrl(url);
+        var request = {url: url};
+
+        if (requestOptions)
+        {
+            lang.mixin(request,requestOptions);
+        }
+
+        // id should be selected always
+        var select = "id";
+        if (query.select)
+        {
+           select =  select + "," + query.select;
+        }
+        var parameters = {select: select};
+        if (query.where)
+        {
+          parameters.where=query.where
+        }
+        request.query = parameters;
+        var promise = this.get(request);
+        if (query.select && query.transformIntoObjects)
+        {
+            var deferred = new Deferred();
+            promise.then( function(data)
+                          {
+                            if (data)
+                            {
+                                var transformed = [];
+                                try
+                                {
+                                    if (data.results)
+                                    {
+                                        var headers = select.split(",");
+                                        for (var i in headers)
+                                        {
+                                            headers[i] = headers[i].replace(/^\s+|\s+$/gm,'');
+                                        }
+                                        for (var r in data.results)
+                                        {
+                                            var results = data.results[r];
+                                            var object = {};
+                                            for (var i in headers)
+                                            {
+                                                var headerName = headers[i];
+                                                var headerValue = results[i];
+                                                object[headerName] = headerValue;
+                                            }
+                                            transformed.push(object);
+                                        }
+                                    }
+                                }
+                                finally
+                                {
+                                  deferred.resolve(transformed);
+                                }
+                            }
+                            else
+                            {
+                                deferred.reject({message: "User identifier is not found!"
+                                                          + " Authentication failed!"});
+                            }
+                          },
+                          function(error)
+                          {
+                            deferred.reject(error);
+                          });
+            return deferred.promise;
+        }
+        return promise;
+    };
+
     return Management;
   });
