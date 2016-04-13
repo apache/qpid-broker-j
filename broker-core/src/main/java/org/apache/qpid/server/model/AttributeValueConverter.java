@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -507,6 +508,53 @@ abstract class AttributeValueConverter<T>
 
     };
 
+    static final AttributeValueConverter<Date> DATE_CONVERTER = new AttributeValueConverter<Date>()
+    {
+
+        @Override
+        public Date convert(final Object value, final ConfiguredObject object)
+        {
+            if(value instanceof Date)
+            {
+                return (Date) value;
+            }
+            else if(value instanceof Number)
+            {
+                return new Date(((Number) value).longValue());
+            }
+            else if(value instanceof String)
+            {
+                String interpolated = AbstractConfiguredObject.interpolate(object, (String) value);
+
+                try
+                {
+                    return new Date(Long.valueOf(interpolated));
+                }
+                catch(NumberFormatException e)
+                {
+                    try
+                    {
+                        return DatatypeConverter.parseDateTime(interpolated).getTime();
+                    }
+                    catch (IllegalArgumentException e1)
+                    {
+                        throw new IllegalArgumentException("Cannot convert string '" + interpolated + "' to a Date."
+                                                           + " It is neither a ISO-8601 date or date time nor a string"
+                                                           + " containing a numeric value.");
+                    }
+                }
+            }
+            else if(value == null)
+            {
+                return null;
+            }
+            else
+            {
+                throw new IllegalArgumentException("Cannot convert type " + value.getClass() + " to a Date");
+            }
+        }
+    };
+
     private static <T> T convertFromJson(final String value, final ConfiguredObject object, final Class<T> valueType)
     {
         String interpolated = AbstractConfiguredObject.interpolate(object, value);
@@ -550,6 +598,10 @@ abstract class AttributeValueConverter<T>
         else if(type == Boolean.class)
         {
             return (AttributeValueConverter<X>) BOOLEAN_CONVERTER;
+        }
+        else if(type == Date.class)
+        {
+            return (AttributeValueConverter<X>) DATE_CONVERTER;
         }
         else if(type == UUID.class)
         {

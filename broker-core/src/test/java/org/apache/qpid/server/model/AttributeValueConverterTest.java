@@ -32,11 +32,13 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.qpid.server.model.testmodels.hierarchy.TestModel;
 import org.apache.qpid.server.model.testmodels.hierarchy.TestCar;
@@ -92,6 +94,40 @@ public class AttributeValueConverterTest extends QpidTestCase
         {
             // PASS
         }
+    }
+
+    public void testDateConverter() throws Exception
+    {
+        final long nowMillis = System.currentTimeMillis();
+        final Date now = new Date(nowMillis);
+
+        ConfiguredObject object = _objectFactory.create(TestCar.class, _attributes);
+
+        AttributeValueConverter<Date> converter = getConverter(Date.class, Date.class);
+
+        assertNull("Cannot convert null", converter.convert(null, object));
+
+        assertEquals("Cannot convert date expressed as Date", now, converter.convert(now, object));
+
+        assertEquals("Cannot convert date expressed as Number", new Date(nowMillis), converter.convert(nowMillis, object));
+        assertEquals("Cannot convert date expressed as String containing Number", new Date(nowMillis), converter.convert(""+nowMillis, object));
+
+        final String iso8601DateTime = "1970-01-01T00:00:01Z";
+        assertEquals("Cannot convert date expressed as ISO8601 date time", new Date(1000), converter.convert(iso8601DateTime, object));
+
+        final String iso8601Date = "1970-01-02Z";
+        assertEquals("Cannot convert date expressed as ISO8601 date", new Date(TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS)), converter.convert(iso8601Date, object));
+
+        try
+        {
+            converter.convert("elephant", object);
+            fail("Exception not thrown");
+        }
+        catch (IllegalArgumentException e)
+        {
+            // PASS
+        }
+
     }
 
     public void testNonGenericCollectionConverter()
