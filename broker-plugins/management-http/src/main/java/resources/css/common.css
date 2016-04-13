@@ -431,3 +431,7 @@ div .messages {
 {
   height: 1.2em;
 }
+.criteriaCondition
+{
+  vertical-align: top;
+}

@@ -38,7 +38,7 @@ define([
   "dijit/form/ValidationTextBox",
   "dijit/form/TextBox",
   "dijit/form/NumberTextBox",
-  "dijit/form/Select",
+  "dijit/form/MultiSelect",
   "dojo/domReady!"
 ],
 function(declare, array, lang, string, domConstruct, domStyle, template, entities, Evented)
@@ -59,6 +59,8 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
     var LESS_EQUAL_THAN = "<=";
     var GREATER_THAN = ">";
     var GREATER_EQUAL_THAN = ">=";
+    var IN = "in"
+    var NOT_IN = "not in"
 
     var CONDITIONS_NOT_NEEDING_WIDGET = [ANY,IS_NULL,IS_NOT_NULL];
     var BOOLEAN_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,EQUAL,NOT_EQUAL];
@@ -66,7 +68,7 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                              NOT_STARTS_WITH,NOT_ENDS_WIDTH];
     var NUMERIC_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,EQUAL,NOT_EQUAL,LESS_THAN,LESS_EQUAL_THAN,GREATER_THAN,
                               GREATER_EQUAL_THAN];
-    var ENUM_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,EQUAL,NOT_EQUAL];
+    var ENUM_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,IN,NOT_IN];
 
     var sqlEscape =                    function(value)
                                        {
@@ -122,6 +124,36 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                                           {
                                             var exp = (condition === NOT_ENDS_WIDTH ? " " + NOT : "");
                                             return name + exp  + " like '%" + sqlLikeEscape(value) + "' escape '\\'";
+                                          }
+                                          else if (condition === IN  || condition === NOT_IN)
+                                          {
+                                            if (!value)
+                                            {
+                                              return undefined;
+                                            }
+
+                                            var exp = condition + " (";
+                                            if (lang.isArray(value))
+                                            {
+                                              if (!value.length)
+                                              {
+                                                return undefined;
+                                              }
+                                              for(var i=0;i<value.length;i++)
+                                              {
+                                                 if (i>0)
+                                                 {
+                                                   exp = exp + ",";
+                                                 }
+                                                 exp = exp + sqlValue(value[i], type);
+                                              }
+                                            }
+                                            else
+                                            {
+                                              exp = exp + sqlValue(value, type);
+                                            }
+                                            exp = exp + " )";
+                                            return name + " " + exp;
                                           }
                                           else
                                           {
@@ -216,10 +248,12 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                                             var domNode = domConstruct.create("div", {}, this.criteriaValueInputContainer);
                                             if (this.typeValidValues && this.typeValidValues.length)
                                             {
-                                                var options = arrayToOptions(this.typeValidValues, this.typeValidValues[0]);
-                                                this.valueEditor = new dijit.form.Select({options: options,
-                                                                                          disabled: true},
-                                                                                          domNode);
+                                                for (var i=0;i<this.typeValidValues.length;i++)
+                                                {
+                                                  var val = this.typeValidValues[i];
+                                                  domConstruct.create("option", {innerHTML: entities.encode(String(val)), value: val}, domNode);
+                                                }
+                                                this.valueEditor = new dijit.form.MultiSelect({disabled: true}, domNode);
                                             }
                                             else
                                             {
@@ -344,7 +378,16 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                                         {
                                           if (!this.valueEditor.get("disabled"))
                                           {
-                                            return this.valueEditor.isValid();
+                                            if (this.valueEditor.isValid)
+                                            {
+                                              return this.valueEditor.isValid();
+                                            }
+
+                                            if (this.valueEditor instanceof dijit.form.MultiSelect)
+                                            {
+                                              var value = this.valueEditor.value;
+                                              return value && value.length;
+                                            }
                                           }
                                           return true;
                                         }
