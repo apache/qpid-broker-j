@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,6 +99,16 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
             newCmd[cmd.length + 2] = brokerOptions.getManagementModePassword();
             cmd = newCmd;
         }
+
+        if (brokerOptions.getInitialSystemProperties() != null)
+        {
+            String[] newCmd = new String[cmd.length + 2];
+            System.arraycopy(cmd, 0, newCmd, 0, cmd.length);
+            newCmd[cmd.length] = "-props";
+            newCmd[cmd.length + 1] = brokerOptions.getInitialSystemProperties();
+            cmd = newCmd;
+        }
+
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Map<String, String> processEnv = pb.environment();
