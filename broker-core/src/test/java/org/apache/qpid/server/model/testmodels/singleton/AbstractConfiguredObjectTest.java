@@ -21,6 +21,7 @@ package org.apache.qpid.server.model.testmodels.singleton;
 import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -205,11 +206,40 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         attributes.put(TestSingleton.NAME, objectName);
         attributes.put(TestSingleton.INT_VALUE, 6.1);
 
-        TestSingleton object1 = _model.getObjectFactory().create(TestSingleton.class,
-                                                                     attributes);
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
 
-        assertEquals(objectName, object1.getName());
-        assertEquals(6, object1.getIntValue());
+        assertEquals(objectName, object.getName());
+        assertEquals(6, object.getIntValue());
+    }
+
+    public void testDateAttributeFromMillis()
+    {
+        final String objectName = "myName";
+        long now = System.currentTimeMillis();
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, objectName);
+        attributes.put(TestSingleton.DATE_VALUE, now);
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+
+        assertEquals(objectName, object.getName());
+        assertEquals(new Date(now), object.getDateValue());
+    }
+
+    public void testDateAttributeFromIso8601()
+    {
+        final String objectName = "myName";
+        String date = "1970-01-01Z";
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, objectName);
+        attributes.put(TestSingleton.DATE_VALUE, date);
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+
+        assertEquals(objectName, object.getName());
+        assertEquals(new Date(0), object.getDateValue());
     }
 
     public void testStringAttributeValueFromContextVariableProvidedBySystemProperty()
@@ -793,6 +823,26 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertEquals(2, listenerCount.get());
         assertEquals("${foo3}", object.getStringValue());
         assertEquals("${foo3}", object.getActualAttributes().get(TestSingleton.STRING_VALUE));
+    }
+
+    public void testCreateAndLastUpdateDate() throws Exception
+    {
+        final String objectName = "myName";
+        final Date now = new Date();
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, objectName);
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+
+        Date createdTime = object.getCreatedTime();
+        assertTrue("Create date not populated", createdTime.compareTo(now) >= 0);
+        assertEquals("Last updated not populated", createdTime, object.getLastUpdatedTime());
+
+        Thread.sleep(10);
+        object.setAttributes(Collections.singletonMap(TestSingleton.DESCRIPTION, "desc"));
+        assertEquals("Created time should not be updated by update", createdTime, object.getCreatedTime());
+        assertTrue("Last update time should be updated by update", object.getLastUpdatedTime().compareTo(createdTime) > 0);
     }
 
     private static class NoopConfigurationChangeListener implements ConfigurationChangeListener

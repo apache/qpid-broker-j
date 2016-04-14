@@ -23,6 +23,7 @@ package org.apache.qpid.server.model;
 import java.lang.reflect.Type;
 import java.security.AccessControlException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -92,13 +93,13 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
     String getLastUpdatedBy();
 
     @DerivedAttribute( persist = true )
-    long getLastUpdatedTime();
+    Date getLastUpdatedTime();
 
     @DerivedAttribute( persist = true )
     String getCreatedBy();
 
     @DerivedAttribute( persist = true )
-    long getCreatedTime();
+    Date getCreatedTime();
 
 
     /**

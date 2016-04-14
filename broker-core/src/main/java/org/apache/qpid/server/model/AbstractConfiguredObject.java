@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -133,13 +134,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
 
     @ManagedAttributeField
-    private long _createdTime;
+    private Date _createdTime;
 
     @ManagedAttributeField
     private String _createdBy;
 
     @ManagedAttributeField
-    private long _lastUpdatedTime;
+    private Date _lastUpdatedTime;
 
     @ManagedAttributeField
     private String _lastUpdatedBy;
@@ -771,7 +772,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
                         _lastUpdatedBy = currentUserName;
                         _createdBy = currentUserName;
                     }
-                    final long currentTime = System.currentTimeMillis();
+                    final Date currentTime = new Date();
                     _attributes.put(LAST_UPDATED_TIME, currentTime);
                     _attributes.put(CREATED_TIME, currentTime);
                     _lastUpdatedTime = currentTime;
@@ -1631,7 +1632,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
             _attributes.put(LAST_UPDATED_BY, currentUser.getName());
             _lastUpdatedBy = currentUser.getName();
         }
-        final long currentTime = System.currentTimeMillis();
+        final Date currentTime = new Date();
         _attributes.put(LAST_UPDATED_TIME, currentTime);
         _lastUpdatedTime = currentTime;
 
@@ -2685,7 +2686,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
     @Override
-    public final long getLastUpdatedTime()
+    public final Date getLastUpdatedTime()
     {
         return _lastUpdatedTime;
     }
@@ -2697,7 +2698,7 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
     }
 
     @Override
-    public final long getCreatedTime()
+    public final Date getCreatedTime()
     {
         return _createdTime;
     }

@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,11 +46,12 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
     String SECURE_VALUE = "secureValue";
     String ENUMSET_VALUES = "enumSetValues";
     String IMMUTABLE_VALUE = "immutableValue";
+    String DATE_VALUE = "dateValue";
 
     String TEST_CONTEXT_DEFAULT = "TEST_CONTEXT_DEFAULT";
+
     @ManagedContextDefault(name = TEST_CONTEXT_DEFAULT)
     String testGlobalDefault = "default";
-
     String TEST_CONTEXT_DEFAULT_WITH_THISREF = "TEST_CONTEXT_DEFAULT_WITH_THISREF";
     @ManagedContextDefault(name = TEST_CONTEXT_DEFAULT_WITH_THISREF)
     String testGlobalDefaultWithThisRef = "a context var that refers to an attribute ${this:name}";
@@ -78,6 +80,9 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
 
     @ManagedAttribute
     int getIntValue();
+
+    @ManagedAttribute
+    Date getDateValue();
 
     @ManagedAttribute(validValues = {VALID_VALUE1, VALID_VALUE2} )
     String getValidValue();

@@ -18,6 +18,7 @@
  */
 package org.apache.qpid.server.model.testmodels.singleton;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -78,6 +79,9 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
 
     @ManagedAttributeField
     private List<String> _listValueWithPattern;
+
+    @ManagedAttributeField
+    private Date _dateValue;
 
     @ManagedObjectFactoryConstructor
     public TestSingletonImpl(final Map<String, Object> attributes)
@@ -189,5 +193,11 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     public List<String> getListValueWithPattern()
     {
         return _listValueWithPattern;
+    }
+
+    @Override
+    public Date getDateValue()
+    {
+        return _dateValue;
     }
 }

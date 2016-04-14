@@ -95,7 +95,9 @@ public class AmqpPortImpl extends AbstractClientAuthCapablePortWithAuthProvider<
             int comparison = left.getPriority() - right.getPriority();
             if (comparison == 0)
             {
-                long createCompare = left.getCreatedTime() - right.getCreatedTime();
+                long leftTime = left.getCreatedTime() == null ? 0 : left.getCreatedTime().getTime();
+                long rightTime = right.getCreatedTime() == null ? 0 : right.getCreatedTime().getTime();
+                long createCompare = leftTime - rightTime;
                 if (createCompare == 0)
                 {
                     comparison = left.getName().compareTo(right.getName());
