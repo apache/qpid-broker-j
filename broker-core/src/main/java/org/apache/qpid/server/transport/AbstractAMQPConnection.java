@@ -27,6 +27,7 @@ import java.security.AccessController;
 import java.security.Principal;
 import java.security.PrivilegedAction;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -222,9 +223,9 @@ public abstract class AbstractAMQPConnection<C extends AbstractAMQPConnection<C>
     }
 
     @Override
-    public final long getLastIoTime()
+    public final Date getLastIoTime()
     {
-        return Math.max(getLastReadTime(), getLastWriteTime());
+        return new Date(Math.max(getLastReadTime(), getLastWriteTime()));
     }
 
     @Override

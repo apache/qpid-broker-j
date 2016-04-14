@@ -200,4 +200,10 @@ public class TestSingletonImpl extends AbstractConfiguredObject<TestSingletonImp
     {
         return _dateValue;
     }
+
+    @Override
+    public Long getLongStatistic()
+    {
+        return System.currentTimeMillis();
+    }
 }

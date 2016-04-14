@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security;
 
+import java.util.Date;
+
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
@@ -50,10 +52,10 @@ public interface SiteSpecificTrustStore<X extends SiteSpecificTrustStore<X>> ext
     String getCertificateSignature();
 
     @DerivedAttribute
-    String getCertificateValidFromDate();
+    Date getCertificateValidFromDate();
 
     @DerivedAttribute
-    String getCertificateValidUntilDate();
+    Date getCertificateValidUntilDate();
 
     @ManagedOperation
     void refreshCertificate();

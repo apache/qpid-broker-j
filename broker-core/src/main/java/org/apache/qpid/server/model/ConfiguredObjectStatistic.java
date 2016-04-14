@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.model;
 
-public interface ConfiguredObjectStatistic<C extends ConfiguredObject, T extends Number> extends ConfiguredObjectAttributeOrStatistic<C,T>
+public interface ConfiguredObjectStatistic<C extends ConfiguredObject, T extends Object> extends ConfiguredObjectAttributeOrStatistic<C,T>
 {
     String getDescription();
 

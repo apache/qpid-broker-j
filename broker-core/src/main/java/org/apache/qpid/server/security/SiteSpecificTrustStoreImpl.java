@@ -29,12 +29,11 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -333,20 +332,16 @@ public class SiteSpecificTrustStoreImpl
     }
 
     @Override
-    public String getCertificateValidFromDate()
+    public Date getCertificateValidFromDate()
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, MMM d, YYYY 'at' HH:mm:ss z");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return _x509Certificate == null ? null : dateFormat.format(_x509Certificate.getNotBefore());
+        return _x509Certificate == null ? null : _x509Certificate.getNotBefore();
     }
 
 
     @Override
-    public String getCertificateValidUntilDate()
+    public Date getCertificateValidUntilDate()
     {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, MMM d, YYYY 'at' HH:mm:ss z");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return _x509Certificate == null ? null : dateFormat.format(_x509Certificate.getNotAfter());
+        return _x509Certificate == null ? null :_x509Certificate.getNotAfter();
     }
 
     @Override

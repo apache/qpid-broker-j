@@ -22,6 +22,7 @@ package org.apache.qpid.server.model.adapter;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -163,15 +164,15 @@ public final class SessionAdapter extends AbstractConfiguredObject<SessionAdapte
     }
 
     @Override
-    public long getTransactionStartTime()
+    public Date getTransactionStartTime()
     {
-        return _session.getTransactionStartTime();
+        return new Date(_session.getTransactionStartTime());
     }
 
     @Override
-    public long getTransactionUpdateTime()
+    public Date getTransactionUpdateTime()
     {
-        return _session.getTransactionUpdateTime();
+        return new Date(_session.getTransactionUpdateTime());
     }
 
     @StateTransition(currentState = State.ACTIVE, desiredState = State.DELETED)

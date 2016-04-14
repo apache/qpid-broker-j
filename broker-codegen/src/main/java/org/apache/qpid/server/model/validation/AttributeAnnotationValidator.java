@@ -201,21 +201,24 @@ public class AttributeAnnotationValidator extends AbstractProcessor
             checkMethodTakesNoArgs(annotationElement, methodElement);
             checkMethodName(annotationElement, methodElement);
             checkTypeAgreesWithName(annotationElement, methodElement);
-            checkMethodReturnTypeIsNumber(annotationElement, methodElement);
+            checkMethodReturnTypeIsNumberOrDate(annotationElement, methodElement);
 
         }
     }
 
-    private void checkMethodReturnTypeIsNumber(final TypeElement annotationElement,
-                                               final ExecutableElement methodElement)
+    private void checkMethodReturnTypeIsNumberOrDate(final TypeElement annotationElement,
+                                                     final ExecutableElement methodElement)
     {
         TypeMirror numberType = elementUtils.getTypeElement("java.lang.Number").asType();
-        if(!typeUtils.isAssignable(methodElement.getReturnType(),numberType))
+        TypeMirror dateType = elementUtils.getTypeElement("java.util.Date").asType();
+        if(!typeUtils.isAssignable(methodElement.getReturnType(),numberType)
+                && !typeUtils.isSameType(methodElement.getReturnType(), dateType))
         {
             messager.printMessage(Diagnostic.Kind.ERROR,
                                   "@"
                                   + annotationElement.getSimpleName()
-                                  + " return type does not extend Number: "
+                                  + " return type does not extend java.lang.Number"
+                                  + " and is not java.util.Date : "
                                   + methodElement.getReturnType().toString(),
                                   methodElement
                                  );
@@ -377,6 +380,11 @@ public class AttributeAnnotationValidator extends AbstractProcessor
 
 
         if(typeUtils.isSameType(type,elementUtils.getTypeElement("java.util.UUID").asType()))
+        {
+            return true;
+        }
+
+        if(typeUtils.isSameType(type,elementUtils.getTypeElement("java.util.Date").asType()))
         {
             return true;
         }

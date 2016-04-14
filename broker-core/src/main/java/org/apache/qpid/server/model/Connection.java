@@ -21,6 +21,7 @@
 package org.apache.qpid.server.model;
 
 import java.util.Collection;
+import java.util.Date;
 
 import org.apache.qpid.server.transport.AMQPConnection;
 
@@ -113,7 +114,7 @@ public interface Connection<X extends Connection<X>> extends ConfiguredObject<X>
     long getMessagesOut();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last I/O time")
-    long getLastIoTime();
+    Date getLastIoTime();
 
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.COUNT, label = "Sessions")
     int getSessionCount();

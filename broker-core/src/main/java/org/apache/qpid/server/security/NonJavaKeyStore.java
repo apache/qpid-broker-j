@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.security;
 
+import java.util.Date;
+
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.KeyStore;
 import org.apache.qpid.server.model.ManagedAttribute;
@@ -44,8 +46,8 @@ public interface NonJavaKeyStore<X extends NonJavaKeyStore<X>> extends KeyStore<
     String getSubjectName();
 
     @DerivedAttribute
-    public long getCertificateValidEnd();
+    public Date getCertificateValidEnd();
 
     @DerivedAttribute
-    public long getCertificateValidStart();
+    public Date getCertificateValidStart();
 }

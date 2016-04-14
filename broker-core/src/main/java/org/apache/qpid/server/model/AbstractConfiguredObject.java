@@ -2711,13 +2711,13 @@ public abstract class AbstractConfiguredObject<X extends ConfiguredObject<X>> im
 
 
     @Override
-    public Map<String,Number> getStatistics()
+    public Map<String, Object> getStatistics()
     {
         Collection<ConfiguredObjectStatistic> stats = _model.getTypeRegistry().getStatistics(getClass());
-        Map<String,Number> map = new HashMap<String,Number>();
+        Map<String,Object> map = new HashMap<>();
         for(ConfiguredObjectStatistic stat : stats)
         {
-            map.put(stat.getName(), (Number) stat.getValue(this));
+            map.put(stat.getName(), stat.getValue(this));
         }
         return map;
     }

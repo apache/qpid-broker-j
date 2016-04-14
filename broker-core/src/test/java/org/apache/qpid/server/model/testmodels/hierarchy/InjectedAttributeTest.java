@@ -306,7 +306,7 @@ public class InjectedAttributeTest extends QpidTestCase
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
-        final Map<String, Number> statistics = testCar.getStatistics();
+        final Map<String, Object> statistics = testCar.getStatistics();
         assertEquals("incorrect number of statistics", 1, statistics.size());
         assertEquals("incorrect statistic value", 42, statistics.get("meaningOfLife"));
     }
@@ -346,7 +346,7 @@ public class InjectedAttributeTest extends QpidTestCase
 
         TestCar<?> testCar = new TestStandardCarImpl(Collections.<String,Object>singletonMap("name", "Arthur"), model);
 
-        final Map<String, Number> statistics = testCar.getStatistics();
+        final Map<String, Object> statistics = testCar.getStatistics();
         assertEquals("incorrect number of statistics", 2, statistics.size());
         assertEquals("incorrect statistic value", 1, statistics.get("whatISent1"));
         assertEquals("incorrect statistic value", 2, statistics.get("whatISent2"));

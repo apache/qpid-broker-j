@@ -28,6 +28,9 @@ import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedContextDefault;
 import org.apache.qpid.server.model.ManagedObject;
+import org.apache.qpid.server.model.ManagedStatistic;
+import org.apache.qpid.server.model.StatisticType;
+import org.apache.qpid.server.model.StatisticUnit;
 
 @ManagedObject( defaultType = TestSingletonImpl.TEST_SINGLETON_TYPE)
 public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObject<X>
@@ -104,5 +107,8 @@ public interface TestSingleton<X extends TestSingleton<X>> extends ConfiguredObj
 
     @ManagedAttribute(immutable = true)
     String getImmutableValue();
+
+    @ManagedStatistic(units = StatisticUnit.ABSOLUTE_TIME, statisticType = StatisticType.POINT_IN_TIME)
+    Long getLongStatistic();
 
 }

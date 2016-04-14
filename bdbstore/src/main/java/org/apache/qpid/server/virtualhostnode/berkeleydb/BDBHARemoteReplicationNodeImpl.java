@@ -23,6 +23,7 @@ package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
 import static org.apache.qpid.server.virtualhostnode.berkeleydb.BDBHAVirtualHostNodeImpl.MUTATE_JE_TIMEOUT_MS;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -61,7 +62,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
     private final String _address;
     private final Broker _broker;
 
-    private volatile long _joinTime;
+    private volatile Date _joinTime;
     private volatile long _lastTransactionId;
 
     @ManagedAttributeField(afterSet="afterSetRole")
@@ -101,7 +102,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
     }
 
     @Override
-    public long getJoinTime()
+    public Date getJoinTime()
     {
         return _joinTime;
     }
@@ -240,7 +241,7 @@ public class BDBHARemoteReplicationNodeImpl extends AbstractConfiguredObject<BDB
 
     void setJoinTime(long joinTime)
     {
-        _joinTime = joinTime;
+        _joinTime = new Date(joinTime);
     }
 
     void setLastTransactionId(long lastTransactionId)

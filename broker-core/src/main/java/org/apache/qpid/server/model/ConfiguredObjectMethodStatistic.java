@@ -21,8 +21,9 @@
 package org.apache.qpid.server.model;
 
 import java.lang.reflect.Method;
+import java.util.Date;
 
-public final class ConfiguredObjectMethodStatistic<C extends ConfiguredObject, T extends Number>
+public final class ConfiguredObjectMethodStatistic<C extends ConfiguredObject, T extends Object>
         extends ConfiguredObjectMethodAttributeOrStatistic<C,T> implements ConfiguredObjectStatistic<C, T>
 {
     private final ManagedStatistic _annotation;
@@ -36,9 +37,9 @@ public final class ConfiguredObjectMethodStatistic<C extends ConfiguredObject, T
             throw new IllegalArgumentException("ManagedStatistic annotation should only be added to no-arg getters");
         }
 
-        if(!Number.class.isAssignableFrom(getType()))
+        if(!Number.class.isAssignableFrom(getType()) && !Date.class.equals(getType()))
         {
-            throw new IllegalArgumentException("ManagedStatistic annotation should only be added to getters returning a Number type");
+            throw new IllegalArgumentException("ManagedStatistic annotation should only be added to getters returning a Number or Date type");
         }
     }
 

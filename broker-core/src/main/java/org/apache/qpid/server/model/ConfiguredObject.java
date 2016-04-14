@@ -206,7 +206,7 @@ public interface ConfiguredObject<X extends ConfiguredObject<X>>
      *
      * @return the current statistics for the ConfiguredObject
      */
-    Map<String,Number> getStatistics();
+    Map<String, Object> getStatistics();
 
     /**
      * Return children of the ConfiguredObject of the given class

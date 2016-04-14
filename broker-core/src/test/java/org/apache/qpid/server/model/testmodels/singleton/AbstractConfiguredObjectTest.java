@@ -845,6 +845,20 @@ public class AbstractConfiguredObjectTest extends QpidTestCase
         assertTrue("Last update time should be updated by update", object.getLastUpdatedTime().compareTo(createdTime) > 0);
     }
 
+    public void testStatistics() throws Exception
+    {
+        final String objectName = "myName";
+
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(TestSingleton.NAME, objectName);
+
+        TestSingleton object = _model.getObjectFactory().create(TestSingleton.class, attributes);
+
+        final Map<String, Object> stats = object.getStatistics();
+        assertEquals("Unexpected number of statistics", 1, stats.size());
+        assertTrue("Expected statistic not found", stats.containsKey("longStatistic"));
+    }
+
     private static class NoopConfigurationChangeListener implements ConfigurationChangeListener
     {
         @Override

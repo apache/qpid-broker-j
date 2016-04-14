@@ -21,6 +21,7 @@
 package org.apache.qpid.server.model;
 
 import java.util.Collection;
+import java.util.Date;
 
 @ManagedObject
 public interface Session<X extends Session<X>> extends ConfiguredObject<X>
@@ -61,7 +62,7 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
      * @return the time this transaction started or 0 if not in a transaction
      */
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Transaction Start")
-    long getTransactionStartTime();
+    Date getTransactionStartTime();
 
     /**
      * Return the time of the last activity on the current transaction.
@@ -69,5 +70,5 @@ public interface Session<X extends Session<X>> extends ConfiguredObject<X>
      * @return the time of the last activity or 0 if not in a transaction
      */
     @ManagedStatistic(statisticType = StatisticType.POINT_IN_TIME, units = StatisticUnit.ABSOLUTE_TIME, label = "Last Transaction Update")
-    long getTransactionUpdateTime();
+    Date getTransactionUpdateTime();
 }

@@ -20,6 +20,8 @@
  */
 package org.apache.qpid.server.virtualhostnode.berkeleydb;
 
+import java.util.Date;
+
 import org.apache.qpid.server.model.DerivedAttribute;
 import org.apache.qpid.server.model.ManagedAttribute;
 import org.apache.qpid.server.model.ManagedObject;
@@ -45,7 +47,7 @@ public interface BDBHARemoteReplicationNode<X extends BDBHARemoteReplicationNode
     NodeRole getRole();
 
     @DerivedAttribute
-    long getJoinTime();
+    Date getJoinTime();
 
     @DerivedAttribute
     long getLastKnownReplicationTransactionId();
