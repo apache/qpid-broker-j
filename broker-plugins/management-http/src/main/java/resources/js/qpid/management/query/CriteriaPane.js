@@ -26,6 +26,7 @@ define([
   "dojo/string",
   "dojo/dom-construct",
   "dojo/dom-style",
+  "dojo/sniff",
   "dojo/text!query/CriteriaPane.html",
   "dojox/html/entities",
   "dojo/Evented",
@@ -39,9 +40,12 @@ define([
   "dijit/form/TextBox",
   "dijit/form/NumberTextBox",
   "dijit/form/MultiSelect",
+  "dijit/form/TimeTextBox",
+  "dijit/form/DateTextBox",
+  "dijit/form/NumberSpinner",
   "dojo/domReady!"
 ],
-function(declare, array, lang, string, domConstruct, domStyle, template, entities, Evented)
+function(declare, array, lang, string, domConstruct, domStyle, has, template, entities, Evented)
 {
     var ANY = "any";
     var IS_NULL = "is null";
@@ -69,6 +73,7 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
     var NUMERIC_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,EQUAL,NOT_EQUAL,LESS_THAN,LESS_EQUAL_THAN,GREATER_THAN,
                               GREATER_EQUAL_THAN];
     var ENUM_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,IN,NOT_IN];
+    var DATE_CONDITIONS = [ANY,IS_NULL,IS_NOT_NULL,EQUAL,NOT_EQUAL,LESS_THAN,LESS_EQUAL_THAN,GREATER_THAN,GREATER_EQUAL_THAN];
 
     var sqlEscape =                    function(value)
                                        {
@@ -167,6 +172,10 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                                          {
                                             return BOOLEAN_CONDITIONS;
                                          }
+                                         if (type === "Date")
+                                         {
+                                             return DATE_CONDITIONS;
+                                         }
                                          else if (isNumericType(type))
                                          {
                                             return NUMERIC_CONDITIONS;
@@ -195,6 +204,213 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                                          return array.indexOf(CONDITIONS_NOT_NEEDING_WIDGET,condition) == -1;
                                        }
 
+    // dojo TimeTextBox has a bug in Firefox
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=487897
+    // Custom TimePicker is implemented for Firefox
+    var TimePicker =                   declare("qpid.management.TimePicker",
+                                         [dijit._WidgetBase, Evented],
+                                         {
+                                           disabled: false,
+                                           intermediateChanges: false,
+                                           value: undefined,
+                                           buildRendering: function()
+                                                     {
+                                                       var domNode = this.domNode = domConstruct.create("div", {className: "dijitReset dijitInline"});
+                                                       domConstruct.create("span",{innerHTML:"T"}, domNode);
+                                                       var timeNode = domConstruct.create("div",{}, domNode);
+                                                       this.hoursEditor = new dijit.form.NumberSpinner({name: "hours",
+                                                                                                        disabled: this.disabled,
+                                                                                                        constraints:{ max:23, min:0 },
+                                                                                                        style: {width: "4em"},
+                                                                                                        intermediateChanges: this.intermediateChanges,
+                                                                                                        title: "Hours in range 0-23"},
+                                                                                                       timeNode);
+                                                       this.hoursEditor.on("change", lang.hitch(this, this._setValue));
+                                                       domConstruct.create("span",{innerHTML:":"}, domNode);
+                                                       var minutesNode = domConstruct.create("div",{}, domNode);
+                                                       this.minutesEditor = new dijit.form.NumberSpinner({name: "minutes",
+                                                                                                          disabled: this.disabled,
+                                                                                                          constraints:{ max:59, min:0 },
+                                                                                                          style: {width: "4em"},
+                                                                                                          intermediateChanges: this.intermediateChanges,
+                                                                                                          title: "Minutes in range 0-59"},
+                                                                                                          minutesNode);
+                                                       this.minutesEditor.on("change", lang.hitch(this, this._setValue));
+                                                       domConstruct.create("span",{innerHTML:":"}, domNode);
+                                                       var secondsNode = domConstruct.create("div",{}, domNode);
+                                                       this.secondsEditor = new dijit.form.NumberSpinner({name: "seconds",
+                                                                                                           disabled: this.disabled,
+                                                                                                           constraints:{ max:59, min:0 },
+                                                                                                           style: {width: "4em"},
+                                                                                                           intermediateChanges: this.intermediateChanges,
+                                                                                                           title: "Seconds in range 0-59"},
+                                                                                                           secondsNode);
+                                                       this.secondsEditor.on("change", lang.hitch(this, this._setValue));
+                                                       domConstruct.create("span",{innerHTML:"."}, domNode);
+                                                       var millisecondsNode = domConstruct.create("div",{}, domNode);
+                                                       this.millisecondsEditor = new dijit.form.NumberSpinner({name: "milliseconds",
+                                                                                                            disabled: this.disabled,
+                                                                                                            constraints:{ max:999, min:0 },
+                                                                                                            style: {width: "5em"},
+                                                                                                            intermediateChanges: this.intermediateChanges,
+                                                                                                            title: "Milliseconds in range 0-999"},
+                                                                                                            millisecondsNode);
+                                                       this.millisecondsEditor.on("change", lang.hitch(this, this._setValue));
+                                                     },
+                                           startup:  function()
+                                                     {
+                                                       this.inherited(arguments);
+                                                       this.hoursEditor.startup();
+                                                       this.minutesEditor.startup();
+                                                       this.secondsEditor.startup();
+                                                       this.millisecondsEditor.startup();
+                                                     },
+                                           _setValue:function()
+                                                     {
+                                                       var date = new Date(0);
+                                                       if (isFinite(this.hoursEditor.value) )
+                                                       {
+                                                        date.setHours(this.hoursEditor.value);
+                                                       }
+                                                       if (isFinite(this.minutesEditor.value))
+                                                       {
+                                                         date.setMinutes(this.minutesEditor.value);
+                                                       }
+                                                       if (isFinite(this.secondsEditor.value))
+                                                       {
+                                                        date.setSeconds(this.secondsEditor.value);
+                                                       }
+                                                       if (isFinite(this.millisecondsEditor.value))
+                                                       {
+                                                        date.setMilliseconds(this.millisecondsEditor.value);
+                                                       }
+                                                       this.value = date;
+                                                       this.emit("change", date);
+                                                     },
+                                           _setDisabledAttr:function(value)
+                                                     {
+                                                       this.inherited(arguments);
+                                                       this.disabled = value;
+                                                       this.hoursEditor.set("disabled", value);
+                                                       this.minutesEditor.set("disabled", value);
+                                                       this.secondsEditor.set("disabled", value);
+                                                       this.millisecondsEditor.set("disabled", value);
+                                                     },
+                                           _setValueAttr:  function(value)
+                                                     {
+                                                       if (value)
+                                                       {
+                                                         var date = value instanceof Date ? value :new Date(value);
+                                                         this.hoursEditor.set("value", date.getHours());
+                                                         this.minutesEditor.set("value", date.getMinutes());
+                                                         this.secondsEditor.set("value", date.getSeconds());
+                                                         this.millisecondsEditor.set("value", date.getMilliseconds());
+                                                       }
+                                                       this.value = date;
+                                                       this.inherited(arguments);
+                                                     },
+                                           _getValueAttr:  function()
+                                                     {
+                                                       return this.value;
+                                                     }
+                                         });
+
+    var DateTimePicker =               declare("qpid.management.DateTimePicker",
+                                         [dijit._WidgetBase, Evented],
+                                         {
+                                           disabled: false,
+                                           value: undefined,
+                                           buildRendering: function()
+                                                     {
+                                                       var domNode = this.domNode = domConstruct.create("div",
+                                                                                                        {className:"dijitReset dijitInline"});
+                                                       var dateNode = domConstruct.create("div",
+                                                                                          {},
+                                                                                          domNode);
+                                                       this.dateEditor = new dijit.form.DateTextBox({name: "date",
+                                                                                                     disabled: this.disabled,
+                                                                                                     intermediateChanges: true},
+                                                                                                    dateNode);
+                                                       this.dateEditor.on("change", lang.hitch(this, this._setValue));
+                                                       var timeNode = domConstruct.create("div",{}, domNode);
+                                                       if (has("ff"))
+                                                       {
+                                                         this.timeEditor = new TimePicker({name: "time",
+                                                                                           value: this.value,
+                                                                                           intermediateChanges: true,
+                                                                                           disabled: this.disabled},
+                                                                                          timeNode);
+                                                       }
+                                                       else
+                                                       {
+                                                         this.timeEditor = new dijit.form.TimeTextBox({name: "time",
+                                                                                                       disabled: this.disabled,
+                                                                                                       intermediateChanges: true,
+                                                                                                       value: this.value,
+                                                                                                       constraints: {
+                                                                                                         timePattern: 'HH:mm:ss.SSS',
+                                                                                                         clickableIncrement: 'T00:15:00',
+                                                                                                         visibleIncrement: 'T00:15:00',
+                                                                                                         visibleRange: 'T00:00:00'
+                                                                                                         }
+                                                                                                       },
+                                                                                                       timeNode);
+                                                       }
+                                                       this.timeEditor.on("change", lang.hitch(this, this._setValue));
+                                                     },
+                                           startup:  function()
+                                                     {
+                                                       this.inherited(arguments);
+                                                       this.dateEditor.startup();
+                                                       this.timeEditor.startup();
+                                                     },
+                                           _setValue:function()
+                                                     {
+                                                       var date = this.dateEditor.get("value");
+                                                       if (date)
+                                                       {
+                                                         var time = this.timeEditor.value;
+                                                         var value = date.getTime() + (time ? time.getTime() : 0) ;
+                                                         this.value = new Date(value).toISOString();
+                                                         this.emit("change", this.value);
+                                                       }
+                                                     },
+                                           _setDisabledAttr: function(value)
+                                                     {
+                                                       this.inherited(arguments);
+                                                       this.disabled = value;
+                                                       this.dateEditor.set("disabled", value);
+                                                       this.timeEditor.set("disabled", value);
+                                                       if (value)
+                                                       {
+                                                         this._setValue();
+                                                       }
+                                                       else
+                                                       {
+                                                         this._setValueAttr(undefined);
+                                                       }
+                                                     },
+                                           _setValueAttr: function(value)
+                                                     {
+                                                       var date;
+                                                       if (value instanceof Date || isFinite(value))
+                                                       {
+                                                         var date = value instanceof Date ? value : new Date(value);
+                                                       }
+                                                       else
+                                                       {
+                                                         date = value;
+                                                       }
+                                                       this.dateEditor.set("value", date);
+                                                       this.timeEditor.set("value", date);
+                                                       this.value = value;
+                                                       this.inherited(arguments);
+                                                     },
+                                           _getValueAttr: function()
+                                                     {
+                                                       return this.value;
+                                                     }
+                                         });
 
     return declare( "qpid.management.query.CriteriaPane",
                     [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin, Evented],
@@ -255,6 +471,10 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                                                 }
                                                 this.valueEditor = new dijit.form.MultiSelect({disabled: true}, domNode);
                                             }
+                                            if (this.typeName === "Date")
+                                            {
+                                                this.valueEditor = new DateTimePicker({disabled: true}, domNode);
+                                            }
                                             else
                                             {
                                                 this.valueEditor = isNumericType(this.typeName)
@@ -294,10 +514,15 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                                         },
                         _conditionValueChanged: function(newValue)
                                         {
-                                            var expression = buildExpression(this.criteriaName,
+                                            var expression;
+                                            var val = this._getConditionValue();
+                                            if (val)
+                                            {
+                                              expression = buildExpression(this.criteriaName,
                                                                              this.criteriaCondition.value,
-                                                                             this._getConditionValue(),
+                                                                             val,
                                                                              this.typeName);
+                                            }
                                             if (!expression)
                                             {
                                               expression = this.criteriaName + ":" + ANY;
@@ -387,6 +612,12 @@ function(declare, array, lang, string, domConstruct, domStyle, template, entitie
                                             {
                                               var value = this.valueEditor.value;
                                               return value && value.length;
+                                            }
+
+                                            if (this.valueEditor instanceof DateTimePicker)
+                                            {
+                                              var value = this.valueEditor.value;
+                                              return !!value;
                                             }
                                           }
                                           return true;
