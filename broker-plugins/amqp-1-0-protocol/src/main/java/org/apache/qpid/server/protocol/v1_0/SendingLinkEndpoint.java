@@ -42,26 +42,26 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
     private Map<Binary, UnsignedInteger> _unsettledMap = new HashMap<Binary, UnsignedInteger>();
     private Binary _transactionId;
 
-    public SendingLinkEndpoint(final SessionEndpoint sessionEndpoint, String name)
+    public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, String name)
     {
         this(sessionEndpoint, name, null);
     }
 
-    public SendingLinkEndpoint(final SessionEndpoint sessionEndpoint, String name, Map<Binary, Outcome> unsettled)
+    public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled)
     {
         super(sessionEndpoint, name, unsettled);
         init();
     }
 
 
-    public SendingLinkEndpoint(final SessionEndpoint sessionEndpoint, String name, Map<Binary, Outcome> unsettled,
+    public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled,
                                DeliveryStateHandler deliveryStateHandler)
     {
         super(sessionEndpoint, name, unsettled, deliveryStateHandler);
         init();
     }
 
-    public SendingLinkEndpoint(final SessionEndpoint sessionEndpoint, final Attach attach)
+    public SendingLinkEndpoint(final Session_1_0 sessionEndpoint, final Attach attach)
     {
         super(sessionEndpoint, attach);
         setSendingSettlementMode(attach.getSndSettleMode());
@@ -83,7 +83,7 @@ public class SendingLinkEndpoint extends LinkEndpoint<SendingLinkListener>
 
     public boolean transfer(final Transfer xfr, final boolean decrementCredit)
     {
-        SessionEndpoint s = getSession();
+        Session_1_0 s = getSession();
         xfr.setMessageFormat(UnsignedInteger.ZERO);
         if(decrementCredit)
         {

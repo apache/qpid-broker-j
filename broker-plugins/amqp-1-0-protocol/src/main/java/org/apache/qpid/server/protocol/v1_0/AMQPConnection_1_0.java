@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.qpid.server.model.AuthenticationProvider;
+import org.apache.qpid.server.model.State;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.protocol.v1_0.codec.DescribedTypeConstructorRegistry;
 import org.apache.qpid.server.protocol.v1_0.codec.FrameWriter;
@@ -98,11 +99,13 @@ import org.apache.qpid.server.security.auth.AuthenticatedPrincipal;
 import org.apache.qpid.server.security.auth.UsernamePrincipal;
 import org.apache.qpid.server.security.auth.manager.AnonymousAuthenticationManager;
 import org.apache.qpid.server.security.auth.manager.ExternalAuthenticationManagerImpl;
+import org.apache.qpid.server.store.StoreException;
 import org.apache.qpid.server.transport.AbstractAMQPConnection;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.transport.ServerNetworkConnection;
 import org.apache.qpid.server.util.Action;
 import org.apache.qpid.server.util.ConnectionScopedRuntimeException;
+import org.apache.qpid.server.util.ServerScopedRuntimeException;
 import org.apache.qpid.server.virtualhost.VirtualHostUnavailableException;
 import org.apache.qpid.transport.ByteBufferSender;
 import org.apache.qpid.transport.network.AggregateTicker;
@@ -190,10 +193,10 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     private SocketAddress _remoteAddress;
 
     // positioned by the *outgoing* channel
-    private SessionEndpoint[] _sendingSessions;
+    private Session_1_0[] _sendingSessions;
 
     // positioned by the *incoming* channel
-    private SessionEndpoint[] _receivingSessions;
+    private Session_1_0[] _receivingSessions;
     private boolean _closedForInput;
     private boolean _closedForOutput;
 
@@ -283,16 +286,27 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     public void receiveAttach(final short channel, final Attach attach)
     {
         assertState(FrameReceivingState.ANY_FRAME);
-        SessionEndpoint endPoint = getSession(channel);
-        if (endPoint != null)
+        final Session_1_0 session = getSession(channel);
+        if (session != null)
         {
-            endPoint.receiveAttach(attach);
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            {
+                @Override
+                public Object run()
+                {
+                    session.receiveAttach(attach);
+                    return null;
+                }
+            }, session.getAccessControllerContext());
+        }
+        else
+        {
+            // TODO - error
         }
     }
 
     public void receive(final short channel, final Object frame)
     {
-        List<Runnable> postLockActions;
         FRAME_LOGGER.debug("RECV[{}|{}] : {}", _remoteAddress, channel, frame);
         if (frame instanceof FrameBody)
         {
@@ -354,9 +368,17 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     {
         Collection<Session_1_0> sessions = new ArrayList<>(_sessions);
 
-        for(Session_1_0 session : sessions)
+        for(final Session_1_0 session : sessions)
         {
-            session.remoteEnd(new End());
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            {
+                @Override
+                public Object run()
+                {
+                    session.remoteEnd(new End());
+                    return null;
+                }
+            }, session.getAccessControllerContext());
         }
     }
 
@@ -532,7 +554,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     {
 
         assertState(FrameReceivingState.ANY_FRAME);
-        SessionEndpoint endpoint = _receivingSessions[channel];
+        Session_1_0 endpoint = _receivingSessions[channel];
         if (endpoint != null)
         {
             _receivingSessions[channel] = null;
@@ -549,10 +571,22 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                                    final Disposition disposition)
     {
         assertState(FrameReceivingState.ANY_FRAME);
-        SessionEndpoint endPoint = getSession(channel);
-        if (endPoint != null)
+        final Session_1_0 session = getSession(channel);
+        if (session != null)
         {
-            endPoint.receiveDisposition(disposition);
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            {
+                @Override
+                public Object run()
+                {
+                    session.receiveDisposition(disposition);
+                    return null;
+                }
+            }, session.getAccessControllerContext());
+        }
+        else
+        {
+            // TODO - error
         }
 
     }
@@ -565,7 +599,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         if (begin.getRemoteChannel() != null)
         {
             myChannelId = begin.getRemoteChannel().shortValue();
-            SessionEndpoint sessionEndpoint;
+            Session_1_0 sessionEndpoint;
             try
             {
                 sessionEndpoint = _sendingSessions[myChannelId];
@@ -626,7 +660,7 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
             if (_receivingSessions[channel] == null)
             {
-                SessionEndpoint sessionEndpoint = new SessionEndpoint(this, begin);
+                Session_1_0 sessionEndpoint = new Session_1_0(this, begin);
 
                 _receivingSessions[channel] = sessionEndpoint;
                 _sendingSessions[myChannelId] = sessionEndpoint;
@@ -655,44 +689,11 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     }
 
-    private void remoteSessionCreation(final SessionEndpoint sessionEndpoint)
+    private void remoteSessionCreation(final Session_1_0 session)
     {
-        if(!_closedOnOpen)
-        {
-            final Session_1_0 session = new Session_1_0(this, sessionEndpoint);
-            _sessions.add(session);
-            sessionAdded(session);
-            sessionEndpoint.setSessionEventListener(new SessionEventListener()
-            {
-                @Override
-                public void remoteLinkCreation(final LinkEndpoint endpoint11)
-                {
-                    AccessController.doPrivileged(new PrivilegedAction<Object>()
-                    {
-                        @Override
-                        public Object run()
-                        {
-                            session.remoteLinkCreation(endpoint11);
-                            return null;
-                        }
-                    }, session.getAccessControllerContext());
-                }
+        _sessions.add(session);
+        sessionAdded(session);
 
-                @Override
-                public void remoteEnd(final End end)
-                {
-                    AccessController.doPrivileged(new PrivilegedAction<Object>()
-                    {
-                        @Override
-                        public Object run()
-                        {
-                            session.remoteEnd(end);
-                            return null;
-                        }
-                    }, session.getAccessControllerContext());
-                }
-            });
-        }
     }
 
     private short getFirstFreeChannel()
@@ -723,48 +724,44 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     public void receiveTransfer(final short channel, final Transfer transfer)
     {
         assertState(FrameReceivingState.ANY_FRAME);
-        SessionEndpoint endPoint = getSession(channel);
-        if (endPoint != null)
+        final Session_1_0 session = getSession(channel);
+        if (session != null)
         {
-            endPoint.receiveTransfer(transfer);
-        }
-
-    }
-
-    public SessionEndpoint createSession(final String name)
-    {
-        // todo assert connection state
-        short channel = getFirstFreeChannel();
-        if (channel != -1)
-        {
-            SessionEndpoint endpoint = new SessionEndpoint(this);
-            _sendingSessions[channel] = endpoint;
-            endpoint.setSendingChannel(channel);
-            Begin begin = new Begin();
-            begin.setNextOutgoingId(endpoint.getNextOutgoingId());
-            begin.setOutgoingWindow(endpoint.getOutgoingWindowSize());
-            begin.setIncomingWindow(endpoint.getIncomingWindowSize());
-
-            begin.setHandleMax(_handleMax);
-            sendFrame(channel, begin);
-            return endpoint;
-
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            {
+                @Override
+                public Object run()
+                {
+                    session.receiveTransfer(transfer);
+                    return null;
+                }
+            }, session.getAccessControllerContext());
         }
         else
         {
-            // TODO - report error
-            return null;
+            // TODO - error
         }
-
     }
 
     public void receiveFlow(final short channel, final Flow flow)
     {
         assertState(FrameReceivingState.ANY_FRAME);
-        SessionEndpoint endPoint = getSession(channel);
-        if (endPoint != null)
+        final Session_1_0 session = getSession(channel);
+        if (session != null)
         {
-            endPoint.receiveFlow(flow);
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            {
+                @Override
+                public Object run()
+                {
+                    session.receiveFlow(flow);
+                    return null;
+                }
+            }, session.getAccessControllerContext());
+        }
+        else
+        {
+            // TODO - error
         }
 
     }
@@ -779,8 +776,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
                         : _channelMax;
         if (_receivingSessions == null)
         {
-            _receivingSessions = new SessionEndpoint[_channelMax + 1];
-            _sendingSessions = new SessionEndpoint[_channelMax + 1];
+            _receivingSessions = new Session_1_0[_channelMax + 1];
+            _sendingSessions = new Session_1_0[_channelMax + 1];
         }
         _maxFrameSize = open.getMaxFrameSize() == null ? DEFAULT_MAX_FRAME : open.getMaxFrameSize().intValue();
         _remoteContainerId = open.getContainerId();
@@ -937,10 +934,22 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
     public void receiveDetach(final short channel, final Detach detach)
     {
         assertState(FrameReceivingState.ANY_FRAME);
-        SessionEndpoint endPoint = getSession(channel);
-        if (endPoint != null)
+        final Session_1_0 session = getSession(channel);
+        if (session != null)
         {
-            endPoint.receiveDetach(detach);
+            AccessController.doPrivileged(new PrivilegedAction<Object>()
+            {
+                @Override
+                public Object run()
+                {
+                    session.receiveDetach(detach);
+                    return null;
+                }
+            }, session.getAccessControllerContext());
+        }
+        else
+        {
+            // TODO - error
         }
     }
 
@@ -1201,59 +1210,73 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
     public void received(final QpidByteBuffer msg)
     {
-        try
+
+        AccessController.doPrivileged(new PrivilegedAction<Object>()
         {
-            updateLastReadTime();
-            if (RAW_LOGGER.isDebugEnabled())
+            @Override
+            public Object run()
             {
-                QpidByteBuffer dup = msg.duplicate();
-                byte[] data = new byte[dup.remaining()];
-                dup.get(data);
-                dup.dispose();
-                Binary bin = new Binary(data);
-                RAW_LOGGER.debug("RECV[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
-            }
-
-            int remaining;
-
-            do
-            {
-                remaining = msg.remaining();
-
-                switch (_frameReceivingState)
+                updateLastReadTime();
+                try
                 {
-                    case AMQP_OR_SASL_HEADER:
-                    case AMQP_HEADER:
-                        if (remaining < 8)
+                    if (RAW_LOGGER.isDebugEnabled())
+                    {
+                        QpidByteBuffer dup = msg.duplicate();
+                        byte[] data = new byte[dup.remaining()];
+                        dup.get(data);
+                        dup.dispose();
+                        Binary bin = new Binary(data);
+                        RAW_LOGGER.debug("RECV[" + getNetwork().getRemoteAddress() + "] : " + bin.toString());
+                    }
+
+                    int remaining;
+
+                    do
+                    {
+                        remaining = msg.remaining();
+
+                        switch (_frameReceivingState)
                         {
-                            return;
+                            case AMQP_OR_SASL_HEADER:
+                            case AMQP_HEADER:
+                                if (remaining >= 8)
+                                {
+                                    processProtocolHeader(msg);
+                                }
+                                break;
+                            case OPEN_ONLY:
+                            case ANY_FRAME:
+                            case SASL_INIT_ONLY:
+                            case SASL_RESPONSE_ONLY:
+                                _frameHandler.parse(msg);
+                                break;
+                            case CLOSED:
+                                // ignore;
+                                break;
                         }
-                        processProtocolHeader(msg);
-                        break;
-                    case OPEN_ONLY:
-                    case ANY_FRAME:
-                    case SASL_INIT_ONLY:
-                    case SASL_RESPONSE_ONLY:
-                        _frameHandler.parse(msg);
-                        break;
-                    case CLOSED:
-                        // ignore;
-                        break;
+
+
+                    }
+                    while (msg.remaining() != remaining);
                 }
-
-
+                catch (IllegalArgumentException | IllegalStateException e)
+                {
+                    throw new ConnectionScopedRuntimeException(e);
+                }
+                catch (StoreException e)
+                {
+                    if (getVirtualHost().getState() == State.ACTIVE)
+                    {
+                        throw new ServerScopedRuntimeException(e);
+                    }
+                    else
+                    {
+                        throw new ConnectionScopedRuntimeException(e);
+                    }
+                }
+                return null;
             }
-            while (msg.remaining() != remaining);
-        }
-        catch (ConnectionScopedRuntimeException e)
-        {
-            throw e;
-        }
-        catch (RuntimeException e)
-        {
-            LOGGER.error("Unexpected exception while processing incoming data", e);
-            throw new ConnectionScopedRuntimeException("Unexpected exception while processing incoming data", e);
-        }
+        }, getAccessControllerContext());
 
     }
 
@@ -1544,8 +1567,8 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
 
         if (_receivingSessions == null)
         {
-            _receivingSessions = new SessionEndpoint[channelMax + 1];
-            _sendingSessions = new SessionEndpoint[channelMax + 1];
+            _receivingSessions = new Session_1_0[channelMax + 1];
+            _sendingSessions = new Session_1_0[channelMax + 1];
         }
         if (channelMax < _channelMax)
         {
@@ -1575,9 +1598,9 @@ public class AMQPConnection_1_0 extends AbstractAMQPConnection<AMQPConnection_1_
         _closedOnOpen = true;
     }
 
-    private SessionEndpoint getSession(final short channel)
+    private Session_1_0 getSession(final short channel)
     {
-        SessionEndpoint session = _receivingSessions[channel];
+        Session_1_0 session = _receivingSessions[channel];
         if (session == null)
         {
             Error error = new Error();

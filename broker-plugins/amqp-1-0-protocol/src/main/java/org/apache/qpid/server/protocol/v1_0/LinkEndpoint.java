@@ -68,7 +68,7 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
 
     private final String _name;
 
-    private SessionEndpoint _session;
+    private Session_1_0 _session;
 
 
     private volatile State _state = State.DETACHED;
@@ -84,12 +84,12 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
 
     private Map<Binary,Delivery> _unsettledTransfers = new HashMap<Binary,Delivery>();
 
-    LinkEndpoint(final SessionEndpoint sessionEndpoint, String name, Map<Binary, Outcome> unsettled)
+    LinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled)
     {
         this(sessionEndpoint, name, unsettled, null);
     }
 
-    LinkEndpoint(final SessionEndpoint sessionEndpoint, String name, Map<Binary, Outcome> unsettled, DeliveryStateHandler deliveryStateHandler)
+    LinkEndpoint(final Session_1_0 sessionEndpoint, String name, Map<Binary, Outcome> unsettled, DeliveryStateHandler deliveryStateHandler)
     {
         _name = name;
         _session = sessionEndpoint;
@@ -99,7 +99,7 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         _deliveryStateHandler = deliveryStateHandler;
     }
 
-    LinkEndpoint(final SessionEndpoint sessionEndpoint,final Attach attach)
+    LinkEndpoint(final Session_1_0 sessionEndpoint,final Attach attach)
     {
         _session = sessionEndpoint;
 
@@ -289,7 +289,7 @@ public abstract class LinkEndpoint<T extends LinkEventListener>
         return _state == State.DETACHED || _session.isEnded();
     }
 
-    public SessionEndpoint getSession()
+    public Session_1_0 getSession()
     {
         return _session;
     }
