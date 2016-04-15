@@ -35,31 +35,27 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.amqp_1_0.transport.DeliveryStateHandler;
-import org.apache.qpid.amqp_1_0.transport.LinkEndpoint;
-import org.apache.qpid.amqp_1_0.transport.SendingLinkEndpoint;
-import org.apache.qpid.amqp_1_0.transport.SendingLinkListener;
-import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
-import org.apache.qpid.amqp_1_0.type.Binary;
-import org.apache.qpid.amqp_1_0.type.DeliveryState;
-import org.apache.qpid.amqp_1_0.type.Outcome;
-import org.apache.qpid.amqp_1_0.type.Symbol;
-import org.apache.qpid.amqp_1_0.type.UnsignedInteger;
-import org.apache.qpid.amqp_1_0.type.messaging.Accepted;
-import org.apache.qpid.amqp_1_0.type.messaging.ExactSubjectFilter;
-import org.apache.qpid.amqp_1_0.type.messaging.Filter;
-import org.apache.qpid.amqp_1_0.type.messaging.MatchingSubjectFilter;
-import org.apache.qpid.amqp_1_0.type.messaging.Modified;
-import org.apache.qpid.amqp_1_0.type.messaging.NoLocalFilter;
-import org.apache.qpid.amqp_1_0.type.messaging.Released;
-import org.apache.qpid.amqp_1_0.type.messaging.Source;
-import org.apache.qpid.amqp_1_0.type.messaging.StdDistMode;
-import org.apache.qpid.amqp_1_0.type.messaging.Target;
-import org.apache.qpid.amqp_1_0.type.messaging.TerminusDurability;
-import org.apache.qpid.amqp_1_0.type.transport.AmqpError;
-import org.apache.qpid.amqp_1_0.type.transport.Detach;
-import org.apache.qpid.amqp_1_0.type.transport.Error;
-import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.ExactSubjectFilter;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Filter;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.MatchingSubjectFilter;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.NoLocalFilter;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.StdDistMode;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.exchange.ExchangeDefaults;
 import org.apache.qpid.filter.SelectorParsingException;
 import org.apache.qpid.filter.selector.ParseException;
@@ -146,10 +142,10 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                         actualFilters.put(entry.getKey(), entry.getValue());
                         noLocal = true;
                     }
-                    else if(messageFilter == null && entry.getValue() instanceof org.apache.qpid.amqp_1_0.type.messaging.JMSSelectorFilter)
+                    else if(messageFilter == null && entry.getValue() instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter)
                     {
 
-                        org.apache.qpid.amqp_1_0.type.messaging.JMSSelectorFilter selectorFilter = (org.apache.qpid.amqp_1_0.type.messaging.JMSSelectorFilter) entry.getValue();
+                        org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter selectorFilter = (org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter) entry.getValue();
                         try
                         {
                             messageFilter = new JMSSelectorFilter(selectorFilter.getValue());
@@ -276,10 +272,10 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
                             actualFilters.put(entry.getKey(), entry.getValue());
                             noLocal = true;
                         }
-                        else if(messageFilter == null && entry.getValue() instanceof org.apache.qpid.amqp_1_0.type.messaging.JMSSelectorFilter)
+                        else if(messageFilter == null && entry.getValue() instanceof org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter)
                         {
 
-                            org.apache.qpid.amqp_1_0.type.messaging.JMSSelectorFilter selectorFilter = (org.apache.qpid.amqp_1_0.type.messaging.JMSSelectorFilter) entry.getValue();
+                            org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter selectorFilter = (org.apache.qpid.server.protocol.v1_0.type.messaging.JMSSelectorFilter) entry.getValue();
                             try
                             {
                                 messageFilter = new JMSSelectorFilter(selectorFilter.getValue());
@@ -485,17 +481,12 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
         while(!_resumeAcceptedTransfers.isEmpty() && getEndpoint().hasCreditToSend())
         {
             Accepted accepted = new Accepted();
-            synchronized(getLock())
-            {
-
-                Transfer xfr = new Transfer();
-                Binary dt = _resumeAcceptedTransfers.remove(0);
-                xfr.setDeliveryTag(dt);
-                xfr.setState(accepted);
-                xfr.setResume(Boolean.TRUE);
-                getEndpoint().transfer(xfr, true);
-            }
-
+            Transfer xfr = new Transfer();
+            Binary dt = _resumeAcceptedTransfers.remove(0);
+            xfr.setDeliveryTag(dt);
+            xfr.setState(accepted);
+            xfr.setResume(Boolean.TRUE);
+            getEndpoint().transfer(xfr, true);
         }
         if(_resumeAcceptedTransfers.isEmpty())
         {
@@ -518,20 +509,18 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
     {
         if(getEndpoint() != null)
         {
-            synchronized(getEndpoint().getLock())
+            if (_draining)
             {
-                if(_draining)
-                {
-                    //TODO
-                    getEndpoint().drained();
-                    _draining = false;
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
+                //TODO
+                getEndpoint().drained();
+                _draining = false;
+                return true;
             }
+            else
+            {
+                return false;
+            }
+
         }
         else
         {
@@ -581,11 +570,6 @@ public class SendingLink_1_0 implements SendingLinkListener, Link_1_0, DeliveryS
     {
         SendingLinkEndpoint endpoint = getEndpoint();
         return endpoint == null ? null : endpoint.getTransactionId();
-    }
-
-    public synchronized Object getLock()
-    {
-        return _linkAttachment == null ? this : getEndpoint().getLock();
     }
 
     public boolean isDetached()

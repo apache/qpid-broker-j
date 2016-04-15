@@ -2381,43 +2381,43 @@ public abstract class AbstractQueue<X extends AbstractQueue<X>>
                 QueueConsumer<?> sub = consumerNodeIterator.getNode().getConsumer();
                 sub.getSendLock();
 
-                    try
+                try
+                {
+                    for(int i = 0 ; i < perSub; i++)
                     {
-                        for(int i = 0 ; i < perSub; i++)
+                        //attempt delivery. returns true if no further delivery currently possible to this sub
+                        consumerDone = attemptDelivery(sub, true);
+                        if (consumerDone)
                         {
-                            //attempt delivery. returns true if no further delivery currently possible to this sub
-                            consumerDone = attemptDelivery(sub, true);
-                            if (consumerDone)
+                            sub.flushBatched();
+                            boolean noMore = getNextAvailableEntry(sub) == null;
+                            if (lastLoop && noMore)
+                            {
+                                sub.queueEmpty();
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            //this consumer can accept additional deliveries, so we must
+                            //keep going after this (if iteration slicing allows it)
+                            allConsumersDone = false;
+                            lastLoop = false;
+                            if(--iterations == 0)
                             {
                                 sub.flushBatched();
-                                boolean noMore = getNextAvailableEntry(sub) == null;
-                                if (lastLoop && noMore)
-                                {
-                                    sub.queueEmpty();
-                                }
                                 break;
                             }
-                            else
-                            {
-                                //this consumer can accept additional deliveries, so we must
-                                //keep going after this (if iteration slicing allows it)
-                                allConsumersDone = false;
-                                lastLoop = false;
-                                if(--iterations == 0)
-                                {
-                                    sub.flushBatched();
-                                    break;
-                                }
-                            }
-
                         }
 
-                        sub.flushBatched();
                     }
-                    finally
-                    {
-                        sub.releaseSendLock();
-                    }
+
+                    sub.flushBatched();
+                }
+                finally
+                {
+                    sub.releaseSendLock();
+                }
             }
 
             if(allConsumersDone && lastLoop)

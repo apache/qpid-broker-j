@@ -26,23 +26,22 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.amqp_1_0.codec.ValueHandler;
-import org.apache.qpid.amqp_1_0.messaging.SectionEncoder;
-import org.apache.qpid.amqp_1_0.messaging.SectionEncoderImpl;
-import org.apache.qpid.amqp_1_0.transport.SendingLinkEndpoint;
-import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
-import org.apache.qpid.amqp_1_0.type.Binary;
-import org.apache.qpid.amqp_1_0.type.DeliveryState;
-import org.apache.qpid.amqp_1_0.type.Outcome;
-import org.apache.qpid.amqp_1_0.type.UnsignedInteger;
-import org.apache.qpid.amqp_1_0.type.codec.AMQPDescribedTypeRegistry;
-import org.apache.qpid.amqp_1_0.type.messaging.Accepted;
-import org.apache.qpid.amqp_1_0.type.messaging.Header;
-import org.apache.qpid.amqp_1_0.type.messaging.Modified;
-import org.apache.qpid.amqp_1_0.type.messaging.Released;
-import org.apache.qpid.amqp_1_0.type.transaction.TransactionalState;
-import org.apache.qpid.amqp_1_0.type.transport.SenderSettleMode;
-import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.server.protocol.v1_0.codec.ValueHandler;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoder;
+import org.apache.qpid.server.protocol.v1_0.messaging.SectionEncoderImpl;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.DeliveryState;
+import org.apache.qpid.server.protocol.v1_0.type.Outcome;
+import org.apache.qpid.server.protocol.v1_0.type.UnsignedInteger;
+import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Accepted;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Header;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Modified;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Released;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TransactionalState;
+import org.apache.qpid.server.protocol.v1_0.type.transport.SenderSettleMode;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.bytebuffer.QpidByteBuffer;
 import org.apache.qpid.server.transport.ProtocolEngine;
 import org.apache.qpid.server.consumer.AbstractConsumerTarget;
@@ -130,21 +129,21 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
             QpidByteBuffer payload = null;
             //TODO
             Collection<QpidByteBuffer> fragments = message.getFragments();
-            if(fragments.size() == 1)
+            if (fragments.size() == 1)
             {
                 payload = fragments.iterator().next();
             }
             else
             {
                 int size = 0;
-                for(QpidByteBuffer fragment : fragments)
+                for (QpidByteBuffer fragment : fragments)
                 {
                     size += fragment.remaining();
                 }
 
                 payload = QpidByteBuffer.allocateDirect(size);
 
-                for(QpidByteBuffer fragment : fragments)
+                for (QpidByteBuffer fragment : fragments)
                 {
                     payload.put(fragment);
                     fragment.dispose();
@@ -153,7 +152,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 payload.flip();
             }
 
-            if(entry.getDeliveryCount() != 0)
+            if (entry.getDeliveryCount() != 0)
             {
                 ValueHandler valueHandler = new ValueHandler(_typeRegistry);
 
@@ -161,7 +160,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 try
                 {
                     Object value = valueHandler.parse(payload);
-                    if(value instanceof Header)
+                    if (value instanceof Header)
                     {
                         oldHeader = (Header) value;
                     }
@@ -177,7 +176,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
                 }
 
                 Header header = new Header();
-                if(oldHeader != null)
+                if (oldHeader != null)
                 {
                     header.setDurable(oldHeader.getDurable());
                     header.setPriority(oldHeader.getPriority());
@@ -190,7 +189,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
                 QpidByteBuffer oldPayload = payload;
                 payload = QpidByteBuffer.allocateDirect(oldPayload.remaining() + encodedHeader.getLength());
-                payload.put(encodedHeader.getArray(),encodedHeader.getArrayOffset(),encodedHeader.getLength());
+                payload.put(encodedHeader.getArray(), encodedHeader.getArrayOffset(), encodedHeader.getLength());
                 payload.put(oldPayload);
                 oldPayload.dispose();
                 payload.flip();
@@ -203,58 +202,57 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
             transfer.setDeliveryTag(tag);
 
-            synchronized(_link.getLock())
+            if (_link.isAttached())
             {
-                if(_link.isAttached())
+                if (SenderSettleMode.SETTLED.equals(getEndpoint().getSendingSettlementMode()))
                 {
-                    if(SenderSettleMode.SETTLED.equals(getEndpoint().getSendingSettlementMode()))
-                    {
-                        transfer.setSettled(true);
-                    }
-                    else
-                    {
-                        UnsettledAction action = _acquires
-                                                 ? new DispositionAction(tag, entry)
-                                                 : new DoNothingAction(tag, entry);
-
-                        _link.addUnsettled(tag, action, entry);
-                    }
-
-                    if(_transactionId != null)
-                    {
-                        TransactionalState state = new TransactionalState();
-                        state.setTxnId(_transactionId);
-                        transfer.setState(state);
-                    }
-                    // TODO - need to deal with failure here
-                    if(_acquires && _transactionId != null)
-                    {
-                        ServerTransaction txn = _link.getTransaction(_transactionId);
-                        if(txn != null)
-                        {
-                            txn.addPostTransactionAction(new ServerTransaction.Action(){
-
-                                public void postCommit()
-                                {
-                                }
-
-                                public void onRollback()
-                                {
-                                    entry.release(getConsumer());
-                                    _link.getEndpoint().updateDisposition(tag, (DeliveryState)null, true);
-                                }
-                            });
-                        }
-
-                    }
-                    getSession().getAMQPConnection().registerMessageDelivered(message.getSize());
-                    getEndpoint().transfer(transfer, false);
+                    transfer.setSettled(true);
                 }
                 else
                 {
-                    entry.release(getConsumer());
+                    UnsettledAction action = _acquires
+                            ? new DispositionAction(tag, entry)
+                            : new DoNothingAction(tag, entry);
+
+                    _link.addUnsettled(tag, action, entry);
                 }
+
+                if (_transactionId != null)
+                {
+                    TransactionalState state = new TransactionalState();
+                    state.setTxnId(_transactionId);
+                    transfer.setState(state);
+                }
+                // TODO - need to deal with failure here
+                if (_acquires && _transactionId != null)
+                {
+                    ServerTransaction txn = _link.getTransaction(_transactionId);
+                    if (txn != null)
+                    {
+                        txn.addPostTransactionAction(new ServerTransaction.Action()
+                        {
+
+                            public void postCommit()
+                            {
+                            }
+
+                            public void onRollback()
+                            {
+                                entry.release(getConsumer());
+                                _link.getEndpoint().updateDisposition(tag, (DeliveryState) null, true);
+                            }
+                        });
+                    }
+
+                }
+                getSession().getAMQPConnection().registerMessageDelivered(message.getSize());
+                getEndpoint().transfer(transfer, false);
             }
+            else
+            {
+                entry.release(getConsumer());
+            }
+
         }
         finally
         {
@@ -281,63 +279,48 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
 
     public boolean allocateCredit(final ServerMessage msg)
     {
-        synchronized (_link.getLock())
+        ProtocolEngine protocolEngine = getSession().getConnection();
+        final boolean hasCredit =
+                _link.isAttached() && getEndpoint().hasCreditToSend() && !protocolEngine.isTransportBlockedForWriting();
+        if (!hasCredit && getState() == State.ACTIVE)
         {
-
-            ProtocolEngine protocolEngine = getSession().getConnection().getAmqpConnection();
-            final boolean hasCredit = _link.isAttached() && getEndpoint().hasCreditToSend() && !protocolEngine.isTransportBlockedForWriting();
-            if (!hasCredit && getState() == State.ACTIVE)
-            {
-                suspend();
-            }
-
-            if (hasCredit)
-            {
-                SendingLinkEndpoint linkEndpoint = _link.getEndpoint();
-                linkEndpoint.setLinkCredit(linkEndpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
-            }
-
-            return hasCredit;
+            suspend();
         }
+
+        if (hasCredit)
+        {
+            SendingLinkEndpoint linkEndpoint = _link.getEndpoint();
+            linkEndpoint.setLinkCredit(linkEndpoint.getLinkCredit().subtract(UnsignedInteger.ONE));
+        }
+
+        return hasCredit;
     }
 
 
     public void suspend()
     {
-        synchronized(_link.getLock())
-        {
-            updateState(State.ACTIVE, State.SUSPENDED);
-        }
+        updateState(State.ACTIVE, State.SUSPENDED);
     }
 
 
     public void restoreCredit(final ServerMessage message)
     {
-        synchronized (_link.getLock())
-        {
-            final SendingLinkEndpoint endpoint = _link.getEndpoint();
-            endpoint.setLinkCredit(endpoint.getLinkCredit().add(UnsignedInteger.ONE));
-        }
+        final SendingLinkEndpoint endpoint = _link.getEndpoint();
+        endpoint.setLinkCredit(endpoint.getLinkCredit().add(UnsignedInteger.ONE));
     }
 
     public void queueEmpty()
     {
-        synchronized(_link.getLock())
-        {
-            _queueEmpty = true;
-        }
+        _queueEmpty = true;
     }
 
     public void flowStateChanged()
     {
-        synchronized(_link.getLock())
+        ProtocolEngine protocolEngine = getSession().getConnection();
+        if (isFlowSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
         {
-            ProtocolEngine protocolEngine = getSession().getConnection().getAmqpConnection();
-            if(isFlowSuspended() && getEndpoint() != null && !protocolEngine.isTransportBlockedForWriting())
-            {
-                updateState(State.SUSPENDED, State.ACTIVE);
-                _transactionId = _link.getTransactionId();
-            }
+            updateState(State.SUSPENDED, State.ACTIVE);
+            _transactionId = _link.getTransactionId();
         }
     }
 
@@ -552,16 +535,13 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     @Override
     protected void processStateChanged()
     {
-        synchronized (_link.getLock())
+        if(_queueEmpty)
         {
-            if(_queueEmpty)
-            {
-                _queueEmpty = false;
+            _queueEmpty = false;
 
-                if(_link.drained())
-                {
-                    updateState(State.ACTIVE, State.SUSPENDED);
-                }
+            if(_link.drained())
+            {
+                updateState(State.ACTIVE, State.SUSPENDED);
             }
         }
     }
@@ -569,10 +549,7 @@ class ConsumerTarget_1_0 extends AbstractConsumerTarget
     @Override
     protected boolean hasStateChanged()
     {
-        synchronized (_link.getLock())
-        {
-            return _queueEmpty;
-        }
+        return _queueEmpty;
     }
 
     @Override

@@ -44,33 +44,26 @@ import javax.security.auth.Subject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.qpid.amqp_1_0.transport.LinkEndpoint;
-import org.apache.qpid.amqp_1_0.transport.ReceivingLinkEndpoint;
-import org.apache.qpid.amqp_1_0.transport.ReceivingLinkListener;
-import org.apache.qpid.amqp_1_0.transport.SendingLinkEndpoint;
-import org.apache.qpid.amqp_1_0.transport.SendingLinkListener;
-import org.apache.qpid.amqp_1_0.transport.SessionEndpoint;
-import org.apache.qpid.amqp_1_0.transport.SessionEventListener;
-import org.apache.qpid.amqp_1_0.type.AmqpErrorException;
-import org.apache.qpid.amqp_1_0.type.Binary;
-import org.apache.qpid.amqp_1_0.type.LifetimePolicy;
-import org.apache.qpid.amqp_1_0.type.Symbol;
-import org.apache.qpid.amqp_1_0.type.messaging.DeleteOnClose;
-import org.apache.qpid.amqp_1_0.type.messaging.DeleteOnNoLinks;
-import org.apache.qpid.amqp_1_0.type.messaging.DeleteOnNoLinksOrMessages;
-import org.apache.qpid.amqp_1_0.type.messaging.DeleteOnNoMessages;
-import org.apache.qpid.amqp_1_0.type.messaging.Source;
-import org.apache.qpid.amqp_1_0.type.messaging.Target;
-import org.apache.qpid.amqp_1_0.type.messaging.TerminusDurability;
-import org.apache.qpid.amqp_1_0.type.transaction.Coordinator;
-import org.apache.qpid.amqp_1_0.type.transaction.TxnCapability;
-import org.apache.qpid.amqp_1_0.type.transport.AmqpError;
-import org.apache.qpid.amqp_1_0.type.transport.ConnectionError;
-import org.apache.qpid.amqp_1_0.type.transport.Detach;
-import org.apache.qpid.amqp_1_0.type.transport.End;
-import org.apache.qpid.amqp_1_0.type.transport.Error;
-import org.apache.qpid.amqp_1_0.type.transport.Role;
-import org.apache.qpid.amqp_1_0.type.transport.Transfer;
+import org.apache.qpid.server.protocol.v1_0.type.AmqpErrorException;
+import org.apache.qpid.server.protocol.v1_0.type.Binary;
+import org.apache.qpid.server.protocol.v1_0.type.LifetimePolicy;
+import org.apache.qpid.server.protocol.v1_0.type.Symbol;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnClose;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnNoLinks;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnNoLinksOrMessages;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.DeleteOnNoMessages;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Source;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.Target;
+import org.apache.qpid.server.protocol.v1_0.type.messaging.TerminusDurability;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.Coordinator;
+import org.apache.qpid.server.protocol.v1_0.type.transaction.TxnCapability;
+import org.apache.qpid.server.protocol.v1_0.type.transport.AmqpError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.ConnectionError;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Detach;
+import org.apache.qpid.server.protocol.v1_0.type.transport.End;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Error;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Role;
+import org.apache.qpid.server.protocol.v1_0.type.transport.Transfer;
 import org.apache.qpid.protocol.AMQConstant;
 import org.apache.qpid.server.connection.SessionPrincipal;
 import org.apache.qpid.server.consumer.ConsumerImpl;
@@ -110,7 +103,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     private final CopyOnWriteArrayList<Action<? super Session_1_0>> _taskList =
             new CopyOnWriteArrayList<Action<? super Session_1_0>>();
 
-    private final Connection_1_0 _connection;
+    private final AMQPConnection_1_0 _connection;
     private UUID _id = UUID.randomUUID();
     private AtomicBoolean _closed = new AtomicBoolean();
     private final Subject _subject = new Subject();
@@ -123,7 +116,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     private final List<ConsumerTarget_1_0> _consumersWithPendingWork = new ArrayList<>();
 
 
-    public Session_1_0(final Connection_1_0 connection, final SessionEndpoint endpoint)
+    public Session_1_0(final AMQPConnection_1_0 connection, final SessionEndpoint endpoint)
     {
         _endpoint = endpoint;
         _connection = connection;
@@ -592,7 +585,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     @Override
     public AMQPConnection<?> getAMQPConnection()
     {
-        return _connection.getAmqpConnection();
+        return _connection;
     }
 
     @Override
@@ -773,7 +766,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
         return getId().compareTo(o.getId());
     }
 
-    public Connection_1_0 getConnection()
+    public AMQPConnection_1_0 getConnection()
     {
         return _connection;
     }
@@ -965,7 +958,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     @Override
     public void addTicker(final Ticker ticker)
     {
-        getConnection().getAmqpConnection().getAggregateTicker().addTicker(ticker);
+        getConnection().getAggregateTicker().addTicker(ticker);
         // trigger a wakeup to ensure the ticker will be taken into account
         getAMQPConnection().notifyWork();
     }
@@ -973,7 +966,7 @@ public class Session_1_0 implements SessionEventListener, AMQSessionModel<Sessio
     @Override
     public void removeTicker(final Ticker ticker)
     {
-        getConnection().getAmqpConnection().getAggregateTicker().removeTicker(ticker);
+        getConnection().getAggregateTicker().removeTicker(ticker);
     }
 
     @Override

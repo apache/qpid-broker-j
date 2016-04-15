@@ -20,7 +20,7 @@
  */
 package org.apache.qpid.server.protocol.v1_0;
 
-import org.apache.qpid.amqp_1_0.type.codec.AMQPDescribedTypeRegistry;
+import org.apache.qpid.server.protocol.v1_0.type.codec.AMQPDescribedTypeRegistry;
 import org.apache.qpid.server.message.internal.InternalMessage;
 import org.apache.qpid.server.model.VirtualHost;
 import org.apache.qpid.server.plugin.MessageConverter;
