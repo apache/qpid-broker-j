@@ -149,7 +149,7 @@ public final class ConfiguredObjectQuery
         }
         catch (ParseException | TokenMgrError e)
         {
-            throw new SelectorParsingException("Unable to parse where clause");
+            throw new SelectorParsingException("Unable to parse where clause", e);
         }
         return filteredObjects;
     }

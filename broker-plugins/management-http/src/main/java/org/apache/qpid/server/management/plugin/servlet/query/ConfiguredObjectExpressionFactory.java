@@ -21,13 +21,16 @@
 package org.apache.qpid.server.management.plugin.servlet.query;
 
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.qpid.filter.Expression;
 import org.apache.qpid.server.model.ConfiguredObject;
@@ -59,6 +62,61 @@ public class ConfiguredObjectExpressionFactory
                     }
                 };
             }
+        },
+
+        NOW {
+            @Override
+            ConfiguredObjectExpression asExpression(final List<Expression> args)
+            {
+                if (args != null && !args.isEmpty())
+                {
+                    throw new IllegalArgumentException(NOW.name() + " does not accept arguments.");
+                }
+                return new ConfiguredObjectExpression()
+                {
+                    @Override
+                    public Object evaluate(final ConfiguredObject<?> object)
+                    {
+                        return new Date();
+                    }
+                };
+            }
+        },
+
+        TO_DATE
+                {
+            @Override
+            ConfiguredObjectExpression asExpression(final List<Expression> args)
+            {
+                if (args == null || args.size() != 1)
+                {
+                    throw new IllegalArgumentException(TO_DATE.name() + " requires a single argument.");
+                }
+
+                return new ConfiguredObjectExpression()
+                {
+                    @Override
+                    public Object evaluate(final ConfiguredObject<?> object)
+                    {
+                        Object dateTime = args.get(0).evaluate(object);
+                        if (!(dateTime instanceof String))
+                        {
+                            throw new IllegalArgumentException(TO_DATE.name() + " requires a string argument, not a " + dateTime.getClass());
+                        }
+                        try
+                        {
+                            final Calendar calendar = DatatypeConverter.parseDateTime((String) dateTime);
+                            return calendar.getTime();
+                        }
+                        catch (IllegalArgumentException e)
+                        {
+                            throw new IllegalArgumentException(TO_DATE
+                                                               + " requires an ISO-8601 format date or date/time.", e);
+                        }
+                    }
+                };
+            }
+
         };
 
         abstract ConfiguredObjectExpression asExpression( List<Expression> args );
