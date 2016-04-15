@@ -27,8 +27,10 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +47,7 @@ import org.apache.qpid.server.configuration.BrokerProperties;
 import org.apache.qpid.server.model.Broker;
 import org.apache.qpid.server.model.Port;
 import org.apache.qpid.server.model.Protocol;
+import org.apache.qpid.server.model.port.AmqpPort;
 import org.apache.qpid.server.protocol.v0_10.ServerDisassembler;
 import org.apache.qpid.test.utils.QpidBrokerTestCase;
 import org.apache.qpid.test.utils.TestBrokerConfiguration;
@@ -65,10 +68,13 @@ public class ProtocolNegotiationTest extends QpidBrokerTestCase
                                   TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT,
                                   Port.PROTOCOLS,
                                   Arrays.asList(getBrokerProtocol()));
+        Map<String,String> overriddenPortContext = new HashMap<>();
+        overriddenPortContext.put(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null);
+        overriddenPortContext.put(AmqpPort.PROTOCOL_HANDSHAKE_TIMEOUT, String.valueOf(AmqpPort.DEFAULT_PROTOCOL_HANDSHAKE_TIMEOUT));
         config.setObjectAttribute(Port.class,
                                   TestBrokerConfiguration.ENTRY_NAME_AMQP_PORT,
                                   Port.CONTEXT,
-                                  Collections.singletonMap(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null));
+                                  overriddenPortContext);
         config.setBrokerAttribute(Broker.CONTEXT,
                                   Collections.singletonMap(BrokerProperties.PROPERTY_DEFAULT_SUPPORTED_PROTOCOL_REPLY, null));
 

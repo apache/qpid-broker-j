@@ -100,15 +100,6 @@ public class SpawnedBrokerHolder extends AbstractBrokerHolder
             cmd = newCmd;
         }
 
-        if (brokerOptions.getInitialSystemProperties() != null)
-        {
-            String[] newCmd = new String[cmd.length + 2];
-            System.arraycopy(cmd, 0, newCmd, 0, cmd.length);
-            newCmd[cmd.length] = "-props";
-            newCmd[cmd.length + 1] = brokerOptions.getInitialSystemProperties();
-            cmd = newCmd;
-        }
-
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.redirectErrorStream(true);
         Map<String, String> processEnv = pb.environment();

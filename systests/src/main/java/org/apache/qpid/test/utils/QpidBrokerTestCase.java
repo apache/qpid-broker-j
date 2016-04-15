@@ -18,12 +18,15 @@
 package org.apache.qpid.test.utils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -94,6 +97,7 @@ public class QpidBrokerTestCase extends QpidTestCase
     private static final Boolean BROKER_PERSISTENT = Boolean.getBoolean("broker.persistent");
     private static final Protocol BROKER_PROTOCOL =
             Protocol.valueOf("AMQP_" + System.getProperty("broker.version", "v0_9").substring(1));
+    private static final String TEST_OVERRIDDEN_PROPERTIES = "test.overridden.properties";
     private static List<BrokerHolder> _brokerList = new ArrayList<>();
 
     static
@@ -118,6 +122,39 @@ public class QpidBrokerTestCase extends QpidTestCase
 
         if (JAVA.equals(BROKER_LANGUAGE))
         {
+            String pathToFileWithOverriddenClientAndBrokerProperties = System.getProperty(TEST_OVERRIDDEN_PROPERTIES);
+            if (pathToFileWithOverriddenClientAndBrokerProperties != null)
+            {
+                File file = new File(pathToFileWithOverriddenClientAndBrokerProperties);
+                if (file.exists())
+                {
+                    _logger.info("Loading overridden system properties from {}", file.getAbsolutePath());
+                    try (InputStream propertiesStream = new FileInputStream(file))
+                    {
+                        Properties properties = new Properties();
+                        properties.load(propertiesStream);
+                        for (String propertyName : properties.stringPropertyNames())
+                        {
+                            setSystemProperty(propertyName, properties.getProperty(propertyName));
+                        }
+                    }
+                    catch (IOException e)
+                    {
+                        throw new RuntimeException(String.format(
+                                "Cannot load overridden properties from '%s'. Verify value provided with system property '%s'",
+                                file.getAbsolutePath(),
+                                TEST_OVERRIDDEN_PROPERTIES), e);
+                    }
+                }
+                else
+                {
+                    throw new RuntimeException(String.format(
+                            "File with overridden properties at '%s' does not exists. Verify value provided with system property '%s'",
+                            file.getAbsolutePath(),
+                            TEST_OVERRIDDEN_PROPERTIES));
+                }
+            }
+
             try
             {
                 Broker.populateSystemPropertiesFromDefaults(null);

@@ -243,10 +243,6 @@ public abstract class AbstractBrokerHolder implements BrokerHolder
             options.setManagementModePassword(QpidBrokerTestCase.MANAGEMENT_MODE_PASSWORD);
         }
         options.setStartupLoggedToSystemOut(false);
-        if (System.getProperty("test.broker.system.properties") != null)
-        {
-            options.setInitialSystemProperties(System.getProperty("test.broker.system.properties"));
-        }
         return options;
     }
 
