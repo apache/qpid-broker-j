@@ -501,7 +501,7 @@ define(["dojo/_base/xhr",
 
            }
 
-           util.updateUI = function(data, fieldNames, obj)
+           util.updateUI = function(data, fieldNames, obj, formatters)
            {
              for(var i=0; i<fieldNames.length;i++)
              {
@@ -510,7 +510,20 @@ define(["dojo/_base/xhr",
                var fieldNode = obj[fieldName];
                if (fieldNode)
                {
-                 fieldNode.innerHTML= (value == undefined || value == null) ? "" : entities.encode(String(value));
+                   if (formatters && fieldNode.className)
+                   {
+                     var clazzes = fieldNode.className.split(" ");
+                     for (var idx in clazzes)
+                     {
+                       var clazz = clazzes[idx];
+                       var fmt = formatters[clazz];
+                       if (fmt && value)
+                       {
+                         value = fmt(value);
+                       }
+                     }
+                   }
+                   fieldNode.innerHTML = (value == undefined || value == null) ? "" : entities.encode(String(value));
                }
              }
            }

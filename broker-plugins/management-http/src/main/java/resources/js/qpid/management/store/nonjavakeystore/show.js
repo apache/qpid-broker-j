@@ -21,40 +21,24 @@ define(["qpid/common/util", "dojox/html/entities", "dojo/domReady!"],
   function (util, entities)
   {
 
-    function toDate(value, userPreferences)
-    {
-        return value ? entities.encode(String(userPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}))) : "";
-    }
-
-    var dateFields = ["certificateValidEnd","certificateValidStart"];
-
     function NonJavaKeyStore(data)
     {
+        var that = this;
         this.fields = [];
         this.management = data.parent.management;
+        this.dateTimeFormatter = function(value){ return value ? that.management.userPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}) : "";};
+
         var attributes = this.management.metadata.getMetaData("KeyStore", "NonJavaKeyStore").attributes;
         for(var name in attributes)
         {
-            if (dateFields.indexOf(name) == -1)
-            {
-                this.fields.push(name);
-            }
+              this.fields.push(name);
         }
-        var allFields = this.fields.concat(dateFields);
-        util.buildUI(data.containerNode, data.parent, "store/nonjavakeystore/show.html",allFields, this);
+        util.buildUI(data.containerNode, data.parent, "store/nonjavakeystore/show.html", this.fields, this);
     }
 
     NonJavaKeyStore.prototype.update = function(data)
     {
-        util.updateUI(data, this.fields, this);
-        if (data)
-        {
-            for(var idx in dateFields)
-            {
-                var name = dateFields[idx];
-                this[name].innerHTML = toDate(data[name], this.management.userPreferences);
-            }
-        }
+        util.updateUI(data, this.fields, this, {datetime: this.dateTimeFormatter});
     }
 
     return NonJavaKeyStore;

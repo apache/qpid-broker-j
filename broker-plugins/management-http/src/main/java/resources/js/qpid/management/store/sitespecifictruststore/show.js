@@ -28,20 +28,21 @@ define(["dojo/query",
 
     function SiteSpecificTrustStore(data)
     {
+        var that = this;
         this.fields = [];
         this.management = data.parent.management;
+        this.dateTimeFormatter = function(value){ return value ? that.management.userPreferences.formatDateTime(value, {addOffset: true, appendTimeZone: true}) : "";};
         var attributes = this.management.metadata.getMetaData("TrustStore", "SiteSpecificTrustStore").attributes;
         for(var name in attributes)
         {
-            this.fields.push(name);
+          this.fields.push(name);
         }
-        var that = this;
         util.buildUI(data.containerNode, data.parent, "store/sitespecifictruststore/show.html", this.fields, this);
     }
 
     SiteSpecificTrustStore.prototype.update = function(data)
     {
-        util.updateUI(data, this.fields, this);
+        util.updateUI(data, this.fields, this, {datetime: this.dateTimeFormatter});
     }
 
     return SiteSpecificTrustStore;
