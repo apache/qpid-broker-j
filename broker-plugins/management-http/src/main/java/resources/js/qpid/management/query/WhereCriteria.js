@@ -109,7 +109,6 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                        this.criteriaContainer.addChild(criteriaPane);
                                        criteriaPane.on("change", lang.hitch(this, this._criteriaConditionChanged));
                                        this._updateRemovable();
-                                       this.conditionDialogContent.connectChildren();
                                        return criteriaPane;
                                      },
                         _getNumberOfCriteria : function()
@@ -118,7 +117,7 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                        var criteriaArray = this.criteriaContainer.getChildren();
                                        for(var i = 0;i<criteriaArray.length;i++)
                                        {
-                                          if (!criteriaArray[i]._removed)
+                                          if (!criteriaArray[i].get("removed"))
                                           {
                                             counter = counter + 1;
                                           }
@@ -132,9 +131,10 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                        var criteriaArray = this.criteriaContainer.getChildren();
                                        for(var i = 0;i<criteriaArray.length;i++)
                                        {
-                                         if (!criteriaArray[i]._removed)
+                                         if (!criteriaArray[i].get("removed"))
                                          {
-                                            criteriaArray[i].setRemovable(!singleCriteria);
+                                            criteriaArray[i].set("removable", !singleCriteria);
+                                            break;
                                          }
                                        }
                                        this.criteriaMatchCondition.set("disabled", singleCriteria);
@@ -153,9 +153,8 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                         var expression = this._getUserFriendlyExpression();
                                         this.criteria.set("label", expression);
                                       },
-                        _criteriaConditionChanged: function()
+                        _criteriaConditionChanged: function(criteria)
                                       {
-                                        this.conditionDialogContent.connectChildren();
                                         var isValid =  this._validateCriteria();
                                         if (isValid)
                                         {
@@ -164,6 +163,35 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                           this._updateRemovable();
                                         }
                                         this.doneButton.set("disabled", !isValid);
+                                        if (criteria && criteria.get("removed"))
+                                        {
+                                          var prev = this.criteriaMatchCondition;
+                                          var criteriaArray = this.criteriaContainer.getChildren();
+                                          for(var i = 0;i<criteriaArray.length;i++)
+                                          {
+                                            if (criteriaArray[i] == criteria)
+                                            {
+                                              break;
+                                            }
+                                            if (!criteriaArray[i].get("removed"))
+                                            {
+                                              prev = criteriaArray[i]
+                                            }
+                                          }
+
+                                          if (prev)
+                                          {
+                                            if (prev.focus)
+                                            {
+                                              prev.focus();
+                                            }
+                                            else if (prev instanceof qpid.management.query.CriteriaPane)
+                                            {
+                                              prev.criteriaCondition.focus();
+                                            }
+                                            criteria.domNode.style.display = "none";
+                                          }
+                                        }
                                       },
                         _validateCriteria:function()
                                       {
@@ -171,7 +199,7 @@ function(declare, array, lang, string, template, entities, popup, CriteriaPane, 
                                         var criteriaArray = this.criteriaContainer.getChildren();
                                         for(var i = 0;i<criteriaArray.length;i++)
                                         {
-                                          if (!criteriaArray[i].validate())
+                                          if (!criteriaArray[i].get("removed") && !criteriaArray[i].isValidCriteria())
                                           {
                                             isValid = false;
                                           }

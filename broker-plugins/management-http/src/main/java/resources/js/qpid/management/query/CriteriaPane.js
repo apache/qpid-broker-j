@@ -549,36 +549,26 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                         },
                         _removalRequested: function()
                                         {
-                                            if (this._stored)
-                                            {
-                                              // do not destroy already stored criteria
-                                              // in order to restore it on cancellation
-
-                                              this._removed = true;
-                                              domStyle.set(this.domNode, "display", "none");
-
-                                              // notify listeners that criteria is changed
-                                              this.emit("change", this);
-                                            }
-                                            else
-                                            {
-                                                this.destroyRecursive(false);
-                                            }
+                                            this._removed = true;
+                                            this.emit("change", this);
+                                        },
+                        _getRemovedAttr:function()
+                                        {
+                                          return this._removed;
                                         },
                         cancelled:      function()
                                         {
-                                            if (this._removed)
-                                            {
-                                              domStyle.set(this.domNode, "display", "");
-                                              this._removed = false;
-                                            }
-
                                             if (!this._stored)
                                             {
                                               this.destroyRecursive(false);
                                             }
                                             else
                                             {
+                                              if (this._removed)
+                                              {
+                                                domStyle.set(this.domNode, "display", "");
+                                                this._removed = false;
+                                              }
                                               this.valueEditor.set("value", this._savedValue);
                                               this.criteriaCondition.set("value", this._savedCondition);
                                             }
@@ -595,11 +585,12 @@ function(declare, array, lang, string, domConstruct, domStyle, has, template, en
                                               this._stored = true;
                                             }
                                         },
-                        setRemovable:   function(removable)
+                        _setRemovableAttr:function(removable)
                                         {
+                                          this._removable = removable
                                           this.removeCriteria.set("disabled", !removable);
                                         },
-                        validate:       function()
+                        isValidCriteria:        function()
                                         {
                                           if (!this.valueEditor.get("disabled"))
                                           {
