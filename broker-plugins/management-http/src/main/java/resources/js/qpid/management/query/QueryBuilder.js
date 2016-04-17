@@ -55,7 +55,7 @@ define(["dojo/_base/declare",
         "dijit/TooltipDialog",
         "dijit/Dialog",
         "dojo/Deferred",
-        "dojo/json"
+        "qpid/management/query/MessageDialog"
         ],
         function(declare,
                  lang,
@@ -76,7 +76,7 @@ define(["dojo/_base/declare",
                  WhereExpression
                  )
         {
-             var selectExpressionToArray =  function(value)
+            var selectExpressionToArray =   function(value)
                                             {
                                               var columns = [];
                                               if (value)
@@ -91,7 +91,7 @@ define(["dojo/_base/declare",
                                               return columns;
                                             };
 
-             var arrayToSelectExpression =  function(value)
+            var arrayToSelectExpression =   function(value)
                                             {
                                               var expression = "";
                                               if (lang.isArray(value))
@@ -105,7 +105,7 @@ define(["dojo/_base/declare",
                                               }
                                               return expression;
                                             };
-             var predefinedCategories =     [ {id: "queue", name: "queue"},  {id: "connection", name: "connection"} ];
+            var predefinedCategories =      [ {id: "queue", name: "queue"},  {id: "connection", name: "connection"} ];
 
             return declare( "qpid.management.query.QueryBuilder",
                             [dijit._Widget, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin],
@@ -145,6 +145,7 @@ define(["dojo/_base/declare",
                                 _searchScopeSelector: null,
                                 _lastCategory: null,
                                 _lastSearchQuery: null,
+                                _showWarningOnAdvancedWhereChanged: true,
 
                                 constructor: function(args)
                                              {
@@ -167,7 +168,8 @@ define(["dojo/_base/declare",
 
                                                // advanced mode widgets
                                                this.selectExpression.on("change", lang.hitch(this, this._advancedModeSelectChanged));
-                                               this.whereExpression.on("change", lang.hitch(this, this._advancedModeWhereChanged));
+                                               this.whereExpression.on("blur", lang.hitch(this, this._advancedModeWhereChanged));
+                                               this.whereExpression.on("change", lang.hitch(this, function(){this._showWarningOnAdvancedWhereChanged=true;}));
                                                this.selectExpression.on("keyUp", lang.hitch(this, this._advancedModeKeyPressed));
                                                this.whereExpression.on("keyUp", lang.hitch(this, this._advancedModeKeyPressed));
 
@@ -236,14 +238,49 @@ define(["dojo/_base/declare",
                                              },
                                 _advancedModeWhereChanged:  function()
                                              {
-                                               if (this._standardModeLastWhereExpression && !this._standardMode)
+                                               if (this._standardModeLastWhereExpression &&
+                                                   this._standardModeLastWhereExpression!= this.whereExpression.value &&
+                                                   !this._standardMode )
                                                {
-                                                 dijit.showTooltip("On switching into Standard Mode where expression"
-                                                                 + " will be erased. Copying of where expression from "
-                                                                 + " Advanced Mode into Standard Mode is unsupported!",
-                                                                 this.whereExpression.domNode,
-                                                                 this.whereExpression.get("tooltipPosition"),
-                                                                 !this.whereExpression.isLeftToRight());
+                                                 var userPreferences = this._management.userPreferences;
+                                                 var displayWarning = !userPreferences || !userPreferences.query ||
+                                                                     (userPreferences.query.displaySwitchModeWarning == undefined
+                                                                      || userPreferences.query.displaySwitchModeWarning );
+                                                 if (displayWarning && this._showWarningOnAdvancedWhereChanged)
+                                                 {
+                                                   if (!this._switchModeWarningDialog)
+                                                   {
+                                                     var that = this;
+                                                     this._switchModeWarningDialog = new qpid.management.query.MessageDialog({title: "Warning!",
+                                                                                                                             message: "<div>On switching into Standard Mode where expression will be erased.</div>"
+                                                                                                                                      + "<div>Copying of where expression from  Advanced Mode into Standard Mode is unsupported!</div>"},
+                                                                                                                             domConstruct.create("div"));
+                                                     this._switchModeWarningDialog.on( "execute",
+                                                                                       function(stopDisplaying)
+                                                                                       {
+                                                                                         if (stopDisplaying)
+                                                                                         {
+                                                                                            if (!userPreferences.query)
+                                                                                            {
+                                                                                              userPreferences.query= {};
+                                                                                            }
+                                                                                            userPreferences.query.displaySwitchModeWarning = false;
+                                                                                            userPreferences.save({query:  userPreferences.query});
+
+                                                                                         }
+                                                                                         else
+                                                                                         {
+                                                                                           that._showWarningOnAdvancedWhereChanged = false;
+                                                                                         }
+                                                                                       });
+                                                     this._switchModeWarningDialog.on( "cancel",
+                                                                                       function(val)
+                                                                                       {
+                                                                                         that.whereExpression.set("value", that._standardModeLastWhereExpression);
+                                                                                       });
+                                                   }
+                                                   this._switchModeWarningDialog.show();
+                                                 }
                                                }
                                              },
                                 _advancedModeSelectChanged: function()

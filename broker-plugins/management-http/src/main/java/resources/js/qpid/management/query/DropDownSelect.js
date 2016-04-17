@@ -88,7 +88,7 @@ function(declare, lang, array, json, domConstruct, template, Grid, Keyboard, Sel
                                           }
                         });
 
-    OptionsPanel = declare("qpid.management.query.OptionsPanel",
+   var OptionsPanel = declare("qpid.management.query.OptionsPanel",
                    [dijit._WidgetBase, dijit._TemplatedMixin, dijit._WidgetsInTemplateMixin],
                    {
                        /**
